@@ -2454,7 +2454,9 @@ public:
 class AstSequence final : public AstNodeFTask {
     // A sequence inside a module
     // TODO when supported might not want to be a NodeFTask
-    bool m_referenced = false;  // Ever referenced (for unsupported check)
+    bool m_referenced = false;  // Set by V3LinkResolve when referenced; cleared by
+                                // V3AssertPre after inlining; if still set after
+                                // V3AssertPre, the reference is in an unsupported context
 public:
     AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}

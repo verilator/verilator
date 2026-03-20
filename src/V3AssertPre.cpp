@@ -63,6 +63,7 @@ private:
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     bool m_inPExpr = false;  // True if in AstPExpr
+    std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
 
@@ -88,12 +89,44 @@ private:
         }
         return newp;
     }
+    AstNodeExpr* getSequenceBodyExprp(const AstSequence* const seqp) const {
+        // The statements in AstSequence are optional AstVar (ports) followed by body expr.
+        AstNode* bodyp = seqp->stmtsp();
+        while (bodyp && VN_IS(bodyp, Var)) bodyp = bodyp->nextp();
+        return VN_CAST(bodyp, NodeExpr);
+    }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
         // The only statements possible in AstProperty are AstPropSpec (body)
         // and AstVar (arguments).
         AstNode* propExprp = propp->stmtsp();
         while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
         return VN_CAST(propExprp, PropSpec);
+    }
+    void substituteSequenceCall(AstFuncRef* funcrefp, AstSequence* seqp) {
+        // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
+        // Inline the sequence body at the call site, replacing the FuncRef
+        AstNodeExpr* bodyExprp = getSequenceBodyExprp(seqp);
+        UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
+        // Clone the body expression since the sequence may be referenced multiple times
+        AstNodeExpr* clonedp = bodyExprp->cloneTree(false);
+        // Substitute formal arguments with actual arguments
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        for (const auto& tconnect : tconnects) {
+            const AstVar* const portp = tconnect.first;
+            AstArg* const argp = tconnect.second;
+            clonedp->foreach([&](AstVarRef* refp) {
+                if (refp->varp() == portp) {
+                    refp->replaceWith(argp->exprp()->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
+                }
+            });
+            pushDeletep(argp->exprp()->unlinkFrBack());
+        }
+        // Replace the FuncRef with the inlined body
+        funcrefp->replaceWith(clonedp);
+        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+        // Clear referenced flag; sequences with isReferenced==false are deleted in assertPreAll
+        seqp->isReferenced(false);
     }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
@@ -601,6 +634,17 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    void visit(AstFuncRef* nodep) override {
+        // IEEE 1800-2023 16.8: Inline sequence instances wherever they appear
+        // in the expression tree (inside implications, boolean ops, nested refs, etc.)
+        if (AstSequence* const seqp = VN_CAST(nodep->taskp(), Sequence)) {
+            substituteSequenceCall(nodep, seqp);
+            // The FuncRef has been replaced; do not access nodep after this point.
+            // The replacement node will be visited by the parent's iterateChildren.
+            return;
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
@@ -790,6 +834,11 @@ private:
         // (AstFuncRef)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstSequence* nodep) override {
+        // Sequence declarations are not visited directly; their bodies are inlined
+        // at call sites by visit(AstFuncRef*). Collect for post-traversal cleanup.
+        m_seqsToCleanup.push_back(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -800,6 +849,17 @@ public:
         iterate(nodep);
         // Fix up varref names
         for (AstVarXRef* xrefp : m_xrefsp) xrefp->name(xrefp->varp()->name());
+        // Clean up sequence declarations after inlining.
+        // Referenced sequences that were inlined have isReferenced cleared.
+        // Remaining referenced sequences are in unsupported contexts (e.g. @seq event).
+        for (AstSequence* seqp : m_seqsToCleanup) {
+            if (seqp->isReferenced()) {
+                seqp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: sequence referenced outside assertion property");
+            } else {
+                VL_DO_DANGLING(seqp->unlinkFrBack()->deleteTree(), seqp);
+            }
+        }
     }
     ~AssertPreVisitor() override = default;
 };
