@@ -6759,6 +6759,10 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(propStmtp, nullptr);
             } else if (VN_IS(propStmtp, PropSpec)) {
                 iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
+            } else if (VN_IS(propStmtp, InitialStaticStmt)
+                       || VN_IS(propStmtp, InitialAutomaticStmt)) {
+                // Property-local variable initialization -- iterate this node only
+                userIterate(propStmtp, nullptr);
             } else {
                 propStmtp->v3fatalSrc("Invalid statement under AstProperty");
             }
