@@ -18,6 +18,7 @@ test.execute()
 for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "___024root*.cpp"):
     test.file_grep_not(filename, r'// $c expression at')
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "___024root__0__Slow.cpp", r'\?')
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root__0__Slow.cpp", r'VL_WRITEF_NX\(\"1.234000\\n\*-\* All Finished \*-\*\\n\"')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root__0__Slow.cpp",
+               r'VL_WRITEF_NX\(\"1.234000\\n\*-\* All Finished \*-\*\\n\"')
 
 test.passes()
