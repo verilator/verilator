@@ -750,27 +750,25 @@ private:
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
         AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
-        beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                                        new AstConst{flp, 0}});
+        beginp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0}});
 
         AstLoop* const loopp = new AstLoop{flp};
         // Loop test: continue while cnt < N
-        loopp->addStmtsp(new AstLoopTest{
-            flp, loopp,
-            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                      countp->cloneTreePure(false)}});
+        loopp->addStmtsp(new AstLoopTest{flp, loopp,
+                                         new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                   countp->cloneTreePure(false)}});
         // if ($sampled(expr)) cnt++
         AstSampled* const sampledp = new AstSampled{flp, exprp};
         sampledp->dtypeFrom(exprp);
-        loopp->addStmtsp(new AstIf{
-            flp, sampledp,
-            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                          new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                     new AstConst{flp, 1}}}});
+        loopp->addStmtsp(
+            new AstIf{flp, sampledp,
+                      new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                    new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                               new AstConst{flp, 1}}}});
         // if (cnt < N) @(clk) -- only wait if not yet matched
         loopp->addStmtsp(new AstIf{
-            flp,
-            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, countp},
+            flp, new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, countp},
             new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr}});
 
         beginp->addStmtsp(loopp);
