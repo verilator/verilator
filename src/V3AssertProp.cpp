@@ -266,7 +266,7 @@ class RangeDelayExpander final : public VNVisitor {
     // Linearize an SExpr tree into sequence steps.
     // Returns steps in evaluation order: [(expr, delay, isRange, min, max), ...]
     // The final expression (tail) has delay=0.
-    struct SeqStep {
+    struct SeqStep final {
         AstNodeExpr* exprp;  // Expression to check (nullptr if unary leading delay)
         int delay;  // Fixed delay after this expression (0 for tail)
         bool isRange;  // Whether this step's delay is a range
@@ -320,11 +320,11 @@ class RangeDelayExpander final : public VNVisitor {
     // Tree structure: SExpr can have preExprp as SExpr (for multi-step from left)
     // or exprp as SExpr (for chained sequences from right).
     //
-    // Example: (##[1:2] b) ##1 c → SExpr(pre=SExpr(##[1:2], b), ##1, c)
-    //   → steps: [{nullptr, range[1:2]}, {b, delay=1}, {c, delay=0}]
+    // Example: (##[1:2] b) ##1 c --> SExpr(pre=SExpr(##[1:2], b), ##1, c)
+    //   --> steps: [{nullptr, range[1:2]}, {b, delay=1}, {c, delay=0}]
     //
-    // Example: a ##[1:2] (b ##1 c) → SExpr(a, ##[1:2], SExpr(b, ##1, c))
-    //   → steps: [{a, range[1:2]}, {b, delay=1}, {c, delay=0}]
+    // Example: a ##[1:2] (b ##1 c) --> SExpr(a, ##[1:2], SExpr(b, ##1, c))
+    //   --> steps: [{a, range[1:2]}, {b, delay=1}, {c, delay=0}]
     bool linearize(AstSExpr* rootp, std::vector<SeqStep>& steps) {
         bool hasRange = false;
         linearizeImpl(rootp, steps, hasRange);
@@ -372,7 +372,7 @@ class RangeDelayExpander final : public VNVisitor {
     //     up to rangeMax cycles, then continue with the rest
     //
     // For range delay at step[idx], the checked expression is step[idx+1].exprp,
-    // and on success the continuation is delay(step[idx+1].delay) → steps[idx+2..end].
+    // and on success the continuation is delay(step[idx+1].delay) --> steps[idx+2..end].
     AstNode* buildContinuation(FileLine* flp, const std::vector<SeqStep>& steps, size_t idx) {
         if (idx >= steps.size()) return new AstPExprClause{flp, true};
 
@@ -391,7 +391,7 @@ class RangeDelayExpander final : public VNVisitor {
             // Range delay at step[idx]:
             //   1. Check step[idx].exprp (if present, i.e. binary form)
             //   2. Wait rangeMin cycles
-            //   3. Check step[idx+1].exprp — if pass, go to after-pass continuation
+            //   3. Check step[idx+1].exprp -- if pass, go to after-pass continuation
             //      If fail, wait 1 cycle and retry, up to rangeWidth times
             //   4. After-pass continuation = delay(step[idx+1].delay) + steps[idx+2..end]
             UASSERT(idx + 1 < steps.size(), "Range delay must have next step");
@@ -486,18 +486,18 @@ class RangeDelayExpander final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        // Skip nested SExprs — the outermost SExpr containing a range delay
+        // Skip nested SExprs -- the outermost SExpr containing a range delay
         // handles the entire tree via linearization
         if (AstSExpr* const parentp = VN_CAST(nodep->backp(), SExpr)) {
             if (parentp->exprp() == nodep || parentp->preExprp() == nodep) {
-                // Don't iterate children — parent will linearize the full tree
+                // Don't iterate children -- parent will linearize the full tree
                 return;
             }
         }
 
         std::vector<SeqStep> steps;
         if (!linearize(nodep, steps)) {
-            // Error in range validation — replace with constant to prevent crash
+            // Error in range validation -- replace with constant to prevent crash
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
