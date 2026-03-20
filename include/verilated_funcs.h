@@ -2418,9 +2418,9 @@ static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits
 }
 
 // Reverse element order of an unpacked array in-place.
-// Used by emitter for descending-range arrays after VL_UNPACK.
+// Used by emitter for descending-range arrays after VL_UNPACK_*.
 template <typename T_Value, std::size_t N_Depth>
-static inline void VL_REVERSE_UNPACKED(VlUnpacked<T_Value, N_Depth>& q) {
+static inline void VL_UNPACK_REVERSED(VlUnpacked<T_Value, N_Depth>& q) {
     for (size_t i = 0; i < N_Depth / 2; ++i) {
         const T_Value tmp = q[i];
         q[i] = q[N_Depth - 1 - i];
@@ -2429,10 +2429,10 @@ static inline void VL_REVERSE_UNPACKED(VlUnpacked<T_Value, N_Depth>& q) {
 }
 
 // Return a reversed copy of an unpacked array.
-// Used by emitter for descending-range arrays before VL_PACK.
+// Used by emitter for descending-range arrays before VL_PACK_*.
 template <typename T_Value, std::size_t N_Depth>
 static inline VlUnpacked<T_Value, N_Depth>
-VL_REVERSED_UNPACKED(const VlUnpacked<T_Value, N_Depth>& q) {
+VL_PACK_REVERSED(const VlUnpacked<T_Value, N_Depth>& q) {
     VlUnpacked<T_Value, N_Depth> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret[i] = q[N_Depth - 1 - i];
     return ret;

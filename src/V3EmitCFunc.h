@@ -467,8 +467,8 @@ public:
         emitRU(fromDtp);
         emitIQW(elemDtp);
         if (descending) {
-            // Wrap source in VL_REVERSED_UNPACKED so VL_PACK sees ascending order
-            emitOpName(nodep, "(%nw, %rw, %P, VL_REVERSED_UNPACKED(%li))", nodep->fromp(), elemDtp,
+            // Wrap source in VL_PACK_REVERSED so VL_PACK sees ascending order
+            emitOpName(nodep, "(%nw, %rw, %P, VL_PACK_REVERSED(%li))", nodep->fromp(), elemDtp,
                        nullptr);
         } else {
             emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
@@ -636,7 +636,7 @@ public:
         if (decind) ofp()->blockDec();
         puts(";\n");
         if (reverseUnpack) {
-            puts("VL_REVERSE_UNPACKED(");
+            puts("VL_UNPACK_REVERSED(");
             iterateAndNextConstNull(nodep->lhsp());
             puts(");\n");
         }
