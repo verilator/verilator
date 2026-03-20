@@ -25,8 +25,16 @@ module t;
   assign t = u;
   assign t = x;
   assign t = y;
+  wire [128:0] xx;
+  logic [128:0] xy;
+  logic [128:0] xz;
   bit one = 1;
   always #5 clk <= ~clk;
+
+  always #10 xz = ~xz;
+  assign xx = xy;
+  assign xx = xz;
+
   // logic example;
   task writeFourState(logic a);
     if (a === 1'b1) $write("1");
@@ -48,8 +56,11 @@ module t;
   initial begin
     static int n = 8;
     static integer res = 'b01xz | n;
-    // $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-    // $dumpvars();
+    #1;
+    xy = 442093479423423857275364882039482723489;
+    xz = 442093479423423857275364882039482723489;
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars();
     // $write("HERE: %d\n", res[0]);
     // $write("HERE1: %d\n", res[1]);
     // $write("HERE2: %d\n", res[2]);
