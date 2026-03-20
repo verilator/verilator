@@ -278,10 +278,8 @@ class RangeDelayExpander final : public VNVisitor {
     bool extractDelayBounds(AstDelay* dlyp, bool& isRange, int& minVal, int& maxVal) {
         isRange = dlyp->isRangeDelay();
         if (isRange) {
-            AstNodeExpr* minExprp
-                = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
-            AstNodeExpr* maxExprp
-                = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
+            AstNodeExpr* minExprp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
+            AstNodeExpr* maxExprp = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
             const AstConst* const minConstp = VN_CAST(minExprp, Const);
             const AstConst* const maxConstp = VN_CAST(maxExprp, Const);
             if (!minConstp || !maxConstp) {
@@ -310,8 +308,7 @@ class RangeDelayExpander final : public VNVisitor {
                 return false;
             }
         } else {
-            AstNodeExpr* const valp
-                = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
+            AstNodeExpr* const valp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
             const AstConst* const constp = VN_CAST(valp, Const);
             minVal = maxVal = constp ? constp->toSInt() : 0;
             VL_DO_DANGLING(valp->deleteTree(), valp);
@@ -384,10 +381,8 @@ class RangeDelayExpander final : public VNVisitor {
         if (step.delay == 0 && !step.isRange) {
             // Tail expression: if (expr) PASS else FAIL
             if (step.exprp) {
-                return new AstIf{flp,
-                                 new AstSampled{flp, step.exprp->cloneTree(false)},
-                                 new AstPExprClause{flp, true},
-                                 new AstPExprClause{flp, false}};
+                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)},
+                                 new AstPExprClause{flp, true}, new AstPExprClause{flp, false}};
             }
             return new AstPExprClause{flp, true};
         }
@@ -415,23 +410,16 @@ class RangeDelayExpander final : public VNVisitor {
             AstNode* chainp = nullptr;
             const int rangeWidth = step.rangeMax - step.rangeMin;
             for (int i = rangeWidth; i >= 0; --i) {
-                AstNode* const passBranchp
-                    = (i == 0) ? afterPassp : afterPassp->cloneTree(false);
+                AstNode* const passBranchp = (i == 0) ? afterPassp : afterPassp->cloneTree(false);
                 if (i == rangeWidth) {
-                    chainp = new AstIf{
-                        flp,
-                        new AstSampled{flp, nextStep.exprp->cloneTree(false)},
-                        passBranchp,
-                        new AstPExprClause{flp, false}};
+                    chainp = new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
+                                       passBranchp, new AstPExprClause{flp, false}};
                 } else {
                     AstBegin* const retryBlock = new AstBegin{flp, "", nullptr, true};
                     retryBlock->addStmtsp(makeCycleDelay(flp, 1));
                     retryBlock->addStmtsp(chainp);
-                    chainp = new AstIf{
-                        flp,
-                        new AstSampled{flp, nextStep.exprp->cloneTree(false)},
-                        passBranchp,
-                        retryBlock};
+                    chainp = new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
+                                       passBranchp, retryBlock};
                 }
             }
 
@@ -442,9 +430,7 @@ class RangeDelayExpander final : public VNVisitor {
 
             // Wrap with pre-expression check if present
             if (step.exprp) {
-                return new AstIf{flp,
-                                 new AstSampled{flp, step.exprp->cloneTree(false)},
-                                 blockp,
+                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)}, blockp,
                                  new AstPExprClause{flp, false}};
             }
             return blockp;
@@ -455,9 +441,7 @@ class RangeDelayExpander final : public VNVisitor {
             if (step.delay > 0) blockp->addStmtsp(makeCycleDelay(flp, step.delay));
             blockp->addStmtsp(continuationp);
             if (step.exprp) {
-                return new AstIf{flp,
-                                 new AstSampled{flp, step.exprp->cloneTree(false)},
-                                 blockp,
+                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)}, blockp,
                                  new AstPExprClause{flp, false}};
             }
             return blockp;
@@ -514,8 +498,7 @@ class RangeDelayExpander final : public VNVisitor {
         std::vector<SeqStep> steps;
         if (!linearize(nodep, steps)) {
             // Error in range validation — replace with constant to prevent crash
-            nodep->replaceWith(
-                new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
