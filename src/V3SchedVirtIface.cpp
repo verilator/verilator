@@ -55,6 +55,8 @@ private:
     V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
                                                        // triggers
     VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars
+    std::map<std::pair<const AstIface*, const AstVar*>, AstVarScope*>
+        m_oldVals;  // Shadow variables for old values
 
     // METHODS
     // For each write across a virtual interface boundary
@@ -87,6 +89,23 @@ private:
         return new AstVarRef{flp, existingTrigger, VAccess::WRITE};
     }
 
+    // Get or create an oldval shadow variable for a VIF member.
+    // The shadow variable tracks the previous value to enable conditional triggering.
+    AstVarScope* getOrCreateOldVal(const AstIface* ifacep, const AstVar* memberVarp) {
+        const auto key = std::make_pair(ifacep, memberVarp);
+        const auto it = m_oldVals.find(key);
+        if (it != m_oldVals.end()) return it->second;
+
+        AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
+        const std::string name
+            = "__Vvif_oldval_" + ifacep->name() + "_" + memberVarp->name();
+        AstVarScope* const vscp = scopeTopp->createTemp(name, memberVarp->dtypep());
+        // Ignore writes for scheduling so we don't introduce OrderGraph cycles
+        vscp->varp()->setIgnoreSchedWrite();
+        m_oldVals[key] = vscp;
+        return vscp;
+    }
+
     template <typename T>
     void handleIface(T nodep) {
         static_assert(std::is_same<typename std::remove_cv<T>::type,
@@ -109,13 +128,59 @@ private:
 
         if (ifacep && memberVarp) {
             FileLine* const flp = nodep->fileline();
+
+            // Try to find the parent assignment to enable conditional triggering.
+            // If the write is the LHS of an assignment, we compare the old value
+            // (stored in a shadow variable) against the new value (RHS). The trigger
+            // only fires when the value actually changes, preventing infinite
+            // convergence loops.
+            AstNodeExpr* rhsClone1 = nullptr;  // For old != new comparison
+            AstNodeExpr* rhsClone2 = nullptr;  // For oldval update
+            AstVarScope* oldValVscp = nullptr;
+            if (const AstNodeAssign* const parentAssignp
+                = VN_CAST(nodep->backp(), NodeAssign)) {
+                if (parentAssignp->lhsp() == static_cast<const AstNode*>(nodep)) {
+                    oldValVscp = getOrCreateOldVal(ifacep, memberVarp);
+                    AstNode* const cloned1 = parentAssignp->rhsp()->cloneTree(false);
+                    rhsClone1 = VN_CAST(cloned1, NodeExpr);
+                    if (rhsClone1) {
+                        AstNode* const cloned2 = parentAssignp->rhsp()->cloneTree(false);
+                        rhsClone2 = VN_CAST(cloned2, NodeExpr);
+                        if (!rhsClone2) {
+                            VL_DO_DANGLING(rhsClone1->deleteTree(), rhsClone1);
+                            VL_DO_DANGLING(cloned2->deleteTree(), cloned2);
+                            oldValVscp = nullptr;
+                        }
+                    } else {
+                        VL_DO_DANGLING(cloned1->deleteTree(), cloned1);
+                        oldValVscp = nullptr;
+                    }
+                }
+            }
+
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
-            relinker.relink(new AstExprStmt{
-                flp,
-                new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
-                              new AstConst{flp, AstConst::BitTrue{}}},
-                nodep});
+
+            AstVarRef* const trigWriteRefp
+                = createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp);
+
+            AstNodeStmt* triggerStmtp = nullptr;
+            if (oldValVscp && rhsClone1 && rhsClone2) {
+                // Conditional trigger: trigger = (oldval != newval)
+                AstNodeExpr* const oldReadp = new AstVarRef{flp, oldValVscp, VAccess::READ};
+                AstNodeExpr* const changedExprp = new AstNeq{flp, oldReadp, rhsClone1};
+                triggerStmtp = new AstAssign{flp, trigWriteRefp, changedExprp};
+                // Update shadow: oldval = newval
+                triggerStmtp->addNext(
+                    new AstAssign{flp, new AstVarRef{flp, oldValVscp, VAccess::WRITE},
+                                  rhsClone2});
+            } else {
+                // Fall back to unconditional trigger
+                triggerStmtp = new AstAssign{flp, trigWriteRefp,
+                                             new AstConst{flp, AstConst::BitTrue{}}};
+            }
+
+            relinker.relink(new AstExprStmt{flp, triggerStmtp, nodep});
         }
     }
 

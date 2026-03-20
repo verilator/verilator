@@ -396,24 +396,13 @@ void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 //============================================================================
 // Helper that creates virtual interface trigger resets
 
-std::vector<AstVarScope*>
-addVirtIfaceTriggerAssignments(AstNetlist* netlistp, const VirtIfaceTriggers& virtIfaceTriggers,
-                               uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
-                               const TriggerKit& trigKit, const std::string& tag) {
-    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-    std::vector<AstVarScope*> gateVscps;
+void addVirtIfaceTriggerAssignments(const VirtIfaceTriggers& virtIfaceTriggers,
+                                    uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
+                                    const TriggerKit& trigKit) {
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
-        // Create an "already fired" gate variable for this VIF trigger.
-        // This prevents the same trigger from re-firing on subsequent convergence
-        // iterations when the VIF member is written with the same value.
-        const std::string gateName = "__Vvif_" + tag + "_fired_" + p.first.m_ifacep->name() + "_"
-                                     + p.first.m_memberp->name();
-        AstVarScope* const gatep = scopeTopp->createTemp(gateName, 1);
-        gateVscps.push_back(gatep);
-        trigKit.addGatedExtraTriggerAssignment(p.second, vifMemberTriggerIndex, gatep);
+        trigKit.addExtraTriggerAssignment(p.second, vifMemberTriggerIndex);
         ++vifMemberTriggerIndex;
     }
-    return gateVscps;
 }
 
 // Order the combinational logic to create the settle loop
@@ -482,16 +471,11 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 //============================================================================
 // Order the replicated combinational logic to create the 'ico' region
 
-struct IcoResult final {
-    AstNode* stmtsp = nullptr;
-    std::vector<AstVarScope*> vifGateVscps;
-};
-
-IcoResult createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
-                              SenExprBuilder& senExprBuilder, LogicByScope& logic,
-                              const VirtIfaceTriggers& virtIfaceTriggers) {
+AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
+                             SenExprBuilder& senExprBuilder, LogicByScope& logic,
+                             const VirtIfaceTriggers& virtIfaceTriggers) {
     // Nothing to do if no combinational logic is sensitive to top level inputs
-    if (logic.empty()) return {};
+    if (logic.empty()) return nullptr;
 
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
@@ -532,9 +516,8 @@ IcoResult createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    const auto icoGateVscps
-        = addVirtIfaceTriggerAssignments(netlistp, virtIfaceTriggers, firstVifTriggerIndex,
-                                         firstVifMemberTriggerIndex, trigKit, "ico");
+    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex,
+                                   firstVifMemberTriggerIndex, trigKit);
 
     // Remap sensitivities
     remapSensitivities(logic, trigKit.mapVec());
@@ -591,7 +574,7 @@ IcoResult createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // Add the first iteration trigger to the trigger computation function
     trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
 
-    return {icoLoop.stmtsp, icoGateVscps};
+    return icoLoop.stmtsp;
 }
 
 //============================================================================
@@ -617,9 +600,7 @@ void createEval(AstNetlist* netlistp,  //
                 const EvalKit& obsKit,  //
                 const EvalKit& reactKit,  //
                 AstCFunc* postponedFuncp,  //
-                TimingKit& timingKit,  //
-                const std::vector<AstVarScope*>& icoGateVscps,  //
-                const std::vector<AstVarScope*>& actGateVscps  //
+                TimingKit& timingKit  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
@@ -814,10 +795,6 @@ void createEval(AstNetlist* netlistp,  //
 
     if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPush(flp, "eval"));
 
-    // Clear the VIF trigger gate flags so triggers can fire in this eval
-    for (AstVarScope* const gatep : icoGateVscps) { funcp->addStmtsp(util::setVar(gatep, 0)); }
-    for (AstVarScope* const gatep : actGateVscps) { funcp->addStmtsp(util::setVar(gatep, 0)); }
-
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
 
@@ -958,9 +935,8 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 7: Create input combinational logic loop
-    const IcoResult icoResult = createInputCombLoop(netlistp, staticp, senExprBuilder,
-                                                    logicReplicas.m_ico, virtIfaceTriggers);
-    AstNode* const icoLoopp = icoResult.stmtsp;
+    AstNode* const icoLoopp = createInputCombLoop(netlistp, staticp, senExprBuilder,
+                                                  logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 8: Create the triggers
@@ -996,9 +972,8 @@ void schedule(AstNetlist* netlistp) {
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    const auto actGateVscps
-        = addVirtIfaceTriggerAssignments(netlistp, virtIfaceTriggers, firstVifTriggerIndex,
-                                         firstVifMemberTriggerIndex, trigKit, "act");
+    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex,
+                                   firstVifMemberTriggerIndex, trigKit);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-triggers");
 
     // Note: Experiments so far show that running the Act (or Ico) regions on
@@ -1115,7 +1090,7 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 14: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
-               timingKit, icoResult.vifGateVscps, actGateVscps);
+               timingKit);
 
     // Step 15: Add neccessary evaluation before awaits
     if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
