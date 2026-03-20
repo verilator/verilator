@@ -592,7 +592,7 @@ public:
                                              const WData* newvalXZp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; i += 2) {
             if (VL_UNLIKELY((oldp[i] ^ newvalp[i]) | (oldp[i + 1] ^ newvalXZp[i]))) {
-                fullWData(oldp, newvalp, bits);
+                fullFourstateWData(oldp, newvalp, newvalXZp, bits);
                 return;
             }
         }
