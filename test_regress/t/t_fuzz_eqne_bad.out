@@ -6,7 +6,7 @@
 %Error: t/t_fuzz_eqne_bad.v:12:18: Comparison requires matching data types
                                  : ... note: In instance 't'
                                  : ... Left-hand data type: 'logic$[0:-1]'
-                                 : ... Right-hand data type: 'logic'
+                                 : ... Right-hand data type: 'bit'
    12 |   initial c = (a != &b);
       |                  ^~
 %Error: Exiting due to

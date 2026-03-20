@@ -20,7 +20,7 @@
    31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
       |                                          ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:31:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:31:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
                                                             : ... note: In instance 't'
    31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
       |                                            ^~~~~~~~~~~~~~~~~
@@ -29,7 +29,7 @@
                                                 : ... note: In instance 't'
    32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
       |                                          ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:32:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:32:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
                                                             : ... note: In instance 't'
    32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
       |                                            ^~~~~~~~~~~~~~~~~
@@ -37,7 +37,7 @@
                                                 : ... note: In instance 't'
    33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
       |                  ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:33:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:33:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
                                                             : ... note: In instance 't'
    33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
       |                    ^~~~~~~~~~~~~~~~~
@@ -45,7 +45,7 @@
                                                 : ... note: In instance 't'
    34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
       |                  ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:34:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:34:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
                                                             : ... note: In instance 't'
    34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
       |                    ^~~~~~~~~~~~~~~~~

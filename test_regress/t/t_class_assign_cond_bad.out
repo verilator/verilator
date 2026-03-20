@@ -7,11 +7,11 @@
                                         : ... note: In instance 't'
    23 |     c1 = (c1 != null) ? c2 : c2;
       |        ^
-%Error: t/t_class_assign_cond_bad.v:24:23: Incompatible types of operands of condition operator: BASICDTYPE 'logic' and CLASSREFDTYPE 'Cls2'
+%Error: t/t_class_assign_cond_bad.v:24:23: Incompatible types of operands of condition operator: BASICDTYPE 'bit' and CLASSREFDTYPE 'Cls2'
                                          : ... note: In instance 't'
    24 |     c2 = (c1 == null) ? 1'b1 : c2;
       |                       ^
-%Error: t/t_class_assign_cond_bad.v:24:8: Assign RHS expects a CLASSREFDTYPE 'Cls2', got BASICDTYPE 'logic'
+%Error: t/t_class_assign_cond_bad.v:24:8: Assign RHS expects a CLASSREFDTYPE 'Cls2', got BASICDTYPE 'bit'
                                         : ... note: In instance 't'
    24 |     c2 = (c1 == null) ? 1'b1 : c2;
       |        ^
