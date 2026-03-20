@@ -543,6 +543,38 @@ private:
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
+    void visit(AstConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- Lower consecutive repetition [*N]
+        // expr[*N] -> expr && $past(expr,1) && ... && $past(expr,N-1)
+        iterateChildren(nodep);
+        const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+        if (!constp || constp->toSInt() < 1) {
+            // Error already reported by V3Width; just remove the node
+            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        const int n = constp->toSInt();
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        if (n == 1) {
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        // Build: expr && $past(expr,1) && $past(expr,2) && ... && $past(expr,N-1)
+        AstNodeExpr* resultp = exprp;
+        for (int i = 1; i < n; ++i) {
+            AstPast* const pastp
+                = new AstPast{flp, exprp->cloneTreePure(false), new AstConst{flp, i}};
+            pastp->dtypeSetBit();
+            pastp->sentreep(newSenTree(nodep));
+            resultp = new AstAnd{flp, resultp, pastp};
+            resultp->dtypeSetBit();
+        }
+        nodep->replaceWith(resultp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstRising* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);

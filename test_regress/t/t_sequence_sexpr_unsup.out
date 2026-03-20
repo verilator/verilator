@@ -83,12 +83,6 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:81:12: Unsupported: sequence
    81 |   sequence s_cycdelay_plus;
       |            ^~~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:86:7: Unsupported: [*] boolean abbrev expression
-   86 |     a [* 1 ];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:86:10: Unsupported: boolean abbrev (in sequence expression)
-   86 |     a [* 1 ];
-      |          ^
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:85:12: Unsupported: sequence
    85 |   sequence s_booleanabbrev_brastar_int;
       |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~

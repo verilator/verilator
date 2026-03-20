@@ -1505,6 +1505,27 @@ class WidthVisitor final : public VNVisitor {
             userIterate(nodep->sentreep(), nullptr);
         }
     }
+    void visit(AstConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N]
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyParamsEdit(nodep->countp());  // countp may change
+            const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+            if (!constp) {
+                nodep->v3error(
+                    "Consecutive repetition count must be constant (IEEE 1800-2023 16.9.2)");
+            } else if (constp->toSInt() < 1) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
+            } else if (constp->toSInt() > 256) {
+                nodep->v3error("Consecutive repetition count "
+                               + cvtToStr(constp->toSInt())
+                               + " exceeds maximum supported (256)");
+            }
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

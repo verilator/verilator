@@ -6798,6 +6798,10 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!
         //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
+        //                      // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
+        //                      // Creates AstConsRep; lowered by V3AssertPre
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
+                        { $$ = new AstConsRep{$<fl>2, $1, $3}; }
         |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev
                         { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: boolean abbrev (in sequence expression)"); DEL($2); }
         //
@@ -6883,9 +6887,8 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
 
 boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         //                      // IEEE: consecutive_repetition
-                yP_BRASTAR constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
-        |       yP_BRASTAR constExpr ':' constExpr ']'
+        //                      // [*N] exact count handled directly in sexpr rule
+                yP_BRASTAR constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); DEL($4); }
         |       yP_BRASTAR ']'
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
