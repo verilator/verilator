@@ -227,6 +227,9 @@ public:
         return m_dtype.size();
     }
 
+    // Type check vertex (for debugging)
+    void typeCheck(const DfgGraph& dfg) const;
+
     // Predicate: has 1 or more sinks
     bool hasSinks() const { return !m_sinks.empty(); }
 
