@@ -38,6 +38,7 @@
 #include "V3Control.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
+#include "V3Covergroup.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -229,6 +230,10 @@ static void process() {
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
         if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+
+        // Functional coverage code generation
+        //    Generate code for covergroups/coverpoints
+        if (v3Global.useCovergroup()) V3Covergroup::covergroup(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());

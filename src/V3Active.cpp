@@ -620,10 +620,150 @@ public:
 };
 
 //######################################################################
+// Automatic covergroup sampling visitor
+// This runs after ActiveVisitor to add automatic sample() calls for covergroups
+// declared with sensitivity events (e.g., covergroup cg @(posedge clk);)
+
+class CovergroupSamplingVisitor final : public VNVisitor {
+    // STATE
+    ActiveNamer m_namer;  // Reuse active naming infrastructure
+    bool m_inFirstPass = true;  // First pass collects CFuncs, second pass adds sampling
+    std::unordered_map<const AstClass*, AstCFunc*>
+        m_covergroupSampleFuncs;  // Class -> sample CFunc
+    std::unordered_map<const AstClass*, AstSenTree*>
+        m_covergroupEvents;  // Class -> sampling event (if any)
+
+    // VISITORS
+    void visit(AstScope* nodep) override {
+        m_namer.main(nodep);  // Initialize active naming for this scope
+
+        // First pass: collect sample CFuncs and sampling events from covergroup class scopes
+        if (m_inFirstPass) {
+            AstClass* const classp = VN_CAST(nodep->modp(), Class);
+            if (classp && classp->isCovergroup()) {
+                for (AstNode* itemp = nodep->blocksp(); itemp; itemp = itemp->nextp()) {
+                    if (AstCFunc* const cfuncp = VN_CAST(itemp, CFunc)) {
+                        if (cfuncp->name().find("sample") != string::npos) {
+                            m_covergroupSampleFuncs[classp] = cfuncp;
+                            cfuncp->isCovergroupSample(true);
+                            break;
+                        }
+                    }
+                }
+                for (AstNode* memberp = classp->membersp(); memberp;) {
+                    AstNode* const nextp = memberp->nextp();
+                    if (AstCovergroup* const cgp = VN_CAST(memberp, Covergroup)) {
+                        // Unlink eventp from cgp so it survives cgp's deletion,
+                        // then take ownership in the map for use during the second pass.
+                        if (cgp->eventp())
+                            m_covergroupEvents[classp] = cgp->eventp()->unlinkFrBack();
+                        cgp->unlinkFrBack();
+                        VL_DO_DANGLING(cgp->deleteTree(), cgp);
+                        break;
+                    }
+                    memberp = nextp;
+                }
+            }
+        }
+
+        iterateChildren(nodep);
+    }
+
+    void visit(AstVarScope* nodep) override {
+        // Only process VarScopes in the second pass
+        if (m_inFirstPass) return;
+
+        // Get the underlying var
+        AstVar* const varp = nodep->varp();
+        if (!varp) return;
+
+        // Check if the variable is of covergroup class type
+        const AstNodeDType* const dtypep = varp->dtypep();
+        if (!dtypep) return;
+
+        const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+        if (!classRefp) return;
+
+        AstClass* const classp = classRefp->classp();
+        if (!classp || !classp->isCovergroup()) return;
+
+        // Check if this covergroup has an automatic sampling event
+        const auto evtIt = m_covergroupEvents.find(classp);
+        if (evtIt == m_covergroupEvents.end())
+            return;  // No automatic sampling for this covergroup
+        AstSenTree* const eventp = evtIt->second;
+
+        // Get the sample CFunc from the map populated during the first pass
+        const auto it = m_covergroupSampleFuncs.find(classp);
+        if (it == m_covergroupSampleFuncs.end()) {
+            UINFO(4, "Could not find sample() CFunc for covergroup " << classp->name() << endl);
+            return;
+        }
+        AstCFunc* const sampleCFuncp = it->second;
+
+        // Create a VarRef to the covergroup instance for the method call
+        FileLine* const fl = nodep->fileline();
+        AstVarRef* const varrefp = new AstVarRef{fl, nodep, VAccess::READ};
+
+        // Create the CMethodCall to sample()
+        // Note: We don't pass arguments in argsp since vlSymsp is passed via argTypes
+        AstCMethodCall* const cmethodCallp
+            = new AstCMethodCall{fl, varrefp, sampleCFuncp, nullptr};
+
+        cmethodCallp->dtypeSetVoid();
+        cmethodCallp->argTypes("vlSymsp");
+
+        // Clone the sensitivity for this active block.
+        // V3Scope has already resolved all VarRefs in eventp, so the clone
+        // inherits correct varScopep values with no fixup needed.
+        AstSenTree* senTreep = eventp->cloneTree(false);
+
+        // Get or create the AstActive node for this sensitivity
+        // senTreep is a template used by getActive() which clones it into the AstActive;
+        // delete it afterwards as it is not added to the AST directly.
+        AstActive* const activep = m_namer.getActive(fl, senTreep);
+        VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
+
+        // Wrap the sample() call in an AstAlways so SchedPartition handles it
+        // via visit(AstNodeProcedure*) like any other clocked always block.
+        activep->addStmtsp(
+            new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
+
+        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name() << endl);
+    }
+
+    void visit(AstActive*) override {}  // Don't iterate into actives
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit CovergroupSamplingVisitor(AstNetlist* nodep) {
+
+        UINFO(4, "CovergroupSamplingVisitor: Starting" << endl);
+
+        // First pass: collect sample CFuncs and sampling events; delete AstCovergroup holders
+        m_inFirstPass = true;
+        iterate(nodep);
+
+        // Second pass: add automatic sampling to covergroup instances
+        m_inFirstPass = false;
+        iterate(nodep);
+
+        // Release the owned AstSenTree nodes that were unlinked from AstCovergroup during
+        // the first pass; they are no longer needed after all clones have been made.
+        for (const auto& itpair : m_covergroupEvents) itpair.second->deleteTree();
+
+        UINFO(4, "CovergroupSamplingVisitor: Complete" << endl);
+    }
+    ~CovergroupSamplingVisitor() override = default;
+};
+
+//######################################################################
 // Active class functions
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { ActiveVisitor{nodep}; }  // Destruct before checking
+    { CovergroupSamplingVisitor{nodep}; }  // Add automatic covergroup sampling
     V3Global::dumpCheckGlobalTree("active", 0, dumpTreeEitherLevel() >= 3);
 }

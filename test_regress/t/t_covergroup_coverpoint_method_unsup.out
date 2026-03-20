@@ -1,0 +1,40 @@
+%Warning-COVERIGN: t/t_covergroup_coverpoint_method_unsup.v:21:32: Unsupported: 'bins' explicit array size (treated as '[]')
+   21 |     coverpoint b {bins the_bins[5] = {[0 : 20]};}
+      |                                ^
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_coverpoint_method_unsup.v:31:42: Member 'a' not found in covergroup 'cg'
+                                                      : ... note: In instance 't'
+   31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
+      |                                          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:31:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                                  : ... note: In instance 't'
+   31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
+      |                                            ^~~~~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_covergroup_coverpoint_method_unsup.v:32:42: Member 'b' not found in covergroup 'cg'
+                                                      : ... note: In instance 't'
+   32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
+      |                                          ^
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:32:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                                  : ... note: In instance 't'
+   32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
+      |                                            ^~~~~~~~~~~~~~~~~
+%Error: t/t_covergroup_coverpoint_method_unsup.v:33:18: Member 'a' not found in covergroup 'cg'
+                                                      : ... note: In instance 't'
+   33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
+      |                  ^
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:33:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                                  : ... note: In instance 't'
+   33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
+      |                    ^~~~~~~~~~~~~~~~~
+%Error: t/t_covergroup_coverpoint_method_unsup.v:34:18: Member 'b' not found in covergroup 'cg'
+                                                      : ... note: In instance 't'
+   34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
+      |                  ^
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:34:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                                  : ... note: In instance 't'
+   34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
+      |                    ^~~~~~~~~~~~~~~~~
+%Error: Exiting due to

@@ -190,10 +190,12 @@ module t (
 `endif
   endclass
 
+`ifndef T_COVERGROUP_UNSUP_IGN
   class CgEmb;
     covergroup extends cg_empty;
     endgroup
   endclass
+`endif
 
   initial begin
     automatic cg_empty cov1 = new;

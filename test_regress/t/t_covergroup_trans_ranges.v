@@ -1,0 +1,47 @@
+// DESCRIPTION: Verilator: Test transition bins - array bins
+// Transition array bins are supported.
+// This file ONLY is placed into the Public Domain, for any use, without warranty.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+module t (/*AUTOARG*/
+  // Inputs
+  clk
+  );
+  input clk;
+
+  logic [2:0] state;
+
+  covergroup cg;
+    // Test array bins: creates separate bin for each transition
+    cp_array: coverpoint state {
+      bins trans_array[] = (0 => 1), (1 => 2), (2 => 3);
+    }
+  endgroup
+
+  cg cg_inst = new;
+
+  int cyc = 0;
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+
+    case (cyc)
+      0: state <= 0;
+      1: state <= 1;  // 0 => 1 (hits trans_array[0=>1])
+      2: state <= 2;  // 1 => 2 (hits trans_array[1=>2])
+      3: state <= 3;  // 2 => 3 (hits trans_array[2=>3])
+      4: begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+    endcase
+
+    cg_inst.sample();
+
+    if (cyc > 10) begin
+      $display("ERROR: Test timed out");
+      $stop;
+    end
+  end
+endmodule

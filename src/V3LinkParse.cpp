@@ -1107,6 +1107,249 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    // Create boilerplate covergroup methods on the given AstClass.
+    // argsp/sampleArgsp are the raw arg lists still owned by the caller; they are iterated
+    // (cloned) but not deleted here.
+    static void createCovergroupMethods(AstClass* nodep, AstNode* argsp, AstNode* sampleArgsp) {
+        // Hidden static to take unspecified reference argument results
+        AstVar* const defaultVarp
+            = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
+        defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        nodep->addStmtsp(defaultVarp);
+
+        // Handle constructor arguments - add function parameters and assignments
+        if (argsp) {
+            // Find the 'new' function to add parameters to
+            AstFunc* newFuncp = nullptr;
+            for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
+                if (AstFunc* const funcp = VN_CAST(memberp, Func)) {
+                    if (funcp->name() == "new") {
+                        newFuncp = funcp;
+                        break;
+                    }
+                }
+            }
+            if (newFuncp) {
+                // Save the existing body statements and unlink them
+                AstNode* const existingBodyp = newFuncp->stmtsp();
+                if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
+                // Add function parameters and assignments
+                for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                        AstVar* const paramp = origVarp->cloneTree(false);
+                        paramp->funcLocal(true);
+                        paramp->direction(VDirection::INPUT);
+                        newFuncp->addStmtsp(paramp);
+                        AstNodeExpr* const lhsp
+                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                        AstNodeExpr* const rhsp
+                            = new AstParseRef{paramp->fileline(), paramp->name()};
+                        newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+                    }
+                }
+                if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
+            }
+        }
+
+        // IEEE: option / type_option members allow external access (cg_inst.option.X)
+        // and require std:: types; std:: is kept because setUsesStdPackage() is called
+        // at parse time for every covergroup declaration.
+        {
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+        {
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+
+        // IEEE: function void sample([arguments])
+        {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+            if (sampleArgsp) {
+                for (AstNode* argp = sampleArgsp; argp; argp = argp->nextp()) {
+                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                        AstVar* const paramp = origVarp->cloneTree(false);
+                        paramp->funcLocal(true);
+                        paramp->direction(VDirection::INPUT);
+                        funcp->addStmtsp(paramp);
+                        AstNodeExpr* const lhsp
+                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                        AstNodeExpr* const rhsp
+                            = new AstParseRef{paramp->fileline(), paramp->name()};
+                        funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+                    }
+                }
+            }
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
+
+        // IEEE: function void start(), void stop()
+        for (const string& name : {"start"s, "stop"s}) {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
+
+        // IEEE: static function real get_coverage(optional ref int, optional ref int)
+        // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
+        for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
+            funcp->isStatic(name == "get_coverage");
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+            {
+                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
+                                                nodep->findDoubleDType()};
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                varp->funcLocal(true);
+                varp->direction(VDirection::OUTPUT);
+                varp->funcReturn(true);
+                funcp->fvarp(varp);
+            }
+            for (const string& varname : {"covered_bins"s, "total_bins"s}) {
+                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
+                                                nodep->findStringDType()};
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                varp->funcLocal(true);
+                varp->direction(VDirection::INPUT);
+                varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
+                funcp->addStmtsp(varp);
+            }
+        }
+
+        // IEEE: function void set_inst_name(string)
+        {
+            AstFunc* const funcp
+                = new AstFunc{nodep->fileline(), "set_inst_name", nullptr, nullptr};
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
+                                            nodep->findStringDType()};
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            varp->funcLocal(true);
+            varp->direction(VDirection::INPUT);
+            funcp->addStmtsp(varp);
+        }
+    }
+
+    void visit(AstCovergroup* nodep) override {
+        // If we're already inside a covergroup class, this is the sentinel AstCovergroup
+        // node carrying the clocking event for V3Covergroup - don't re-transform it.
+        if (m_modp && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isCovergroup()) return;
+
+        // Transform raw parse-time AstCovergroup into a fully-formed AstClass
+        cleanFileline(nodep);
+
+        const string libname = m_modp ? m_modp->libname() : "";
+        AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
+        cgClassp->isCovergroup(true);
+        v3Global.useCovergroup(true);
+
+        // Clocking event: unlink before deleteTree, attach as AstCovergroup child on class
+        if (AstSenTree* const eventp = nodep->eventp()) {
+            eventp->unlinkFrBack();
+            AstCovergroup* const cgNodep = new AstCovergroup{
+                nodep->fileline(), nodep->name(), nullptr, nullptr, nullptr, eventp};
+            cgClassp->addMembersp(cgNodep);
+        }
+
+        // Convert constructor args to member variables
+        for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+            if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                AstVar* const memberp = origVarp->cloneTree(false);
+                memberp->varType(VVarType::MEMBER);
+                memberp->funcLocal(false);
+                memberp->direction(VDirection::NONE);
+                cgClassp->addMembersp(memberp);
+            }
+        }
+
+        // Convert sample args to member variables
+        for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
+            if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                AstVar* const memberp = origVarp->cloneTree(false);
+                memberp->varType(VVarType::MEMBER);
+                memberp->funcLocal(false);
+                memberp->direction(VDirection::NONE);
+                cgClassp->addMembersp(memberp);
+            }
+        }
+
+        // Create the constructor; detach membersp (coverage body) and use as its body
+        {
+            AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+            newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
+            newp->classMethod(true);
+            newp->isConstructor(true);
+            newp->dtypep(cgClassp->dtypep());
+            if (AstNode* const bodyp = nodep->membersp()) {
+                bodyp->unlinkFrBackWithNext();
+                newp->addStmtsp(bodyp);
+            }
+            cgClassp->addMembersp(newp);
+        }
+
+        // Add all boilerplate covergroup methods (reads argsp/sampleArgsp from nodep)
+        createCovergroupMethods(cgClassp, nodep->argsp(), nodep->sampleArgsp());
+
+        // Replace AstCovergroup with AstClass and process the new class normally
+        nodep->replaceWith(cgClassp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(cgClassp);
+    }
+
+    void visit(AstCoverpoint* nodep) override {
+        cleanFileline(nodep);
+        // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
+        // into the typed binsp and optionsp slots.  The grammar attaches both node types
+        // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
+        // can iterate and split them without any temporary-parent tricks.
+        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                optp->unlinkFrBack();
+                VCoverOptionType optType = VCoverOptionType::COMMENT;
+                if (optp->name() == "at_least") {
+                    optType = VCoverOptionType::AT_LEAST;
+                } else if (optp->name() == "weight") {
+                    optType = VCoverOptionType::WEIGHT;
+                } else if (optp->name() == "goal") {
+                    optType = VCoverOptionType::GOAL;
+                } else if (optp->name() == "auto_bin_max") {
+                    optType = VCoverOptionType::AUTO_BIN_MAX;
+                } else if (optp->name() == "per_instance") {
+                    optType = VCoverOptionType::PER_INSTANCE;
+                } else if (optp->name() == "comment") {
+                    optType = VCoverOptionType::COMMENT;
+                } else {
+                    optp->v3warn(COVERIGN,
+                                 "Ignoring unsupported coverage option: " + optp->name());
+                }
+                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
+                                                      optp->valuep()->cloneTree(false)});
+                VL_DO_DANGLING(optp->deleteTree(), optp);
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);
