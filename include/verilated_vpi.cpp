@@ -2380,16 +2380,26 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
 
     // If we have indices, apply them using vpi_handle_by_multi_index
     if (hasIndices && !indices.empty()) {
-        resultHandle = vpi_handle_by_multi_index(resultHandle, indices.size(), indices.data());
+        vpiHandle indexedHandle = vpi_handle_by_multi_index(
+            resultHandle, static_cast<PLI_INT32>(indices.size()), indices.data());
+        vpi_release_handle(resultHandle);
+        resultHandle = indexedHandle;
         if (!resultHandle) return nullptr;
     }
 
     // If we have a bit range part-select, apply it
     if (bitRange.valid) {
         VerilatedVpioVar* const varop = VerilatedVpioVar::castp(resultHandle);
-        if (!varop) return nullptr;
+        if (!varop) {
+            vpi_release_handle(resultHandle);
+            return nullptr;
+        }
         VerilatedVpioVar* const partsel = varop->withPartSelect(bitRange.hi, bitRange.lo);
-        if (!partsel) return nullptr;
+        if (!partsel) {
+            vpi_release_handle(resultHandle);
+            return nullptr;
+        }
+        vpi_release_handle(resultHandle);
         resultHandle = partsel->castVpiHandle();
     }
 
@@ -4212,11 +4222,13 @@ vpiHandle vpi_handle_by_multi_index(vpiHandle obj, PLI_INT32 num_index, PLI_INT3
     if (VL_UNLIKELY(!index_array)) return nullptr;
     if (VL_UNLIKELY(num_index <= 0)) return nullptr;
 
-    vpiHandle result_handle = obj;
+    vpiHandle resultHandle = obj;
     for (PLI_INT32 i = 0; i < num_index; ++i) {
-        result_handle = vpi_handle_by_index(result_handle, index_array[i]);
-        if (VL_UNLIKELY(!result_handle)) { return nullptr; }
+        vpiHandle nextIndexHandle = vpi_handle_by_index(resultHandle, index_array[i]);
+        if (i > 0) vpi_release_handle(resultHandle);
+        resultHandle = nextIndexHandle;
+        if (VL_UNLIKELY(!resultHandle)) { return nullptr; }
     }
 
-    return result_handle;
+    return resultHandle;
 }
