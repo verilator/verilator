@@ -139,8 +139,7 @@ private:
                 }
             } else {
                 // sensIfacep() path: nodep is a VarRef directly in the Assign.
-                if (const AstNodeAssign* const assignp
-                    = VN_CAST(nodep->backp(), NodeAssign)) {
+                if (const AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
                     if (VN_IS(assignp, AssignW) && assignp->lhsp() == nodep) {
                         nodep->varp()->setIgnoreSchedWrite();
                         T const clonedNodep = nodep->cloneTree(false);
