@@ -47,6 +47,7 @@ private:
     AstClocking* m_clockingp = nullptr;  // Current clocking block
     // Reset each module:
     AstClocking* m_defaultClockingp = nullptr;  // Default clocking for current module
+    AstVar* m_defaultClkEvtVarp = nullptr;  // Event var for default clocking (for ##0)
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable for current module
     // Reset each assertion:
     AstSenItem* m_senip = nullptr;  // Last sensitivity
@@ -376,9 +377,39 @@ private:
             nodep->v3error(
                 "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
         } else if (constp->isZero()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
+            if (m_inSynchDrive) {
+                // ##0 has no effect in synchronous drives (IEEE 1800-2023 14.11)
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+            if (m_inPExpr) {
+                // ##0 in sequence context = zero delay = same clock tick
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+            // Procedural ##0: synchronize with default clocking event (IEEE 1800-2023 14.11)
+            // If the clocking event has not yet occurred this timestep, wait for it;
+            // otherwise continue without suspension.
+            if (!m_defaultClockingp) {
+                nodep->v3error("Usage of cycle delays requires default clocking"
+                               " (IEEE 1800-2023 14.11)");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+            AstVar* const evtVarp = m_defaultClkEvtVarp;
+            UASSERT_OBJ(evtVarp, nodep, "Default clocking event var not pre-created");
+            AstCMethodHard* const isTriggeredp = new AstCMethodHard{
+                flp, new AstVarRef{flp, evtVarp, VAccess::READ}, VCMethod::EVENT_IS_TRIGGERED};
+            isTriggeredp->dtypeSetBit();
+            AstEventControl* const waitp = new AstEventControl{
+                flp,
+                new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
+                                                   new AstVarRef{flp, evtVarp, VAccess::READ}}},
+                nullptr};
+            AstIf* const ifp = new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
+            nodep->replaceWith(ifp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
         AstSenItem* sensesp = nullptr;
@@ -806,9 +837,11 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
+        m_defaultClkEvtVarp = nullptr;
         nodep->foreach([&](AstClocking* const clockingp) {
             if (clockingp->isDefault()) {
                 if (m_defaultClockingp) {
@@ -827,6 +860,11 @@ private:
             m_defaultDisablep = disablep;
         });
         m_modp = nodep;
+        // Pre-create and cache the clocking event var before iterating children.
+        // visit(AstClocking) will unlink the event from the clocking node and place it
+        // in the module tree, then delete the clocking. After that, ensureEventp() would
+        // create an orphaned var. Caching here avoids this.
+        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {
