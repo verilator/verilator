@@ -312,12 +312,12 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     m_maxBits = 0;
     m_sigs_enabledVec.clear();
 
-    // Call all initialize callbacks for root (non-library) instances, which will:
+    // Call all initialize callbacks for root (non-hier-child) instances, which will:
     // - Call decl* for each signal (these eventually call ::declCode)
     // - Call the initialize callbacks of library instances underneath
     // - Store the base code
     for (const CallbackRecord& cbr : m_initCbs) {
-        if (cbr.m_isLibInstance) continue;  // Will be called from parent callback
+        if (cbr.m_isHierChild) continue;  // Will be called from parent callback
         const uint32_t baseCode = nextCode();
         m_nextCode += cbr.m_nTraceCodes;
         m_initUserp = cbr.m_userp;
@@ -686,9 +686,9 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
-                                                   const std::string& name, bool isLibInstance,
+                                                   const std::string& name, bool isHierChild,
                                                    uint32_t nTraceCodes) VL_MT_SAFE {
-    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp, isLibInstance, name, nTraceCodes});
+    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp, isHierChild, name, nTraceCodes});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addConstCb(dumpCb_t cb, uint32_t fidx,

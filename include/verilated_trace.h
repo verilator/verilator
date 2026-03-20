@@ -233,22 +233,22 @@ private:
         };
         const uint32_t m_fidx;  // The index of the tracing function
         void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
-        const bool m_isLibInstance;  // Whether the callback is for a --lib-create instance
+        const bool m_isHierChild;  // Whether the callback is for a --lib-create instance
         const std::string m_name;  // The name of the instance callback is for
         const uint32_t m_nTraceCodes;  // The number of trace codes used by callback
-        CallbackRecord(initCb_t cb, void* userp, bool isLibInstance, const std::string& name,
+        CallbackRecord(initCb_t cb, void* userp, bool isHierChild, const std::string& name,
                        uint32_t nTraceCodes)
             : m_initCb{cb}
             , m_fidx{0}
             , m_userp{userp}
-            , m_isLibInstance{isLibInstance}
+            , m_isHierChild{isHierChild}
             , m_name{name}
             , m_nTraceCodes{nTraceCodes} {}
         CallbackRecord(dumpCb_t cb, uint32_t fidx, void* userp)
             : m_dumpCb{cb}
             , m_fidx{fidx}
             , m_userp{userp}
-            , m_isLibInstance{false}  // Don't care
+            , m_isHierChild{false}  // Don't care
             , m_name{}  // Don't care
             , m_nTraceCodes{0}  // Don't care
         {}
@@ -256,7 +256,7 @@ private:
             : m_dumpOffloadCb{cb}
             , m_fidx{fidx}
             , m_userp{userp}
-            , m_isLibInstance{false}  // Don't care
+            , m_isHierChild{false}  // Don't care
             , m_name{}  // Don't care
             , m_nTraceCodes{0}  // Don't care
         {}
@@ -264,7 +264,7 @@ private:
             : m_cleanupCb{cb}
             , m_fidx{0}
             , m_userp{userp}
-            , m_isLibInstance{false}  // Don't care
+            , m_isHierChild{false}  // Don't care
             , m_name{}  // Don't care
             , m_nTraceCodes{0}  // Don't care
         {}
@@ -450,7 +450,7 @@ public:
     // Non-hot path internal interface to Verilator generated code
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
-    void addInitCb(initCb_t cb, void* userp, const std::string& name, bool isLibInstance,
+    void addInitCb(initCb_t cb, void* userp, const std::string& name, bool isHierChild,
                    uint32_t nTraceCodes) VL_MT_SAFE;
     void addConstCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addConstCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
