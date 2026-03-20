@@ -97,8 +97,7 @@ private:
         if (it != m_oldVals.end()) return it->second;
 
         AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
-        const std::string name
-            = "__Vvif_oldval_" + ifacep->name() + "_" + memberVarp->name();
+        const std::string name = "__Vvif_oldval_" + ifacep->name() + "_" + memberVarp->name();
         AstVarScope* const vscp = scopeTopp->createTemp(name, memberVarp->dtypep());
         // Ignore writes for scheduling so we don't introduce OrderGraph cycles
         vscp->varp()->setIgnoreSchedWrite();
@@ -137,8 +136,7 @@ private:
             AstNodeExpr* rhsClone1 = nullptr;  // For old != new comparison
             AstNodeExpr* rhsClone2 = nullptr;  // For oldval update
             AstVarScope* oldValVscp = nullptr;
-            if (const AstNodeAssign* const parentAssignp
-                = VN_CAST(nodep->backp(), NodeAssign)) {
+            if (const AstNodeAssign* const parentAssignp = VN_CAST(nodep->backp(), NodeAssign)) {
                 if (parentAssignp->lhsp() == static_cast<const AstNode*>(nodep)) {
                     oldValVscp = getOrCreateOldVal(ifacep, memberVarp);
                     AstNode* const cloned1 = parentAssignp->rhsp()->cloneTree(false);
@@ -172,12 +170,11 @@ private:
                 triggerStmtp = new AstAssign{flp, trigWriteRefp, changedExprp};
                 // Update shadow: oldval = newval
                 triggerStmtp->addNext(
-                    new AstAssign{flp, new AstVarRef{flp, oldValVscp, VAccess::WRITE},
-                                  rhsClone2});
+                    new AstAssign{flp, new AstVarRef{flp, oldValVscp, VAccess::WRITE}, rhsClone2});
             } else {
                 // Fall back to unconditional trigger
-                triggerStmtp = new AstAssign{flp, trigWriteRefp,
-                                             new AstConst{flp, AstConst::BitTrue{}}};
+                triggerStmtp
+                    = new AstAssign{flp, trigWriteRefp, new AstConst{flp, AstConst::BitTrue{}}};
             }
 
             relinker.relink(new AstExprStmt{flp, triggerStmtp, nodep});
