@@ -332,6 +332,19 @@ class OrderGraphBuilder final : public VNVisitor {
         iterateLogic(nodep);
     }
 
+    void visit(AstMemberSel* nodep) override {
+        // Read accesses through a virtual interface are handled via explicit
+        // triggers, so skip them to avoid OrderGraph cycles from the
+        // conditional trigger comparison reads. Write accesses must still be
+        // processed for correct ordering (e.g. VIF initialization).
+        if (nodep->access().isReadOnly() && VN_IS(nodep->fromp(), VarRef)) {
+            AstIfaceRefDType* const ifacep
+                = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (ifacep && ifacep->isVirtual()) return;
+        }
+        iterateChildren(nodep);
+    }
+
     //--- Ignored nodes
     void visit(AstVar*) override {}
     void visit(AstVarScope* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
