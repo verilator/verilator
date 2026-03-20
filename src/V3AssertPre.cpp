@@ -609,16 +609,6 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
-        if (VN_IS(lhsp, PExpr)) {
-            // Sequence expression as antecedent of implication is not yet supported
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Implication with sequence expression as antecedent");
-            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
-            VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
-            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
-        }
         if (AstPExpr* const pexprp = VN_CAST(rhsp, PExpr)) {
             // Implication with sequence expression on RHS (IEEE 1800-2023 16.11, 16.12.7).
             // The PExpr was already lowered from the property expression by V3AssertProp.
@@ -706,6 +696,16 @@ private:
             VL_DO_DANGLING(pushDeletep(notp), notp);
             iterate(nodep);
             return;
+        }
+        // Sequence expression as antecedent of implication is not yet supported
+        if (AstImplication* const implp = VN_CAST(nodep->backp(), Implication)) {
+            if (implp->lhsp() == nodep) {
+                implp->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Implication with sequence expression as antecedent");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
         VL_RESTORER(m_inPExpr);
         VL_RESTORER(m_disableSeqIfp);
