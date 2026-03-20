@@ -5623,16 +5623,6 @@ class WidthVisitor final : public VNVisitor {
                                  BOTH);  // it's like an if() condition.
             }
             nodep->dtypeSetBit();
-            if (m_hasSExpr) {
-                if (VN_IS(m_seqUnsupp, Implication)) {
-                    m_seqUnsupp->v3warn(E_UNSUPPORTED,
-                                        "Unsupported: Implication with sequence expression");
-                    AstConst* const newp = new AstConst{nodep->fileline(), 0};
-                    newp->dtypeFrom(nodep);
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
-            }
         }
     }
 
