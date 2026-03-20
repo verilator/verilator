@@ -34,10 +34,21 @@ module t;
   Clsgen #(virtual PBus) gen;
 
   initial begin
+    if (va != null) $stop;
+    if (null != va) $stop;
+    va = null;
+    if (va != null) $stop;
+    if (null != va) $stop;
     va = ia;
-    vb = ia;
-
     if (va == null) $stop;
+    if (null == va) $stop;
+    va = null;
+    if (va != null) $stop;
+    if (null != va) $stop;
+    va = ia;
+    if (va != ia) $stop;
+
+    vb = ia;
 
     $display("va==vb? %b", va == vb);
     $display("va!=vb? %b", va != vb);

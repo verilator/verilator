@@ -46,6 +46,7 @@ Verilator 5.047 devel
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
+* Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
 * Fix false recursive definition error (#6769) (#7118). [Alex Zhou]

@@ -8676,7 +8676,9 @@ class WidthVisitor final : public VNVisitor {
                        = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
                 const AstIfaceRefDType* underIfaceRefp
                     = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
-                if (!underIfaceRefp) {
+                if (VN_IS(underp, Const) && VN_AS(underp, Const)->num().isNull()) {
+                    // '= null' is ok
+                } else if (!underIfaceRefp) {
                     underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
                                     << " interface on " << side << " but " << underp->prettyNameQ()
