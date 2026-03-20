@@ -1058,6 +1058,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("\n");
     }
     void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }
+    void visit(AstSExprGotoRep* nodep) override {
+        iterateConst(nodep->exprp());
+        puts(" [-> ");
+        iterateConst(nodep->countp());
+        puts("]");
+    }
     void visit(AstSExpr* nodep) override {
         iterateConstNull(nodep->preExprp());
         {

@@ -60,6 +60,7 @@ private:
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_gotoRepNames{"__VgotoRep"};  // Goto repetition counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
@@ -709,6 +710,99 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    // Validate goto repetition count: must be a positive elaboration-time constant.
+    // On error, replaces nodep with BitFalse placeholder and returns nullptr.
+    const AstConst* validateGotoRepCount(AstNode* nodep, AstNodeExpr*& countp) {
+        countp = V3Const::constifyEdit(countp);
+        const AstConst* const constp = VN_CAST(countp, Const);
+        if (!constp) {
+            nodep->v3error("Goto repetition count is not an elaboration-time constant"
+                           " (IEEE 1800-2023 16.9.2)");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return nullptr;
+        }
+        if (constp->isZero()) {
+            nodep->v3error("Goto repetition count must be greater than zero"
+                           " (IEEE 1800-2023 16.9.2)");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return nullptr;
+        }
+        return constp;
+    }
+
+    // Lower goto repetition expr[->N] to a counter-based PExpr loop.
+    // Generated structure:
+    //   begin
+    //     automatic uint32 cnt = 0;
+    //     loop { test(cnt < N); if (sampled(expr)) cnt++; if (cnt < N) @(clk); }
+    //     // consequent check (if rhsp) or pass clause
+    //   end
+    AstPExpr* createGotoRepPExpr(FileLine* flp, AstNodeExpr* exprp, AstNodeExpr* countp,
+                                 AstNodeExpr* rhsp, bool isOverlapped) {
+        AstSenItem* const sensesp = m_senip;
+        UASSERT_OBJ(sensesp, exprp, "Goto repetition requires a clock");
+
+        const std::string name = m_gotoRepNames.get(exprp);
+        AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, name + "__counter",
+                                           exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
+        beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                        new AstConst{flp, 0}});
+
+        AstLoop* const loopp = new AstLoop{flp};
+        // Loop test: continue while cnt < N
+        loopp->addStmtsp(new AstLoopTest{
+            flp, loopp,
+            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                      countp->cloneTreePure(false)}});
+        // if ($sampled(expr)) cnt++
+        AstSampled* const sampledp = new AstSampled{flp, exprp};
+        sampledp->dtypeFrom(exprp);
+        loopp->addStmtsp(new AstIf{
+            flp, sampledp,
+            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                          new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                     new AstConst{flp, 1}}}});
+        // if (cnt < N) @(clk) -- only wait if not yet matched
+        loopp->addStmtsp(new AstIf{
+            flp,
+            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, countp},
+            new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr}});
+
+        beginp->addStmtsp(loopp);
+
+        if (rhsp) {
+            if (!isOverlapped) {
+                beginp->addStmtsp(new AstEventControl{
+                    flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            }
+            AstSampled* const sampledRhsp = new AstSampled{flp, rhsp};
+            sampledRhsp->dtypeFrom(rhsp);
+            beginp->addStmtsp(new AstIf{flp, sampledRhsp, new AstPExprClause{flp, true},
+                                        new AstPExprClause{flp, false}});
+        } else {
+            beginp->addStmtsp(new AstPExprClause{flp, true});
+        }
+
+        return new AstPExpr{flp, beginp, exprp->findBitDType()};
+    }
+
+    void visit(AstSExprGotoRep* nodep) override {
+        // Standalone goto rep (not inside implication antecedent)
+        iterateChildren(nodep);
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
+        if (!validateGotoRepCount(nodep, countp)) return;
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        AstPExpr* const pexprp = createGotoRepPExpr(flp, exprp, countp, nullptr, true);
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     void visit(AstFuncRef* nodep) override {
         // IEEE 1800-2023 16.8: Inline sequence instances wherever they appear
         // in the expression tree (inside implications, boolean ops, nested refs, etc.)
@@ -722,6 +816,23 @@ private:
     }
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
+
+        // Handle goto repetition as antecedent before iterateChildren,
+        // so the standalone AstSExprGotoRep visitor doesn't process it
+        if (AstSExprGotoRep* const gotop = VN_CAST(nodep->lhsp(), SExprGotoRep)) {
+            iterateChildren(gotop);
+            iterateAndNextNull(nodep->rhsp());
+            FileLine* const flp = nodep->fileline();
+            AstNodeExpr* countp = gotop->countp()->unlinkFrBack();
+            if (!validateGotoRepCount(nodep, countp)) return;
+            AstNodeExpr* const exprp = gotop->exprp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstPExpr* const pexprp
+                = createGotoRepPExpr(flp, exprp, countp, rhsp, nodep->isOverlapped());
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
 
         iterateChildren(nodep);
 

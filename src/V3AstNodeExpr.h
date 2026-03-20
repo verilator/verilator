@@ -2153,6 +2153,23 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
 };
+class AstSExprGotoRep final : public AstNodeExpr {
+    // Goto repetition: expr [-> count]
+    // IEEE 1800-2023 16.9.2
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    explicit AstSExprGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_SExprGotoRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstSExprGotoRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
+};
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,
     // used to pass to (potentially) runtime decoding of format arguments

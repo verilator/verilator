@@ -1,8 +1,1 @@
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:51: Unsupported: [-> boolean abbrev expression
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                                   ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:54: Unsupported: boolean abbrev (in sequence expression)
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                                      ^
 %Error: Exiting due to
