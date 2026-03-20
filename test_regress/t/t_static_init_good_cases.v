@@ -37,6 +37,23 @@ module t;
     rand int x;
   endclass
 
+  typedef class SideFxB;
+
+  class SideFxA;
+    static int tgt = 0;
+    // Adversarial but legal: declaration order puts this read before SideFxB declaration.
+    // Correct behavior requires ordering SideFxB::trigger before this initializer.
+    static int seen = SideFxB::trigger + tgt;
+    static function int do_set();
+      tgt = 33;
+      return tgt;
+    endfunction
+  endclass
+
+  class SideFxB;
+    static int trigger = SideFxA::do_set();
+  endclass
+
   function automatic int mk_range();
     return $urandom_range(100, 200);
   endfunction
@@ -82,6 +99,21 @@ module t;
   int file_h = mk_file_for_read();
   int file_first_ch = $fgetc(file_h);
   int log_h = $fopen("t_static_init_good_cases.log", "w");
+  int pre_a = 6;
+  int pre_b = pre_a + 1;
+  bit pre_ok = (pre_b == 7);
+
+  function automatic int auto_seq();
+    int x = 0;
+    x++;
+    return x;
+  endfunction
+
+  function int static_seq();
+    static int y = 0;
+    y++;
+    return y;
+  endfunction
 
   initial begin
     int got;
@@ -120,6 +152,18 @@ module t;
     if (file_h == 0) $stop;
     if (file_first_ch != 90) $stop;  // 'Z'
     $fclose(file_h);
+
+    if (SideFxA::tgt != 33) $stop;
+    if (SideFxB::trigger != 33) $stop;
+    if (SideFxA::seen != 66) $stop;
+
+    if (pre_ok != 1) $stop;
+    if (pre_b != 7) $stop;
+
+    if (auto_seq() != 1) $stop;
+    if (auto_seq() != 1) $stop;
+    if (static_seq() != 1) $stop;
+    if (static_seq() != 2) $stop;
 
     if (agg_arr[0] != seed_b) $stop;
     if (agg_arr[1] != seed_b + 1) $stop;

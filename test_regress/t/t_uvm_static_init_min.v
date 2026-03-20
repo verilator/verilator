@@ -2,7 +2,6 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-// SPDX-FileCopyrightText: 2026 Nick Badger
 // SPDX-License-Identifier: CC0-1.0
 
 package uvm_pkg;

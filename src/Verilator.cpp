@@ -91,7 +91,6 @@
 #include "V3Reorder.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
-#include "V3SchedStatic.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
@@ -473,7 +472,6 @@ static void process() {
 
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
-            V3SchedStatic::scheduleStatic(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
