@@ -4,13 +4,21 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+`define STRINGIFY(x) `"x`"
+
 module t;
-  logic [500:0] x = 0;
+  logic [128:0] x = 0;
+
+  always #10 x = ~x;
 
   initial begin
     #1;
-    x = 487274592023809;
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars();
     #5;
+    x = 442093479423423857275364882039482723489;
+    #5;
+    #100;
     $write("*-* All Finished *-*\n");
     $finish;
   end
