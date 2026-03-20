@@ -449,13 +449,7 @@ class DynScopeVisitor final : public VNVisitor {
                         << nodep->varp()->verilogKwd()
                         << " variable of a function after a timing control is not allowed");
                 } else {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
-                                                     << nodep->varp()->verilogKwd()
-                                                     << " variable in a "
-                                                     << (VN_IS(nodep->backp(), AssignDly)
-                                                             ? "non-blocking assignment"
-                                                             : "fork")
-                                                     << " after a timing control");
+                    UASSERT_OBJ(nodep->varp()->lifetime().isAutomatic(), nodep, "writing to an automatic variable after a timing control");
                 }
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
