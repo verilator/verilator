@@ -63,6 +63,7 @@ private:
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     bool m_inPExpr = false;  // True if in AstPExpr
+    std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
 
@@ -795,7 +796,8 @@ private:
     }
     void visit(AstSequence* nodep) override {
         // Sequence declarations are not visited directly; their bodies are inlined
-        // at call sites by visit(AstFuncRef*). Cleanup is in assertPreAll.
+        // at call sites by visit(AstFuncRef*). Collect for post-traversal cleanup.
+        m_seqsToCleanup.push_back(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -807,6 +809,17 @@ public:
         iterate(nodep);
         // Fix up varref names
         for (AstVarXRef* xrefp : m_xrefsp) xrefp->name(xrefp->varp()->name());
+        // Clean up sequence declarations after inlining.
+        // Referenced sequences that were inlined have isReferenced cleared.
+        // Remaining referenced sequences are in unsupported contexts (e.g. @seq event).
+        for (AstSequence* seqp : m_seqsToCleanup) {
+            if (seqp->isReferenced()) {
+                seqp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: sequence referenced outside assertion property");
+            } else {
+                VL_DO_DANGLING(seqp->unlinkFrBack()->deleteTree(), seqp);
+            }
+        }
     }
     ~AssertPreVisitor() override = default;
 };
@@ -817,19 +830,5 @@ public:
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { AssertPreVisitor{nodep}; }  // Destruct before checking
-    // Clean up sequence declarations after inlining.
-    // Referenced sequences that were inlined have isReferenced cleared.
-    // Remaining referenced sequences are in unsupported contexts (e.g. @seq event).
-    std::vector<AstSequence*> seqsToCleanup;
-    nodep->foreach([&](AstSequence* seqp) { seqsToCleanup.push_back(seqp); });
-    for (AstSequence* seqp : seqsToCleanup) {
-        if (seqp->isReferenced()) {
-            // Still referenced in unsupported context; emit error but keep the node
-            // alive so FuncRef pointers don't dangle before abortIfErrors
-            seqp->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
-        } else {
-            VL_DO_DANGLING(seqp->unlinkFrBack()->deleteTree(), seqp);
-        }
-    }
     V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeEitherLevel() >= 3);
 }
