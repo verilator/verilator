@@ -1,6 +1,6 @@
-[0] vif3.data==0000
 [0] intf1.data==0000
 [0] intf2.data==0000
+[0] vif3.data==0000
 [15000] intf1.data==dead
 [30000] intf2.data==dead
 [35000] intf1.data==beef

@@ -121,7 +121,7 @@ private:
             // assigns are clocked and don't have this problem.
             // The scheduling dependency cycles that would normally arise from
             // reading the current value are avoided because:
-            //  - VIF path: V3OrderGraphBuilder skips read-only MemberSel on VIFs
+            //  - VIF path: V3OrderGraphBuilder skips all MemberSel on VIFs
             //  - sensIfacep path: cloned read VarRef has ignoreSchedRead set,
             //    which is checked by all scheduling dependency graph builders
             AstNodeExpr* oldValReadp = nullptr;
