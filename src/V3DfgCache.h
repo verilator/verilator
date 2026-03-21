@@ -254,26 +254,35 @@ inline Vertex* get(DfgGraph& dfg, T_Cache& cache, const DfgDataType& dtype, Oper
     return it != cache.end() ? reinterpret_cast<Vertex*>(it->second) : nullptr;
 }
 
-// These add an existing vertex to the table, if an equivalent does not yet exist
-inline void cache(CacheSel& cache, DfgSel* vtxp) {
+// These add an existing vertex to the table. If an equivalent exists,
+// it is returned and the cache is not updated.
+inline DfgSel* cache(CacheSel& cache, DfgSel* vtxp) {
     DfgSel*& entrypr = getEntry(cache, vtxp->dtype(), vtxp->fromp(), vtxp->lsb());
-    if (!entrypr) entrypr = vtxp;
+    if (entrypr && entrypr != vtxp) return entrypr;
+    entrypr = vtxp;
+    return nullptr;
 }
 
-inline void cache(CacheUnary& cache, DfgVertexUnary* vtxp) {
+inline DfgVertexUnary* cache(CacheUnary& cache, DfgVertexUnary* vtxp) {
     DfgVertexUnary*& entrypr = getEntry(cache, vtxp->dtype(), vtxp->inputp(0));
-    if (!entrypr) entrypr = vtxp;
+    if (entrypr && entrypr != vtxp) return entrypr;
+    entrypr = vtxp;
+    return nullptr;
 }
 
-inline void cache(CacheBinary& cache, DfgVertexBinary* vtxp) {
+inline DfgVertexBinary* cache(CacheBinary& cache, DfgVertexBinary* vtxp) {
     DfgVertexBinary*& entrypr = getEntry(cache, vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1));
-    if (!entrypr) entrypr = vtxp;
+    if (entrypr && entrypr != vtxp) return entrypr;
+    entrypr = vtxp;
+    return nullptr;
 }
 
-inline void cache(CacheTernary& cache, DfgVertexTernary* vtxp) {
+inline DfgVertexTernary* cache(CacheTernary& cache, DfgVertexTernary* vtxp) {
     DfgVertexTernary*& entrypr
         = getEntry(cache, vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1), vtxp->inputp(2));
-    if (!entrypr) entrypr = vtxp;
+    if (entrypr && entrypr != vtxp) return entrypr;
+    entrypr = vtxp;
+    return nullptr;
 }
 
 // These remove an existing vertex from the cache, if it is the cached vertex
@@ -357,8 +366,9 @@ public:
     template <typename Vertex, typename... Operands>
     inline Vertex* get(const DfgDataType& dtype, Operands... operands);
 
-    // Add an existing vertex of the table. If an equivalent already exists, then nothing happens.
-    void cache(DfgVertex* vtxp);
+    // Add an existing vertex of the cache. If an equivalent already exists,
+    // it is returned and the cache is not updated.
+    DfgVertex* cache(DfgVertex* vtxp);
 
     // Remove an exiting vertex, it is the cached vertex.
     void invalidateByValue(DfgVertex* vtxp);
