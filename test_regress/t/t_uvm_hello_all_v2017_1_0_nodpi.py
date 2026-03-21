@@ -21,6 +21,7 @@ test.compile(v_flags2=[
     test.build_jobs,
     "--CFLAGS -O0",
     "-Wall",
+    "-Wno-DISPLAYWIDE",  # $swrite in uvm_bits_to_string() blows up otherwise
     "+incdir+t/uvm",  #
     "t/uvm/uvm_pkg_all_v2017_1_0_nodpi.svh",
 ])

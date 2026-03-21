@@ -719,6 +719,14 @@ List Of Warnings
    generated C++ code to add appropriate prints to see what is going on.
 
 
+.. option:: DISPLAYWIDE
+
+   Warns that a $display-like argument is too wide.
+
+   Ignoring this warning will result in truncated $display-like output in
+   such cases.
+
+
 .. option:: ENCAPSULATED
 
    Warns that a class member is declared ``local`` or
