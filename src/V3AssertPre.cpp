@@ -565,9 +565,8 @@ private:
         // Build: expr && $past(expr,1) && $past(expr,2) && ... && $past(expr,N-1)
         AstNodeExpr* resultp = exprp;
         for (int i = 1; i < n; ++i) {
-            AstPast* const pastp
-                = new AstPast{flp, exprp->cloneTreePure(false),
-                              new AstConst{flp, static_cast<uint32_t>(i)}};
+            AstPast* const pastp = new AstPast{flp, exprp->cloneTreePure(false),
+                                               new AstConst{flp, static_cast<uint32_t>(i)}};
             pastp->dtypeSetBit();
             pastp->sentreep(newSenTree(nodep));
             resultp = new AstAnd{flp, resultp, pastp};
