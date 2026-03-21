@@ -109,13 +109,65 @@ private:
 
         if (ifacep && memberVarp) {
             FileLine* const flp = nodep->fileline();
+
+            // For continuous assigns (AstAssignW), make the trigger conditional
+            // on the value actually changing. This prevents infinite convergence
+            // loops when combinational logic repeatedly writes the same value
+            // through a VIF boundary:  trigger = (current_val != newval)
+            // Only continuous assigns can cause convergence loops; procedural
+            // assigns are clocked and don't have this problem.
+            // The OrderGraph cycles that would normally arise from reading the
+            // current value are avoided because V3OrderGraphBuilder skips virtual
+            // interface member accesses (AstMemberSel) and writes to
+            // sensIfacep() variables use ignoreSchedWrite.
+            AstNodeExpr* oldValReadp = nullptr;
+            AstNodeExpr* newValExprp = nullptr;
+            if (nodep->varp()->isVirtIface()) {
+                // VIF path: AST is AssignW(MemberSel(VarRef(vif), member), rhs).
+                // nodep is VarRef(vif), look up through MemberSel to the Assign.
+                AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel);
+                if (memberSelp) {
+                    if (const AstNodeAssign* const assignp
+                        = VN_CAST(memberSelp->backp(), NodeAssign)) {
+                        if (VN_IS(assignp, AssignW) && assignp->lhsp() == memberSelp) {
+                            AstMemberSel* const clonedSelp = memberSelp->cloneTree(false);
+                            clonedSelp->access(VAccess::READ);
+                            oldValReadp = clonedSelp;
+                            newValExprp = assignp->rhsp()->cloneTree(false);
+                        }
+                    }
+                }
+            } else {
+                // sensIfacep() path: nodep is a VarRef directly in the Assign.
+                if (const AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
+                    if (VN_IS(assignp, AssignW) && assignp->lhsp() == nodep) {
+                        nodep->varp()->setIgnoreSchedWrite();
+                        T const clonedNodep = nodep->cloneTree(false);
+                        clonedNodep->access(VAccess::READ);
+                        oldValReadp = clonedNodep;
+                        newValExprp = assignp->rhsp()->cloneTree(false);
+                    }
+                }
+            }
+
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
-            relinker.relink(new AstExprStmt{
-                flp,
-                new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
-                              new AstConst{flp, AstConst::BitTrue{}}},
-                nodep});
+
+            AstVarRef* const trigWriteRefp
+                = createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp);
+
+            AstNodeStmt* triggerStmtp = nullptr;
+            if (oldValReadp && newValExprp) {
+                // Conditional trigger: trigger = (current_val != newval)
+                AstNodeExpr* const changedExprp = new AstNeq{flp, oldValReadp, newValExprp};
+                triggerStmtp = new AstAssign{flp, trigWriteRefp, changedExprp};
+            } else {
+                // Fall back to unconditional trigger
+                triggerStmtp
+                    = new AstAssign{flp, trigWriteRefp, new AstConst{flp, AstConst::BitTrue{}}};
+            }
+
+            relinker.relink(new AstExprStmt{flp, triggerStmtp, nodep});
         }
     }
 
