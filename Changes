@@ -23,7 +23,7 @@ Verilator 5.047 devel
 * Support constraint imperfect distributions (#6811) (#7168). [Yilou Wang]
 * Support procedural concurrent assertion simple cases (#6944).
 * Support force assignments to array elements of real type (#7048). [Ryszard Rozak, Antmicro Ltd.]
-* Support VPI array indexing in signal names (#7097) (#7187) (#7214). [Christian Hecken, Heidelberg University]
+* Support VPI array indexing in signal names (#7097) (#7187) (#7214) (#7289). [Christian Hecken, Heidelberg University]
 * Support soft constraint solving (#7124) (#7166). [Yilou Wang]
 * Support constraints on fixed-size array of class object members (#7170) (#7183). [Yilou Wang]
 * Support Z non-blocking assignment (#7192) (#496) (#7197). [Nick Brereton]
@@ -34,6 +34,9 @@ Verilator 5.047 devel
 * Support array and struct info metadata in FST traces (#7255). [Geza Lore, Testorrent USA, Inc.]
 * Support dynamic array .size in inline randomize() with constraints (#7258) (#7266). [Yilou Wang]
 * Support modport export/import task prototypes and out-of-block definitions (#7277). [Yilou Wang]
+* Support named sequence declarations and instances in assertions  (#7283). [Yilou Wang]
+* Support `##` delay on implication RHS in SVA properties (#7284). [Yilou Wang]
+* Support `##0` cycle delays (#4263) (#7298). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -43,12 +46,14 @@ Verilator 5.047 devel
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
+* Optimize reuse of existing associative terms in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
+* Fix `local::` false error in randomize() with on parameterized class (#6680) (#7293). [Yilou Wang]
 * Fix false recursive definition error (#6769) (#7118). [Alex Zhou]
 * Fix interface localparam dependencies and arbitrary nesting (#6936) (#7128) (#7188) (#7190). [em2machine]
 * Fix errant integer promotion (#7012). [Todd Strader]
@@ -62,6 +67,7 @@ Verilator 5.047 devel
 * Fix recursive constant function in $unit scope (#7173) (#7174).
 * Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
+* Fix VPI force of bit-selected signals (#7211) (#7301). [Christian Hecken]
 * Fix wrong $bits() for parameterized interface struct typedefs (#7218) (#7219). [em2machine]
 * Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
 * Fix array reduction in constraints crashing with class inheritance (#7226) (#7263). [Yilou Wang]
@@ -74,6 +80,8 @@ Verilator 5.047 devel
 * Fix --hierarchical dropping arguments in -f/-F files (#7240). [Clara Sparks]
 * Fix `final` asserts and $stop (#7249). [Artur Bieniek, Antmicro Ltd.]
 * Fix vpi_put_value with vpiIntVal on VlWide data (#7256). [Christian Hecken]
+* Fix streaming with descending unpacked arrays and unpacked-to-queue (#7287). [Yilou Wang]
+* Fix coroutine trace setters (#7078 repair) (#7296). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.046 2026-02-28

@@ -34,9 +34,21 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     case (cyc)
-      2, 5: begin a <= 1'b1; b <= 1'b1; c <= 1'b1; end
-      3, 6: begin a <= 1'b0; b <= 1'b0; c <= 1'b1; end  // c stays high for |=> check
-      default: begin a <= 1'b0; b <= 1'b0; c <= 1'b0; end
+      2, 5: begin
+        a <= 1'b1;
+        b <= 1'b1;
+        c <= 1'b1;
+      end
+      3, 6: begin
+        a <= 1'b0;
+        b <= 1'b0;
+        c <= 1'b1;
+      end  // c stays high for |=> check
+      default: begin
+        a <= 1'b0;
+        b <= 1'b0;
+        c <= 1'b0;
+      end
     endcase
     if (cyc == 10) begin
       $write("*-* All Finished *-*\n");

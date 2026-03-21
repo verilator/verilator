@@ -66,12 +66,12 @@ module t;
   // If ##0 is truly "no effect", both signals update in the same cycle.
   always begin
     @(posedge clk);
-    cb.data_ref  <= 8'hAB;       // no ##0 -- baseline
-    cb.data_test <= ##0 8'hAB;   // with ##0 -- should behave identically
+    cb.data_ref <= 8'hAB;  // no ##0 -- baseline
+    cb.data_test <= ##0 8'hAB;  // with ##0 -- should behave identically
     @(posedge clk);
     `checkd(data_test, data_ref)
     `checkd(data_test, 8'hAB)
-    wait(0);
+    wait (0);
   end
 
   // =========================================================
@@ -91,10 +91,8 @@ module t;
   end
 
   // Pass action block: only incremented on nonvacuous success
-  assert property (@(posedge clk) p |-> (p ##0 q))
-    assert_pass_count++;
-  else
-    $error("Branch 3: assertion (p |-> p ##0 q) failed");
+  assert property (@(posedge clk) p |-> (p ##0 q)) assert_pass_count++;
+  else $error("Branch 3: assertion (p |-> p ##0 q) failed");
 
   // =========================================================
   // Completion
