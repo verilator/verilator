@@ -878,10 +878,11 @@ class ParamProcessor final {
                     if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
                             correctModp, refp->typedefp()->name())) {
                         refp->typedefp(newTdp);
+                        if (newTdp->subDTypep()) refp->refDTypep(newTdp->subDTypep());
                         fixed = true;
                     }
                 }
-                if (refp->refDTypep()) {
+                if (!fixed && refp->refDTypep()) {
                     if (AstNodeDType* const newDtp = V3LinkDotIfaceCapture::findDTypeInModule(
                             correctModp, refp->refDTypep()->name(), refp->refDTypep()->type())) {
                         refp->refDTypep(newDtp);
