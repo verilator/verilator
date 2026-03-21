@@ -164,8 +164,7 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
                 // If read, add var -> logic edge
                 // Note: Use same heuristic as ordering does to ignore written variables
                 // TODO: Use live variable analysis.
-                if (refp->access().isReadOrRW() && !refp->ignoreSchedRead()
-                    && !vscp->user3SetOnce() && !vscp->user2())
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2())
                     addEdge(vvtxp, lvtxp, weight, true);
             });
         }

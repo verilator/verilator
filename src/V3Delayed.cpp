@@ -164,7 +164,6 @@ class DelayedVisitor final : public VNVisitor {
         union {
             struct {  // Stuff needed for Scheme::ShadowVar
                 AstVarScope* vscp;  // The shadow variable
-                AstVarScope* flagp;  // Commit flag (for sensIfacep vars to avoid VIF overwrite)
             } m_shadowVariableKit;
             struct {  // Stuff needed for Scheme::ShadowVarMasked
                 AstVarScope* vscp;  // The shadow variable
@@ -590,7 +589,6 @@ class DelayedVisitor final : public VNVisitor {
         const std::string name = "__Vdly__" + vscp->varp()->shortName();
         AstVarScope* const shadowVscp = createTemp(flp, scopep, name, vscp->dtypep());
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
-        vscpInfo.shadowVariableKit().flagp = nullptr;
         // Mark both for V3LifePsot
         vscp->optimizeLifePost(true);
         shadowVscp->optimizeLifePost(true);
@@ -598,36 +596,16 @@ class DelayedVisitor final : public VNVisitor {
         AstActive* const activep = new AstActive{flp, "nba-shadow-variable", vscpInfo.senTreep()};
         activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
-        // For variables also accessed via virtual interface, the NBA commit must
-        // be conditional on an actual write.  Without this, the save/commit pair
-        // (which runs every cycle) overwrites VIF pointer writes that go directly
-        // to the member.
-        const bool needFlag = vscp->varp()->sensIfacep() != nullptr;
-        AstVarScope* flagVscp = nullptr;
-        if (needFlag) {
-            const std::string flagName = "__VdlySet__" + vscp->varp()->shortName();
-            flagVscp = createTemp(flp, scopep, flagName, 1);
-            vscpInfo.shadowVariableKit().flagp = flagVscp;
-        }
         // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
         AstAlwaysPre* const prep = new AstAlwaysPre{flp};
         activep->addStmtsp(prep);
         prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
                                       new AstVarRef{flp, vscp, VAccess::READ}});
-        if (flagVscp) {
-            prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
-                                          new AstConst{flp, AstConst::BitFalse{}}});
-        }
         // Add 'Post' scheduled 'originalVariable = shadowVariable' assignment
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
-        AstAssign* const commitp = new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                                 new AstVarRef{flp, shadowVscp, VAccess::READ}};
-        if (flagVscp) {
-            postp->addStmtsp(new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}, commitp});
-        } else {
-            postp->addStmtsp(commitp);
-        }
+        postp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                       new AstVarRef{flp, shadowVscp, VAccess::READ}});
     }
     void convertSchemeShadowVar(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVar, vscp, "Inconsistent NBA scheme");
@@ -640,15 +618,6 @@ class DelayedVisitor final : public VNVisitor {
             refp->varScopep(shadowVscp);
             refp->varp(shadowVscp->varp());
         });
-
-        // For sensIfacep variables, set the commit flag so the Post commit
-        // knows an actual NBA write happened (vs just the save/commit round-trip)
-        AstVarScope* const flagVscp = vscpInfo.shadowVariableKit().flagp;
-        if (flagVscp) {
-            FileLine* const flp = nodep->fileline();
-            nodep->addNextHere(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
-                                             new AstConst{flp, AstConst::BitTrue{}}});
-        }
     }
 
     // Scheme::ShadowVarMasked

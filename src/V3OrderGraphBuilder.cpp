@@ -191,7 +191,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // Compute whether the value is consumed (read) here
         bool con = false;
-        if (!prevCon && nodep->access().isReadOrRW() && !nodep->ignoreSchedRead()) {
+        if (!prevCon && nodep->access().isReadOrRW()) {
             con = true;
             if (prevGen && !m_inClocked) {
                 // Dangerous assumption:
