@@ -29,7 +29,9 @@ namespace V3DfgCacheInternal {
 DfgVertex* V3DfgCache::cache(DfgVertex* vtxp) {
     switch (vtxp->type()) {
 #define VERTEX_CACHE_ADD_CASE(t) \
-    case t::dfgType(): return V3DfgCacheInternal::cache(m_cache##t, reinterpret_cast<t*>(vtxp)); break;
+    case t::dfgType(): \
+        return V3DfgCacheInternal::cache(m_cache##t, reinterpret_cast<t*>(vtxp)); \
+        break;
         FOREACH_CACHED_VERTEX_TYPE(VERTEX_CACHE_ADD_CASE)
 #undef VERTEX_CACHE_ADD_CASE
     default: return nullptr;
