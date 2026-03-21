@@ -2144,10 +2144,10 @@ backtrace. You will typically see a frame sequence something like:
 Bisecting bad transformations
 -----------------------------
 
-If a bad transformation causes a failure only at runtime, it can be found
-fairly automatically by only applying the transform a limited number of times,
-then performing a bisection search over the limit to pinpoint the exact
-application that introduces the failure.
+If a bad transformation in the internals of Verilator causes a failure only at
+runtime, it can be found fairly automatically by only applying the transform a
+limited number of times, then performing a bisection search over the limit to
+pinpoint the exact transformation that introduces the failure.
 
 To facilitate this an instance of the ``V3DebugBisect`` class can be used in
 conjunction with the ``verilator_bisect`` script.
