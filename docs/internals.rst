@@ -2133,6 +2133,47 @@ backtrace. You will typically see a frame sequence something like:
    visit()
    ...
 
+Bisecting bad transformations
+-----------------------------
+
+If a bad transformation in the internals of Verilator causes a failure only at
+runtime, it can be found fairly automatically by only applying the transform a
+limited number of times, then performing a bisection search over the limit to
+pinpoint the exact transformation that introduces the failure.
+
+To facilitate this an instance of the ``V3DebugBisect`` class can be used in
+conjunction with the ``verilator_bisect`` script.
+
+In the offending algorithm, create a static instance of ``V3DebugBisect``:
+
+::
+
+   static V3DebugBisect s_debugBisect{"TransformName"};
+
+Call the ``stop`` method before applying a transformation, and do not proceed
+if it returns ``false``. Then use ``verilator_bisect`` to search an interval of
+values. You need to provide an arbitrary discriminator command, this should run
+Verilator, then any necessary checks (e.g.: simulation) to detect that the
+failure is still present. It should exit with a non-zero status if the failure
+is still present. The discriminator command can otherwise be arbitrarily
+complex, the actual search limit is passed via environment variables. E.g.:
+
+::
+
+  bin/verilator_bisect DfgPeephole 0 1000 test_regress/t/t_myothertest.py
+
+An additional command can be run before the discriminator command. E.g.  this
+will run RTLMeter, but first removes its working directory so the models are
+recompiled on every step:
+
+::
+
+  bin/verilator_bisect --pre "rm -rf work-bisect" DfgPeephole 0 10000000 \
+    rtlmeter run --cases "..." --workRoot=work-bisect
+
+When the bisection ends, the first value that makes the discriminator command
+fail is printed, which identifies the exact offending application of the
+transform.
 
 Adding a New Feature
 ====================

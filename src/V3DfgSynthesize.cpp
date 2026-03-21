@@ -522,14 +522,8 @@ public:
         , m_ctx{ctx} {}
 };
 
-// For debugging, we can stop synthesizing after a certain number of vertices.
-// for this we need a global counter (inside the template makes multiple copies)
-static size_t s_dfgSynthDebugCount = 0;
-// The number of vertices we stop after can be passed in through the environment
-// you can then use a bisection search over this value and look at the dumps
-// produced with the lowest failing value
-static const size_t s_dfgSynthDebugLimit
-    = std::stoull(V3Os::getenvStr("VERILATOR_DFG_SYNTH_DEBUG", "0"));
+// Debug aid - outisde 'AstToDfgSynthesize' as it is a template, but want one instance
+V3DebugBisect s_dfgSynthDebugBisect{"DfgSynthesize"};
 
 template <bool T_Scoped>
 class AstToDfgSynthesize final {
@@ -1769,18 +1763,15 @@ class AstToDfgSynthesize final {
             UASSERT_OBJ(logicp->selectedForSynthesis(), logicp, "Unselected DfgLogic remains");
 
             // Debug aid
-            if (VL_UNLIKELY(s_dfgSynthDebugLimit)) {
-                if (s_dfgSynthDebugCount == s_dfgSynthDebugLimit) break;
-                ++s_dfgSynthDebugCount;
-                if (s_dfgSynthDebugCount == s_dfgSynthDebugLimit) {
-                    // This is the breaking logic
-                    m_debugLogicp = logicp;
-                    // Dump it
-                    UINFOTREE(0, logicp->nodep(), "Problematic DfgLogic: " << logicp, "  ");
-                    V3EmitV::debugVerilogForTree(logicp->nodep(), std::cout);
-                    debugDump("synth-lastok");
-                }
-            }
+            const auto debugCallback = [&]() -> void {
+                // This is the breaking logic
+                m_debugLogicp = logicp;
+                // Dump it
+                UINFOTREE(0, logicp->nodep(), "Problematic DfgLogic: " << logicp, "  ");
+                V3EmitV::debugVerilogForTree(logicp->nodep(), std::cout);
+                debugDump("synth-lastok");
+            };
+            if (VL_UNLIKELY(s_dfgSynthDebugBisect.stop(debugCallback))) break;
 
             // Synthesize it, if failed, enqueue for reversion
             if (!synthesize(*logicp)) {

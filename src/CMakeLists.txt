@@ -71,6 +71,7 @@ set(HEADERS
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
+    V3DebugBisect.h
     V3Delayed.h
     V3Depth.h
     V3DepthBlock.h

@@ -140,11 +140,14 @@ class V3DfgPeephole final : public DfgVisitor {
     // Vertex lookup-table to avoid creating redundant vertices
     V3DfgCache m_cache{m_dfg};
 
+    // Debug aid
+    static V3DebugBisect s_debugBisect;
+
 #define APPLYING(id) if (checkApplying(VDfgPeepholePattern::id))
 
     // METHODS
     bool checkApplying(VDfgPeepholePattern id) {
-        if (!m_ctx.m_enabled[id]) return false;
+        if (VL_UNLIKELY(!m_ctx.m_enabled[id] || s_debugBisect.isStopped())) return false;
         UINFO(9, "Applying DFG pattern " << id.ascii());
         ++m_ctx.m_count[id];
         return true;
@@ -189,6 +192,16 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void replace(DfgVertex* vtxp, DfgVertex* replacementp) {
+        const auto debugCallback = [&]() -> void {
+            UINFO(0, "Problematic DfgPeephole replacement: " << vtxp << " -> " << replacementp);
+            m_dfg.sourceCone({vtxp, replacementp});
+            const auto cone = m_dfg.sourceCone({vtxp, replacementp});
+            m_dfg.dumpDotFilePrefixed("peephole-broken", [&](const DfgVertex& v) {  //
+                return cone->count(&v);
+            });
+        };
+        if (VL_UNLIKELY(s_debugBisect.stop(debugCallback))) return;
+
         // Add sinks of replaced vertex to the work list
         addSinksToWorkList(vtxp);
         // Add replacement to the work list
@@ -1876,6 +1889,8 @@ class V3DfgPeephole final : public DfgVisitor {
 public:
     static void apply(DfgGraph& dfg, V3DfgPeepholeContext& ctx) { V3DfgPeephole{dfg, ctx}; }
 };
+
+V3DebugBisect V3DfgPeephole::s_debugBisect{"DfgPeephole"};
 
 void V3DfgPasses::peephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx) {
     if (!v3Global.opt.fDfgPeephole()) return;
