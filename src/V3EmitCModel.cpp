@@ -593,7 +593,7 @@ class EmitCModel final : public EmitCFunc {
              + "&" + protect("trace_init")  //
              + ", &(vlSymsp->TOP)"  //
              + ", name()"  //
-             + ", " + (v3Global.opt.libCreate().empty() ? "false" : "true")  //
+             + ", " + (v3Global.opt.hierChild() ? "true" : "false")  //
              + ", " + std::to_string(v3Global.rootp()->nTraceCodes())  //
              + ");\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
