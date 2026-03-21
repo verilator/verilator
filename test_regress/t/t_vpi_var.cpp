@@ -1071,6 +1071,19 @@ int _mon_check_multi_index() {
         vpi_get_value(vh_3d, &v);
         CHECK_RESULT(v.value.integer, 7);  // (1*4) + (1*2) + 1
 
+        // 2D Packed array with negative indices: [8:-7] [3:-4] negative_multi_packed[0:-2]
+        TestVpiHandle vh_neg_packed_base
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed", nullptr);
+        CHECK_RESULT_NZ(vh_neg_packed_base);
+        PLI_INT32 idx_neg_packed[2] = {-1, -2};
+        TestVpiHandle vh_neg_packed
+            = vpi_handle_by_multi_index(vh_neg_packed_base, 2, idx_neg_packed);
+        CHECK_RESULT_NZ(vh_neg_packed);
+        CHECK_RESULT(vpi_get(vpiType, vh_neg_packed), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_packed), 8);
+        vpi_get_value(vh_neg_packed, &v);
+        CHECK_RESULT(v.value.integer, 4);
+
         // Verify multi_index matches sequential vpi_handle_by_index
         TestVpiHandle vh_seq_base = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d", nullptr);
         CHECK_RESULT_NZ(vh_seq_base);
@@ -1266,6 +1279,15 @@ int _mon_check_multi_index() {
         CHECK_RESULT(vpi_get(vpiSize, vh_3d), 96);
         vpi_get_value(vh_3d, &v);
         CHECK_RESULT(v.value.integer, 7);
+
+        // Index into single bit with negative index
+        TestVpiHandle vh_neg_bit
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1][-2][-2]", nullptr);
+        CHECK_RESULT_NZ(vh_neg_bit);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_bit), 1);
+        vpi_get_value(vh_neg_bit, &v);
+        // Element [-1][-2] is 8'h4; elements are indexed as [3:-4], so bit -2 is 1
+        CHECK_RESULT(v.value.integer, 1);
     }
 
     // Packed dimension indexing: quads[2] bit selection
@@ -1322,6 +1344,24 @@ int _mon_check_multi_index() {
         CHECK_RESULT_NZ(vh_last);
         vpi_get_value(vh_last, &v);
         CHECK_RESULT(v.value.integer, 0xDD);
+
+        // Negative indices: negative_multi_packed is defined as
+        // `[8:-7] [3:-4] negative_multi_packed[0:-2]`
+        TestVpiHandle vh_neg
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1]", nullptr);
+        CHECK_RESULT_NZ(vh_neg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg), 128);
+        TestVpiHandle vh_neg_packed = vpi_handle_by_index(vh_neg, -2);
+        CHECK_RESULT_NZ(vh_neg_packed);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_packed), 8);
+        vpi_get_value(vh_neg_packed, &v);
+        CHECK_RESULT(v.value.integer, 4);
+        // Further into bit level
+        TestVpiHandle vh_neg_bit = vpi_handle_by_index(vh_neg_packed, -2);
+        CHECK_RESULT_NZ(vh_neg_bit);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_bit), 1);
+        vpi_get_value(vh_neg_bit, &v);
+        CHECK_RESULT(v.value.integer, 1);
     }
 
     // Partial indexing (not all unpacked dimensions)
@@ -1350,6 +1390,8 @@ int _mon_check_multi_index() {
         // Non-integer / non-decimal index values
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][abc]", nullptr));
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0x2][3]", nullptr));
+        // Index out of bounds
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[4][0]", nullptr));
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[-1][0]", nullptr));
         // Structural bracket errors
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][]", nullptr));
@@ -1366,7 +1408,8 @@ int _mon_check_multi_index() {
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped_inst[0] .sig [3:0]", nullptr));
         // Indexing non-array signals
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.onebit[0]", nullptr));
-        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.twoone[0]", nullptr));
+        // Part-select on non-array signal
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.onebit[0:0]", nullptr));
         // Part-select on unpacked-only array
         CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.unpacked_only[3:0]", nullptr));
         // Range/slice syntax in non-last position or on unpacked dimensions
@@ -1401,6 +1444,15 @@ int _mon_check_multi_index() {
         CHECK_RESULT(vpi_get(vpiSize, vh_desc_full), 8);
         vpi_get_value(vh_desc_full, &v);
         CHECK_RESULT(v.value.integer, 24);  // 0x18
+
+        // Descending range that crosses zero
+        TestVpiHandle vh_desc_cross
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1][-2][1:-3]", nullptr);
+        CHECK_RESULT_NZ(vh_desc_cross);
+        CHECK_RESULT(vpi_get(vpiSize, vh_desc_cross), 5);
+        vpi_get_value(vh_desc_cross, &v);
+        // Element [-1][-2] is 8'h4; elements are indexed as [3:-4], so bits [1:-3] = 0b00010
+        CHECK_RESULT(v.value.integer, 2);
 
         // Ascending packed range behavior is explicit:
         // mem_3d has packed declaration [0:95], so [3:0] selects the MSB-end nibble,

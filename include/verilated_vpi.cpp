@@ -395,6 +395,7 @@ public:
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t bitOffset() const override { return m_bitOffset; }
+    int32_t partselBits() const { return m_partselBits; }
     uint32_t bitSize() const {
         if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
         return VerilatedVpioVarBase::bitSize();
@@ -1119,7 +1120,7 @@ public:
         }
         s().m_inertialPuts.clear();
     }
-    static auto getForceControlSignals(const VerilatedVpioVarBase* vop);
+    static auto getForceControlSignals(const VerilatedVpioVar* vop);
 
     static std::size_t vlTypeSize(VerilatedVarType vltype);
     static void setAllBitsToValue(const VerilatedVpioVar* vop, uint8_t bitValue) {
@@ -1314,15 +1315,16 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     return s().m_errorInfop;
 }
 
-auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const baseSignalVop) {
+auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignalVop) {
     const VerilatedForceControlSignals* const forceControlSignals
         = baseSignalVop->varp()->forceControlSignals();
     // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
     if (VL_UNLIKELY(!forceControlSignals)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: VPI force or release requested for '%s', but signal has no force "
-                      "control signals. Ensure signal is marked as forceable",
-                      __func__, baseSignalVop->fullname());
+        VL_VPI_ERROR_(
+            __FILE__, __LINE__,
+            "%s: VPI put or get requested for forceable signal '%s', but signal has no force "
+            "control signals.",
+            __func__, baseSignalVop->fullname());
         return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
             nullptr, nullptr};
     }  // LCOV_EXCL_STOP
@@ -1331,26 +1333,141 @@ auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const b
     // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
     if (VL_UNLIKELY(!forceEnableSignalVarp)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: VPI force or release requested for '%s', but force enable signal could "
-                      "not be found. Ensure signal is marked as forceable",
+                      "%s: VPI put or get requested for forceable signal '%s', but force enable "
+                      "signal could not be found.",
                       __func__, baseSignalVop->fullname());
         return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
             nullptr, nullptr};
     }
     if (VL_UNLIKELY(!forceValueSignalVarp)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: VPI force or release requested for '%s', but force value signal could "
-                      "not be found. Ensure signal is marked as forceable",
-                      __func__, baseSignalVop->fullname());
+        VL_VPI_ERROR_(
+            __FILE__, __LINE__,
+            "%s: VPI put or get requested for forceable signal '%s', but force value signal could "
+            "not be found.",
+            __func__, baseSignalVop->fullname());
         return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
             nullptr, nullptr};
     }
     // LCOV_EXCL_STOP
-    VerilatedVpioVar forceEnableSignal{forceEnableSignalVarp, baseSignalVop->scopep()};
-    VerilatedVpioVar forceValueSignal{forceValueSignalVarp, baseSignalVop->scopep()};
+
+    // Adjust dimension and partselect to match the base signal, so that forcing a partial signal
+    // doesn't exceed the bounds given by the base signal
+    VerilatedVpioVar* forceEnableSignalVop
+        = new VerilatedVpioVar{forceEnableSignalVarp, baseSignalVop->scopep()};
+    VerilatedVpioVar* forceValueSignalVop
+        = new VerilatedVpioVar{forceValueSignalVarp, baseSignalVop->scopep()};
+
+    for (int idx : baseSignalVop->index()) {
+        VerilatedVpioVar* nextForceEnableSignalVop = forceEnableSignalVop->withIndex(idx);
+        VerilatedVpioVar* nextForceValueSignalVop = forceValueSignalVop->withIndex(idx);
+        VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        forceEnableSignalVop = nextForceEnableSignalVop;
+        forceValueSignalVop = nextForceValueSignalVop;
+        if (!forceEnableSignalVop || !forceValueSignalVop) break;  // LCOV_EXCL_LINE
+    }
+
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
+    if (VL_UNLIKELY(!forceEnableSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but force enable "
+                      "signal could not be indexed to the same dimension as the base signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceValueSignalVop))
+            VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    if (VL_UNLIKELY(!forceValueSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but force value "
+                      "signal could not be indexed to the same dimension as the base signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceEnableSignalVop))
+            VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    // LCOV_EXCL_STOP
+
+    if (VL_UNLIKELY(baseSignalVop->partselBits() != -1)) {
+        // Bits are stored left-to-right in memory, which can either be ascending or descending. To
+        // match the bitOffset of the base signal, the distance to the rightmost bit, rather than
+        // to the lowest indexed bit, must be determined
+        int currentDimRight = baseSignalVop->rangep()->right();
+        int32_t offsetFromRight
+            = static_cast<int32_t>(static_cast<int64_t>(baseSignalVop->bitOffset())
+                                   - static_cast<int64_t>(forceValueSignalVop->bitOffset()));
+        const bool isDescending
+            = baseSignalVop->rangep()->left() >= baseSignalVop->rangep()->right();
+
+        const int32_t partSelIndexRight
+            = isDescending ? currentDimRight + offsetFromRight : currentDimRight - offsetFromRight;
+        const int32_t partSelIndexLeft
+            = isDescending ? partSelIndexRight + (baseSignalVop->partselBits() - 1)
+                           : partSelIndexRight - (baseSignalVop->partselBits() - 1);
+        const int32_t partSelIndexHigh = std::max(partSelIndexLeft, partSelIndexRight);
+        const int32_t partSelIndexLow = std::min(partSelIndexLeft, partSelIndexRight);
+
+        VerilatedVpioVar* partIndexedForceEnableSignalVop
+            = forceEnableSignalVop->withPartSelect(partSelIndexHigh, partSelIndexLow);
+        VerilatedVpioVar* partIndexedForceValueSignalVop
+            = forceValueSignalVop->withPartSelect(partSelIndexHigh, partSelIndexLow);
+
+        VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        forceEnableSignalVop = partIndexedForceEnableSignalVop;
+        forceValueSignalVop = partIndexedForceValueSignalVop;
+    }
+
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
+    if (VL_UNLIKELY(!forceEnableSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but part selection "
+                      "could not be applied to the force enable signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceValueSignalVop))
+            VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    if (VL_UNLIKELY(!forceValueSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but part selection "
+                      "could not be applied to the force value signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceEnableSignalVop))
+            VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    // LCOV_EXCL_STOP
+
+#ifdef VL_DEBUG
+    // Sanity checks: Offsets, widths, and dimensions should all match between the base signal and
+    // the force control signals, so that they always refer to the same bits
+    assert(forceEnableSignalVop->bitSize() == baseSignalVop->bitSize());
+    assert(forceValueSignalVop->bitSize() == baseSignalVop->bitSize());
+    assert(forceEnableSignalVop->indexedDim() == baseSignalVop->indexedDim());
+    assert(forceValueSignalVop->indexedDim() == baseSignalVop->indexedDim());
+    assert(forceEnableSignalVop->index() == baseSignalVop->index());
+    assert(forceValueSignalVop->index() == baseSignalVop->index());
+    assert(forceEnableSignalVop->bitOffset() == baseSignalVop->bitOffset());
+    assert(forceValueSignalVop->bitOffset() == baseSignalVop->bitOffset());
+    assert(forceEnableSignalVop->partselBits() == baseSignalVop->partselBits());
+    assert(forceValueSignalVop->partselBits() == baseSignalVop->partselBits());
+    // entSize can differ because the force enable signal can have a different vltyp than the base
+    // signal (e.g. the base signal can be of type VLVT_REAL, while the force enable signal is
+    // still of type VLVT_UINT8), but for now entSize is only used for unpacked arrays, which
+    // cannot be forced through VPI yet
+    // assert(forceEnableSignalVop->entSize() == baseSignalVop->entSize());
+    assert(forceValueSignalVop->entSize() == baseSignalVop->entSize());
+    assert(forceEnableSignalVop->varDatap() == forceEnableSignalVarp->datap());
+    assert(forceValueSignalVop->varDatap() == forceValueSignalVarp->datap());
+#endif  // VL_DEBUG
+
     return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
-        std::make_unique<VerilatedVpioVar>(forceEnableSignal),
-        std::make_unique<VerilatedVpioVar>(forceValueSignal)};
+        forceEnableSignalVop, forceValueSignalVop};
 }
 
 std::size_t VerilatedVpiImp::vlTypeSize(const VerilatedVarType vltype) {
@@ -2902,11 +3019,15 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     // __VforceRd already has the correct value, but that signal is not public and thus not present
     // in the scope's m_varsp map, will be removed entirely eventually (#7092), so its value has to
     // be recreated using the __VforceEn and __VforceVal signals.
-    const auto forceControlSignals
-        = vop->varp()->isForceable()
-              ? VerilatedVpiImp::getForceControlSignals(vop)
-              : std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
-                    nullptr, nullptr};
+    const auto forceControlSignals = [vop]() {
+        if (vop->varp()->isForceable()) {
+            const VerilatedVpioVar* varVop = dynamic_cast<const VerilatedVpioVar*>(vop);
+            assert(varVop);  // VerilatedVpioParams cannot be forced
+            return VerilatedVpiImp::getForceControlSignals(varVop);
+        }
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }();
     const VerilatedVpioVarBase* const forceEnableSignalVop = forceControlSignals.first.get();
     const VerilatedVpioVarBase* const forceValueSignalVop = forceControlSignals.second.get();
     t_vpi_error_info getForceControlSignalsError{};
