@@ -566,7 +566,8 @@ private:
         AstNodeExpr* resultp = exprp;
         for (int i = 1; i < n; ++i) {
             AstPast* const pastp
-                = new AstPast{flp, exprp->cloneTreePure(false), new AstConst{flp, i}};
+                = new AstPast{flp, exprp->cloneTreePure(false),
+                              new AstConst{flp, static_cast<uint32_t>(i)}};
             pastp->dtypeSetBit();
             pastp->sentreep(newSenTree(nodep));
             resultp = new AstAnd{flp, resultp, pastp};
