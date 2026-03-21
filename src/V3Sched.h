@@ -397,6 +397,7 @@ void transformForks(AstNetlist* const netlistp) VL_MT_DISABLED;
 
 // Top level entry point to scheduling
 void schedule(AstNetlist*) VL_MT_DISABLED;
+void scheduleStatic(AstCFunc* evalStaticp) VL_MT_DISABLED;
 
 // Sub-steps
 LogicByScope breakCycles(AstNetlist* netlistp,

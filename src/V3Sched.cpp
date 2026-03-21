@@ -370,6 +370,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_static);
+    scheduleStatic(funcp);
     return funcp;  // Not splitting yet as it is not final
 }
 
