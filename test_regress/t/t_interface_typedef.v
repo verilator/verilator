@@ -1,18 +1,20 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2021 Wilson Snyder
-// SPDX-License-Identifier: CC0-1.0
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 // verilog_format: off
 `define stop $stop
-`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: (%m) %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
 interface ifc #(
     parameter int unsigned WIDTH
 ) ();
-  typedef struct {logic [WIDTH-1:0] data;} struct_t;
+  typedef struct packed {logic [WIDTH-1:0] data;} struct_t;
 endinterface
 
 module t (  /*AUTOARG*/
@@ -46,15 +48,15 @@ module sub #(
     input logic clk,
     ifc ifc_if
 );
-  typedef ifc_if.struct_t struct_t;
+  typedef ifc_if.struct_t my_struct_t;
 
   wire [EXP_WIDTH-1:0] expval = '1;
 
   initial begin
-    struct_t substruct;
+    my_struct_t substruct;
     #10;
     substruct.data = '1;
-    `checkh($bits(struct_t), EXP_WIDTH);
+    `checkh($bits(my_struct_t), EXP_WIDTH);
     `checkh(substruct.data, expval);
   end
 

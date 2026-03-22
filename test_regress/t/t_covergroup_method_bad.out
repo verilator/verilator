@@ -3,7 +3,7 @@
    16 |     cov1.some_unknown_method.name = "new_cov1_name";   
       |          ^~~~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_covergroup_method_bad.v:16:30: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+%Error-UNSUPPORTED: t/t_covergroup_method_bad.v:16:30: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
                                                      : ... note: In instance 't'
    16 |     cov1.some_unknown_method.name = "new_cov1_name";   
       |                              ^~~~

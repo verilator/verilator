@@ -3,7 +3,7 @@
    25 |     automatic Converter #(bit) conv2 = conv1;
       |                                        ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-ENUMVALUE: t/t_class_param_enum_bad.v:26:17: Implicit conversion to enum 'enum{}$unit::enum_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_class_param_enum_bad.v:26:17: Implicit conversion to enum 'enum{}$unit::enum_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                                   : ... note: In instance 't'
                                                   : ... Suggest use enum's mnemonic, or static cast
    26 |     conv1.toInt(0);

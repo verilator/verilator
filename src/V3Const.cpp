@@ -1599,7 +1599,13 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(const AstNode* node1p, const AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (const AstConst* const const1p = VN_CAST(node1p, Const)) {
+            if (const AstConst* const const2p = VN_CAST(node2p, Const)) {
+                return V3Number{node1p->fileline(), 1, 0}
+                    .opEq(const1p->num(), const2p->num())
+                    .isEqOne();
+            }
+        }
         if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.

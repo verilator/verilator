@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 
-test.compile(verilator_flags2=['--structs-packed'])
+test.compile(verilator_flags2=['-Wno-DEPRECATED', '--structs-packed'])
 
 test.execute()
 

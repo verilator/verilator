@@ -200,8 +200,6 @@ protected:
         m_inputps.emplace_back(new DfgEdge{this});
         return m_inputps.back().get();
     }
-    // Unlink all inputs and reset to no inputs
-    void resetInputs() { m_inputps.clear(); }
 
 public:
     // Get input 'i'
@@ -210,6 +208,8 @@ public:
     void inputp(size_t i, DfgVertex* vtxp) { m_inputps[i]->relinkSrcp(vtxp); }
     // The number of inputs this vertex has. Some might be unconnected.
     size_t nInputs() const { return m_inputps.size(); }
+    // Unlink all inputs and reset to no inputs - use very carefully
+    void resetInputs() { m_inputps.clear(); }
 
     // The type of this vertex
     VDfgType type() const { return m_type; }
@@ -226,6 +226,9 @@ public:
         UASSERT_OBJ(m_dtype.isPacked(), this, "Non packed vertex has no 'width'");
         return m_dtype.size();
     }
+
+    // Type check vertex (for debugging)
+    void typeCheck(const DfgGraph& dfg) const;
 
     // Predicate: has 1 or more sinks
     bool hasSinks() const { return !m_sinks.empty(); }

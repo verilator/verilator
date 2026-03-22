@@ -27,6 +27,8 @@
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <unordered_map>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -47,6 +49,7 @@ private:
     AstClocking* m_clockingp = nullptr;  // Current clocking block
     // Reset each module:
     AstClocking* m_defaultClockingp = nullptr;  // Default clocking for current module
+    AstVar* m_defaultClkEvtVarp = nullptr;  // Event var for default clocking (for ##0)
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable for current module
     // Reset each assertion:
     AstSenItem* m_senip = nullptr;  // Last sensitivity
@@ -58,6 +61,7 @@ private:
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
+    V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -96,10 +100,14 @@ private:
         return VN_CAST(bodyp, NodeExpr);
     }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
-        // The only statements possible in AstProperty are AstPropSpec (body)
-        // and AstVar (arguments).
+        // Statements in AstProperty: AstVar (ports/local vars),
+        // AstInitialStaticStmt/AstInitialAutomaticStmt (var init), AstPropSpec (body).
         AstNode* propExprp = propp->stmtsp();
-        while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
+        while (propExprp
+               && (VN_IS(propExprp, Var) || VN_IS(propExprp, InitialStaticStmt)
+                   || VN_IS(propExprp, InitialAutomaticStmt))) {
+            propExprp = propExprp->nextp();
+        }
         return VN_CAST(propExprp, PropSpec);
     }
     void substituteSequenceCall(AstFuncRef* funcrefp, AstSequence* seqp) {
@@ -109,18 +117,22 @@ private:
         UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
         // Clone the body expression since the sequence may be referenced multiple times
         AstNodeExpr* clonedp = bodyExprp->cloneTree(false);
-        // Substitute formal arguments with actual arguments
+        // Build substitution map, then do a single traversal to replace all formals
+        // (textual substitution per IEEE 16.8.2).
         const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
-            const AstVar* const portp = tconnect.first;
-            AstArg* const argp = tconnect.second;
-            clonedp->foreach([&](AstVarRef* refp) {
-                if (refp->varp() == portp) {
-                    refp->replaceWith(argp->exprp()->cloneTree(false));
-                    VL_DO_DANGLING(pushDeletep(refp), refp);
-                }
-            });
-            pushDeletep(argp->exprp()->unlinkFrBack());
+            portMap[tconnect.first] = tconnect.second->exprp();
+        }
+        clonedp->foreach([&](AstVarRef* refp) {
+            const auto it = portMap.find(refp->varp());
+            if (it != portMap.end()) {
+                refp->replaceWith(it->second->cloneTree(false));
+                VL_DO_DANGLING(pushDeletep(refp), refp);
+            }
+        });
+        for (const auto& tconnect : tconnects) {
+            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
         // Replace the FuncRef with the inlined body
         funcrefp->replaceWith(clonedp);
@@ -138,20 +150,53 @@ private:
                 // Clone subtree after substitution. It is needed, because property might be called
                 // multiple times with different arguments.
                 propExprp = propExprp->cloneTree(false);
-                // Substitute formal arguments with actual arguments
+                // Build substitution maps for formal arguments and property-local
+                // variables, then perform a single foreach to apply all replacements.
+                // Map port vars to their actual argument expressions
                 const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
+                std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
                 for (const auto& tconnect : tconnects) {
-                    const AstVar* const portp = tconnect.first;
-                    // cppcheck-suppress constVariablePointer // 'exprp' unlinked below
-                    AstArg* const argp = tconnect.second;
-                    propExprp->foreach([&](AstVarRef* refp) {
-                        if (refp->varp() == portp) {
-                            refp->replaceWith(argp->exprp()->cloneTree(false));
-                            VL_DO_DANGLING(pushDeletep(refp), refp);
-                        }
-                    });
-                    pushDeletep(argp->exprp()->unlinkFrBack());
+                    portMap[tconnect.first] = tconnect.second->exprp();
                 }
+
+                // Promote property-local variables (non-port vars, IEEE 16.10) to
+                // module-level __Vpropvar temps. Cross-cycle persistence is handled
+                // by the match item lowering in visit(AstImplication*).
+                std::unordered_map<const AstVar*, AstVar*> localVarMap;
+                for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                        if (!varp->isIO()) {
+                            const string newName = m_propVarNames.get(varp);
+                            AstVar* const newVarp = new AstVar{
+                                varp->fileline(), VVarType::MODULETEMP, newName, varp->dtypep()};
+                            newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                            m_modp->addStmtsp(newVarp);
+                            localVarMap[varp] = newVarp;
+                        }
+                    }
+                }
+
+                // Single traversal: substitute ports and update local var references
+                propExprp->foreach([&](AstVarRef* refp) {
+                    {
+                        const auto portIt = portMap.find(refp->varp());
+                        if (portIt != portMap.end()) {
+                            refp->replaceWith(portIt->second->cloneTree(false));
+                            VL_DO_DANGLING(pushDeletep(refp), refp);
+                            return;
+                        }
+                    }
+                    {
+                        const auto localIt = localVarMap.find(refp->varp());
+                        if (localIt != localVarMap.end()) { refp->varp(localIt->second); }
+                    }
+                });
+
+                // Clean up argument expressions
+                for (const auto& tconnect : tconnects) {
+                    pushDeletep(tconnect.second->exprp()->unlinkFrBack());
+                }
+
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
                     nodep->v3error("disable iff expression before property call and in its "
@@ -376,9 +421,39 @@ private:
             nodep->v3error(
                 "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
         } else if (constp->isZero()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            VL_DO_DANGLING(valuep->deleteTree(), valuep);
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            if (m_inSynchDrive) {
+                // ##0 has no effect in synchronous drives (IEEE 1800-2023 14.11)
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            if (m_inPExpr) {
+                // ##0 in sequence context = zero delay = same clock tick
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            // Procedural ##0: synchronize with default clocking event (IEEE 1800-2023 14.11)
+            // If the clocking event has not yet occurred this timestep, wait for it;
+            // otherwise continue without suspension.
+            if (!m_defaultClockingp) {
+                nodep->v3error("Usage of cycle delays requires default clocking"
+                               " (IEEE 1800-2023 14.11)");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            AstVar* const evtVarp = m_defaultClkEvtVarp;
+            UASSERT_OBJ(evtVarp, nodep, "Default clocking event var not pre-created");
+            AstCMethodHard* const isTriggeredp = new AstCMethodHard{
+                flp, new AstVarRef{flp, evtVarp, VAccess::READ}, VCMethod::EVENT_IS_TRIGGERED};
+            isTriggeredp->dtypeSetBit();
+            AstEventControl* const waitp = new AstEventControl{
+                flp,
+                new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
+                                                   new AstVarRef{flp, evtVarp, VAccess::READ}}},
+                nullptr};
+            AstIf* const ifp = new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
+            nodep->replaceWith(ifp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
         AstSenItem* sensesp = nullptr;
@@ -653,6 +728,71 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+
+        // Lower sequence match items (IEEE 16.11): (expr, var = val, ...) |-> / |=>
+        if (AstExprStmt* const exprStmtp = VN_CAST(lhsp, ExprStmt)) {
+            AstNodeExpr* const antExprp = exprStmtp->resultp()->unlinkFrBack();
+
+            if (nodep->isOverlapped()) {
+                // |-> : assign to __Vpropvar via always_comb (continuous).
+                // The assign evaluates RHS once; V3Sampled snapshots the
+                // result so all consequent refs read the same value.
+                AstNode* matchAssignsp = nullptr;
+                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
+                    AstNode* const nextp = stmtp->nextp();
+                    if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                        assignp->unlinkFrBack();
+                        if (!matchAssignsp) {
+                            matchAssignsp = assignp;
+                        } else {
+                            matchAssignsp->addNext(assignp);
+                        }
+                    }
+                    stmtp = nextp;
+                }
+                VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                lhsp = antExprp;
+
+                if (matchAssignsp) {
+                    AstAlways* const alwaysp
+                        = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, matchAssignsp};
+                    m_modp->addStmtsp(alwaysp);
+                }
+            } else {
+                // |=> : assign to __Vpropvar via NBA in a clocked always block.
+                // The NBA commits before the next cycle's sampled snapshot,
+                // so the consequent (which already references __Vpropvar)
+                // sees the captured value.
+                AstNode* matchAssignsp = nullptr;
+                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
+                    AstNode* const nextp = stmtp->nextp();
+                    if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                        assignp->unlinkFrBack();
+                        AstNodeExpr* const assignLhsp = assignp->lhsp()->unlinkFrBack();
+                        AstNodeExpr* const assignRhsp = assignp->rhsp()->unlinkFrBack();
+                        AstAssignDly* const dlyp = new AstAssignDly{flp, assignLhsp, assignRhsp};
+                        VL_DO_DANGLING(pushDeletep(assignp), assignp);
+                        if (!matchAssignsp) {
+                            matchAssignsp = dlyp;
+                        } else {
+                            matchAssignsp->addNext(dlyp);
+                        }
+                    }
+                    stmtp = nextp;
+                }
+                VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                lhsp = antExprp;
+
+                if (matchAssignsp) {
+                    AstIf* const condp
+                        = new AstIf{flp, antExprp->cloneTreePure(false), matchAssignsp};
+                    AstAlways* const alwaysp
+                        = new AstAlways{flp, VAlwaysKwd::ALWAYS, newSenTree(nodep), condp};
+                    m_modp->addStmtsp(alwaysp);
+                }
+            }
+        }
+
         if (AstPExpr* const pexprp = VN_CAST(rhsp, PExpr)) {
             // Implication with sequence expression on RHS (IEEE 1800-2023 16.11, 16.12.7).
             // The PExpr was already lowered from the property expression by V3AssertProp.
@@ -806,9 +946,11 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
+        m_defaultClkEvtVarp = nullptr;
         nodep->foreach([&](AstClocking* const clockingp) {
             if (clockingp->isDefault()) {
                 if (m_defaultClockingp) {
@@ -827,6 +969,11 @@ private:
             m_defaultDisablep = disablep;
         });
         m_modp = nodep;
+        // Pre-create and cache the clocking event var before iterating children.
+        // visit(AstClocking) will unlink the event from the clocking node and place it
+        // in the module tree, then delete the clocking. After that, ensureEventp() would
+        // create an orphaned var. Caching here avoids this.
+        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {

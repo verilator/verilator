@@ -178,8 +178,9 @@ module t (
   `signal(REMOVE_CONCAT_OF_ADJOINING_SELS, {rand_a[10:3], rand_a[2:1]});
   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS_CAT, {rand_a[2:1], rand_b});
   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS_CAT, {rand_b, rand_a[10:3]});
-  `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS, {rand_a[10:3], {rand_a[2:1], rand_b}});
-  `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS, {{rand_b, rand_a[10:3]}, rand_a[2:1]});
+  `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS, {rand_a[10:4], {rand_a[3:1], rand_b}});
+  `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS, {{rand_a, rand_b[11:6]}, rand_b[5:1]});
+  `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS_COMMON, {rand_a, rand_b[11:6]});
   `signal(REMOVE_COND_WITH_FALSE_CONDITION, 1'd0 ? rand_a : rand_b);
   `signal(REMOVE_COND_WITH_TRUE_CONDITION, 1'd1 ? rand_a : rand_b);
   `signal(REMOVE_COND_WITH_BRANCHES_SAME, rand_a[0] ? ~rand_b : ~rand_b);
@@ -217,6 +218,20 @@ module t (
   `signal(REPLACE_LOGOR_WITH_OR, rand_a[0] || rand_a[1]);
   `signal(RIGHT_LEANING_ASSOC, (((rand_a + rand_b) + rand_a) + rand_b));
   `signal(RIGHT_LEANING_CONCET, {{{rand_a, rand_b}, rand_a}, rand_b});
+  `signal(REUSE_ASSOC_ADD_COMMON, rand_a[23:4] + ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_ADD, rand_a[23:4] + (~rand_b[23:4] + rand_a[39:20]));
+  `signal(REUSE_ASSOC_MUL_COMMON, rand_a[23:4] * ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_MUL, rand_a[23:4] * (~rand_b[23:4] * rand_a[39:20]));
+  `signal(REUSE_ASSOC_MULS_COMMON, srand_a[23:4] * ~srand_b[23:4]);
+  `signal(REUSE_ASSOC_MULS, srand_a[23:4] * (~srand_b[23:4] * srand_a[39:20]));
+  `signal(REUSE_ASSOC_AND_COMMON, rand_a[23:4] & ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_AND, rand_a[23:4] & (~rand_b[23:4] & rand_a[39:20]));
+  `signal(REUSE_ASSOC_OR_COMMON, rand_a[23:4] | ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_OR, rand_a[23:4] | (~rand_b[23:4] | rand_a[39:20]));
+  `signal(REUSE_ASSOC_XOR_COMMON, rand_a[23:4] ^ ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_XOR, rand_a[23:4] ^ (~rand_b[23:4] ^ rand_a[39:20]));
+  `signal(REUSE_ASSOC_CAT_COMMON, {rand_a[23:4], ~rand_b[23:4]});
+  `signal(REUSE_ASSOC_CAT, {rand_a[23:4], {~rand_b[23:4], rand_a[39:20]}});
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
