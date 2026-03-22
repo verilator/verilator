@@ -96,6 +96,13 @@ AstArg* V3ParseGrammar::argWrapList(AstNodeExpr* nodep) {
     return outp;
 }
 
+AstDumpCtl* V3ParseGrammar::createDumpVarsScoped(FileLine* fl, AstNodeExpr* levelp,
+                                                 AstNode* exprListp) {
+    AstDumpCtl* const resultp = new AstDumpCtl{fl, VDumpCtlType::VARS, levelp};
+    resultp->addTargetsp(exprListp);
+    return resultp;
+}
+
 AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
     AstAssignW* assignp = new AstAssignW{fileline, new AstParseRef{fileline, name},
                                          value ? new AstConst{fileline, AstConst::All1{}}

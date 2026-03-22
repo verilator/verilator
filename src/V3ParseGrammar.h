@@ -67,6 +67,8 @@ public:
 
     // METHODS
     AstArg* argWrapList(AstNodeExpr* nodep) VL_MT_DISABLED;
+    AstDumpCtl* createDumpVarsScoped(FileLine* fl, AstNodeExpr* levelp,
+                                     AstNode* exprListp) VL_MT_DISABLED;
     bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }

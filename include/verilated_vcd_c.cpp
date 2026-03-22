@@ -383,8 +383,9 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
+    const auto dumpvarsPath = Super::dumpvarsPath(m_prefixStack, name);
 
-    const bool enabled = Super::declCode(code, hierarchicalName, bits);
+    const bool enabled = Super::declCode(code, dumpvarsPath, bits);
 
     if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);

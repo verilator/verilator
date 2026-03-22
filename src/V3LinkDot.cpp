@@ -80,6 +80,27 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+static string dumpvarsTargetText(const AstNode* nodep) {
+    if (!nodep) return "";
+    if (const AstText* const textp = VN_CAST(nodep, Text)) return textp->text();
+    if (const AstCellRef* const refp = VN_CAST(nodep, CellRef)) return refp->name();
+    if (const AstCellArrayRef* const refp = VN_CAST(nodep, CellArrayRef)) return refp->name();
+    if (const AstParseRef* const refp = VN_CAST(nodep, ParseRef)) return refp->prettyName();
+    if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp->name();
+    if (const AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
+        if (refp->dotted().empty()) return refp->name();
+        return refp->dotted() + "." + refp->name();
+    }
+    if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
+        const string lhs = dumpvarsTargetText(dotp->lhsp());
+        const string rhs = dumpvarsTargetText(dotp->rhsp());
+        if (lhs.empty()) return rhs;
+        if (rhs.empty()) return lhs;
+        return lhs + "." + rhs;
+    }
+    return nodep->prettyName();
+}
+
 static string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
     if (AstParseRef* const refp = VN_CAST(nodep, ParseRef)) {
         return refp->name();
@@ -6028,6 +6049,37 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         iterateChildren(nodep);
+    }
+    void visit(AstDumpCtl* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        if (nodep->exprp()) iterateAndNextNull(nodep->exprp());
+        AstNode* targetsp = nodep->targetsp();
+        if (!targetsp) return;
+        // Resolve each target from its parse-tree form (AstParseRef/AstDot)
+        // into a plain text name, validating it against the symbol table.
+        VNRelinker relinker;
+        targetsp->unlinkFrBackWithNext(&relinker);
+        AstNode* newTargetsp = nullptr;
+        for (AstNode* targetp = targetsp; targetp;) {
+            AstNode* const nextp = targetp->nextp();
+            if (nextp) nextp->unlinkFrBackWithNext();
+            const string target = dumpvarsTargetText(targetp);
+            if (!target.empty() && m_curSymp) {
+                string baddot;
+                VSymEnt* matchSymp = nullptr;
+                if (!m_statep->findDotted(nodep->fileline(), m_curSymp, target,
+                                          baddot, matchSymp, true)) {
+                    UINFO(5, "$dumpvars target '" << target
+                                                  << "' not found in hierarchy" << endl);
+                }
+            }
+            VL_DO_DANGLING(pushDeletep(targetp), targetp);
+            newTargetsp
+                = AstNode::addNextNull(newTargetsp, new AstText{nodep->fileline(), target});
+            targetp = nextp;
+        }
+        relinker.relink(newTargetsp);
     }
     void visit(AstCellArrayRef* nodep) override {
         LINKDOT_VISIT_START();

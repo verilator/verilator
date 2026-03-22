@@ -369,7 +369,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 }
 
 template <>
-bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::string& declName,
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code,
+                                                  const DumpvarsPath& path,
                                                   uint32_t bits) {
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
@@ -377,21 +378,8 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
     // To keep it simple, this is O(enables * signals), but we expect few enables
     bool enabled = false;
     if (m_dumpvars.empty()) enabled = true;
-    for (const auto& item : m_dumpvars) {
-        const int dumpvarsLevel = item.first;
-        const char* dvp = item.second.c_str();
-        const char* np = declName.c_str();
-        while (*dvp && *dvp == *np) {
-            ++dvp;
-            ++np;
-        }
-        if (*dvp) continue;  // Didn't match dumpvar item
-        if (*np && *np != ' ') continue;  // e.g. "t" isn't a match for "top"
-        int levels = 0;
-        while (*np) {
-            if (*np++ == ' ') ++levels;
-        }
-        if (levels > dumpvarsLevel) continue;  // Too deep
+    for (const auto& entry : m_dumpvars) {
+        if (!path.matches(entry)) continue;
         // We only need to set first code word if it's a multicode signal
         // as that's all we'll check for later
         if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
@@ -434,15 +422,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_resolution(const std::string& 
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
-    if (level == 0) {
+    if (level == 0 && hier.empty()) {
         m_dumpvars.clear();  // empty = everything on
     } else {
-        // Convert Verilog . separators to trace space separators
-        std::string hierSpaced = hier;
-        for (auto& i : hierSpaced) {
-            if (i == '.') i = ' ';
-        }
-        m_dumpvars.emplace_back(level, hierSpaced);
+        m_dumpvars.emplace_back(level, hier);
     }
 }
 

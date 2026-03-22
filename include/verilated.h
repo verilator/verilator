@@ -110,6 +110,15 @@ class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
 
+struct VerilatedTraceDumpvarsEntry final {
+    int m_level;
+    std::string m_hier;
+
+    VerilatedTraceDumpvarsEntry(int level, const std::string& hier)
+        : m_level{level}
+        , m_hier{hier} {}
+};
+
 //=========================================================================
 // Basic types
 
@@ -404,6 +413,8 @@ protected:
     mutable VerilatedMutex m_timeDumpMutex;  // Protect misc slow strings
     std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeDumpMutex);  // $timeformat printf format
     std::string m_dumpfile VL_GUARDED_BY(m_timeDumpMutex);  // $dumpfile setting
+    std::vector<VerilatedTraceDumpvarsEntry>
+        m_dumpvars VL_GUARDED_BY(m_timeDumpMutex);  // $dumpvars settings
 
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
@@ -655,6 +666,11 @@ public:
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     std::string dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+
+    // Internal: $dumpvars
+    void dumpvarsAdd(int level, const std::string& hier) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+    std::vector<VerilatedTraceDumpvarsEntry> dumpvars() const
+        VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-exec related settings
     uint64_t profExecStart() const VL_MT_SAFE { return m_ns.m_profExecStart; }
