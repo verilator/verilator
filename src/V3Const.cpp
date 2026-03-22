@@ -1599,7 +1599,13 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(const AstNode* node1p, const AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (const AstConst* const const1p = VN_CAST(node1p, Const)) {
+            if (const AstConst* const const2p = VN_CAST(node2p, Const)) {
+                return V3Number{node1p->fileline(), 1, 0}
+                    .opEq(const1p->num(), const2p->num())
+                    .isEqOne();
+            }
+        }
         if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
@@ -2389,6 +2395,32 @@ class ConstVisitor final : public VNVisitor {
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamL reverses, so reverse=true)
+            if ((VN_IS(srcDTypep, UnpackArrayDType) || VN_IS(srcDTypep, QueueDType)
+                 || VN_IS(srcDTypep, DynArrayDType))
+                && (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType))) {
+                int blockSize = 1;
+                if (const AstConst* const constp
+                    = VN_CAST(VN_AS(streamp, StreamL)->rhsp(), Const)) {
+                    blockSize = constp->toSInt();
+                    if (VL_UNLIKELY(blockSize <= 0)) blockSize = 1;
+                }
+                int srcElementBits = 0;
+                if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    srcElementBits = elemDtp->width();
+                }
+                int dstElementBits = 0;
+                if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    dstElementBits = elemDtp->width();
+                }
+                nodep->lhsp(dstp);
+                nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, true,
+                                                   blockSize, dstElementBits, srcElementBits});
+                nodep->dtypep(dstDTypep);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                return true;
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
@@ -2420,6 +2452,44 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamR does not reverse, so reverse=false).
+            // V3Width may have wrapped the source in CvtArrayToPacked; unwrap it.
+            if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                AstNodeExpr* origSrcp = srcp;
+                if (AstCvtArrayToPacked* const cvtp = VN_CAST(srcp, CvtArrayToPacked)) {
+                    origSrcp = cvtp->fromp();
+                }
+                const AstNodeDType* const origSrcDTypep = origSrcp->dtypep()->skipRefp();
+                if (VN_IS(origSrcDTypep, UnpackArrayDType) || VN_IS(origSrcDTypep, QueueDType)
+                    || VN_IS(origSrcDTypep, DynArrayDType)) {
+                    int srcElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = origSrcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
+                    }
+                    int dstElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
+                    }
+                    if (VN_IS(srcp, CvtArrayToPacked)) {
+                        origSrcp = VN_AS(srcp, CvtArrayToPacked)->fromp()->unlinkFrBack();
+                        VL_DO_DANGLING(pushDeletep(srcp), srcp);
+                        srcp = origSrcp;
+                    }
+                    // Descending unpacked arrays need element reversal
+                    bool reverse = false;
+                    if (const AstUnpackArrayDType* const unpackDtp
+                        = VN_CAST(origSrcDTypep, UnpackArrayDType)) {
+                        reverse = !unpackDtp->declRange().ascending();
+                    }
+                    nodep->lhsp(dstp);
+                    nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, reverse,
+                                                       1, dstElementBits, srcElementBits});
+                    nodep->dtypep(dstDTypep);
+                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                    return true;
+                }
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {

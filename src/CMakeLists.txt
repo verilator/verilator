@@ -71,6 +71,7 @@ set(HEADERS
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
+    V3DebugBisect.h
     V3Delayed.h
     V3Depth.h
     V3DepthBlock.h
@@ -243,7 +244,6 @@ set(COMMON_SOURCES
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
     V3DfgBreakCycles.cpp
-    V3DfgCache.cpp
     V3DfgColorSCCs.cpp
     V3DfgCse.cpp
     V3DfgDataType.cpp

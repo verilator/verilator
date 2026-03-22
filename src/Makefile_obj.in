@@ -258,7 +258,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Dfg.o \
   V3DfgAstToDfg.o \
   V3DfgBreakCycles.o \
-  V3DfgCache.o \
   V3DfgColorSCCs.o \
   V3DfgCse.o \
   V3DfgDataType.o \
@@ -362,6 +361,7 @@ NON_STANDALONE_HEADERS = \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
   V3AstNodeStmt.h \
+  V3DebugBisect.h \
   V3DfgVertices.h \
   V3ThreadPool.h \
   V3WidthRemove.h \

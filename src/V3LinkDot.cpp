@@ -4663,7 +4663,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         if (nodep->name() == "local::") {
-            if (!m_randSymp) {
+            if (!m_randSymp && !m_randMethodCallp) {
                 nodep->v3error("Illegal 'local::' outside 'randomize() with'"
                                " (IEEE 1800-2023 18.7.1)");
                 m_ds.m_dotErr = true;

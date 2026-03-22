@@ -456,12 +456,23 @@ public:
     void visit(AstCvtArrayToPacked* nodep) override {
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
         AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        const bool descending = [&]() {
+            if (const AstUnpackArrayDType* const unpackDtp = VN_CAST(fromDtp, UnpackArrayDType))
+                return !unpackDtp->declRange().ascending();
+            return false;
+        }();
         puts("VL_PACK_");
         emitIQW(nodep);
         puts("_");
         emitRU(fromDtp);
         emitIQW(elemDtp);
-        emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+        if (descending) {
+            // Wrap source in VL_PACK_REVERSED so VL_PACK sees ascending order
+            emitOpName(nodep, "(%nw, %rw, %P, VL_PACK_REVERSED(%li))", nodep->fromp(), elemDtp,
+                       nullptr);
+        } else {
+            emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+        }
     }
 
     void visit(AstCvtUnpackedToQueue* nodep) override {
@@ -499,6 +510,7 @@ public:
         bool paren = true;
         bool decind = false;
         bool rhs = true;
+        bool reverseUnpack = false;  // Set for descending CvtPackedToArray
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
@@ -567,6 +579,11 @@ public:
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
+            // Descending unpacked dest: reverse after unpack
+            if (const AstUnpackArrayDType* const unpackDtp
+                = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!unpackDtp->declRange().ascending()) reverseUnpack = true;
+            }
         } else if (const AstCvtArrayToArray* const castp
                    = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
             if (castp->reverse()) {
@@ -618,6 +635,11 @@ public:
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
         puts(";\n");
+        if (reverseUnpack) {
+            puts("VL_UNPACK_REVERSED(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(");\n");
+        }
     }
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());

@@ -140,11 +140,14 @@ class V3DfgPeephole final : public DfgVisitor {
     // Vertex lookup-table to avoid creating redundant vertices
     V3DfgCache m_cache{m_dfg};
 
+    // Debug aid
+    static V3DebugBisect s_debugBisect;
+
 #define APPLYING(id) if (checkApplying(VDfgPeepholePattern::id))
 
     // METHODS
     bool checkApplying(VDfgPeepholePattern id) {
-        if (!m_ctx.m_enabled[id]) return false;
+        if (VL_UNLIKELY(!m_ctx.m_enabled[id] || s_debugBisect.isStopped())) return false;
         UINFO(9, "Applying DFG pattern " << id.ascii());
         ++m_ctx.m_count[id];
         return true;
@@ -167,42 +170,65 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void deleteVertex(DfgVertex* vtxp) {
-        // Add all sources to the work list
-        addSourcesToWorkList(vtxp);
+        // Inputs should have been reset
+        UASSERT_OBJ(vtxp->is<DfgVertexVar>() || !vtxp->nInputs(), vtxp,
+                    "Operation Vertx should not have sources when being deleted");
+        // Should not have sinks
+        UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
         // If in work list then we can't delete it just yet (as we can't remove from the middle of
         // the work list), but it will be deleted when the work list is processed.
         if (m_workList.contains(*vtxp)) return;
         // Otherwise we can delete it now.
-        // Remove from cache
-        m_cache.invalidateByValue(vtxp);
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
         // to the variable and no references in other graph then delete the Ast var too.
         const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         AstNode* const nodep
             = varp && !varp->isVolatile() && !varp->hasDfgRefs() ? varp->nodep() : nullptr;
-        // Should not have sinks
-        UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
         // Delete vertex and Ast variable if any
         VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
         if (nodep) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     void replace(DfgVertex* vtxp, DfgVertex* replacementp) {
+        const auto debugCallback = [&]() -> void {
+            UINFO(0, "Problematic DfgPeephole replacement: " << vtxp << " -> " << replacementp);
+            m_dfg.sourceCone({vtxp, replacementp});
+            const auto cone = m_dfg.sourceCone({vtxp, replacementp});
+            m_dfg.dumpDotFilePrefixed("peephole-broken", [&](const DfgVertex& v) {  //
+                return cone->count(&v);
+            });
+        };
+        if (VL_UNLIKELY(s_debugBisect.stop(debugCallback))) return;
+
         // Add sinks of replaced vertex to the work list
         addSinksToWorkList(vtxp);
         // Add replacement to the work list
         addToWorkList(replacementp);
-        // Replace vertex with the replacement
+        // Add all sources to the work list
+        addSourcesToWorkList(vtxp);
+        // Remove this and sinks from cache
+        m_cache.invalidate(vtxp);
         vtxp->foreachSink([&](DfgVertex& sink) {
-            m_cache.invalidateByValue(&sink);
+            m_cache.invalidate(&sink);
             return false;
         });
+        // Replace vertex with the replacement
         vtxp->replaceWith(replacementp);
-        replacementp->foreachSink([&](DfgVertex& sink) {
-            m_cache.cache(&sink);
-            return false;
-        });
+        // Unlink and reset all inputs of the replaced vertex so it doesn't get iterated again
+        vtxp->resetInputs();
+        // Re-cache all sinks of the replacement, remove duplicates
+        while (true) {
+            DfgVertex* sinkp = nullptr;
+            DfgVertex* samep = nullptr;
+            replacementp->foreachSink([&](DfgVertex& sink) -> bool {
+                sinkp = &sink;
+                samep = m_cache.cache(&sink);
+                return samep;
+            });
+            if (!samep) break;
+            replace(sinkp, samep);
+        }
         // Vertex is now unused, so delete it
         deleteVertex(vtxp);
     }
@@ -220,6 +246,9 @@ class V3DfgPeephole final : public DfgVisitor {
     Vertex* make(FileLine* flp, const DfgDataType& dtype, Operands... operands) {
         // Find or create an equivalent vertex
         Vertex* const vtxp = m_cache.getOrCreate<Vertex, Operands...>(flp, dtype, operands...);
+        // Sanity check
+        UASSERT_OBJ(vtxp->dtype() == dtype, vtxp, "Vertex dtype mismatch");
+        if (VL_UNLIKELY(v3Global.opt.debugCheck())) vtxp->typeCheck(m_dfg);
         // Add to work list
         addToWorkList(vtxp);
         // Return new node
@@ -383,8 +412,26 @@ class V3DfgPeephole final : public DfgVisitor {
             // If we didn't apply the change (pattern was disabled), break the loop
             break;
         }
+        if (changed) return true;
 
-        return changed;
+        // if (a OP (b OP c)), check if (a OP b) exists and if so replace with (a OP b) OP c
+        if (Vertex* rVtxp = vtxp->rhsp()->template cast<Vertex>()) {
+            const DfgDataType& dtype
+                = std::is_same<Vertex, DfgConcat>::value
+                      ? DfgDataType::packed(lhsp->width() + rVtxp->lhsp()->width())
+                      : vtxp->dtype();
+            if (Vertex* const cVtxp = m_cache.get<Vertex>(dtype, lhsp, rVtxp->lhsp())) {
+                if (cVtxp->hasSinks() && cVtxp != rhsp) {
+                    APPLYING(REUSE_ASSOC_BINARY) {
+                        Vertex* const resp = make<Vertex>(vtxp, cVtxp, rVtxp->rhsp());
+                        replace(vtxp, resp);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     // Transformations that apply to all commutative binary vertices
@@ -1394,7 +1441,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgVertex* const newLhsp
                         = lWidth == lhsp->width()
                               ? lhsp
-                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0);
+                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0U);
 
                     // Create the new concatenation
                     DfgConcat* const newConcat = make<DfgConcat>(
@@ -1821,6 +1868,7 @@ class V3DfgPeephole final : public DfgVisitor {
         // If undriven, or driven from another var, it is completely redundant.
         if (!vtxp->srcp() || vtxp->srcp()->is<DfgVertexVar>()) {
             APPLYING(REMOVE_VAR) {
+                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
@@ -1839,6 +1887,7 @@ class V3DfgPeephole final : public DfgVisitor {
         });
         if (!keep) {
             APPLYING(REMOVE_VAR) {
+                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
@@ -1856,15 +1905,17 @@ class V3DfgPeephole final : public DfgVisitor {
         for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
 
         // Add all operation vertices to the work list and cache
-        for (DfgVertex& vtx : m_dfg.opVertices()) {
-            addToWorkList(&vtx);
-            m_cache.cache(&vtx);
-        }
+        for (DfgVertex& vtx : m_dfg.opVertices()) addToWorkList(&vtx);
 
         // Process the work list
         m_workList.foreach([&](DfgVertex& vtx) {
             // Remove unused operations as we go. Some vars may be removed in the visit method.
             if (!vtx.hasSinks() && !vtx.is<DfgVertexVar>()) {
+                if (vtx.nInputs()) {
+                    addSourcesToWorkList(&vtx);
+                    m_cache.invalidate(&vtx);
+                    vtx.resetInputs();
+                }
                 deleteVertex(&vtx);
                 return;
             }
@@ -1876,6 +1927,8 @@ class V3DfgPeephole final : public DfgVisitor {
 public:
     static void apply(DfgGraph& dfg, V3DfgPeepholeContext& ctx) { V3DfgPeephole{dfg, ctx}; }
 };
+
+V3DebugBisect V3DfgPeephole::s_debugBisect{"DfgPeephole"};
 
 void V3DfgPasses::peephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx) {
     if (!v3Global.opt.fDfgPeephole()) return;

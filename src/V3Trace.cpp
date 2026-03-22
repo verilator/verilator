@@ -467,10 +467,8 @@ class TraceVisitor final : public VNVisitor {
                     } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
                         // If there are awaits, insert the setter after each await
                         if (funcp->isCoroutine() && funcp->stmtsp()) {
-                            funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
-                                AstNode* stmtp = awaitp->backp();
-                                while (VN_IS(stmtp, NodeExpr)) stmtp = stmtp->backp();
-                                stmtp->addNextHere(setterp->cloneTree(false));
+                            funcp->stmtsp()->foreachAndNext([setterp](AstCAwait* awaitp) {
+                                awaitp->addNextHere(setterp->cloneTree(false));
                             });
                         }
                         funcp->addStmtsp(setterp);

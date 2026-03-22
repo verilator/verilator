@@ -1,11 +1,5 @@
-%Error-UNSUPPORTED: t/t_property_var_unsup.v:16:11: Unsupported: sequence match items
-   16 |     (valid, prevcyc = cyc) |=> (cyc == prevcyc + 1);
-      |           ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_var_unsup.v:15:9: Unsupported: property variable declaration
-   15 |     int prevcyc;
-      |         ^~~~~~~
 %Error-UNSUPPORTED: t/t_property_var_unsup.v:23:30: Unsupported: property variable default value
    23 |   property with_def(int nine = 9);
       |                              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

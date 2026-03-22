@@ -5640,16 +5640,6 @@ class WidthVisitor final : public VNVisitor {
                                  BOTH);  // it's like an if() condition.
             }
             nodep->dtypeSetBit();
-            if (m_hasSExpr) {
-                if (VN_IS(m_seqUnsupp, Implication)) {
-                    m_seqUnsupp->v3warn(E_UNSUPPORTED,
-                                        "Unsupported: Implication with sequence expression");
-                    AstConst* const newp = new AstConst{nodep->fileline(), 0};
-                    newp->dtypeFrom(nodep);
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
-            }
         }
     }
 
@@ -6776,6 +6766,10 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(propStmtp, nullptr);
             } else if (VN_IS(propStmtp, PropSpec)) {
                 iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
+            } else if (VN_IS(propStmtp, InitialStaticStmt)
+                       || VN_IS(propStmtp, InitialAutomaticStmt)) {
+                // Property-local variable initialization -- iterate this node only
+                userIterate(propStmtp, nullptr);
             } else {
                 propStmtp->v3fatalSrc("Invalid statement under AstProperty");
             }
@@ -6785,13 +6779,22 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstReturn* nodep) override { nodep->v3fatalSrc("'return' missed in LinkJump"); }
     void visit(AstSequence* nodep) override {
-        // UNSUPPORTED message is thrown only where the sequence is referenced
-        // in order to enable some UVM tests.
-        // When support more here will need finer-grained UNSUPPORTED if items
-        // under the sequence are not supported
-        if (nodep->isReferenced()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
-        userIterateChildren(nodep, nullptr);
-        if (!nodep->isReferenced()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
+        // Width-check the sequence body so expressions are typed for later inlining.
+        // Referenced sequences in assertion context will be inlined by V3AssertPre.
+        if (nodep->didWidth()) return;
+        nodep->dtypeSetBit();
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (VN_IS(stmtp, Var)) {
+                userIterate(stmtp, nullptr);
+            } else if (VN_IS(stmtp, NodeExpr)) {
+                iterateCheckSelf(nodep, "SeqBody", stmtp, SELF, BOTH);
+            } else {
+                stmtp->v3fatalSrc("Invalid statement under AstSequence");
+            }
+        }
+        nodep->didWidth(true);
+        // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
     }
 
     AstPackage* getItemPackage(AstNode* pkgItemp) {
@@ -8693,7 +8696,9 @@ class WidthVisitor final : public VNVisitor {
                        = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
                 const AstIfaceRefDType* underIfaceRefp
                     = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
-                if (!underIfaceRefp) {
+                if (VN_IS(underp, Const) && VN_AS(underp, Const)->num().isNull()) {
+                    // '= null' is ok
+                } else if (!underIfaceRefp) {
                     underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
                                     << " interface on " << side << " but " << underp->prettyNameQ()

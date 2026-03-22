@@ -20,6 +20,7 @@ Doc_Waivers = [
     '-order-clock-delay',  # Deprecated
     '-pp-comments',  # Deprecated
     '-prof-threads',  # Deprecated
+    '-structs-packed',  # Deprecated
     '-xml-only',  # Removed
     '-xml-output',  # Removed
 ]

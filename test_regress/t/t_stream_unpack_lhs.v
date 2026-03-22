@@ -111,23 +111,19 @@ module t (
         // 2D packed array into unpacked array
         if (unpacked_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
         if (unpacked_asc_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
-        // TODO: VL_UNPACK does not account for descending unpacked array
-        // index direction -- re-enable once fixed.
-        // if (unpacked_des_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
+        if (unpacked_des_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
         // 2D unpacked array into packed array
         if (packed_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
         if (packed_asc_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
-        // TODO: Descending-range packed array streaming + pattern comparison
-        // if (packed_des_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
+        if (packed_des_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
         // 2D packed array into queue
         if (packed_siz_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
         if (packed_asc_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
         if (packed_des_queue_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
-        // TODO: Streaming from unpacked array into queue produces empty
-        // queue -- re-enable once fixed.
-        // if (unpacked_siz_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
-        // if (unpacked_asc_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
-        // if (unpacked_des_queue_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
+        // 2D unpacked array into queue
+        if (unpacked_siz_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
+        if (unpacked_asc_queue_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
+        if (unpacked_des_queue_dout != '{8'h76, 8'h54, 8'h32, 8'h10}) $stop;
       end
 
       if (cyc == 3) begin

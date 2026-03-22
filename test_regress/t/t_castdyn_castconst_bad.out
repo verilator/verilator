@@ -1,4 +1,4 @@
-%Warning-CASTCONST: t/t_castdyn_castconst_bad.v:20:9: $cast will always return one as 'int' is always castable from 'logic[31:0]'
+%Warning-CASTCONST: t/t_castdyn_castconst_bad.v:20:9: $cast will always return one as 'int' is always castable from 'bit[31:0]'
                                                     : ... note: In instance 't'
                                                     : ... Suggest static cast
    20 |     i = $cast(v, 1);   

@@ -517,6 +517,7 @@ PY_PROGRAMS = \
   nodist/lint_py_test_filter \
   nodist/log_changes \
   nodist/uvm_pkg_packer \
+  nodist/verilator_bisect \
   nodist/verilator_saif_diff \
   src/.gdbinit.py \
   src/astgen \

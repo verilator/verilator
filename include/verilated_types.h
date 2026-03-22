@@ -1931,7 +1931,10 @@ public:
 
 struct VlNull final {
     operator bool() const { return false; }
-    bool operator==(const void* ptr) const { return !ptr; }
+    template <class T>
+    operator T*() const {
+        return nullptr;
+    }
 };
 inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
