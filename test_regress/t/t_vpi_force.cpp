@@ -99,9 +99,9 @@ enum class Direction : uint8_t {
 };
 
 #ifndef IVERILOG
-const std::array<TestSignal, 35> TestSignals = {
+const std::array<TestSignal, 36> TestSignals = {
 #else  // Multidimensional packed arrays aren't tested in Icarus
-const std::array<TestSignal, 16> TestSignals = {
+const std::array<TestSignal, 17> TestSignals = {
 #endif
     TestSignal{"onebit",
                vpiIntVal,
@@ -130,6 +130,26 @@ const std::array<TestSignal, 16> TestSignals = {
                 0}},
 
     TestSignal{"vectorC",
+               vpiVectorVal,
+               {},
+               // NOLINTBEGIN (cppcoreguidelines-avoid-c-arrays)
+               {.vector = (t_vpi_vecval[]){{0b10101010, 0}}},
+               {.vector = (t_vpi_vecval[]){{0b01010101, 0}}},
+               true,
+               {{.vector = (t_vpi_vecval[]){{0b10100101, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b01011010, 0}}},
+                {.vector = (t_vpi_vecval[]){{0x5, 0}}},
+                {.vector = (t_vpi_vecval[]){{0xA, 0}}},
+                {.lo = 0, .hi = 3}},
+               {{.vector = (t_vpi_vecval[]){{0b10101011, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b01010100, 0}}},
+                vpiVectorVal,
+                {.vector = (t_vpi_vecval[]){{0b1, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b0, 0}}},
+                0}},
+    // NOLINTEND (cppcoreguidelines-avoid-c-arrays)
+
+    TestSignal{"forcedNonForceable",
                vpiVectorVal,
                {},
                // NOLINTBEGIN (cppcoreguidelines-avoid-c-arrays)
