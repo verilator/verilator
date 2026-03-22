@@ -1518,9 +1518,6 @@ class WidthVisitor final : public VNVisitor {
                     "Consecutive repetition count must be constant (IEEE 1800-2023 16.9.2)");
             } else if (constp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
-            } else if (constp->toSInt() > 256) {
-                nodep->v3error("Consecutive repetition count " + cvtToStr(constp->toSInt())
-                               + " exceeds maximum supported (256)");
             }
             nodep->dtypeSetBit();
         }

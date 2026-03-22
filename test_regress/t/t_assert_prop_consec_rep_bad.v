@@ -11,9 +11,6 @@ module t (input clk);
   // Bad: non-constant repetition count
   assert property (@(posedge clk) a [*n] |-> 1);
 
-  // Bad: repetition count exceeds maximum (256)
-  assert property (@(posedge clk) a [*257] |-> 1);
-
   // Bad: [*0] consecutive repetition unsupported
   assert property (@(posedge clk) a [*0] |-> 1);
 
