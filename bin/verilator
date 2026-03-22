@@ -213,14 +213,22 @@ sub ulimit_stack_unlimited {
     # AddressSanitizer doesn't work with 'ulimit -s unlimted'
     if (`${\(verilator_bin())} --get-supported DEV_ASAN` eq "1\n") {
         # Use host 'physical memory / #cores / 8' instead
-        open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
-        while (<$fh>) {
-            if (m/MemTotal:\s+(\d+)\s+kB/) {
-                $limit = int(int($1)/`nproc`/8);
-                last;
+        if ($^O eq "darwin") {
+            my $membytes = `sysctl -n hw.memsize`;
+            chomp $membytes;
+            my $ncpu = `sysctl -n hw.ncpu`;
+            chomp $ncpu;
+            $limit = int(int($membytes / 1024) / $ncpu / 8);
+        } else {
+            open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
+            while (<$fh>) {
+                if (m/MemTotal:\s+(\d+)\s+kB/) {
+                    $limit = int(int($1)/`nproc`/8);
+                    last;
+                }
             }
+            close($fh);
         }
-        close($fh);
     }
     system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
