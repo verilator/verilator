@@ -117,18 +117,22 @@ private:
         UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
         // Clone the body expression since the sequence may be referenced multiple times
         AstNodeExpr* clonedp = bodyExprp->cloneTree(false);
-        // Substitute formal arguments with actual arguments
+        // Build substitution map, then do a single traversal to replace all formals
+        // (textual substitution per IEEE 16.8.2).
         const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
-            const AstVar* const portp = tconnect.first;
-            AstArg* const argp = tconnect.second;
-            clonedp->foreach([&](AstVarRef* refp) {
-                if (refp->varp() == portp) {
-                    refp->replaceWith(argp->exprp()->cloneTree(false));
-                    VL_DO_DANGLING(pushDeletep(refp), refp);
-                }
-            });
-            pushDeletep(argp->exprp()->unlinkFrBack());
+            portMap[tconnect.first] = tconnect.second->exprp();
+        }
+        clonedp->foreach([&](AstVarRef* refp) {
+            const auto it = portMap.find(refp->varp());
+            if (it != portMap.end()) {
+                refp->replaceWith(it->second->cloneTree(false));
+                VL_DO_DANGLING(pushDeletep(refp), refp);
+            }
+        });
+        for (const auto& tconnect : tconnects) {
+            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
         // Replace the FuncRef with the inlined body
         funcrefp->replaceWith(clonedp);
@@ -146,43 +150,51 @@ private:
                 // Clone subtree after substitution. It is needed, because property might be called
                 // multiple times with different arguments.
                 propExprp = propExprp->cloneTree(false);
-                // Substitute formal arguments with actual arguments
+                // Build substitution maps for formal arguments and property-local
+                // variables, then perform a single foreach to apply all replacements.
+                // Map port vars to their actual argument expressions
                 const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
+                std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
                 for (const auto& tconnect : tconnects) {
-                    const AstVar* const portp = tconnect.first;
-                    // cppcheck-suppress constVariablePointer // 'exprp' unlinked below
-                    AstArg* const argp = tconnect.second;
-                    propExprp->foreach([&](AstVarRef* refp) {
-                        if (refp->varp() == portp) {
-                            refp->replaceWith(argp->exprp()->cloneTree(false));
-                            VL_DO_DANGLING(pushDeletep(refp), refp);
-                        }
-                    });
-                    pushDeletep(argp->exprp()->unlinkFrBack());
+                    portMap[tconnect.first] = tconnect.second->exprp();
                 }
 
-                // Handle property-local variable declarations (IEEE 1800-2023 16.10).
-                // Property-local vars are non-port vars declared inside a property.
-                // They are lowered by creating module-level variables and updating
-                // references in the cloned property body. The actual cross-cycle
-                // persistence is handled by the implication lowering (match item
-                // substitution in visit(AstImplication*)).
+                // Promote property-local variables (non-port vars, IEEE 16.10) to
+                // module-level __Vpropvar temps. Cross-cycle persistence is handled
+                // by the match item lowering in visit(AstImplication*).
+                std::unordered_map<const AstVar*, AstVar*> localVarMap;
                 for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                         if (!varp->isIO()) {
-                            // This is a property-local variable, not a port.
-                            // Create a module-level replacement variable.
                             const string newName = m_propVarNames.get(varp);
                             AstVar* const newVarp = new AstVar{
                                 varp->fileline(), VVarType::MODULETEMP, newName, varp->dtypep()};
                             newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
                             m_modp->addStmtsp(newVarp);
-                            // Update all references in the cloned PropSpec body
-                            propExprp->foreach([&](AstVarRef* refp) {
-                                if (refp->varp() == varp) { refp->varp(newVarp); }
-                            });
+                            localVarMap[varp] = newVarp;
                         }
                     }
+                }
+
+                // Single traversal: substitute ports and update local var references
+                propExprp->foreach([&](AstVarRef* refp) {
+                    {
+                        const auto portIt = portMap.find(refp->varp());
+                        if (portIt != portMap.end()) {
+                            refp->replaceWith(portIt->second->cloneTree(false));
+                            VL_DO_DANGLING(pushDeletep(refp), refp);
+                            return;
+                        }
+                    }
+                    {
+                        const auto localIt = localVarMap.find(refp->varp());
+                        if (localIt != localVarMap.end()) { refp->varp(localIt->second); }
+                    }
+                });
+
+                // Clean up argument expressions
+                for (const auto& tconnect : tconnects) {
+                    pushDeletep(tconnect.second->exprp()->unlinkFrBack());
                 }
 
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
@@ -717,43 +729,69 @@ private:
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        // Handle sequence match items (IEEE 1800-2023 16.11): (expr, var = val, ...) |=>
-        // consequent Extract match item assignments from AstExprStmt and substitute property-local
-        // variable references in the consequent.
+        // Lower sequence match items (IEEE 16.11): (expr, var = val, ...) |-> / |=>
         if (AstExprStmt* const exprStmtp = VN_CAST(lhsp, ExprStmt)) {
-            // Build map from match item vars to their assigned expressions
-            std::unordered_map<AstVar*, AstNodeExpr*> matchItemMap;
-            for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
-                    if (AstVarRef* const varrefp = VN_CAST(assignp->lhsp(), VarRef)) {
-                        matchItemMap[varrefp->varp()] = assignp->rhsp();
+            AstNodeExpr* const antExprp = exprStmtp->resultp()->unlinkFrBack();
+
+            if (nodep->isOverlapped()) {
+                // |-> : assign to __Vpropvar via always_comb (continuous).
+                // The assign evaluates RHS once; V3Sampled snapshots the
+                // result so all consequent refs read the same value.
+                AstNode* matchAssignsp = nullptr;
+                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
+                    AstNode* const nextp = stmtp->nextp();
+                    if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                        assignp->unlinkFrBack();
+                        if (!matchAssignsp) {
+                            matchAssignsp = assignp;
+                        } else {
+                            matchAssignsp->addNext(assignp);
+                        }
                     }
+                    stmtp = nextp;
+                }
+                VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                lhsp = antExprp;
+
+                if (matchAssignsp) {
+                    AstAlways* const alwaysp = new AstAlways{
+                        flp, VAlwaysKwd::ALWAYS_COMB, nullptr, matchAssignsp};
+                    m_modp->addStmtsp(alwaysp);
+                }
+            } else {
+                // |=> : assign to __Vpropvar via NBA in a clocked always block.
+                // The NBA commits before the next cycle's sampled snapshot,
+                // so the consequent (which already references __Vpropvar)
+                // sees the captured value.
+                AstNode* matchAssignsp = nullptr;
+                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
+                    AstNode* const nextp = stmtp->nextp();
+                    if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                        assignp->unlinkFrBack();
+                        AstNodeExpr* const assignLhsp = assignp->lhsp()->unlinkFrBack();
+                        AstNodeExpr* const assignRhsp = assignp->rhsp()->unlinkFrBack();
+                        AstAssignDly* const dlyp
+                            = new AstAssignDly{flp, assignLhsp, assignRhsp};
+                        VL_DO_DANGLING(pushDeletep(assignp), assignp);
+                        if (!matchAssignsp) {
+                            matchAssignsp = dlyp;
+                        } else {
+                            matchAssignsp->addNext(dlyp);
+                        }
+                    }
+                    stmtp = nextp;
+                }
+                VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                lhsp = antExprp;
+
+                if (matchAssignsp) {
+                    AstIf* const condp
+                        = new AstIf{flp, antExprp->cloneTreePure(false), matchAssignsp};
+                    AstAlways* const alwaysp = new AstAlways{
+                        flp, VAlwaysKwd::ALWAYS, newSenTree(nodep), condp};
+                    m_modp->addStmtsp(alwaysp);
                 }
             }
-            // Extract the pure expression (without side effects)
-            AstNodeExpr* const pureExprp = exprStmtp->resultp()->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
-            lhsp = pureExprp;
-
-            // Substitute property-local var references in the consequent
-            // For |=> (non-overlapping), wrap in Past since consequent is
-            // evaluated one cycle after the antecedent.
-            // For |-> (overlapping), use value directly.
-            rhsp->foreach([&](AstVarRef* refp) {
-                auto it = matchItemMap.find(refp->varp());
-                if (it != matchItemMap.end()) {
-                    AstNodeExpr* replacep = it->second->cloneTreePure(false);
-                    if (!nodep->isOverlapped()) {
-                        // Non-overlapping: wrap in Past for one-cycle delay
-                        AstPast* const matchPastp = new AstPast{flp, replacep};
-                        matchPastp->dtypeFrom(replacep);
-                        matchPastp->sentreep(newSenTree(nodep));
-                        replacep = matchPastp;
-                    }
-                    refp->replaceWith(replacep);
-                    VL_DO_DANGLING(pushDeletep(refp), refp);
-                }
-            });
         }
 
         if (AstPExpr* const pexprp = VN_CAST(rhsp, PExpr)) {

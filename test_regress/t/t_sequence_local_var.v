@@ -42,6 +42,27 @@ module t (
   assert property (p_track(counter_x));
   assert property (p_track(counter_y));
 
+  // --- Scenario 4: |-> match item with $urandom (side-effect test) ---
+  // snap = $urandom() must evaluate once; snap == snap is always true.
+  int overlap_fail = 0;
+  property p_overlap_sideeffect;
+    int snap;
+    @(posedge clk)
+    (1, snap = $urandom()) |-> (snap == snap);
+  endproperty
+  assert property (p_overlap_sideeffect)
+  else overlap_fail++;
+
+  // --- Scenario 5: |=> match item with $urandom (side-effect test) ---
+  int nonoverlap_fail = 0;
+  property p_nonoverlap_sideeffect;
+    int snap;
+    @(posedge clk)
+    (1, snap = $urandom()) |=> (snap == snap);
+  endproperty
+  assert property (p_nonoverlap_sideeffect)
+  else nonoverlap_fail++;
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     counter_x <= counter_x + 1;
@@ -50,7 +71,9 @@ module t (
     // valid is true at specific cycles only (not always-true)
     valid <= (cyc == 2 || cyc == 5 || cyc == 8);
 
-    if (cyc == 12) begin
+    if (cyc == 100) begin
+      if (overlap_fail > 0) $stop;
+      if (nonoverlap_fail > 0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end
