@@ -80,6 +80,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:
@@ -200,6 +201,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:

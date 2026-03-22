@@ -964,6 +964,61 @@ class V3DfgPeephole final : public DfgVisitor {
         return false;
     }
 
+    // Given an operand of an Add, return the term that could be used for conveting to CountOnes
+    // Result is a tulpe of (Vertex, Lsb, Width)
+    std::tuple<DfgVertex*, uint32_t, uint32_t> addToCountOnesTerm(DfgVertex* vtxp) {
+        if (DfgConcat* const oCatp = vtxp->cast<DfgConcat>()) {
+            if (isZero(oCatp->lhsp())) {
+                if (DfgCountOnes* const countOnesp = oCatp->rhsp()->cast<DfgCountOnes>()) {
+                    // Zero extended count ones
+                    if (DfgSel* const selp = countOnesp->srcp()->cast<DfgSel>()) {
+                        return {selp->fromp(), selp->lsb(), selp->width()};
+                    }
+                } else if (DfgSel* const selp = oCatp->rhsp()->cast<DfgSel>()) {
+                    // Zero extended single bit select
+                    if (selp->dtype() == m_bitDType) {  //
+                        return {selp->fromp(), selp->lsb(), selp->width()};
+                    }
+                }
+            }
+            return {nullptr, 0, 0};
+        }
+        if (DfgCountOnes* const countOnesp = vtxp->cast<DfgCountOnes>()) {
+            // Simple count ones
+            if (DfgSel* const selp = countOnesp->srcp()->cast<DfgSel>()) {
+                return {selp->fromp(), selp->lsb(), selp->width()};
+            }
+            return {nullptr, 0, 0};
+        }
+        if (DfgSel* const oSelp = vtxp->cast<DfgSel>()) {
+            if (oSelp->lsb() == 0) {
+                // Truncated count ones
+                if (DfgCountOnes* const countOnesp = oSelp->fromp()->cast<DfgCountOnes>()) {
+                    // Zero extended count ones
+                    if (DfgSel* const selp = countOnesp->srcp()->cast<DfgSel>()) {
+                        return {selp->fromp(), selp->lsb(), selp->width()};
+                    }
+                }
+            }
+            // Single bit select
+            if (oSelp->dtype() == m_bitDType) {  //
+                return {oSelp->fromp(), oSelp->lsb(), 1};
+            }
+            return {nullptr, 0, 0};
+        }
+        // Altered form of extended MSB
+        if (DfgShiftR* const shiftrp = vtxp->cast<DfgShiftR>()) {
+            if (DfgConst* const rConstp = shiftrp->rhsp()->cast<DfgConst>()) {
+                if (rConstp->toU32() == shiftrp->width() - 1) {
+                    return {shiftrp->lhsp(), shiftrp->width() - 1, 1};
+                }
+            }
+            return {nullptr, 0, 0};
+        }
+        // Not applicable
+        return {nullptr, 0, 0};
+    }
+
     // VISIT methods
 
     void visit(DfgVertex*) override {}
@@ -1461,6 +1516,65 @@ class V3DfgPeephole final : public DfgVisitor {
         if (associativeBinary(vtxp)) return;
 
         if (commutativeBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isZero(lhsp)) {
+            APPLYING(REMOVE_ADD_ZERO) {
+                replace(rhsp);
+                return;
+            }
+        }
+
+        const std::tuple<DfgVertex*, uint32_t, uint32_t> lTerm = addToCountOnesTerm(lhsp);
+        if (DfgVertex* const lVtxp = std::get<0>(lTerm)) {
+            std::tuple<DfgVertex*, uint32_t, uint32_t> rTerm = addToCountOnesTerm(rhsp);
+            DfgVertex* extrap = nullptr;
+            if (!std::get<0>(rTerm)) {
+                if (DfgAdd* const rAddp = rhsp->cast<DfgAdd>()) {
+                    rTerm = addToCountOnesTerm(rAddp->lhsp());
+                    extrap = rAddp->rhsp();
+                }
+            }
+
+            if (DfgVertex* const rVtxp = std::get<0>(rTerm)) {
+                if (isSame(lVtxp, rVtxp)) {
+                    const uint32_t lLsb = std::get<1>(lTerm);
+                    const uint32_t rLsb = std::get<1>(rTerm);
+                    const uint32_t lWidth = std::get<2>(lTerm);
+                    const uint32_t rWidth = std::get<2>(rTerm);
+                    bool adjoined = true;
+                    uint32_t lsb = 0;
+                    if (lLsb + lWidth == rLsb) {
+                        lsb = lLsb;
+                    } else if (lLsb == rLsb + rWidth) {
+                        lsb = rLsb;
+                    } else {
+                        adjoined = false;
+                    }
+                    if (adjoined) {
+                        APPLYING(REPLACE_ADD_WITH_COUNT_ONES) {
+                            DfgSel* const selp
+                                = make<DfgSel>(vtxp->fileline(),
+                                               DfgDataType::packed(lWidth + rWidth), lVtxp, lsb);
+                            DfgVertex* resp
+                                = make<DfgCountOnes>(flp, DfgDataType::packed(32), selp);
+                            if (vtxp->width() > 32U) {
+                                resp = make<DfgConcat>(vtxp, makeZero(flp, vtxp->width() - 32U),
+                                                       resp);
+                            } else if (vtxp->width() < 32U) {
+                                resp = make<DfgSel>(vtxp, resp, 0U);
+                            }
+                            if (extrap) resp = make<DfgAdd>(vtxp, resp, extrap);
+                            replace(resp);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void visit(DfgArraySel* const vtxp) override {
