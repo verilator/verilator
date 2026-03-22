@@ -754,8 +754,8 @@ private:
                 lhsp = antExprp;
 
                 if (matchAssignsp) {
-                    AstAlways* const alwaysp = new AstAlways{
-                        flp, VAlwaysKwd::ALWAYS_COMB, nullptr, matchAssignsp};
+                    AstAlways* const alwaysp
+                        = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, matchAssignsp};
                     m_modp->addStmtsp(alwaysp);
                 }
             } else {
@@ -770,8 +770,7 @@ private:
                         assignp->unlinkFrBack();
                         AstNodeExpr* const assignLhsp = assignp->lhsp()->unlinkFrBack();
                         AstNodeExpr* const assignRhsp = assignp->rhsp()->unlinkFrBack();
-                        AstAssignDly* const dlyp
-                            = new AstAssignDly{flp, assignLhsp, assignRhsp};
+                        AstAssignDly* const dlyp = new AstAssignDly{flp, assignLhsp, assignRhsp};
                         VL_DO_DANGLING(pushDeletep(assignp), assignp);
                         if (!matchAssignsp) {
                             matchAssignsp = dlyp;
@@ -787,8 +786,8 @@ private:
                 if (matchAssignsp) {
                     AstIf* const condp
                         = new AstIf{flp, antExprp->cloneTreePure(false), matchAssignsp};
-                    AstAlways* const alwaysp = new AstAlways{
-                        flp, VAlwaysKwd::ALWAYS, newSenTree(nodep), condp};
+                    AstAlways* const alwaysp
+                        = new AstAlways{flp, VAlwaysKwd::ALWAYS, newSenTree(nodep), condp};
                     m_modp->addStmtsp(alwaysp);
                 }
             }
