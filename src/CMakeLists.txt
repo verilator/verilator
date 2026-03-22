@@ -333,6 +333,7 @@ set(COMMON_SOURCES
     V3Reorder.cpp
     V3Sampled.cpp
     V3Sched.cpp
+    V3SchedStatic.cpp
     V3SchedAcyclic.cpp
     V3SchedPartition.cpp
     V3SchedReplicate.cpp

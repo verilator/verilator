@@ -19,7 +19,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
 -V{t#,#}+ Initial
 -V{t#,#}+    Vt_timing_debug2___024root___eval_static
--V{t#,#}+      Vt_timing_debug2_t___eval_static__TOP__t
+-V{t#,#}+      Vt_timing_debug2_t___eval_static__TOP__t__Vstatic0
 -V{t#,#}+          Vt_timing_debug2___024unit__03a__03aBaseClass::new
 -V{t#,#}+          Vt_timing_debug2___024unit__03a__03aBaseClass::_ctor_var_reset
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aEventClass::new

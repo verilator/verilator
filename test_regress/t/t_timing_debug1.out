@@ -4,7 +4,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Initial
 -V{t#,#}+    Vt_timing_debug1___024root___eval_static
--V{t#,#}+    Vt_timing_debug1___024root___eval_static__TOP
+-V{t#,#}+    Vt_timing_debug1___024root___eval_static__TOP__Vstatic0
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}+    Vt_timing_debug1___024root___eval_initial
 -V{t#,#}+    Vt_timing_debug1___024root___eval_initial__TOP__Vtiming__0
