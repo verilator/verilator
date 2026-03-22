@@ -31,6 +31,62 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+// Check whether a subtree contains any AstSExpr (multi-cycle sequence)
+static bool containsSExpr(const AstNode* nodep) {
+    if (VN_IS(nodep, SExpr)) return true;
+    for (const AstNode* childp = nodep->op1p(); childp; childp = childp->nextp()) {
+        if (containsSExpr(childp)) return true;
+    }
+    for (const AstNode* childp = nodep->op2p(); childp; childp = childp->nextp()) {
+        if (containsSExpr(childp)) return true;
+    }
+    for (const AstNode* childp = nodep->op3p(); childp; childp = childp->nextp()) {
+        if (containsSExpr(childp)) return true;
+    }
+    for (const AstNode* childp = nodep->op4p(); childp; childp = childp->nextp()) {
+        if (containsSExpr(childp)) return true;
+    }
+    return false;
+}
+
+// A single step in a sequence timeline
+struct SeqStep final {
+    int delayCycles;
+    AstNodeExpr* exprp;
+};
+
+// Extract timeline from a sequence expression
+static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
+    std::vector<SeqStep> timeline;
+    if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
+        if (sexprp->preExprp()) {
+            if (AstSExpr* const preSExprp = VN_CAST(sexprp->preExprp(), SExpr)) {
+                timeline = extractTimeline(preSExprp);
+            } else {
+                timeline.push_back({0, sexprp->preExprp()});
+            }
+        }
+        int cycles = 0;
+        if (AstDelay* const dlyp = VN_CAST(sexprp->delayp(), Delay)) {
+            if (AstConst* const constp = VN_CAST(dlyp->lhsp(), Const)) {
+                cycles = constp->toSInt();
+            }
+        }
+        if (AstSExpr* const innerSExprp = VN_CAST(sexprp->exprp(), SExpr)) {
+            std::vector<SeqStep> inner = extractTimeline(innerSExprp);
+            if (!inner.empty()) {
+                inner[0].delayCycles += cycles;
+                for (auto& step : inner) timeline.push_back(step);
+            }
+        } else {
+            timeline.push_back({cycles, sexprp->exprp()});
+        }
+    } else {
+        timeline.push_back({0, nodep});
+    }
+    return timeline;
+}
+
 //######################################################################
 // Assert class functions
 
@@ -62,6 +118,7 @@ private:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
+    V3UniqueNames m_seqBrNames{"__VseqBr"};  // Sequence or branch dead-tracking name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -823,6 +880,9 @@ private:
             AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
+            // Don't iterate pexprp here -- it was already iterated when created
+            // (in visit(AstSOr*) or visit(AstSExpr*)), so delays and disable iff
+            // are already processed.
         } else if (nodep->isOverlapped()) {
             nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
         } else {
@@ -986,6 +1046,130 @@ private:
         // at call sites by visit(AstFuncRef*). Collect for post-traversal cleanup.
         m_seqsToCleanup.push_back(nodep);
     }
+    void visit(AstSOr* nodep) override {
+        // Don't iterateChildren: children contain AstSExpr with AstDelay that
+        // would be processed outside PExpr context. We replace the whole node.
+        // Only handle multi-cycle sequence or; boolean or already lowered to LogOr.
+        if (!containsSExpr(nodep->lhsp()) && !containsSExpr(nodep->rhsp())) return;
+
+        FileLine* const flp = nodep->fileline();
+
+        // Extract timelines and compute absolute cycles
+        const std::vector<SeqStep> lhsTimeline = extractTimeline(nodep->lhsp());
+        const std::vector<SeqStep> rhsTimeline = extractTimeline(nodep->rhsp());
+
+        struct AbsStep final {
+            int cycle;
+            AstNodeExpr* exprp;
+            int branchId;
+        };
+        std::vector<AbsStep> allSteps;
+        int absCycle = 0;
+        for (const auto& step : lhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 0});
+        }
+        absCycle = 0;
+        for (const auto& step : rhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 1});
+        }
+
+        // Group by cycle
+        std::map<int, std::vector<std::pair<int, AstNodeExpr*>>> cycleChecks;
+        for (const auto& step : allSteps) {
+            cycleChecks[step.cycle].push_back({step.branchId, step.exprp});
+        }
+        int br0MaxCycle = -1, br1MaxCycle = -1;
+        for (const auto& step : allSteps) {
+            if (step.branchId == 0)
+                br0MaxCycle = step.cycle;
+            else
+                br1MaxCycle = step.cycle;
+        }
+
+        // Build body with dead-tracking variables
+        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+
+        AstVar* const br0Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("0_dead"),
+                                            nodep->findBitDType(1, 1, VSigning::UNSIGNED)};
+        br0Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        AstVar* const br1Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("1_dead"),
+                                            nodep->findBitDType(1, 1, VSigning::UNSIGNED)};
+        br1Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(br0Deadp);
+        m_modp->addStmtsp(br1Deadp);
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br0Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br1Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+
+        auto makePass = [&]() -> AstPExprClause* { return new AstPExprClause{flp, true}; };
+        auto makeFail = [&]() -> AstPExprClause* { return new AstPExprClause{flp, false}; };
+
+        // Build inside-out: from last cycle to first
+        AstNode* innerp = nullptr;
+        int nextCycle = -1;
+
+        for (auto rit = cycleChecks.rbegin(); rit != cycleChecks.rend(); ++rit) {
+            const int cycle = rit->first;
+            AstBegin* const cycleBlock = new AstBegin{flp, "", nullptr, true};
+
+            for (const auto& entry : rit->second) {
+                const int brId = entry.first;
+                AstNodeExpr* const exprp = entry.second;
+                AstVar* const deadVarp = (brId == 0) ? br0Deadp : br1Deadp;
+                AstNodeExpr* const sampledp = new AstSampled{flp, exprp->cloneTree(false)};
+                sampledp->dtypeSetBit();
+                AstNodeExpr* const condp = new AstLogAnd{
+                    flp, new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}},
+                    new AstLogNot{flp, sampledp}};
+                condp->dtypeSetBit();
+                cycleBlock->addStmtsp(
+                    new AstIf{flp, condp,
+                              new AstAssign{flp, new AstVarRef{flp, deadVarp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitTrue{}}}});
+            }
+
+            if (cycle == br0MaxCycle) {
+                cycleBlock->addStmtsp(
+                    new AstIf{flp, new AstLogNot{flp, new AstVarRef{flp, br0Deadp, VAccess::READ}},
+                              makePass()});
+            }
+            if (cycle == br1MaxCycle) {
+                cycleBlock->addStmtsp(
+                    new AstIf{flp, new AstLogNot{flp, new AstVarRef{flp, br1Deadp, VAccess::READ}},
+                              makePass()});
+            }
+
+            AstNodeExpr* const allDeadp
+                = new AstLogAnd{flp, new AstVarRef{flp, br0Deadp, VAccess::READ},
+                                new AstVarRef{flp, br1Deadp, VAccess::READ}};
+            allDeadp->dtypeSetBit();
+            cycleBlock->addStmtsp(new AstIf{flp, allDeadp, makeFail()});
+
+            if (nextCycle > cycle) {
+                AstDelay* const dlyp = new AstDelay{
+                    flp, new AstConst{flp, static_cast<uint32_t>(nextCycle - cycle)}, true};
+                cycleBlock->addStmtsp(dlyp);
+                if (innerp) dlyp->addStmtsp(innerp);
+            }
+
+            innerp = cycleBlock;
+            nextCycle = cycle;
+        }
+
+        bodyp->addStmtsp(innerp);
+        AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+
+        // Always iterate immediately to process delays via visit(AstPExpr*).
+        // Variables and delays are fully initialized before any parent (e.g. Implication)
+        // modifies the PExpr body structure.
+        iterate(pexprp);
+    }
+
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
