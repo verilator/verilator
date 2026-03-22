@@ -290,6 +290,11 @@ module t (
   `signal(REPLACE_SHIFTL_SHIFTL, rand_a << 2 << 3);
   `signal(REPLACE_SHIFTR_SHIFTR, rand_a >> 2 >> 3);
   `signal(PUSH_COMMUTATIVE_BINARY_THROUGH_COND, 58'h1 + (rand_a[0] ? rand_b[1 +: 58] : ~rand_b[1 +: 58]));
+  `signal(REMOVE_ADD_ZERO, rand_a + '0);
+  `signal(REPLACE_ADD_WITH_COUNT_ONES_A, 4'(rand_a[63]) + 4'(rand_a[62]) + 4'(rand_a[61]));
+  `signal(REPLACE_ADD_WITH_COUNT_ONES_B, 32'(rand_a[63]) + 32'(rand_a[62]) + 32'(rand_a[61]));
+  `signal(REPLACE_ADD_WITH_COUNT_ONES_C, 200'(rand_a[63]) + 200'(rand_a[62]) + 200'(rand_a[61]));
+  `signal(REPLACE_ADD_WITH_COUNT_ONES_D, 1'(rand_a[63]) + 1'(rand_a[62]) + 1'(rand_a[61]));
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
