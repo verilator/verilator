@@ -244,7 +244,6 @@ set(COMMON_SOURCES
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
     V3DfgBreakCycles.cpp
-    V3DfgCache.cpp
     V3DfgColorSCCs.cpp
     V3DfgCse.cpp
     V3DfgDataType.cpp
