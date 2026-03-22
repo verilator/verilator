@@ -23,13 +23,13 @@
 #include "fstcpp/fstcpp_stream_write_helper.h"
 #include "fstcpp/fstcpp_variable_info.h"
 
-// AT(x) is used to access vector at index x, and it will throw exception if out of bound
+// AT(vec, x) is used to access vector at index x, and it will throw exception if out of bound
 // in debug mode, but in release mode, it will not throw exception
-// Usually you should only need AT(x) only at very hot code path.
+// Usually you should only need AT(vec, x) only at very hot code path.
 #ifndef NDEBUG
-#	define AT(x) .at(x)
+#	define AT(vec, x) (vec.at(x))
 #else
-#	define AT(x) [x]
+#	define AT(vec, x) (vec[x])
 #endif
 
 namespace fst {
@@ -228,7 +228,7 @@ void Writer::emitTimeChange(uint64_t tim) {
 template <typename... T>
 void Writer::emitValueChangeHelper_(Handle handle, T &&...val) {
 	// Let data prefetch go first
-	VariableInfo &var_info = m_value_change_data_.m_variable_infos AT(handle - 1);
+	VariableInfo &var_info = AT(m_value_change_data_.m_variable_infos, handle - 1);
 #if defined(__GNUC__) || defined(__clang__)
 	__builtin_prefetch(var_info.data_ptr() + var_info.size() - 1, 1, 0);
 #endif
@@ -256,7 +256,7 @@ void Writer::emitValueChange(Handle handle, uint64_t val) {
 
 void Writer::emitValueChange(Handle handle, const char *val) {
 	finalizeHierarchy_();
-	VariableInfo &var_info = m_value_change_data_.m_variable_infos AT(handle - 1);
+	VariableInfo &var_info = AT(m_value_change_data_.m_variable_infos, handle - 1);
 
 	// For double handles, const char* is interpreted as a double* (8B)
 	// This double shall be written out as raw IEEE 754 double
@@ -271,24 +271,23 @@ void Writer::emitValueChange(Handle handle, const char *val) {
 	FST_DCHECK_NE(bitwidth, 0);
 
 	val += bitwidth;
-	static std::vector<uint64_t> t_packed_value_buffer;
 	const unsigned num_words{(bitwidth + 63) / 64};
-	t_packed_value_buffer.assign(num_words, 0);
+	m_packed_value_buffer_.assign(num_words, 0);
 	for (unsigned i = 0; i < num_words; ++i) {
 		const char *start{val - std::min((i + 1) * 64, bitwidth)};
 		const char *end{val - 64 * i};
-		t_packed_value_buffer[i] = 0;
+		m_packed_value_buffer_[i] = 0;
 		for (const char *p = start; p < end; ++p) {
 			// No checking for invalid characters, follow original C implementation
-			t_packed_value_buffer[i] <<= 1;
-			t_packed_value_buffer[i] |= static_cast<uint64_t>(*p - '0');
+			m_packed_value_buffer_[i] <<= 1;
+			m_packed_value_buffer_[i] |= static_cast<uint64_t>(*p - '0');
 		}
 	}
 
 	if (bitwidth <= 64) {
-		emitValueChange(handle, t_packed_value_buffer.front());
+		emitValueChange(handle, m_packed_value_buffer_.front());
 	} else {
-		emitValueChange(handle, t_packed_value_buffer.data(), EncodingType::BINARY);
+		emitValueChange(handle, m_packed_value_buffer_.data(), EncodingType::BINARY);
 	}
 }
 

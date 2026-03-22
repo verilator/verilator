@@ -395,61 +395,48 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], newval ? 1 : 0);
+    m_fst->emitValueChange(m_symbolp[code], uint64_t(newval));
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
+void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
+void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
+void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
+void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
-    // While emitValueChange has a uint32_t* version
-    // It does the same conversion, allocating a pointer and copying the data
-    // So I decide to use the verilator buffer directly.
-    // The buffer were designed to hold maxBits() char,
-    // so it is very safe to use it as uint64_t*.
-    int words = VL_WORDS_I(bits);
-    uint64_t* wp = reinterpret_cast<uint64_t*>(m_strbufp);
-    // cast newvalp (uint32_t[words]) to wp (uint64_t[ceil(words/2)])
-    for (int i = 0; i < words/2; ++i) {
-        wp[i] = newvalp[i*2+1];
-        wp[i] <<= 32;
-        wp[i] |= newvalp[i*2];
-    }
-    if (words % 2 == 1) {
-        wp[words/2] = newvalp[words-1];
-    }
+void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], wp);
+    // call emitValueChange(handle, uint32_t*)
+    m_fst->emitValueChange(m_symbolp[code], newvalp);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
     uint64_t newval_u64;
     std::memcpy(&newval_u64, &newval, sizeof(newval_u64));

@@ -77,6 +77,9 @@ private:
 	std::ofstream m_main_fst_file_{};
 	std::vector<uint8_t> m_hierarchy_buffer_{};
 	std::vector<uint8_t> m_geometry_buffer_{};
+	// Temporary buffer for packing bit strings into words
+	// Only used in emitValueChange(Handle, const char*)
+	std::vector<uint64_t> m_packed_value_buffer_{};
 	Header m_header_{};
 	detail::BlackoutData m_blackout_data_{};  // Not implemented yet
 	detail::ValueChangeData m_value_change_data_{};
