@@ -691,12 +691,13 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         return;
     }
 
+    case VDfgType::SAnd:
+    case VDfgType::SOr: UASSERT_OBJ(false, this, "SAnd/SOr should be removed before DFG"); return;
+
     case VDfgType::LogAnd:
     case VDfgType::LogEq:
     case VDfgType::LogIf:
-    case VDfgType::LogOr:
-    case VDfgType::SAnd:
-    case VDfgType::SOr: {
+    case VDfgType::LogOr: {
         CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
         CHECK(inputp(0)->isPacked(), "LHS should be Packed type");
         CHECK(inputp(1)->isPacked(), "RHS should be Packed type");

@@ -39,6 +39,7 @@
 #include "V3AssertProp.h"
 
 #include "V3Graph.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -103,20 +104,9 @@ public:
 
 // Check whether a subtree contains any AstSExpr (multi-cycle sequence)
 static bool containsSExpr(const AstNode* nodep) {
-    if (VN_IS(nodep, SExpr)) return true;
-    for (const AstNode* childp = nodep->op1p(); childp; childp = childp->nextp()) {
-        if (containsSExpr(childp)) return true;
-    }
-    for (const AstNode* childp = nodep->op2p(); childp; childp = childp->nextp()) {
-        if (containsSExpr(childp)) return true;
-    }
-    for (const AstNode* childp = nodep->op3p(); childp; childp = childp->nextp()) {
-        if (containsSExpr(childp)) return true;
-    }
-    for (const AstNode* childp = nodep->op4p(); childp; childp = childp->nextp()) {
-        if (containsSExpr(childp)) return true;
-    }
-    return false;
+    bool found = false;
+    nodep->foreach([&](const AstSExpr*) { found = true; });
+    return found;
 }
 
 // A single step in a sequence timeline: delay cycles followed by an expression check
@@ -146,6 +136,9 @@ static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
         if (AstDelay* const dlyp = VN_CAST(sexprp->delayp(), Delay)) {
             if (AstConst* const constp = VN_CAST(dlyp->lhsp(), Const)) {
                 cycles = constp->toSInt();
+            } else {
+                dlyp->lhsp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: non-constant cycle delay in sequence and/or");
             }
         }
         // The expression after the delay
@@ -168,8 +161,11 @@ static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
 
 // Lower sequence and/or to AST
 class AssertPropLowerVisitor final : public VNVisitor {
+    // STATE
+    AstNodeModule* m_modp = nullptr;  // Current module
+    V3UniqueNames m_seqBrNames{"__VseqBr"};  // Sequence branch dead-tracking name generator
+
     // Lower a multi-cycle sequence 'and' to an AstPExpr with interleaved if/delay AST.
-    // Sequence 'or' is deferred to V3AssertPre where BLOCKTEMP vars can be created.
     void lowerSeqAnd(AstNodeBiop* nodep) {
         FileLine* const flp = nodep->fileline();
 
@@ -266,6 +262,141 @@ class AssertPropLowerVisitor final : public VNVisitor {
         }
     }
 
+    // Lower a multi-cycle sequence 'or' to an AstPExpr with dead-tracking variables.
+    // IEEE 1800-2023 16.9.7: composite matches if at least one operand sequence matches.
+    // Both branches are evaluated independently from the same start cycle.
+    void lowerSeqOr(AstNodeBiop* nodep) {
+        UASSERT_OBJ(m_modp, nodep, "SOr not under a module");
+        FileLine* const flp = nodep->fileline();
+
+        // Extract timelines from both operands
+        const std::vector<SeqStep> lhsTimeline = extractTimeline(nodep->lhsp());
+        const std::vector<SeqStep> rhsTimeline = extractTimeline(nodep->rhsp());
+
+        // Compute absolute cycle for each step, mark which is last per branch
+        struct AbsStep final {
+            int cycle;
+            AstNodeExpr* exprp;
+            int branchId;
+        };
+        std::vector<AbsStep> allSteps;
+
+        int absCycle = 0;
+        for (const auto& step : lhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 0});
+        }
+        const int br0MaxCycle = absCycle;
+
+        absCycle = 0;
+        for (const auto& step : rhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 1});
+        }
+        const int br1MaxCycle = absCycle;
+
+        // Group by cycle, preserving branch info
+        struct CycleEntry final {
+            int branchId;
+            AstNodeExpr* exprp;
+        };
+        std::map<int, std::vector<CycleEntry>> cycleChecks;
+        for (const auto& step : allSteps) {
+            cycleChecks[step.cycle].push_back({step.branchId, step.exprp});
+        }
+
+        // Create dead-tracking variables at module level
+        AstVar* const br0Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("0_dead"),
+                                            VFlagBitPacked{}, 1};
+        br0Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        AstVar* const br1Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("1_dead"),
+                                            VFlagBitPacked{}, 1};
+        br1Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(br0Deadp);
+        m_modp->addStmtsp(br1Deadp);
+
+        auto makePass = [&]() -> AstPExprClause* { return new AstPExprClause{flp, true}; };
+        auto makeFail = [&]() -> AstPExprClause* { return new AstPExprClause{flp, false}; };
+
+        // Build from innermost (last cycle) outward, same nesting pattern as and
+        AstNode* innerp = nullptr;
+        int nextCycle = -1;
+
+        for (auto rit = cycleChecks.rbegin(); rit != cycleChecks.rend(); ++rit) {
+            const int cycle = rit->first;
+            AstBegin* const cycleBlock = new AstBegin{flp, "", nullptr, true};
+
+            // For each branch's check at this cycle
+            for (const auto& entry : rit->second) {
+                AstVar* const deadVarp = (entry.branchId == 0) ? br0Deadp : br1Deadp;
+                const int brMaxCycle = (entry.branchId == 0) ? br0MaxCycle : br1MaxCycle;
+                const bool isLast = (cycle == brMaxCycle);
+
+                AstNodeExpr* const sampledp = new AstSampled{flp, entry.exprp->cloneTree(false)};
+                sampledp->dtypeSetBit();
+                AstNodeExpr* const alivep
+                    = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
+                alivep->dtypeSetBit();
+
+                if (isLast) {
+                    // Last check: alive && passes -> pass
+                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, sampledp};
+                    passCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(new AstIf{flp, passCond, makePass()});
+                    // alive && fails -> dead
+                    AstNodeExpr* const alive2p
+                        = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
+                    alive2p->dtypeSetBit();
+                    AstNodeExpr* const failCond = new AstLogAnd{
+                        flp, alive2p, new AstLogNot{flp, sampledp->cloneTree(false)}};
+                    failCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(
+                        new AstIf{flp, failCond,
+                                  new AstAssign{flp, new AstVarRef{flp, deadVarp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitTrue{}}}});
+                } else {
+                    // Non-last: alive && fails -> dead
+                    AstNodeExpr* const failCond
+                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, sampledp}};
+                    failCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(
+                        new AstIf{flp, failCond,
+                                  new AstAssign{flp, new AstVarRef{flp, deadVarp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitTrue{}}}});
+                }
+            }
+
+            // Both dead -> fail
+            AstNodeExpr* const allDeadp
+                = new AstLogAnd{flp, new AstVarRef{flp, br0Deadp, VAccess::READ},
+                                new AstVarRef{flp, br1Deadp, VAccess::READ}};
+            allDeadp->dtypeSetBit();
+            cycleBlock->addStmtsp(new AstIf{flp, allDeadp, makeFail()});
+
+            // Nest delay + inner from later cycles
+            if (nextCycle > cycle && innerp) {
+                AstDelay* const dlyp = new AstDelay{
+                    flp, new AstConst{flp, static_cast<uint32_t>(nextCycle - cycle)}, true};
+                cycleBlock->addStmtsp(dlyp);
+                dlyp->addStmtsp(innerp);
+            }
+
+            innerp = cycleBlock;
+            nextCycle = cycle;
+        }
+
+        // Wrap in AstPExpr with initialization
+        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br0Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br1Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(innerp);
+        AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+
     void visit(AstSAnd* nodep) override {
         iterateChildren(nodep);
         if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
@@ -282,8 +413,7 @@ class AssertPropLowerVisitor final : public VNVisitor {
     void visit(AstSOr* nodep) override {
         iterateChildren(nodep);
         if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
-            // Multi-cycle or: defer to V3AssertPre where BLOCKTEMP vars can
-            // be safely created (V3Broken checks AstVar after V3AssertProp)
+            lowerSeqOr(nodep);
         } else {
             // Pure boolean operands: lower to LogOr
             AstLogOr* const newp = new AstLogOr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
@@ -292,6 +422,11 @@ class AssertPropLowerVisitor final : public VNVisitor {
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
     void visit(AstConstPool* nodep) override {}
@@ -372,7 +507,7 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
             m_lastVtxp = dlyVtxp;
         }
     }
-    void visit(AstSOr* nodep) override {}  // Multi-cycle or: handled by V3AssertPre
+    void visit(AstSOr* nodep) override {}  // All SOr lowered by AssertPropLowerVisitor
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstConstPool* nodep) override {}
 
