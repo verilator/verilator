@@ -2050,7 +2050,7 @@ V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    if (!v3Global.opt.fourstate()) NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);  // FIXME
+    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     setZero();
     if (width() <= 64) {

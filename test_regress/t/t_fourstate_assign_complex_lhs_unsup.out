@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_fourstate_assign_complex_lhs_unsup.v:10:10: LHS different than variable reference in assignment is unsupported in four-state mode
+                                                                  : ... note: In instance 't'
+   10 |     x[1] = 1;
+      |          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
