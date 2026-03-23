@@ -1,8 +1,8 @@
       ZERO       | ONE        | X          | Z      
-ZERO  0 & 0 == 0 | 0 & 1 == 0 | 0 & x == 0 | 0 & z == 0 |
-ONE   1 & 0 == 0 | 1 & 1 == 1 | 1 & x == x | 1 & z == x |
-X     x & 0 == 0 | x & 1 == x | x & x == x | x & z == x |
-Z     z & 0 == 0 | z & 1 == x | z & x == x | z & z == x |
+ZERO  0 ^ 0 == 0 | 0 ^ 1 == 1 | 0 ^ x == x | 0 ^ z == x |
+ONE   1 ^ 0 == 1 | 1 ^ 1 == 0 | 1 ^ x == x | 1 ^ z == x |
+X     x ^ 0 == x | x ^ 1 == x | x ^ x == x | x ^ z == x |
+Z     z ^ 0 == x | z ^ 1 == x | z ^ x == x | z ^ z == x |
 x wire: 1
 z wor: 1
 u triand: 1
