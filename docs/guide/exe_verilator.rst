@@ -621,6 +621,12 @@ Summary:
    Flattening large designs may require significant CPU time, memory and
    storage.
 
+.. option:: --fourstate
+
+.. option:: --no-fourstate
+
+   Enables/Disables four-state logic support.
+
 .. option:: -fno-acyc-simp
 
 .. option:: -fno-assemble

@@ -1,3 +1,24 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//*************************************************************************
+// DESCRIPTION: Verilator: Four-state logic handler
+//
+// Code available from: https://verilator.org
+//
+//*************************************************************************
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+//*************************************************************************
+//
+// - Splits four-state variables into two two-state variables
+// - Handles wire conflicts
+//
+//*************************************************************************
+
 #include "V3PchAstNoMT.h"
 
 #include "V3Fourstate.h"
@@ -18,18 +39,19 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - split asswignw into multiple statements
  */
 
-struct FourStatePair {
+struct FourStatePair final {
     AstNodeExpr* value;
     AstNodeExpr* xz;
 };
 
 template <typename T, typename = void>
-struct ReducerTrait : std::false_type {};
+struct ReducerTrait final : std::false_type {};
 template <typename T>
 struct ReducerTrait<
     T, std::enable_if_t<std::is_same<decltype(std::declval<T>()(std::declval<FourStatePair>(),
                                                                 std::declval<FourStatePair>())),
-                                     FourStatePair>::value>> : std::true_type {};
+                                     FourStatePair>::value>>
+    final : std::true_type {};
 
 class FourstateVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
@@ -198,7 +220,7 @@ class FourstateVisitor final : public VNVisitor {
         return newp;
     }
 
-    struct TmpVarsReleaser {
+    struct TmpVarsReleaser final {
         FourstateVisitor& visitor;
         ~TmpVarsReleaser() {
             for (AstVar* const varp : visitor.m_tmpVarpsInUse) {
@@ -560,10 +582,13 @@ class FourstateVisitor final : public VNVisitor {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
             return VN_AS(exprp->user1p(), NodeExpr)->cloneTree(false);
+        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
+            result = cresetp->cloneTree(false);
         } else {
             exprp->v3warn(E_UNSUPPORTED,
-                          "Unsupported: " << exprp << " operator in four-state mode");
-            result = nullptr;
+                          "Unsupported: Operator not supported in the four-state mode");
+            // Workaround to avaoid Internal errors
+            result = new AstConst{exprp->fileline(), AstConst::BitFalse{}};
         }
         if (putIntoTmp) {
             FileLine* const flp = exprp->fileline();
@@ -626,10 +651,13 @@ class FourstateVisitor final : public VNVisitor {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
             return VN_AS(exprp->user2p(), NodeExpr)->cloneTree(false);
+        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
+            result = cresetp->cloneTree(false);
         } else {
             exprp->v3warn(E_UNSUPPORTED,
-                          "Unsupported: " << exprp << " operator in four-state mode");
-            result = nullptr;
+                          "Unsupported: Operator not supported in the four-state mode");
+            // Workaround to avaoid Internal errors
+            result = new AstConst{exprp->fileline(), AstConst::BitFalse{}};
         }
         if (putIntoTmp) {
             FileLine* const flp = exprp->fileline();
@@ -914,6 +942,7 @@ public:
         triorTriandReduce(m_assignWToWire, triReducer);
     }
     ~FourstateVisitor() override {
+        V3Error::abortIfErrors();
         for (AstVar* const varp : m_varpsToRemove) varp->unlinkFrBack()->deleteTree();
     }
 };

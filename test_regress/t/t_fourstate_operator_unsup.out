@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_fourstate_operator_unsup.v:11:9: Unsupported: Operator not supported in the four-state mode
+                                                       : ... note: In instance 't'
+   11 |     y = |x;
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
