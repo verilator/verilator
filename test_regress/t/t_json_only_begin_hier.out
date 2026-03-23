@@ -2,7 +2,7 @@
  "modulesp": [
   {"type":"MODULE","name":"test","addr":"(E)","loc":"d,21:8,21:12","origName":"test","verilogName":"test","level":1,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"N","addr":"(F)","loc":"d,22:10,22:11","dtypep":"(G)","origName":"N","verilogName":"N","direction":"NONE","isUsedLoopIdx":true,"lifetime":"VSTATICI","varType":"GENVAR","dtypeName":"integer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"N","addr":"(F)","loc":"d,22:10,22:11","dtypep":"(G)","origName":"N","verilogName":"N","direction":"NONE","isUsedLoopIdx":true,"lifetime":"VSTATICI","varType":"GENVAR","dtypeName":"integer","sensIfacep":"UNLINKED","fourStateComplement":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"GENBLOCK","name":"FOR_GENERATE","addr":"(H)","loc":"d,24:5,24:8","implied":true,"genforp": [],"itemsp": []},
     {"type":"GENBLOCK","name":"FOR_GENERATE[0]","addr":"(I)","loc":"d,25:14,25:24","genforp": [],
      "itemsp": [
@@ -27,7 +27,7 @@
    "stmtsp": [
     {"type":"GENBLOCK","name":"submod_gen","addr":"(T)","loc":"d,11:18,11:28","genforp": [],
      "itemsp": [
-      {"type":"VAR","name":"l1_sig","addr":"(U)","loc":"d,12:10,12:16","dtypep":"(V)","origName":"l1_sig","verilogName":"l1_sig","direction":"NONE","lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+      {"type":"VAR","name":"l1_sig","addr":"(U)","loc":"d,12:10,12:16","dtypep":"(V)","origName":"l1_sig","verilogName":"l1_sig","direction":"NONE","lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic","sensIfacep":"UNLINKED","fourStateComplement":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"GENBLOCK","name":"nested_gen","addr":"(W)","loc":"d,13:20,13:30","genforp": [],
        "itemsp": [
         {"type":"CELL","name":"submod_nested","addr":"(X)","loc":"d,14:15,14:28","origName":"submod_nested","verilogName":"submod_nested","modp":"(Y)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
