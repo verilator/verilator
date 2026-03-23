@@ -694,6 +694,7 @@ class FourstateVisitor final : public VNVisitor {
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         relinker.relink(getFourStateExpressionValue(nodep));
+        nodep->deleteTree();
     }
 
     void visit(AstNodeIf* const nodep) override {
