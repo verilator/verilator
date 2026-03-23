@@ -951,15 +951,6 @@ public:
         puts(levelExpr);
         puts(", __vlDvHier); }\n");
     }
-    void emitDumpVarsTargetMissing(const AstDumpCtl* nodep, const string& target) {
-        putns(nodep, "VL_FATAL_MT(\"");
-        puts(V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename())));
-        puts("\", ");
-        puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", \"\", \"$dumpvars target not found: ");
-        puts(V3OutFormatter::quoteNameControls(target));
-        puts("\");\n");
-    }
     // Emit $dumpvars filter logic when scope info is available.
     void emitDumpVarsWithScope(AstDumpCtl* nodep) {
         UASSERT_OBJ(nodep->scopeNamep(), nodep, "$dumpvars missing AstScopeName");
@@ -981,9 +972,7 @@ public:
         if (nodep->targetsp()) {
             for (AstNode* tp = nodep->targetsp(); tp; tp = tp->nextp()) {
                 const string target = VN_AS(tp, Text)->text();
-                if (kDumpvarsMissing.matches(target)) {
-                    emitDumpVarsTargetMissing(nodep, kDumpvarsMissing.strip(target));
-                } else if (kDumpvarsRuntimeRoot.matches(target)) {
+                if (kDumpvarsRuntimeRoot.matches(target)) {
                     emitDumpVarsAddRuntimeRoot(nodep, kDumpvarsRuntimeRoot.strip(target),
                                                levelExpr);
                 } else {

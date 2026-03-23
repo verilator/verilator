@@ -22,10 +22,9 @@
 
 // Tagged $dumpvars target string.  During compile-time resolution in V3LinkDot
 // each target is tagged with a prefix that tells EmitC how to emit the
-// corresponding runtime code.  The three tag types are:
+// corresponding runtime code.  The tag types are:
 //   Resolved    – fully resolved to a compile-time hierarchy path
 //   RuntimeRoot – first component must match the C++ wrapper root name at runtime
-//   Missing     – proven invalid at compile time; emit VL_FATAL_MT at runtime
 struct DumpvarsTag final {
     const char* const prefix;
     const size_t prefixLen;
@@ -42,6 +41,5 @@ struct DumpvarsTag final {
 
 constexpr DumpvarsTag kDumpvarsResolved{"@dumpvars:"};
 constexpr DumpvarsTag kDumpvarsRuntimeRoot{"@dumpvars_root:"};
-constexpr DumpvarsTag kDumpvarsMissing{"@dumpvars_missing:"};
 
 #endif  // Guard

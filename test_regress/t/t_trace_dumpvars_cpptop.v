@@ -25,7 +25,7 @@ module t(
   initial begin
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // cpptop is defined in the C++ testbench as the root of the trace hierarchy, so $dumpvars(0, cpptop) should dump everything.
-    $dumpvars(0, cpptop);
+    $dumpvars(0, cpptop, cpptop.t);
   end
 endmodule
 

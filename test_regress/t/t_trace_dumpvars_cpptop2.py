@@ -12,14 +12,14 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(
+    fails=True,
     make_main=False,
     verilator_flags2=[
         '--cc',
         '--exe',
         '--trace-vcd',
         't/t_trace_dumpvars_cpptop.cpp',
-    ])
-
-test.execute(fails=True, expect_filename=test.golden_filename)
+    ],
+    expect_filename=test.golden_filename)
 
 test.passes()

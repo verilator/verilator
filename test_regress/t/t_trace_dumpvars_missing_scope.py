@@ -11,8 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--binary --trace-vcd'])
-
-test.execute(fails=True, expect_filename=test.golden_filename)
+test.compile(fails=True, verilator_flags2=['--binary --trace-vcd'],
+             expect_filename=test.golden_filename)
 
 test.passes()
