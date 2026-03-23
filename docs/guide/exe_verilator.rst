@@ -621,12 +621,6 @@ Summary:
    Flattening large designs may require significant CPU time, memory and
    storage.
 
-.. option:: --fourstate
-
-.. option:: --no-fourstate
-
-   Enables/Disables four-state logic support.
-
 .. option:: -fno-acyc-simp
 
 .. option:: -fno-assemble
@@ -754,6 +748,12 @@ Summary:
    Rarely needed. Do not attempt to split variables
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
+
+.. option:: --fourstate
+
+.. option:: --no-fourstate
+
+   Enables/Disables four-state logic support.
 
 .. option:: --fslice-element-limit
 
