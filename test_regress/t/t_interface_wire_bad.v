@@ -8,11 +8,11 @@ interface Ifc;
 endinterface
 
 module Sub;
-   Ifc a();
+  Ifc a ();
 endmodule
 
 module t;
-   Sub sub();
-   // Issue #5649
-   wire wbad = sub.a;
+  Sub sub ();
+  // Issue #5649
+  wire wbad = sub.a;
 endmodule

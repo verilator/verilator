@@ -23,102 +23,102 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   initial begin
+  initial begin
 `ifdef D1A
-      if (`STRINGIFY(`D4B) !== "") $stop;
+    if (`STRINGIFY(`D4B) !== "") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D2A
-      if (`STRINGIFY(`D2A) !== "VALA") $stop;
+    if (`STRINGIFY(`D2A) !== "VALA") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D3A
-      if (`STRINGIFY(`D4B) !== "") $stop;
+    if (`STRINGIFY(`D4B) !== "") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D3B
-      if (`STRINGIFY(`D4B) !== "") $stop;
+    if (`STRINGIFY(`D4B) !== "") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D4A
-      if (`STRINGIFY(`D4A) !== "VALA") $stop;
+    if (`STRINGIFY(`D4A) !== "VALA") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D4B
-      if (`STRINGIFY(`D4B) !== "") $stop;
+    if (`STRINGIFY(`D4B) !== "") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D5A
-      if (`STRINGIFY(`D5A) !== "VALA") $stop;
+    if (`STRINGIFY(`D5A) !== "VALA") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef D5A
-      if (`STRINGIFY(`D5B) !== "VALB") $stop;
+    if (`STRINGIFY(`D5B) !== "VALB") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef STRING1
-      if (`STRING1 !== "New String") $stop;
+    if (`STRING1 !== "New String") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef STRING2
-      if (`STRING2 !== "New String") $stop;
+    if (`STRING2 !== "New String") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef STRING3
-      if (`STRING3 !== "New String") $stop;
+    if (`STRING3 !== "New String") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef LIT1
-      if (`STRINGIFY(`LIT1) !== "32'h600D600D") $stop;
+    if (`STRINGIFY(`LIT1) !== "32'h600D600D") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef LIT2
-      if (`STRINGIFY(`LIT2) !== "32'h600D600D") $stop;
+    if (`STRINGIFY(`LIT2) !== "32'h600D600D") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifdef LIT3
-      if (`STRINGIFY(`LIT3) !== "32'h600D600D") $stop;
+    if (`STRINGIFY(`LIT3) !== "32'h600D600D") $stop;
 `else
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 
 `ifndef CMD_DEF
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 `ifndef CMD_DEF2
-      $write("%%Error: Missing define\n"); $stop;
+    $write("%%Error: Missing define\n"); $stop;
 `endif
 `ifdef CMD_UNDEF
-      $write("%%Error: Extra define\n"); $stop;
+    $write("%%Error: Extra define\n"); $stop;
 `endif
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

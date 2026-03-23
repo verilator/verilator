@@ -170,8 +170,8 @@ public:
     void readFiles() VL_MT_DISABLED;
     void removeStd() VL_MT_DISABLED;
     void checkTree() const;
-    static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
-                                    bool doDump = true);
+    static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0, bool doDump = true,
+                                    bool doCheck = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void assertScoped(bool flag) { m_assertScoped = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }

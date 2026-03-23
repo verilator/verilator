@@ -4,24 +4,22 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 100ns/1ns
+`timescale 100ns / 1ns
 
 module t;
-   int   ia;
-   int   ib;
+  int ia;
+  int ib;
 
-   initial begin
-      ia = 0;
-      #1 ib = ++ia;
-      #1
-        if (ia !== ib) $stop;
+  initial begin
+    ia = 0;
+    #1 ib = ++ia;
+    #1 if (ia !== ib) $stop;
 
-      #1 ib = ia++;
-      #1
-        if (ia == ib) $stop;
-      #10;
+    #1 ib = ia++;
+    #1 if (ia == ib) $stop;
+    #10;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

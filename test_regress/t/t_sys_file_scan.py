@@ -17,8 +17,6 @@ test.compile()
 
 test.execute()
 
-test.file_grep(test.obj_dir + "/t_sys_file_scan_test.log", r"""# a
-          1
-""")
+test.files_identical(test.obj_dir + "/t_sys_file_scan_test.log", test.golden_filename)
 
 test.passes()

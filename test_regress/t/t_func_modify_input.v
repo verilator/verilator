@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class foo;
-   function void g(input integer x);
-      f(x);
-   endfunction
-   function void f(inout integer x);
-   endfunction
+  function void g(input integer x);
+    f(x);
+  endfunction
+  function void f(inout integer x);
+  endfunction
 endclass

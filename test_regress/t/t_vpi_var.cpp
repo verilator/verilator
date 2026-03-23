@@ -9,6 +9,7 @@
 //
 //*************************************************************************
 
+#include "vpi_user.h"
 #ifdef IS_VPI
 
 #include "sv_vpi_user.h"
@@ -1031,6 +1032,508 @@ int _mon_check_vlog_info() {
     return 0;
 }
 
+int _mon_check_multi_index() {
+    s_vpi_value v;
+    v.format = vpiIntVal;
+
+    // vpi_handle_by_multi_index tests
+
+    // Basic tests for vpi_handle_by_multi_index
+    {
+        // 1D unpacked array: quads[2:3] with 62-bit elements
+        TestVpiHandle vh_1d_base = vpi_handle_by_name((PLI_BYTE8*)"t.quads", nullptr);
+        CHECK_RESULT_NZ(vh_1d_base);
+        PLI_INT32 idx_1d[1] = {2};
+        TestVpiHandle vh_1d = vpi_handle_by_multi_index(vh_1d_base, 1, idx_1d);
+        CHECK_RESULT_NZ(vh_1d);
+        CHECK_RESULT(vpi_get(vpiType, vh_1d), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_1d), 62);
+
+        // 2D unpacked array: mem_2d[3:0][7:0] with 8-bit elements
+        TestVpiHandle vh_2d_base = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d", nullptr);
+        CHECK_RESULT_NZ(vh_2d_base);
+        PLI_INT32 idx_2d[2] = {1, 3};
+        TestVpiHandle vh_2d = vpi_handle_by_multi_index(vh_2d_base, 2, idx_2d);
+        CHECK_RESULT_NZ(vh_2d);
+        CHECK_RESULT(vpi_get(vpiType, vh_2d), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_2d), 8);
+        vpi_get_value(vh_2d, &v);
+        CHECK_RESULT(v.value.integer, 11);  // 1*8 + 3
+
+        // 3D unpacked array: mem_3d[0:1][1:0][0:1] with 96-bit elements
+        TestVpiHandle vh_3d_base = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d", nullptr);
+        CHECK_RESULT_NZ(vh_3d_base);
+        PLI_INT32 idx_3d[3] = {1, 1, 1};
+        TestVpiHandle vh_3d = vpi_handle_by_multi_index(vh_3d_base, 3, idx_3d);
+        CHECK_RESULT_NZ(vh_3d);
+        CHECK_RESULT(vpi_get(vpiType, vh_3d), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_3d), 96);
+        vpi_get_value(vh_3d, &v);
+        CHECK_RESULT(v.value.integer, 7);  // (1*4) + (1*2) + 1
+
+        // 2D Packed array with negative indices: [8:-7] [3:-4] negative_multi_packed[0:-2]
+        TestVpiHandle vh_neg_packed_base
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed", nullptr);
+        CHECK_RESULT_NZ(vh_neg_packed_base);
+        PLI_INT32 idx_neg_packed[2] = {-1, -2};
+        TestVpiHandle vh_neg_packed
+            = vpi_handle_by_multi_index(vh_neg_packed_base, 2, idx_neg_packed);
+        CHECK_RESULT_NZ(vh_neg_packed);
+        CHECK_RESULT(vpi_get(vpiType, vh_neg_packed), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_packed), 8);
+        vpi_get_value(vh_neg_packed, &v);
+        CHECK_RESULT(v.value.integer, 4);
+
+        // Verify multi_index matches sequential vpi_handle_by_index
+        TestVpiHandle vh_seq_base = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d", nullptr);
+        CHECK_RESULT_NZ(vh_seq_base);
+        TestVpiHandle vh_seq_1 = vpi_handle_by_index(vh_seq_base, 1);
+        CHECK_RESULT_NZ(vh_seq_1);
+        TestVpiHandle vh_seq_2 = vpi_handle_by_index(vh_seq_1, 3);
+        CHECK_RESULT_NZ(vh_seq_2);
+        vpi_get_value(vh_seq_2, &v);
+        CHECK_RESULT(v.value.integer, 11);
+    }
+
+    // Error handling for vpi_handle_by_multi_index
+    {
+        // Null handle
+        PLI_INT32 idx_null[1] = {0};
+        TestVpiHandle vh_null_hdl = vpi_handle_by_multi_index(nullptr, 1, idx_null);
+        CHECK_RESULT_Z(vh_null_hdl);
+
+        // Null index array
+        TestVpiHandle vh_base = vpi_handle_by_name((PLI_BYTE8*)"t.quads", nullptr);
+        CHECK_RESULT_NZ(vh_base);
+        TestVpiHandle vh_null_idx = vpi_handle_by_multi_index(vh_base, 1, nullptr);
+        CHECK_RESULT_Z(vh_null_idx);
+
+        // Zero num_index
+        PLI_INT32 idx_zero[1] = {0};
+        TestVpiHandle vh_zero = vpi_handle_by_multi_index(vh_base, 0, idx_zero);
+        CHECK_RESULT_Z(vh_zero);
+
+        // Negative num_index
+        PLI_INT32 idx_neg[1] = {0};
+        TestVpiHandle vh_neg = vpi_handle_by_multi_index(vh_base, -1, idx_neg);
+        CHECK_RESULT_Z(vh_neg);
+    }
+
+    // Bound checking
+    {
+        // Out of bounds on 1D array (quads is [2:3])
+        TestVpiHandle vh_1d = vpi_handle_by_name((PLI_BYTE8*)"t.quads", nullptr);
+        CHECK_RESULT_NZ(vh_1d);
+        PLI_INT32 idx_oob_1d[1] = {99};
+        TestVpiHandle vh_oob_1d = vpi_handle_by_multi_index(vh_1d, 1, idx_oob_1d);
+        CHECK_RESULT_Z(vh_oob_1d);
+
+        // Out of bounds on 2D array (mem_2d[3:0][7:0])
+        TestVpiHandle vh_2d = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d", nullptr);
+        CHECK_RESULT_NZ(vh_2d);
+        PLI_INT32 idx_oob_2d[2] = {0, 99};
+        TestVpiHandle vh_oob_2d = vpi_handle_by_multi_index(vh_2d, 2, idx_oob_2d);
+        CHECK_RESULT_Z(vh_oob_2d);
+    }
+
+    // Boundary: lowest and highest valid indices on 2D array
+    {
+        TestVpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d", nullptr);
+        CHECK_RESULT_NZ(vh1);
+        PLI_INT32 lo[2] = {0, 0};
+        TestVpiHandle vh2 = vpi_handle_by_multi_index(vh1, 2, lo);
+        CHECK_RESULT_NZ(vh2);
+        vpi_get_value(vh2, &v);
+        CHECK_RESULT(v.value.integer, 0);
+        PLI_INT32 hi[2] = {3, 7};
+        TestVpiHandle vh3 = vpi_handle_by_multi_index(vh1, 2, hi);
+        CHECK_RESULT_NZ(vh3);
+        vpi_get_value(vh3, &v);
+        CHECK_RESULT(v.value.integer, 31);  // 3*8 + 7
+    }
+
+    // Packed dimension indexing: mem_3d fully indexed gives 96-bit element (VLWide)
+    {
+        PLI_INT32 indices[3] = {0, 0, 0};
+        TestVpiHandle vh_elem = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d", nullptr);
+        CHECK_RESULT_NZ(vh_elem);
+        TestVpiHandle vh_3d = vpi_handle_by_multi_index(vh_elem, 3, indices);
+        CHECK_RESULT_NZ(vh_3d);
+        // Bit selection within element
+        TestVpiHandle vh_3d_bit0 = vpi_handle_by_index(vh_3d, 0);
+        CHECK_RESULT_NZ(vh_3d_bit0);
+        CHECK_RESULT(vpi_get(vpiSize, vh_3d_bit0), 1);
+        // Out of range bit
+        TestVpiHandle vh_3d_oob = vpi_handle_by_index(vh_3d, 96);
+        CHECK_RESULT_Z(vh_3d_oob);
+    }
+
+    // vpi_handle_by_name indexing tests
+
+    {
+        // Escaped identifier with literal brackets in the name
+        TestVpiHandle vh_esc
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped_with_brackets[3] ", nullptr);
+        CHECK_RESULT_NZ(vh_esc);
+        CHECK_RESULT(vpi_get(vpiType, vh_esc), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_esc), 8);
+        vpi_get_value(vh_esc, &v);
+        CHECK_RESULT(v.value.integer, 0x5a);
+
+        // Escaped identifier with whitespace and trailing part-select
+        // 0x5a = 0b01011010, [7:4] = 0b0101 = 5
+        TestVpiHandle vh_esc_ps
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped_with_brackets[3] [7:4]", nullptr);
+        CHECK_RESULT_NZ(vh_esc_ps);
+        CHECK_RESULT(vpi_get(vpiType, vh_esc_ps), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_esc_ps), 4);
+        vpi_get_value(vh_esc_ps, &v);
+        CHECK_RESULT(v.value.integer, 0x5);
+
+        // Escaped identifier with multiple whitespaces and trailing part-select
+        // 0x5a = 0b01011010, [3:0] = 0b1010 = 0xa
+        TestVpiHandle vh_esc_ps_multispace
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped_with_brackets[3]  [3:0]", nullptr);
+        CHECK_RESULT_NZ(vh_esc_ps_multispace);
+        CHECK_RESULT(vpi_get(vpiType, vh_esc_ps_multispace), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_esc_ps_multispace), 4);
+        vpi_get_value(vh_esc_ps_multispace, &v);
+        CHECK_RESULT(v.value.integer, 0xa);
+
+        // Escaped instance name (with brackets as part of identifier) accessed through hierarchy
+        TestVpiHandle vh_escaped_inst_sig
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped.inst[0] .sig", nullptr);
+        CHECK_RESULT_NZ(vh_escaped_inst_sig);
+        CHECK_RESULT(vpi_get(vpiType, vh_escaped_inst_sig), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_escaped_inst_sig), 8);
+
+        // Escaped instance name with part-select
+        TestVpiHandle vh_escaped_inst_sig_ps
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped.inst[0] .sig[3:0]", nullptr);
+        CHECK_RESULT_NZ(vh_escaped_inst_sig_ps);
+        CHECK_RESULT(vpi_get(vpiType, vh_escaped_inst_sig_ps), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_escaped_inst_sig_ps), 4);
+
+        // Two escaped identifiers in the path: escaped instance + escaped signal name
+        TestVpiHandle vh_two_escapes
+            = vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped.inst[0] .\\escaped_sig[1] ", nullptr);
+        CHECK_RESULT_NZ(vh_two_escapes);
+        CHECK_RESULT(vpi_get(vpiType, vh_two_escapes), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_two_escapes), 8);
+
+        // Two escaped identifiers with part-select and consecutive spaces
+        TestVpiHandle vh_two_escapes_ps = vpi_handle_by_name(
+            (PLI_BYTE8*)"t.\\escaped.inst[0]    .\\escaped_sig[1]       [3:0]", nullptr);
+        CHECK_RESULT_NZ(vh_two_escapes_ps);
+        CHECK_RESULT(vpi_get(vpiType, vh_two_escapes_ps), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_two_escapes_ps), 4);
+    }
+
+    // vpi_handle_by_name with generated signal
+    {
+        // Retrieve signal
+        TestVpiHandle vh_generated = vpi_handle_by_name((PLI_BYTE8*)"t.gen[0].gen_sig", NULL);
+        CHECK_RESULT_NZ(vh_generated);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated), 8);
+        vpi_get_value(vh_generated, &v);
+        CHECK_RESULT(v.value.integer, 0xAB);
+
+        // Single bit indexing
+        TestVpiHandle vh_generated_bit
+            = vpi_handle_by_name((PLI_BYTE8*)"t.gen[0].gen_sig[3]", NULL);
+        CHECK_RESULT_NZ(vh_generated_bit);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_bit), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated_bit), 1);
+        vpi_get_value(vh_generated_bit, &v);
+        CHECK_RESULT(v.value.integer, 1);
+
+        // Generated scope
+        TestVpiHandle vh_generated_scope = vpi_handle_by_name((PLI_BYTE8*)"t.subs[1]", NULL);
+        CHECK_RESULT_NZ(vh_generated_scope);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_scope), vpiGenScope);
+
+        // Signal in generated instance
+        TestVpiHandle vh_generated_inst
+            = vpi_handle_by_name((PLI_BYTE8*)"t.subs[1].subsub.subsig1", NULL);
+        CHECK_RESULT_NZ(vh_generated_inst);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_inst), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated_inst), 1);
+    }
+
+    // vpi_handle_by_name with array indexing
+    {
+        TestVpiHandle vh_1d = vpi_handle_by_name((PLI_BYTE8*)"t.quads[2]", nullptr);
+        CHECK_RESULT_NZ(vh_1d);
+        CHECK_RESULT(vpi_get(vpiType, vh_1d), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_1d), 62);
+
+        TestVpiHandle vh_2d = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[1][3]", nullptr);
+        CHECK_RESULT_NZ(vh_2d);
+        CHECK_RESULT(vpi_get(vpiSize, vh_2d), 8);
+        vpi_get_value(vh_2d, &v);
+        CHECK_RESULT(v.value.integer, 11);
+
+        TestVpiHandle vh_3d = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1]", nullptr);
+        CHECK_RESULT_NZ(vh_3d);
+        CHECK_RESULT(vpi_get(vpiSize, vh_3d), 96);
+        vpi_get_value(vh_3d, &v);
+        CHECK_RESULT(v.value.integer, 7);
+
+        // Index into single bit with negative index
+        TestVpiHandle vh_neg_bit
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1][-2][-2]", nullptr);
+        CHECK_RESULT_NZ(vh_neg_bit);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_bit), 1);
+        vpi_get_value(vh_neg_bit, &v);
+        // Element [-1][-2] is 8'h4; elements are indexed as [3:-4], so bit -2 is 1
+        CHECK_RESULT(v.value.integer, 1);
+    }
+
+    // Packed dimension indexing: quads[2] bit selection
+    {
+        TestVpiHandle vh_arr = vpi_handle_by_name((PLI_BYTE8*)"t.quads[2]", nullptr);
+        CHECK_RESULT_NZ(vh_arr);
+        TestVpiHandle vh_bit0 = vpi_handle_by_index(vh_arr, 0);
+        CHECK_RESULT_NZ(vh_bit0);
+        CHECK_RESULT(vpi_get(vpiType, vh_bit0), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_bit0), 1);
+        // Try to index into a single bit
+        TestVpiHandle vh_invalid = vpi_handle_by_index(vh_bit0, 0);
+        CHECK_RESULT_Z(vh_invalid);
+
+        TestVpiHandle vh_bit32 = vpi_handle_by_index(vh_arr, 32);
+        CHECK_RESULT_NZ(vh_bit32);
+        CHECK_RESULT(vpi_get(vpiSize, vh_bit32), 1);
+        // Out of range bit should fail
+        TestVpiHandle vh_oob = vpi_handle_by_index(vh_arr, 100);
+        CHECK_RESULT_Z(vh_oob);
+    }
+
+    // Multiple packed dimensions: multi_packed is [0:15][0:3][7:0] multi_packed[2:0]
+    {
+        TestVpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.multi_packed[1]", nullptr);
+        CHECK_RESULT_NZ(vh1);
+        CHECK_RESULT(vpi_get(vpiSize, vh1), 512);  // 16*8*4
+
+        // Index into first packed dim
+        TestVpiHandle vh2 = vpi_handle_by_index(vh1, 2);
+        CHECK_RESULT_NZ(vh2);
+        CHECK_RESULT(vpi_get(vpiSize, vh2), 32);  // 8*4
+
+        // Index into second packed dim -> 8-bit word
+        TestVpiHandle vh3 = vpi_handle_by_index(vh2, 2);
+        CHECK_RESULT_NZ(vh3);
+        CHECK_RESULT(vpi_get(vpiSize, vh3), 8);
+        vpi_get_value(vh3, &v);
+        CHECK_RESULT(v.value.integer, 74);  // 1*64 + 2*4 + 2
+
+        // Further into bit level
+        TestVpiHandle vh4 = vpi_handle_by_index(vh3, 3);
+        CHECK_RESULT_NZ(vh4);
+        CHECK_RESULT(vpi_get(vpiSize, vh4), 1);
+
+        // Write last 32 bits of the packed vector in the specified unpacked dimension,
+        // i.e. the four 8-bit elements in multi_packed[1][15][0:3]
+        v.value.integer = 0xAABBCCDD;
+        vpi_put_value(vh1, &v, nullptr, vpiNoDelay);
+
+        // Index into the last element of the packed array and check value
+        TestVpiHandle vh_last
+            = vpi_handle_by_name((PLI_BYTE8*)"t.multi_packed[1][15][3]", nullptr);
+        CHECK_RESULT_NZ(vh_last);
+        vpi_get_value(vh_last, &v);
+        CHECK_RESULT(v.value.integer, 0xDD);
+
+        // Negative indices: negative_multi_packed is defined as
+        // `[8:-7] [3:-4] negative_multi_packed[0:-2]`
+        TestVpiHandle vh_neg
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1]", nullptr);
+        CHECK_RESULT_NZ(vh_neg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg), 128);
+        TestVpiHandle vh_neg_packed = vpi_handle_by_index(vh_neg, -2);
+        CHECK_RESULT_NZ(vh_neg_packed);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_packed), 8);
+        vpi_get_value(vh_neg_packed, &v);
+        CHECK_RESULT(v.value.integer, 4);
+        // Further into bit level
+        TestVpiHandle vh_neg_bit = vpi_handle_by_index(vh_neg_packed, -2);
+        CHECK_RESULT_NZ(vh_neg_bit);
+        CHECK_RESULT(vpi_get(vpiSize, vh_neg_bit), 1);
+        vpi_get_value(vh_neg_bit, &v);
+        CHECK_RESULT(v.value.integer, 1);
+    }
+
+    // Partial indexing (not all unpacked dimensions)
+    {
+        // mem_2d[1] partially indexes -> remaining [0:7] array
+        TestVpiHandle vh_2d_part = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[1]", nullptr);
+        CHECK_RESULT_NZ(vh_2d_part);
+        CHECK_RESULT(vpi_get(vpiType, vh_2d_part), vpiRegArray);
+        CHECK_RESULT(vpi_get(vpiSize, vh_2d_part), 8);
+        TestVpiHandle vh_2d_elem = vpi_handle_by_index(vh_2d_part, 3);
+        CHECK_RESULT_NZ(vh_2d_elem);
+        CHECK_RESULT(vpi_get(vpiType, vh_2d_elem), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_2d_elem), 8);
+
+        // mem_3d[0] partially indexes -> remaining [1:0][0:1] = 2*2=4 elements
+        TestVpiHandle vh_3d_part = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[0]", nullptr);
+        CHECK_RESULT_NZ(vh_3d_part);
+        CHECK_RESULT(vpi_get(vpiType, vh_3d_part), vpiRegArray);
+        CHECK_RESULT(vpi_get(vpiSize, vh_3d_part), 4);
+    }
+
+    // Invalid syntax in vpi_handle_by_name
+    {
+        // Trailing text after indices
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][0]bar", nullptr));
+        // Non-integer / non-decimal index values
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][abc]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0x2][3]", nullptr));
+        // Index out of bounds
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[4][0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[-1][0]", nullptr));
+        // Structural bracket errors
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0[0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][1", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[[0]][1]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][1]]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d0][1]", nullptr));
+        // Whitespace in indices (unsupported)
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[ 0 ][ 1 ]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][1]  ", nullptr));
+        // Plain identifier with whitespace before part-select (unsupported; only escaped
+        // identifiers may have whitespace before a trailing part-select)
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.\\escaped_inst[0] .sig [3:0]", nullptr));
+        // Indexing non-array signals
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.onebit[0]", nullptr));
+        // Part-select on non-array signal
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.onebit[0:0]", nullptr));
+        // Part-select on unpacked-only array
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.unpacked_only[3:0]", nullptr));
+        // Range/slice syntax in non-last position or on unpacked dimensions
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][1:3]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0:2][0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0:2][1:4]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0+:2][0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0-:2][0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0:2]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[0:1][0][0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[0][0:1][0]", nullptr));
+        // Part-select with remaining unpacked dims (not fully indexed)
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[0][7:0]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[0][0][7:0]", nullptr));
+        // Part-select out of range: mem_2d[0][0] is 8 bits [7:0]
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][0][15:8]", nullptr));
+        CHECK_RESULT_Z(vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[0][0][8:7]", nullptr));
+    }
+
+    // Bit-range part-select via vpi_handle_by_name
+    {
+        // Descending-range element: mem_2d[3][0] = 8'(((3 * 8) + 0)) = 24 = 0x18
+        TestVpiHandle vh_desc_mid = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[3][0][7:4]", nullptr);
+        CHECK_RESULT_NZ(vh_desc_mid);
+        CHECK_RESULT(vpi_get(vpiSize, vh_desc_mid), 4);
+        vpi_get_value(vh_desc_mid, &v);
+        CHECK_RESULT(v.value.integer, 0x1);  // [7:4] of 0x18
+
+        TestVpiHandle vh_desc_full
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[3][0][7:0]", nullptr);
+        CHECK_RESULT_NZ(vh_desc_full);
+        CHECK_RESULT(vpi_get(vpiSize, vh_desc_full), 8);
+        vpi_get_value(vh_desc_full, &v);
+        CHECK_RESULT(v.value.integer, 24);  // 0x18
+
+        // Descending range that crosses zero
+        TestVpiHandle vh_desc_cross
+            = vpi_handle_by_name((PLI_BYTE8*)"t.negative_multi_packed[-1][-2][1:-3]", nullptr);
+        CHECK_RESULT_NZ(vh_desc_cross);
+        CHECK_RESULT(vpi_get(vpiSize, vh_desc_cross), 5);
+        vpi_get_value(vh_desc_cross, &v);
+        // Element [-1][-2] is 8'h4; elements are indexed as [3:-4], so bits [1:-3] = 0b00010
+        CHECK_RESULT(v.value.integer, 2);
+
+        // Ascending packed range behavior is explicit:
+        // mem_3d has packed declaration [0:95], so [3:0] selects the MSB-end nibble,
+        // while [92:95] selects the LSB-end nibble where value 7 resides.
+        TestVpiHandle vh_asc_lsb
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][92:95]", nullptr);
+        CHECK_RESULT_NZ(vh_asc_lsb);
+        CHECK_RESULT(vpi_get(vpiSize, vh_asc_lsb), 4);
+        vpi_get_value(vh_asc_lsb, &v);
+        CHECK_RESULT(v.value.integer, 7);  // [92:95] of 0x...000007
+
+        // Select order [95:92] is also accepted and refers to the same bit set as [92:95].
+        TestVpiHandle vh_asc_lsb_rev
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][95:92]", nullptr);
+        CHECK_RESULT_NZ(vh_asc_lsb_rev);
+        CHECK_RESULT(vpi_get(vpiSize, vh_asc_lsb_rev), 4);
+        vpi_get_value(vh_asc_lsb_rev, &v);
+        CHECK_RESULT(v.value.integer, 7);
+
+        TestVpiHandle vh_asc_mid
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][90:94]", nullptr);
+        CHECK_RESULT_NZ(vh_asc_mid);
+        CHECK_RESULT(vpi_get(vpiSize, vh_asc_mid), 5);
+        vpi_get_value(vh_asc_mid, &v);
+        CHECK_RESULT(v.value.integer, 3);  // 5-bit window containing 0b00011
+
+        TestVpiHandle vh_asc_mid_rev
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][95:91]", nullptr);
+        CHECK_RESULT_NZ(vh_asc_mid_rev);
+        CHECK_RESULT(vpi_get(vpiSize, vh_asc_mid_rev), 5);
+        vpi_get_value(vh_asc_mid_rev, &v);
+        CHECK_RESULT(v.value.integer, 7);
+
+        // Cross-order select on ascending declaration is allowed and maps by declared indices.
+        TestVpiHandle vh_asc_msb
+            = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][3:0]", nullptr);
+        CHECK_RESULT_NZ(vh_asc_msb);
+        CHECK_RESULT(vpi_get(vpiSize, vh_asc_msb), 4);
+        vpi_get_value(vh_asc_msb, &v);
+        CHECK_RESULT(v.value.integer, 0);  // [3:0] is MSB-end for [0:95]
+
+        // Part-select combined with array index: mem_2d[2][3] = 19 = 0x13
+        TestVpiHandle vh_2d_arr = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[2][3][3:0]", nullptr);
+        CHECK_RESULT_NZ(vh_2d_arr);
+        CHECK_RESULT(vpi_get(vpiSize, vh_2d_arr), 4);
+        vpi_get_value(vh_2d_arr, &v);
+        CHECK_RESULT(v.value.integer, 0x3);
+
+        // Equivalent ascending-order spelling of the MSB-end nibble
+        TestVpiHandle vh_3d_ps = vpi_handle_by_name((PLI_BYTE8*)"t.mem_3d[1][1][1][0:3]", nullptr);
+        CHECK_RESULT_NZ(vh_3d_ps);
+        CHECK_RESULT(vpi_get(vpiSize, vh_3d_ps), 4);
+        vpi_get_value(vh_3d_ps, &v);
+        CHECK_RESULT(v.value.integer, 0);
+    }
+
+    // Part-select write: write 0x2 to mem_2d[3][0][7:4], verify only those bits change
+    {
+        TestVpiHandle vh_ps = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[3][0][7:4]", nullptr);
+        CHECK_RESULT_NZ(vh_ps);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0x2;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh_ps, &put_val, &time_s, vpiNoDelay);
+
+        // Read back full element
+        TestVpiHandle vh_full = vpi_handle_by_name((PLI_BYTE8*)"t.mem_2d[3][0]", nullptr);
+        CHECK_RESULT_NZ(vh_full);
+        vpi_get_value(vh_full, &v);
+        CHECK_RESULT(v.value.integer, 0x28);  // 0x18 with bits [7:4] changed to 0x2
+
+        // Restore original value
+        put_val.value.integer = 0x1;
+        vpi_put_value(vh_ps, &put_val, &time_s, vpiNoDelay);
+    }
+
+    return 0;
+}
+
 extern "C" int mon_check() {
     // Callback from initial block in monitor
 #ifdef TEST_VERBOSE
@@ -1054,6 +1557,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_string()) return status;
     if (int status = _mon_check_putget_str(NULL)) return status;
     if (int status = _mon_check_vlog_info()) return status;
+    if (int status = _mon_check_multi_index()) return status;
     if (int status = _mon_check_delayed()) return status;
     if (int status = _mon_check_too_big()) return status;
 #ifndef IS_VPI

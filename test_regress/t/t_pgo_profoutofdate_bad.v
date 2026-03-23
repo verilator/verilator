@@ -5,21 +5,21 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+  // Inputs
+  clk
+  );
+  input clk;
 
-   integer cyc = 0;
+  integer cyc = 0;
 
-   // Test loop
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc == 99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  // Test loop
+  always @ (posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 

@@ -6,4 +6,4 @@
 
 `verilator_config
 
-parallel_case -file "t/t_assert_synth.v" -lines 55
+parallel_case -file "t/t_assert_synth.v" -lines 52

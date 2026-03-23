@@ -1,0 +1,3 @@
+[10] %Error: t_final_assert.v:12: Assertion failed in top.tb: 'assert' failed.
+%Error: t/t_final_assert.v:12: Verilog $stop
+Aborting...

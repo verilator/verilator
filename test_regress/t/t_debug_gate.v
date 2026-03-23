@@ -5,24 +5,27 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Outputs
-   o,
-   // Inputs
-   i
-   );
-   input i;
-   output o;
-   sub sub (.i, .o);
+module t (  /*AUTOARG*/
+    // Outputs
+    o,
+    // Inputs
+    i
+);
+  input i;
+  output o;
+  sub sub (
+      .i,
+      .o
+  );
 endmodule
 
-module sub(/*AUTOARG*/
-   // Outputs
-   o,
-   // Inputs
-   i
-   );
-   input i;
-   output o;
-   assign o = !i;
+module sub (  /*AUTOARG*/
+    // Outputs
+    o,
+    // Inputs
+    i
+);
+  input i;
+  output o;
+  assign o = !i;
 endmodule

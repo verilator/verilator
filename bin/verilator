@@ -149,7 +149,7 @@ if ($opt_gdb) {
         . verilator_bin()
         . " " . join(' ', @quoted_sw));
 } else {
-    # Normal, non gdb
+    # Normal, non-gdb
     run(ulimit_stack_unlimited() . aslr(1) . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
@@ -213,14 +213,22 @@ sub ulimit_stack_unlimited {
     # AddressSanitizer doesn't work with 'ulimit -s unlimted'
     if (`${\(verilator_bin())} --get-supported DEV_ASAN` eq "1\n") {
         # Use host 'physical memory / #cores / 8' instead
-        open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
-        while (<$fh>) {
-            if (m/MemTotal:\s+(\d+)\s+kB/) {
-                $limit = int(int($1)/`nproc`/8);
-                last;
+        if ($^O eq "darwin") {
+            my $membytes = `sysctl -n hw.memsize`;
+            chomp $membytes;
+            my $ncpu = `sysctl -n hw.ncpu`;
+            chomp $ncpu;
+            $limit = int(int($membytes / 1024) / $ncpu / 8);
+        } else {
+            open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
+            while (<$fh>) {
+                if (m/MemTotal:\s+(\d+)\s+kB/) {
+                    $limit = int(int($1)/`nproc`/8);
+                    last;
+                }
             }
+            close($fh);
         }
-        close($fh);
     }
     system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
@@ -345,6 +353,7 @@ detailed descriptions of these arguments.
      -CFLAGS <flags>            C++ compiler arguments for makefile
     --compiler <compiler-name>  Tune for specified C++ compiler
     --compiler-include          Include additional header in the precompiled one
+    --constraint-array-limit <size>   Maximum array size for constraint array reduction
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-expr             Enable expression coverage
@@ -390,6 +399,7 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
+    --func-recursion-depth <value>  Maximum recursive constant function depth
     --future0 <option>          Ignore an option for compatibility
     --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage
@@ -482,6 +492,7 @@ detailed descriptions of these arguments.
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit <value>      Minimum iterations for forming loops
+    --replication-limit <value> Replication concatenation limit (default: 8k)
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
     --runtime-debug             Enable model runtime debugging
@@ -495,7 +506,6 @@ detailed descriptions of these arguments.
     --no-std-package            Prevent parsing standard package
     --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
-    --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading

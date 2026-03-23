@@ -4,5 +4,7 @@
 // SPDX-FileCopyrightText: 2022 Yu-Sheng Lin
 // SPDX-License-Identifier: CC0-1.0
 
-module t(input clk);
+module t (
+    input clk
+);
 endmodule

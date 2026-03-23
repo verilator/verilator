@@ -322,9 +322,14 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Call the initialization function for the library instance
         AstCStmt* const initp = new AstCStmt{flp};
-        initp->add("tracep->initLib(vlSymsp->name() + ");
-        initp->add(new AstConst{flp, AstConst::String{}, "." + AstNode::prettyName(path)});
-        initp->add(");\n");
+        initp->add("{\n");
+        initp->add("std::string __VlibName = vlSymsp->name();\n");
+        initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
+        initp->add("__VlibName += ");
+        initp->add(new AstConst{flp, AstConst::String{}, AstNode::prettyName(path)});
+        initp->add(";\n");
+        initp->add("tracep->initLib(__VlibName);\n");
+        initp->add("}\n");
 
         placeholderp->addNextHere(initp);
         // Delete the placeholder
@@ -569,7 +574,8 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_traName);
         FileLine* const flp = nodep->fileline();
 
-        addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::ARRAY_UNPACKED});
+        addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::ARRAY_UNPACKED,
+                                            nodep->left(), nodep->right()});
 
         if (VN_IS(nodep->subDTypep()->skipRefToEnump(),
                   BasicDType)  // Nothing lower than this array
@@ -584,7 +590,9 @@ class TraceDeclVisitor final : public VNVisitor {
             }
         } else {
             AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
-            for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
+            // Always iterate left index to right index
+            const int inc = nodep->rangep()->ascending() ? 1 : -1;
+            for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
                 VL_RESTORER(m_traValuep);
                 m_traName = '[' + std::to_string(i) + ']';
                 m_traValuep = m_traValuep->cloneTree(false);
@@ -608,12 +616,25 @@ class TraceDeclVisitor final : public VNVisitor {
             return;
         }
 
+        AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
+
+        // Do not unroll if the elements are simple 'bit', or 'logic'
+        if (AstBasicDType* const basicp = VN_CAST(subtypep->skipRefp(), BasicDType)) {
+            if (basicp->isBitLogic() && !basicp->isRanged()) {
+                addTraceDecl(VNumRange{}, nodep->width());
+                return;
+            }
+        }
+
         VL_RESTORER(m_traName);
         FileLine* const flp = nodep->fileline();
-        addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::ARRAY_PACKED});
 
-        AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
-        for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
+        addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::ARRAY_PACKED,
+                                            nodep->left(), nodep->right()});
+
+        // Always iterate left index to right index
+        const int inc = nodep->rangep()->ascending() ? 1 : -1;
+        for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
             VL_RESTORER(m_traValuep);
             m_traName = '[' + std::to_string(i) + ']';
             const int lsb = (i - nodep->lo()) * subtypep->width();
@@ -640,9 +661,12 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_traName);
         FileLine* const flp = nodep->fileline();
 
+        int nMembers = 0;
+        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+
         if (!nodep->packed()) {
-            addToSubFunc(
-                new AstTracePushPrefix{flp, m_traName, VTracePrefixType::STRUCT_UNPACKED});
+            addToSubFunc(new AstTracePushPrefix{flp, m_traName,  //
+                                                VTracePrefixType::STRUCT_UNPACKED, nMembers});
             for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
                 nextp = VN_AS(itemp->nextp(), MemberDType);
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
@@ -656,7 +680,8 @@ class TraceDeclVisitor final : public VNVisitor {
             }
             addToSubFunc(new AstTracePopPrefix{flp});
         } else {
-            addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::STRUCT_PACKED});
+            addToSubFunc(new AstTracePushPrefix{flp, m_traName,  //
+                                                VTracePrefixType::STRUCT_PACKED, nMembers});
             for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
                 nextp = VN_AS(itemp->nextp(), MemberDType);
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
@@ -685,10 +710,14 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_traName);
         FileLine* const flp = nodep->fileline();
 
+        int nMembers = 0;
+        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+
         if (!nodep->packed()) {
             addIgnore("Unsupported: Unpacked union");
         } else {
-            addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::UNION_PACKED});
+            addToSubFunc(new AstTracePushPrefix{flp, m_traName,  //
+                                                VTracePrefixType::UNION_PACKED, nMembers});
             for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
                 nextp = VN_AS(itemp->nextp(), MemberDType);
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();

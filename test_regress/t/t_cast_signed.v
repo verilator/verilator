@@ -6,18 +6,18 @@
 
 module t;
 
-   logic [7:0] smaller;
-   logic [15:0] bigger;
-   typedef logic [15:0] bigger_t;
+  logic [7:0] smaller;
+  logic [15:0] bigger;
+  typedef logic [15:0] bigger_t;
 
-   initial begin
-      smaller = 8'hfa;
-      bigger = bigger_t'(signed'(smaller));
-      $display("%x", bigger); // NOCOMMIT
-      if (bigger != 16'hfffa) $stop;
+  initial begin
+    smaller = 8'hfa;
+    bigger = bigger_t'(signed'(smaller));
+    $display("%x", bigger);  // NOCOMMIT
+    if (bigger != 16'hfffa) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -6,26 +6,26 @@
 
 module t;
 
-   initial begin
-      string a [string];
-      string k;
-      string v;
+  initial begin
+    string a[string];
+    string k;
+    string v;
 
-      v = a.num("badarg");
-      v = a.size("badarg");
-      v = a.exists();  // Bad
-      v = a.exists(k, "bad2");
-      v = a.first();  // Bad
-      v = a.next(k, "bad2");  // Bad
-      v = a.last();  // Bad
-      v = a.prev(k, "bad2");  // Bad
-      a.delete(k, "bad2");
+    v = a.num("badarg");
+    v = a.size("badarg");
+    v = a.exists();  // Bad
+    v = a.exists(k, "bad2");
+    v = a.first();  // Bad
+    v = a.next(k, "bad2");  // Bad
+    v = a.last();  // Bad
+    v = a.prev(k, "bad2");  // Bad
+    a.delete(k, "bad2");
 
-      a.sort;  // Not legal on assoc
-      a.rsort;  // Not legal on assoc
-      a.reverse;  // Not legal on assoc
-      a.shuffle;  // Not legal on assoc
+    a.sort;  // Not legal on assoc
+    a.rsort;  // Not legal on assoc
+    a.reverse;  // Not legal on assoc
+    a.shuffle;  // Not legal on assoc
 
-      a.bad_not_defined();
-   end
+    a.bad_not_defined();
+  end
 endmodule

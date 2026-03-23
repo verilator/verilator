@@ -4,11 +4,11 @@
 // SPDX-FileCopyrightText: 2022 Varun Koyyalagunta
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
-   initial begin
-      $dumpfile("dump.vcd");
-      $dumpvars();
-   end
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars();
+  end
 
 endmodule

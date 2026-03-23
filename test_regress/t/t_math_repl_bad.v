@@ -6,11 +6,11 @@
 
 module t;
 
-   logic [31:0] o;
+  logic [31:0] o;
 
-   initial begin
-      o = {0 {1'b1}};  // Bad 0 rep
-      o = {$test$plusargs("NON-CONSTANT") {1'b1}};  // Bad non-constant rep
-      $stop;
-   end
+  initial begin
+    o = {0{1'b1}};  // Bad 0 rep
+    o = {$test$plusargs("NON-CONSTANT") {1'b1}};  // Bad non-constant rep
+    $stop;
+  end
 endmodule

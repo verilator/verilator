@@ -1,22 +1,22 @@
-%Error: t/t_pli_bad.v:10:7: Unsupported or unknown PLI call: '$unknown_pli_task'
-   10 |       $unknown_pli_task;
-      |       ^~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:10:5: Unsupported or unknown PLI call: '$unknown_pli_task'
+   10 |     $unknown_pli_task;
+      |     ^~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_pli_bad.v:11:7: Unsupported or unknown PLI call: '$unknown_pli_task'
-   11 |       $unknown_pli_task("arg", i);
-      |       ^~~~~~~~~~~~~~~~~
-%Error: t/t_pli_bad.v:12:11: Unsupported or unknown PLI call: '$unknown_pli_function'
-   12 |       i = $unknown_pli_function;
-      |           ^~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_pli_bad.v:13:11: Unsupported or unknown PLI call: '$unknown_pli_function'
-   13 |       i = $unknown_pli_function("arg", i);
-      |           ^~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_pli_bad.v:15:7: Unsupported or unknown PLI call: '$sformatff'
+%Error: t/t_pli_bad.v:11:5: Unsupported or unknown PLI call: '$unknown_pli_task'
+   11 |     $unknown_pli_task("arg", i);
+      |     ^~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:12:9: Unsupported or unknown PLI call: '$unknown_pli_function'
+   12 |     i = $unknown_pli_function;
+      |         ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:13:9: Unsupported or unknown PLI call: '$unknown_pli_function'
+   13 |     i = $unknown_pli_function("arg", i);
+      |         ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:15:5: Unsupported or unknown PLI call: '$sformatff'
                           : ... Suggested alternative: '$sformatf'
-   15 |       $sformatff();   
-      |       ^~~~~~~~~~
-%Error: t/t_pli_bad.v:16:11: Unsupported or unknown PLI call: '$sformatff'
-                           : ... Suggested alternative: '$sformatf'
-   16 |       i = $sformatff();   
-      |           ^~~~~~~~~~
+   15 |     $sformatff();   
+      |     ^~~~~~~~~~
+%Error: t/t_pli_bad.v:16:9: Unsupported or unknown PLI call: '$sformatff'
+                          : ... Suggested alternative: '$sformatf'
+   16 |     i = $sformatff();   
+      |         ^~~~~~~~~~
 %Error: Exiting due to

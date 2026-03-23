@@ -1,2 +1,2 @@
-%Error: t/t_tri_struct_packed.v:25: Verilog $stop
+%Error: t/t_tri_struct_packed.v:29: Verilog $stop
 Aborting...

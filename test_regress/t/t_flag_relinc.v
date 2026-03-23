@@ -7,5 +7,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   t_flag_relinc_sub sub ();
+  t_flag_relinc_sub sub ();
 endmodule

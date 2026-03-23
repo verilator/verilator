@@ -75,7 +75,6 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitorConst {
 
 private:
     // CONSTANTS
-    static constexpr int CONST_FUNC_RECURSION_MAX = 1000;
     static constexpr int CALL_STACK_MAX = 100;
 
     // NODE STATE
@@ -571,6 +570,14 @@ private:
                 "Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)");
             clearOptimizable(nodep, "Constant function called under generate");
         }
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialAutomaticStmt* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -1150,9 +1157,10 @@ private:
         UASSERT_OBJ(funcp, nodep, "Not linked");
 
         if (funcp->recursive()) {
-            if (m_recurseCount >= CONST_FUNC_RECURSION_MAX) {
+            if (m_recurseCount >= v3Global.opt.funcRecursionDepth()) {
                 clearOptimizable(funcp, "Constant function recursed more than "s
-                                            + std::to_string(CONST_FUNC_RECURSION_MAX) + " times");
+                                            + std::to_string(v3Global.opt.funcRecursionDepth())
+                                            + " times");
                 return;
             }
             ++m_recurseCount;
@@ -1259,65 +1267,71 @@ private:
         // Ignore
     }
 
+    void visit(AstSFormatArg* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
     void visit(AstSFormatF* nodep) override {
         if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
-        if (m_params) {
-            AstNode* nextArgp = nodep->exprsp();
+        if (m_checkOnly) return;
+        if (!optimizable()) return;  // Accelerate
 
-            string result;
-            const string format = nodep->text();
-            auto pos = format.cbegin();
-            bool inPct = false;
-            string width;
-            for (; pos != format.cend(); ++pos) {
-                if (!inPct && pos[0] == '%') {
-                    inPct = true;
-                    width = "";
-                } else if (!inPct) {  // Normal text
-                    result += *pos;
-                } else {  // Format character
-                    if (std::isdigit(pos[0])) {
-                        width += pos[0];
-                        continue;
+        AstNode* nextArgp = nodep->exprsp();
+        string result;
+        const string format = nodep->text();
+        auto pos = format.cbegin();
+        bool inPct = false;
+        string width;
+        for (; pos != format.cend(); ++pos) {
+            if (!inPct && pos[0] == '%') {
+                inPct = true;
+                width = "";
+            } else if (!inPct) {  // Normal text
+                result += *pos;
+            } else {  // Format character
+                if (std::isdigit(pos[0])) {
+                    width += pos[0];
+                    continue;
+                }
+
+                inPct = false;
+
+                if (V3Number::displayedFmtHasArg(std::tolower(pos[0]), false)) {
+                    AstNode* const argp = nextArgp;
+                    nextArgp = nextArgp->nextp();
+                    AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+                    AstNode* const subargp = fargp ? fargp->exprp() : argp;
+                    AstConst* const constp = fetchConstNull(subargp);
+                    const VFormatAttr formatAttr
+                        = argp ? AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep())
+                               : VFormatAttr{};
+                    if (!constp) {
+                        clearOptimizable(nodep,
+                                         "Argument for $display-like statement is not constant");
+                        break;
                     }
-
-                    inPct = false;
-
-                    if (V3Number::displayedFmtLegal(std::tolower(pos[0]), false)) {
-                        AstNode* const argp = nextArgp;
-                        nextArgp = nextArgp->nextp();
-                        AstConst* const constp = fetchConstNull(argp);
-                        if (!constp) {
-                            clearOptimizable(
-                                nodep, "Argument for $display like statement is not constant");
-                            break;
-                        }
-                        const string pformat = "%"s + width + pos[0];
-                        result += constp->num().displayed(nodep, pformat);
-                    } else {
-                        switch (std::tolower(pos[0])) {
-                        case '%': result += "%"; break;
-                        case 'm':
-                            // This happens prior to AstScope so we don't
-                            // know the scope name. Leave the %m in place.
-                            result += "%m";
-                            break;
-                        default:
-                            clearOptimizable(nodep, "Unknown $display-like format code.");
-                            break;
-                        }
+                    const string pformat = "%"s + width + pos[0];
+                    result += constp->num().displayed(nodep, pformat, formatAttr);
+                } else {
+                    switch (std::tolower(pos[0])) {
+                    case '%': result += "%"; break;
+                    case 'm':
+                        // This happens prior to AstScope so we don't
+                        // know the scope name. Leave the %m in place.
+                        result += "%m";
+                        break;
+                    default: clearOptimizable(nodep, "Unknown $display-like format code."); break;
                     }
                 }
             }
-
-            AstConst* const resultConstp
-                = new AstConst{nodep->fileline(), AstConst::String{}, result};
-            setValue(nodep, resultConstp);
-            m_reclaimValuesp.push_back(resultConstp);
         }
+
+        AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
+        setValue(nodep, resultConstp);
+        m_reclaimValuesp.push_back(resultConstp);
     }
 
     void visit(AstDisplay* nodep) override {
@@ -1346,6 +1360,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (!optimizable()) return;
+        if (m_checkOnly) return;
         std::string result = toStringRecurse(nodep->lhsp());
         if (!optimizable()) return;
         AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};

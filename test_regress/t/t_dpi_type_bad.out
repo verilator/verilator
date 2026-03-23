@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_dpi_type_bad.v:11:4: Unsupported DPI type 'DPI-BAD': Use 'DPI-C' (IEEE 1800-2023 35.5.4)
-   11 |    import "DPI-BAD" task dpix_twice;
-      |    ^~~~~~
+%Error-UNSUPPORTED: t/t_dpi_type_bad.v:11:3: Unsupported DPI type 'DPI-BAD': Use 'DPI-C' (IEEE 1800-2023 35.5.4)
+   11 |   import "DPI-BAD" task dpix_twice;
+      |   ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

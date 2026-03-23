@@ -8,13 +8,13 @@
 
 module t;
 
-   always_comb begin
-      integer i;
+  always_comb begin
+    integer i;
 
-      for(i=0; i<10; i++ ) begin: COMB
-      end
+    for(i=0; i<10; i++ ) begin: COMB
+    end
 
-      for(i=0; i<9; i++ ) begin: COMB
-      end
-   end
+    for(i=0; i<9; i++ ) begin: COMB
+    end
+  end
 endmodule

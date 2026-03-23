@@ -9,41 +9,39 @@
 
 module t;
 
-   interconnect a;
-   interconnect b;
+  interconnect a;
+  interconnect b;
 
-   moda suba (.a, .b);
-   modb #(.TA_t(real)) subb (.a(a), .b(b));
+  moda suba (.a, .b);
+  modb #(.TA_t(real)) subb (.a(a), .b(b));
 
 endmodule
 
-module moda
-  (
-   output interconnect a,
-   output interconnect b);
-   modaa subaa (.a, .b);
+module moda (
+    output interconnect a,
+    output interconnect b);
+  modaa subaa (.a, .b);
 endmodule
 
-module modaa
-  (
-   output real a,
-   output int  b);
-   initial begin
-      a = 1.234;
-      b = 1234;
-   end
+module modaa (
+    output real a,
+    output int  b);
+  initial begin
+    a = 1.234;
+    b = 1234;
+  end
 endmodule
 
 module modb
   #(parameter type TA_t = int)
   (
-   input TA_t a,
-   input int b);
-   initial begin
-      #10;
-      if (a != 1.234) $stop;
-      if (b != 1234) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    input TA_t a,
+    input int b);
+  initial begin
+    #10;
+    if (a != 1.234) $stop;
+    if (b != 1234) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

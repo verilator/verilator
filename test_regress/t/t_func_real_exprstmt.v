@@ -6,18 +6,18 @@
 
 module t;
 
-   function automatic real logWrapper(real x);
-      return $ln(x);
-   endfunction
+  function automatic real logWrapper(real x);
+    return $ln(x);
+  endfunction
 
-   initial begin
-      // See bug4543
-      $display("bad x=%f, y=%f", logWrapper(10.0), 1.0 * logWrapper(10.0));
-      $display("noc x=%f, y=%f", $ln(10.0), 1.0 * $ln(10.0));
-      if (logWrapper(10.0) != $ln(10.0)) $stop;
-      if (logWrapper(10.0) != 1.0 * logWrapper(10.0)) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    // See bug4543
+    $display("bad x=%f, y=%f", logWrapper(10.0), 1.0 * logWrapper(10.0));
+    $display("noc x=%f, y=%f", $ln(10.0), 1.0 * $ln(10.0));
+    if (logWrapper(10.0) != $ln(10.0)) $stop;
+    if (logWrapper(10.0) != 1.0 * logWrapper(10.0)) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

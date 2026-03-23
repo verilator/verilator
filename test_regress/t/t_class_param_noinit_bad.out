@@ -1,14 +1,14 @@
-%Error: t/t_class_param_noinit_bad.v:13:7: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
+%Error: t/t_class_param_noinit_bad.v:17:5: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
                                          : ... note: In instance 't'
-   13 |       Cls #(1) c;   
-      |       ^~~
+   17 |     Cls #(1) c;   
+      |     ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_param_noinit_bad.v:13:7: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+%Error: t/t_class_param_noinit_bad.v:17:5: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                          : ... note: In instance 't'
-   13 |       Cls #(1) c;   
-      |       ^~~
-%Error: t/t_class_param_noinit_bad.v:8:32: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
-                                         : ... note: In instance 't'
-    8 | class Cls #(int A, int B, type T);
-      |                                ^
+   17 |     Cls #(1) c;   
+      |     ^~~
+%Error: t/t_class_param_noinit_bad.v:11:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                          : ... note: In instance 't'
+   11 |     type T
+      |          ^
 %Error: Exiting due to

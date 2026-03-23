@@ -92,8 +92,9 @@ class EmitCImp final : public EmitCFunc {
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
-        m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                         "(" + modName + "* vlSelf);");
+        if (modp->ctorVarReset())
+            m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
+                             "(" + modName + "* vlSelf);");
         puts("\n");
 
         const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
@@ -148,7 +149,7 @@ class EmitCImp final : public EmitCFunc {
         }
 
         putsDecoration(modp, "// Reset structure values\n");
-        puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
+        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");
@@ -627,21 +628,27 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("tracep->declDouble(");
+            puts("VL_TRACE_DECL_DOUBLE");
         } else if (nodep->isWide()) {
-            puts("tracep->declArray(");
+            puts("VL_TRACE_DECL_WIDE");
         } else if (nodep->isQuad()) {
-            puts("tracep->declQuad(");
+            puts("VL_TRACE_DECL_QUAD");
         } else if (nodep->bitRange().ranged()) {
-            puts("tracep->declBus(");
+            puts("VL_TRACE_DECL_BUS");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("tracep->declEvent(");
+            puts("VL_TRACE_DECL_EVENT");
         } else {
-            puts("tracep->declBit(");
+            puts("VL_TRACE_DECL_BIT");
+        }
+
+        if (nodep->arrayRange().ranged()) {
+            puts("_ARRAY(tracep");
+        } else {
+            puts("(tracep");
         }
 
         // Code
-        puts("c+" + cvtToStr(nodep->code()));
+        puts(",c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
 
         // Function index
@@ -676,9 +683,11 @@ class EmitCTrace final : public EmitCFunc {
 
         // Array range
         if (nodep->arrayRange().ranged()) {
-            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
-        } else {
-            puts(", false,-1");
+            if (nodep->arrayRange().ascending()) {
+                puts(", (i + " + std::to_string(nodep->arrayRange().lo()) + ")");
+            } else {
+                puts(", (" + std::to_string(nodep->arrayRange().hi()) + " - i)");
+            }
         }
 
         // Bit range
@@ -738,6 +747,10 @@ class EmitCTrace final : public EmitCFunc {
                  : "(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
+        const VNumRange& arrayRange = nodep->declp()->arrayRange();
+        if (arrayRange.ranged() && !arrayRange.ascending()) {
+            arrayindex = arrayRange.elements() - 1 - arrayindex;
+        }
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
@@ -798,14 +811,16 @@ class EmitCTrace final : public EmitCFunc {
         EmitCFunc::visit(nodep);
     }
     void visit(AstTracePushPrefix* nodep) override {
-        putns(nodep, "tracep->pushPrefix(");
+        putns(nodep, "VL_TRACE_PUSH_PREFIX(tracep, ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
+        puts(", " + std::to_string(nodep->left()));
+        puts(", " + std::to_string(nodep->right()));
         puts(");\n");
     }
     void visit(AstTracePopPrefix* nodep) override {  //
-        putns(nodep, "tracep->popPrefix();\n");
+        putns(nodep, "VL_TRACE_POP_PREFIX(tracep);\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());

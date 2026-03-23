@@ -4,43 +4,42 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   reg   _ranit;
+module t (
+    input clk
+);
 
-   `include "t_initial_inc.vh"
+  reg _ranit;
 
-   // surefire lint_off STMINI
-   initial assign user_loaded_value = 1;
+  `include "t_initial_inc.vh"
 
-   initial _ranit = 0;
+  // surefire lint_off STMINI
+  initial assign user_loaded_value = 1;
 
-   always @ (posedge clk) begin
-      if (!_ranit) begin
-         _ranit <= 1;
+  initial _ranit = 0;
 
-         // Test $time
-         // surefire lint_off CWECBB
-         if ($time<20) $write("time<20\n");
-         // surefire lint_on  CWECBB
+  always @(posedge clk) begin
+    if (!_ranit) begin
+      _ranit <= 1;
 
-         // Test $write
-         $write ("[%0t] %m: User loaded ", $time);
-         $display ("%b", user_loaded_value);
-         if (user_loaded_value!=1) $stop;
+      // Test $time
+      // surefire lint_off CWECBB
+      if ($time < 20) $write("time<20\n");
+      // surefire lint_on  CWECBB
 
-         // Test $c
+      // Test $write
+      $write("[%0t] %m: User loaded ", $time);
+      $display("%b", user_loaded_value);
+      if (user_loaded_value != 1) $stop;
+
+      // Test $c
 `ifdef VERILATOR
-         $c ("VL_PRINTF(\"Hi From C++\\n\");");
+      $c("VL_PRINTF(\"Hi From C++\\n\");");
 `endif
-         user_loaded_value <= 2;
+      user_loaded_value <= 2;
 
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule

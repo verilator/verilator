@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(fails=test.vlt_all, expect_filename=test.golden_filename)
-
-if not test.vlt_all:
-    test.execute()
+test.compile()
+test.execute()
 
 test.passes()

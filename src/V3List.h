@@ -82,7 +82,7 @@ class V3List final {
 
     VL_ATTR_ALWINLINE
     static void prefetch(const T_Base* elementp, const T_Base* fallbackp) {
-        UDEBUGONLY(UASSERT(fallbackp, "Prefetch fallback pointer must be non nullptr"););
+        UDEBUGONLY(UASSERT(fallbackp, "Prefetch fallback pointer must be non-nullptr"););
         // This compiles to a branchless prefetch with cmove, with the address always valid
         VL_PREFETCH_RW(elementp ? elementp : fallbackp);
     }

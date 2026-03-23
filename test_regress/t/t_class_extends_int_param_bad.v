@@ -6,11 +6,13 @@
 
 module t;
 
-   class Bar #(type T=int) extends T;
-   endclass
+  class Bar #(
+      type T = int
+  ) extends T;
+  endclass
 
-   initial begin
-      Bar#() bar;
-      $stop;
-   end
+  initial begin
+    Bar #() bar;
+    $stop;
+  end
 endmodule

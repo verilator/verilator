@@ -1,0 +1,10 @@
+%Error: t/t_clocking_zero_delay_bad.v:15:17: Cycle delays not allowed as intra-assignment delays (IEEE 1800-2023 14.11)
+                                           : ... note: In instance 'has_clocking'
+   15 |   always out <= ##0 1;
+      |                 ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_clocking_zero_delay_bad.v:20:11: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                           : ... note: In instance 'no_clocking'
+   20 |   initial ##0;
+      |           ^~
+%Error: Exiting due to

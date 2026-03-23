@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   const int aconst = 10;
-   static const int astatic = 20;
+  const int aconst = 10;
+  static const int astatic = 20;
 endclass
 
 module t;
-   initial begin
-      automatic Cls c = new;
-      if (c.aconst !== 10) $stop;
-      if (Cls::astatic !== 20) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic Cls c = new;
+    if (c.aconst !== 10) $stop;
+    if (Cls::astatic !== 20) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

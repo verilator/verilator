@@ -8,12 +8,12 @@ class Cls;
   int callCount = 0;
   int callCount2 = 0;
   int value = 6;
-  bit[5:0] value2 = 6;
+  bit [5:0] value2 = 6;
   function int get();
     callCount += 1;
     return value;
   endfunction
-  function bit[5:0] get2();
+  function bit [5:0] get2();
     callCount2 += 1;
     return value2;
   endfunction
@@ -45,7 +45,7 @@ module t;
       default: $stop;
     endcase
     case (c.getPure())
-      1:;
+      1: ;
       default: $stop;
     endcase
     if (!called) $stop;

@@ -25,6 +25,8 @@
 //=========================================================================
 
 #include "verilatedos.h"
+
+#include <memory>
 #define VERILATOR_VERILATED_VPI_CPP_
 
 #include "verilated.h"
@@ -33,6 +35,7 @@
 
 #include "vltstd/vpi_user.h"
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <list>
@@ -359,12 +362,9 @@ public:
 
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     uint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
-    union {
-        uint8_t u8[4];
-        uint32_t u32;
-    } m_mask;  // memoized variable mask
     uint32_t m_entSize = 0;  // memoized variable size
     uint32_t m_bitOffset = 0;
+    int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
 
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
@@ -373,20 +373,18 @@ protected:
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
-        m_mask.u32 = VL_MASK_I(varp->entBits());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    explicit VerilatedVpioVar(const VerilatedVpioVar* varp)
-        : VerilatedVpioVarBase{varp} {
-        if (varp) {
-            m_mask.u32 = varp->m_mask.u32;
-            m_entSize = varp->m_entSize;
-            m_varDatap = varp->m_varDatap;
-            m_index = varp->m_index;
+    explicit VerilatedVpioVar(const VerilatedVpioVar* vop)
+        : VerilatedVpioVarBase{vop} {
+        if (vop) {
+            m_entSize = vop->m_entSize;
+            m_varDatap = vop->m_varDatap;
+            m_index = vop->m_index;
+            m_partselBits = vop->m_partselBits;
+            m_bitOffset = vop->m_bitOffset;
             // Not copying m_prevDatap, must be nullptr
-        } else {
-            m_mask.u32 = 0;
         }
     }
     ~VerilatedVpioVar() override {
@@ -397,10 +395,49 @@ public:
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t bitOffset() const override { return m_bitOffset; }
-    uint32_t mask() const { return m_mask.u32; }
-    uint8_t mask_byte(int idx) const { return m_mask.u8[idx & 3]; }
+    int32_t partselBits() const { return m_partselBits; }
+    uint32_t bitSize() const {
+        if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
+        return VerilatedVpioVarBase::bitSize();
+    }
+    uint32_t size() const override {
+        if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
+        return VerilatedVpioVarBase::size();
+    }
     uint32_t entSize() const { return m_entSize; }
     const std::vector<int32_t>& index() const { return m_index; }
+    // Create a part-selected view of this variable with the given bit range [hi:lo].
+    VerilatedVpioVar* withPartSelect(int32_t hi, int32_t lo) const {
+        if (isIndexedDimUnpacked()) return nullptr;
+
+        // Need a packed range to select from
+        const VerilatedRange* range = get_range();
+        if (!range) return nullptr;
+
+        // Normalize so sel_lo <= sel_hi
+        const int32_t sel_lo = std::min(hi, lo);
+        const int32_t sel_hi = std::max(hi, lo);
+        const int32_t decl_left = range->left();
+        const int32_t decl_right = range->right();
+        const int32_t decl_lo = std::min(decl_left, decl_right);
+        const int32_t decl_hi = std::max(decl_left, decl_right);
+
+        if (sel_lo < decl_lo || sel_hi > decl_hi) return nullptr;
+
+        const int32_t width = sel_hi - sel_lo + 1;
+
+        // Convert to storage bit position
+        int32_t normalized_lo;
+        if (decl_left > decl_right)  // descending [31:0]
+            normalized_lo = sel_lo - decl_lo;
+        else  // ascending [0:31]
+            normalized_lo = decl_right - sel_hi;
+
+        auto* ret = new VerilatedVpioVar{this};
+        ret->m_bitOffset += normalized_lo;
+        ret->m_partselBits = width;
+        return ret;
+    }
     VerilatedVpioVar* withIndex(int32_t index) const {
         if (VL_UNLIKELY(indexedDim() + 1 >= varp()->dims())) return nullptr;
 
@@ -416,7 +453,8 @@ public:
             ret->m_varDatap = (static_cast<uint8_t*>(ret->m_varDatap))
                               + entSize() * chunkSize * (index - get_range()->low());
         else
-            ret->m_bitOffset += chunkSize * (index - get_range()->low());
+            // Packed arrays are stored left-to-right, not high index to low index
+            ret->m_bitOffset += chunkSize * std::abs(index - get_range()->right());
 
         return ret;
     }
@@ -716,7 +754,7 @@ public:
     // cppcheck-suppress uninitVar  // m_value
     VerilatedVpiCbHolder(uint64_t id, const s_cb_data* cbDatap, const VerilatedVpioVar* varop)
         : m_id{id}
-        , m_cbData{*cbDatap}
+        , m_cbData{*cbDatap}  // vpi_register_cb checks cbDatap is non-null
         , m_varo{varop} {
         m_value.format = cbDatap->value ? cbDatap->value->format : vpiSuppressVal;
         m_cbData.value = &m_value;
@@ -1082,26 +1120,7 @@ public:
         }
         s().m_inertialPuts.clear();
     }
-    static auto getForceControlSignals(const VerilatedVpioVarBase* vop);
-
-    // Used in the deleter of vopGuard_t, which is invoked upon
-    // destruction of the return value of getForceControlSignals.
-    // This means that it is called at the end of vpi_get_value whenever the signal
-    // is forceable and at the end of vpi_put_value whenever the signal is both forceable and
-    // either vpiForceFlag or vpiReleaseFlag is used.
-    // Because it is always automatically called at the end, it should not
-    // erase any previously issued errors or warnings.
-    static void releaseWithoutErrorReset(vpiHandle object) {
-        VerilatedVpiImp::assertOneCheck();
-        VerilatedVpio* const vop = VerilatedVpio::castp(object);
-        VL_DO_DANGLING(delete vop, vop);
-    }
-
-    static void releaseVop(VerilatedVpioVar* vop) {
-        releaseWithoutErrorReset(vop->castVpiHandle());
-    }
-
-    using vopGuard_t = std::unique_ptr<VerilatedVpioVar, decltype(&VerilatedVpiImp::releaseVop)>;
+    static auto getForceControlSignals(const VerilatedVpioVar* vop);
 
     static std::size_t vlTypeSize(VerilatedVarType vltype);
     static void setAllBitsToValue(const VerilatedVpioVar* vop, uint8_t bitValue) {
@@ -1296,35 +1315,159 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     return s().m_errorInfop;
 }
 
-auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const vop) {
-    const std::string signalName = vop->fullname();
-    const std::string forceEnableSignalName = signalName + "__VforceEn";
-    const std::string forceValueSignalName = signalName + "__VforceVal";
+auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignalVop) {
+    const VerilatedForceControlSignals* const forceControlSignals
+        = baseSignalVop->varp()->forceControlSignals();
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
+    if (VL_UNLIKELY(!forceControlSignals)) {
+        VL_VPI_ERROR_(
+            __FILE__, __LINE__,
+            "%s: VPI put or get requested for forceable signal '%s', but signal has no force "
+            "control signals.",
+            __func__, baseSignalVop->fullname());
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }  // LCOV_EXCL_STOP
+    const VerilatedVar* const forceEnableSignalVarp = forceControlSignals->forceEnableSignalp;
+    const VerilatedVar* const forceValueSignalVarp = forceControlSignals->forceValueSignalp;
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
+    if (VL_UNLIKELY(!forceEnableSignalVarp)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but force enable "
+                      "signal could not be found.",
+                      __func__, baseSignalVop->fullname());
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    if (VL_UNLIKELY(!forceValueSignalVarp)) {
+        VL_VPI_ERROR_(
+            __FILE__, __LINE__,
+            "%s: VPI put or get requested for forceable signal '%s', but force value signal could "
+            "not be found.",
+            __func__, baseSignalVop->fullname());
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    // LCOV_EXCL_STOP
 
-    vpiHandle const forceEnableSignalp  // NOLINT(misc-misplaced-const)
-        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(forceEnableSignalName.c_str()), nullptr);
-    vpiHandle const forceValueSignalp  // NOLINT(misc-misplaced-const)
-        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(forceValueSignalName.c_str()), nullptr);
-    VerilatedVpioVar* forceEnableSignalVop = VerilatedVpioVar::castp(forceEnableSignalp);
-    VerilatedVpioVar* forceValueSignalVop = VerilatedVpioVar::castp(forceValueSignalp);
+    // Adjust dimension and partselect to match the base signal, so that forcing a partial signal
+    // doesn't exceed the bounds given by the base signal
+    VerilatedVpioVar* forceEnableSignalVop
+        = new VerilatedVpioVar{forceEnableSignalVarp, baseSignalVop->scopep()};
+    VerilatedVpioVar* forceValueSignalVop
+        = new VerilatedVpioVar{forceValueSignalVarp, baseSignalVop->scopep()};
+
+    for (int idx : baseSignalVop->index()) {
+        VerilatedVpioVar* nextForceEnableSignalVop = forceEnableSignalVop->withIndex(idx);
+        VerilatedVpioVar* nextForceValueSignalVop = forceValueSignalVop->withIndex(idx);
+        VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        forceEnableSignalVop = nextForceEnableSignalVop;
+        forceValueSignalVop = nextForceValueSignalVop;
+        if (!forceEnableSignalVop || !forceValueSignalVop) break;  // LCOV_EXCL_LINE
+    }
+
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
     if (VL_UNLIKELY(!forceEnableSignalVop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: VPI force or release requested for '%s', but vpiHandle '%p' of enable "
-                      "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
-                      "marked as forceable",
-                      __func__, signalName.c_str(), forceEnableSignalp,
-                      forceEnableSignalName.c_str());
+                      "%s: VPI put or get requested for forceable signal '%s', but force enable "
+                      "signal could not be indexed to the same dimension as the base signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceValueSignalVop))
+            VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
     }
     if (VL_UNLIKELY(!forceValueSignalVop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: VPI force or release requested for '%s', but vpiHandle '%p' of value "
-                      "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
-                      "marked as forceable",
-                      __func__, signalName.c_str(), forceValueSignalp,
-                      forceValueSignalName.c_str());
+                      "%s: VPI put or get requested for forceable signal '%s', but force value "
+                      "signal could not be indexed to the same dimension as the base signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceEnableSignalVop))
+            VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
     }
-    return std::pair<vopGuard_t, vopGuard_t>{vopGuard_t{forceEnableSignalVop, releaseVop},
-                                             vopGuard_t{forceValueSignalVop, releaseVop}};
+    // LCOV_EXCL_STOP
+
+    if (VL_UNLIKELY(baseSignalVop->partselBits() != -1)) {
+        // Bits are stored left-to-right in memory, which can either be ascending or descending. To
+        // match the bitOffset of the base signal, the distance to the rightmost bit, rather than
+        // to the lowest indexed bit, must be determined
+        int currentDimRight = baseSignalVop->rangep()->right();
+        int32_t offsetFromRight
+            = static_cast<int32_t>(static_cast<int64_t>(baseSignalVop->bitOffset())
+                                   - static_cast<int64_t>(forceValueSignalVop->bitOffset()));
+        const bool isDescending
+            = baseSignalVop->rangep()->left() >= baseSignalVop->rangep()->right();
+
+        const int32_t partSelIndexRight
+            = isDescending ? currentDimRight + offsetFromRight : currentDimRight - offsetFromRight;
+        const int32_t partSelIndexLeft
+            = isDescending ? partSelIndexRight + (baseSignalVop->partselBits() - 1)
+                           : partSelIndexRight - (baseSignalVop->partselBits() - 1);
+        const int32_t partSelIndexHigh = std::max(partSelIndexLeft, partSelIndexRight);
+        const int32_t partSelIndexLow = std::min(partSelIndexLeft, partSelIndexRight);
+
+        VerilatedVpioVar* partIndexedForceEnableSignalVop
+            = forceEnableSignalVop->withPartSelect(partSelIndexHigh, partSelIndexLow);
+        VerilatedVpioVar* partIndexedForceValueSignalVop
+            = forceValueSignalVop->withPartSelect(partSelIndexHigh, partSelIndexLow);
+
+        VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        forceEnableSignalVop = partIndexedForceEnableSignalVop;
+        forceValueSignalVop = partIndexedForceValueSignalVop;
+    }
+
+    // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
+    if (VL_UNLIKELY(!forceEnableSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but part selection "
+                      "could not be applied to the force enable signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceValueSignalVop))
+            VL_DO_DANGLING(delete forceValueSignalVop, forceValueSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    if (VL_UNLIKELY(!forceValueSignalVop)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: VPI put or get requested for forceable signal '%s', but part selection "
+                      "could not be applied to the force value signal.",
+                      __func__, baseSignalVop->fullname());
+        if (VL_UNLIKELY(forceEnableSignalVop))
+            VL_DO_DANGLING(delete forceEnableSignalVop, forceEnableSignalVop);
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }
+    // LCOV_EXCL_STOP
+
+#ifdef VL_DEBUG
+    // Sanity checks: Offsets, widths, and dimensions should all match between the base signal and
+    // the force control signals, so that they always refer to the same bits
+    assert(forceEnableSignalVop->bitSize() == baseSignalVop->bitSize());
+    assert(forceValueSignalVop->bitSize() == baseSignalVop->bitSize());
+    assert(forceEnableSignalVop->indexedDim() == baseSignalVop->indexedDim());
+    assert(forceValueSignalVop->indexedDim() == baseSignalVop->indexedDim());
+    assert(forceEnableSignalVop->index() == baseSignalVop->index());
+    assert(forceValueSignalVop->index() == baseSignalVop->index());
+    assert(forceEnableSignalVop->bitOffset() == baseSignalVop->bitOffset());
+    assert(forceValueSignalVop->bitOffset() == baseSignalVop->bitOffset());
+    assert(forceEnableSignalVop->partselBits() == baseSignalVop->partselBits());
+    assert(forceValueSignalVop->partselBits() == baseSignalVop->partselBits());
+    // entSize can differ because the force enable signal can have a different vltyp than the base
+    // signal (e.g. the base signal can be of type VLVT_REAL, while the force enable signal is
+    // still of type VLVT_UINT8), but for now entSize is only used for unpacked arrays, which
+    // cannot be forced through VPI yet
+    // assert(forceEnableSignalVop->entSize() == baseSignalVop->entSize());
+    assert(forceValueSignalVop->entSize() == baseSignalVop->entSize());
+    assert(forceEnableSignalVop->varDatap() == forceEnableSignalVarp->datap());
+    assert(forceValueSignalVop->varDatap() == forceValueSignalVarp->datap());
+#endif  // VL_DEBUG
+
+    return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+        forceEnableSignalVop, forceValueSignalVop};
 }
 
 std::size_t VerilatedVpiImp::vlTypeSize(const VerilatedVarType vltype) {
@@ -2174,6 +2317,83 @@ void vpi_get_systf_info(vpiHandle /*object*/, p_vpi_systf_data /*systf_data_p*/)
     VL_VPI_UNIMP_();
 }
 
+// Bit range information extracted from a name string by vl_vpi_parse_indices.
+struct VlVpiBitRange final {
+    int32_t hi = 0;
+    int32_t lo = 0;
+    bool valid = false;
+};
+
+// Parse multi-dimensional array indices and an optional trailing bit range from a name string.
+// e.g., "mem[0][3][2]" -> name becomes "mem", indices = {0, 3, 2}
+// e.g., "mem[0][3][15:8]" -> name becomes "mem", indices = {0, 3}, bitRange = {15, 8}
+// e.g., "signal[31:0]" -> name becomes "signal", indices = {}, bitRange = {31, 0}
+// Returns true if any brackets were parsed successfully, false otherwise.
+static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indices,
+                                 VlVpiBitRange* bitRange = nullptr) {
+    if (name.empty() || name.back() != ']') return false;
+
+    // Only parse brackets after the last escaped identifier's terminating space
+    size_t escapeSpacePos = std::string::npos;
+    const size_t backslashPos = name.rfind('\\');
+    if (backslashPos != std::string::npos) escapeSpacePos = name.find(' ', backslashPos);
+
+    indices.clear();
+    size_t end = name.length();
+    bool first = true;
+
+    while (end > 0 && name[end - 1] == ']') {
+        const size_t close = end - 1;
+        // Search backward for matching '['
+        size_t open = close;
+        while (open > 0 && name[open - 1] != '[') --open;
+        if (open == 0) return false;  // No matching '['
+        --open;  // Points to '['
+
+        // For escaped identifiers: skip brackets that come before the terminating space
+        if (escapeSpacePos != std::string::npos && open < escapeSpacePos) break;
+
+        const std::string content = name.substr(open + 1, close - open - 1);
+        if (content.empty()) return false;  // Empty brackets []
+
+        // On the first (rightmost) bracket, check for bit range [hi:lo]
+        if (first && bitRange) {
+            const size_t colon = content.find(':');
+            if (colon != std::string::npos) {
+                char* endp = nullptr;
+                const long hi_val = std::strtol(content.c_str(), &endp, 10);
+                if (!endp || *endp != ':') return false;
+                const long lo_val = std::strtol(endp + 1, &endp, 10);
+                if (!endp || *endp != '\0') return false;
+                bitRange->hi = static_cast<int32_t>(hi_val);
+                bitRange->lo = static_cast<int32_t>(lo_val);
+                bitRange->valid = true;
+                end = open;
+                first = false;
+                continue;
+            }
+        }
+        first = false;
+
+        // Parse as integer index
+        char* endp = nullptr;
+        const long val = std::strtol(content.c_str(), &endp, 10);
+        if (!endp || *endp != '\0') return false;
+        indices.push_back(static_cast<PLI_INT32>(val));
+        end = open;
+    }
+
+    if (indices.empty() && !(bitRange && bitRange->valid)) return false;
+
+    // Reverse indices to get them in forward order [0][3][2] -> {0, 3, 2}
+    std::reverse(indices.begin(), indices.end());
+
+    // Truncate name to remove the indices
+    name.erase(end);
+
+    return true;
+}
+
 // for obtaining handles
 
 vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
@@ -2181,22 +2401,36 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!namep)) return nullptr;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n", namep, scope););
+
+    std::string scopeAndName = namep;
+
+    // Collapse consecutive spaces into single spaces (can occur with escaped identifiers)
+    scopeAndName.erase(std::unique(scopeAndName.begin(), scopeAndName.end(),
+                                   [](char a, char b) { return a == ' ' && b == ' '; }),
+                       scopeAndName.end());
+
+    static thread_local std::vector<PLI_INT32> indices;
+    VlVpiBitRange bitRange;
+    bool hasIndices = false;
+
     const VerilatedVar* varp = nullptr;
     const VerilatedScope* scopep;
     const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
-    std::string scopeAndName = namep;
-    if (0 == std::strncmp(namep, "$root.", std::strlen("$root."))) {
-        namep += std::strlen("$root.");
-        scopeAndName = namep;
+
+    if (0 == std::strncmp(scopeAndName.c_str(), "$root.", std::strlen("$root."))) {
+        scopeAndName.erase(0, std::strlen("$root."));
     } else if (voScopep) {
         const bool scopeIsPackage = VerilatedVpioPackage::castp(scope) != nullptr;
-        scopeAndName = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + namep;
-        namep = const_cast<PLI_BYTE8*>(scopeAndName.c_str());
+        scopeAndName
+            = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + scopeAndName;
     }
     {
         // This doesn't yet follow the hierarchy in the proper way
         bool isPackage = false;
-        scopep = Verilated::threadContextp()->scopeFind(namep);
+
+        // Scopes in generate blocks can also end with an index, so look it up first before
+        // interpreting the trailing brackets as array indices or bit selects.
+        scopep = Verilated::threadContextp()->scopeFind(scopeAndName.c_str());
         if (scopep) {  // Whole thing found as a scope
             if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{scopep})->castVpiHandle();
@@ -2235,6 +2469,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
             scopename = scopeAndName.substr(0, pos);
             if (scopename == "$unit") scopename = "\\$unit ";
         }
+
+        // Parse any array indices and optional bit range from the name
+        // e.g., "mem[0][3][2]" or "signal[15:8]" or "mem[0][3][15:8]"
+        hasIndices = vl_vpi_parse_indices(basename, indices, &bitRange);
+
         if (prevpos == std::string::npos) {
             // scopename is a toplevel (no '.' separator), so search in our TOP ports first.
             scopep = Verilated::threadContextp()->scopeFind("TOP");
@@ -2248,11 +2487,40 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     }
     if (!varp) return nullptr;
 
+    // Create the initial variable handle
+    vpiHandle resultHandle;
     if (varp->isParam()) {
-        return (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
+        resultHandle = (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
     } else {
-        return (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
+        resultHandle = (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
     }
+
+    // If we have indices, apply them using vpi_handle_by_multi_index
+    if (hasIndices && !indices.empty()) {
+        vpiHandle indexedHandle = vpi_handle_by_multi_index(
+            resultHandle, static_cast<PLI_INT32>(indices.size()), indices.data());
+        vpi_release_handle(resultHandle);
+        resultHandle = indexedHandle;
+        if (!resultHandle) return nullptr;
+    }
+
+    // If we have a bit range part-select, apply it
+    if (bitRange.valid) {
+        VerilatedVpioVar* const varop = VerilatedVpioVar::castp(resultHandle);
+        if (!varop) {
+            vpi_release_handle(resultHandle);
+            return nullptr;
+        }
+        VerilatedVpioVar* const partsel = varop->withPartSelect(bitRange.hi, bitRange.lo);
+        if (!partsel) {
+            vpi_release_handle(resultHandle);
+            return nullptr;
+        }
+        vpi_release_handle(resultHandle);
+        resultHandle = partsel->castVpiHandle();
+    }
+
+    return resultHandle;
 }
 
 vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
@@ -2574,6 +2842,26 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
     return status;
 }
 
+// Get a VPI format that can be used to fully represent a signal of the given type
+PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
+    switch (vlType) {
+    case VLVT_UINT8:
+    case VLVT_UINT16:
+    case VLVT_UINT32:
+    case VLVT_UINT64:
+    case VLVT_WDATA: return vpiVectorVal;
+    case VLVT_STRING:
+        return vpiStringVal;  // LCOV_EXCL_LINE - vl_get_vltype_format is only used in
+                              // vpi_put_value for releasing a forceable signal, and string signals
+                              // cannot be forced
+    case VLVT_REAL: return vpiRealVal;
+    default:  // LCOV_EXCL_START - Cannot test, because vpi_put_value would already exit due to
+              // failed vl_check_format before calling this
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vlType);
+        return vpiUndefined;
+    }  // LCOV_EXCL_STOP
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args, args_copy;
     va_start(args, fmt);
@@ -2620,7 +2908,8 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
 
     // make sure we're not trying to write outside var bounds
     assert(varBits > addOffset);
-    bitCount = std::min(bitCount, varBits - addOffset);
+    bitCount = std::min({wordBits,  // For VLWide, varBits can exceed wordBits
+                         bitCount, varBits - addOffset});
 
     VarAccessInfo<T> info;
     info.m_datap = reinterpret_cast<T*>(vop->varDatap());
@@ -2727,16 +3016,18 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
 
     const int varBits = vop->bitSize();
 
-    // __VforceRd already has the correct value, but that signal is not public and thus not
-    // present in the scope's m_varsp map, so its value has to be recreated using the __VforceEn
-    // and __VforceVal signals.
-    // TODO: Implement a way to retrieve __VforceRd, rather than needing to recreate it.
-    const auto forceControlSignals
-        = vop->varp()->isForceable()
-              ? VerilatedVpiImp::getForceControlSignals(vop)
-              : std::pair<VerilatedVpiImp::vopGuard_t, VerilatedVpiImp::vopGuard_t>{
-                    VerilatedVpiImp::vopGuard_t{nullptr, VerilatedVpiImp::releaseVop},
-                    VerilatedVpiImp::vopGuard_t{nullptr, VerilatedVpiImp::releaseVop}};
+    // __VforceRd already has the correct value, but that signal is not public and thus not present
+    // in the scope's m_varsp map, will be removed entirely eventually (#7092), so its value has to
+    // be recreated using the __VforceEn and __VforceVal signals.
+    const auto forceControlSignals = [vop]() {
+        if (vop->varp()->isForceable()) {
+            const VerilatedVpioVar* varVop = dynamic_cast<const VerilatedVpioVar*>(vop);
+            assert(varVop);  // VerilatedVpioParams cannot be forced
+            return VerilatedVpiImp::getForceControlSignals(varVop);
+        }
+        return std::pair<std::unique_ptr<VerilatedVpioVar>, std::unique_ptr<VerilatedVpioVar>>{
+            nullptr, nullptr};
+    }();
     const VerilatedVpioVarBase* const forceEnableSignalVop = forceControlSignals.first.get();
     const VerilatedVpioVarBase* const forceValueSignalVop = forceControlSignals.second.get();
     t_vpi_error_info getForceControlSignalsError{};
@@ -2747,6 +3038,8 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         vpi_printf(getForceControlSignalsError.message);
         VL_VPI_ERROR_RESET_();
     }  // LCOV_EXCL_STOP
+    // LCOV_EXCL_START - Cannot test, since getForceControlSignals can only fail when a Verilation
+    // time error causes force control signals to be missing
     // NOLINTNEXTLINE(readability-simplify-boolean-expr);
     if (VL_UNLIKELY(
             (errorOccurred && getForceControlSignalsError.level >= vpiError)
@@ -2765,7 +3058,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
                       __func__, vop->fullname(),
                       gotErrorMessage ? previousErrorMessage.c_str() : "");
         return;
-    }
+    }  // LCOV_EXCL_STOP
 
     const std::function<QData(const VerilatedVpioVarBase*, size_t, size_t)> getForceableSignalWord
         = [forceEnableSignalVop, forceValueSignalVop](const VerilatedVpioVarBase* baseSignalVop,
@@ -2991,9 +3284,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             = baseSignalVop->varp()->isForceable()
                       && (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag)
                   ? VerilatedVpiImp::getForceControlSignals(baseSignalVop)
-                  : std::pair<VerilatedVpiImp::vopGuard_t, VerilatedVpiImp::vopGuard_t>{
-                        VerilatedVpiImp::vopGuard_t{nullptr, VerilatedVpiImp::releaseVop},
-                        VerilatedVpiImp::vopGuard_t{nullptr, VerilatedVpiImp::releaseVop}};
+                  : std::pair<std::unique_ptr<VerilatedVpioVar>,
+                              std::unique_ptr<VerilatedVpioVar>>{nullptr, nullptr};
         const VerilatedVpioVar* const forceEnableSignalVop = forceControlSignals.first.get();
         const VerilatedVpioVar* const forceValueSignalVop = forceControlSignals.second.get();
         t_vpi_error_info getForceControlSignalsError{};
@@ -3004,6 +3296,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             vpi_printf(getForceControlSignalsError.message);
             VL_VPI_ERROR_RESET_();
         }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_START - Cannot test, since getForceControlSignals can only fail when a
+        // Verilation time error causes force control signals to be missing
         // NOLINTNEXTLINE(readability-simplify-boolean-expr);
         if (VL_UNLIKELY(baseSignalVop->varp()->isForceable()
                         && (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag)
@@ -3022,7 +3316,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                           __func__, baseSignalVop->fullname(), object,
                           gotErrorMessage ? previousErrorMessage.c_str() : "");
             return nullptr;
-        }
+        }  // LCOV_EXCL_STOP
 
         const VerilatedVpioVar* const valueVop
             = (forceFlag == vpiForceFlag) ? forceValueSignalVop : baseSignalVop;
@@ -3038,6 +3332,18 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
 
             if (baseSignalVop->varp()->isContinuously())
                 VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
+
+            // For writing back the forced value to a non-continuously assigned base signal in the
+            // release case, need to get the forced signal's raw data, since valuep could have
+            // a format that modifies the data (e.g. vpiStringVal which pads with spaces)
+            const s_vpi_value forcedValue
+                = baseSignalVop->varp()->isContinuously() ? s_vpi_value{} : [&baseSignalVop]() {
+                      s_vpi_value val{.format
+                                      = vl_get_vltype_format(baseSignalVop->varp()->vltype()),
+                                      .value{}};
+                      vl_vpi_get_value(baseSignalVop, &val);
+                      return val;
+                  }();
 
             vl_vpi_get_value(baseSignalVop, valuep);
 
@@ -3062,8 +3368,14 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 VL_VPI_ERROR_RESET_();
             }  // LCOV_EXCL_STOP
 
-            if (!baseSignalVop->varp()->isContinuously())
+            if (!baseSignalVop->varp()->isContinuously()) {
                 VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
+
+                // If the signal is not continuously assigned, it should keep the forced value
+                // until the next time it is assigned in the simulation, so the forced value is
+                // written to the base signal
+                vpi_put_value(object, const_cast<p_vpi_value>(&forcedValue), nullptr, vpiNoDelay);
+            }
 
             return nullptr;
         }
@@ -4022,8 +4334,22 @@ PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
     }
 }
 
-vpiHandle vpi_handle_by_multi_index(vpiHandle /*obj*/, PLI_INT32 /*num_index*/,
-                                    PLI_INT32* /*index_array*/) {
-    VL_VPI_UNIMP_();
-    return nullptr;
+vpiHandle vpi_handle_by_multi_index(vpiHandle obj, PLI_INT32 num_index, PLI_INT32* index_array) {
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_multi_index %p %d\n", obj, num_index););
+    VerilatedVpiImp::assertOneCheck();
+    VL_VPI_ERROR_RESET_();
+
+    if (VL_UNLIKELY(!obj)) return nullptr;
+    if (VL_UNLIKELY(!index_array)) return nullptr;
+    if (VL_UNLIKELY(num_index <= 0)) return nullptr;
+
+    vpiHandle resultHandle = obj;
+    for (PLI_INT32 i = 0; i < num_index; ++i) {
+        vpiHandle nextIndexHandle = vpi_handle_by_index(resultHandle, index_array[i]);
+        if (i > 0) vpi_release_handle(resultHandle);
+        resultHandle = nextIndexHandle;
+        if (VL_UNLIKELY(!resultHandle)) { return nullptr; }
+    }
+
+    return resultHandle;
 }

@@ -10,22 +10,22 @@
 `define LONG_NAME_SUB sublongnameiuqyrewewriqyewroiquyweriuqyewriuyewrioryqoiewyriuewyrqrqioeyriuqyewriuqyeworqiurewyqoiuewyrqiuewoyewriuoeyqiuewryqiuewyroiqyewiuryqeiuwryuqiyreoiqyewiuryqewiruyqiuewyroiuqyewroiuyqewoiryqiewuyrqiuewyroqiyewriuqyewrewqroiuyqiuewyriuqyewroiqyewroiquewyriuqyewroiqewyriuqewyroiqyewroiyewoiuryqoiewyriuqyewiuryqoierwyqoiuewyrewoiuyqroiewuryewurqyoiweyrqiuewyreqwroiyweroiuyqweoiuryqiuewyroiuqyroie
 `define LONG_NAME_VAR varlongnameiuqyrewewriqyewroiquyweriuqyewriuyewrioryqoiewyriuewyrqrqioeyriuqyewriuqyeworqiurewyqoiuewyrqiuewoyewriuoeyqiuewryqiuewyroiqyewiuryqeiuwryuqiyreoiqyewiuryqewiruyqiuewyroiuqyewroiuyqewoiryqiewuyrqiuewyroqiyewriuqyewrewqroiuyqiuewyriuqyewroiqyewroiquewyriuqyewroiqewyriuqewyroiqyewroiyewoiuryqoiewyriuqyewiuryqoierwyqoiuewyrewoiuyqroiewuryewurqyoiweyrqiuewyreqwroiyweroiuyqweoiuryqiuewyroiuqyroie
 
-module t ();
+module t;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-   logic `LONG_NAME_VAR;
+  logic `LONG_NAME_VAR;
 
-   `LONG_NAME_MOD
-     `LONG_NAME_SUB
-       ();
+  `LONG_NAME_MOD
+    `LONG_NAME_SUB
+     ();
 
 endmodule
 
 module `LONG_NAME_MOD ();
-   // Force Verilator to make a new class
-   logic a1 /* verilator public */;
+  // Force Verilator to make a new class
+  logic a1 /* verilator public */;
 endmodule

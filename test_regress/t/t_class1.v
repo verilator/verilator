@@ -7,32 +7,32 @@
 typedef class Cls;
 
 class Cls;
-   int imembera;
-   int imemberb;
+  int imembera;
+  int imemberb;
 endclass : Cls
 
 module t;
-   typedef Cls Cls2;
+  typedef Cls Cls2;
 
-   initial begin
-      Cls c;
-      Cls2 c2;
-      if (c != null) $stop;
-      if (c) $stop;
-      if (c2) $stop;
-      $display("Display: null = \"%p\"", c);  // null
-      c = new;
-      c2 = new;
-      if (c == null) $stop;
-      if (!c) $stop;
-      if (!c2) $stop;
-      $display("Display: newed = \"%p\"", c);  // '{imembera:0, imemberb:0}
-      c.imembera = 10;
-      c.imemberb = 20;
-      $display("Display: set = \"%p\"", c);  // '{imembera:10, imemberb:20}
-      if (c.imembera != 10) $stop;
-      if (c.imemberb != 20) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Cls c;
+    Cls2 c2;
+    if (c != null) $stop;
+    if (c) $stop;
+    if (c2) $stop;
+    $display("Display: null = \"%p\"", c);  // null
+    c = new;
+    c2 = new;
+    if (c == null) $stop;
+    if (!c) $stop;
+    if (!c2) $stop;
+    $display("Display: newed = \"%p\"", c);  // '{imembera:0, imemberb:0}
+    c.imembera = 10;
+    c.imemberb = 20;
+    $display("Display: set = \"%p\"", c);  // '{imembera:10, imemberb:20}
+    if (c.imembera != 10) $stop;
+    if (c.imemberb != 20) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

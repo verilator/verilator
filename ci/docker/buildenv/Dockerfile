@@ -37,7 +37,7 @@ RUN apt-get update \
                         libfl2 \
                         libfl-dev \
                         libclang-rt-18-dev \
-                        libgoogle-perftools-dev \
+                        libjemalloc-dev \
                         libsystemc \
                         libsystemc-dev \
                         numactl \

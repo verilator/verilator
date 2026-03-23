@@ -14,14 +14,14 @@ class ExtCls1;
 endclass
 
 module t;
-   Cls1 c1;
-   Cls2 c2;
-   ExtCls1 ext_c1;
+  Cls1 c1;
+  Cls2 c2;
+  ExtCls1 ext_c1;
 
-   initial begin
-      c1 = (c1 != null) ? c1 : c2;
-      c1 = (c1 != null) ? c2 : c2;
-      c2 = (c1 == null) ? 1'b1 : c2;
-      ext_c1 = (c1 == null) ? ext_c1 : c1;
-   end
+  initial begin
+    c1 = (c1 != null) ? c1 : c2;
+    c1 = (c1 != null) ? c2 : c2;
+    c2 = (c1 == null) ? 1'b1 : c2;
+    ext_c1 = (c1 == null) ? ext_c1 : c1;
+  end
 endmodule

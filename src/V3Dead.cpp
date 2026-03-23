@@ -173,6 +173,7 @@ class DeadVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
         checkAll(nodep);
         if (nodep->taskp()) nodep->taskp()->user1Inc();
         if (nodep->classOrPackagep()) {

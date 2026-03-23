@@ -262,9 +262,9 @@ module sub3;
   real a, d;
 
   task write_m;
-    a = 0.4;
+    a = 2.4;
     // verilator lint_off REALCVT
-    $display("a: -0.4=> %.1f  %0d  %0x  %0b", copyr(a), copyr(a), copyr(a), copyr(a));
+    $display("a: -2.4=> %.1f  %0d  %0x  %0b", copyr(a), copyr(a), copyr(a), copyr(a));
     // verilator lint_on REALCVT
   endtask
 endmodule

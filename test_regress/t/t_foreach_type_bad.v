@@ -9,22 +9,22 @@ endclass
 
 module t;
 
-   real r;
+  real r;
 
-   bit  b[2];
+  bit b[2];
 
-   Cls c;
+  Cls c;
 
-   initial begin
-      foreach (c[i]);  // bad type
+  initial begin
+    foreach (c[i]);  // bad type
 
-      foreach (r[i]);  // no loop var
+    foreach (r[i]);  // no loop var
 
-      foreach (b[i, j, k]);  // extra loop var
+    foreach (b[i, j, k]);  // extra loop var
 
-      foreach (r[, i]);  // no loop var and extra
+    foreach (r[, i]);  // no loop var and extra
 
-      $stop;
-   end
+    $stop;
+  end
 
 endmodule

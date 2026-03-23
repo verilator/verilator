@@ -1,5 +1,5 @@
-%Error: t/t_lint_pkg_colon_bad.v:8:8: syntax error, unexpected IDENTIFIER-::
-    8 |    reg mispkgb::bar_t b;
-      |        ^~~~~~~
+%Error: t/t_lint_pkg_colon_bad.v:8:7: syntax error, unexpected IDENTIFIER-::
+    8 |   reg mispkgb::bar_t b;
+      |       ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

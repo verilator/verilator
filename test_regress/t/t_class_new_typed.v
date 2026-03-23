@@ -4,27 +4,27 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
-class SuperCls;
-   int s = 2;
-   function new(int def = 3);
+module t;
+  class SuperCls;
+    int s = 2;
+    function new(int def = 3);
       s = def;
-   endfunction
-endclass
+    endfunction
+  endclass
 
-class Cls extends SuperCls;
-   function new(int def = 42);
+  class Cls extends SuperCls;
+    function new(int def = 42);
       s = def;
-   endfunction
-endclass
+    endfunction
+  endclass
 
-   SuperCls super_obj;
+  SuperCls super_obj;
 
-   initial begin
-      super_obj = Cls::new;
-      if (super_obj.s != 42) $stop;
+  initial begin
+    super_obj = Cls::new;
+    if (super_obj.s != 42) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -4,15 +4,13 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   t_multitop1s s ();
-   initial $display("In '%m'");
-   always @(posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+module t (
+    input clk
+);
+  t_multitop1s s ();
+  initial $display("In '%m'");
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

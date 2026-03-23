@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   // IEEE 2023 only disallows nested interface inside another interface, not
-   // class
-   interface class good_can_nest;
-   endclass
+  // IEEE 2023 only disallows nested interface inside another interface, not
+  // class
+  interface class good_can_nest;
+  endclass
 endclass
 
 module t;
-   Cls c;
+  Cls c;
 endmodule

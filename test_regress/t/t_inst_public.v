@@ -6,26 +6,26 @@
 
 module t;
 
-   Pub pub();
+  Pub pub ();
 
-   localparam ZERO = 0;
-   if (ZERO) Dead dead();
+  localparam ZERO = 0;
+  if (ZERO) Dead dead ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
 module Pub;
 
-   // verilator public_module
+  // verilator public_module
 
-   // no signals here
+  // no signals here
 
 endmodule
 
 module Dead;
-   // verilator public_module
+  // verilator public_module
 endmodule

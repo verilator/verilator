@@ -107,6 +107,7 @@ public:
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         FUNCTIMECTL,    // Functions cannot have timing/delay/wait
+        FUTURE,         // Feature is under development and not yet supported
         GENCLK,         // Generated Clock. Historical, never issued.
         GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
@@ -223,7 +224,7 @@ public:
             "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
             "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
-            "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
+            "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
             "INFINITELOOP", "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN",
             "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP",

@@ -16,7 +16,7 @@ function bit check_double(real d);
   return 1'b0;
 endfunction
 
-module t();
+module t;
   initial begin
     if (!check_string("WO"))
       $stop;

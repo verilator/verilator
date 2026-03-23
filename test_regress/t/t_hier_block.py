@@ -29,7 +29,7 @@ test.compile(
         '-pvalue+PARAM_B=200',
         '-DPARAM_OVERRIDE',  #
         '--CFLAGS',
-        '"-pipe -DCPP_MACRO=cplusplus"'
+        '"-O0 -pipe -DCPP_MACRO=cplusplus"'
     ],
     threads=(6 if test.vltmt else 1))
 

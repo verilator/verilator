@@ -225,8 +225,8 @@ class LinkResolveVisitor final : public VNVisitor {
             if (VN_IS(nodep->backp(), StmtExpr)) {
                 nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
             }
-            // UINFOTREE(1, letp, "", "let-let");
-            // UINFOTREE(1, nodep, "", "let-ref");
+            // UINFOTREE(9, letp, "", "let-let");
+            // UINFOTREE(9, nodep, "", "let-ref");
             // cppcheck-suppress constVariablePointer
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
@@ -250,7 +250,7 @@ class LinkResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(refp), refp);
                 }
             });
-            // UINFOTREE(1, newp, "", "let-new");
+            // UINFOTREE(9, newp, "", "let-new");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Iterate to expand further now, so we can look for recursions
@@ -362,7 +362,7 @@ class LinkResolveVisitor final : public VNVisitor {
                                   + m_modp->prettyName();
                         break;
                     default:  // Most operators, just move to next argument
-                        if (!V3Number::displayedFmtLegal(ch, isScan)) {
+                        if (!V3Number::displayedFmtHasArg(ch, isScan)) {
                             nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
                         } else if (!inIgnore) {
                             if (!argp) {
@@ -436,23 +436,28 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
-        if (!nodep->hasFormat()) {
-            UASSERT_OBJ(nodep->text() == "", nodep,
-                        "Non-format $sformatf should have \"\" format");
+        // Similar code in V3Const::visit(AstSFormatF)
+        if (nodep->exprFormat()) {
             if (VN_IS(nodep->exprsp(), Const)
                 && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
                 AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
+                nodep->exprFormat(false);
                 VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
-            nodep->hasFormat(true);
         }
-        const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
-        nodep->text(newFormat);
+        if (nodep->optionalFormat()) {  // e.g. $display, $swrite; _not_ $sformat/$sformatf
+            nodep->optionalFormat(false);
+            nodep->exprFormat(false);
+        }
         if ((VN_IS(nodep->backp(), Display)
              && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
             nodep->scopeNamep(new AstScopeName{nodep->fileline(), true});
+        }
+        if (!nodep->exprFormat()) {
+            const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+            nodep->text(newFormat);
         }
     }
 

@@ -13,32 +13,32 @@
 `endif
 
 module t (
-   input clk,
-   input dummy_clk // Never toggled from C++
+    input clk,
+    input dummy_clk  // Never toggled from C++
 );
 
-   int count;
+  int count;
 
-   logic [7:0] pub_byte /* verilator public_flat_rw */ = 123;
-   logic [7:0] comb_byte;
+  logic [7:0] pub_byte  /* verilator public_flat_rw */ = 123;
+  logic [7:0] comb_byte;
 
-   always_comb comb_byte = `IMPURE_ONE ? pub_byte : '0;
+  always_comb comb_byte = `IMPURE_ONE ? pub_byte : '0;
 
-   always_ff @(posedge clk) begin
-      count <= count + 1;
-      if (comb_byte != pub_byte) begin
-         $display("%%Error: comb_byte (%0d) != pub_byte (%0d)", comb_byte, pub_byte);
-         $stop;
-      end
-      if (count == 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always_ff @(posedge clk) begin
+    count <= count + 1;
+    if (comb_byte != pub_byte) begin
+      $display("%%Error: comb_byte (%0d) != pub_byte (%0d)", comb_byte, pub_byte);
+      $stop;
+    end
+    if (count == 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
-   always_ff @(posedge dummy_clk) begin
-      // verilator lint_off MULTIDRIVEN
-      comb_byte = ~pub_byte;
-      // verilator lint_on MULTIDRIVEN
-   end
+  always_ff @(posedge dummy_clk) begin
+    // verilator lint_off MULTIDRIVEN
+    comb_byte = ~pub_byte;
+    // verilator lint_on MULTIDRIVEN
+  end
 endmodule

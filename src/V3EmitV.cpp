@@ -182,6 +182,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialAutomaticStmt* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialStaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
         if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
             if (!ap->nextp()) {
@@ -361,6 +363,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     void visit(AstToStringN* nodep) override { iterateConst(nodep->lhsp()); }
+    void visit(AstSFormatArg* nodep) override { iterateConst(nodep->exprp()); }
     void visit(AstSFormatF* nodep) override {
         visitNodeDisplay(nodep, nullptr, nodep->text(), nodep->exprsp());
     }
@@ -802,11 +805,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
         putfs(nodep, nodep->verilogKwd() + " ");
-        if (nodep->type() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
+        if (nodep->userType() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
             puts("#0 ");
-        } else if (nodep->type() == VAssertType::FINAL_DEFERRED_IMMEDIATE) {
+        } else if (nodep->userType() == VAssertType::FINAL_DEFERRED_IMMEDIATE) {
             puts("final ");
-        } else if (nodep->type() == VAssertType::CONCURRENT) {
+        } else if (nodep->userType() == VAssertType::CONCURRENT) {
             puts("property ");
         }
         iterateConstNull(nodep->sentreep());

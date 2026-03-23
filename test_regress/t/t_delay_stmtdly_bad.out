@@ -1,54 +1,54 @@
-%Warning-ASSIGNDLY: t/t_delay.v:26:11: Ignoring timing control on this assignment/primitive due to --no-timing
+%Warning-ASSIGNDLY: t/t_delay.v:24:10: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... note: In instance 't'
-   26 |    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
-      |           ^
+   24 |   assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
+      |          ^
                     ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
-%Warning-ASSIGNDLY: t/t_delay.v:27:11: Ignoring timing control on this assignment/primitive due to --no-timing
+%Warning-ASSIGNDLY: t/t_delay.v:25:10: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... note: In instance 't'
-   27 |    assign #(sub.delay) dly3 = dly1 + 1;
-      |           ^
-%Warning-ASSIGNDLY: t/t_delay.v:28:11: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... note: In instance 't'
-   28 |    assign #sub.delay dly4 = dly1 + 1;
-      |           ^
-%Warning-ASSIGNDLY: t/t_delay.v:35:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... note: In instance 't'
-   35 |          dly0 <= #0 32'h11;
-      |                  ^
-%Warning-ASSIGNDLY: t/t_delay.v:38:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... note: In instance 't'
-   38 |          dly0 <= #0.12 dly0 + 32'h12;
-      |                  ^
-%Warning-ASSIGNDLY: t/t_delay.v:46:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... note: In instance 't'
-   46 |          dly0 <= #(dly_s.dly) 32'h55;
-      |                  ^
-%Warning-STMTDLY: t/t_delay.v:52:10: Ignoring delay on this statement due to --no-timing
-                                   : ... note: In instance 't'
-   52 |          #100 $finish;
+   25 |   assign #(sub.delay) dly3 = dly1 + 1;
       |          ^
+%Warning-ASSIGNDLY: t/t_delay.v:26:10: Ignoring timing control on this assignment/primitive due to --no-timing
+                                     : ... note: In instance 't'
+   26 |   assign #sub.delay dly4 = dly1 + 1;
+      |          ^
+%Warning-ASSIGNDLY: t/t_delay.v:33:15: Ignoring timing control on this assignment/primitive due to --no-timing
+                                     : ... note: In instance 't'
+   33 |       dly0 <= #0 32'h11;
+      |               ^
+%Warning-ASSIGNDLY: t/t_delay.v:36:15: Ignoring timing control on this assignment/primitive due to --no-timing
+                                     : ... note: In instance 't'
+   36 |       dly0 <= #0.12 dly0 + 32'h12;
+      |               ^
+%Warning-ASSIGNDLY: t/t_delay.v:44:15: Ignoring timing control on this assignment/primitive due to --no-timing
+                                     : ... note: In instance 't'
+   44 |       dly0 <= #(dly_s.dly) 32'h55;
+      |               ^
+%Warning-STMTDLY: t/t_delay.v:50:7: Ignoring delay on this statement due to --no-timing
+                                  : ... note: In instance 't'
+   50 |       #100 $finish;
+      |       ^
                   ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
-%Warning-BLKSEQ: t/t_delay.v:45:20: Blocking assignment '=' in sequential logic process
+%Warning-BLKSEQ: t/t_delay.v:43:17: Blocking assignment '=' in sequential logic process
                                   : ... note: In instance 't'
                                   : ... Suggest using delayed assignment '<='
-   45 |          dly_s.dly = 55;
-      |                    ^
+   43 |       dly_s.dly = 55;
+      |                 ^
                  ... For warning description see https://verilator.org/warn/BLKSEQ?v=latest
                  ... Use "/* verilator lint_off BLKSEQ */" and lint_on around source to disable this message.
-%Warning-UNUSEDSIGNAL: t/t_delay.v:21:16: Signal is not used: 'dly4'
+%Warning-UNUSEDSIGNAL: t/t_delay.v:19:15: Signal is not used: 'dly4'
                                         : ... note: In instance 't'
-   21 |    wire [31:0] dly4;
-      |                ^~~~
+   19 |   wire [31:0] dly4;
+      |               ^~~~
                        ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
                        ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
-%Warning-UNUSEDSIGNAL: t/t_delay.v:24:12: Signal is not used: 'dly_s'
+%Warning-UNUSEDSIGNAL: t/t_delay.v:22:11: Signal is not used: 'dly_s'
                                         : ... note: In instance 't'
-   24 |    dly_s_t dly_s;
-      |            ^~~~~
-%Warning-UNUSEDSIGNAL: t/t_delay.v:59:13: Signal is not used: 'delay'
+   22 |   dly_s_t dly_s;
+      |           ^~~~~
+%Warning-UNUSEDSIGNAL: t/t_delay.v:57:12: Signal is not used: 'delay'
                                         : ... note: In instance 't.sub'
-   59 |    realtime delay = 2.3;
-      |             ^~~~~
+   57 |   realtime delay = 2.3;
+      |            ^~~~~
 %Error: Exiting due to

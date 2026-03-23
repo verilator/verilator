@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilator lint_off MULTIDRIVEN
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
   input clk;
 
   logic [31:0] lhs1, lhs2, rhs;
@@ -36,16 +36,16 @@ module t (/*AUTOARG*/
     if (cyc == 0) cond <= 1;
     if (cyc == 3) cond <= 0;
     if (cyc > 1 && cyc < 4) begin
-        if (lhs1 != 'hdeadbeef) $stop;
-        if (lhs2 != 'hfeedface) $stop;
+      if (lhs1 != 'hdeadbeef) $stop;
+      if (lhs2 != 'hfeedface) $stop;
     end
     if (cyc > 4 && cyc < 8) begin
-        if (lhs1 != '1) $stop;
-        if (lhs2 != '1) $stop;
+      if (lhs1 != '1) $stop;
+      if (lhs2 != '1) $stop;
     end
     if (cyc >= 8) begin
-        $write("*-* All Finished *-*\n");
-        $finish;
+      $write("*-* All Finished *-*\n");
+      $finish;
     end
   end
 endmodule

@@ -5,9 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    clk
+    input clk
 );
-  input clk;
 
   reg [31:0] state;
   initial state = 0;
@@ -19,52 +18,59 @@ module t (
   wire Z11;
 
   Test1 test1 (  /*AUTOINST*/
-               // Inouts
-               .Z1                      (Z1),
-               // Inputs
-               .OE                      (OE),
-               .A                       (A));
+      // Inouts
+      .Z1(Z1),
+      // Inputs
+      .OE(OE),
+      .A(A)
+  );
 
   Test2 test2 (  /*AUTOINST*/
-               // Inouts
-               .Z2                      (Z2),
-               // Inputs
-               .OE                      (OE),
-               .A                       (A));
+      // Inouts
+      .Z2(Z2),
+      // Inputs
+      .OE(OE),
+      .A(A)
+  );
 
   Test3 test3 (  /*AUTOINST*/
-               // Inouts
-               .Z3                      (Z3),
-               // Inputs
-               .OE                      (OE),
-               .A                       (A));
+      // Inouts
+      .Z3(Z3),
+      // Inputs
+      .OE(OE),
+      .A(A)
+  );
 
   Test4 test4 (  /*AUTOINST*/
-               // Outputs
-               .Z4                      (Z4),
-               // Inouts
-               .Z5                      (Z5));
+      // Outputs
+      .Z4(Z4),
+      // Inouts
+      .Z5(Z5)
+  );
 
   Test5 test5 (  /*AUTOINST*/
-               // Inouts
-               .Z6                      (Z6),
-               .Z7                      (Z7),
-               .Z8                      (Z8),
-               .Z9                      (Z9),
-               // Inputs
-               .OE                      (OE));
+      // Inouts
+      .Z6(Z6),
+      .Z7(Z7),
+      .Z8(Z8),
+      .Z9(Z9),
+      // Inputs
+      .OE(OE)
+  );
 
   Test6 test6 (  /*AUTOINST*/
-               // Inouts
-               .Z10                     (Z10[3:0]),
-               // Inputs
-               .OE                      (OE));
+      // Inouts
+      .Z10(Z10[3:0]),
+      // Inputs
+      .OE(OE)
+  );
 
   Test7 test7 (  /*AUTOINST*/
-               // Outputs
-               .Z11                     (Z11),
-               // Inputs
-               .state                   (state[2:0]));
+      // Outputs
+      .Z11(Z11),
+      // Inputs
+      .state(state[2:0])
+  );
 
   always @(posedge clk) begin
     state <= state + 1;

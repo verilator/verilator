@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 primitive udp_x (a_bad, b, c_bad);
-   tri  a_bad;
-   output b;
-   output c_bad;
-   table
-      //a   b
-      0  :   1;
-      1  :   0;
+  tri  a_bad;
+  output b;
+  output c_bad;
+  table
+    //a b
+    0 : 1;
+    1 : 0;

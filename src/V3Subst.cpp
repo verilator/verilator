@@ -323,7 +323,7 @@ class SubstVisitor final : public VNVisitor {
             if (ops > SUBST_MAX_OPS_SUBST) return nullptr;
             // AstCvtPackedToArray can't be anywhere else than on the RHS of assignment
             if (VN_IS(nodep->rhsp(), CvtPackedToArray)) return nullptr;
-            // If non const but want const subtitutions only
+            // If non-const but want const subtitutions only
             if (refp->varp()->substConstOnly() && !VN_IS(nodep->rhsp(), Const)) return nullptr;
             // Otherwise can substitute based on the assignment
             return nodep;

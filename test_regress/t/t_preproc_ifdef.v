@@ -4,10 +4,11 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
-   integer num;
-   initial begin
-      num = 0;
+  integer num;
+  initial begin
+    num = 0;
 
 `define EMPTY_TRUE
 `ifndef EMPTY_TRUE
@@ -32,13 +33,13 @@ module t;
 `elsif C        $stop;
 `else           $stop;
 `endif
-      if (num == 3) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $write("%%Error: Bad count: %d\n", num);
-         $stop;
-      end
-   end
+    if (num == 3) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    else begin
+      $write("%%Error: Bad count: %d\n", num);
+      $stop;
+    end
+  end
 endmodule

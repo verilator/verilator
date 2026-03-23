@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define test(a1,a2) ((a1) + (a2))
 
 `test val

@@ -6,14 +6,14 @@
 
 module t;
 
-   looped looped ();
+  looped looped ();
 
 endmodule
 
 module looped;
-   looped2 looped2 ();
+  looped2 looped2 ();
 endmodule
 
 module looped2;
-   looped looped ();
+  looped looped ();
 endmodule

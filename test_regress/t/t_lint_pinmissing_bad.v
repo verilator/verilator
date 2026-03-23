@@ -5,8 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub sub();  // <--- Warning
+  sub sub ();  // <--- Warning
 endmodule
-module sub
-  (output port);
+module sub (
+    output port
+);
 endmodule

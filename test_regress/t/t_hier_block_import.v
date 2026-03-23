@@ -6,25 +6,24 @@
 // SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t(/*AUTOARG*/
-   // inputs
-   clk
+module t (
+    input clk
 );
-   input clk;
-   bit [31:0] outA;
-   bit [31:0] outB;
 
-   subA subA(.out(outA));
-   subB subB(.out(outB));
+  bit [31:0] outA;
+  bit [31:0] outB;
 
-   always @(posedge clk) begin
-      if (outA == `VALUE_A && outB == `VALUE_B) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $write("Mismatch\n");
-         $stop;
-      end
-   end
+  subA subA (.out(outA));
+  subB subB (.out(outB));
+
+  always @(posedge clk) begin
+    if (outA == `VALUE_A && outB == `VALUE_B) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    else begin
+      $write("Mismatch\n");
+      $stop;
+    end
+  end
 endmodule

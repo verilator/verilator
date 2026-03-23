@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $error("One");
-      $fatal;
-      $error("Two");
-      $error("Three");
-      $error("Four");
-      $error("Five");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $error("One");
+    $fatal;
+    $error("Two");
+    $error("Three");
+    $error("Four");
+    $error("Five");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

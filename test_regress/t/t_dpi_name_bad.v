@@ -6,15 +6,17 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
-   import "DPI-C" function int \badly.named (int i);
+  import "DPI-C" function int \badly.named (int i);
 
-   export "DPI-C" function \badly.expt ;
-   function int \badly.expt ; return 0; endfunction
+  export "DPI-C" function \badly.expt ;
+  function int \badly.expt ;
+    return 0;
+  endfunction
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

@@ -12,35 +12,33 @@
 
 /* verilator public_on */
 
-module t (  /*AUTOARG*/
-);
+module t;
+
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish();
+  end
 
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish();
-   end
-
-
-   gen_wrapper top_wrap_1 ();
-   gen_wrapper top_wrap_2 ();
+  gen_wrapper top_wrap_1 ();
+  gen_wrapper top_wrap_2 ();
 
 endmodule : t
 
 module sub;
-   reg subsig1;
+  reg subsig1;
 endmodule : sub
 
 
 module gen_wrapper;
-   genvar i;
-   generate
-      for (i = 0; i < 1; i++) begin : gen_loop
+  genvar i;
+  generate
+    for (i = 0; i < 1; i++) begin : gen_loop
 
-         // This fixes the scope
-         // localparam int x  = 2;
+      // This fixes the scope
+      // localparam int x  = 2;
 
-         sub after_gen_loop ();
-      end
-   endgenerate
+      sub after_gen_loop ();
+    end
+  endgenerate
 endmodule

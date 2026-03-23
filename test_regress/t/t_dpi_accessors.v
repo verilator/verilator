@@ -24,73 +24,68 @@
 
 
 // Define the width of registers and size of memory we use
-`define REG_WIDTH   8
-`define MEM_SIZE  256
+`define REG_WIDTH 8
+`define MEM_SIZE 256
 
 
 // Top module defines the accessors and instantiates a sub-module with
 // substantive content.
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   `include "t_dpi_accessors_macros_inc.vh"
-   `include "t_dpi_accessors_inc.vh"
+  `include "t_dpi_accessors_macros_inc.vh"
+  `include "t_dpi_accessors_inc.vh"
 
-   // Put the serious stuff in a sub-module, so we can check hierarchical
-   // access works OK.
-   test_sub i_test_sub (.clk (clk));
+  // Put the serious stuff in a sub-module, so we can check hierarchical
+  // access works OK.
+  test_sub i_test_sub (.clk(clk));
 
-endmodule // t
+endmodule  // t
 
 
 // A sub-module with all sorts of goodies we would like to access
 
-module test_sub (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module test_sub (
+    input clk
+);
 
-   input                    clk;
+  integer i;  // General counter
 
-   integer                  i;          // General counter
+  // Elements we would like to access from outside
+  reg a;
+  reg [`REG_WIDTH - 1:0] b;
+  reg [`REG_WIDTH - 1:0] mem[`MEM_SIZE - 1:0];
+  wire c;
+  wire [`REG_WIDTH - 1:0] d;
+  reg [`REG_WIDTH - 1:0] e;
+  reg [`REG_WIDTH - 1:0] f;
 
-   // Elements we would like to access from outside
-   reg                      a;
-   reg [`REG_WIDTH - 1:0]   b;
-   reg [`REG_WIDTH - 1:0]   mem [`MEM_SIZE - 1:0];
-   wire                     c;
-   wire [`REG_WIDTH - 1:0]  d;
-   reg [`REG_WIDTH - 1:0]   e;
-   reg [`REG_WIDTH - 1:0]   f;
+  // Drive our wires from our registers
+  assign c = ~a;
+  assign d = ~b;
 
-   // Drive our wires from our registers
-   assign  c = ~a;
-   assign  d = ~b;
+  // Initial values for registers and array
+  initial begin
+    a = 0;
+    b = `REG_WIDTH'h0;
 
-   // Initial values for registers and array
-   initial begin
-      a = 0;
-      b = `REG_WIDTH'h0;
+    for (i = 0; i < `MEM_SIZE; i++) begin
+      mem[i] = i[`REG_WIDTH-1:0];
+    end
 
-      for (i = 0; i < `MEM_SIZE; i++) begin
-         mem[i] = i [`REG_WIDTH - 1:0];
-      end
+    e = 0;
+    f = 0;
+  end
 
-      e = 0;
-      f = 0;
-   end
+  // Wipe out one memory cell in turn on the positive clock edge, restoring
+  // the previous element. We toggle the wipeout value.
+  always @(posedge clk) begin
+    mem[b] <= {`REG_WIDTH{a}};
+    mem[b-1] <= b - 1;
+    a <= ~a;
+    b <= b + 1;
+  end
 
-   // Wipe out one memory cell in turn on the positive clock edge, restoring
-   // the previous element. We toggle the wipeout value.
-   always @(posedge clk) begin
-      mem[b]     <= {`REG_WIDTH {a}};
-      mem[b - 1] <= b - 1;
-      a          <= ~a;
-      b          <= b + 1;
-   end
-
-endmodule // test_sub
+endmodule  // test_sub

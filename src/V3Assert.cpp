@@ -139,7 +139,7 @@ class AssertVisitor final : public VNVisitor {
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
     unsigned m_modPastNum = 0;  // Module past numbering
     unsigned m_modStrobeNum = 0;  // Module $strobe numbering
-    const AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
+    AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -308,7 +308,7 @@ class AssertVisitor final : public VNVisitor {
         } else {
             bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
         }
-        return newIfAssertOn(bodyp, nodep->directive(), nodep->type());
+        return newIfAssertOn(bodyp, nodep->directive(), nodep->userType());
     }
 
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
@@ -398,24 +398,31 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         AstSenTree* const sentreep = nodep->sentreep();
+        if (nodep->immediate()) {
+            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensitivity");
+        } else {
+            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensitivity");
+            if (m_procedurep) {
+                if (!nodep->senFromAlways()) {
+                    // To support this need queue of asserts to activate
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Procedural concurrent assertion with"
+                                  " clocking event inside always (IEEE 1800-2023 16.14.6)");
+                }
+                // Change type to concurrent and relink after process
+                nodep->immediate(false);
+                static_cast<AstNode*>(m_procedurep)->addNext(nodep->unlinkFrBack());
+                return;  // Later iterate will pick up
+            } else {
+                sentreep->unlinkFrBack();
+            }
+        }
+        //
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
         if (passsp) passsp->unlinkFrBackWithNext();
         if (failsp) failsp->unlinkFrBackWithNext();
 
-        if (nodep->immediate()) {
-            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensitivity");
-        } else {
-            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensitivity");
-            sentreep->unlinkFrBack();
-            if (m_procedurep) {
-                // To support this need queue of asserts to activate
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Procedural concurrent assertion with"
-                              " clocking event inside always (IEEE 1800-2023 16.14.6)");
-            }
-        }
-        //
         bool selfDestruct = false;
         if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
             ++m_statCover;
@@ -766,10 +773,10 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             FileLine* const fl = nodep->fileline();
-            AstNode* monExprsp = nodep->fmtp()->exprsp();
+
             AstSenItem* monSenItemsp = nullptr;
-            while (monExprsp) {
-                if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
+            if (AstNode* const monExprsp = nodep->fmtp()->exprsp()) {
+                monExprsp->foreachAndNext([&](AstVarRef* varrefp) {
                     AstSenItem* const senItemp
                         = new AstSenItem{fl, VEdgeType::ET_CHANGED,
                                          // Clone so get VarRef or VarXRef as needed
@@ -779,9 +786,9 @@ class AssertVisitor final : public VNVisitor {
                     } else {
                         monSenItemsp->addNext(senItemp);
                     }
-                }
-                monExprsp = monExprsp->nextp();
+                });
             }
+
             AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
             const auto monNum = ++m_monitorNum;
             // Where $monitor was we do "__VmonitorNum = N;"

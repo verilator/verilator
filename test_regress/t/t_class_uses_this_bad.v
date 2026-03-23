@@ -6,10 +6,10 @@
 //
 
 module t;
-   bit [3:0] addr;
-   initial begin
-       this.addr = 2;
-       $write("*-* All Finished *-*\n");
-       $finish;
-   end
+  bit [3:0] addr;
+  initial begin
+    this.addr = 2;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

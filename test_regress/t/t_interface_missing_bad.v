@@ -9,25 +9,20 @@
 //   logic a;
 //endinterface
 
-module foo_mod
-  (
-   foo_intf foo
-   );
+module foo_mod (
+    foo_intf foo
+);
 endmodule
 
 module t;
 
-   foo_intf the_foo ();
+  foo_intf the_foo ();
 
-   foo_mod
-     foo_mod
-       (
-        .foo (the_foo)
-        );
+  foo_mod foo_mod (.foo(the_foo));
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -6,10 +6,10 @@
 
 module t;
 
-   localparam logic [7:0] TOO_FEW [5] = '{0, 1, 2**8-1};  // Bad
+  localparam logic [7:0] TOO_FEW[5] = '{0, 1, 2 ** 8 - 1};  // Bad
 
-   initial begin
-      $display("%p", TOO_FEW);
-      $stop;
-   end
+  initial begin
+    $display("%p", TOO_FEW);
+    $stop;
+  end
 endmodule

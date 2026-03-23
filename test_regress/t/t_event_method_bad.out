@@ -1,6 +1,6 @@
-%Error: t/t_event_method_bad.v:12:10: Unknown built-in event method 'bad_method'
-                                    : ... note: In instance 't'
-   12 |       e1.bad_method();
-      |          ^~~~~~~~~~
+%Error: t/t_event_method_bad.v:12:8: Unknown built-in event method 'bad_method'
+                                   : ... note: In instance 't'
+   12 |     e1.bad_method();
+      |        ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

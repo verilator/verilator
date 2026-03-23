@@ -25,7 +25,7 @@ class Foo;
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     int desired_counts[10];
     counts = '{10{0}};

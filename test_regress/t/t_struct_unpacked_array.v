@@ -5,37 +5,35 @@
 // SPDX-License-Identifier: CC0-1.0
 
 
-typedef struct {
-    logic a;
-} Data_t;
+typedef struct {logic a;} Data_t;
 
-module t (/*AUTOARG*/
-    clk
+module t (
+    input clk
 );
-    input clk;
-    int cyc = 0;
 
-    localparam int SIZE = 20;
-    reg[$clog2(SIZE)-1 : 0] ptr;
-    Data_t buffer[SIZE];
-    Data_t out;
-    reg out1;
+  int cyc = 0;
 
-    always_ff @( posedge clk ) begin
-        int i;
-        cyc <= cyc + 1;
-        if (cyc == 0) begin
-            for (i=0;i<SIZE;i=i+1) begin
-                buffer[i].a <= 0;
-            end
-        end
-        else begin
-            ptr <= (ptr+1);
-            out <= buffer[ptr];
-            out1 <= buffer[ptr].a;
-            $write("*-* All Finished *-*\n");
-            $finish;
-        end
+  localparam int SIZE = 20;
+  reg [$clog2(SIZE)-1 : 0] ptr;
+  Data_t buffer[SIZE];
+  Data_t out;
+  reg out1;
+
+  always_ff @(posedge clk) begin
+    int i;
+    cyc <= cyc + 1;
+    if (cyc == 0) begin
+      for (i = 0; i < SIZE; i = i + 1) begin
+        buffer[i].a <= 0;
+      end
     end
+    else begin
+      ptr <= (ptr + 1);
+      out <= buffer[ptr];
+      out1 <= buffer[ptr].a;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule

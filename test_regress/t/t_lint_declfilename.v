@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   t_lint_declfilename sub ();
+  t_lint_declfilename sub ();
 endmodule
 
 module t_lint_declfilename;

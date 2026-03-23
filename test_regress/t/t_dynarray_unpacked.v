@@ -4,29 +4,31 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
 
 module t;
 
-   byte dyn [][1:0];
+  byte dyn[][1:0];
 
-   initial begin
-      begin
-         dyn = new [3];
-         dyn[0] = '{101, 100};
-         dyn[1] = '{111, 110};
-         dyn[2] = '{121, 120};
-         `checkh(dyn[0][0], 100);
-         `checkh(dyn[0][1], 101);
-         `checkh(dyn[1][0], 110);
-         `checkh(dyn[1][1], 111);
-         `checkh(dyn[2][0], 120);
-         `checkh(dyn[2][1], 121);
-      end
+  initial begin
+    begin
+      dyn = new[3];
+      dyn[0] = '{101, 100};
+      dyn[1] = '{111, 110};
+      dyn[2] = '{121, 120};
+      `checkh(dyn[0][0], 100);
+      `checkh(dyn[0][1], 101);
+      `checkh(dyn[1][0], 110);
+      `checkh(dyn[1][1], 111);
+      `checkh(dyn[2][0], 120);
+      `checkh(dyn[2][1], 121);
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

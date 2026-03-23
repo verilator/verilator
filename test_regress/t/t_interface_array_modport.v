@@ -5,37 +5,34 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface foo_intf;
-   logic a;
+  logic a;
 
-   modport m(input a);
+  modport m(input a);
 endinterface
 
-module foo_mod
-  (
-   foo_intf foo,
-   foo_intf.m bars[4]
-   );
+module foo_mod (
+    foo_intf foo,
+    foo_intf.m bars[4]
+);
 endmodule
 
 module t;
 
-   localparam N = 4;
+  localparam N = 4;
 
-   foo_intf foos [N-1:0] ();
-   foo_intf bars [N] ();
-   //foo_intf foos ();
+  foo_intf foos[N-1:0] ();
+  foo_intf bars[N] ();
+  //foo_intf foos ();
 
-   foo_mod
-     foo_mod
-       (
-        .foo (foos[2]),
-    .bars (bars)
-        //.foo (foos)
-        );
+  foo_mod foo_mod (
+      .foo(foos[2]),
+      .bars(bars)
+      //.foo (foos)
+  );
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

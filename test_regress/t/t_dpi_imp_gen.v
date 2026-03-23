@@ -6,29 +6,27 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   parameter integer BLKS = 3;
+  parameter integer BLKS = 3;
 
-   generate
-      for (genvar blkIdx=0; blkIdx < BLKS; blkIdx=blkIdx+1 ) begin : slice
+  generate
+    for (genvar blkIdx = 0; blkIdx < BLKS; blkIdx = blkIdx + 1) begin : slice
 
-         import "DPI-C" context function void dpi_genvarTest ();
+      import "DPI-C" context function void dpi_genvarTest();
 
-         initial begin
-            dpi_genvarTest();
-            $display("slice = %0d   :  %m", blkIdx);
-         end
-     end
-   endgenerate
+      initial begin
+        dpi_genvarTest();
+        $display("slice = %0d   :  %m", blkIdx);
+      end
+    end
+  endgenerate
 
-   always @ (posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

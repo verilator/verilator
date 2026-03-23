@@ -33,7 +33,7 @@ class Bar extends Foo;
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     process p;
     Foo foo;

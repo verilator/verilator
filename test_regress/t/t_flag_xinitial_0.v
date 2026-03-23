@@ -4,21 +4,21 @@
 // SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Outputs
-   value
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    value
+);
 
-   output reg [63:0] value;
+  output reg [63:0] value;
 
-   initial begin
+  initial begin
 `ifdef VERILATOR
-      // Default is all ones, so we assume that here
-      if (value != '0) $stop;
+    // Default is all ones, so we assume that here
+    if (value != '0) $stop;
 `else
-      if (value != {64{1'bx}}) $stop;
+    if (value != {64{1'bx}}) $stop;
 `endif
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

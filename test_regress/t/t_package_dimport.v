@@ -5,60 +5,56 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package defs;
-   function automatic integer max;
-      input integer a;
-      input integer b;
-      max = (a > b) ? a : b;
-   endfunction
+  function automatic integer max;
+    input integer a;
+    input integer b;
+    max = (a > b) ? a : b;
+  endfunction
 
-   function automatic integer log2;
-      input integer value;
-      value = value >> 1;
-      for (log2 = 0; value > 0; log2 = log2 + 1)
-        value = value >> 1;
-   endfunction
+  function automatic integer log2;
+    input integer value;
+    value = value >> 1;
+    for (log2 = 0; value > 0; log2 = log2 + 1) value = value >> 1;
+  endfunction
 
-   function automatic integer ceil_log2;
-      input integer value;
-      value = value - 1;
-      for (ceil_log2 = 0; value > 0; ceil_log2 = ceil_log2 + 1)
-        value = value >> 1;
-   endfunction
+  function automatic integer ceil_log2;
+    input integer value;
+    value = value - 1;
+    for (ceil_log2 = 0; value > 0; ceil_log2 = ceil_log2 + 1) value = value >> 1;
+  endfunction
 endpackage
 
-module sub();
+module sub ();
 
-   import defs::*;
+  import defs::*;
 
-   parameter RAND_NUM_MAX          = "";
+  parameter RAND_NUM_MAX = "";
 
-   localparam DATA_RANGE           = RAND_NUM_MAX + 1;
-   localparam DATA_WIDTH           = ceil_log2(DATA_RANGE);
-   localparam WIDTH                = max(4, ceil_log2(DATA_RANGE + 1));
+  localparam DATA_RANGE = RAND_NUM_MAX + 1;
+  localparam DATA_WIDTH = ceil_log2(DATA_RANGE);
+  localparam WIDTH = max(4, ceil_log2(DATA_RANGE + 1));
 
 endmodule
 
 module t;
 
-   import defs::*;
+  import defs::*;
 
-   parameter WHICH          = 0;
-   parameter MAX_COUNT      = 10;
+  parameter WHICH = 0;
+  parameter MAX_COUNT = 10;
 
-   localparam MAX_EXPONENT         = log2(MAX_COUNT);
-   localparam EXPONENT_WIDTH       = ceil_log2(MAX_EXPONENT + 1);
+  localparam MAX_EXPONENT = log2(MAX_COUNT);
+  localparam EXPONENT_WIDTH = ceil_log2(MAX_EXPONENT + 1);
 
-   generate
-      if (WHICH == 1)
-        begin : which_true
-           sub sub_true();
-           defparam sub_true.RAND_NUM_MAX   = MAX_EXPONENT;
-        end
-      else
-        begin : which_false
-           sub sub_false();
-           defparam sub_false.RAND_NUM_MAX   = MAX_COUNT;
-        end
-   endgenerate
+  generate
+    if (WHICH == 1) begin : which_true
+      sub sub_true ();
+      defparam sub_true.RAND_NUM_MAX = MAX_EXPONENT;
+    end
+    else begin : which_false
+      sub sub_false ();
+      defparam sub_false.RAND_NUM_MAX = MAX_COUNT;
+    end
+  endgenerate
 
 endmodule

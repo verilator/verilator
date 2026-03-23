@@ -4,14 +4,17 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk1, clk2);
-   input wire clk1, clk2;
-   logic b = 1'bz === (clk1 & clk2);
+module t (
+    clk1,
+    clk2
+);
+  input wire clk1, clk2;
+  logic b = 1'bz === (clk1 & clk2);
 
-   always begin
-      if (!b) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always begin
+    if (!b) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

@@ -8,18 +8,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub sub();
+  sub sub();
 endmodule
 
 module sub
   #(parameter type T = type(bit[9:0]) )
-   ();
+  ();
 
-   type(bit[9:0]) tvar;
+  type(bit[9:0]) tvar;
 
-   initial begin
-      if ($bits(T) != 10) $stop;
-      if ($bits(tvar) != 10) $stop;
-      $finish;
-   end
+  initial begin
+    if ($bits(T) != 10) $stop;
+    if ($bits(tvar) != 10) $stop;
+    $finish;
+  end
 endmodule

@@ -6,34 +6,34 @@
 
 module t;
 
-   integer i;
-   string s;
+  integer i;
+  string s;
 
-   initial begin
+  initial begin
 `ifndef VERILATOR
- `ifndef VCS
-  `ifndef NC
-      $system();  // Legal per spec, but not supported everywhere and nonsensical
-  `endif
- `endif
-`endif
-      $system("ls");  // IData
-      $system("exit 0");  // QData
-      $system("echo hello");  // WDATA
 `ifndef VCS
-      i = $system("exit 0");
-      if (i!==0) $stop;
-      i = $system("exit 10");
-      if (i!==10) $stop;
-      i = $system("exit     20"); // Wide
-      if (i!==20) $stop;
-      s = "exit 10";
-      i = $system(s); // String
-      if (i!==10) $stop;
+`ifndef NC
+    $system();  // Legal per spec, but not supported everywhere and nonsensical
+`endif
+`endif
+`endif
+    $system("ls");  // IData
+    $system("exit 0");  // QData
+    $system("echo hello");  // WDATA
+`ifndef VCS
+    i = $system("exit 0");
+    if (i !== 0) $stop;
+    i = $system("exit 10");
+    if (i !== 10) $stop;
+    i = $system("exit     20");  // Wide
+    if (i !== 20) $stop;
+    s = "exit 10";
+    i = $system(s);  // String
+    if (i !== 10) $stop;
 `endif
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -9,10 +9,10 @@ endmodule
 
 module t;
 
-   Mod_Dead cell_keptdead();
+  Mod_Dead cell_keptdead ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

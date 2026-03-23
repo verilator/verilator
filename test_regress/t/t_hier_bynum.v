@@ -4,27 +4,35 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: Unlicense
 
-module flop (q, d, clk);
-   // No AUTOARG; order of below is different from port order above
-   input wire clk;
-   output reg q;
-   input wire d;
+module flop (
+    q,
+    d,
+    clk
+);
+  // No AUTOARG; order of below is different from port order above
+  input wire clk;
+  output reg q;
+  input wire d;
 
-   // verilator hier_block
+  // verilator hier_block
 
-   always_ff @(posedge clk) begin
-     q <= d;
-   end
+  always_ff @(posedge clk) begin
+    q <= d;
+  end
 
 endmodule
 
 module t (
-          output wire q,
-          input wire  d,
-          input wire  clk
-          );
+    output wire q,
+    input wire d,
+    input wire clk
+);
 
-   // This intentionally uses pin number ordering
-   flop u_flop(q, d, clk);
+  // This intentionally uses pin number ordering
+  flop u_flop (
+      q,
+      d,
+      clk
+  );
 
 endmodule

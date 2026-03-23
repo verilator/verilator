@@ -50,6 +50,7 @@
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3Hash.h"
 
 #include <memory>
 #include <unordered_map>
@@ -129,6 +130,13 @@ public:
     const DfgDataType& elemDtype() const {
         UASSERT(isArray(), "Non-array has no 'elemDType'");
         return *m_elemDtypep;
+    }
+
+    V3Hash hash() const {
+        V3Hash hash{static_cast<uint32_t>(m_kind)};
+        hash += m_size;
+        if (m_elemDtypep) hash += m_elemDtypep->hash();
+        return hash;
     }
 
     //-----------------------------------------------------------------------

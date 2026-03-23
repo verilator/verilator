@@ -7,15 +7,15 @@
 `define STRINGIFY(x) `"x`"
 
 module t #(
-           parameter int POVERRODE = 16,
-           parameter int PORIG = 16
-           );
+    parameter int POVERRODE = 16,
+    parameter int PORIG = 16
+);
 
-   initial begin
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars;
+  initial begin
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

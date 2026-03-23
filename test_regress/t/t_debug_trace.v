@@ -5,14 +5,14 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   a
-   );
-   input a;
-   sub sub ();
+module t (  /*AUTOARG*/
+    // Inputs
+    a
+);
+  input a;
+  sub sub ();
 endmodule
 
 module sub;
-   reg svar;
+  reg svar;
 endmodule

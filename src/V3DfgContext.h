@@ -270,15 +270,15 @@ public:
         VDouble0 synthAlways;  // Number of always blocks successfully synthesized
         VDouble0 synthAssign;  // Number of continuous assignments successfully synthesized
         // Unsuccessful
-        VDouble0 nonSynConv;  // Non synthesizable: non representable (above)
-        VDouble0 nonSynExtWrite;  // Non synthesizable: has externally written variable
-        VDouble0 nonSynLoop;  // Non synthesizable: loop in CFG
-        VDouble0 nonSynStmt;  // Non synthesizable: unsupported statement
-        VDouble0 nonSynMultidrive;  // Non synthesizable: multidriven value within statement
-        VDouble0 nonSynArray;  // Non synthesizable: array type unhandled
-        VDouble0 nonSynLatch;  // Non synthesizable: maybe latch
-        VDouble0 nonSynJoinInput;  // Non synthesizable: needing to join input variable
-        VDouble0 nonSynFalseWrite;  // Non synthesizable: does not write output
+        VDouble0 nonSynConv;  // Non-synthesizable: non-representable (above)
+        VDouble0 nonSynExtWrite;  // Non-synthesizable: has externally written variable
+        VDouble0 nonSynLoop;  // Non-synthesizable: loop in CFG
+        VDouble0 nonSynStmt;  // Non-synthesizable: unsupported statement
+        VDouble0 nonSynMultidrive;  // Non-synthesizable: multidriven value within statement
+        VDouble0 nonSynArray;  // Non-synthesizable: array type unhandled
+        VDouble0 nonSynLatch;  // Non-synthesizable: maybe latch
+        VDouble0 nonSynJoinInput;  // Non-synthesizable: needing to join input variable
+        VDouble0 nonSynFalseWrite;  // Non-synthesizable: does not write output
         // Reverted
         VDouble0 revertNonSyn;  // Reverted due to being driven from non-synthesizable vertex
         VDouble0 revertMultidrive;  // Reverted due to multiple drivers

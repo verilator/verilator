@@ -18,6 +18,7 @@
 
 #include "V3Options.h"
 
+#include "V3Container.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -70,30 +71,26 @@ public:
     std::list<string> m_lineArgs;  // List of command line argument encountered
     // List of arguments encounterd, and a bool in needed for rerunning --dump-inputs
     std::list<std::pair<std::list<std::string>, bool>> m_allArgs;
-    std::list<string> m_incDirUsers;  // Include directories (ordered)
-    std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
+    VInsertionSet<std::string> m_incDirUsers;  // Include directories (ordered)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
     std::set<string> m_incDirFallbackSet;  // Include directories (for removing duplicates)
     std::map<const string, V3LangCode> m_langExts;  // Language extension map
-    std::list<string> m_libExtVs;  // Library extensions (ordered)
-    std::set<string> m_libExtVSet;  // Library extensions (for removing duplicates)
+    VInsertionSet<std::string> m_libExtVs;  // Library extensions (ordered)
     DirMap m_dirMap;  // Directory listing
 
     // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        const auto itFoundPair = m_incDirUserSet.insert(dir);
-        if (itFoundPair.second) {
+        const bool inserted = m_incDirUsers.insert(dir);
+        if (inserted) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_incDirUsers.push_back(dir);
             m_incDirFallbacks.remove(dir);  // User has priority over Fallback
             m_incDirFallbackSet.erase(dir);  // User has priority over Fallback
         }
     }
     void addIncDirFallback(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        if (m_incDirUserSet.find(dir)
-            == m_incDirUserSet.end()) {  // User has priority over Fallback
+        if (!m_incDirUsers.exists(dir)) {  // User has priority over Fallback
             const auto itFoundPair = m_incDirFallbackSet.insert(dir);
             if (itFoundPair.second) m_incDirFallbacks.push_back(dir);
         }
@@ -106,10 +103,7 @@ public:
         m_langExts[addext] = lc;
     }
 
-    void addLibExtV(const string& libext) {
-        const auto itFoundPair = m_libExtVSet.insert(libext);
-        if (itFoundPair.second) m_libExtVs.push_back(libext);
-    }
+    void addLibExtV(const string& libext) { m_libExtVs.insert(libext); }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;
 };
@@ -437,40 +431,42 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
     string out;
     bool stripArg = false;
     bool stripArgIfNum = false;
-    for (const string& arg : m_impp->m_lineArgs) {
-        if (stripArg) {
-            stripArg = false;
-            continue;
-        }
-        if (stripArgIfNum) {
-            stripArgIfNum = false;
-            if (isdigit(arg[0])) continue;
-        }
-        int skip = 0;
-        if (arg.length() >= 2 && arg[0] == '-' && arg[1] == '-') {
-            skip = 2;
-        } else if (arg.length() >= 1 && arg[0] == '-') {
-            skip = 1;
-        }
-        if (skip > 0) {  // arg is an option
-            const string opt = arg.substr(skip);  // Remove '-' in the beginning
-            const int numStrip = stripOptionsForChildRun(opt, forTop);
-            if (numStrip) {
-                UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
-                if (numStrip == 2) stripArg = true;
-                if (numStrip == 3) stripArgIfNum = true;
+    for (const auto& pair : m_impp->m_allArgs) {
+        for (const string& arg : pair.first) {
+            if (stripArg) {
+                stripArg = false;
                 continue;
             }
-        } else {  // Not an option
-            if (vFiles.find(arg) != vFiles.end()  // Remove HDL
-                || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
-                continue;
+            if (stripArgIfNum) {
+                stripArgIfNum = false;
+                if (isdigit(arg[0])) continue;
             }
+            int skip = 0;
+            if (arg.length() >= 2 && arg[0] == '-' && arg[1] == '-') {
+                skip = 2;
+            } else if (arg.length() >= 1 && arg[0] == '-') {
+                skip = 1;
+            }
+            if (skip > 0) {  // arg is an option
+                const string opt = arg.substr(skip);  // Remove '-' in the beginning
+                const int numStrip = stripOptionsForChildRun(opt, forTop);
+                if (numStrip) {
+                    UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
+                    if (numStrip == 2) stripArg = true;
+                    if (numStrip == 3) stripArgIfNum = true;
+                    continue;
+                }
+            } else {  // Not an option
+                if (vFiles.find(arg) != vFiles.end()  // Remove HDL
+                    || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
+                    continue;
+                }
+            }
+            if (out != "") out += " ";
+            // Don't use opt here because '-' is removed in arg
+            // Use double quote because arg may contain whitespaces
+            out += '"' + VString::quoteAny(arg, '"', '\\') + '"';
         }
-        if (out != "") out += " ";
-        // Don't use opt here because '-' is removed in arg
-        // Use double quote because arg may contain whitespaces
-        out += '"' + VString::quoteAny(arg, '"', '\\') + '"';
     }
     return out;
 }
@@ -708,6 +704,8 @@ string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
                 ss << V3Error::warnMore() << "     " << fn << "\n";
             }
         }
+        ss << V3Error::warnMore() << "... With current working directory '" << V3Os::cwd()
+           << "'\n";
     }
     return ss.str();
 }
@@ -1058,6 +1056,10 @@ void V3Options::notify() VL_MT_DISABLED {
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 
+    if (fourstate()) {
+        cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
+    }
+
     if (coverage() && savable()) {
         cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
@@ -1375,6 +1377,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-abort", CbCall, []() {
         V3Error::vlAbort();  // LCOV_EXCL_LINE
     }).undocumented();  // See also --debug-sigseg
+#ifdef VL_ALLOC_RANDOM_CHECKS
+    DECL_OPTION("-debug-alloc-random", Set, &m_debugAllocRandom).undocumented();
+#endif
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
@@ -1435,6 +1440,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     }).notForRerun();
     DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-fourstate", OnOff, &m_fourstate).undocumented();
     DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
     DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
 
@@ -1480,6 +1486,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
+    DECL_OPTION("-flift-expr", FOnOff, &m_fLiftExpr);
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
@@ -1592,6 +1599,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("Unknown --make system specified: '" << valp << "'");
         }
     });
+    DECL_OPTION("-func-recursion-depth", Set, &m_funcRecursion);
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
     DECL_OPTION("-mod-prefix", CbVal, [this, fl](const char* valp) {
         validateIdentifier(fl, valp, "--mod-prefix");
@@ -1700,6 +1708,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-replication-limit", CbVal, [this, fl](const char* valp) {
+        m_replicationLimit = std::atoi(valp);
+        if (m_replicationLimit < 0) fl->v3error("--replication-limit must be >= 0: " << valp);
+    });
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");
@@ -1730,7 +1742,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
-    DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
+    DECL_OPTION("-structs-packed", CbOnOff, [this, fl](bool flag) {
+        m_structsPacked = flag;
+        fl->v3warn(DEPRECATED, "Option --structs-packed is deprecated, avoid use");
+    }).undocumented();
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -1827,6 +1842,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
     DECL_OPTION("-underline-zero", OnOff, &m_underlineZero).undocumented();  // Deprecated
     DECL_OPTION("-no-unlimited-stack", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-constraint-array-limit", Set, &m_constraintArrayLimit);
     DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
     DECL_OPTION("-unroll-limit", Set, &m_unrollLimit);
     DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts).undocumented();  // Optimization tweak
@@ -1949,8 +1965,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     }).notForRerun();
 
     parser.finalize();
-
-    const std::string cwd = V3Os::filenameRealPath(".");
 
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i]);

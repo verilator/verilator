@@ -1,7 +1,7 @@
-%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:13:7: Unsupported: $cast to 'string$[$]' from 'int$[string]'
+%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:13:5: Unsupported: $cast to 'string$[$]' from 'int$[string]'
                                                 : ... note: In instance 't'
                                                 : ... Suggest try static cast
-   13 |       $cast(q, aarray);
-      |       ^~~~~
+   13 |     $cast(q, aarray);
+      |     ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

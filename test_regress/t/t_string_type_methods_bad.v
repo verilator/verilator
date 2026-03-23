@@ -6,16 +6,16 @@
 
 module t;
 
-   string s;
-   integer i;
+  string s;
+  integer i;
 
-   // Check constification
-   initial begin
-      s="1234";
-      i = s.len(0); // BAD
-      s.itoa;  // BAD
-      s.itoa(1,2,3);  // BAD
-      s.bad_no_such_method();  // BAD
-   end
+  // Check constification
+  initial begin
+    s = "1234";
+    i = s.len(0);  // BAD
+    s.itoa;  // BAD
+    s.itoa(1, 2, 3);  // BAD
+    s.bad_no_such_method();  // BAD
+  end
 
 endmodule

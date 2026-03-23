@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $display("\x\y\z");  // Illegal escapes
-   end
+  initial begin
+    $display("\x\y\z");  // Illegal escapes
+  end
 endmodule

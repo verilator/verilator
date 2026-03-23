@@ -5,181 +5,181 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t(input logic clk);
-   unsupported_ctl_type unsupported_ctl_type(clk ? 1 : 2);
-   unsupported_ctl_type_expr unsupported_ctl_type_expr();
-   assert_class assert_class();
-   assert_iface assert_iface();
-   assert_iface_class assert_iface_class();
+  unsupported_ctl_type unsupported_ctl_type(clk ? 1 : 2);
+  unsupported_ctl_type_expr unsupported_ctl_type_expr();
+  assert_class assert_class();
+  assert_iface assert_iface();
+  assert_iface_class assert_iface_class();
 endmodule
 
 module unsupported_ctl_type(input int a);
-   initial begin
-      let Lock = 1;
-      let Unlock = 2;
-      let PassOn = 6;
-      let PassOff = 7;
-      let FailOn = 8;
-      let FailOff = 9;
-      let NonvacuousOn = 10;
-      let VacuousOff = 11;
-      $assertcontrol(Lock, a);
+  initial begin
+    let Lock = 1;
+    let Unlock = 2;
+    let PassOn = 6;
+    let PassOff = 7;
+    let FailOn = 8;
+    let FailOff = 9;
+    let NonvacuousOn = 10;
+    let VacuousOff = 11;
+    $assertcontrol(Lock, a);
 
-      $assertcontrol(Unlock);
+    $assertcontrol(Unlock);
 
-      $assertcontrol(PassOn);
-      $assertpasson;
-      $assertpasson(a);
-      $assertpasson(a, t);
+    $assertcontrol(PassOn);
+    $assertpasson;
+    $assertpasson(a);
+    $assertpasson(a, t);
 
-      $assertcontrol(PassOff);
-      $assertpassoff;
-      $assertpassoff(a);
-      $assertpassoff(a, t);
+    $assertcontrol(PassOff);
+    $assertpassoff;
+    $assertpassoff(a);
+    $assertpassoff(a, t);
 
-      $assertcontrol(FailOn);
-      $assertfailon;
-      $assertfailon(a);
-      $assertfailon(a, t);
+    $assertcontrol(FailOn);
+    $assertfailon;
+    $assertfailon(a);
+    $assertfailon(a, t);
 
-      $assertcontrol(FailOff);
-      $assertfailoff;
-      $assertfailoff(a);
-      $assertfailoff(a, t);
+    $assertcontrol(FailOff);
+    $assertfailoff;
+    $assertfailoff(a);
+    $assertfailoff(a, t);
 
-      $assertcontrol(NonvacuousOn);
-      $assertnonvacuouson;
-      $assertnonvacuouson(a);
-      $assertnonvacuouson(a, t);
+    $assertcontrol(NonvacuousOn);
+    $assertnonvacuouson;
+    $assertnonvacuouson(a);
+    $assertnonvacuouson(a, t);
 
-      $assertcontrol(VacuousOff);
-      $assertvacuousoff;
-      $assertvacuousoff(a);
-      $assertvacuousoff(a, t);
-   end
+    $assertcontrol(VacuousOff);
+    $assertvacuousoff;
+    $assertvacuousoff(a);
+    $assertvacuousoff(a, t);
+  end
 endmodule
 
 module unsupported_ctl_type_expr;
-   int ctl_type = 1;
-   initial begin
-      $assertcontrol(ctl_type);
-   end
+  int ctl_type = 1;
+  initial begin
+    $assertcontrol(ctl_type);
+  end
 endmodule
 
 module assert_class;
-   virtual class AssertCtl;
-      pure virtual function void virtual_assert_ctl();
-   endclass
+  virtual class AssertCtl;
+    pure virtual function void virtual_assert_ctl();
+  endclass
 
-   class AssertCls;
-      static function void static_function();
-         assert(0);
-      endfunction
-      static task static_task();
-         assert(0);
-      endtask
-      function void assert_function();
-         assert(0);
-      endfunction
-      task assert_task();
-         assert(0);
-      endtask
-      virtual function void virtual_assert();
-         assert(0);
-      endfunction
-   endclass
+  class AssertCls;
+    static function void static_function();
+      assert(0);
+    endfunction
+    static task static_task();
+      assert(0);
+    endtask
+    function void assert_function();
+      assert(0);
+    endfunction
+    task assert_task();
+      assert(0);
+    endtask
+    virtual function void virtual_assert();
+      assert(0);
+    endfunction
+  endclass
 
-   class AssertOn extends AssertCtl;
-      virtual function void virtual_assert_ctl();
-         $asserton;
-      endfunction
-   endclass
-
-   class AssertOff extends AssertCtl;
-      virtual function void virtual_assert_ctl();
-         $assertoff;
-      endfunction
-   endclass
-
-   AssertCls assertCls;
-   AssertOn assertOn;
-   AssertOff assertOff;
-   initial begin
-      $assertoff;
-      AssertCls::static_function();
-      AssertCls::static_task();
+  class AssertOn extends AssertCtl;
+    virtual function void virtual_assert_ctl();
       $asserton;
-      AssertCls::static_function();
-      AssertCls::static_task();
+    endfunction
+  endclass
 
-      assertCls = new;
-      assertOn = new;
-      assertOff = new;
+  class AssertOff extends AssertCtl;
+    virtual function void virtual_assert_ctl();
+      $assertoff;
+    endfunction
+  endclass
 
-      assertOff.virtual_assert_ctl();
-      assertCls.assert_function();
-      assertCls.assert_task();
-      assertCls.virtual_assert();
+  AssertCls assertCls;
+  AssertOn assertOn;
+  AssertOff assertOff;
+  initial begin
+    $assertoff;
+    AssertCls::static_function();
+    AssertCls::static_task();
+    $asserton;
+    AssertCls::static_function();
+    AssertCls::static_task();
 
-      assertOn.virtual_assert_ctl();
-      assertCls.assert_function();
-      assertCls.assert_task();
-      assertCls.virtual_assert();
-      assertOff.virtual_assert_ctl();
-      assertCls.assert_function();
-   end
+    assertCls = new;
+    assertOn = new;
+    assertOff = new;
+
+    assertOff.virtual_assert_ctl();
+    assertCls.assert_function();
+    assertCls.assert_task();
+    assertCls.virtual_assert();
+
+    assertOn.virtual_assert_ctl();
+    assertCls.assert_function();
+    assertCls.assert_task();
+    assertCls.virtual_assert();
+    assertOff.virtual_assert_ctl();
+    assertCls.assert_function();
+  end
 endmodule
 
 interface Iface;
-   function void assert_func();
-      assert(0);
-   endfunction
+  function void assert_func();
+    assert(0);
+  endfunction
 
-   function void assertoff_func();
-      $assertoff;
-   endfunction
+  function void assertoff_func();
+    $assertoff;
+  endfunction
 
-   initial begin
-      assertoff_func();
-      assert(0);
-      assert_func();
-      $asserton;
-      assert(0);
-      assert_func();
-   end
+  initial begin
+    assertoff_func();
+    assert(0);
+    assert_func();
+    $asserton;
+    assert(0);
+    assert_func();
+  end
 endinterface
 
 module assert_iface;
-   Iface iface();
-   virtual Iface vIface = iface;
-   initial begin
-      vIface.assert_func();
-      vIface.assertoff_func();
-      vIface.assert_func();
+  Iface iface();
+  virtual Iface vIface = iface;
+  initial begin
+    vIface.assert_func();
+    vIface.assertoff_func();
+    vIface.assert_func();
 
-      iface.assert_func();
-      iface.assertoff_func();
-      iface.assert_func();
-   end
+    iface.assert_func();
+    iface.assertoff_func();
+    iface.assert_func();
+  end
 endmodule
 
 interface class IfaceClass;
-   pure virtual function void assertoff_func();
-   pure virtual function void assert_func();
+  pure virtual function void assertoff_func();
+  pure virtual function void assert_func();
 endclass
 
 class IfaceClassImpl implements IfaceClass;
-   virtual function void assertoff_func();
-      $assertoff;
-   endfunction
-   virtual function void assert_func();
-      assert(0);
-   endfunction
+  virtual function void assertoff_func();
+    $assertoff;
+  endfunction
+  virtual function void assert_func();
+    assert(0);
+  endfunction
 endclass
 
 module assert_iface_class;
-   IfaceClassImpl ifaceClassImpl = new;
-   initial begin
-         ifaceClassImpl.assertoff_func();
-         ifaceClassImpl.assert_func();
-   end
+  IfaceClassImpl ifaceClassImpl = new;
+  initial begin
+    ifaceClassImpl.assertoff_func();
+    ifaceClassImpl.assert_func();
+  end
 endmodule

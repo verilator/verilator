@@ -6,7 +6,7 @@
 
 `define STRINGIFY(x) `"x`"
 
-module t ();
+module t;
   reg a0 = 'x;
   reg a1 = 'x;
   reg a2 = 'x;

@@ -1,8 +1,8 @@
-%Error: t/t_assert_dup_bad.v:17:4: Duplicate declaration of block: 'covlabel'
-   17 |    covlabel:   
-      |    ^~~~~~~~
-        t/t_assert_dup_bad.v:15:4: ... Location of original declaration
-   15 |    covlabel:
-      |    ^~~~~~~~
+%Error: t/t_assert_dup_bad.v:15:3: Duplicate declaration of block: 'covlabel'
+   15 |   covlabel :   
+      |   ^~~~~~~~
+        t/t_assert_dup_bad.v:13:3: ... Location of original declaration
+   13 |   covlabel :
+      |   ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

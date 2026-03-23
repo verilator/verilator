@@ -28,6 +28,8 @@
 
 #include "verilatedos.h"
 
+#include "verilated.h"
+
 #include <vector>
 
 //===========================================================================
@@ -249,6 +251,14 @@ public:
 };
 
 //===========================================================================
+// Force control signals of a VerilatedVar
+
+struct VerilatedForceControlSignals final {
+    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
+    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
+};
+
+//===========================================================================
 // Verilator variable
 // Thread safety: Assume is constructed only with model, then any number of readers
 
@@ -256,6 +266,9 @@ class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
     const char* const m_namep;  // Name - slowpath
+    std::unique_ptr<const VerilatedForceControlSignals>
+        m_forceControlSignals;  // Force control signals
+
 protected:
     const bool m_isParam;
     friend class VerilatedScope;
@@ -266,13 +279,25 @@ protected:
         , m_datap{datap}
         , m_namep{namep}
         , m_isParam{isParam} {}
+    VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
+                 std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals)
+        : VerilatedVarProps{vltype, vlflags, udims, pdims}
+        , m_datap{datap}
+        , m_namep{namep}
+        , m_forceControlSignals{std::move(forceControlSignals)}
+        , m_isParam{isParam} {}
 
 public:
     ~VerilatedVar() = default;
+    VerilatedVar(VerilatedVar&&) = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
+    const VerilatedForceControlSignals* forceControlSignals() const {
+        return m_forceControlSignals.get();
+    }
 };
 
 #endif  // Guard

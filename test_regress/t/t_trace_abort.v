@@ -4,18 +4,16 @@
 // SPDX-FileCopyrightText: 2020 Geza Lore
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-   reg [2:0] cyc = 0;
+  reg [2:0] cyc = 0;
 
-   always @(posedge clk) begin
-      cyc <= cyc + 3'd1;
-      // Exit via abort to make sure trace is flushed
-      if (&cyc) $stop;
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 3'd1;
+    // Exit via abort to make sure trace is flushed
+    if (&cyc) $stop;
+  end
 
 endmodule

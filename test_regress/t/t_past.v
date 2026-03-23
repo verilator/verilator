@@ -4,121 +4,124 @@
 // SPDX-FileCopyrightText: 2018 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   integer      cyc = 0;
-   reg [63:0]   crc;
-   reg [63:0]   sum;
+  integer cyc = 0;
+  reg [63:0] crc;
+  reg [63:0] sum;
 
-   // Take CRC data and apply to testblock inputs
-   wire [31:0]  in = crc[31:0];
+  // Take CRC data and apply to testblock inputs
+  wire [31:0] in = crc[31:0];
 
-   Test test (/*AUTOINST*/
-              // Inputs
-              .clk                      (clk),
-              .in                       (in[31:0]));
+  Test test (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
 
-   Test2 test2 (/*AUTOINST*/
-                // Inputs
-                .clk                    (clk),
-                .in                     (in[31:0]));
+  Test2 test2 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
 
-   // Test loop
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
-      if (cyc==0) begin
-         // Setup
-         crc <= 64'h5aef0c8d_d70a4497;
-      end
-      else if (cyc<10) begin
-      end
-      else if (cyc<90) begin
-      end
-      else if (cyc==99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
-
-endmodule
-
-module Test (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
-
-   input clk;
-   input [31:0] in;
-
-   reg [31:0]   dly0;
-   reg [31:0]   dly1;
-   reg [31:0]   dly2;
-   reg [31:0]   dly3;
-   reg [31:0]   dly0Inc;
-   reg [31:0]   dly1Inc;
-   reg [31:0]   dly2Inc;
-   reg [31:0]   dly3Inc;
-
-   // If called in an assertion, sequence, or property, the appropriate clocking event.
-   // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
-   // Otherwise, if called in an action block of an assertion, the leading clock of the assertion is used.
-   // Otherwise, if called in a procedure, the inferred clock
-   // Otherwise, default clocking
-
-   always @(posedge clk) begin
-      dly0 <= in;
-      dly1 <= dly0;
-      dly2 <= dly1;
-      dly3 <= dly2;
-      dly0Inc <= in + 1;
-      dly1Inc <= dly0Inc;
-      dly2Inc <= dly1Inc;
-      dly3Inc <= dly2Inc;
-      if ($time > 40) begin
-         // $past(expression, ticks, expression, clocking)
-         // In clock expression
-         if (dly0 != $past(in)) $stop;
-         if (dly0 != $past(in,)) $stop;
-         if (dly1 != $past(in, 2)) $stop;
-         if (dly1 != $past(in, 2, )) $stop;
-         if (dly1 != $past(in, 2, , )) $stop;
-         if (dly0Inc != $past(in + 1)) $stop;
-         if (dly0Inc != $past(in + 1,)) $stop;
-         if (dly1Inc != $past(in + 1, 2)) $stop;
-         if (dly1Inc != $past(in + 1, 2, )) $stop;
-         if (dly1Inc != $past(in + 1, 2, , )) $stop;
-         // $sampled(expression) -> expression
-         if (in != $sampled(in)) $stop;
-      end
-   end
-
-   assert property (@(posedge clk) $time < 40 || dly0 == $past(in));
-   assert property (@(posedge clk) $time < 40 || dly0Inc == $past(in + 1));
+  // Test loop
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    if (cyc == 0) begin
+      // Setup
+      crc <= 64'h5aef0c8d_d70a4497;
+    end
+    else if (cyc < 10) begin
+    end
+    else if (cyc < 90) begin
+    end
+    else if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
-module Test2 (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
+module Test (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
 
-   input clk;
-   input [31:0] in;
+  input clk;
+  input [31:0] in;
 
-   reg [31:0]   dly0;
-   reg [31:0]   dly1;
+  reg [31:0] dly0;
+  reg [31:0] dly1;
+  reg [31:0] dly2;
+  reg [31:0] dly3;
+  reg [31:0] dly0Inc;
+  reg [31:0] dly1Inc;
+  reg [31:0] dly2Inc;
+  reg [31:0] dly3Inc;
 
-   always @(posedge clk) begin
-      dly0 <= in;
-      dly1 <= dly0;
-   end
+  // If called in an assertion, sequence, or property, the appropriate clocking event.
+  // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
+  // Otherwise, if called in an action block of an assertion, the leading clock of the assertion is used.
+  // Otherwise, if called in a procedure, the inferred clock
+  // Otherwise, default clocking
 
-   default clocking @(posedge clk); endclocking
-   assert property (@(posedge clk) $time < 40 || dly1 == $past(in, 2));
+  always @(posedge clk) begin
+    dly0 <= in;
+    dly1 <= dly0;
+    dly2 <= dly1;
+    dly3 <= dly2;
+    dly0Inc <= in + 1;
+    dly1Inc <= dly0Inc;
+    dly2Inc <= dly1Inc;
+    dly3Inc <= dly2Inc;
+    if ($time > 40) begin
+      // $past(expression, ticks, expression, clocking)
+      // In clock expression
+      if (dly0 != $past(in)) $stop;
+      if (dly0 != $past(in,)) $stop;
+      if (dly1 != $past(in, 2)) $stop;
+      if (dly1 != $past(in, 2,)) $stop;
+      if (dly1 != $past(in, 2,,)) $stop;
+      if (dly0Inc != $past(in + 1)) $stop;
+      if (dly0Inc != $past(in + 1,)) $stop;
+      if (dly1Inc != $past(in + 1, 2)) $stop;
+      if (dly1Inc != $past(in + 1, 2,)) $stop;
+      if (dly1Inc != $past(in + 1, 2,,)) $stop;
+      // $sampled(expression) -> expression
+      if (in != $sampled(in)) $stop;
+    end
+  end
+
+  assert property (@(posedge clk) $time < 40 || dly0 == $past(in));
+  assert property (@(posedge clk) $time < 40 || dly0Inc == $past(in + 1));
+
+endmodule
+
+module Test2 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
+
+  input clk;
+  input [31:0] in;
+
+  reg [31:0] dly0;
+  reg [31:0] dly1;
+
+  always @(posedge clk) begin
+    dly0 <= in;
+    dly1 <= dly0;
+  end
+
+  default clocking @(posedge clk);
+  endclocking
+  assert property (@(posedge clk) $time < 40 || dly1 == $past(in, 2));
 
 endmodule

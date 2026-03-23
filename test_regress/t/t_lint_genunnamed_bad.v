@@ -6,31 +6,31 @@
 
 module t;
 
-   parameter P = 1;
+  parameter P = 1;
 
-   if (P) ;
+  if (P) ;
 
-   if (P)
-     begin
-        initial $display;
-     end
-   else
-     begin
-        initial $display;
-     end
+  if (P)
+    begin
+      initial $display;
+    end
+  else
+    begin
+      initial $display;
+    end
 
-   for (genvar v = 0; v < P; ++v) ;
+  for (genvar v = 0; v < P; ++v) ;
 
-   for (genvar v = 0; v < P; ++v)
-     begin
-        initial $display;
-     end
+  for (genvar v = 0; v < P; ++v)
+    begin
+      initial $display;
+    end
 
-   case (P)
-     1: initial begin end
-     2: begin
-        initial begin end
-     end
-   endcase
+  case (P)
+    1: initial begin end
+    2: begin
+      initial begin end
+    end
+  endcase
 
 endmodule

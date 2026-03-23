@@ -32,6 +32,7 @@ Verilator User's Guide
 
    languages.rst
    extensions.rst
+   control.rst
    executables.rst
    warnings.rst
    files.rst

@@ -6,5 +6,7 @@
 
 int i;
 
-class Cls #(parameter type P_T = i);
+class Cls #(
+    parameter type P_T = i
+);
 endclass

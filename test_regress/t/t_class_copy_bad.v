@@ -8,14 +8,17 @@ class Other;
 endclass
 
 class Cls;
-   int imembera;
-   function int inc_methoda; imembera += 1; return imembera; endfunction
+  int imembera;
+  function int inc_methoda;
+    imembera += 1;
+    return imembera;
+  endfunction
 endclass
 
 module t;
-   initial begin
-      Cls c1;
-      Other co;
-      c1 = new co;  // Bad, incompatible types
-   end
+  initial begin
+    Cls c1;
+    Other co;
+    c1 = new co;  // Bad, incompatible types
+  end
 endmodule

@@ -254,6 +254,7 @@ private:
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
+    bool m_fourstate = false;       // main switch: --fourstate
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
     bool m_jsonOnly = false;        // main switch: --json-only
@@ -313,8 +314,9 @@ private:
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
-    int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_convergeLimit = 10000;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
+    int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_hierChild = 0;      // main switch: --hierarchical-child
@@ -329,6 +331,7 @@ private:
     int         m_localizeMaxSize = 1024;  // main switch: --localize-max-size
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
+    int         m_funcRecursion = 1000;  // main switch: --func-recursion-depth
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
     int         m_outputGroups = -1;  // main switch: --output-groups
     int         m_outputSplit = 20000;  // main switch: --output-split
@@ -338,6 +341,7 @@ private:
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
+    int         m_replicationLimit = 8192; // main switch: --replication-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     bool        m_stopFail = true;  // main switch: --stop-fail
     int         m_threads = 1;      // main switch: --threads
@@ -353,6 +357,7 @@ private:
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollLimit = 16384;  // main switch: --unroll-limit
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
+    int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
@@ -412,6 +417,7 @@ private:
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
+    bool m_fLiftExpr = true;   // main switch: -fno-lift-expr: lift expressions out of statements
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
@@ -540,6 +546,7 @@ public:
     bool emitAccessors() const { return m_emitAccessors; }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
+    bool fourstate() const { return m_fourstate; }
     bool gmake() const { return m_gmake; }
     bool makeJson() const { return m_makeJson; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
@@ -595,6 +602,7 @@ public:
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
+    int debugAllocRandom() const { return m_debugAllocRandom; }
     bool dumpTreeAddrids() const VL_MT_SAFE;
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
@@ -608,6 +616,7 @@ public:
     bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
+    int funcRecursionDepth() const { return m_funcRecursion; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
@@ -615,6 +624,7 @@ public:
     int outputGroups() const { return m_outputGroups; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int reloopLimit() const { return m_reloopLimit; }
+    int replicationLimit() const { return m_replicationLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     bool stopFail() const { return m_stopFail; }
     int threads() const VL_MT_SAFE { return m_threads; }
@@ -638,6 +648,7 @@ public:
     int unrollCount() const { return m_unrollCount; }
     int unrollLimit() const { return m_unrollLimit; }
     int unrollStmts() const { return m_unrollStmts; }
+    int constraintArrayLimit() const { return m_constraintArrayLimit; }
     int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
@@ -732,6 +743,7 @@ public:
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
+    bool fLiftExpr() const { return m_fLiftExpr; }
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }

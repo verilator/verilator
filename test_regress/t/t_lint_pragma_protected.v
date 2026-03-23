@@ -6,6 +6,7 @@
 
 // This part should pass OK
 
+// verilog_format: off
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected

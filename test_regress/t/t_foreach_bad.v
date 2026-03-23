@@ -6,19 +6,19 @@
 
 module t;
 
-   integer a, b;
+  integer a, b;
 
-   reg [2:0][2:0] array;
+  reg [2:0][2:0] array;
 
-   initial begin
-      foreach (array);  // no index
+  initial begin
+    foreach (array);  // no index
 
-      foreach (array.array[a]); // not supported
+    foreach (array.array[a]);  // not supported
 
-      foreach (array[a.b]);  // no index
+    foreach (array[a.b]);  // no index
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

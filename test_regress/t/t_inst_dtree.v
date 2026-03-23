@@ -4,69 +4,83 @@
 // SPDX-FileCopyrightText: 2013 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-`ifdef INLINE_A //verilator inline_module
+`ifdef INLINE_A  //verilator inline_module
 `else  //verilator no_inline_module
 `endif
 
-   bmod bsub3 (.clk, .n(3));
-   bmod bsub2 (.clk, .n(2));
-   bmod bsub1 (.clk, .n(1));
-   bmod bsub0 (.clk, .n(0));
+  // verilog_format: off
+  bmod bsub3 (.clk, .n(3));
+  bmod bsub2 (.clk, .n(2));
+  bmod bsub1 (.clk, .n(1));
+  bmod bsub0 (.clk, .n(0));
+  // verilog_format: on
 endmodule
 
-module bmod
-  (input  clk,
-   input [31:0] n);
+module bmod (
+    input clk,
+    input [31:0] n
+);
 
-`ifdef INLINE_B //verilator inline_module
+`ifdef INLINE_B  //verilator inline_module
 `else  //verilator no_inline_module
 `endif
 
-   cmod csub (.clk, .n);
+  cmod csub (
+      .clk,
+      .n
+  );
 
 endmodule
 
-module cmod
-  (input   clk, input [31:0] n);
+module cmod (
+    input clk,
+    input [31:0] n
+);
 
-`ifdef INLINE_C //verilator inline_module
+`ifdef INLINE_C  //verilator inline_module
 `else  //verilator no_inline_module
 `endif
 
-   reg [31:0] clocal;
-   always @ (posedge clk) clocal <= n;
+  reg [31:0] clocal;
+  always @(posedge clk) clocal <= n;
 
-   dmod dsub (.clk, .n);
+  dmod dsub (
+      .clk,
+      .n
+  );
 endmodule
 
-module dmod (input clk, input [31:0] n);
+module dmod (
+    input clk,
+    input [31:0] n
+);
 
-`ifdef INLINE_D //verilator inline_module
+`ifdef INLINE_D  //verilator inline_module
 `else  //verilator no_inline_module
 `endif
 
-   reg [31:0] dlocal;
-   always @ (posedge clk) dlocal <= n;
+  reg [31:0] dlocal;
+  always @(posedge clk) dlocal <= n;
 
-   int   cyc;
-   always @(posedge clk) begin
-      cyc <= cyc+1;
-   end
-   always @(posedge clk) begin
-      if (cyc>10) begin
-`ifdef TEST_VERBOSE $display("%m: csub.clocal=%0d  dlocal=%0d", csub.clocal, dlocal); `endif
-         if (csub.clocal !== n) $stop;
-         if (dlocal !== n) $stop;
-      end
-      if (cyc==99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  int cyc;
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+  end
+  always @(posedge clk) begin
+    if (cyc > 10) begin
+`ifdef TEST_VERBOSE
+      $display("%m: csub.clocal=%0d  dlocal=%0d", csub.clocal, dlocal);
+`endif
+      if (csub.clocal !== n) $stop;
+      if (dlocal !== n) $stop;
+    end
+    if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

@@ -121,28 +121,6 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
 
-    // State associated with processing $display style string formatting
-    struct EmitDispState final {
-        string m_format;  // "%s" and text from user
-        std::vector<char> m_argsChar;  // Format of each argument to be printed
-        std::vector<AstNode*> m_argsp;  // Each argument to be printed
-        std::vector<string> m_argsFunc;  // Function before each argument to be printed
-        EmitDispState() { clear(); }
-        void clear() {
-            m_format = "";
-            m_argsChar.clear();
-            m_argsp.clear();
-            m_argsFunc.clear();
-        }
-        void pushFormat(const string& fmt) { m_format += fmt; }
-        void pushFormat(char fmt) { m_format += fmt; }
-        void pushArg(char fmtChar, AstNode* nodep, const string& func) {
-            m_argsChar.push_back(fmtChar);
-            m_argsp.push_back(nodep);
-            m_argsFunc.push_back(func);
-        }
-    } m_emitDispState;
-
 protected:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -172,11 +150,9 @@ protected:
 
 public:
     // METHODS
-    void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
-                     AstNode* exprsp, bool isScan);
-    void displayEmit(AstNode* nodep, bool isScan);
-    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
-                    char fmtLetter);
+    bool displayEmitHeader(AstNode* nodep, bool isScan);
+    void displayNode(AstNode* nodep, AstSFormatF* fmtp, const string& vformat, AstNode* exprsp,
+                     bool isScan);
 
     bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(const AstNode* nodep) {
@@ -209,12 +185,13 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
+    std::string dereferenceString(const std::string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp, bool constructing);
+    void emitVarReset(const string& prefix, AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix, const AstNode* valuep);
@@ -330,56 +307,27 @@ public:
     }
 
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
-        // Virtual bases in depth-first left-to-right order
-        std::vector<AstClass*> virtualBases;
-        std::unordered_set<AstClass*> doneClasses;
-        collectVirtualBasesRecursep(classp, virtualBases);
-        for (AstClass* vbase : virtualBases) {
-            if (doneClasses.count(vbase)) continue;
-            puts(doneClasses.empty() ? "" : "\n    , ");
-            doneClasses.emplace(vbase);
-            puts(EmitCUtil::prefixNameProtect(vbase));
-            if (constructorNeedsProcess(vbase)) {
-                puts("(vlProcess, vlSymsp)");
-            } else {
-                puts("(vlSymsp)");
-            }
-        }
-        const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
-            if (doneClasses.count(extp->classp())) continue;
-            puts(doneClasses.empty() ? "" : "\n    , ");
-            doneClasses.emplace(extp->classp());
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
+            puts("::init");
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {
                 puts("(vlSymsp");
             }
             // Handle super.new() args for the concrete parent
-            if (!extp->classp()->isInterfaceClass() && superNewCallp) {
+            if (const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp())) {
                 putCommaIterateNext(superNewCallp->argsp(), true);
             }
-            puts(")");
-        }
-    }
-    void collectVirtualBasesRecursep(const AstClass* classp,
-                                     std::vector<AstClass*>& virtualBases) {
-        std::set<const AstClass*> visited;
-        collectVirtualBasesRecursep(classp, virtualBases /*ref*/, visited /*ref*/);
-    }
-    void collectVirtualBasesRecursep(const AstClass* classp, std::vector<AstClass*>& virtualBases,
-                                     std::set<const AstClass*>& visited) {
-        if (visited.count(classp)) return;
-        visited.emplace(classp);
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            // Depth-first: recurse into this base first
-            collectVirtualBasesRecursep(extp->classp(), virtualBases, visited);
-            if (extp->classp()->useVirtualPublic()) { virtualBases.push_back(extp->classp()); }
+            puts(");\n");
+            // Since SystemVerilog allows only for extending from one class, for sure there won't
+            // be any more constructors to be called. Even if there are some classes which are
+            // "implemented", those are interface classes which do not have constructors.
+            break;
         }
     }
 
@@ -402,14 +350,11 @@ public:
         if (nodep->ifdef() != "") putns(nodep, "#ifdef " + nodep->ifdef() + "\n");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
+        puts(" {\n");
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) {
-                puts("\n    : ");
-                putConstructorSubinit(classp, nodep);
-            }
+            if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
         }
-        puts(" {\n");
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
@@ -511,12 +456,23 @@ public:
     void visit(AstCvtArrayToPacked* nodep) override {
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
         AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        const bool descending = [&]() {
+            if (const AstUnpackArrayDType* const unpackDtp = VN_CAST(fromDtp, UnpackArrayDType))
+                return !unpackDtp->declRange().ascending();
+            return false;
+        }();
         puts("VL_PACK_");
         emitIQW(nodep);
         puts("_");
         emitRU(fromDtp);
         emitIQW(elemDtp);
-        emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+        if (descending) {
+            // Wrap source in VL_PACK_REVERSED so VL_PACK sees ascending order
+            emitOpName(nodep, "(%nw, %rw, %P, VL_PACK_REVERSED(%li))", nodep->fromp(), elemDtp,
+                       nullptr);
+        } else {
+            emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+        }
     }
 
     void visit(AstCvtUnpackedToQueue* nodep) override {
@@ -526,13 +482,35 @@ public:
 
     void visit(AstNodeAssign* nodep) override {
         if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
-            AstVar* const varp = VN_AS(nodep->lhsp(), NodeVarRef)->varp();
-            emitVarReset(varp, resetp->constructing());
+            // TODO get rid of emitVarReset and instead let AstNodeAssign understand how to init
+            // anything
+            AstNode* fromp = nodep->lhsp();
+            // Fork needs to use a member select.  Nothing else should be possible before VarRef.
+            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+                // Fork-DynScope generated pointer to previously automatic variable
+                AstVar* const memberVarp = sfromp->varp();
+                fromp = sfromp->fromp();
+                if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                emitVarReset(
+                    ("VL_NULL_CHECK("s
+                     + (fromVarRefp->selfPointer().isEmpty()
+                            ? ""
+                            : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
+                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
+                     + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
+                    memberVarp, resetp->constructing());
+            } else {
+                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
+                emitVarReset("", varp, resetp->constructing());
+            }
             return;
         }
         bool paren = true;
         bool decind = false;
         bool rhs = true;
+        bool reverseUnpack = false;  // Set for descending CvtPackedToArray
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
@@ -601,6 +579,11 @@ public:
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
+            // Descending unpacked dest: reverse after unpack
+            if (const AstUnpackArrayDType* const unpackDtp
+                = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!unpackDtp->declRange().ascending()) reverseUnpack = true;
+            }
         } else if (const AstCvtArrayToArray* const castp
                    = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
             if (castp->reverse()) {
@@ -652,6 +635,11 @@ public:
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
         puts(";\n");
+        if (reverseUnpack) {
+            puts("VL_UNPACK_REVERSED(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(");\n");
+        }
     }
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
@@ -712,8 +700,8 @@ public:
         puts(";\n");
     }
     void visit(AstCNew* nodep) override {
-        if (VN_IS(nodep->dtypep(), VoidDType)) {
-            // super.new case
+        if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case
+            putsDecoration(nodep, "/*super.new*/");
             return;
         }
         // assignment case;
@@ -905,7 +893,7 @@ public:
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
         if (nodep->addNewline()) text += "\n";
-        displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
+        displayNode(nodep, nodep->fmtp(), text, nodep->fmtp()->exprsp(), false);
     }
     void visit(AstDumpCtl* nodep) override {
         switch (nodep->ctlType()) {
@@ -956,11 +944,10 @@ public:
         }
     }
     void visit(AstSFormat* nodep) override {
-        displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(),
-                    nodep->fmtp()->exprsp(), false);
+        displayNode(nodep, nodep->fmtp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);
     }
     void visit(AstSFormatF* nodep) override {
-        displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
+        displayNode(nodep, nodep, nodep->text(), nodep->exprsp(), false);
     }
     void visit(AstFScanF* nodep) override {
         displayNode(nodep, nullptr, nodep->text(), nodep->exprsp(), true);
@@ -999,7 +986,7 @@ public:
     }
     void visit(AstFGetS* nodep) override {
         checkMaxWords(nodep);
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
     }
 
     void checkMaxWords(AstNode* nodep) {
@@ -1177,7 +1164,7 @@ public:
         if (VN_IS(nodep->exprp()->dtypep()->skipRefp(), VoidDType)) {
             putns(nodep, "");
         } else {
-            putns(nodep, "(void)");  // Prevent unused expression warning in C
+            putns(nodep, "std::ignore = ");
         }
         iterateConst(nodep->exprp());
         puts(";\n");
@@ -1271,6 +1258,22 @@ public:
     }
     void visit(AstExprStmt* nodep) override {
         VL_RESTORER(m_createdScopeHash);
+        const bool containsAwait = nodep->exists([](AstCAwait*) -> bool { return true; });
+        if (containsAwait) {
+            UASSERT_OBJ(m_cfuncp && m_cfuncp->isCoroutine(), nodep,
+                        "AstExprStmt with CAwait must be in coroutine");
+            putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+            puts("co_return;\n");
+            if (!nodep->hasResult()) {
+                puts("}()))");
+                return;
+            }
+            puts("}()), ");
+            iterateAndNextConstNull(nodep->resultp());
+            puts(")");
+            return;
+        }
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");

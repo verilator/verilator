@@ -75,12 +75,10 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:*"
-          - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
           - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
-          - "OpenPiton:2x2:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
           - "VeeR-EH1:asic*"
@@ -121,12 +119,10 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:*"
-          - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
           - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
-          - "OpenPiton:2x2:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
           - "VeeR-EH1:asic*"
@@ -167,11 +163,9 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:* !-hier"
-          - "BlackParrot:2x2:* !-hier"
           - "BlackParrot:4x4:* !-hier"
           - "NVDLA:* !-hier"
           - "OpenPiton:1x1:* !-hier"
-          - "OpenPiton:2x2:* !-hier"
           - "OpenPiton:4x4:* !-hier"
           - "OpenPiton:8x8:* !-hier"
           - "OpenPiton:16x16:dhry !-hier"
@@ -198,7 +192,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download all results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: rtlmeter-${{ matrix.tag }}-results-*
           path: all-results-${{ matrix.tag }}
@@ -208,7 +202,7 @@ jobs:
         run: |
           ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
       - name: Upload combined results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: all-results-${{ matrix.tag }}.json
           name: all-results-${{ matrix.tag }}
@@ -227,20 +221,20 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: all-results-*
           path: results
           merge-multiple: true
       - name: Upload published results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: results/*.json
           name: published-results
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.2.1
+        uses: actions/create-github-app-token@v3.0.0
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
@@ -289,7 +283,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download combined results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: all-results-*
           path: all-results
@@ -308,7 +302,7 @@ jobs:
           DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
           echo "date=$DATE" >> $GITHUB_OUTPUT
       - name: Download scheduled run results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: published-results
           path: nightly-results
@@ -374,14 +368,14 @@ jobs:
           done
           cat report.txt
       - name: Upload report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: report.txt
           name: rtlmeter-pr-results
       - name: Save PR number
         run: echo ${{ github.event.number }} > pr-number.txt
       - name: Upload PR number
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: pr-number.txt
           name: pr-number
@@ -397,7 +391,7 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.2.1
+        uses: actions/create-github-app-token@v3.0.0
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

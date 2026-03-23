@@ -6,83 +6,82 @@
 
 `define STRINGIFY(x) `"x`"
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   integer      cyc = 0;
+module t (
+    input clk
+);
 
-   wire         out;
-   reg          in;
+  integer      cyc = 0;
 
-   Genit g (.clk(clk), .value(in), .result(out));
+  wire         out;
+  reg          in;
 
-   always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d %x %x\n", $time, cyc, in, out);
-      cyc <= cyc + 1;
-      if (cyc==0) begin
-         // Setup
-         in <= 1'b1;
-      end
-      else if (cyc==1) begin
-         in <= 1'b0;
-      end
-      else if (cyc==2) begin
-         if (out != 1'b1) $stop;
-      end
-      else if (cyc==3) begin
-         if (out != 1'b0) $stop;
-      end
-      else if (cyc==9) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  Genit g (.clk(clk), .value(in), .result(out));
+
+  always @ (posedge clk) begin
+    //$write("[%0t] cyc==%0d %x %x\n", $time, cyc, in, out);
+    cyc <= cyc + 1;
+    if (cyc==0) begin
+      // Setup
+      in <= 1'b1;
+    end
+    else if (cyc==1) begin
+      in <= 1'b0;
+    end
+    else if (cyc==2) begin
+      if (out != 1'b1) $stop;
+    end
+    else if (cyc==3) begin
+      if (out != 1'b0) $stop;
+    end
+    else if (cyc==9) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
 module Generate (clk, value, result);
-   input clk;
-   input value;
-   output result;
+  input clk;
+  input value;
+  output result;
 
-   reg Internal;
+  reg Internal;
 
-   assign result = Internal;
+  assign result = Internal;
 
-   always @(posedge clk)
-     Internal <= value;
+  always @(posedge clk)
+    Internal <= value;
 endmodule
 
 module Checker (clk, value);
   input clk, value;
 
-   always @(posedge clk) begin
-      $write ("[%0t] value=%h\n", $time, value);
-   end
+  always @(posedge clk) begin
+    $write ("[%0t] value=%h\n", $time, value);
+  end
 
 endmodule
 
 module Test (clk, value, result);
-   input clk;
-   input value;
-   output result;
+  input clk;
+  input value;
+  output result;
 
-   Generate gen (clk, value, result);
-   Checker  chk (clk, gen.Internal);
+  Generate gen (clk, value, result);
+  Checker  chk (clk, gen.Internal);
 
 endmodule
 
 module Genit (clk, value, result);
-   input clk;
-   input value;
-   output result;
+  input clk;
+  input value;
+  output result;
 
 `ifndef ATSIM  // else unsupported
  `ifndef NC  // else unsupported
   `ifndef IVERILOG  // else unsupported
-   `define WITH_FOR_GENVAR
+  `define WITH_FOR_GENVAR
   `endif
  `endif
 `endif
@@ -90,25 +89,25 @@ module Genit (clk, value, result);
 `define WITH_GENERATE
 `ifdef WITH_GENERATE
  `ifndef WITH_FOR_GENVAR
-   genvar i;
+  genvar i;
  `endif
-   generate
-      for (
+  generate
+    for (
  `ifdef WITH_FOR_GENVAR
-           genvar
+        genvar
  `endif
-           i = 0; i < 1; i = i + 1)
-        begin : foo
-           Test tt (clk, value, result);
-        end
-   endgenerate
+        i = 0; i < 1; i = i + 1)
+      begin : foo
+        Test tt (clk, value, result);
+      end
+  endgenerate
 `else
-   Test tt (clk, value, result);
+  Test tt (clk, value, result);
 `endif
 
-   wire Result2 = t.g.foo[0].tt.gen.Internal;  // Works - Do not change!
-   always @ (posedge clk) begin
-      $write("[%0t] Result2 = %x\n", $time, Result2);
-   end
+  wire Result2 = t.g.foo[0].tt.gen.Internal;  // Works - Do not change!
+  always @ (posedge clk) begin
+    $write("[%0t] Result2 = %x\n", $time, Result2);
+  end
 
 endmodule

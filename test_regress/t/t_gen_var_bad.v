@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   integer i;
-   generate
-      for (i=0; i<3; i=i+1) begin  // Bad: i is not a genvar
-      end
-   endgenerate
+  integer i;
+  generate
+    for (i = 0; i < 3; i = i + 1) begin  // Bad: i is not a genvar
+    end
+  endgenerate
 endmodule

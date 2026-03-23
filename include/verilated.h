@@ -408,6 +408,7 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
@@ -530,6 +531,10 @@ public:
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
+    /// Check if generated final() code is executing
+    bool executingFinal() const VL_MT_SAFE;
+    /// Set if generated final() code is executing
+    void executingFinal(bool flag) VL_MT_SAFE;
     /// Return if quiet enabled
     bool quiet() const VL_MT_SAFE { return m_s.m_quiet; }
     /// Enable quiet (also prevents need for OS calls to get CPU time)
@@ -731,8 +736,12 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     ~VerilatedScope();
 
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
-                   int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
+                            int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
+                                     VerilatedVarType vltype, int vlflags,
+                                     std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
+                                     int udims, int pdims...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -744,15 +753,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void scopeDump() const;
     void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
-    static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
-        if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
-        if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
-            // m_callbacksp must be declared, as Max'es are > 0
-            return scopep->m_callbacksp[funcnum];
-        } else {  // LCOV_EXCL_LINE
-            return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
-        }
-    }
+    static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
 };
 

@@ -6,20 +6,16 @@
 
 module x;
 
-   typedef struct {
-      int         a;
-   } notpacked_t;
+  typedef struct {int a;} notpacked_t;
 
-   typedef struct packed {
-      notpacked_t b;
-   } ispacked_t;
+  typedef struct packed {notpacked_t b;} ispacked_t;
 
-   ispacked_t p;
+  ispacked_t p;
 
-   initial begin
-      p.b = 1;
-      if (p.b != 1) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    p.b = 1;
+    if (p.b != 1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -6,31 +6,31 @@
 
 module t;
 
-   mailbox #(int) mbox;
+  mailbox #(int) mbox;
 
-   task main();
-      // See issue #4323; not an INFINITELOOP due to delay inside get()
-      forever begin
-         int i;
-         mbox.get(i);
-         $display("[%0t] Got %0d", $time, i);
-      end
-   endtask
+  task main();
+    // See issue #4323; not an INFINITELOOP due to delay inside get()
+    forever begin
+      int i;
+      mbox.get(i);
+      $display("[%0t] Got %0d", $time, i);
+    end
+  endtask
 
-   initial begin
-      mbox = new (1);
+  initial begin
+    mbox = new(1);
 
-      #10;
-      fork
-         main();
-      join_none
+    #10;
+    fork
+      main();
+    join_none
 
-      #10;
-      mbox.put(10);
-      mbox.put(11);
+    #10;
+    mbox.put(10);
+    mbox.put(11);
 
-      #10;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    #10;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

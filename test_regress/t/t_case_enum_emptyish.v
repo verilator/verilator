@@ -6,24 +6,24 @@
 
 module t;
 
-   enum logic [2:0] {
-          e0,
-          e1,
-          e2,
-          e3
-        } EN;
+  enum logic [2:0] {
+    e0,
+    e1,
+    e2,
+    e3
+  } EN;
 
-   initial begin
+  initial begin
 
-      unique case (EN)
-        e0 :;
-        e1 :;
-        e2 :;
-        e3 :;
-      endcase
+    unique case (EN)
+      e0: ;
+      e1: ;
+      e2: ;
+      e3: ;
+    endcase
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.lint(fails=True, v_flags2=['-Wno-WIDTHTRUNC'], expect_filename=test.golden_filename)
 

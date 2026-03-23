@@ -6,13 +6,13 @@
 
 module t;
 
-   integer a[];
+  integer a[];
 
-   string  s;
+  string s;
 
-   initial begin
-      s = "str";
-      a = new [s];  // Bad
-   end
+  initial begin
+    s = "str";
+    a = new[s];  // Bad
+  end
 
 endmodule

@@ -1,5 +1,5 @@
-%Error: t/t_no_std_bad.v:9:11: Import package not found: 'std'
-    9 |    import std::*;
-      |           ^~~
+%Error: t/t_no_std_bad.v:9:10: Import package not found: 'std'
+    9 |   import std::*;
+      |          ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

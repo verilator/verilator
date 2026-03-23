@@ -10,41 +10,41 @@
 
 module t;
 
-   initial begin
-      if (0)
-        $display("ok");
-        $display("bad1");  // <--- Bad
-
-      if (0)
-        $display("ok");
-      else
-        $display("ok");
-        $display("bad2");  // <--- Bad
-
-      for (;0;)
-        $display("ok");
-        $display("bad3");  // <--- Bad
-
-      while (0)
-        $display("ok");
-        $display("bad4");  // <--- Bad
-
-      // Normal styles
-      if (0) $display("ok");
+  initial begin
+    if (0)
       $display("ok");
-      for (;0;) $display("ok");
-      $display("ok");
-      while (0) $display("ok");
-      $display("ok");
+      $display("bad1");  // <--- Bad
 
-      // Questionable but pops up in some cases e.g. SweRV
-      // (all statements have similar indent)
-      if (0)
-        begin
-          $display("ok");
-        end
-          $display("ok");
+    if (0)
+      $display("ok");
+    else
+      $display("ok");
+      $display("bad2");  // <--- Bad
 
-   end
+    for (;0;)
+      $display("ok");
+      $display("bad3");  // <--- Bad
+
+    while (0)
+      $display("ok");
+      $display("bad4");  // <--- Bad
+
+    // Normal styles
+    if (0) $display("ok");
+    $display("ok");
+    for (;0;) $display("ok");
+    $display("ok");
+    while (0) $display("ok");
+    $display("ok");
+
+    // Questionable but pops up in some cases e.g. SweRV
+    // (all statements have similar indent)
+    if (0)
+      begin
+       $display("ok");
+      end
+       $display("ok");
+
+  end
 
 endmodule

@@ -97,18 +97,25 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
-    const VAssertType m_type;  // Assertion/cover type
+    const VAssertType m_userType;  // Assertion/cover type for user enable/disable
     const VAssertDirectiveType m_directive;  // Assertion directive type
+    bool m_senFromAlways = false;  // Sensitivity list copied from upper always
+    bool m_immediate = false;  // Immediate assert (may differ from userType being immediate)
 
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, VAssertType type,
-                         VAssertDirectiveType directive, const string& name = "")
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
+                         VAssertType userType, VAssertDirectiveType directive,
+                         const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
-        , m_type{type}
+        , m_userType{userType}
         , m_directive{directive} {
         this->propp(propp);
         addPasssp(passsp);
+        m_immediate = m_userType.containsAny(VAssertType::SIMPLE_IMMEDIATE
+                                             | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
+                                             | VAssertType::FINAL_DEFERRED_IMMEDIATE)
+                      || m_userType == VAssertType::INTERNAL;
     }
     ASTGEN_MEMBERS_AstNodeCoverOrAssert;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
@@ -116,14 +123,13 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    VAssertType type() const VL_MT_SAFE { return m_type; }
+    string type() { return ""; }
+    VAssertType userType() const VL_MT_SAFE { return m_userType; }
     VAssertDirectiveType directive() const { return m_directive; }
-    bool immediate() const {
-        return this->type().containsAny(VAssertType::SIMPLE_IMMEDIATE
-                                        | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
-                                        | VAssertType::FINAL_DEFERRED_IMMEDIATE)
-               || this->type() == VAssertType::INTERNAL;
-    }
+    bool immediate() const { return m_immediate; }
+    void immediate(bool flag) { m_immediate = flag; }
+    bool senFromAlways() const VL_MT_STABLE { return m_senFromAlways; }
+    void senFromAlways(bool flag) { m_senFromAlways = flag; }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := headerp : AstForeachHeader
@@ -305,6 +311,7 @@ public:
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
+    const VCStmtType m_stmtType;  // Special statement (instead of comparing name())
 
     static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
         // Compute the label
@@ -331,8 +338,10 @@ class AstCStmt final : public AstNodeStmt {
     }
 
 public:
-    explicit AstCStmt(FileLine* fl, const std::string& text = "")
-        : ASTGEN_SUPER_CStmt(fl) {
+    explicit AstCStmt(FileLine* fl, const std::string& text = "",
+                      const VCStmtType& stmtType = VCStmtType::NONE)
+        : ASTGEN_SUPER_CStmt(fl)
+        , m_stmtType{stmtType} {
         if (!text.empty()) add(text);
     }
     ASTGEN_MEMBERS_AstCStmt;
@@ -341,6 +350,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
     bool sameNode(const AstNode*) const override { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VCStmtType stmtType() const { return m_stmtType; }
     // Add some text, or a node to this statement
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
@@ -589,7 +601,10 @@ public:
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
-        fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar};
+        newp->optionalFormat(true);
+        fmtp(newp);
         this->filep(filep);
     }
     ASTGEN_MEMBERS_AstDisplay;
@@ -755,6 +770,38 @@ public:
     }
     ASTGEN_MEMBERS_AstFireEvent;
     bool isDelayed() const { return m_delayed; }
+};
+class AstInitialAutomaticStmt final : public AstNodeStmt {
+    // Automatic variable initialization in a statement position
+    // Used during early stages to record an initial initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialAutomatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialAutomaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialAutomaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialAutomaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
+};
+class AstInitialStaticStmt final : public AstNodeStmt {
+    // Static variable initialization in a statement position
+    // Used during early stages to record a static initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialStatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialStaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialStaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialStaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
 };
 class AstJumpBlock final : public AstNodeStmt {
     // Block of code that might contain AstJumpGo statements as children,
@@ -1066,15 +1113,13 @@ class AstSFormat final : public AstNodeStmt {
     // @astgen op1 := fmtp : AstSFormatF
     // @astgen op2 := lhsp : AstNodeExpr
 public:
-    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, const string& text, AstNodeExpr* exprsp,
+    AstSFormat(FileLine* fl, bool optionalFormat, AstNodeExpr* lhsp, AstNodeExpr* exprsp,
                char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
-        fmtp(new AstSFormatF{fl, text, true, exprsp, missingArgChar});
-        this->lhsp(lhsp);
-    }
-    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* exprsp, char missingArgChar = 'd')
-        : ASTGEN_SUPER_SFormat(fl) {
-        fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar};
+        newp->optionalFormat(optionalFormat);
+        fmtp(newp);
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstSFormat;
@@ -1307,15 +1352,22 @@ public:
 class AstTracePushPrefix final : public AstNodeStmt {
     const string m_prefix;  // Prefix to add to signal names
     const VTracePrefixType m_prefixType;  // Type of prefix being pushed
+    const int m_left;  // Array left index, or struct/union member count
+    const int m_right;  // Array right index
 public:
-    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType)
+    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType,
+                       int left = 0, int right = 0)
         : ASTGEN_SUPER_TracePushPrefix(fl)
         , m_prefix{prefix}
-        , m_prefixType{prefixType} {}
+        , m_prefixType{prefixType}
+        , m_left{left}
+        , m_right{right} {}
     ASTGEN_MEMBERS_AstTracePushPrefix;
     bool sameNode(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
+    int left() const { return m_left; }
+    int right() const { return m_right; }
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr

@@ -10,119 +10,117 @@
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   integer cyc = 0;
+  integer cyc = 0;
 
-   reg [3:0]  in;
-   tri [3:0]  bus = in;
+  reg [3:0] in;
+  tri [3:0] bus = in;
 
-   int        never_driven;
-   int        never_forced;
+  int never_driven;
+  int never_forced;
 
-   real       r;
+  real r;
 
-   task force_bus;
-      force bus[1:0] = 2'b10;
-   endtask
+  task force_bus;
+    force bus[1:0] = 2'b10;
+  endtask
 
-   task release_bus;
+  task release_bus;
+    release bus;
+  endtask
+
+  // Test loop
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 0) begin
+      in <= 4'b0101;
+    end
+    else if (cyc == 1) begin
+      `checkh(in, 4'b0101);
+    end
+    // Check forces with no driver
+    if (cyc == 1) begin
+      force never_driven = 32'h888;
+    end
+    else if (cyc == 2) begin
+      `checkh(never_driven, 32'h888);
+    end
+    //
+    // Check release with no force
+    else if (cyc == 10) begin
+      never_forced <= 5432;
+    end
+    else if (cyc == 11) begin
+      `checkh(never_forced, 5432);
+    end
+    else if (cyc == 12) begin
+      release never_forced;  // no-op
+    end
+    else if (cyc == 13) begin
+      `checkh(never_forced, 5432);
+    end
+    //
+    // bus
+    else if (cyc == 20) begin
+      `checkh(bus, 4'b0101);
+      force bus = 4'b0111;
+    end
+    else if (cyc == 21) begin
+      `checkh(bus, 4'b0111);
+      force bus = 4'b1111;
+    end
+    else if (cyc == 22) begin
+      `checkh(bus, 4'b1111);
       release bus;
-   endtask
-
-   // Test loop
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc == 0) begin
-         in <= 4'b0101;
-      end
-      else if (cyc == 1) begin
-         `checkh(in, 4'b0101);
-      end
-      // Check forces with no driver
-      if (cyc == 1) begin
-         force never_driven = 32'h888;
-      end
-      else if (cyc == 2) begin
-         `checkh(never_driven, 32'h888);
-      end
-      //
-      // Check release with no force
-      else if (cyc == 10) begin
-         never_forced <= 5432;
-      end
-      else if (cyc == 11) begin
-         `checkh(never_forced, 5432);
-      end
-      else if (cyc == 12) begin
-         release never_forced;  // no-op
-      end
-      else if (cyc == 13) begin
-         `checkh(never_forced, 5432);
-      end
-      //
-      // bus
-      else if (cyc == 20) begin
-         `checkh(bus, 4'b0101);
-         force bus = 4'b0111;
-      end
-      else if (cyc == 21) begin
-         `checkh(bus, 4'b0111);
-         force bus = 4'b1111;
-      end
-      else if (cyc == 22) begin
-         `checkh(bus, 4'b1111);
-         release bus;
-      end
-      else if (cyc == 23) begin
-         `checkh(bus, 4'b0101);
-      end
-      //
-      else if (cyc == 30) begin
-         force_bus();
-      end
-      else if (cyc == 31) begin
-         `checkh(bus, 4'b0110);
-      end
-      else if (cyc == 32) begin
-         release bus[0];
-      end
-      else if (cyc == 33) begin
-         `checkh(bus, 4'b0111);
-         release_bus();
-      end
-      else if (cyc == 34) begin
-         `checkh(in, 4'b0101);
-         `checkh(bus, 4'b0101);
-      end
-      //
-      else if (cyc == 40) begin
-         r <= 1.25;
-      end
-      else if (cyc == 41) begin
-         `checkr(r, 1.25);
-      end
-      else if (cyc == 42) begin
-         force r = 2.5;
-      end
-      else if (cyc == 43) begin
-         `checkr(r, 2.5);
-      end
-      else if (cyc == 44) begin
-         release r;
-      end
-      else if (cyc == 45) begin
-         `checkr(r, 2.5);
-      end
-      //
-      else if (cyc == 99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    end
+    else if (cyc == 23) begin
+      `checkh(bus, 4'b0101);
+    end
+    //
+    else if (cyc == 30) begin
+      force_bus();
+    end
+    else if (cyc == 31) begin
+      `checkh(bus, 4'b0110);
+    end
+    else if (cyc == 32) begin
+      release bus[0];
+    end
+    else if (cyc == 33) begin
+      `checkh(bus, 4'b0111);
+      release_bus();
+    end
+    else if (cyc == 34) begin
+      `checkh(in, 4'b0101);
+      `checkh(bus, 4'b0101);
+    end
+    //
+    else if (cyc == 40) begin
+      r <= 1.25;
+    end
+    else if (cyc == 41) begin
+      `checkr(r, 1.25);
+    end
+    else if (cyc == 42) begin
+      force r = 2.5;
+    end
+    else if (cyc == 43) begin
+      `checkr(r, 2.5);
+    end
+    else if (cyc == 44) begin
+      release r;
+    end
+    else if (cyc == 45) begin
+      `checkr(r, 2.5);
+    end
+    //
+    else if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule

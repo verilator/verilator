@@ -574,6 +574,7 @@ public:
                 || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
                 || m_e == TIME);
     }
+    bool isBit() const { return m_e == BIT; }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);
     }
@@ -801,6 +802,9 @@ public:
         DYN_RESIZE,
         DYN_SIZE,
         DYN_SLICE,
+        DYN_SLICE_ASSIGN,
+        DYN_SLICE_ASSIGN_BACK_BACK,
+        DYN_SLICE_ASSIGN_FRONT_BACK,
         DYN_SLICE_BACK_BACK,
         DYN_SLICE_FRONT_BACK,
         EVENT_CLEAR_FIRED,
@@ -815,11 +819,16 @@ public:
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
+        RANDOMIZER_DISABLE_SOFT,
         RANDOMIZER_HARD,
+        RANDOMIZER_SOFT,
         RANDOMIZER_UNIQUE,
         RANDOMIZER_MARK_RANDC,
         RANDOMIZER_SOLVE_BEFORE,
+        RANDOMIZER_PIN_VAR,
         RANDOMIZER_WRITE_VAR,
+        RANDOMIZER_SET_VAR_DISABLED,
+        RANDOMIZER_CLEAR_VAR_DISABLED,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -938,6 +947,9 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {DYN_RESIZE, "resize", false}, \
            {DYN_SIZE, "size", true}, \
            {DYN_SLICE, "slice", true}, \
+           {DYN_SLICE_ASSIGN, "sliceAssign", false}, \
+           {DYN_SLICE_ASSIGN_BACK_BACK, "sliceAssignBackBack", false}, \
+           {DYN_SLICE_ASSIGN_FRONT_BACK, "sliceAssignFrontBack", false}, \
            {DYN_SLICE_BACK_BACK, "sliceBackBack", true}, \
            {DYN_SLICE_FRONT_BACK, "sliceFrontBack", true}, \
            {EVENT_CLEAR_FIRED, "clearFired", false}, \
@@ -952,11 +964,16 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
+           {RANDOMIZER_DISABLE_SOFT, "disable_soft", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
+           {RANDOMIZER_SOFT, "soft", false}, \
            {RANDOMIZER_UNIQUE, "rand_unique", false}, \
            {RANDOMIZER_MARK_RANDC, "markRandc", false}, \
            {RANDOMIZER_SOLVE_BEFORE, "solveBefore", false}, \
+           {RANDOMIZER_PIN_VAR, "pin_var", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
+           {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
+           {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
@@ -979,6 +996,48 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \
            {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
+class VCStmtType final {
+public:
+    enum en : uint8_t {
+        NONE,  // Unknown or not applicable
+        CTOR_VAR_RESET_CALL,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Statement's enum mnemonic, for checking
+        const char* m_name;  // Statements name, for debugging
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCStmtType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCStmtType(en _e)
+        : m_e{_e} {}
+    explicit VCStmtType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        return names[m_e];
+    }
+    bool isNone() const { return m_e == NONE; }
+};
+constexpr bool operator==(const VCStmtType& lhs, const VCStmtType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCStmtType& lhs, VCStmtType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCStmtType::en lhs, const VCStmtType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCStmtType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 

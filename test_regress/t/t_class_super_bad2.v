@@ -6,7 +6,7 @@
 //
 
 class Cls;
-   task t;
-      super.i = 1;  // Bad - no extends
-   endtask
+  task t;
+    super.i = 1;  // Bad - no extends
+  endtask
 endclass

@@ -6,13 +6,13 @@
 
 module t;
 
-   integer file;
-   integer i;
+  integer file;
+  integer i;
 
-   initial begin
-      $fscanf(file, "%l", i);  // Bad
-      $fscanf(file, "%m", i);  // Bad
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $fscanf(file, "%l", i);  // Bad
+    $fscanf(file, "%m", i);  // Bad
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -2417,6 +2417,46 @@ static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits
     }
 }
 
+// Reverse element order of an unpacked array in-place.
+// Used by emitter for descending-range arrays after VL_UNPACK_*.
+template <typename T_Value, std::size_t N_Depth>
+static inline void VL_UNPACK_REVERSED(VlUnpacked<T_Value, N_Depth>& q) {
+    for (size_t i = 0; i < N_Depth / 2; ++i) {
+        const T_Value tmp = q[i];
+        q[i] = q[N_Depth - 1 - i];
+        q[N_Depth - 1 - i] = tmp;
+    }
+}
+
+// Return a reversed copy of an unpacked array.
+// Used by emitter for descending-range arrays before VL_PACK_*.
+template <typename T_Value, std::size_t N_Depth>
+static inline VlUnpacked<T_Value, N_Depth>
+VL_PACK_REVERSED(const VlUnpacked<T_Value, N_Depth>& q) {
+    VlUnpacked<T_Value, N_Depth> ret;
+    for (size_t i = 0; i < N_Depth; ++i) ret[i] = q[N_Depth - 1 - i];
+    return ret;
+}
+
+// Overloads for VlUnpacked source -> VlQueue destination
+template <typename T, std::size_t N_Depth>
+static inline void VL_COPY_Q(VlQueue<T>& q, const VlUnpacked<T, N_Depth>& from, int lbits,
+                             int srcElementBits, int dstElementBits) {
+    VlQueue<T> srcQ;
+    srcQ.renew(N_Depth);
+    for (size_t i = 0; i < N_Depth; ++i) srcQ.atWrite(i) = from[i];
+    VL_COPY_Q(q, srcQ, lbits, srcElementBits, dstElementBits);
+}
+
+template <typename T, std::size_t N_Depth>
+static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlUnpacked<T, N_Depth>& from, int lbits,
+                                int srcElementBits, int dstElementBits) {
+    VlQueue<T> srcQ;
+    srcQ.renew(N_Depth);
+    for (size_t i = 0; i < N_Depth; ++i) srcQ.atWrite(i) = from[N_Depth - 1 - i];
+    VL_COPY_Q(q, srcQ, lbits, srcElementBits, dstElementBits);
+}
+
 //======================================================================
 // Expressions needing insert/select
 
@@ -2792,10 +2832,9 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
 //======================================================================
 // Triops
 
-static inline WDataOutP VL_COND_WIWW(int obits, WDataOutP owp, int cond, WDataInP const w1p,
-                                     WDataInP const w2p) VL_MT_SAFE {
-    return VL_MEMCPY_W(owp, cond ? w1p : w2p, VL_WORDS_I(obits));
-}
+// This must be a macro in order for short-circuiting of the values to work.
+#define VL_COND_WIWW(obits, owp, cond, w1p, w2p) \
+    VL_MEMCPY_W(owp, (cond) ? (w1p) : (w2p), VL_WORDS_I(obits))
 
 //======================================================================
 // Constification
@@ -2946,7 +2985,8 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
-extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str) VL_PURE;
+extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,
+                      int truncFront = 0) VL_PURE;
 
 extern IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE;
 

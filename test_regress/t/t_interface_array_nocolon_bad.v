@@ -4,30 +4,28 @@
 // SPDX-FileCopyrightText: 2017 Mike Popoloski
 // SPDX-License-Identifier: CC0-1.0
 
-interface foo_intf
-  (
-   input x
-   );
+interface foo_intf (
+    input x
+);
 endinterface
 
-module foo_subm
-  (
-   input x
-   );
+module foo_subm (
+    input x
+);
 endmodule
 
-module t ();
+module t;
 
-   localparam N = 3;
+  localparam N = 3;
 
-   wire [2:0] X = 3'b110;
+  wire [2:0] X = 3'b110;
 
-   // Will cause ASCRANGE warning?
-   foo_intf foos [N] (.x(X)); // bad
-   foo_intf fool [1:3] (.x(X)); // bad
-   foo_intf foom [3:1] (.x(X)); // ok
+  // Will cause ASCRANGE warning?
+  foo_intf foos[N] (.x(X));  // bad
+  foo_intf fool[1:3] (.x(X));  // bad
+  foo_intf foom[3:1] (.x(X));  // ok
 
-   foo_subm subs [N] (.x(X)); // bad
-   foo_subm subl [1:3] (.x(X)); // bad
-   foo_subm subm [3:1] (.x(X)); // ok
+  foo_subm subs[N] (.x(X));  // bad
+  foo_subm subl[1:3] (.x(X));  // bad
+  foo_subm subm[3:1] (.x(X));  // ok
 endmodule

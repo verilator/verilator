@@ -251,7 +251,7 @@ class V3DfgPushDownSels final {
     // METHODS - Vertex processing
 
     static bool ignoredSink(const DfgVertex& sink) {
-        // Ignore non observable variable sinks. These will be eliminated.
+        // Ignore non-observable variable sinks. These will be eliminated.
         if (const DfgVarPacked* const varp = sink.cast<DfgVarPacked>()) {
             if (!varp->hasSinks() && !varp->isObserved()) return true;
         }
@@ -303,7 +303,7 @@ class V3DfgPushDownSels final {
 
             // Iterate sinks, collect selects, check if should be optimized
             selps.clear();
-            DfgVertex* sinkp = nullptr;  // The only non DfgSel sink (ignoring some DfgVars)
+            DfgVertex* sinkp = nullptr;  // The only non-DfgSel sink (ignoring some DfgVars)
             const bool multipleNonSelSinks = catp->foreachSink([&](DfgVertex& sink) {
                 // Collect selects
                 if (DfgSel* const selp = sink.cast<DfgSel>()) {
@@ -312,14 +312,14 @@ class V3DfgPushDownSels final {
                 }
                 // Skip ignored sinks
                 if (ignoredSink(sink)) return false;
-                // If already found a non DfgSel sink, return true
+                // If already found a non-DfgSel sink, return true
                 if (sinkp) return true;
-                // Save the non DfgSel sink
+                // Save the non-DfgSel sink
                 sinkp = &sink;
                 return false;
             });
 
-            // It it has multiple non DfgSel sinks, it will need a temporary, so don't bother
+            // It it has multiple non-DfgSel sinks, it will need a temporary, so don't bother
             if (multipleNonSelSinks) continue;
             // We only add DfgConcats to the work list that drive a select.
             UASSERT_OBJ(!selps.empty(), catp, "Should have selects");

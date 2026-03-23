@@ -5,20 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Inputs
-   in
-   );
-   input int in;
+  // Inputs
+  in
+  );
+  input int in;
 
-   int ass_keptdead;
+  int ass_keptdead;
 
-   initial begin
-      if (in != 0) begin
-         ass_keptdead = 1 | in;
-         $display("Avoid gate removing");
-         ass_keptdead = 2 | in;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (in != 0) begin
+      ass_keptdead = 1 | in;
+      $display("Avoid gate removing");
+      ass_keptdead = 2 | in;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

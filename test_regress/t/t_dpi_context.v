@@ -6,81 +6,81 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
-   sub a (.inst(1));
-   sub b (.inst(2));
+  sub a (.inst(1));
+  sub b (.inst(2));
 
-   initial begin
-      a.test1;
-      b.test1;
-      a.test2;
-      b.test2;
+  initial begin
+    a.test1;
+    b.test1;
+    a.test2;
+    b.test2;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-   import "DPI-C" context function void dpic_final();
-   final dpic_final();
+  import "DPI-C" context function void dpic_final();
+  final dpic_final();
 
 endmodule
 
 module sub (input integer inst);
 
-   import "DPI-C" context function int dpic_line();
-   import "DPI-C" context function int dpic_save(int value);
-   import "DPI-C" context function int dpic_restore();
-   import "DPI-C" context function int unsigned dpic_getcontext();
-   import "DPI-C" context function int unsigned dpic_get1();
+  import "DPI-C" context function int dpic_line();
+  import "DPI-C" context function int dpic_save(int value);
+  import "DPI-C" context function int dpic_restore();
+  import "DPI-C" context function int unsigned dpic_getcontext();
+  import "DPI-C" context function int unsigned dpic_get1();
 
-   int result;
+  int result;
 
-   // Exports here are only to cover the export dumper of Verilated::internalsDump
-   export "DPI-C" function dpix_void;
-   function void dpix_void;
-   endfunction
-   export "DPI-C" function dpix_result;
-   function int dpix_result;
-      return result;
-   endfunction
+  // Exports here are only to cover the export dumper of Verilated::internalsDump
+  export "DPI-C" function dpix_void;
+  function void dpix_void;
+  endfunction
+  export "DPI-C" function dpix_result;
+  function int dpix_result;
+    return result;
+  endfunction
 
-   task test1;
-      // Check line numbering
+  task test1;
+    // Check line numbering
 `ifndef verilator // Not all sims support SV2009 `__LINE__, and some that do fail the specific-line test
-      result = dpic_line(); if (!result) $stop;
+    result = dpic_line(); if (!result) $stop;
 `else
-      result = dpic_line(); if (result !== `__LINE__) $stop;
-      //
-      result = dpic_line(); if (result !== `__LINE__) $stop;
+    result = dpic_line(); if (result !== `__LINE__) $stop;
+    //
+    result = dpic_line(); if (result !== `__LINE__) $stop;
 `endif
 
-      // Check save-restore
-      result = dpic_save(23+inst);
-      if (result==0) $stop;
-   endtask
+    // Check save-restore
+    result = dpic_save(23+inst);
+    if (result==0) $stop;
+  endtask
 
-   task test2;
-      if (dpic_restore() != 23+inst) $stop;
-   endtask
+  task test2;
+    if (dpic_restore() != 23+inst) $stop;
+  endtask
 
-   function automatic int call_dpic_get1;
-      int res = dpic_get1();
-      return res;
-   endfunction
+  function automatic int call_dpic_get1;
+    int res = dpic_get1();
+    return res;
+  endfunction
 
-   int unsigned cntxt1;
-   int unsigned cntxt2;
+  int unsigned cntxt1;
+  int unsigned cntxt2;
 
-   initial begin
-     cntxt1 = dpic_getcontext();
-     begin : caller_context
-       // call from a different scope - should still get the context of the function declaration
-       cntxt2 = dpic_getcontext();
-     end
-     // svContext should be the context of the function declaration, not the context of the function call
-     if (cntxt1 != cntxt2) $stop;
-     if (call_dpic_get1() != 1) $stop;
-   end
+  initial begin
+    cntxt1 = dpic_getcontext();
+    begin : caller_context
+     // call from a different scope - should still get the context of the function declaration
+     cntxt2 = dpic_getcontext();
+    end
+    // svContext should be the context of the function declaration, not the context of the function call
+    if (cntxt1 != cntxt2) $stop;
+    if (call_dpic_get1() != 1) $stop;
+  end
 
 endmodule

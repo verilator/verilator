@@ -696,6 +696,7 @@ class VlTest:
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
         self._start_time = time.time()
+        self._uses_asan = False
         self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
@@ -1127,6 +1128,9 @@ class VlTest:
         else:
             self.trace_format = 'vcd-c'  # pylint: disable=attribute-defined-outside-init
 
+        if re.search(r'-runtime-debug', checkflags):
+            self._uses_asan = True
+
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
             verilator_flags += ["--gdb"]
@@ -1191,6 +1195,7 @@ class VlTest:
             'make_flags': [],
             'tee': True,
             'timing_loop': False,
+            'main_top_name': "top",
         }
         param.update(vars(self))
         param.update(kwargs)
@@ -1360,7 +1365,7 @@ class VlTest:
                 return
 
             if not param['fails'] and param['make_main']:
-                self._make_main(param['timing_loop'])
+                self._make_main(param['timing_loop'], param['main_top_name'])
 
             if (param['verilator_make_gmake']
                     or (not param['verilator_make_gmake'] and not param['verilator_make_cmake'])):
@@ -1416,7 +1421,8 @@ class VlTest:
                     entering=self.obj_dir,
                     cmd=[
                         os.environ['MAKE'],
-                        (("-j " + str(Args.driver_build_jobs)) if Args.driver_build_jobs else ""),
+                        (("-j " +
+                          str(Args.driver_build_jobs_n)) if Args.driver_build_jobs_n else ""),
                         "-C " + self.obj_dir,
                         "-f " + os.path.abspath(os.path.dirname(__file__)) + "/Makefile_obj",
                         ("" if self.verbose else "--no-print-directory"),
@@ -1674,6 +1680,10 @@ class VlTest:
         return VlTest._cached_aslr_off
 
     @property
+    def build_jobs(self) -> str:
+        return "--build-jobs " + str(Args.driver_build_jobs_n)
+
+    @property
     def driver_verilator_flags(self) -> list:
         return Args.passdown_verilator_flags
 
@@ -1690,6 +1700,13 @@ class VlTest:
         if self.errors or self.errors_keep_going or self._skips:
             self._ok = False
         return self._ok
+
+    def parse_name(self, regex: str):
+        basename = os.path.basename(test.py_filename)
+        match = re.match(regex, basename.partition(".")[0])
+        if match is None:
+            test.error(f"Invalid test file name '{basename}")
+        return match.groups()
 
     def passes(self, is_ok=True):
         if not self.errors:
@@ -1839,6 +1856,10 @@ class VlTest:
 
         if entering:
             print("driver: Entering directory '" + os.path.abspath(entering) + "'")
+
+        if self._uses_asan and platform.system() == "Darwin":
+            # Otherwise asan prints warning that causes mismatch with expected output
+            os.environ['MallocNanoZone'] = '0'
 
         # Execute command redirecting output, keeping order between stderr and stdout.
         # Must do low-level IO so GCC interaction works (can't be line-based)
@@ -2006,7 +2027,7 @@ class VlTest:
                     return size + line
         return size + firstline
 
-    def _make_main(self, timing_loop: bool) -> None:
+    def _make_main(self, timing_loop: bool, main_top_name: str) -> None:
         if timing_loop and self.sc:
             self.error("Cannot use timing loop and SystemC together!")
 
@@ -2103,7 +2124,7 @@ class VlTest:
             fh.write("    srand48(5);\n")  # Ensure determinism
             if self.verilated_randReset is not None and self.verilated_randReset != "":
                 fh.write("    contextp->randReset(" + str(self.verilated_randReset) + ");\n")
-            fh.write("    topp.reset(new " + self.vm_prefix + "{\"top\"});\n")
+            fh.write("    topp.reset(new " + self.vm_prefix + '{"' + main_top_name + '"});\n')
             if self.verilated_debug:
                 fh.write("    contextp->internalsDump()\n;")
 
@@ -2425,11 +2446,11 @@ class VlTest:
                 line = re.sub(r'CPU Time: +[0-9.]+ seconds[^\n]+', 'CPU Time: ###', line)
                 line = re.sub(r'\?v=[0-9.]+', '?v=latest', line)  # warning URL
                 line = re.sub(r'_h[0-9a-f]{8}_', '_h########_', line)
-                line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1',
-                              line)  # Avoid absolute paths
-                line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2',
-                              line)  # Avoid absolute paths
+                # Avoid absolute paths
+                line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1', line)
+                line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2', line)
                 line = re.sub(r' \/[^ ]+\/verilated_std.sv', ' verilated_std.sv', line)
+                line = re.sub(r'(With current working directory \')[^\']+\'', r"\1...'", line)
                 #
                 (line, n) = re.subn(r'Exiting due to.*', r"Exiting due to", line)
                 if n:
@@ -2533,6 +2554,52 @@ class VlTest:
         out = VtOs.run_capture(cmd, check=False)
         print(out)
 
+        # Post-process file and fix up to match upcoming fst2vcd output
+        # also reindent for readability
+
+        # Slurp whole file
+        with open(fn2, 'r', encoding='latin-1') as fd:
+            lines = fd.readlines()
+
+        # Process line by line
+        new_lines = []
+        fixup_array_scope = False
+        indent = ""
+        for line in lines:
+            line = line.strip()
+            # Change "$attrbegin class" to "$attrbegin pack"
+            if match := re.match(r'^(\$attrbegin\s+)class(.*)', line):
+                line = indent + match.group(1) + "pack" + match.group(2)
+            # Check for "$attrbegin array"
+            elif re.search(r'^\$attrbegin\s+array', line):
+                line = indent + line
+                fixup_array_scope = True
+            # Check for "$scope"
+            elif match := re.match(r'(\$scope\s)(\S+)(.*)', line.lstrip('\r\n')):
+                if not indent:
+                    indent = " "
+                # Fix up array scope
+                if (match.group(2) == "module") and fixup_array_scope:
+                    line = indent + match.group(1) + "sv_array" + match.group(3)
+                    fixup_array_scope = False
+                else:
+                    line = indent + line
+                indent += " "
+            # Check for "$upscope"
+            elif re.search(r'^\$upscope', line):
+                indent = indent[0:-1]
+                line = indent + line
+                if len(indent) == 1:
+                    indent = ""
+            # Just reindent
+            else:
+                line = indent + line
+            new_lines.append(line + "\n")
+
+        # Write back to file
+        with open(fn2, 'w', encoding='latin-1') as fd:
+            fd.writelines(new_lines)
+
     def fst_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
         """Test if two FST files have logically-identical contents"""
         if fn1.endswith(".fst"):
@@ -2556,14 +2623,26 @@ class VlTest:
             self.copy_if_golden(fn1, fn2)
             self.error("SAIF files miscompare")
 
+    def trace_identical(self, traceFn: str, goldenFn: str, ignore_attr: bool = False) -> None:
+        match traceFn.rpartition(".")[-1]:
+            case "vcd":
+                self.vcd_identical(traceFn, goldenFn, ignore_attr)
+            case "fst":
+                self.fst_identical(traceFn, goldenFn, ignore_attr)
+            case "saif":
+                self.saif_identical(traceFn, goldenFn)
+            case _:
+                self.error("Unknown trace file format " + traceFn)
+
     def _vcd_read(self, filename: str) -> dict:
         data = {}
         with open(filename, 'r', encoding='latin-1') as fh:
             hier_stack = ["TOP"]
             var = []
+            attr = []
             for line in fh:
-                match1 = re.search(r'\$scope (module|struct|interface)\s+(\S+)', line)
-                match2 = re.search(r'(\$var (\S+)\s+\d+\s+)\S+\s+(\S+)', line)
+                match1 = re.search(r'\$scope (\S*)\s+(\S+)', line)
+                match2 = re.search(r'(\$var \S+\s+\d+\s+)\S+\s+(.+)\s+\$end', line)
                 match3 = re.search(r'(\$attrbegin .* \$end)', line)
                 line = line.rstrip()
                 # print("VR"+ ' '*len(hier_stack) +" L " + line)
@@ -2573,16 +2652,20 @@ class VlTest:
                     hier_stack += [name]
                     scope = '.'.join(hier_stack)
                     data[scope] = match1.group(1) + " " + name
+                    if attr:
+                        data[scope + "#"] = " ".join(attr)
+                        attr = []
                 elif match2:  # $var
                     # print("VR"+ ' '*len(hier_stack) +" var " + line)
                     scope = '.'.join(hier_stack)
                     var = match2.group(2)
-                    data[scope + "." + var] = match2.group(1) + match2.group(3)
+                    data[scope + "." + var] = match2.group(1)
+                    if attr:
+                        data[scope + "." + var + "#"] = " ".join(attr)
+                        attr = []
                 elif match3:  # $attrbegin
                     # print("VR"+ ' '*len(hier_stack) +" attr " + line)
-                    if var:
-                        scope = '.'.join(hier_stack)
-                        data[scope + "." + var + "#"] = match3.group(1)
+                    attr.append(match3.group(1))
                 elif re.search(r'\$enddefinitions', line):
                     break
                 n = len(re.findall(r'\$upscope', line))
@@ -2590,6 +2673,8 @@ class VlTest:
                     for i in range(0, n):  # pylint: disable=unused-variable
                         # print("VR"+ ' '*len(hier_stack) +" upscope " + line)
                         hier_stack.pop()
+            if attr:
+                self.error(f"Unhandled attribute: {attr}")
         return data
 
     def inline_checks(self) -> None:
@@ -2680,7 +2765,7 @@ class VlTest:
             self.error("File_grep: " + filename + ": Got='" + match.group(1) + "' Expected='" +
                        str(expvalue) + "' in regexp: '" + regexp + "'")
             return None
-        return [match.groups()]
+        return match.groups()
 
     def file_grep_count(self, filename: str, regexp, expcount: int) -> None:
         contents = self.file_contents(filename)
@@ -3075,8 +3160,8 @@ if __name__ == '__main__':
 
     forker = Forker(Args.jobs)
 
-    Args.driver_build_jobs = None
     if len(Arg_Tests) >= 2 and Args.jobs >= 2:
+        Args.driver_build_jobs_n = 2
         # Read supported into master process, so don't call every subprocess
         Capabilities.warmup_cache()
         # Without this tests such as t_debug_sigsegv_bt_bad.py will occasionally
@@ -3086,6 +3171,10 @@ if __name__ == '__main__':
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
     else:
         # Speed up single-test makes
-        Args.driver_build_jobs = calc_jobs()
+        Args.driver_build_jobs_n = calc_jobs()
+
+    if Capabilities.have_dev_asan and platform.system() == "Darwin":
+        # Otherwise asan prints warning that causes mismatch with expected output
+        os.environ['MallocNanoZone'] = '0'
 
     run_them()

@@ -6,6 +6,6 @@
 
 module t;
 
-   parameter [200:0] MIXED = 32'dx_1;
+  parameter [200:0] MIXED = 32'dx_1;
 
 endmodule

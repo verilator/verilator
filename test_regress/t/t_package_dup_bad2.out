@@ -20,4 +20,5 @@
                         obj_vlt/t_package_dup_bad2/IOBUF
                         obj_vlt/t_package_dup_bad2/IOBUF.v
                         obj_vlt/t_package_dup_bad2/IOBUF.sv
+                   ... With current working directory '...'
 %Error: Exiting due to

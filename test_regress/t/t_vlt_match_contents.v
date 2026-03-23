@@ -7,6 +7,6 @@
 string MATCH_VERSION = "10.20";
 
 module t;
-   logic usignal_contents_suppress;  // Suppressed with -contents
-   logic usignal_contents_mismatch;  // Doesn't match -contents
+  logic usignal_contents_suppress;  // Suppressed with -contents
+  logic usignal_contents_mismatch;  // Doesn't match -contents
 endmodule

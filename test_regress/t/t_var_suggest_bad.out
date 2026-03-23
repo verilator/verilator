@@ -1,10 +1,10 @@
-%Error: t/t_var_suggest_bad.v:13:11: Can't find definition of variable: 'foobat'
-                                   : ... Suggested alternative: 'foobar'
-   13 |       if (foobat) $stop;
-      |           ^~~~~~
+%Error: t/t_var_suggest_bad.v:14:9: Can't find definition of variable: 'foobat'
+                                  : ... Suggested alternative: 'foobar'
+   14 |     if (foobat) $stop;
+      |         ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_var_suggest_bad.v:14:7: Can't find definition of task/function: 'boobat'
+%Error: t/t_var_suggest_bad.v:15:5: Can't find definition of task/function: 'boobat'
                                   : ... Suggested alternative: 'boobar'
-   14 |       boobat;
-      |       ^~~~~~
+   15 |     boobat;
+      |     ^~~~~~
 %Error: Exiting due to

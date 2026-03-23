@@ -10,37 +10,37 @@
 // verilog_format: on
 
 typedef struct {
-   string name1;
-   string name2;
+  string name1;
+  string name2;
 } names_t;
 
 class uvm_queue;
-   names_t m_queue[$];
+  names_t m_queue[$];
 
-   virtual function void push_back(names_t item);
-      m_queue.push_back(item);
-   endfunction
+  virtual function void push_back(names_t item);
+    m_queue.push_back(item);
+  endfunction
 endclass
 
 module t;
 
-   uvm_queue q;
+  uvm_queue q;
 
-   initial begin
-      q = new;
-      // From uvm_queue#(uvm_acs_name_struct) __local_field_names__;
-      q.push_back('{"n1", "n2"});
-      q.push_back('{"m1", "m2"});
-      q.m_queue.push_back('{"o1", "o2"});
-      $display("%p", q);
-      `checks(q.m_queue[0].name1, "n1");
-      `checks(q.m_queue[0].name2, "n2");
-      `checks(q.m_queue[1].name1, "m1");
-      `checks(q.m_queue[1].name2, "m2");
-      `checks(q.m_queue[2].name1, "o1");
-      `checks(q.m_queue[2].name2, "o2");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    q = new;
+    // From uvm_queue#(uvm_acs_name_struct) __local_field_names__;
+    q.push_back('{"n1", "n2"});
+    q.push_back('{"m1", "m2"});
+    q.m_queue.push_back('{"o1", "o2"});
+    $display("%p", q);
+    `checks(q.m_queue[0].name1, "n1");
+    `checks(q.m_queue[0].name2, "n2");
+    `checks(q.m_queue[1].name1, "m1");
+    `checks(q.m_queue[1].name2, "m2");
+    `checks(q.m_queue[2].name1, "o1");
+    `checks(q.m_queue[2].name2, "o2");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

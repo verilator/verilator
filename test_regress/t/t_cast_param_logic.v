@@ -4,17 +4,15 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t
-  #(
+module t #(
     parameter type data_t = logic
-    )
-   (
-    input data_t[7:0] in_data
-    );
+) (
+    input data_t [7:0] in_data
+);
 
-    typedef data_t[7:0] in_data_t;
+  typedef data_t [7:0] in_data_t;
 
-    in_data_t out_data;
-    always_comb out_data = in_data_t'(in_data);
+  in_data_t out_data;
+  always_comb out_data = in_data_t'(in_data);
 
 endmodule

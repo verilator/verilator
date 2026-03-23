@@ -5,13 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub s1();
+  sub s1 ();
 endmodule
 
 module sub;
-   enum {s0, s1} state;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  enum {
+    s0,
+    s1
+  } state;
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

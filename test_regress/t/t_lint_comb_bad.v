@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
-   input clk;
+  input clk;
 
-   always_comb @(*) begin
-      $stop;
-   end
+  always_comb @(*) begin
+    $stop;
+  end
 
 endmodule

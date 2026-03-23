@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
 
   enum bit signed [3:0] {OK1 = -1} ok1_t;  // As is signed, loss of 1 bits is ok per IEEE
   enum bit signed [3:0] {OK2 = 3} ok2_t;

@@ -1,11 +1,11 @@
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:14:15: Unsupported: clocking event edge override
-   14 |        output posedge #1 a;
-      |               ^~~~~~~
+%Error-UNSUPPORTED: t/t_clocking_unsup1.v:12:12: Unsupported: clocking event edge override
+   12 |     output posedge #1 a;
+      |            ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:15:15: Unsupported: clocking event edge override
-   15 |        output negedge #1 b;
-      |               ^~~~~~~
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:16:15: Unsupported: clocking event edge override
-   16 |        output edge #1 b;
-      |               ^~~~
+%Error-UNSUPPORTED: t/t_clocking_unsup1.v:13:12: Unsupported: clocking event edge override
+   13 |     output negedge #1 b;
+      |            ^~~~~~~
+%Error-UNSUPPORTED: t/t_clocking_unsup1.v:14:12: Unsupported: clocking event edge override
+   14 |     output edge #1 b;
+      |            ^~~~
 %Error: Exiting due to

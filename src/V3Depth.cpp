@@ -85,6 +85,7 @@ class DepthVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeStmt* nodep) override { visitStmt(nodep); }
+    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }  // Don't split
     // Operators
     void visit(AstNodeTermop* nodep) override {}
     void visit(AstNodeExpr* nodep) override {

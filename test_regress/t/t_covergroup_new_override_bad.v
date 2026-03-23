@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 /* verilator lint_off COVERIGN */
-module t();
-    covergroup cg;
-    function new();
+module t;
+  covergroup cg;
+  function new();
 
-    endfunction
-    endgroup
+  endfunction
+  endgroup
 endmodule

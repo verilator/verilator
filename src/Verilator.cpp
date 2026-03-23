@@ -67,7 +67,9 @@
 #include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
+#include "V3LiftExpr.h"
 #include "V3LinkDot.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3LinkInc.h"
 #include "V3LinkJump.h"
 #include "V3LinkLValue.h"
@@ -177,9 +179,14 @@ static void process() {
         //   This requires some width calculations and constant propagation
         // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
+
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
         V3Error::abortIfErrors();
+
+        // Fix any remaining cross-interface refs created during V3Width::widthParamsEdit
+        // that weren't captured earlier. Must run before V3Dead deletes template modules.
+        V3LinkDotIfaceCapture::finalizeIfaceCapture();
 
         // Remove any modules that were parameterized and are no longer referenced.
         V3Dead::deadifyModules(v3Global.rootp());
@@ -284,6 +291,9 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
+            // Lift expressions out of statements.
+            if (v3Global.opt.fLiftExpr()) V3LiftExpr::liftExprAll(v3Global.rootp());
+
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
             // module.)
@@ -524,10 +534,11 @@ static void process() {
             V3Dead::deadifyAll(v3Global.rootp());
 
             // Here down, widthMin() is the Verilog width, and width() is the C++ width
-            // Bits between widthMin() and width() are irrelevant, but may be non zero.
+            // Bits between widthMin() and width() are irrelevant, but may be non-zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
-            // Make all expressions either 8, 16, 32 or 64 bits
+            // Make all expressions 32, 64, or 32*N bits
+            // Variables and selects-of-variables remain verilog-width
             V3Clean::cleanAll(v3Global.rootp());
 
             // Move wide constants to BLOCK temps / ConstPool.

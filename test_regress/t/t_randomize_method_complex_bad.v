@@ -5,14 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   Cls f;
-   rand int r;
+  Cls f;
+  rand int r;
 endclass
 module t;
-   Cls x = new;
-   int i;
-   initial $display(
-      x.f.randomize(),
-      x.f.randomize() with { r < 5; },
-      i.randomize() with { v < 5; });
+  Cls x = new;
+  int i;
+  // verilog_format: off
+  initial $display(
+    x.f.randomize(),
+    x.f.randomize() with { r < 5; },
+    i.randomize() with { v < 5; });
 endmodule

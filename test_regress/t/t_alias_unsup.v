@@ -19,9 +19,9 @@ module t (  /*AUTOARG*/
   input clk;
 
 
-  int         cyc;
-  reg  [63:0] crc;
-  reg  [63:0] sum;
+  int cyc;
+  reg [63:0] crc;
+  reg [63:0] sum;
 
   // Values to swap and locations for the swapped values.
   wire [31:0] x_fwd = crc[31:0];
@@ -51,11 +51,11 @@ module t (  /*AUTOARG*/
       // Setup
       crc <= 64'h5aef0c8d_d70a4497;
       sum <= '0;
-    end else if (cyc < 10) begin
+    end
+    else if (cyc < 10) begin
       sum <= '0;
-    end else
-    if (cyc < 90) begin
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
       `checkh(crc, 64'hc77bb9b3784ea091);
       // What checksum will we end up with (above print should match)

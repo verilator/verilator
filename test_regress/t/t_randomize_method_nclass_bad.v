@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      randomize(1);
-      srandom(1);
-   end
+  initial begin
+    randomize(1);
+    srandom(1);
+  end
 endmodule

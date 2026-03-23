@@ -5,9 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub sub ();
+  sub sub ();
 endmodule
 
-module sub #(parameter WIDTH=X, parameter X=WIDTH)
-   ();
+module sub #(
+    parameter WIDTH = X,
+    parameter X = WIDTH
+) ();
 endmodule

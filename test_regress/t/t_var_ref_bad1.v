@@ -9,11 +9,12 @@
 
 module t;
 
-   bit bad_parent;
-   sub sub
-     (.bad_sub_ref(bad_parent));  // Type mismatch
+  bit bad_parent;
+  sub sub (.bad_sub_ref(bad_parent));  // Type mismatch
 
 endmodule
 
-module sub(ref real bad_sub_ref);
+module sub (
+    ref real bad_sub_ref
+);
 endmodule

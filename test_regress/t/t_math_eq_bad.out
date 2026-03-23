@@ -1,6 +1,6 @@
-%Error: t/t_math_eq_bad.v:13:13: Real is illegal operand to ?== operator
+%Error: t/t_math_eq_bad.v:13:11: Real is illegal operand to ?== operator
                                : ... note: In instance 't'
-   13 |       if (a ==? 1.0) $stop;   
-      |             ^~~
+   13 |     if (a ==? 1.0) $stop;   
+      |           ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

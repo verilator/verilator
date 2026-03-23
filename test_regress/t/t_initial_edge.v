@@ -23,80 +23,86 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 1ns/1ns
+`timescale 1ns / 1ns
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   wire  res;
-   wire  res_n;
-   reg   rst;
-   reg   rst_n;
+  wire res;
+  wire res_n;
+  reg rst;
+  reg rst_n;
 
-   integer count = 0;
+  integer count = 0;
 
-   initial_edge i_edge (.res (res),
-                        .rst (rst));
+  initial_edge i_edge (
+      .res(res),
+      .rst(rst)
+  );
 
-   initial_edge_n i_edge_n (.res_n (res_n),
-                            .rst_n (rst_n));
+  initial_edge_n i_edge_n (
+      .res_n(res_n),
+      .rst_n(rst_n)
+  );
 
-   // run for 3 cycles, with one cycle of reset.
-   always @(posedge clk) begin
+  // run for 3 cycles, with one cycle of reset.
+  always @(posedge clk) begin
 
-      rst   <= (count == 0) ? 1 : 0;
-      rst_n <= (count == 0) ? 0 : 1;
+    rst <= (count == 0) ? 1 : 0;
+    rst_n <= (count == 0) ? 0 : 1;
 
-      if (count == 3) begin
-         if ((res == 1) && (res_n == 1)) begin
-            $write ("*-* All Finished *-*\n");
-            $finish;
-         end
-         else begin
-`ifdef TEST_VERBOSE
-            $write ("FAILED: res = %b, res_n = %b\n", res, res_n);
-`endif
-            $stop;
-         end
+    if (count == 3) begin
+      if ((res == 1) && (res_n == 1)) begin
+        $write("*-* All Finished *-*\n");
+        $finish;
       end
+      else begin
+`ifdef TEST_VERBOSE
+        $write("FAILED: res = %b, res_n = %b\n", res, res_n);
+`endif
+        $stop;
+      end
+    end
 
-      count = count + 1;
+    count = count + 1;
 
-   end
+  end
 
 endmodule
 
 
-module initial_edge_n (res_n,
-                       rst_n);
-   output  res_n;
-   input   rst_n;
+module initial_edge_n (
+    res_n,
+    rst_n
+);
+  output res_n;
+  input rst_n;
 
-   reg     res_n = 1'b0;
+  reg res_n = 1'b0;
 
-   always @(negedge rst_n) begin
-      if (rst_n == 1'b0) begin
-         res_n <= 1'b1;
-      end
-   end
+  always @(negedge rst_n) begin
+    if (rst_n == 1'b0) begin
+      res_n <= 1'b1;
+    end
+  end
 
-endmodule // initial_edge_n
+endmodule  // initial_edge_n
 
 
-module initial_edge (res,
-                     rst);
-   output  res;
-   input   rst;
+module initial_edge (
+    res,
+    rst
+);
+  output res;
+  input rst;
 
-   reg     res = 1'b0;
+  reg res = 1'b0;
 
-   always @(posedge rst) begin
-      if (rst == 1'b1) begin
-         res <= 1'b1;
-      end
-   end
+  always @(posedge rst) begin
+    if (rst == 1'b1) begin
+      res <= 1'b1;
+    end
+  end
 
-endmodule // initial_edge
+endmodule  // initial_edge

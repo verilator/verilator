@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module secret_impl;
-   initial begin
-      #10;
-      $stop;
-   end
+  initial begin
+    #10;
+    $stop;
+  end
 endmodule

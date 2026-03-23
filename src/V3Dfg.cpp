@@ -539,6 +539,199 @@ DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataT
     dfg.addVertex(*this);
 }
 
+void DfgVertex::typeCheck(const DfgGraph& dfg) const {
+
+#define CHECK(cond, msg) \
+    UASSERT_OBJ(cond, this, \
+                "Dfg type error for vertex " << typeName() << " in " << dfg.name() << ": " \
+                                             << msg);
+    switch (type()) {
+    case VDfgType::Const: {
+        CHECK(isPacked(), "Should be Packed type");
+        return;
+    }
+    case VDfgType::VarArray:
+    case VDfgType::VarPacked: {
+        const DfgVertexVar& v = *as<DfgVertexVar>();
+        CHECK(!v.defaultp() || v.defaultp()->dtype() == v.dtype(), "'defaultp' should match");
+        CHECK(!v.srcp() || v.srcp()->dtype() == v.dtype(), "'srcp' should match");
+        return;
+    }
+    case VDfgType::SpliceArray:
+    case VDfgType::SplicePacked: {
+        const DfgVertexSplice& v = *as<DfgVertexSplice>();
+        v.foreachDriver([&](const DfgVertex& src, uint32_t lo) {
+            CHECK(src.dtype() == DfgDataType::select(v.dtype(), lo, src.size()), "driver");
+            return false;
+        });
+        return;
+    }
+    case VDfgType::Logic: {
+        CHECK(dtype().isNull(), "Should be Null type");
+        return;
+    }
+    case VDfgType::Unresolved: {
+        CHECK(!dtype().isNull(), "Should not be Null type");
+        return;
+    }
+    case VDfgType::UnitArray: {
+        const DfgUnitArray& v = *as<DfgUnitArray>();
+        CHECK(v.isArray(), "Should be Array type");
+        CHECK(v.size() == 1, "Should be one element");
+        CHECK(v.srcp()->dtype() == v.dtype().elemDtype(), "Input should be the element type");
+        return;
+    }
+    case VDfgType::Sel: {
+        const DfgSel& v = *as<DfgSel>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.dtype() == DfgDataType::select(v.srcp()->dtype(), v.lsb(), v.size()), "sel");
+        return;
+    }
+    case VDfgType::Mux: {
+        const DfgMux& v = *as<DfgMux>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.fromp()->isPacked(), "Source operand should be Packed type");
+        CHECK(v.fromp()->size() >= v.size(), "Source operand should not be narrower");
+        CHECK(v.lsbp()->isPacked(), "Index should be Packed type");
+        return;
+    }
+    case VDfgType::ArraySel: {
+        const DfgArraySel& v = *as<DfgArraySel>();
+        CHECK(v.dtype() == v.fromp()->dtype().elemDtype(), "Element type should match");
+        CHECK(v.bitp()->isPacked(), "Index should be Packed type");
+        return;
+    }
+
+    case VDfgType::Add:
+    case VDfgType::And:
+    case VDfgType::BufIf1:
+    case VDfgType::Div:
+    case VDfgType::DivS:
+    case VDfgType::ModDiv:
+    case VDfgType::ModDivS:
+    case VDfgType::Mul:
+    case VDfgType::MulS:
+    case VDfgType::Or:
+    case VDfgType::Sub:
+    case VDfgType::Xor: {
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->dtype() == dtype(), "LHS should be same type");
+        CHECK(inputp(1)->dtype() == dtype(), "RHS should be same type");
+        return;
+    }
+
+    case VDfgType::Negate:
+    case VDfgType::Not: {
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->dtype() == dtype(), "Input should be same type");
+        return;
+    }
+
+    case VDfgType::ShiftL:
+    case VDfgType::ShiftR:
+    case VDfgType::ShiftRS: {
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->dtype() == dtype(), "LHS should be same type");
+        CHECK(inputp(1)->isPacked(), "RHS should be Packed type");
+        return;
+    }
+
+    case VDfgType::Concat: {
+        const DfgConcat& v = *as<DfgConcat>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.lhsp()->isPacked(), "LHS should be Packed type");
+        CHECK(v.rhsp()->isPacked(), "RHS should be Packed type");
+        CHECK(v.size() == v.rhsp()->size() + v.lhsp()->size(), "Concat result mismatch");
+        return;
+    }
+
+    case VDfgType::Replicate: {
+        // TODO: model DfgReplicate without an explicit 'countp' which is always constant
+        const DfgReplicate& v = *as<DfgReplicate>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.srcp()->isPacked(), "'srcp' should be same type");
+        CHECK(v.countp()->isPacked(), "'countp' should be Packed type");
+        CHECK(v.size() % v.srcp()->size() == 0, "Not a replicate");
+        return;
+    }
+
+    case VDfgType::StreamL:
+    case VDfgType::StreamR: {
+        // TODO: model these without an explicit slice size which is always constant (?)
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->dtype() == dtype(), "LHS should be same type");
+        CHECK(inputp(1)->isPacked(), "Slice size should be Packed type");
+        return;
+    }
+
+    case VDfgType::Eq:
+    case VDfgType::EqCase:
+    case VDfgType::EqWild:
+    case VDfgType::Neq:
+    case VDfgType::NeqCase:
+    case VDfgType::NeqWild:
+    case VDfgType::Gt:
+    case VDfgType::GtS:
+    case VDfgType::Gte:
+    case VDfgType::GteS:
+    case VDfgType::Lt:
+    case VDfgType::LtS:
+    case VDfgType::Lte:
+    case VDfgType::LteS: {
+        CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
+        CHECK(inputp(0)->dtype() == inputp(1)->dtype(), "Sides should match");
+        return;
+    }
+
+    case VDfgType::Extend:
+    case VDfgType::ExtendS: {
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->isPacked(), "Operand should be same type");
+        CHECK(inputp(0)->size() < size(), "Operand should be narrower");
+        return;
+    }
+
+    case VDfgType::LogAnd:
+    case VDfgType::LogEq:
+    case VDfgType::LogIf:
+    case VDfgType::LogOr: {
+        CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
+        CHECK(inputp(0)->isPacked(), "LHS should be Packed type");
+        CHECK(inputp(1)->isPacked(), "RHS should be Packed type");
+        return;
+    }
+
+    case VDfgType::LogNot:
+    case VDfgType::RedAnd:
+    case VDfgType::RedOr:
+    case VDfgType::RedXor: {
+        CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
+        CHECK(inputp(0)->isPacked(), "Operand should be Packed type");
+        return;
+    }
+
+    case VDfgType::Cond: {
+        const DfgCond& v = *as<DfgCond>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.condp()->isPacked(), "Condition should be Packed type");
+        CHECK(v.thenp()->dtype() == v.dtype(), "Then should be same type");
+        CHECK(v.elsep()->dtype() == v.dtype(), "Else should be same type");
+        return;
+    }
+
+    case VDfgType::Pow:
+    case VDfgType::PowSS:
+    case VDfgType::PowSU:
+    case VDfgType::PowUS: {
+        CHECK(isPacked(), "Should be Packed type");
+        CHECK(inputp(0)->dtype() == dtype(), "LHS should be same type");
+        CHECK(inputp(1)->isPacked(), "RHS should be Packed type");
+        return;
+    }
+    }
+#undef CHECK
+}
+
 uint32_t DfgVertex::fanout() const {
     uint32_t result = 0;
     foreachSink([&](const DfgVertex&) {

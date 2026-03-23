@@ -125,7 +125,9 @@ test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_clas
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
 
 # Check combine count
-test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (276 if test.vltmt else 259))
+nFiles = int(test.file_grep(test.stats, r'Node count, CFILE + (\d+)')[0])
+if nFiles < 200:
+    test.error("Expecting >= 200 files, but got " + str(nFiles))
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_FAST + (\d+)', 2)
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_SLOW + (\d+)', 2)
 

@@ -6,13 +6,13 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
-   import "DPI-C" function int foo (int i);
-   export "DPI-C" function foo;  // Bad mix
+  import "DPI-C" function int foo(int i);
+  export "DPI-C" function foo;  // Bad mix
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

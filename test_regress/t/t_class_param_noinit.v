@@ -5,13 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // No init value is legal with classes, as long as not used without the parameter
-class Cls #(int A, int B);
+class Cls #(
+    int A,
+    int B
+);
 endclass
 
 module t;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

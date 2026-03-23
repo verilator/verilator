@@ -2255,7 +2255,7 @@ class Partitioner final {
                     for (V3GraphEdge& tEdge : top->outEdges()) {
                         LogicMTask* const transp = static_cast<LogicMTask*>(tEdge.top()->userp());
                         // The Move graph is bipartite (logic <-> var), and logic is never
-                        // bypassed, hence 'transp' must be non nullptr.
+                        // bypassed, hence 'transp' must be non-nullptr.
                         UASSERT_OBJ(transp, mVtxp, "This cannot be a bypassed vertex");
                         addEdge(transp);
                     }

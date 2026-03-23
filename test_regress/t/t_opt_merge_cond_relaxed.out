@@ -1,0 +1,173 @@
+setViaDpi 3
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt=  4 pub=  1
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt=  8 pub=  2
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 18
+setViaDpi 34
+setViaDpi 32
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt= 12 pub=  3
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 35
+setViaDpi 67
+setViaDpi 3
+getViaDpi 2
+cnt= 16 pub=  4
+setViaDpi 6
+getViaDpi 2
+cnt= 20 pub=  5
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt= 24 pub=  6
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 22
+setViaDpi 38
+setViaDpi 36
+setViaDpi 3
+setViaDpi 6
+getViaDpi 2
+cnt= 28 pub=  7
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 39
+setViaDpi 71
+getViaDpi 2
+cnt= 32 pub=  8
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt= 36 pub=  9
+getViaDpi 24
+getViaDpi 24
+setViaDpi 3
+getViaDpi 100
+cnt= 40 pub= 10
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 26
+setViaDpi 42
+setViaDpi 40
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt= 44 pub= 11
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 43
+setViaDpi 75
+getViaDpi 2
+cnt= 48 pub= 12
+setViaDpi 3
+setViaDpi 6
+getViaDpi 2
+cnt= 52 pub= 13
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt= 56 pub= 14
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 30
+setViaDpi 46
+setViaDpi 44
+setViaDpi 6
+getViaDpi 2
+cnt= 60 pub= 15
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 47
+setViaDpi 79
+setViaDpi 3
+getViaDpi 2
+cnt= 64 pub= 16
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt= 68 pub= 17
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt= 72 pub= 18
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 34
+setViaDpi 50
+setViaDpi 48
+setViaDpi 3
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt= 76 pub= 19
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 51
+setViaDpi 83
+getViaDpi 2
+cnt= 80 pub= 20
+setViaDpi 6
+getViaDpi 2
+cnt= 84 pub= 21
+getViaDpi 24
+getViaDpi 24
+setViaDpi 3
+getViaDpi 100
+cnt= 88 pub= 22
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 38
+setViaDpi 54
+setViaDpi 52
+setViaDpi 6
+getViaDpi 2
+cnt= 92 pub= 23
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 55
+setViaDpi 87
+getViaDpi 2
+cnt= 96 pub= 24
+setViaDpi 3
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt=100 pub= 25
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt=104 pub= 26
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 42
+setViaDpi 58
+setViaDpi 56
+setViaDpi 6
+setViaDpi 4
+getViaDpi 2
+cnt=108 pub= 27
+cyc[1] is 1 once
+cyc[1] is 1 twice
+setViaDpi 59
+setViaDpi 91
+setViaDpi 3
+getViaDpi 2
+cnt=112 pub= 28
+setViaDpi 6
+getViaDpi 2
+cnt=116 pub= 29
+getViaDpi 24
+getViaDpi 24
+getViaDpi 100
+cnt=120 pub= 30
+*-* All Finished *-*

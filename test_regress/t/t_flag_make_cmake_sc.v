@@ -4,14 +4,12 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   always @ (posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

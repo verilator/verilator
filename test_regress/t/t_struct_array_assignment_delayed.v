@@ -5,31 +5,31 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module tb;
-    typedef struct {
-        logic a;
-        logic b;
-    } SimpleStruct;
+  typedef struct {
+    logic a;
+    logic b;
+  } SimpleStruct;
 
-    SimpleStruct s [1];
+  SimpleStruct s[1];
 
-    logic clock;
+  logic clock;
 
-    always @(posedge clock) begin
-        for (int i = 0; i < 1; i++) begin
-            s[i].a <= 1;
-            s[i].b <= 0;
-        end
+  always @(posedge clock) begin
+    for (int i = 0; i < 1; i++) begin
+      s[i].a <= 1;
+      s[i].b <= 0;
     end
+  end
 
-    initial begin
-        clock = 0;
-        s[0].a = 0;
-        s[0].b = 0;
+  initial begin
+    clock = 0;
+    s[0].a = 0;
+    s[0].b = 0;
 
-        #1 clock = 1;
-        #1 if (s[0].a != 1) $stop;
+    #1 clock = 1;
+    #1 if (s[0].a != 1) $stop;
 
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

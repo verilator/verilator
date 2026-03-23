@@ -5,15 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package pkg;
-   localparam PARAM = 10;
+  localparam PARAM = 10;
 endpackage
 
 package pkg;
-   localparam PARAM = 10;
+  localparam PARAM = 10;
 endpackage
 
-module sub import pkg::*;
-   #( ) ();
+module sub
+  import pkg::*;
+#(
+) ();
 endmodule
 
 package pkg;
@@ -23,9 +25,9 @@ package pkg;
 endpackage
 
 module t;
-   sub sub ();
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  sub sub ();
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

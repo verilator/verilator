@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   semaphore s;
+  semaphore s;
 
-   initial begin
-      s = new(4);
-      if (s.bad_method() != 0) $stop;
+  initial begin
+    s = new(4);
+    if (s.bad_method() != 0) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -6,14 +6,14 @@
 
 module t;
 
-   wire foo;
-   wire bar;
+  wire foo;
+  wire bar;
 
-   sub sub (.*, .*);
+  sub sub (.*, .*);
 
-   sub sub (foo, .*);
+  sub sub (foo, .*);
 
-   sub sub (foo, .bar);
+  sub sub (foo, .bar);
 
 endmodule
 

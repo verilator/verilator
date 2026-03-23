@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //See bug289
-
+// verilog_format: off
 `elsif A
 `endif
 

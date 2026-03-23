@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.compile(verilator_flags2=['--assert'],
              nc_flags2=['+assert'],

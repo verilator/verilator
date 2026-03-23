@@ -4,21 +4,25 @@
 // SPDX-FileCopyrightText: 2010 Lane Brooks
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
+module t (
+    input clk
+);
 
-   wire  A;
+  wire A;
 
-   pullup p1(A);
+  pullup p1 (A);
 
-   child child(/*AUTOINST*/
-               // Inouts
-               .A                       (A));
+  child child (  /*AUTOINST*/
+      // Inouts
+      .A(A)
+  );
 
 endmodule
 
-module child(inout A);
+module child (
+    inout A
+);
 
-   pulldown p2(A);
+  pulldown p2 (A);
 
 endmodule

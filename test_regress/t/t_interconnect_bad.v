@@ -6,12 +6,12 @@
 
 module t;
 
-   interconnect a;
+  interconnect a;
 
-   assign a = 1; // Bad IEEE 6.6.8 - shall not be used in continuous assignment
+  assign a = 1;  // Bad IEEE 6.6.8 - shall not be used in continuous assignment
 
-   initial begin
-      a = 2; // Bad IEEE 6.6.8 - shall not be used in procedural assignment
-   end
+  initial begin
+    a = 2;  // Bad IEEE 6.6.8 - shall not be used in procedural assignment
+  end
 
 endmodule

@@ -106,6 +106,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         // CONSTRUCTORS
         LeafInfo() = default;
         LeafInfo(const LeafInfo& other) = default;
+        LeafInfo& operator=(const LeafInfo& other) = default;
+        LeafInfo(LeafInfo&& other) = default;
+        LeafInfo& operator=(LeafInfo&& other) = default;
         explicit LeafInfo(int lsb)
             : m_lsb{lsb} {}
 
@@ -1596,7 +1599,13 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(const AstNode* node1p, const AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (const AstConst* const const1p = VN_CAST(node1p, Const)) {
+            if (const AstConst* const const2p = VN_CAST(node2p, Const)) {
+                return V3Number{node1p->fileline(), 1, 0}
+                    .opEq(const1p->num(), const2p->num())
+                    .isEqOne();
+            }
+        }
         if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
@@ -1623,7 +1632,11 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
-        return true;
+        // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
+        return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
+               && !VN_IS(elsesp->rhsp(), NodeFTaskRef)  //
+               && thensp->rhsp()->isPure()  //
+               && elsesp->rhsp()->isPure();
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
@@ -2382,6 +2395,32 @@ class ConstVisitor final : public VNVisitor {
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamL reverses, so reverse=true)
+            if ((VN_IS(srcDTypep, UnpackArrayDType) || VN_IS(srcDTypep, QueueDType)
+                 || VN_IS(srcDTypep, DynArrayDType))
+                && (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType))) {
+                int blockSize = 1;
+                if (const AstConst* const constp
+                    = VN_CAST(VN_AS(streamp, StreamL)->rhsp(), Const)) {
+                    blockSize = constp->toSInt();
+                    if (VL_UNLIKELY(blockSize <= 0)) blockSize = 1;
+                }
+                int srcElementBits = 0;
+                if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    srcElementBits = elemDtp->width();
+                }
+                int dstElementBits = 0;
+                if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    dstElementBits = elemDtp->width();
+                }
+                nodep->lhsp(dstp);
+                nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, true,
+                                                   blockSize, dstElementBits, srcElementBits});
+                nodep->dtypep(dstDTypep);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                return true;
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
@@ -2413,6 +2452,44 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamR does not reverse, so reverse=false).
+            // V3Width may have wrapped the source in CvtArrayToPacked; unwrap it.
+            if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                AstNodeExpr* origSrcp = srcp;
+                if (AstCvtArrayToPacked* const cvtp = VN_CAST(srcp, CvtArrayToPacked)) {
+                    origSrcp = cvtp->fromp();
+                }
+                const AstNodeDType* const origSrcDTypep = origSrcp->dtypep()->skipRefp();
+                if (VN_IS(origSrcDTypep, UnpackArrayDType) || VN_IS(origSrcDTypep, QueueDType)
+                    || VN_IS(origSrcDTypep, DynArrayDType)) {
+                    int srcElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = origSrcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
+                    }
+                    int dstElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
+                    }
+                    if (VN_IS(srcp, CvtArrayToPacked)) {
+                        origSrcp = VN_AS(srcp, CvtArrayToPacked)->fromp()->unlinkFrBack();
+                        VL_DO_DANGLING(pushDeletep(srcp), srcp);
+                        srcp = origSrcp;
+                    }
+                    // Descending unpacked arrays need element reversal
+                    bool reverse = false;
+                    if (const AstUnpackArrayDType* const unpackDtp
+                        = VN_CAST(origSrcDTypep, UnpackArrayDType)) {
+                        reverse = !unpackDtp->declRange().ascending();
+                    }
+                    nodep->lhsp(dstp);
+                    nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, reverse,
+                                                       1, dstElementBits, srcElementBits});
+                    nodep->dtypep(dstDTypep);
+                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                    return true;
+                }
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
@@ -2427,12 +2504,20 @@ class ConstVisitor final : public VNVisitor {
                 }
                 srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
             } else {
-                UASSERT_OBJ(sWidth >= dWidth, nodep,
-                            "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
                 } else if (sWidth >= dWidth) {
                     srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+                } else {
+                    // Source narrower than destination: left-justify by shifting left.
+                    // The right stream operator packs left-to-right, so remaining
+                    // LSBs are zero-filled (IEEE 1800-2023 11.4.14.2).
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
+                    extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                    srcp = new AstShiftL{
+                        srcp->fileline(), extendp,
+                        new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
+                        dWidth};
                 }
             }
             nodep->lhsp(dstp);
@@ -2660,12 +2745,28 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
             if (!(m_doExpensive || m_params)) return false;
-            // At present only support 1D unpacked arrays
-            const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
-                return VN_IS(nodep, Const) || VN_IS(nodep, InitItem);
+            const auto isConstInit
+                = [](const AstNode* const exprp, const auto& isConstInitRecurse) -> bool {
+                if (VN_IS(exprp, Const)) return true;
+                if (const AstInitItem* const itemp = VN_CAST(exprp, InitItem)) {
+                    return isConstInitRecurse(itemp->valuep(), isConstInitRecurse);
+                }
+                if (const AstInitArray* const arrayp = VN_CAST(exprp, InitArray)) {
+                    const auto itemIsConstInit
+                        = [&isConstInitRecurse](const AstNode* const itemp) -> bool {
+                        return isConstInitRecurse(itemp, isConstInitRecurse);
+                    };
+                    if (arrayp->initsp() && !arrayp->initsp()->forall(itemIsConstInit))
+                        return false;
+                    if (arrayp->defaultp()
+                        && !isConstInitRecurse(arrayp->defaultp(), isConstInitRecurse)) {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
             };
-            if (initp->initsp() && !initp->initsp()->forall(initOfConst)) return false;
-            if (initp->defaultp() && !initp->defaultp()->forall(initOfConst)) return false;
+            if (!isConstInit(initp, isConstInit)) return false;
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
@@ -2890,7 +2991,7 @@ class ConstVisitor final : public VNVisitor {
     void replaceSelIntoBiop(AstSel* nodep) {
         // SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
         AstNodeBiop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeBiop);
-        UASSERT_OBJ(fromp, nodep, "Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non-biop");
         AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
         //
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
@@ -2905,7 +3006,7 @@ class ConstVisitor final : public VNVisitor {
     void replaceSelIntoUniop(AstSel* nodep) {
         // SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
         AstNodeUniop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeUniop);
-        UASSERT_OBJ(fromp, nodep, "Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non-biop");
         AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
         //
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
@@ -2938,6 +3039,16 @@ class ConstVisitor final : public VNVisitor {
                 AstNode* const fromp = nodep->fromp()->unlinkFrBack();
                 nodep->replaceWithKeepDType(fromp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
+        }
+        // Handle ARRAYSEL directly on InitArray (not through VarRef)
+        else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), InitArray)) {
+            const AstInitArray* const initarp = VN_AS(nodep->fromp(), InitArray);
+            const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
+            const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
+            if (VN_IS(itemp, Const)) {
+                const V3Number& num = VN_AS(itemp, Const)->num();
+                VL_DO_DANGLING(replaceNum(nodep, num), nodep);
             }
         }
         m_selp = nullptr;
@@ -3329,61 +3440,68 @@ class ConstVisitor final : public VNVisitor {
             varrefp->varp()->valuep(initvaluep);
         }
     }
+    void visit(AstCReset* nodep) override {
+        iterateChildren(nodep);
+        if (!m_doNConst) return;
+        const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
+        if (!bdtypep) return;
+        if (!bdtypep->isZeroInit()) return;
+        AstConst* const newp = new AstConst{nodep->fileline(), V3Number{nodep, bdtypep}};
+        UINFO(9, "CRESET(0) => CONST(0) " << nodep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
         // Handle the case where we have a stream operation inside a cast conversion
-        // To avoid infinite recursion, mark the node as processed by setting user1.
-        if (!nodep->user1()) {
-            nodep->user1(true);
-            // Check for both StreamL and StreamR operations
-            AstNodeStream* streamp = nullptr;
-            bool isReverse = false;
-            if (AstStreamL* const streamLp = VN_CAST(nodep->fromp(), StreamL)) {
-                streamp = streamLp;
-                isReverse = true;  // StreamL reverses the operation
-            } else if (AstStreamR* const streamRp = VN_CAST(nodep->fromp(), StreamR)) {
-                streamp = streamRp;
-                isReverse = false;  // StreamR doesn't reverse the operation
-            }
-            if (streamp) {
-                AstNodeExpr* srcp = streamp->lhsp();
-                const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
-                AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
-                if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
-                    int blockSize = 1;
-                    if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
-                        blockSize = constp->toSInt();
-                        if (VL_UNLIKELY(blockSize <= 0)) {
-                            // Not reachable due to higher level checks when parsing stream
-                            // operators commented out to not fail v3error-coverage-checks.
-                            // nodep->v3error("Stream block size must be positive, got " <<
-                            // blockSize);
-                            blockSize = 1;
-                        }
+        // Check for both StreamL and StreamR operations
+        AstNodeStream* streamp = nullptr;
+        bool isReverse = false;
+        if (AstStreamL* const streamLp = VN_CAST(nodep->fromp(), StreamL)) {
+            streamp = streamLp;
+            isReverse = true;  // StreamL reverses the operation
+        } else if (AstStreamR* const streamRp = VN_CAST(nodep->fromp(), StreamR)) {
+            streamp = streamRp;
+            isReverse = false;  // StreamR doesn't reverse the operation
+        }
+        if (streamp) {
+            AstNodeExpr* srcp = streamp->lhsp();
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
+            if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
+                int blockSize = 1;
+                if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
+                    blockSize = constp->toSInt();
+                    if (VL_UNLIKELY(blockSize <= 0)) {
+                        // Not reachable due to higher level checks when parsing stream
+                        // operators commented out to not fail v3error-coverage-checks.
+                        // nodep->v3error("Stream block size must be positive, got " <<
+                        // blockSize);
+                        blockSize = 1;
                     }
-                    // Not reachable due to higher level checks when parsing stream operators
-                    // commented out to not fail v3error-coverage-checks.
-                    // else {
-                    //    nodep->v3error("Stream block size must be constant (got " <<
-                    //    streamp->rhsp()->prettyTypeName() << ")");
-                    // }
-                    int srcElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
-                        srcElementBits = elemDtp->width();
-                    }
-                    int dstElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
-                        dstElementBits = elemDtp->width();
-                    }
-                    streamp->unlinkFrBack();
-                    AstNodeExpr* newp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     isReverse,
-                        blockSize,        dstElementBits,       srcElementBits};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
                 }
+                // Not reachable due to higher level checks when parsing stream operators
+                // commented out to not fail v3error-coverage-checks.
+                // else {
+                //    nodep->v3error("Stream block size must be constant (got " <<
+                //    streamp->rhsp()->prettyTypeName() << ")");
+                // }
+                int srcElementBits = 0;
+                if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    srcElementBits = elemDtp->width();
+                }
+                int dstElementBits = 0;
+                if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    dstElementBits = elemDtp->width();
+                }
+                streamp->unlinkFrBack();
+                AstNodeExpr* newp = new AstCvtArrayToArray{
+                    srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     isReverse,
+                    blockSize,        dstElementBits,       srcElementBits};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
             }
         }
     }
@@ -3566,26 +3684,43 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
+    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
         // This eliminates a pile of wide temps, and makes the C a whole lot more readable.
         iterateChildren(nodep);
+        if (nodep->exprFormat()) {
+            // Upconvert to text-based format?
+            // Similar code in V3LinkResolve::visit(AstSFormatF)
+            UASSERT_OBJ(nodep->text() == "", nodep,
+                        "Non-format $sformatf should have text format == \"\"");
+            if (VN_IS(nodep->exprsp(), Const)
+                && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
+                nodep->text(fmtp->num().toString());
+                nodep->exprFormat(false);
+                VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
+            }
+        }
+        if (nodep->exprFormat()) return;  // Runtime, unfortunately  (unless constify format later)
         bool anyconst = false;
         for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
-            if (VN_IS(argp, Const)) {
+            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+            AstNode* const subargp = fargp ? fargp->exprp() : argp;
+            if (VN_IS(subargp, Const)) {
                 anyconst = true;
                 break;
             }
         }
         if (m_doNConst && anyconst) {
-            // UINFO(9, "  Display in  " << nodep->text());
+            UINFO(9, "  Display in  " << nodep->text());
             string newFormat;
             string fmt;
             bool inPct = false;
             AstNode* argp = nodep->exprsp();
             const string text = nodep->text();
-            for (const char ch : text) {
+            for (char ch : text) {
                 if (!inPct && ch == '%') {
                     inPct = true;
                     fmt = ch;
@@ -3594,22 +3729,30 @@ class ConstVisitor final : public VNVisitor {
                 } else if (inPct) {
                     inPct = false;
                     fmt += ch;
-                    switch (std::tolower(ch)) {
+                    ch = std::tolower(ch);
+                    switch (ch) {
                     case '%': break;  // %% - still %%
                     case 'm': break;  // %m - still %m - auto insert "name"
                     case 'l': break;  // %l - still %l - auto insert "library"
-                    case 't':  // FALLTHRU
-                    case '^':  // %t/%^ - don't know $timeformat so can't constify
+                    case 't':  // %t - don't know $timeformat so can't constify
                         if (argp) argp = argp->nextp();
                         break;
                     default:  // Most operators, just move to next argument
                         if (argp) {
                             AstNode* const nextp = argp->nextp();
-                            if (VN_IS(argp, Const)) {  // Convert it
-                                const string out = constNumV(argp).displayed(nodep, fmt);
+                            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+                            AstNode* const subargp = fargp ? fargp->exprp() : argp;
+                            const VFormatAttr formatAttr
+                                = argp
+                                      ? AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep())
+                                      : VFormatAttr{};
+                            if (VN_IS(subargp, Const)) {  // Convert it
+                                const string out
+                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
-                                                            << argp);
-                                // fmt = out w/ replace % with %% as it must be literal.
+                                                            << subargp);
+                                // fmt = out w/ replace % with %% as it must later when
+                                // used as a format output as literal.
                                 fmt = VString::quotePercent(out);
                                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
                             }
@@ -3627,9 +3770,20 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(9, "  Display out " << nodep);
             }
         }
-        if (!nodep->exprsp() && nodep->name().find('%') == string::npos && !nodep->hidden()) {
+        if (!nodep->exprsp() && nodep->text().find('%') == string::npos && !nodep->hidden()) {
             // Just a simple constant string - the formatting is pointless
-            VL_DO_DANGLING(replaceConstString(nodep, nodep->name()), nodep);
+            UINFO(9, "replaceConstStr");
+            VL_DO_DANGLING(replaceConstString(nodep, nodep->text()), nodep);
+            return;
+        }
+        if (VN_IS(nodep->backp(), NodeAssign)  // Can't remove under Display etc
+            && nodep->text() == "%s" && VN_IS(nodep->exprsp(), SFormatArg)
+            && VN_AS(nodep->exprsp(), SFormatArg)->formatAttr().isString()
+            && !nodep->exprsp()->nextp()) {
+            UINFO(9, "  Display(%p, expr) -> constant expr " << nodep);
+            nodep->replaceWith(VN_AS(nodep->exprsp(), SFormatArg)->exprp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
         }
     }
     void visit(AstNodeFTask* nodep) override {
@@ -3837,7 +3991,7 @@ class ConstVisitor final : public VNVisitor {
 
     // In the future maybe support more complicated match & replace:
     //   ("AstOr  {%a, AstAnd{AstNot{%b}, %c}} if %a.width1 if %a==%b", "AstOr{%a,%c}; %b.delete");
-    // Lhs/rhs would be implied; for non math operations you'd need $lhsp etc.
+    // Lhs/rhs would be implied; for non-math operations you'd need $lhsp etc.
 
     //    v--- * * This op done on Verilog or C+++ mode, in all non-m_doConst stages
     //    v--- *1* These ops are always first, as we warn before replacing
@@ -4161,7 +4315,14 @@ class ConstVisitor final : public VNVisitor {
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
                 || VN_IS(nodep, Dot)) {
-                // Ignore dtypes for parameter type pins
+                // ignore
+            } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
+                iterate(crp->exprp());
+                if (AstNode* const newp = crp->exprp()) {
+                    crp->replaceWithKeepDType(newp->unlinkFrBack());
+                    VL_DO_DANGLING(pushDeletep(crp), crp);
+                }
+                return;
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
                                << nodep->prettyTypeName() << " to constant.");

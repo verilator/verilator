@@ -1,32 +1,32 @@
-%Error: t/t_var_bad_sameas.v:10:8: Unsupported in C: Instance has the same name as variable: 'varfirst'
-   10 |    sub varfirst ();   
-      |        ^~~~~~~~
-        t/t_var_bad_sameas.v:9:12: ... Location of original declaration
-    9 |    integer varfirst;
-      |            ^~~~~~~~
+%Error: t/t_var_bad_sameas.v:10:7: Unsupported in C: Instance has the same name as variable: 'varfirst'
+   10 |   sub varfirst ();   
+      |       ^~~~~~~~
+        t/t_var_bad_sameas.v:9:11: ... Location of original declaration
+    9 |   integer varfirst;
+      |           ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_var_bad_sameas.v:11:9: Unsupported in C: Task has the same name as instance: 'varfirst'
-   11 |    task varfirst; begin end endtask   
-      |         ^~~~~~~~
-        t/t_var_bad_sameas.v:10:8: ... Location of original declaration
-   10 |    sub varfirst ();   
+%Error: t/t_var_bad_sameas.v:11:8: Unsupported in C: Task has the same name as instance: 'varfirst'
+   11 |   task varfirst;
       |        ^~~~~~~~
-%Error: t/t_var_bad_sameas.v:14:12: Unsupported in C: Variable has same name as instance: 'cellfirst'
-   14 |    integer cellfirst;   
-      |            ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:15:9: Unsupported in C: Task has the same name as instance: 'cellfirst'
-   15 |    task cellfirst; begin end endtask   
-      |         ^~~~~~~~~
-        t/t_var_bad_sameas.v:13:8: ... Location of original declaration
-   13 |    sub cellfirst ();
+        t/t_var_bad_sameas.v:10:7: ... Location of original declaration
+   10 |   sub varfirst ();   
+      |       ^~~~~~~~
+%Error: t/t_var_bad_sameas.v:17:11: Unsupported in C: Variable has same name as instance: 'cellfirst'
+   17 |   integer cellfirst;   
+      |           ^~~~~~~~~
+%Error: t/t_var_bad_sameas.v:18:8: Unsupported in C: Task has the same name as instance: 'cellfirst'
+   18 |   task cellfirst;
       |        ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:18:12: Unsupported in C: Variable has same name as task: 'taskfirst'
-   18 |    integer taskfirst;   
-      |            ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:19:8: Unsupported in C: Instance has the same name as task: 'taskfirst'
-   19 |    sub taskfirst ();   
+        t/t_var_bad_sameas.v:16:7: ... Location of original declaration
+   16 |   sub cellfirst ();
+      |       ^~~~~~~~~
+%Error: t/t_var_bad_sameas.v:27:11: Unsupported in C: Variable has same name as task: 'taskfirst'
+   27 |   integer taskfirst;   
+      |           ^~~~~~~~~
+%Error: t/t_var_bad_sameas.v:28:7: Unsupported in C: Instance has the same name as task: 'taskfirst'
+   28 |   sub taskfirst ();   
+      |       ^~~~~~~~~
+        t/t_var_bad_sameas.v:23:8: ... Location of original declaration
+   23 |   task taskfirst;
       |        ^~~~~~~~~
-        t/t_var_bad_sameas.v:17:9: ... Location of original declaration
-   17 |    task taskfirst; begin end endtask
-      |         ^~~~~~~~~
 %Error: Exiting due to

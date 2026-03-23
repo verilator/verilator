@@ -1690,8 +1690,16 @@ modport_itemList<nodep>:                // IEEE: part of modport_declaration
 
 modport_item<nodep>:                    // ==IEEE: modport_item
                 idAny/*new-modport*/ '('
-        /*mid*/         { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
-        /*cont*/    modportPortsDeclList ')'            { $$ = new AstModport{$<fl>1, *$1, $4}; }
+        /*mid*/         { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT);
+                          GRAMMARP->m_modportProtoTasksp = nullptr; }
+        /*cont*/    modportPortsDeclList ')'
+                        { $$ = new AstModport{$<fl>1, *$1, $4};
+                          // Append any prototype tasks from import/export as interface siblings
+                          if (GRAMMARP->m_modportProtoTasksp) {
+                              $$ = AstNode::addNextNull(
+                                  GRAMMARP->m_modportProtoTasksp, $$);
+                              GRAMMARP->m_modportProtoTasksp = nullptr;
+                          } }
         ;
 
 modportPortsDeclList<nodep>:
@@ -1720,9 +1728,19 @@ modportPortsDecl<nodep>:
                           GRAMMARP->m_modportImpExpActive = true;
                           GRAMMARP->m_modportImpExpLastIsExport = true; }
         |       yIMPORT method_prototype
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); DEL($2); }
+                        { $$ = new AstModportFTaskRef{$<fl>2, $2->name(), false};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = false;
+                          // Import prototype: task should already exist in interface
+                          // (from export or direct declaration). Delete the prototype.
+                          DEL($2); }
         |       yEXPORT method_prototype
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); DEL($2); }
+                        { $$ = new AstModportFTaskRef{$<fl>2, $2->name(), true};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = true;
+                          // Export: add prototype task to interface (as sibling of modport)
+                          GRAMMARP->m_modportProtoTasksp
+                              = AstNode::addNextNull(GRAMMARP->m_modportProtoTasksp, $2); }
         // Continuations of above after a comma.
         //                      // IEEE: modport_simple_ports_declaration
         |       modportSimplePortOrTFPort                { $$ = $1; }
@@ -3038,13 +3056,9 @@ delay_value<nodeExprp>:         // ==IEEE:delay_value
         |       y1STEP                                  { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
         ;
 
-delayExpr<nodeExprp>:
-                expr                                    { $$ = $1; }
-        ;
-
 minTypMax<nodeExprp>:           // IEEE: mintypmax_expression and constant_mintypmax_expression
-                delayExpr                               { $$ = $1; }
-        |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
+                expr                               { $$ = $1; }
+        |       expr ':' expr ':' expr { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
         ;
 
 minTypMaxE<nodeExprp>:
@@ -4236,11 +4250,11 @@ system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returni
         |       yD_STOP parenE                          { $$ = new AstStop{$1, false}; }
         |       yD_STOP '(' expr ')'                    { $$ = new AstStop{$1, false}; DEL($3); }
         //
-        |       yD_SFORMAT '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5}; }
-        |       yD_SWRITE  '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5}; }
-        |       yD_SWRITEB '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'b'}; }
-        |       yD_SWRITEH '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'h'}; }
-        |       yD_SWRITEO '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'o'}; }
+        |       yD_SFORMAT '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, false, $3, $5}; }
+        |       yD_SWRITE  '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'd'}; }
+        |       yD_SWRITEB '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'b'}; }
+        |       yD_SWRITEH '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'h'}; }
+        |       yD_SWRITEO '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'o'}; }
         //
         |       yD_DISPLAY parenE                               { $$ = new AstDisplay{$1, VDisplayType::DT_DISPLAY, nullptr, nullptr}; }
         |       yD_DISPLAY '(' commasE exprDispList ')'         { $$ = new AstDisplay{$1, VDisplayType::DT_DISPLAY, nullptr, $4}; }
@@ -4502,7 +4516,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
         |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
-        |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::NoFormat{}, $3, 'd', false}; }
+        |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::ExprFormat{}, $3, 'd', false}; }
         |       yD_SHORTREALTOBITS '(' expr ')'         { $$ = new AstRealToBits{$1, $3}; UNSUPREAL($1); }
         |       yD_SIGNED '(' expr ')'                  { $$ = new AstSigned{$1, $3}; }
         |       yD_SIN '(' expr ')'                     { $$ = new AstSinD{$1, $3}; }
@@ -4683,7 +4697,7 @@ taskId<nodeFTaskp>:
         |       id/*interface_identifier*/ '.' idAny
                         { $$ = new AstTask{$<fl>$, *$3, nullptr};
                           $$->verilogTask(true);
-                          BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+                          $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
                         { $$ = new AstTask{$<fl>$, *$2, nullptr};
@@ -4749,9 +4763,9 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
         //
         |       id/*interface_identifier*/ '.' idAny
                         { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$ = new AstFunc{$<fl>$, *$3, nullptr, nullptr};
                           $$->verilogFunction(true);
-                          BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+                          $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
                         { $<fl>$ = $<fl>1;
@@ -5386,7 +5400,7 @@ exprDispList<nodeExprp>:            // exprList for within $display
                         { $$ = $1->addNext(new AstConst{$<fl>2, AstConst::VerilogStringLiteral{}, " "}); }
         ;
 
-vrdList<nodep>:
+vrdList<nodeExprp>:
                 idClassSel                              { $$ = $1; }
         |       vrdList ',' idClassSel                  { $$ = $1->addNext($3); }
         ;
@@ -5396,7 +5410,7 @@ commasE:
         |       ',' commasE                             { } /* ignored */
         ;
 
-commaVRDListE<nodep>:
+commaVRDListE<nodeExprp>:
                 /* empty */                             { $$ = nullptr; }
         |       ',' vrdList                             { $$ = $2; }
         ;
@@ -5935,10 +5949,13 @@ specparam_assignment<varp>:     // ==IEEE: specparam_assignment
                 idNotPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($4) $$->valuep($4); }
-        //                      //  IEEE: pulse_control_specparam
-        |       idPathpulse sigAttrListE '=' '(' minTypMax ')'
+        //                      // IEEE: pulse_control_specparam
+        //                      // LRM grammar requires '(' as the first token after assignment,
+        //                      // but IEEE provides an example in 30.7.1 where it is omitted.
+        //                      // Other simulators also support it.
+        |       idPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          if ($5) $$->valuep($5); }
+                          if ($4) $$->valuep($4); }
         |       idPathpulse sigAttrListE '=' '(' minTypMax ',' minTypMax ')'
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($5) $$->valuep($5);
@@ -6529,9 +6546,9 @@ property_port_itemDirE:
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
                 assertion_variable_declarationList property_spec
-                        { $$ = nullptr; BBUNSUP($1->fileline(), "Unsupported: property variable declaration"); DEL($1, $2); }
+                        { $$ = addNextNull($1, $2); }
         |       assertion_variable_declarationList property_spec ';'
-                        { $$ = nullptr; BBUNSUP($1->fileline(), "Unsupported: property variable declaration"); DEL($1, $2); }
+                        { $$ = addNextNull($1, $2); }
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
         |       property_spec                           { $$ = $1; }
@@ -6551,9 +6568,9 @@ sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
                           $$->addStmtsp($2);
                           $$->addStmtsp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
-                          // No error on UVM special case with no reference; see t_sequence_unused.v
-                          if (! (!$$->stmtsp() || (VN_IS($$->stmtsp(), Const) && !$$->stmtsp()->nextp())))
-                              $$->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
+                          // Sequence declarations are allowed; they are inlined by V3AssertPre.
+                          // Sequences in unsupported contexts are reported by assertPreAll
+                          // after inlining.
                         }
         ;
 
@@ -6796,7 +6813,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
         |       '(' ~p~sexpr ')'                        { $$ = $2; }
         |       '(' ~p~sexpr ',' sequence_match_itemList ')'
-                        { $$ = $2; BBUNSUP($3, "Unsupported: sequence match items"); DEL($4); }
+                        { $$ = new AstExprStmt{$3, $4, $2}; }
         //
         //                      // AND/OR are between pexprs OR sexprs
         |       ~p~sexpr yAND ~p~sexpr
@@ -7844,12 +7861,10 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
 constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
-                        { ($<fl>1)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
-                          $$ = nullptr; DEL($2, $4); }
+                        { $$ = new AstConstraintBefore{$1, $2, $4}; }
         |       constraint_expressionList constraint_expression { $$ = addNextNull($1, $2); }
         |       constraint_expressionList ySOLVE solve_before_list yBEFORE solve_before_list ';'
-                        { ($<fl>2)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
-                          $$ = $1; DEL($3, $5); }
+                        { $$ = addNextNull($1, new AstConstraintBefore{$<fl>2, $3, $5}); }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression

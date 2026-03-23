@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_assert_clock_event_unsup.v:26:7: Unsupported: Clock event before property call and in its body
-   26 |       @(negedge clk)
-      |       ^
+%Error-UNSUPPORTED: t/t_assert_clock_event_unsup.v:24:5: Unsupported: Clock event before property call and in its body
+   24 |     @(negedge clk) check(
+      |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

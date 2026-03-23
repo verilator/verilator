@@ -4,33 +4,27 @@
 // SPDX-FileCopyrightText: 2016 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t
-   (
-   input wire clk,
-   input wire a,
-   input wire b
-   );
+module t (
+    input wire clk,
+    input wire a,
+    input wire b
+);
 
-   integer q;
+  integer q;
 
-   // bug1120
-   always @ (a or posedge clk)
-     begin
-        if (a)
-          q = 0;
-        else
-          q = q + 1;
-     end
+  // bug1120
+  always @(a or posedge clk) begin
+    if (a) q = 0;
+    else q = q + 1;
+  end
 
-   // bug934
-   integer qb;
-   always @((a && b) or posedge clk) begin
-      if (a)
-        qb = 0;
-      else
-        qb = qb + 1;
-   end
+  // bug934
+  integer qb;
+  always @((a && b) or posedge clk) begin
+    if (a) qb = 0;
+    else qb = qb + 1;
+  end
 
-   always @(posedge clk) $display("%d", qb); // So qb is not optimized away
+  always @(posedge clk) $display("%d", qb);  // So qb is not optimized away
 
 endmodule

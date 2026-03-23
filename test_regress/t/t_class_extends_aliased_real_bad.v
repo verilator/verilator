@@ -6,14 +6,16 @@
 
 module t;
 
-   class bar #(type T) extends T;
-   endclass
+  class bar #(
+      type T
+  ) extends T;
+  endclass
 
-   typedef real real_t;
+  typedef real real_t;
 
-   bar #(real_t) bar_real_t;
+  bar #(real_t) bar_real_t;
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 endmodule

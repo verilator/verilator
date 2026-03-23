@@ -6,16 +6,16 @@
 
 module t;
 
-   initial begin
-      fork : fblk
-         begin
-            $write("Forked");
-         end
-         begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
-      join : fblk
-   end
+  initial begin
+    fork : fblk
+      begin
+        $write("Forked");
+      end
+      begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+    join : fblk
+  end
 
 endmodule

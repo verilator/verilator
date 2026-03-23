@@ -6,67 +6,67 @@
 
 class cls;
   static task automatic tsk1;
-     integer task_assign = 1;
-     if (task_assign != 1) $stop;
-     task_assign = 2;
-     if (task_assign != 2) $stop;
+    integer task_assign = 1;
+    if (task_assign != 1) $stop;
+    task_assign = 2;
+    if (task_assign != 2) $stop;
   endtask
   static task tsk2;
-     integer task_assign = 1;
-     if (task_assign != 1) $stop;
-     task_assign = 2;
-     if (task_assign != 2) $stop;
+    integer task_assign = 1;
+    if (task_assign != 1) $stop;
+    task_assign = 2;
+    if (task_assign != 2) $stop;
   endtask
 endclass
 
 module t;
 
-   integer top;
-   integer top_assign=1;
+  integer top;
+  integer top_assign = 1;
 
-   task automatic tsk;
-      integer task_assign = 1;
-      if (task_assign != 1) $stop;
-      task_assign = 2;
-      if (task_assign != 2) $stop;
-   endtask
+  task automatic tsk;
+    integer task_assign = 1;
+    if (task_assign != 1) $stop;
+    task_assign = 2;
+    if (task_assign != 2) $stop;
+  endtask
 
-   initial begin
-      begin : a
-         automatic integer lower;
-         automatic integer lower_assign = 1;
-         lower = 1;
-         top = 1;
-         if (lower != 1) $stop;
-         if (lower_assign != 1) $stop;
-         begin : aa
-            integer lev2;
-            lev2 = 1;
-            lower = 2;
-            lower_assign = 2;
-            top = 2;
-         end
-         if (lower != 2) $stop;
-         if (lower_assign != 2) $stop;
+  initial begin
+    begin : a
+      automatic integer lower;
+      automatic integer lower_assign = 1;
+      lower = 1;
+      top = 1;
+      if (lower != 1) $stop;
+      if (lower_assign != 1) $stop;
+      begin : aa
+        integer lev2;
+        lev2 = 1;
+        lower = 2;
+        lower_assign = 2;
+        top = 2;
       end
-      begin : b
-         integer lower;
-         lower = 1;
-         top = 2;
-         begin : empty
-            begin : empty
-            end
-         end
+      if (lower != 2) $stop;
+      if (lower_assign != 2) $stop;
+    end
+    begin : b
+      integer lower;
+      lower = 1;
+      top = 2;
+      begin : empty
+        begin : empty
+        end
       end
-      // Repeat task calls to ensure we reinit the initial value
-      tsk;
-      tsk;
-      cls::tsk1();
-      cls::tsk1();
-      cls::tsk2();
-      cls::tsk2();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    end
+    // Repeat task calls to ensure we reinit the initial value
+    tsk;
+    tsk;
+    cls::tsk1();
+    cls::tsk1();
+    cls::tsk2();
+    cls::tsk2();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

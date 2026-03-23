@@ -6,30 +6,32 @@
 
 
 class ClsNoArg;
-   int imembera;
-   function new();
-      imembera = 5;
-   endfunction
+  int imembera;
+  function new();
+    imembera = 5;
+  endfunction
 endclass
 
 class ClsNoNew;
-   int imembera;
+  int imembera;
 endclass
 
 class ClsArg;
-   int imembera;
-   function new(int i);
-      imembera = i + 1;
-   endfunction
+  int imembera;
+  function new(int i);
+    imembera = i + 1;
+  endfunction
 endclass
 
 class ClsNew1;
-  static function new();  // <--- Error: new can't be static
+  static
+  function new();  // <--- Error: new can't be static
   endfunction
 endclass
 
 class ClsNew2;
-  virtual function new();  // <--- Error: new can't be virtual
+  virtual
+  function new();  // <--- Error: new can't be virtual
   endfunction
 endclass
 
@@ -40,14 +42,14 @@ function ClsNew3::new();
 endfunction
 
 module t;
-   initial begin
-      ClsNoArg c1;
-      ClsNoNew c2;
-      ClsArg c3;
-      c1 = new(3);  // Bad, called with arg
-      c2 = new(3);  // Bad, called with arg
-      c3 = new();  // Bad, called without arg
-      c1 = new[2];
-      $stop;
-   end
+  initial begin
+    ClsNoArg c1;
+    ClsNoNew c2;
+    ClsArg c3;
+    c1 = new(3);  // Bad, called with arg
+    c2 = new(3);  // Bad, called with arg
+    c3 = new();  // Bad, called without arg
+    c1 = new[2];
+    $stop;
+  end
 endmodule

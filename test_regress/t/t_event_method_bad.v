@@ -6,10 +6,10 @@
 
 module t;
 
-   event e1;
+  event e1;
 
-   initial begin
-      e1.bad_method();
-   end
+  initial begin
+    e1.bad_method();
+  end
 
 endmodule

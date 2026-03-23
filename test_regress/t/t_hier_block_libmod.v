@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Unlicense
 
 module t;
-   t_flag_relinc_sub i_t_flag_relinc_sub();
+  t_flag_relinc_sub i_t_flag_relinc_sub();
 endmodule
 
 `ifdef VERILATOR

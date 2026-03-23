@@ -226,15 +226,37 @@ static void warnNoSplit(const AstVar* varp, const AstNode* wherep, const char* r
 // Split Unpacked Variables
 // Replacement policy:
 // AstArraySel  -> Just replace with the AstVarRef for the split variable
-// AstVarRef    -> Create a temporary variable and refer the variable
-// AstSliceSel  -> Create a temporary variable and refer the variable
+// AstVarRef    -> Create a temporary variable and refer to the variable
+// AstSliceSel  -> Create a temporary variable and refer to the variable
 
-// Compare AstNode* to get deterministic ordering when showing messages.
+// Track order-of-encounter for nodes, so we are stable, versus comparing node pointers
+// (fileline may be the same across multiple nodes, so is insufficient)
+class SplitNodeOrder final {
+    // NODE STATE
+    //  AstNode::user4()  -> uint64_t. Order the node is in the tree
+    const VNUser4InUse m_user4InUse;
+
+public:
+    static uint64_t nextId() {
+        static uint64_t s_sequence = 0;
+        return ++s_sequence;
+    }
+    static uint64_t nodeOrder(const AstNode* const nodep) {
+        AstNode* const ncnodep = const_cast<AstNode*>(nodep);
+        const uint64_t id = ncnodep->user4();
+        if (VL_LIKELY(id)) return id;
+        ncnodep->user4(nextId());
+        return ncnodep->user4();
+    }
+};
+
+// Compare AstNode* to get deterministic ordering
 struct AstNodeComparator final {
     bool operator()(const AstNode* ap, const AstNode* bp) const {
+        // First consider lines, as makes messages to user more obvious
         const int lineComp = ap->fileline()->operatorCompare(*bp->fileline());
         if (lineComp != 0) return lineComp < 0;
-        return ap < bp;
+        return SplitNodeOrder::nodeOrder(ap) < SplitNodeOrder::nodeOrder(bp);
     }
 };
 
@@ -247,6 +269,7 @@ class UnpackRef final {
     const int m_lsb;  // for SliceSel
     const VAccess m_access;
     const bool m_ftask;  // true if the reference is in function/task. false if in module.
+
 public:
     UnpackRef(AstNode* stmtp, AstVarRef* nodep, bool ftask)
         : m_contextp{stmtp}
@@ -587,12 +610,12 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    AstVarRef* createTempVar(AstNode* context, AstNode* nodep, AstUnpackArrayDType* dtypep,
+    AstVarRef* createTempVar(AstNode* contextp, AstNode* nodep, AstUnpackArrayDType* dtypep,
                              const std::string& name_prefix, std::vector<AstVar*>& vars,
                              int start_idx, bool lvalue, bool /*ftask*/) {
         FileLine* const fl = nodep->fileline();
         const std::string name = m_tempNames.get(nodep) + "__" + name_prefix;
-        AstNodeAssign* const assignp = VN_CAST(context, NodeAssign);
+        AstNodeAssign* const assignp = VN_CAST(contextp, NodeAssign);
         if (assignp) {
             // "always_comb a = b;" to "always_comb begin a = b; end" so that local
             // variable can be added.
@@ -604,7 +627,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                      << " is created lsb:" << dtypep->lo() << " msb:" << dtypep->hi());
         // Use AstAssign if true, otherwise AstAssignW
         const bool use_simple_assign
-            = (context && VN_IS(context, NodeFTaskRef)) || (assignp && VN_IS(assignp, Assign));
+            = (contextp && VN_IS(contextp, NodeFTaskRef)) || (assignp && VN_IS(assignp, Assign));
 
         for (int i = 0; i < dtypep->elementsConst(); ++i) {
             AstNodeExpr* lhsp
@@ -618,11 +641,11 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 AstAssign* const ap = new AstAssign{fl, lhsp, rhsp};
                 if (lvalue) {
                     // If varp is LHS, this assignment must appear after the original
-                    // assignment(context).
-                    context->addNextHere(ap);
+                    // assignment(contextp).
+                    contextp->addNextHere(ap);
                 } else {
                     // If varp is RHS, this assignment comes just before the original assignment
-                    context->addHereThisAsNext(ap);
+                    contextp->addHereThisAsNext(ap);
                 }
                 UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
                 setContextAndIterate(ap, refp);
@@ -836,10 +859,17 @@ public:
     // If this is AstVarRef and referred in the sensitivity list of always@,
     // return the sensitivity item
     AstSenItem* backSenItemp() const {
-        if (const AstVarRef* const refp = VN_CAST(m_nodep, VarRef)) {
-            return VN_CAST(refp->backp(), SenItem);
-        }
-        return nullptr;
+        const AstVarRef* const refp = VN_CAST(m_nodep, VarRef);
+        if (!refp) return nullptr;
+        return VN_CAST(refp->backp(), SenItem);
+    }
+    AstNodeAssign* backCResetp() const {
+        const AstVarRef* const refp = VN_CAST(m_nodep, VarRef);
+        if (!refp) return nullptr;
+        AstNodeAssign* const assp = VN_CAST(refp->backp(), NodeAssign);
+        if (!assp) return nullptr;
+        if (!VN_IS(assp->rhsp(), CReset)) return nullptr;
+        return assp;
     }
 };
 
@@ -1027,7 +1057,8 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             UINFO(4, var.varp()->prettyNameQ() << "[" << msb << ":" << lsb << "] used for "
                                                << ref.nodep()->prettyNameQ() << '\n');
             // LSB of varp is always 0. "lsb - var.lsb()" means this. see also SplitNewVar
-            return new AstSel{fl, refp, lsb - var.lsb(), bitwidth};
+            AstNodeExpr* const newp = new AstSel{fl, refp, lsb - var.lsb(), bitwidth};
+            return newp;
         }
     }
     static void connectPortAndVar(const std::vector<SplitNewVar>& vars, AstVar* portp,
@@ -1083,6 +1114,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             dtypep->rangep(new AstRange{
                 varp->fileline(), VNumRange{newvar.msb(), newvar.lsb(), basicp->ascending()}});
             newvar.varp(new AstVar{varp->fileline(), VVarType::VAR, name, dtypep});
+            newvar.varp()->lifetime(varp->lifetime());
             newvar.varp()->propagateAttrFrom(varp);
             newvar.varp()->funcLocal(varp->isFuncLocal() || varp->isFuncReturn());
             // Enable this line to trace split variable directly:
@@ -1091,6 +1123,15 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             varp->addNextHere(newvar.varp());
             UINFO(4, newvar.varp()->prettyNameQ() << " is added for " << varp->prettyNameQ());
         }
+    }
+    static AstAssign* newAssignCReset(AstNodeAssign* cresetAssp, AstVar* attachVarp) {
+        AstCReset* const cresetp = VN_AS(cresetAssp->rhsp(), CReset);
+        AstCReset* const newCResetp = cresetp->cloneTree(false);
+        newCResetp->dtypeFrom(attachVarp);
+        AstAssign* const newp = new AstAssign{
+            cresetAssp->fileline(),
+            new AstVarRef{cresetAssp->fileline(), attachVarp, VAccess::WRITE}, newCResetp};
+        return newp;
     }
     static void updateReferences(AstVar* varp, PackedVarRef& pref,
                                  const std::vector<SplitNewVar>& vars) {
@@ -1102,9 +1143,14 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 UASSERT_OBJ(varit != vars.end(), ref.nodep(), "Not found");
                 UASSERT(!(varit->msb() < ref.lsb() || ref.msb() < varit->lsb()),
                         "wrong search result");
-                AstNode* prevp;
+                AstNode* prevp = nullptr;
                 bool inSentitivityList = false;
-                if (AstSenItem* const senitemp = ref.backSenItemp()) {
+                AstNodeAssign* const cresetAssp = ref.backCResetp();
+                if (cresetAssp) {
+                    // ASSIGN(VARREF old, CRESET) convert to a creset of each new var
+                    cresetAssp->addNextHere(newAssignCReset(cresetAssp, varit->varp()));
+                } else if (AstSenItem* const senitemp = ref.backSenItemp()) {
+                    // SENITEM(VARREF old) convert to a list of separate SenItems for each new var
                     AstNode* const oldsenrefp = senitemp->sensp();
                     oldsenrefp->replaceWith(
                         new AstVarRef{senitemp->fileline(), varit->varp(), VAccess::READ});
@@ -1118,7 +1164,9 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                      residue -= varit->bitwidth()) {
                     ++varit;
                     UASSERT_OBJ(varit != vars.end(), ref.nodep(), "not enough split variables");
-                    if (AstSenItem* const senitemp = VN_CAST(prevp, SenItem)) {
+                    if (cresetAssp) {
+                        cresetAssp->addNextHere(newAssignCReset(cresetAssp, varit->varp()));
+                    } else if (AstSenItem* const senitemp = VN_CAST(prevp, SenItem)) {
                         prevp = new AstSenItem{
                             senitemp->fileline(), senitemp->edgeType(),
                             new AstVarRef{senitemp->fileline(), varit->varp(), VAccess::READ}};
@@ -1135,7 +1183,9 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 // split()
                 if (varp->isIO() && (varp->isFuncLocal() || varp->isFuncReturn()))
                     connectPortAndVar(vars, varp, ref.nodep());
-                if (!inSentitivityList) ref.replaceNodeWith(prevp);
+                if (!inSentitivityList && !cresetAssp) ref.replaceNodeWith(prevp);
+                if (cresetAssp)
+                    VL_DO_DANGLING(cresetAssp->unlinkFrBack()->deleteTree(), cresetAssp);
                 UASSERT_OBJ(varit->msb() >= ref.msb(), varit->varp(), "Out of range");
             }
         }
@@ -1337,6 +1387,7 @@ const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
 
 void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    SplitNodeOrder order;
     SplitVarRefs refs;
     {
         const SplitUnpackedVarVisitor visitor{nodep};

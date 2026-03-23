@@ -10,35 +10,38 @@ module d;
 endmodule
 
 module b;
-   generate if (1) begin
+  generate
+    if (1) begin
       c c1 ();
       c c2 ();
-   end
-   endgenerate
+    end
+  endgenerate
 endmodule
 
 module c;
-   generate if (1) begin
+  generate
+    if (1) begin
       d d1 ();
       d d2 ();
-   end
-   endgenerate
+    end
+  endgenerate
 endmodule
 
 module a;
-   generate if (1) begin
+  generate
+    if (1) begin
       b b1 ();
       b b2 ();
-   end
-   endgenerate
+    end
+  endgenerate
 endmodule
 
 module t;
 
-   a a1 ();
+  a a1 ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

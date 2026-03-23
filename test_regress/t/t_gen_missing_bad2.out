@@ -1,18 +1,18 @@
-%Error: t/t_gen_missing_bad2.v:8:8: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
+%Error: t/t_gen_missing_bad2.v:8:7: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
                                   : ... note: In instance 't'
-    8 |    if ($test$plusargs("BAD-non-constant")) begin
-      |        ^~~~~~~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_gen_missing_bad2.v:8:8: Generate If condition must evaluate to constant
-                                  : ... note: In instance 't'
-    8 |    if ($test$plusargs("BAD-non-constant")) begin
-      |        ^~~~~~~~~~~~~~
-%Error: t/t_gen_missing_bad2.v:12:7: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
-                                   : ... note: In instance 't'
-   12 |       $test$plusargs("BAD-non-constant"): initial $stop;
+    8 |   if ($test$plusargs("BAD-non-constant")) begin
       |       ^~~~~~~~~~~~~~
-%Error: t/t_gen_missing_bad2.v:12:41: Generate Case item does not evaluate to constant
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_gen_missing_bad2.v:8:7: Generate If condition must evaluate to constant
+                                  : ... note: In instance 't'
+    8 |   if ($test$plusargs("BAD-non-constant")) begin
+      |       ^~~~~~~~~~~~~~
+%Error: t/t_gen_missing_bad2.v:12:5: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
+                                   : ... note: In instance 't'
+   12 |     $test$plusargs("BAD-non-constant"): initial $stop;
+      |     ^~~~~~~~~~~~~~
+%Error: t/t_gen_missing_bad2.v:12:39: Generate Case item does not evaluate to constant
                                     : ... note: In instance 't'
-   12 |       $test$plusargs("BAD-non-constant"): initial $stop;
-      |                                         ^
+   12 |     $test$plusargs("BAD-non-constant"): initial $stop;
+      |                                       ^
 %Error: Exiting due to

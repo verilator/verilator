@@ -5,15 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   function void func();
-      int a[2];
-      begin
-         int t;
-      end
-      foreach (a[i]) begin
-      end
-      begin
-         int x;
-      end
-   endfunction
+  function void func();
+    int a[2];
+    begin
+      int t;
+    end
+    foreach (a[i]) begin
+    end
+    begin
+      int x;
+    end
+  endfunction
 endmodule

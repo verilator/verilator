@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   localparam t = logic;  // Bad
-   localparam t2 = realtime;  // Bad
+  localparam t = logic;  // Bad
+  localparam t2 = realtime;  // Bad
 endmodule

@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   interface class inte;
-      interface class bad_cannot_nest;
-      endclass
-   endclass
+  interface class inte;
+    interface class bad_cannot_nest;
+    endclass
+  endclass
 endclass
 
 module t;
-   Cls c;
+  Cls c;
 endmodule

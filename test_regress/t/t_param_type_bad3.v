@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   localparam int PI = 6;
-   localparam type P_T = PI;  // Bad
+  localparam int PI = 6;
+  localparam type P_T = PI;  // Bad
 endmodule

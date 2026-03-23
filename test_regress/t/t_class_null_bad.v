@@ -5,15 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   int imembera;
+  int imembera;
 endclass : Cls
 
 module t;
-   Cls c;
-   initial begin
-      c = null;  // Not really required as null is default
-      c.imembera = 10;  // BAD IEEE 8.4
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  Cls c;
+  initial begin
+    c = null;  // Not really required as null is default
+    c.imembera = 10;  // BAD IEEE 8.4
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

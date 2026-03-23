@@ -4,39 +4,43 @@
 // SPDX-FileCopyrightText: 2015 Johan Bjork
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface a_if ();
-   string s;
+  string s;
 endinterface
 
-module sub (output string s);
-   initial s = $sformatf("%m");
+module sub (
+    output string s
+);
+  initial s = $sformatf("%m");
 endmodule
 
 module t;
 
-   string str [2:0][1:0];
+  string str[2:0][1:0];
 
-   a_if iface [2:0][1:0] ();
+  a_if iface[2:0][1:0] ();
 
-   sub i_sub[2:0][1:0] (.s(str));
+  sub i_sub[2:0][1:0] (.s(str));
 
-   initial begin
-      // TODO make self checking
-      $display(iface[0][0]);
-      $display(iface[0][1]);
-      $display(iface[1][0]);
-      $display(iface[1][1]);
-      $display(iface[2][0]);
-      $display(iface[2][1]);
+  initial begin
+    // TODO make self checking
+    $display(iface[0][0]);
+    $display(iface[0][1]);
+    $display(iface[1][0]);
+    $display(iface[1][1]);
+    $display(iface[2][0]);
+    $display(iface[2][1]);
 
-      $display(str[0][0]);
-      $display(str[0][1]);
-      $display(str[1][0]);
-      $display(str[1][1]);
-      $display(str[2][0]);
-      $display(str[2][1]);
-   end
+    $display(str[0][0]);
+    $display(str[0][1]);
+    $display(str[1][0]);
+    $display(str[1][1]);
+    $display(str[2][0]);
+    $display(str[2][1]);
+  end
 endmodule

@@ -5,40 +5,39 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Rnd;
-   rand bit x;
+  rand bit x;
 endclass
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   Rnd c;
+module t (
+    input clk
+);
 
-   input clk;
+  Rnd c;
 
-   int cyc;
-   integer rand_result;
-   integer seed = 123;
+  int cyc;
+  integer rand_result;
+  integer seed = 123;
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc != 0) begin
-         if (cyc == 10) begin
-            #5;
-            $display("dist: %f ", $dist_poisson(seed, 12));  // Get verilated_probdist.cpp
-            c = new;
-            rand_result = c.randomize();
-            $display("rand: %x x: %x ", rand_result, c.x);  // Get verilated_random.cpp
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc != 0) begin
+      if (cyc == 10) begin
+        #5;
+        $display("dist: %f ", $dist_poisson(seed, 12));  // Get verilated_probdist.cpp
+        c = new;
+        rand_result = c.randomize();
+        $display("rand: %x x: %x ", rand_result, c.x);  // Get verilated_random.cpp
+        $write("*-* All Finished *-*\n");
+        $finish;
       end
-   end
+    end
+  end
 
-   cyc_eq_5: cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5");
+  cyc_eq_5 :
+  cover property (@(posedge clk) cyc == 5) $display("*COVER: Cyc==5");
 
-   export "DPI-C" function dpix_f_int;
-   function int dpix_f_int ();
-      return cyc;
-   endfunction
+  export "DPI-C" function dpix_f_int;
+  function int dpix_f_int();
+    return cyc;
+  endfunction
 endmodule

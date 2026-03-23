@@ -7,5 +7,5 @@
 typedef sometype;
 
 module t;
-   sometype p;
+  sometype p;
 endmodule

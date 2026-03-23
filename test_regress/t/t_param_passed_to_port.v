@@ -7,19 +7,19 @@
 parameter int HwDataAttr[1] = '{1};
 
 module flash_mp_data_region_sel (
-   input int region_attrs_i[1]
+    input int region_attrs_i[1]
 );
-   initial begin
-      automatic int o = 0;
-      for (int i = 0; i < 1; i++) begin
-         o = region_attrs_i[i];
-      end
-      if (o != 1) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic int o = 0;
+    for (int i = 0; i < 1; i++) begin
+      o = region_attrs_i[i];
+    end
+    if (o != 1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module t;
-   flash_mp_data_region_sel u_hw_sel (.region_attrs_i(HwDataAttr));
+  flash_mp_data_region_sel u_hw_sel (.region_attrs_i(HwDataAttr));
 endmodule

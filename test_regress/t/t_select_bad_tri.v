@@ -6,9 +6,9 @@
 
 module t;
 
-   reg [72:1] in;
-   initial begin
-      if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
-   end
+  reg [72:1] in;
+  initial begin
+    if (in[((1'h0/1'b0))+:71] != 71'h0) $stop;
+  end
 
 endmodule

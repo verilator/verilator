@@ -12,17 +12,17 @@
 `define IMPURE_ONE (|($random | $random))
 `endif
 
-module t ();
+module t;
 
-   logic clk /* verilator public_flat_rw */;
-   int count;
-   wire other_clk = `IMPURE_ONE & clk;
+  logic clk  /* verilator public_flat_rw */;
+  int count;
+  wire other_clk = `IMPURE_ONE & clk;
 
-   always_ff @(posedge other_clk) begin
-      count <= count + 1;
-      if (count == 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always_ff @(posedge other_clk) begin
+    count <= count + 1;
+    if (count == 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

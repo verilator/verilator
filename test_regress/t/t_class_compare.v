@@ -4,47 +4,49 @@
 // SPDX-FileCopyrightText: 2023 Ilya Barkov
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define check_comp(lhs, rhs, op, exp) if ((exp) != ((lhs) op (rhs))) begin $write("%%Error: %s:%0d: op comparison shall return 'b%x\n", `__FILE__, `__LINE__, (exp)); `stop; end
 // Two checks because == and != may not be derived from each other
 `define check_eq(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b1) `check_comp(lhs, rhs, !=, 1'b0)
 `define check_ne(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b0) `check_comp(lhs, rhs, !=, 1'b1)
+// verilog_format: on
 
 class Cls;
-   class InnerCls;
-      int j;
-   endclass
-   int i;
+  class InnerCls;
+    int j;
+  endclass
+  int i;
 endclass
 
 class ExtendCls extends Cls;
 endclass
 
 module t;
-   initial begin
-      automatic Cls a = new;
-      automatic Cls b = new;
-      automatic ExtendCls ext = new;
-      automatic Cls::InnerCls ia = new;
-      automatic Cls::InnerCls ib = new;
-      automatic ExtendCls::InnerCls iext = new;
-      `check_ne(a, b)
-      `check_ne(a, ext)
-      `check_ne(ext, a)
-      `check_ne(ia, ib)
-      `check_ne(ia, iext)
-      `check_ne(iext, ia)
-      a = b;
-      ia = ib;
-      `check_eq(a, b)
-      `check_eq(ia, ib)
-      a = ext;
-      ia = iext;
-      `check_eq(a, ext)
-      `check_eq(ext, a)
-      `check_eq(ia, iext)
-      `check_eq(iext, ia)
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic Cls a = new;
+    automatic Cls b = new;
+    automatic ExtendCls ext = new;
+    automatic Cls::InnerCls ia = new;
+    automatic Cls::InnerCls ib = new;
+    automatic ExtendCls::InnerCls iext = new;
+    `check_ne(a, b)
+    `check_ne(a, ext)
+    `check_ne(ext, a)
+    `check_ne(ia, ib)
+    `check_ne(ia, iext)
+    `check_ne(iext, ia)
+    a = b;
+    ia = ib;
+    `check_eq(a, b)
+    `check_eq(ia, ib)
+    a = ext;
+    ia = iext;
+    `check_eq(a, ext)
+    `check_eq(ext, a)
+    `check_eq(ia, iext)
+    `check_eq(iext, ia)
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

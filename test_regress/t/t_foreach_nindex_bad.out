@@ -1,6 +1,6 @@
-%Error: t/t_foreach_nindex_bad.v:12:34: foreach loop variables exceed number of indices of array
+%Error: t/t_foreach_nindex_bad.v:12:32: foreach loop variables exceed number of indices of array
                                       : ... note: In instance 't'
-   12 |       foreach (array[i, j, badk, badl]);   
-      |                                  ^~~~
+   12 |     foreach (array[i, j, badk, badl]);   
+      |                                ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

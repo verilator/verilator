@@ -1,10 +1,10 @@
-%Error-UNSUPPORTED: t/t_tri_array.v:25:25: Unsupported LHS tristate construct: ARRAYSEL
+%Error-UNSUPPORTED: t/t_tri_array.v:24:17: Unsupported LHS tristate construct: ARRAYSEL
                                          : ... note: In instance 't'
-   25 |       Pad pad1 (.pad(pad[g]),
-      |                         ^
+   24 |         .pad(pad[g]),
+      |                 ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tri_array.v:28:25: Unsupported LHS tristate construct: ARRAYSEL
+%Error-UNSUPPORTED: t/t_tri_array.v:29:17: Unsupported LHS tristate construct: ARRAYSEL
                                          : ... note: In instance 't'
-   28 |       Pad pad0 (.pad(pad[g]),
-      |                         ^
+   29 |         .pad(pad[g]),
+      |                 ^
 %Error: Exiting due to

@@ -1,6 +1,6 @@
-%Error: t/t_semaphore_bad.v:12:13: Class method 'bad_method' not found in class 'semaphore'
+%Error: t/t_semaphore_bad.v:12:11: Class method 'bad_method' not found in class 'semaphore'
                                  : ... note: In instance 't'
-   12 |       if (s.bad_method() != 0) $stop;
-      |             ^~~~~~~~~~
+   12 |     if (s.bad_method() != 0) $stop;
+      |           ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

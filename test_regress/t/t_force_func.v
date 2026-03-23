@@ -9,8 +9,8 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-  function bit [1:0] get_arg (bit [1:0] x);
-   return x;
+function bit [1:0] get_arg(bit [1:0] x);
+  return x;
 endfunction
 
 module t;

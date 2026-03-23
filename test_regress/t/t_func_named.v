@@ -4,27 +4,31 @@
 // SPDX-FileCopyrightText: 2013 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t;
 
-   function automatic int f( int j = 1, int s = 0 );
-      return (j<<16) | s;
-   endfunction
+  function automatic int f( int j = 1, int s = 0 );
+    return (j<<16) | s;
+  endfunction
 
-   initial begin
-      `checkh( f(.j(2), .s(1))  , 32'h2_0001 );
-      `checkh( f(.s(1))         , 32'h1_0001 );
-      `checkh( f(, 1)           , 32'h1_0001 );
-      `checkh( f(.j(2))         , 32'h2_0000 );
-      `checkh( f(.s(1), .j(2))  , 32'h2_0001 );
-      `checkh( f(.s(), .j())    , 32'h1_0000 );
-      `checkh( f(2)             , 32'h2_0000 );
-      `checkh( f()              , 32'h1_0000 );
+  initial begin
+    // verilog_format: off
+    `checkh( f(.j(2), .s(1))  , 32'h2_0001 );
+    `checkh( f(.s(1))         , 32'h1_0001 );
+    `checkh( f(, 1)           , 32'h1_0001 );
+    `checkh( f(.j(2))         , 32'h2_0000 );
+    `checkh( f(.s(1), .j(2))  , 32'h2_0001 );
+    `checkh( f(.s(), .j())    , 32'h1_0000 );
+    `checkh( f(2)             , 32'h2_0000 );
+    `checkh( f()              , 32'h1_0000 );
+    // verilog_format: on
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

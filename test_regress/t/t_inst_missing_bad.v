@@ -5,14 +5,25 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   wire ok = 1'b0;
-   // verilator lint_off UNDRIVEN
-   wire nc;
-   // verilator lint_on UNDRIVEN
+  wire ok = 1'b0;
+  // verilator lint_off UNDRIVEN
+  wire nc;
+  // verilator lint_on UNDRIVEN
 
-   sub sub (ok, , nc);
+  sub sub (
+      ok
+      ,,
+      nc
+  );
 endmodule
 
-module sub (input ok, input none, input nc, input missing);
-   initial if (ok && none && nc && missing) begin end  // No unused warning
+module sub (
+    input ok,
+    input none,
+    input nc,
+    input missing
+);
+  initial
+    if (ok && none && nc && missing) begin
+    end  // No unused warning
 endmodule

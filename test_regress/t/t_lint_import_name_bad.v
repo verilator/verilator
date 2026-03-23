@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package defs;
-   int sig;
+  int sig;
 endpackage
 
 import defs::sigs;

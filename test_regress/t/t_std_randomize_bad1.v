@@ -5,19 +5,19 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t_std_randomize_bad1;
-    bit [3:0] a;
+  bit [3:0] a;
 
-    function int run();
-        int success;
-        success = std::randomize(a + 1); // ERROR: argument is not a variable
-        return success;
-    endfunction
+  function int run();
+    int success;
+    success = std::randomize(a + 1); // ERROR: argument is not a variable
+    return success;
+  endfunction
 
-    initial begin
-        int ok, x;
-        ok = run();
-        void'(std::randomize(null));
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    int ok, x;
+    ok = run();
+    void'(std::randomize(null));
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

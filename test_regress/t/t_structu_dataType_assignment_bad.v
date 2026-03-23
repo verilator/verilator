@@ -6,14 +6,12 @@
 
 /* verilator lint_off UNPACKED */
 
-module top();
+module top ();
 
 
-  typedef struct { // IEEE 1800-2023 10.9.2
+  typedef struct {  // IEEE 1800-2023 10.9.2
     int A;
-    struct {
-    int B, C;
-    } BC1, BC2;
+    struct {int B, C;} BC1, BC2;
   } DEF_struct;
 
   DEF_struct DEF_bad = '{1: 5, default: 10};

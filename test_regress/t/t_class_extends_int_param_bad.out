@@ -1,6 +1,6 @@
-%Error: t/t_class_extends_int_param_bad.v:9:23: Attempting to extend using non-class
-                                              : ... note: In instance 't'
-    9 |    class Bar #(type T=int) extends T;
-      |                       ^~~
+%Error: t/t_class_extends_int_param_bad.v:10:16: Attempting to extend using non-class
+                                               : ... note: In instance 't'
+   10 |       type T = int
+      |                ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

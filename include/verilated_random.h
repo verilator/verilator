@@ -28,10 +28,10 @@
 
 #include "verilated.h"
 
-#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <set>
 #include <sstream>
 
 //=============================================================================
@@ -88,6 +88,7 @@ public:
         m_arrVarsRefp = arrVarsRefp;
     }
     mutable std::map<std::string, int> count_cache;
+    void clearCountCache() const { count_cache.clear(); }
     int countMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
         if (VL_LIKELY(count_cache.find(base_name) != count_cache.end()))
             return count_cache[base_name];
@@ -172,7 +173,14 @@ public:
                 for (int i = 0; i < dimension(); ++i) s << ")";
             }
         } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+            if (dimension() > 0) {
+                for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+                s << "(_ BitVec " << width() << ")";
+                for (int i = 0; i < dimension(); ++i) s << ")";
+            } else {
+                VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                            "indexed_name not found in m_arr_vars");
+            }
         }
     }
     int totalWidth() const override {
@@ -200,27 +208,31 @@ public:
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
+    std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
-                                                                       // variables
+    std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
+                                           // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
     std::vector<std::string> m_unique_arrays;
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
     std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
-    std::map<std::string, std::deque<uint64_t>>
-        m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
-    size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
+    std::map<std::string, std::set<uint64_t>>
+        m_randcUsedValues;  // Previously used values per randc var (exclusion-based cycling)
+    size_t m_randcConstraintHash = 0;  // Hash of constraints when history was valid
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
-    void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
+    bool checkSat(std::iostream& os);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints() const;
     bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
 
@@ -328,6 +340,12 @@ public:
                     "supported currently.");
     }
 
+    // Mark a variable as rand_mode-disabled: solver keeps it in m_vars
+    // (so constraints still reference it) but skips write-back after solving.
+    void set_var_disabled(const char* name) { m_disabledVars.insert(name); }
+    // Clear disabled state for a variable
+    void clear_var_disabled(const char* name) { m_disabledVars.erase(name); }
+
     // ---  write_var to register variables  ---
     // Register scalar variable (non-struct, basic type)
     template <typename T>
@@ -354,12 +372,15 @@ public:
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
-            name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
+                name, width, &var, dimension, randmodeIdx);
+        }
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
 
@@ -376,15 +397,17 @@ public:
     write_var(VlUnpacked<T, N_Depth>& var, uint32_t width, const std::string& name,
               uint32_t dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-
-        if (m_vars.find(name) != m_vars.end()) return;
-
-        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
-            name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name]
+                = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
+                    name, width, &var, dimension, randmodeIdx);
+        }
 
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
     // Register unpacked array of structs
@@ -400,13 +423,16 @@ public:
     typename std::enable_if<!VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name]
-            = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-                name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name]
+                = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
+                    name, width, &var, dimension, randmodeIdx);
+        }
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
 
@@ -591,13 +617,31 @@ public:
                + std::to_string(idx);
     }
 
+    // Helper: Clear existing array element entries for a base name
+    void clear_arr_table(const std::string& name) {
+        for (int index = 0;; ++index) {
+            const std::string key = generateKey(name, index);
+            const auto it = m_arr_vars.find(key);
+            if (it == m_arr_vars.end()) break;
+            m_arr_vars.erase(it);
+        }
+    }
+
     void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
+    void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+              const char* source = "");
+    void pin_var(const char* name, int width, uint64_t value) {
+        std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
+                                 + std::to_string(width) + ")))";
+        hard(std::move(constraint));
+    }
+    void disable_soft(const std::string& varName);
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
-    void solveBefore(const char* beforeName,
-                     const char* afterName);  // Register solve-before ordering
+    void solveBefore(const std::string& beforeName,
+                     const std::string& afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

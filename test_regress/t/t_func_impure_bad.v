@@ -6,25 +6,25 @@
 
 module t;
 
-   int sig;
+  int sig;
 
-   task foo;
-      // verilator no_inline_task
-      sig = '1;
-   endtask
+  task foo;
+    // verilator no_inline_task
+    sig = '1;
+  endtask
 
-   task bar;
-      sig = '1;
-   endtask
+  task bar;
+    sig = '1;
+  endtask
 
-   task baz;
-     // verilator no_inline_task
-     bar();
-   endtask
+  task baz;
+    // verilator no_inline_task
+    bar();
+  endtask
 
-   initial begin
-      foo();
-      baz();
-   end
+  initial begin
+    foo();
+    baz();
+  end
 
 endmodule

@@ -6,6 +6,6 @@
 
 module t;
 
-   liblib_a a ();
+  liblib_a a ();
 
 endmodule

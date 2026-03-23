@@ -12,6 +12,6 @@ module t;
 `define DUPP paramed(x) (x)
 `define DUPP paramed(x,z) (x*z)
 
-     initial $stop; // Should have failed
+  initial $stop; // Should have failed
 
 endmodule

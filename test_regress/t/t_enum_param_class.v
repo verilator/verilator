@@ -9,29 +9,30 @@
 /// should be handled properly.
 
 class ClsParam #(
-   int A = 0
+    int A = 0
 );
-    typedef enum int {
-        EN_A = A + 0,
-        EN_B = A + 1,
-        EN_C = A + 2
-    } enums_t;
+  typedef enum int {
+    EN_A = A + 0,
+    EN_B = A + 1,
+    EN_C = A + 2
+  } enums_t;
 
-    int val = EN_C;
-    function int test();
-        return EN_C;
-    endfunction
-endclass;
+  int val = EN_C;
+  function int test();
+    return EN_C;
+  endfunction
+endclass
+;
 
 module t;
-    // localparam ENUM_VAL = ClsParam#(100)::EN_C; // TODO: Unsupported: dotted expressions in parameters
-    // $info("ENUM_VAL: %0d", ENUM_VAL);
+  // localparam ENUM_VAL = ClsParam#(100)::EN_C; // TODO: Unsupported: dotted expressions in parameters
+  // $info("ENUM_VAL: %0d", ENUM_VAL);
 
-    ClsParam#(100) cls = new;
-    initial begin
-        if (cls.test() != 102) $stop;
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  ClsParam #(100) cls = new;
+  initial begin
+    if (cls.test() != 102) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

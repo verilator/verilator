@@ -1172,6 +1172,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                                                   FL_BRK; }
 
   /* Verilator */
+  /* See also V3ParseImp::preprocDumps() */
   "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
   "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
   "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }

@@ -18,6 +18,14 @@ endclass
 
 class Base;
   int m_in_base;
+  virtual function string fs(input string add = "default");
+    static string s_f = "foo";
+    fs = {s_f, add};
+  endfunction
+  virtual function string other(input string add = "default");
+    string other = "other";
+    other = {other, fs(add)};
+  endfunction
 endclass
 
 class ClsA extends Base;
@@ -54,8 +62,11 @@ module t;
     c.debug();
 
     ca = new;
-    $display("'%p'", ca);
+    if (ca.fs("-s") !== "foo-s") $stop;  // So not optimized away
+    if (ca.other("-o") !== "otherfoo-o") $stop;  // So not optimized away
+
     cb = new;
+    $display("'%p'", ca);
     ca.m_b = cb;
     $display("'%p'", ca);
     cb.m_a = ca;  // Circular

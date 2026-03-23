@@ -9,26 +9,27 @@
 //     VBase b = new;
 // see t_class_virtual_bad
 virtual class VBase;
-   function new(); endfunction
+  function new();
+  endfunction
 endclass
 
 // Another constructor of an abstact class in the chain
 virtual class VChild1 extends VBase;
-   function new();
-      super.new();
-   endfunction
+  function new();
+    super.new();
+  endfunction
 endclass
 
 // It shall be perfectly fine to create an instance of a
 // non-abstract VChild2
 class VChild2 extends VChild1;
-   function new();
-      super.new();
-   endfunction
+  function new();
+    super.new();
+  endfunction
 endclass
 
 module t;
-   initial begin
-      automatic VChild2 c = new;
-   end
+  initial begin
+    automatic VChild2 c = new;
+  end
 endmodule

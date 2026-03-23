@@ -8,36 +8,35 @@
 
 module t;
 
-   event ev_test;
+  event ev_test;
 
-   int i;
+  int i;
 
-   bit toggle = 1'b0;
+  bit toggle = 1'b0;
 
-   bit clk;
-   always #10 clk = ~clk;
+  bit clk;
+  always #10 clk = ~clk;
 
-   initial begin
+  initial begin
+    @(posedge clk);
+
+    @(ev_test);
+    toggle = ~toggle;
+  end
+
+  initial begin
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars(0, top);
+    for (i = 0; i < 10; i++) begin
       @(posedge clk);
 
-      @(ev_test);
-      toggle = ~toggle;
-   end
+      if (i == 5)->ev_test;
+    end
 
-   initial begin
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars(0, top);
-      for(i=0; i < 10; i++) begin
-         @(posedge clk);
+    @(posedge clk);
 
-         if (i == 5)
-           ->ev_test;
-      end
-
-      @(posedge clk);
-
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

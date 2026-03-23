@@ -6,14 +6,13 @@
 
 /* verilator lint_off PINNOTFOUND */
 module a;
-localparam A=1;
-generate
-if (A==0)
-begin
-b b_inst1 (.x(1'b0)); // nonexistent port
-b #(.PX(1'b0)) b_inst2 (); // nonexistent parameter
-end
-endgenerate
+  localparam A = 1;
+  generate
+    if (A == 0) begin
+      b b_inst1 (.x(1'b0));  // nonexistent port
+      b #(.PX(1'b0)) b_inst2 ();  // nonexistent parameter
+    end
+  endgenerate
 endmodule
 
 module b;

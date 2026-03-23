@@ -8,9 +8,9 @@ package Foo;
 endpackage
 
 package Bar;
-    static int baz;
+  static int baz;
 endpackage
 
 module t;
-    int baz = Foo::Bar::baz;
+  int baz = Foo::Bar::baz;
 endmodule

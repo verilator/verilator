@@ -4,8 +4,8 @@
    :emphasize-lines: 2
 
    module t;
-      sub sub();  // <--- Warning
+     sub sub ();  // <--- Warning
    endmodule
-   module sub
-     (output port);
-   endmodule
+   module sub (
+       output port
+   );

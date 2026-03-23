@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-   clk
-   );
-   input clk;
+    clk
+);
+  input clk;
 endmodule

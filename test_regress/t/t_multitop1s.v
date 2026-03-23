@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t_multitop1s;
-   initial $display("In '%m'");
+  initial $display("In '%m'");
 endmodule
 
 module in_subfile;
-   initial $display("In '%m'");
+  initial $display("In '%m'");
 endmodule

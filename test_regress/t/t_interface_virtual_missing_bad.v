@@ -6,10 +6,10 @@
 
 module t;
 
-   virtual foo vif;
+  virtual foo vif;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

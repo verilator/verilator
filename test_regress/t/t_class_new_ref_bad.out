@@ -1,14 +1,14 @@
-%Error: t/t_class_new_ref_bad.v:16:24: new() assignment not legal to non-class data type 'int'
+%Error: t/t_class_new_ref_bad.v:16:22: new() assignment not legal to non-class data type 'int'
                                      : ... note: In instance 't'
-   16 |       txn_type_t txn = new;
-      |                        ^~~
+   16 |     txn_type_t txn = new;
+      |                      ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_new_ref_bad.v:17:25: new() cannot copy from non-class data type 'int'
+%Error: t/t_class_new_ref_bad.v:17:23: new() cannot copy from non-class data type 'int'
                                      : ... note: In instance 't'
-   17 |       txn_type_t copy = new txn;
-      |                         ^~~
-%Error: t/t_class_new_ref_bad.v:26:31: Assign RHS expects a CLASSREFDTYPE 'Base', got BASICDTYPE 'int'
+   17 |     txn_type_t copy = new txn;
+      |                       ^~~
+%Error: t/t_class_new_ref_bad.v:26:29: Assign RHS expects a CLASSREFDTYPE 'Base', got BASICDTYPE 'int'
                                      : ... note: In instance 't'
-   26 |       automatic Base b = Cls::generate_txn();
-      |                               ^~~~~~~~~~~~
+   26 |     automatic Base b = Cls::generate_txn();
+      |                             ^~~~~~~~~~~~
 %Error: Exiting due to

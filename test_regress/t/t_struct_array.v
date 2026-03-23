@@ -5,33 +5,34 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package TEST_TYPES;
-   typedef struct a_struct_t;  // Forward
-   typedef struct packed {
-      logic       stuff;
-   } a_struct_t;
-endpackage // TEST_TYPES
+  typedef struct a_struct_t;  // Forward
+  typedef struct packed {logic stuff;} a_struct_t;
+endpackage  // TEST_TYPES
 
-module t(clk);
-   input clk;
-   TEST_TYPES::a_struct_t [3:0] a_out;
-   sub sub (.a_out);
-   always @ (posedge clk) begin
-      if (a_out[0] != 1'b0) $stop;
-      if (a_out[1] != 1'b1) $stop;
-      if (a_out[2] != 1'b0) $stop;
-      if (a_out[3] != 1'b1) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+module t (
+    clk
+);
+  input clk;
+  TEST_TYPES::a_struct_t [3:0] a_out;
+  sub sub (.a_out);
+  always @(posedge clk) begin
+    if (a_out[0] != 1'b0) $stop;
+    if (a_out[1] != 1'b1) $stop;
+    if (a_out[2] != 1'b0) $stop;
+    if (a_out[3] != 1'b1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
-module sub(a_out);
-   parameter N = 4;
-   output TEST_TYPES::a_struct_t [N-1:0] a_out;
-   always_comb begin
-      for (int i=0;i<N;i++)
-        a_out[i].stuff = i[0];
-   end
+module sub (
+    a_out
+);
+  parameter N = 4;
+  output TEST_TYPES::a_struct_t [N-1:0] a_out;
+  always_comb begin
+    for (int i = 0; i < N; i++) a_out[i].stuff = i[0];
+  end
 endmodule
 
 // Local Variables:

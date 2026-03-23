@@ -4,16 +4,19 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (a,z);
-   input a;
-   output z;
+module t (
+    a,
+    z
+);
+  input a;
+  output z;
 
-   assign b = 1'b1;
+  assign b = 1'b1;
 
-   or   OR0 (nt0, a, b);
+  or OR0 (nt0, a, b);
 
-   logic [1:0] dummy_ip;
-   assign {dummy1, dummy2} = dummy_ip;
+  logic [1:0] dummy_ip;
+  assign {dummy1, dummy2} = dummy_ip;
 
-   assign z = nt0;
+  assign z = nt0;
 endmodule

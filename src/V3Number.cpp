@@ -336,7 +336,8 @@ void V3Number::create(const char* sourcep) {
                 break;
             }
 
-            case 'h': {
+            case 'h':  // FALLTHRU
+            case 'x': {
                 base_align = 4;
                 switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
@@ -610,29 +611,31 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     return out.str();
 }
 
-bool V3Number::displayedFmtLegal(char format, bool isScan) {
-    // Is this a valid format letter?
+bool V3Number::displayedFmtHasArg(char format, bool isScan) {
+    // Is this a format letter that takes an argument in runtime?
+    (void)isScan;
     switch (std::tolower(format)) {
-    case 'b': return true;
-    case 'c': return true;
-    case 'd': return true;  // Unsigned decimal
-    case 'e': return true;
-    case 'f': return true;
-    case 'g': return true;
-    case 'h': return true;
-    case 'o': return true;
+    case 'b': return true;  // Binary
+    case 'c': return true;  // Character
+    case 'd': return true;  // Decimal
+    case 'e': return true;  // Floating
+    case 'f': return true;  // Floating
+    case 'g': return true;  // Floating
+    case 'h': return true;  // Hex
+    case 'o': return true;  // Octal
     case 'p': return true;  // Pattern
-    case 's': return true;
-    case 't': return true;
+    case 's': return true;  // String
+    case 't': return true;  // Time
     case 'u': return true;  // Packed 2-state
     case 'v': return true;  // Strength
-    case 'x': return true;
+    case 'x': return true;  // Hex
     case 'z': return true;  // Packed 4-state
-    case '@': return true;  // Packed string
-    case '~': return true;  // Signed decimal
-    case '*': return isScan;  // $scan ignore argument
+    case '?': return true;  // Internal: Compute format in V3Width based on data type
     default: return false;
     }
+    // 'l'                  // Library - precomputed front string, so no arg
+    // 'm'                  // Module - precomputed front string, so no arg
+    // '*'                  // $scan ignore argument
 }
 
 string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE {
@@ -641,15 +644,19 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE {
-    return displayed(nodep->fileline(), vformat);
+string V3Number::displayed(const AstNode* nodep, const string& vformat,
+                           const VFormatAttr& formatAttr) const VL_MT_STABLE {
+    return displayed(nodep->fileline(), vformat, formatAttr);
 }
 
-string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE {
+string V3Number::displayed(FileLine* fl, const string& vformat,
+                           const VFormatAttr& formatAttr) const VL_MT_STABLE {
+    // Similar code flow in verilated.cpp _vl_vsformat
     // Correct number of zero bits/width matters
+    // UINFO(9, "displayed(\"" << vformat << "\", formatAttr=" << formatAttr);
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
-            "$display-like function with non format argument " << *this);
+            "$display-like function with non-format argument " << *this);
     ++pos;
     bool left = false;
     if (pos[0] == '-') {
@@ -661,8 +668,96 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         fmtsize += pos[0];
     }
     string str;
-    const char code = std::tolower(pos[0]);
-    switch (code) {
+
+    char fmt = std::tolower(pos[0]);
+
+    // Override user's code for certain data-type determined arguments
+    if (formatAttr.isComplex()) {
+        if (fmt != 'p') fmt = 's';  // override
+    } else if (formatAttr.isString()) {
+        if (fmt == 'h' || fmt == 'x') {
+            // V3Width errors on const %x of string, but V3Randomize may make a %x on a
+            // string, or may have a runtime format
+            V3Number strwide{fl, static_cast<int>(toString().length()) * 8, 0};
+            strwide.opNToI(*this);
+            return strwide.displayed(fl, vformat, VFormatAttr::UNSIGNED);
+        }
+        if (fmt != 'p') fmt = 's';  // override
+    } else if (formatAttr.isSigned() || formatAttr.isUnsigned()) {
+        if (fmt == 'p') {
+            if (fmtsize == "0") {  // For %0p, IEEE our choice, use 'h%0h
+                str += "'h";
+                fmt = 'h';
+            } else {  // UVM tests require %0d
+                fmtsize = "0";
+                fmt = 'd';
+            }
+        }
+    } else if (formatAttr.isDouble()) {
+        // 'p' not converted to 'g' here as vformat string can't be easily changed
+        if (!(fmt == 'e' || fmt == 'f' || fmt == 'g' || fmt == 'p'
+              || VL_UNCOVERABLE(fmt == 't'))) {
+            // A non-float format with a float, must convert to integer then format
+            V3Number nonfloat{fl, 64, 0};
+            nonfloat.opRToIRoundS(*this);
+            return nonfloat.displayed(fl, vformat, VFormatAttr::SIGNED);
+        }
+    }
+
+    switch (fmt) {
+    case 'c': {
+        if (width() > 8)
+            fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
+        const unsigned int v = bitsValue(0, 8);
+        str.push_back(static_cast<char>(v));
+        return str;
+    }
+    case 'e':  // FALLTHRU
+    case 'f':  // FALLTHRU
+    case 'g': {
+        const double n = formatAttr.isDouble()   ? toDouble()
+                         : formatAttr.isSigned() ? toSQuad()
+                                                 : toUQuad();
+        char tmp[MAX_SPRINTF_DOUBLE_SIZE];
+        VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), n);
+        return tmp;
+    }
+    case 's': {
+        if (formatAttr.isString() || formatAttr.isComplex()) {
+            str = toString();
+        } else {
+            // Spec says always drop leading zeros, this isn't quite right, we space pad.
+            int bit = width() - 1;
+            bool start = true;
+            while ((bit % 8) != 7) ++bit;
+            for (; bit >= 0; bit -= 8) {
+                const int v = bitsValue(bit - 7, 8);
+                if (!start || v) {
+                    str += static_cast<char>((v == 0) ? ' ' : v);
+                    start = false;  // Drop leading 0s
+                } else {
+                    if (fmtsize != "0") str += ' ';
+                }
+            }
+        }
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, ' ', left, str);
+        return str;
+    }
+    case 'p': {  // Pattern
+        // 'p' with NUMBER was earlier converted to 'd'
+        if (formatAttr.isDouble()) {
+            const double n = formatAttr.isDouble()   ? toDouble()
+                             : formatAttr.isSigned() ? toSQuad()
+                                                     : toUQuad();
+            char tmp[MAX_SPRINTF_DOUBLE_SIZE];
+            VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, "%g", n);
+            return tmp;
+        }
+        if (formatAttr.isString()) return '"' + toString() + '"';
+        if (formatAttr.isComplex()) return toString();
+        return "%p";
+    }
     case 'b':  // FALLTHRU
     case 'o':  // FALLTHRU
     case 'h':  // FALLTHRU
@@ -671,7 +766,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         if (left || !fmtsize.empty()) {
             while (bit && bitIs0(bit)) --bit;
         }
-        switch (code) {
+        switch (fmt) {
         case 'b': {
             for (; bit >= 0; --bit) {
                 if (bitIs0(bit)) {
@@ -747,35 +842,9 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         str = displayPad(fmtsizen, (left ? ' ' : '0'), left, str);
         return str;
     }  // case b/d/x/o
-    case 'c': {
-        if (width() > 8)
-            fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
-        const unsigned int v = bitsValue(0, 8);
-        str.push_back(static_cast<char>(v));
-        return str;
-    }
-    case 's': {
-        // Spec says always drop leading zeros, this isn't quite right, we space pad.
-        int bit = width() - 1;
-        bool start = true;
-        while ((bit % 8) != 7) ++bit;
-        for (; bit >= 0; bit -= 8) {
-            const int v = bitsValue(bit - 7, 8);
-            if (!start || v) {
-                str += static_cast<char>((v == 0) ? ' ' : v);
-                start = false;  // Drop leading 0s
-            } else {
-                if (fmtsize != "0") str += ' ';
-            }
-        }
-        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', left, str);
-        return str;
-    }
-    case '~':  // Signed decimal
     case 't':  // Time
     case 'd': {  // Unsigned decimal
-        const bool issigned = (code == '~');
+        const bool issigned = formatAttr.isSigned();
         if (fmtsize == "" && !left) {
             const double mantissabits = width() - (issigned ? 1 : 0);
             // To get the number of digits required, we want to compute
@@ -821,16 +890,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
         return str;
     }
-    case 'e':
-    case 'f':
-    case 'g':
-    case '^': {  // Realtime
-        char tmp[MAX_SPRINTF_DOUBLE_SIZE];
-        VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), toDouble());
-        return tmp;
-    }
     // 'l'   // Library - converted to text by V3LinkResolve
-    // 'p'   // Packed - converted to another code by V3Width
     case 'u': {  // Packed 2-state
         for (int i = 0; i < words(); ++i) {
             const uint32_t v = m_data.num()[i].m_value;
@@ -869,11 +929,6 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
                 str += "StX";
             }
         }
-        return str;
-    }
-    case '@': {  // Packed string
-        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
     default: fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
@@ -1532,8 +1587,9 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    if (rhsval > 8192) {
-        v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
+    if (v3Global.opt.replicationLimit() && rhsval > (uint32_t)v3Global.opt.replicationLimit()) {
+        v3warn(WIDTHCONCAT, "Replication of more that --replication-limit "
+                                << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
     setZero();
     int obit = 0;

@@ -4,23 +4,23 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
+  v95 v95 ();
+  v01nc v01nc ();
+  v01c v01c ();
+  v05 v05 ();
+  s05 s05 ();
+  s09 s09 ();
+  s12 s12 ();
+  s17 s17 ();
+  s23 s23 ();
 
-   v95 v95 ();
-   v01nc v01nc ();
-   v01c v01c ();
-   v05 v05 ();
-   s05 s05 ();
-   s09 s09 ();
-   s12 s12 ();
-   s17 s17 ();
-   s23 s23 ();
+  a23 a23 ();
 
-   a23 a23 ();
-
-   initial begin
-      $finish;
-   end
+  initial begin
+     $finish;
+  end
 endmodule
 
 `begin_keywords "1364-1995"

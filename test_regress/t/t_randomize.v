@@ -5,73 +5,73 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int header;  // 0..7
-   rand int length;  // 0..15
-   rand int sublength; // 0..15
-   rand bit if_4;
-   rand bit iff_5_6;
+  rand int header;  // 0..7
+  rand int length;  // 0..15
+  rand int sublength; // 0..15
+  rand bit if_4;
+  rand bit iff_5_6;
 
-   /*rand*/ int array[2];  // 2,4,6  // TODO: add rand when supported
+  rand int array[2];  // 2,4,6
 
-   constraint empty {}
+  constraint empty {}
 
-   constraint size {
-      header > 0 && header <= 7;
-      length <= 15;
-      length >= header;
-      length dist { [0:1], [2:5] :/ 2, 6 := 6, 7 := 10, 1};
-   }
+  constraint size {
+    header > 0 && header <= 7;
+    length <= 15;
+    length >= header;
+    length dist { [0:1], [2:5] :/ 2, 6 := 6, 7 := 10, 1};
+  }
 
-   constraint ifs {
-      if (header > 4) {
-         if_4 == '1;
-      }
-      if (header == 5 || header == 6) {
-         iff_5_6 == '1;
-      } else {
-         iff_5_6 == '0;
-      }
-   }
+  constraint ifs {
+    if (header > 4) {
+      if_4 == '1;
+    }
+    if (header == 5 || header == 6) {
+      iff_5_6 == '1;
+    } else {
+      iff_5_6 == '0;
+    }
+  }
 
-   constraint arr_uniq {
-      foreach (array[i]) {
-         array[i] inside {2, 4, 6};
-      }
-      unique { array[0], array[1] };
-   }
+  constraint arr_uniq {
+    foreach (array[i]) {
+      array[i] inside {2, 4, 6};
+    }
+    unique { array[0], array[1] };
+  }
 
-   constraint order { solve length before header; }
+  constraint order { solve length before header; }
 
-   constraint dis {
-      soft sublength;
-      disable soft sublength;
-      sublength <= length;
-   }
+  constraint dis {
+    soft sublength;
+    disable soft sublength;
+    sublength <= length;
+  }
 
 endclass
 
 module t;
 
-   Packet p;
+  Packet p;
 
-   initial begin
+  initial begin
 
-      automatic int v;
-      automatic bit if_4 = '0;
-      // TODO not testing constrained values
-      v = p.randomize();
-      if (v != 1) $stop;
-      v = p.randomize() with {};
-      if (v != 1) $stop;
-      v = p.randomize() with { if_4 == local::if_4; header == 2; };
-      if (v != 1) $stop;
-      // verilator lint_off WIDTH
-      assert(p.randomize && p.randomize);  // No parens, math
-      // verilator lint_on WIDTH
+    automatic int v;
+    automatic bit if_4 = '0;
+    p = new;
+    v = p.randomize();
+    if (v != 1) $stop;
+    v = p.randomize() with {};
+    if (v != 1) $stop;
+    v = p.randomize() with { if_4 == local::if_4; header == 2; };
+    if (v != 1) $stop;
+    // verilator lint_off WIDTH
+    assert(p.randomize && p.randomize);  // No parens, math
+    // verilator lint_on WIDTH
 
-      // TODO not testing other randomize forms as unused in UVM
+    // TODO not testing other randomize forms as unused in UVM
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

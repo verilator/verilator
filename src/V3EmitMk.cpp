@@ -285,7 +285,7 @@ private:
         if (m_logp) *m_logp << "Buckets assigned to Work Lists:\n";
         int availableBuckets = v3Global.opt.outputGroups();
         for (WorkList* listp : m_concatenableListsByDescSize) {
-            if (availableBuckets > 0) {
+            if (availableBuckets > 0 && idealBucketScore > 0) {
                 listp->m_bucketsNum = std::min(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
@@ -806,9 +806,8 @@ class EmitMkHierVerilation final {
     const V3HierGraph* const m_graphp;
     const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {
-        const string cwd = V3Os::filenameRealPath(".");
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
-        of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
+        of.puts("VM_HIER_RUN_DIR := " + V3Os::cwd() + "\n");
         of.puts("# Common options for hierarchical blocks\n");
         const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.buildDepBin());
         const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";

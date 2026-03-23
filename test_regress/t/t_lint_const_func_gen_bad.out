@@ -1,12 +1,12 @@
-%Error: t/t_lint_const_func_gen_bad.v:11:30: Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)
+%Error: t/t_lint_const_func_gen_bad.v:11:28: Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)
                                            : ... note: In instance 't'
-   11 |       function automatic bit constFunc();
-      |                              ^~~~~~~~~
+   11 |     function automatic bit constFunc();
+      |                            ^~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_const_func_gen_bad.v:15:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'constFunc'
+%Error: t/t_lint_const_func_gen_bad.v:15:24: Expecting expression to be constant, but can't determine constant for FUNCREF 'constFunc'
                                            : ... note: In instance 't'
-        t/t_lint_const_func_gen_bad.v:11:30: ... Location of non-constant FUNC 'constFunc': Constant function called under generate
-        t/t_lint_const_func_gen_bad.v:15:26: ... Called from 'constFunc()' with parameters:
-   15 |       localparam PARAM = constFunc();
-      |                          ^~~~~~~~~
+        t/t_lint_const_func_gen_bad.v:11:28: ... Location of non-constant FUNC 'constFunc': Constant function called under generate
+        t/t_lint_const_func_gen_bad.v:15:24: ... Called from 'constFunc()' with parameters:
+   15 |     localparam PARAM = constFunc();
+      |                        ^~~~~~~~~
 %Error: Exiting due to

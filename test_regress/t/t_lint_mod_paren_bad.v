@@ -9,11 +9,11 @@
 
 module t
   (
-   FOO=1
-   ) (
-      output bar
-      );
+  FOO=1
+  ) (
+    output bar
+    );
 
-   assign bar = FOO;
+  assign bar = FOO;
 
 endmodule

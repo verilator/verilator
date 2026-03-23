@@ -4,30 +4,32 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t;
 
-   logic [3:0] foo [1:0];
-   logic [3:0] fooe [1:0];
-   initial begin
-      foo[0] = 4'b0101;
-      foo[1] = 4'b0011;
+  logic [3:0] foo[1:0];
+  logic [3:0] fooe[1:0];
+  initial begin
+    foo[0] = 4'b0101;
+    foo[1] = 4'b0011;
 
-      `checkh(foo.or, 4'b0111);
-      `checkh(foo.and, 4'b0001);
-      `checkh(foo.xor, 4'b0110);
-      `checkh(foo.sum, 4'b1000);
-      `checkh(foo.product, 4'b1111);
+    `checkh(foo.or, 4'b0111);
+    `checkh(foo.and, 4'b0001);
+    `checkh(foo.xor, 4'b0110);
+    `checkh(foo.sum, 4'b1000);
+    `checkh(foo.product, 4'b1111);
 
-      fooe[0] = 4'b0101;
-      fooe[1] = 4'b0011;
-      if (foo != fooe) $stop;
+    fooe[0] = 4'b0101;
+    fooe[1] = 4'b0011;
+    if (foo != fooe) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

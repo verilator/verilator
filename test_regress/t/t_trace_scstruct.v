@@ -10,18 +10,17 @@
 //bug858
 
 typedef struct packed {
-    logic m_1;
-    logic m_2;
+  logic m_1;
+  logic m_2;
 } struct_t;
 
 typedef struct packed {
-    logic [94:0] m_1;
-    logic m_2;
+  logic [94:0] m_1;
+  logic m_2;
 } struct96_t;
 
-module t
-  (
-   input struct_t   test_input,
-   input struct96_t t96
-   );
+module t (
+    input struct_t test_input,
+    input struct96_t t96
+);
 endmodule

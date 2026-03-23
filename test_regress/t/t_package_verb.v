@@ -6,18 +6,20 @@
 
 // bug474
 package verb_pkg;
-   typedef enum int {VERB_I,
-                     VERB_W} Verb_t;
-   Verb_t  verb = VERB_I;
-   string message = " ";
+  typedef enum int {
+    VERB_I,
+    VERB_W
+  } Verb_t;
+  Verb_t verb = VERB_I;
+  string message = " ";
 endpackage
 
 module t;
-   import verb_pkg::*;
+  import verb_pkg::*;
 
-   string message  = "*x*";
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  string message = "*x*";
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

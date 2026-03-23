@@ -276,6 +276,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
 void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     bool noblanks = forInputs || (v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine());
     bool nolines = forInputs;
+    bool anyNonVerilog = false;
     for (auto& buf : m_ppBuffers) {
         if (noblanks) {
             bool blank = true;
@@ -287,9 +288,12 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
             }
             if (blank) continue;
             if (nolines && buf.rfind("`line ", 0) == 0) continue;
+            // Ignores comments, but over-positive match search should be ok
+            if (forInputs && buf.rfind("`verilator_config", 0) == 0) anyNonVerilog = true;
         }
         os << buf;
     }
+    if (forInputs && anyNonVerilog) os << "\n`verilog\n";
 }
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,

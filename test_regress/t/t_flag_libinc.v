@@ -5,23 +5,23 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module liblib_a;
-   liblib_b b ();
+  liblib_b b ();
 endmodule
 
 module liblib_b;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module liblib_c;
-   // Unused
-   initial $stop;
-   liblib_d d ();
+  // Unused
+  initial $stop;
+  liblib_d d ();
 endmodule
 
 module liblib_d;
-   // Unused
-   initial $stop;
+  // Unused
+  initial $stop;
 endmodule

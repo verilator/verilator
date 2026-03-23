@@ -7,17 +7,17 @@
 int x = 0;
 
 function int increment_x;
-   x++;
-   return x;
+  x++;
+  return x;
 endfunction
 
 module t;
 
-   initial begin
-      fork
-         increment_x();
-         #1 disable increment_x;
-      join
-   end
+  initial begin
+    fork
+      increment_x();
+      #1 disable increment_x;
+    join
+  end
 
 endmodule

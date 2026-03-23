@@ -9,35 +9,31 @@
 // SPDX-FileCopyrightText: 2021 Dan Petrisko
 // SPDX-License-Identifier: CC0-1.0
 
-module top(/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module top (
+    input clk
+);
 
-   always_ff @(posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish();
-   end
+  always_ff @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish();
+  end
 
-   under under();
+  under under ();
 
 endmodule
 
-module under(/*AUTOARG*/
-   );
+module under;
 
 endmodule
 
-module faketop(/*AUTOARG*/
-   );
+module faketop;
 
-   under under();
-   top top();
+  under under ();
+  top top ();
 
-   // Stop immediately if this module is instantiated
-   initial begin
-     $stop();
-   end
+  // Stop immediately if this module is instantiated
+  initial begin
+    $stop();
+  end
 
 endmodule

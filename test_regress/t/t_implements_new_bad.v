@@ -8,10 +8,10 @@ interface class Icls;
 endclass
 
 module t;
-   Icls c;
-   initial begin
-      c = new;  // Bad
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  Icls c;
+  initial begin
+    c = new;  // Bad
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -5,25 +5,25 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      for (int i = 0; i < 3; i++) begin
-         begin : blk
-            int x;
-            fork : fork_blk
-               begin
-                  x = 1;
-                  #2;
-                  x = 2;
-               end
-            join_none
-            #1;
-            if (i < 2) disable fork_blk;
+  initial begin
+    for (int i = 0; i < 3; i++) begin
+      begin : blk
+        int x;
+        fork : fork_blk
+          begin
+            x = 1;
             #2;
-            if (i < 2 && x != 1) $stop;
-            if (i == 2 && x != 2) $stop;
-         end
+            x = 2;
+          end
+        join_none
+        #1;
+        if (i < 2) disable fork_blk;
+        #2;
+        if (i < 2 && x != 1) $stop;
+        if (i == 2 && x != 2) $stop;
       end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 Tony Bybell.
+ * Copyright (c) 2009-2026 Tony Bybell.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -108,7 +108,8 @@ enum fstScopeType
     FST_ST_VHDL_GENERATE = 20,
     FST_ST_VHDL_PACKAGE = 21,
 
-    FST_ST_MAX = 21,
+    FST_ST_SV_ARRAY = 22,
+    FST_ST_MAX = 22,
 
     FST_ST_GEN_ATTRBEGIN = 252,
     FST_ST_GEN_ATTREND = 253,

@@ -11,36 +11,69 @@
 // then caused V3Inline to blow up as it assumes that.
 
 module top #(
-    parameter N=8
+    parameter N = 8
 ) (
-    input   wire  [N-1:0] i,
-    output  wire  [N-1:0] o,
-    output  wire  [N-1:0] a
+    input wire [N-1:0] i,
+    output wire [N-1:0] o,
+    output wire [N-1:0] a
 );
 
-sub #(.N(N)) inst(.i(i), .o(a));
+  sub #(
+      .N(N)
+  ) inst (
+      .i(i),
+      .o(a)
+  );
 
-generate if (N > 1) begin: recursive
-    top #(.N(N/2)) hi(.i(i[N   - 1:N/2]), .o(o[N   - 1:N/2]), .a());
-    top #(.N(N/2)) lo(.i(i[N/2 - 1:  0]), .o(o[N/2 - 1:  0]), .a());
-end else begin: base
-    assign o = i;
-end endgenerate
+  generate
+    if (N > 1) begin : recursive
+      top #(
+          .N(N / 2)
+      ) hi (
+          .i(i[N-1:N/2]),
+          .o(o[N-1:N/2]),
+          .a()
+      );
+      top #(
+          .N(N / 2)
+      ) lo (
+          .i(i[N/2-1:0]),
+          .o(o[N/2-1:0]),
+          .a()
+      );
+    end
+    else begin : base
+      assign o = i;
+    end
+  endgenerate
 
 endmodule
 
 module sub #(
     parameter N = 8
 ) (
-    input   wire  [N-1:0] i,
-    output  wire  [N-1:0] o
+    input wire [N-1:0] i,
+    output wire [N-1:0] o
 );
 
-generate if (N > 1) begin: recursive
-    sub #(.N(N/2)) hi(.i(i[N   - 1:N/2]), .o(o[N   - 1:N/2]));
-    sub #(.N(N/2)) lo(.i(i[N/2 - 1:  0]), .o(o[N/2 - 1:  0]));
-end else begin: base
-    assign o = i;
-end endgenerate
+  generate
+    if (N > 1) begin : recursive
+      sub #(
+          .N(N / 2)
+      ) hi (
+          .i(i[N-1:N/2]),
+          .o(o[N-1:N/2])
+      );
+      sub #(
+          .N(N / 2)
+      ) lo (
+          .i(i[N/2-1:0]),
+          .o(o[N/2-1:0])
+      );
+    end
+    else begin : base
+      assign o = i;
+    end
+  endgenerate
 
 endmodule

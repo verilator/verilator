@@ -4,16 +4,16 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
-   sub #(.Z(0)) sub1 ();
-   sub #(.Z(1)) sub2 ();
-   sub #(.Z(2)) sub3 ();
+  sub #(.Z(0)) sub1 ();
+  sub #(.Z(1)) sub2 ();
+  sub #(.Z(2)) sub3 ();
 
 endmodule
 
 module sub;
-   parameter Z = 0;
-   wire [1:0] a = 2'b11;
-   wire [0:0] b = a;
+  parameter Z = 0;
+  wire [1:0] a = 2'b11;
+  wire [0:0] b = a;
 endmodule

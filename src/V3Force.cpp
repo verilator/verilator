@@ -205,6 +205,7 @@ public:
                 return currInitp;
             } else {
                 lhsDtypep->v3fatalSrc("Unhandled type");
+                return nullptr;  // LCOV_EXCL_LINE
             }
         }
         static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,
@@ -241,6 +242,7 @@ public:
 
 private:
     // NODE STATE
+    //  AstNodeDType::user1p  -> AstNodeDType*, dtype created for __En variables
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
@@ -264,7 +266,7 @@ private:
         if (const AstUnpackArrayDType* const udtp = VN_CAST(dtp, UnpackArrayDType)) {
             const size_t elemsInSubDType = checkIfDTypeSupportedRecurse(udtp->subDTypep(), varp);
             return udtp->elementsConst() * elemsInSubDType;
-        } else if (const AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType)) {
+        } else if (const AstStructDType* const sdtp = VN_CAST(dtp, StructDType)) {
             size_t elemCount = 0;
             for (const AstMemberDType* mdtp = sdtp->membersp(); mdtp;
                  mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
@@ -287,26 +289,117 @@ private:
             return 1;
         }
     }
-    static AstNodeDType* getEnVarpDTypep(const AstVar* const varp) {
+    static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        if (origDTypep->user1p()) return VN_AS(origDTypep->user1p(), NodeDType);
         const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
-        }
-        if (VN_IS(origDTypep, UnpackArrayDType)) {
-            return origDTypep;
-        } else if (VN_IS(origDTypep, BasicDType)) {
-            return isRangedDType(varp) ? origDTypep : varp->findBitDType();
-        } else if (VN_IS(origDTypep, PackArrayDType)) {
-            return origDTypep;
-        } else if (VN_IS(origDTypep, NodeUOrStructDType)) {
-            return origDTypep;
-        } else {
-            varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
             return origDTypep;
         }
+        return getEnVarpDTypeRecursep(varp, origDTypep);
+    }
+    static AstNodeDType* getEnVarpDTypeRecursep(AstVar* const varp, AstNodeDType* const dtypep) {
+        if (dtypep->user1p()) return VN_AS(dtypep->user1p(), NodeDType);
+        if (AstNodeArrayDType* const arrp = VN_CAST(dtypep, NodeArrayDType)) {
+            AstNodeDType* const subDTypep = arrp->subDTypep()->skipRefp();
+            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, subDTypep);
+            if (subDTypep != enSubDTypep) {
+                AstNodeArrayDType* enArrp;
+                if (VN_IS(arrp, UnpackArrayDType)) {
+                    enArrp = new AstUnpackArrayDType{arrp->fileline(), enSubDTypep,
+                                                     arrp->rangep()->cloneTree(false)};
+                } else if (VN_IS(arrp, PackArrayDType)) {
+                    enArrp = new AstPackArrayDType{arrp->fileline(), enSubDTypep,
+                                                   arrp->rangep()->cloneTree(false)};
+                } else {
+                    varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+                    return dtypep;
+                }
+                dtypep->user1p(enArrp);
+                v3Global.rootp()->typeTablep()->addTypesp(enArrp);
+                return enArrp;
+            } else {
+                dtypep->user1p(dtypep);
+                return dtypep;
+            }
+        } else if (AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+            if (basicp->isBit()) {
+                dtypep->user1p(dtypep);
+                return dtypep;
+            } else {
+                AstNodeDType* const bitDtp = varp->findBitRangeDType(
+                    basicp->declRange(), basicp->elements(), VSigning::UNSIGNED);
+                dtypep->user1p(bitDtp);
+                return bitDtp;
+            }
+        } else if (AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            std::vector<AstMemberDType*> enMemberDTypes;
+            bool changed = false;
+            for (AstMemberDType* mdtp = structp->membersp(); mdtp;
+                 mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
+                AstNodeDType* const subMdtp = mdtp->subDTypep()->skipRefp();
+                AstNodeDType* const enSubMdtp = getEnVarpDTypeRecursep(varp, subMdtp);
+                if (subMdtp != enSubMdtp) {
+                    changed = true;
+                    AstMemberDType* const enMdtp
+                        = new AstMemberDType{mdtp->fileline(), mdtp->name(), enSubMdtp};
+                    enMdtp->dtypep(enSubMdtp);
+                    enMemberDTypes.push_back(enMdtp);
+                } else {
+                    enMemberDTypes.push_back(mdtp->cloneTreePure(false));
+                }
+            }
+            if (changed) {
+                const bool packed = structp->packed();
+                AstNodeUOrStructDType* enStructp;
+                if (VN_IS(structp, StructDType)) {
+                    enStructp = new AstStructDType{structp->fileline(),
+                                                   packed ? VSigning::SIGNED : VSigning::NOSIGN};
+                } else if (VN_IS(structp, UnionDType) && packed) {
+                    const AstUnionDType* const unionp = VN_AS(structp, UnionDType);
+                    enStructp = new AstUnionDType{unionp->fileline(), unionp->isSoft(),
+                                                  unionp->isTagged(), VSigning::SIGNED};
+                } else {
+                    varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+                    return dtypep;
+                }
+                int width = 0;
+                if (packed) {
+                    for (const auto& memberp : enMemberDTypes) {
+                        enStructp->addMembersp(memberp);
+                        const int memberWidth = memberp->width();
+                        if (VN_IS(structp, StructDType)) {
+                            width += memberWidth;
+                        } else {
+                            width = std::max(width, memberWidth);
+                        }
+                    }
+                } else {
+                    for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
+                    width = 1;
+                }
+                v3Global.rootp()->typeTablep()->addTypesp(enStructp);
+                enStructp->name(structp->name() + "__VforceEn_t");
+                enStructp->dtypep(enStructp);
+                enStructp->widthForce(width, width);
+                enStructp->classOrPackagep(structp->classOrPackagep());
+                dtypep->user1p(enStructp);
+                AstTypedef* const typedefp
+                    = new AstTypedef{enStructp->fileline(), enStructp->name(), enStructp,
+                                     VN_IS(enStructp->classOrPackagep(), Class)};
+                varp->addNextHere(typedefp);
+                return enStructp;
+            } else {
+                for (const auto& memberp : enMemberDTypes) memberp->deleteTree();
+                dtypep->user1p(dtypep);
+                return dtypep;
+            }
+        }
+        varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+        return dtypep;
     }
 
 public:
@@ -442,40 +535,30 @@ class ForceConvertVisitor final : public VNVisitor {
         // continuous assignment shall reestablish that assignment and schedule a reevaluation in
         // the continuous assignment's scheduling region.
         AstAssign* const resetRdp
-            = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
+            = new AstAssign{flp, lhsp->unlinkFrBack(), lhsp->cloneTreePure(false)};
         resetRdp->user2(true);
-        // Replace write refs on the LHS
-        resetRdp->lhsp()->foreach([this](AstVarRef* refp) {
-            if (refp->access() != VAccess::WRITE) return;
-            AstVarScope* const vscp = refp->varScopep();
-            if (vscp->varp()->isContinuously()) {
-                AstVarRef* const newpRefp = new AstVarRef{
-                    refp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
-                refp->replaceWith(newpRefp);
-                VL_DO_DANGLING(refp->deleteTree(), refp);
-            }
-        });
-        // Replace write refs on RHS
-        if (VN_IS(resetRdp->rhsp(), ArraySel) || VN_IS(resetRdp->rhsp(), StructSel)) {
-            AstVarRef* const refp
-                = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
-            AstVarScope* const vscp = refp->varScopep();
-            AstNodeExpr* const origRhsp = resetRdp->rhsp();
-            origRhsp->replaceWith(
-                m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, refp));
-            VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
+        AstVarRef* const refp = VN_AS(AstNodeVarRef::varRefLValueRecurse(lhsp), VarRef);
+        AstVarScope* const vscp = refp->varScopep();
+        AstVarRef* const rhsRefp = refp->clonep();
+
+        if (vscp->varp()->isContinuously()) {
+            AstVarRef* const lhsRefp = new AstVarRef{
+                refp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
+            refp->replaceWith(lhsRefp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+            rhsRefp->access(VAccess::READ);
+            ForceState::markNonReplaceable(rhsRefp);
         } else {
-            resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
-                if (refp->access() != VAccess::WRITE) return;
-                AstVarScope* const vscp = refp->varScopep();
-                if (vscp->varp()->isContinuously()) {
-                    refp->access(VAccess::READ);
-                    ForceState::markNonReplaceable(refp);
-                } else {
-                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
-                    VL_DO_DANGLING(refp->deleteTree(), refp);
-                }
-            });
+            if (rhsRefp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                // In this case var ref can be replaced with expression
+                rhsRefp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
+                VL_DO_DANGLING(rhsRefp->deleteTree(), rhsRefp);
+            } else {
+                AstNodeExpr* const origRhsp = resetRdp->rhsp();
+                origRhsp->replaceWith(
+                    m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, rhsRefp));
+                VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
+            }
         }
 
         resetRdp->addNext(resetEnp);

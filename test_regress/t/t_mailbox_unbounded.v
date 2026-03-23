@@ -6,25 +6,25 @@
 // verilator lint_off DECLFILENAME
 
 module t;
-   mailbox #(int) m;
-   int     msg = 0;
-   int     out = 0;
+  mailbox #(int) m;
+  int msg = 0;
+  int out = 0;
 
-   initial begin
-      m = new;
-      fork
-         begin
-            #10;  // So later then get() starts below
-            msg = 1;
-            if (m.try_put(msg) != 1) $stop;
-         end
-         begin
-            m.get(out);
-            if (out != 1) $stop;
-         end
-      join
+  initial begin
+    m = new;
+    fork
+      begin
+        #10;  // So later then get() starts below
+        msg = 1;
+        if (m.try_put(msg) != 1) $stop;
+      end
+      begin
+        m.get(out);
+        if (out != 1) $stop;
+      end
+    join
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

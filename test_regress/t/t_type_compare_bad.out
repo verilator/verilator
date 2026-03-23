@@ -1,6 +1,6 @@
-%Error: t/t_type_compare_bad.v:12:9: Case(type) statement requires items that have type() items
+%Error: t/t_type_compare_bad.v:12:7: Case(type) statement requires items that have type() items
                                    : ... note: In instance 't'
-   12 |         1: $stop;   
-      |         ^
+   12 |       1: $stop;   
+      |       ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

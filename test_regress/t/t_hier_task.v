@@ -5,44 +5,44 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module mod_a;
-   mod_inner u_inner();
-   mod_a_mon u_a_mon();
+  mod_inner u_inner ();
+  mod_a_mon u_a_mon ();
 
-   initial begin
-      bit x;
+  initial begin
+    bit x;
 
-      u_inner.x = 1;
-      u_a_mon.y = 0;
-      u_a_mon.accessor;
+    u_inner.x = 1;
+    u_a_mon.y = 0;
+    u_a_mon.accessor;
 
-      if (u_a_mon.y != 1) begin
-         $write("%%Error: Incorrect value placed in submodule\n");
-         $stop;
-      end
+    if (u_a_mon.y != 1) begin
+      $write("%%Error: Incorrect value placed in submodule\n");
+      $stop;
+    end
 
-      u_inner.x = 0;
-      u_a_mon.accessor;
+    u_inner.x = 0;
+    u_a_mon.accessor;
 
-      if (u_a_mon.y != 0) begin
-         $write("%%Error: Incorrect value placed in submodule\n");
-         $stop;
-      end
+    if (u_a_mon.y != 0) begin
+      $write("%%Error: Incorrect value placed in submodule\n");
+      $stop;
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule : mod_a
 
 module mod_inner;
-   logic x;
+  logic x;
 endmodule : mod_inner
 
 module mod_a_mon;
-   bit y;
-   function automatic void accessor;
-      begin : accessor_block
-         bit read_x = mod_a.u_inner.x;
-         y = read_x;
-      end
-   endfunction
+  bit y;
+  function automatic void accessor;
+    begin : accessor_block
+      bit read_x = mod_a.u_inner.x;
+      y = read_x;
+    end
+  endfunction
 endmodule

@@ -1,6 +1,6 @@
-%Error: t/t_disable_iff_multi_bad.v:14:4: Only one 'default disable iff' allowed per module (IEEE 1800-2023 16.15)
+%Error: t/t_disable_iff_multi_bad.v:12:3: Only one 'default disable iff' allowed per module (IEEE 1800-2023 16.15)
                                         : ... note: In instance 't'
-   14 |    default disable iff (!rstn);
-      |    ^~~~~~~
+   12 |   default disable iff (!rstn);
+      |   ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

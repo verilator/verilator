@@ -6,14 +6,18 @@
 
 module t;
 
-class Cls;
-   typedef enum {A = 10, B = 20, C = 30} en_t;
-endclass
+  class Cls;
+    typedef enum {
+      A = 10,
+      B = 20,
+      C = 30
+    } en_t;
+  endclass
 
-   initial begin
-      Cls c;
-      if (c.A != 10) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Cls c;
+    if (c.A != 10) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

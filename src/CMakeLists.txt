@@ -65,11 +65,13 @@ set(HEADERS
     V3Clock.h
     V3Combine.h
     V3Common.h
-    V3Control.h
     V3Const.h
+    V3Container.h
+    V3Control.h
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
+    V3DebugBisect.h
     V3Delayed.h
     V3Depth.h
     V3DepthBlock.h
@@ -120,6 +122,7 @@ set(HEADERS
     V3LanguageWords.h
     V3Life.h
     V3LifePost.h
+    V3LiftExpr.h
     V3LinkCells.h
     V3LinkDot.h
     V3LinkDotIfaceCapture.h
@@ -241,7 +244,6 @@ set(COMMON_SOURCES
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
     V3DfgBreakCycles.cpp
-    V3DfgCache.cpp
     V3DfgColorSCCs.cpp
     V3DfgCse.cpp
     V3DfgDataType.cpp
@@ -294,6 +296,7 @@ set(COMMON_SOURCES
     V3LibMap.cpp
     V3Life.cpp
     V3LifePost.cpp
+    V3LiftExpr.cpp
     V3LinkCells.cpp
     V3LinkDot.cpp
     V3LinkDotIfaceCapture.cpp

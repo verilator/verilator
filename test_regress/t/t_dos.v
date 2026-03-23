@@ -5,17 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // This file has DOS carrage returns in it!
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-
-   always @ (posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 // This file has DOS carrage returns in it!

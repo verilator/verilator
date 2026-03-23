@@ -7,77 +7,71 @@
 `define CONCAT(a, b) a``b
 `define STRINGIFY(x) `"x`"
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  integer cyc;
+  initial cyc = 1;
+  integer c_trace_on;
 
-   integer cyc; initial cyc=1;
-   integer c_trace_on;
+  sub sub ();
 
-   sub sub ();
+  // verilator tracing_off
+  string filename;
+  // verilator tracing_on
 
-   // verilator tracing_off
-   string  filename;
-   // verilator tracing_on
-
-   initial begin
-`ifdef TEST_FST
-      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.fst"};
-`else
-      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.vcd"};
-`endif
+  initial begin
+    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.", `STRINGIFY(`TRACE_FMT)};
 
 `ifdef TEST_DUMP
-      $dumpfile(filename);
-      $dumpvars(0);  // Intentionally no ", top" for parsing coverage with just (expr)
-      $dumpvars(1, top);  // Intentionally checking parsing coverage
-      $dumpvars(1, top, top);  // Intentionally checking parsing coverage
-      $dumplimit(10 * 1024 * 1024);
+    $dumpfile(filename);
+    $dumpvars(0);  // Intentionally no ", top" for parsing coverage with just (expr)
+    $dumpvars(1, top);  // Intentionally checking parsing coverage
+    $dumpvars(1, top, top);  // Intentionally checking parsing coverage
+    $dumplimit(10 * 1024 * 1024);
 `elsif TEST_DUMPPORTS
-      $dumpports(top, filename);
-      $dumpportslimit(10 * 1024 * 1024, filename);
+    $dumpports(top, filename);
+    $dumpportslimit(10 * 1024 * 1024, filename);
 `endif
-   end
+  end
 
-   always @ (posedge clk) begin
-      if (cyc != 0) begin
-         cyc <= cyc + 1;
-         c_trace_on <= cyc + 2;
-         if (cyc == 3) begin
+  always @(posedge clk) begin
+    if (cyc != 0) begin
+      cyc <= cyc + 1;
+      c_trace_on <= cyc + 2;
+      if (cyc == 3) begin
 `ifdef TEST_DUMP
-            $dumpoff;
+        $dumpoff;
 `elsif TEST_DUMPPORTS
-            $dumpportsoff(filename);
+        $dumpportsoff(filename);
 `endif
-         end
-         else if (cyc == 5) begin
-`ifdef TEST_DUMP
-            $dumpall;
-            $dumpflush;
-`elsif TEST_DUMPPORTS
-            $dumpportsall(filename);
-            $dumpportsflush(filename);
-`endif
-         end
-         else if (cyc == 7) begin
-`ifdef TEST_DUMP
-            $dumpon;
-`elsif TEST_DUMPPORTS
-            $dumpportson(filename);
-`endif
-         end
-         else if (cyc == 10) begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
       end
-   end
+      else if (cyc == 5) begin
+`ifdef TEST_DUMP
+        $dumpall;
+        $dumpflush;
+`elsif TEST_DUMPPORTS
+        $dumpportsall(filename);
+        $dumpportsflush(filename);
+`endif
+      end
+      else if (cyc == 7) begin
+`ifdef TEST_DUMP
+        $dumpon;
+`elsif TEST_DUMPPORTS
+        $dumpportson(filename);
+`endif
+      end
+      else if (cyc == 10) begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+    end
+  end
 
 endmodule
 
 module sub;
-   integer inside_sub_a = 1;
+  integer inside_sub_a = 1;
 endmodule

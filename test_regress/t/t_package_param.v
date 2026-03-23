@@ -9,31 +9,29 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package defs;
-   parameter NUMBER = 8;
-   localparam NUM = NUMBER;
+  parameter NUMBER = 8;
+  localparam NUM = NUMBER;
 endpackage
 
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-   import defs::*;
+  import defs::*;
 
-   // This also fails if we use localparam
-   parameter NUM = 32;
+  // This also fails if we use localparam
+  parameter NUM = 32;
 
-   // Check we have the right definition
-   always @(posedge clk) begin
-      if (NUM == 32) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $stop;
-      end
-   end
+  // Check we have the right definition
+  always @(posedge clk) begin
+    if (NUM == 32) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    else begin
+      $stop;
+    end
+  end
 
 endmodule

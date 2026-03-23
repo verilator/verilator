@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define FOO
 `define BAR(aa,bb) aa bb
 `FOO

@@ -7,30 +7,30 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   integer infile, outfile;
-   integer count, a;
+  integer infile, outfile;
+  integer count, a;
 
-   initial begin
-      infile = $fopen("t/t_sys_file_scan.dat", "r");
-      outfile = $fopen({`STRINGIFY(`TEST_OBJ_DIR),"/t_sys_file_scan_test.log"}, "w");
+  initial begin
+    infile = $fopen("t/t_sys_file_scan.dat", "r");
+    outfile = $fopen({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_file_scan_test.log"}, "w");
 
-      count = 1234;
+    count = 1234;
 `ifdef TEST_VERBOSE
-      $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
+    $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
 `endif
-      count = $fscanf(infile, "%d\n", a);
+    count = $fscanf(infile, "%d\n", a);
 `ifdef TEST_VERBOSE
-      // Ifdefing this out gave bug248
-      $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
+    // Ifdefing this out gave bug248
+    $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
 `endif
-      if (count == 0) $stop;
-      $fwrite(outfile, "# a\n");
-      $fwrite(outfile, "%d\n", a);
-      $fclose(infile);
-      $fclose(outfile);
+    if (count != 1) $stop;
+    $fwrite(outfile, "# a\n");
+    $fwrite(outfile, "%d\n", a);
+    $fclose(infile);
+    $fclose(outfile);
 
-      $write("*-* All Finished *-*\n");
-      $finish(0);  // Test arguments to finish
-   end
+    $write("*-* All Finished *-*\n");
+    $finish(0);  // Test arguments to finish
+  end
 
 endmodule

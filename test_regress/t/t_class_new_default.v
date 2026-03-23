@@ -6,23 +6,23 @@
 
 
 class ClsDef;
-   int imembera;
-   function new(default);
-      imembera = i + 1;
-   endfunction
+  int imembera;
+  function new(default);
+    imembera = i + 1;
+  endfunction
 endclass
 
 class ClsDefFwd;
-   int imembera;
-   extern function new(default);
+  int imembera;
+  extern function new(default);
 endclass
 
 function ClsDefFwd::new(default);
 endfunction
 
 module t;
-   initial begin
-      // TODO real test
-      $stop;
-   end
+  initial begin
+    // TODO real test
+    $stop;
+  end
 endmodule

@@ -4,15 +4,15 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
-   typedef integer q_t[$];
+module t;
+  typedef integer q_t[$];
 
-   function void queue_set(ref q_t q);
-      q.push_back(42);
-   endfunction
+  function void queue_set(ref q_t q);
+    q.push_back(42);
+  endfunction
 
-   initial begin
-      q_t iq;
-      queue_set(42);  // 42 is bad, meant iq
-   end
+  initial begin
+    q_t iq;
+    queue_set(42);  // 42 is bad, meant iq
+  end
 endmodule

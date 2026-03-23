@@ -437,6 +437,9 @@ std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
     return VL_TO_STRING_W(N_Words, obj.data());
 }
 
+template <typename T_Class>
+class VlClassRef;
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -447,6 +450,9 @@ std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
 template <typename T_Value, size_t N_MaxSize = 0>
 class VlQueue final {
 private:
+    template <typename U_Value, size_t M_MaxSize>
+    friend class VlQueue;
+
     // TYPES
     using Deque = std::deque<T_Value>;
 
@@ -469,6 +475,13 @@ public:
     VlQueue(VlQueue&&) = default;
     VlQueue& operator=(const VlQueue&) = default;
     VlQueue& operator=(VlQueue&&) = default;
+
+    // Template constuctors that construct from containers holding sub-classes
+    template <typename T_Subclass>
+    inline VlQueue(const VlQueue<VlClassRef<T_Subclass>>&);
+    template <typename T_Subclass>
+    inline VlQueue(VlQueue<VlClassRef<T_Subclass>>&&);
+
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
     bool operator<(const VlQueue& rhs) const {
@@ -633,6 +646,24 @@ public:
     }
     VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
         return slice(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb);
+    }
+    // Assign src elements to q[lsb:msb]
+    void sliceAssign(int32_t lsb, int32_t msb, const VlQueue& src) {
+        const int32_t sz = static_cast<int32_t>(m_deque.size());
+        const int32_t srcSz = static_cast<int32_t>(src.m_deque.size());
+        if (VL_UNLIKELY(sz <= 0 || srcSz <= 0)) return;
+        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
+        if (VL_UNLIKELY(lsb >= sz)) lsb = sz - 1;
+        if (VL_UNLIKELY(msb >= sz)) msb = sz - 1;
+        const int32_t count = std::min(msb - lsb + 1, srcSz);
+        if (VL_UNLIKELY(count <= 0)) return;
+        std::copy_n(src.m_deque.begin(), count, m_deque.begin() + lsb);
+    }
+    void sliceAssignFrontBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(lsb, m_deque.size() - 1 - msb, src);
+    }
+    void sliceAssignBackBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb, src);
     }
 
     // For save/restore
@@ -1909,7 +1940,10 @@ public:
 
 struct VlNull final {
     operator bool() const { return false; }
-    bool operator==(const void* ptr) const { return !ptr; }
+    template <class T>
+    operator T*() const {
+        return nullptr;
+    }
 };
 inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
@@ -1946,11 +1980,26 @@ public:
     VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
-        // () required here to avoid narrowing conversion warnings,
-        // when a new() has an e.g. CData type and passed a 1U.
-        : m_objp{new T_Class(std::forward<T_Args>(args)...)} {
-        // refCountInc was moved to the constructor of T_Class
-        // to fix self references in constructor.
+        : m_objp{new T_Class} {
+        // Instantly init the object to presevrve RAII
+        m_objp->init(std::forward<T_Args>(args)...);
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, T_Class&& args)
+        // Move constructor
+        : m_objp{new T_Class{std::forward<T_Class>(args)}} {
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, const T_Class& args)
+        // Copy constructor
+        : m_objp{new T_Class{args}} {
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, T_Class& args)
+        // Copy constructor - this is required since if `T_Class&`
+        // will be provided a compiler will match it to the constructor
+        // with variadic template instead of `T_Class&&`
+        : m_objp{new T_Class{args}} {
         m_objp->m_deleterp = &deleter;
     }
     // Explicit to avoid implicit conversion from 0
@@ -2144,5 +2193,18 @@ inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
 }
 
 //======================================================================
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_Subclass>
+VlQueue<T_Value, N_MaxSize>::VlQueue(const VlQueue<VlClassRef<T_Subclass>>& that)
+    : m_deque{that.m_deque.begin(), that.m_deque.end()}
+    , m_defaultValue{that.m_defaultValue} {}
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_Subclass>
+VlQueue<T_Value, N_MaxSize>::VlQueue(VlQueue<VlClassRef<T_Subclass>>&& that)
+    : m_deque{std::make_move_iterator(that.m_deque.begin()),
+              std::make_move_iterator(that.m_deque.end())}
+    , m_defaultValue{std::move(that.m_defaultValue)} {}
 
 #endif  // Guard

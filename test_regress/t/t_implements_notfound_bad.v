@@ -8,5 +8,5 @@ class ClsI implements Inotfound;
 endclass
 
 module t;
-   ClsI ci;
+  ClsI ci;
 endmodule
