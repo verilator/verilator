@@ -128,11 +128,18 @@ template <> void foldOp<DfgXor>        (V3Number& out, const V3Number& lhs, cons
 // clang-format on
 
 class V3DfgPeephole final : public DfgVisitor {
+    // TYPES
+    struct VertexInfo final {
+        // Position of this vertx in the work list. Zero means not in the list.
+        size_t m_workListIndex = 0;
+    };
+
     // STATE
     DfgGraph& m_dfg;  // The DfgGraph being visited
     V3DfgPeepholeContext& m_ctx;  // The config structure
     const DfgDataType& m_bitDType = DfgDataType::packed(1);  // Common, so grab it up front
-    DfgWorklist m_workList{m_dfg};  // This is a worklist based algorithm
+    std::vector<DfgVertex*> m_wlist;  // Using a manual work list as need special operations
+    DfgUserMap<VertexInfo> m_vInfo = m_dfg.makeUserMap<VertexInfo>();  // Map to VertexInfo
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
 
@@ -149,7 +156,14 @@ class V3DfgPeephole final : public DfgVisitor {
         return true;
     }
 
-    void addToWorkList(DfgVertex* vtxp) { m_workList.push_front(*vtxp); }
+    void addToWorkList(DfgVertex* vtxp) {
+        VertexInfo& vInfo = m_vInfo[*vtxp];
+        // If already on work list, ignore
+        if (vInfo.m_workListIndex) return;
+        // Add to work list
+        vInfo.m_workListIndex = m_wlist.size();
+        m_wlist.push_back(vtxp);
+    }
 
     void addSourcesToWorkList(DfgVertex* vtxp) {
         vtxp->foreachSource([&](DfgVertex& src) {
@@ -166,15 +180,12 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void deleteVertex(DfgVertex* vtxp) {
-        UASSERT_OBJ(!m_workList.contains(*vtxp), vtxp, "Deleted Vertex is in work list");
+        UASSERT_OBJ(!m_vInfo[vtxp].m_workListIndex, vtxp, "Deleted Vertex is in work list");
         // Inputs should have been reset
         UASSERT_OBJ(vtxp->is<DfgVertexVar>() || !vtxp->nInputs(), vtxp,
                     "Operation Vertx should not have sources when being deleted");
         // Should not have sinks
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
-        // If in work list then we can't delete it just yet (as we can't remove from the middle of
-        // the work list), but it will be deleted when the work list is processed.
-        if (m_workList.contains(*vtxp)) return;
         // Otherwise we can delete it now.
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
@@ -190,7 +201,7 @@ class V3DfgPeephole final : public DfgVisitor {
     // Replace 'm_vtxp' with the given vertex
     void replace(DfgVertex* resp) {
         // Should not be in the work list
-        UASSERT_OBJ(!m_workList.contains(*m_vtxp), m_vtxp, "Replaced Vertex is in work list");
+        UASSERT_OBJ(!m_vInfo[m_vtxp].m_workListIndex, m_vtxp, "Replaced Vertex is in work list");
 
         // Debug bisect check
         const auto debugCallback = [&]() -> void {
@@ -1804,44 +1815,54 @@ class V3DfgPeephole final : public DfgVisitor {
         : m_dfg{dfg}
         , m_ctx{ctx} {
 
+        // Initialize the work list
+        m_wlist.reserve(m_dfg.size() * 4);
+        // Need a nullptr at index 0 so VertexInfo::m_workListIndex can be used to check membership
+        m_wlist.push_back(nullptr);
+
         // Add all variable vertices to the work list. Do this first so they are processed last.
         // This order has a better chance of preserving original variables in case they are needed.
         for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
 
-        // Add all operation vertices to the work list and cache
+        // Add all operation vertices to the work list
         for (DfgVertex& vtx : m_dfg.opVertices()) addToWorkList(&vtx);
 
         // Process the work list
-        m_workList.foreach([&](DfgVertex& vtx) {
+        while (!m_wlist.empty()) {
             VL_RESTORER(m_vtxp);
-            m_vtxp = &vtx;
 
-            // Variables are special, just iterate them, the visit might delete them
-            if (vtx.is<DfgVertexVar>()) {
-                iterate(&vtx);
-                return;
+            // Pop up head of work list
+            m_vtxp = m_wlist.back();
+            m_wlist.pop_back();
+            if (!m_vtxp) continue;  // If removed from worklist, move on
+            m_vInfo[m_vtxp].m_workListIndex = 0;  // No longer on work list
+
+            // Variables are special, just visit them, the visit might delete them
+            if (DfgVertexVar* const varp = m_vtxp->cast<DfgVertexVar>()) {
+                visit(varp);
+                continue;
             }
 
             // Remove unused operations as we go
-            if (!vtx.hasSinks()) {
-                if (vtx.nInputs()) {
-                    addSourcesToWorkList(&vtx);
-                    m_cache.invalidate(&vtx);
-                    vtx.resetInputs();
+            if (!m_vtxp->hasSinks()) {
+                if (m_vtxp->nInputs()) {
+                    addSourcesToWorkList(m_vtxp);
+                    m_cache.invalidate(m_vtxp);
+                    m_vtxp->resetInputs();
                 }
-                deleteVertex(&vtx);
-                return;
+                deleteVertex(m_vtxp);
+                continue;
             }
 
             // Check if an equivalent vertex exists, if so replace this vertex with it
-            if (DfgVertex* const sampep = m_cache.cache(&vtx)) {
+            if (DfgVertex* const sampep = m_cache.cache(m_vtxp)) {
                 replace(sampep);
-                return;
+                continue;
             }
 
             // Visit vertex, might get deleted in the process
-            iterate(&vtx);
-        });
+            iterate(m_vtxp);
+        }
     }
 
 public:
