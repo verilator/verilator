@@ -616,6 +616,7 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionArithmeticValue(mulp);
         } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
             result = cresetp->cloneTree(false);
+            result->dtypeSetBitSized(exprp->width(), exprp->dtypep()->numeric());
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -691,6 +692,7 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionArithmeticXZ(mulp);
         } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
             result = cresetp->cloneTree(false);
+            result->dtypeSetBitSized(exprp->width(), exprp->dtypep()->numeric());
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -793,6 +795,9 @@ class FourstateVisitor final : public VNVisitor {
                 assignWConflictResolution(lhsVarRefp->varp(), assignWValuep,
                                           VN_AS(assignXZp, AssignW));
             }
+        } else {
+            UASSERT_OBJ(!nodep->rhsp()->dtypep()->isFourstate(), nodep,
+                        "Verilator makes rhsp == lhsp");
         }
         iterateChildren(nodep);
     }
@@ -907,36 +912,44 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
-    void handleTwoStateSubExprOperand(AstNodeExpr* const exprp) {
-        if (exprp->dtypep()->isFourstate()) {
-            VNRelinker relinker;
-            AstNodeExpr* oldp = exprp->unlinkFrBack(&relinker);
-            relinker.relink(getTwoStateCast(oldp));
-            oldp->deleteTree();
-        } else {
-            iterate(exprp);
-        }
-    }
-
     void visit(AstNodeUniop* const nodep) override {
         UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
                     "This visitor shall only be reached for two-state expressions");
-        handleTwoStateSubExprOperand(nodep->lhsp());
+        if (nodep->lhsp()->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(getTwoStateCast(nodep));
+            nodep->deleteTree();
+        } else {
+            iterateChildren(nodep);
+        }
     }
 
     void visit(AstNodeBiop* const nodep) override {
         UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
                     "This visitor shall only be reached for two-state expressions");
-        handleTwoStateSubExprOperand(nodep->lhsp());
-        handleTwoStateSubExprOperand(nodep->rhsp());
+        if (nodep->lhsp()->dtypep()->isFourstate() || nodep->rhsp()->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(getTwoStateCast(nodep));
+            nodep->deleteTree();
+        } else {
+            iterateChildren(nodep);
+        }
     }
 
     void visit(AstNodeTriop* const nodep) override {
         UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
                     "This visitor shall only be reached for two-state expressions");
-        handleTwoStateSubExprOperand(nodep->lhsp());
-        handleTwoStateSubExprOperand(nodep->rhsp());
-        handleTwoStateSubExprOperand(nodep->thsp());
+        if (nodep->lhsp()->dtypep()->isFourstate() || nodep->rhsp()->dtypep()->isFourstate()
+            || nodep->thsp()->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(getTwoStateCast(nodep));
+            nodep->deleteTree();
+        } else {
+            iterateChildren(nodep);
+        }
     }
 
     void visit(AstNodeIf* const nodep) override {
