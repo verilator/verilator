@@ -9,30 +9,12 @@
 module t(
     input clk
 );
-  typedef struct packed {
-    logic [7:0] \x ;
-    logic [7:0] y;
-  } point_t;
-
-  typedef struct packed {
-    point_t origin;
-    point_t size;
-  } rect_t;
-
   int cyc;
-  rect_t rect;
-  point_t \pt ;
 
-  sub #(10) sub_a(.*);
+  sub #(10) arr[2](.*);
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    \pt .\x  <= \pt .\x  + 1;
-    \pt .y <= \pt .y + 2;
-    rect.origin.\x  <= rect.origin.\x  + 1;
-    rect.origin.y <= rect.origin.y + 2;
-    rect.size.\x  <= 8'd100;
-    rect.size.y <= 8'd200;
     if (cyc == 5) begin
       $write("*-* All Finished *-*\n");
       $finish;
@@ -41,9 +23,8 @@ module t(
 
   initial begin
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-    // Target a single escaped struct member in $dumpvars.
-    $dumpvars(1, rect.origin.\x );
-    $dumpvars(1, \pt .\y );
+    // Test $dumpvars with an arrayed hierarchical scope path.
+    $dumpvars(1, t.arr[1].deep);
   end
 endmodule
 
@@ -54,4 +35,15 @@ module sub #(
 );
   int value;
   always_comb value = cyc + ADD;
+
+  deep #(ADD + 1) deep(.*);
+endmodule
+
+module deep #(
+    parameter int ADD
+)(
+    input int cyc
+);
+  int inner;
+  always_comb inner = cyc + ADD;
 endmodule

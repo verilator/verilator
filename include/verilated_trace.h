@@ -509,6 +509,11 @@ public:
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
+    void dumpvars(const std::vector<VerilatedTraceDumpvarsEntry>& entries) VL_MT_SAFE {
+        for (const VerilatedTraceDumpvarsEntry& entry : entries) {
+            dumpvars(entry.m_level, entry.m_hier);
+        }
+    }
 
     // Call
     void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);

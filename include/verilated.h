@@ -110,8 +110,11 @@ class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
 
+// Internal: One $dumpvars call.
 struct VerilatedTraceDumpvarsEntry final {
+    /// Maximum hierarchy depth to dump modules.
     int m_level;
+    /// Hierarchy root to dump.
     std::string m_hier;
 
     VerilatedTraceDumpvarsEntry(int level, const std::string& hier)

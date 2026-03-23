@@ -1598,28 +1598,33 @@ class TaskVisitor final : public VNVisitor {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
             ++m_statInlines;
         }
-        // When a function call has inlinedDots (from V3Inline's cell hierarchy),
-        // propagate that info to:
+        // Propagate the caller scope into the cloned task body so scope-sensitive
+        // operations such as $dumpvars reflect the call site even when the task
+        // was defined at $unit. When V3Inline added extra hierarchy, include it.
+        // This applies to:
         // 1. Any AstDumpCtl/AstScopeName in the inlined body (direct $dumpvars)
         // 2. Any nested AstNodeFTaskRef in the inlined body (indirect $dumpvars)
-        if (!nodep->inlinedDots().empty()) {
+        {
             const string& callerDots = nodep->inlinedDots();
-            string dots = callerDots;
-            string::size_type pos;
-            while ((pos = dots.find('.')) != string::npos) dots.replace(pos, 1, "__DOT__");
-            const string scopePath = "__DOT__"s + m_scopep->name() + "__DOT__" + dots;
+            string scopePath = "__DOT__"s + m_scopep->name();
+            if (!callerDots.empty()) {
+                string dots = callerDots;
+                string::size_type pos;
+                while ((pos = dots.find('.')) != string::npos) dots.replace(pos, 1, "__DOT__");
+                scopePath += "__DOT__" + dots;
+            }
             beginp->foreachAndNext([&](AstDumpCtl* dcp) {
                 if (AstScopeName* const snp = dcp->scopeNamep()) {
                     snp->scopeAttr(scopePath);
                     snp->scopeEntr(scopePath);
                 }
             });
-            // Propagate inlinedDots to nested task references
-            beginp->foreachAndNext([&](AstNodeFTaskRef* refp) {
-                if (refp->inlinedDots().empty()) {
-                    refp->inlinedDots(callerDots);
-                }
-            });
+            if (!callerDots.empty()) {
+                // Propagate inlinedDots to nested task references.
+                beginp->foreachAndNext([&](AstNodeFTaskRef* refp) {
+                    if (refp->inlinedDots().empty()) refp->inlinedDots(callerDots);
+                });
+            }
         }
 
         if (VN_IS(nodep, New)) {  // New not legal as while() condition

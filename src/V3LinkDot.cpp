@@ -84,19 +84,29 @@ static string dumpvarsTargetText(const AstNode* nodep) {
     if (!nodep) return "";
     if (const AstText* const textp = VN_CAST(nodep, Text)) return textp->text();
     if (const AstCellRef* const refp = VN_CAST(nodep, CellRef)) return refp->name();
-    if (const AstCellArrayRef* const refp = VN_CAST(nodep, CellArrayRef)) return refp->name();
+    if (const AstSelBit* const selp = VN_CAST(nodep, SelBit)) {
+        const string from = dumpvarsTargetText(selp->fromp());
+        const string bit = dumpvarsTargetText(selp->bitp());
+        if (from.empty()) return "";
+        return from + "[" + bit + "]";
+    }
+    if (const AstCellArrayRef* const refp = VN_CAST(nodep, CellArrayRef)) {
+        string out = refp->name();
+        for (const AstNodeExpr* selp = refp->selp(); selp; selp = VN_CAST(selp->nextp(), NodeExpr)) {
+            out += "[" + dumpvarsTargetText(selp) + "]";
+        }
+        return out;
+    }
+    if (const AstConst* const constp = VN_CAST(nodep, Const)) return cvtToStr(constp->toSInt());
     if (const AstParseRef* const refp = VN_CAST(nodep, ParseRef)) return refp->prettyName();
     if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp->name();
     if (const AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
-        if (refp->dotted().empty()) return refp->name();
-        return refp->dotted() + "." + refp->name();
+        return VString::dot(refp->dotted(), ".", refp->name());
     }
     if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
         const string lhs = dumpvarsTargetText(dotp->lhsp());
         const string rhs = dumpvarsTargetText(dotp->rhsp());
-        if (lhs.empty()) return rhs;
-        if (rhs.empty()) return lhs;
-        return lhs + "." + rhs;
+        return VString::dot(lhs, ".", rhs);
     }
     return nodep->prettyName();
 }
@@ -3163,6 +3173,127 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     } m_ds;  // State to preserve across recursions
 
+    static string dumpvarsSymPathPiece(const AstNode* nodep) {
+        if (!nodep) return "";
+        if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp->origName();
+        if (const AstCell* const cellp = VN_CAST(nodep, Cell)) return cellp->origName();
+        if (const AstCellInline* const inlinep = VN_CAST(nodep, CellInline)) return inlinep->name();
+        if (const AstVarScope* const vscp = VN_CAST(nodep, VarScope)) return vscp->varp()->name();
+        return nodep->name();
+    }
+
+    static bool dumpvarsMatchesLocalModule(const VSymEnt* symp, const string& ident) {
+        if (!symp) return false;
+        if (const AstCell* const cellp = VN_CAST(symp->nodep(), Cell)) {
+            return cellp->modp() && cellp->modp()->origName() == ident;
+        }
+        if (const AstCellInline* const inlinep = VN_CAST(symp->nodep(), CellInline)) {
+            return inlinep->origModName() == ident;
+        }
+        if (const AstNodeModule* const modp = VN_CAST(symp->nodep(), NodeModule)) {
+            return modp->origName() == ident;
+        }
+        return false;
+    }
+
+    static string dumpvarsResolvedPath(VSymEnt* symp) {
+        std::vector<string> pieces;
+        for (VSymEnt* walkp = symp; walkp && walkp->parentp(); walkp = walkp->parentp()) {
+            const string piece = dumpvarsSymPathPiece(walkp->nodep());
+            if (!piece.empty()) pieces.push_back(piece);
+        }
+        std::reverse(pieces.begin(), pieces.end());
+        string path;
+        for (const string& piece : pieces) {
+            if (!path.empty()) path += '.';
+            path += piece;
+        }
+        return path;
+    }
+
+    static bool dumpvarsHasBareTarget(AstNode* targetsp, const string& name) {
+        for (AstNode* tp = targetsp; tp; tp = tp->nextp()) {
+            if (dumpvarsTargetText(tp) == name) return true;
+        }
+        return false;
+    }
+
+    VSymEnt* findDumpvarsLocal(FileLine* refLocationp, const string& dotname, string& baddot,
+                               VSymEnt*& okSymp) {
+        if (!m_curSymp) return nullptr;
+        string leftname = dotname;
+        string::size_type pos;
+        string ident;
+        if ((pos = leftname.find('.')) != string::npos) {
+            ident = leftname.substr(0, pos);
+            leftname = leftname.substr(pos + 1);
+        } else {
+            ident = leftname;
+            leftname = "";
+        }
+
+        baddot = ident;
+        okSymp = m_curSymp;
+        string altIdent;
+        if (m_statep->forPrearray()) {
+            if ((pos = ident.rfind("__BRA__")) != string::npos) altIdent = ident.substr(0, pos);
+        }
+
+        VSymEnt* symp = nullptr;
+        if (dumpvarsMatchesLocalModule(m_curSymp, ident)) {
+            symp = m_curSymp;
+        } else {
+            symp = m_curSymp->findIdFallback(ident);
+            if (!symp && !altIdent.empty()) symp = m_curSymp->findIdFallback(altIdent);
+        }
+        if (!symp) return nullptr;
+        if (leftname.empty()) {
+            okSymp = symp;
+            return symp;
+        }
+        return m_statep->findDotted(refLocationp, symp, leftname, baddot, okSymp, false);
+    }
+
+    // Resolve a single $dumpvars target string against the symbol table.
+    // Returns a tagged string that tells EmitC how to generate the runtime code.
+    string resolveDumpvarsTarget(FileLine* fl, const string& target, AstNode* targetsp) {
+        if (target.empty() || !m_curSymp) return target;
+
+        string baddot;
+        VSymEnt* matchSymp = nullptr;
+
+        // Step 1: Try local scope lookup.
+        if (findDumpvarsLocal(fl, target, baddot, matchSymp)) return target;
+
+        // Step 2: Try global lookup from $root.
+        if (VSymEnt* const rootSymp = m_statep->findDotted(
+                fl, m_statep->rootEntp(), target, baddot, matchSymp, true)) {
+            const string resolved = dumpvarsResolvedPath(rootSymp);
+            if (!resolved.empty()) return kDumpvarsResolved.make(resolved);
+        }
+
+        // Step 3: Single-component name — defer to runtime root matching.
+        const string::size_type dotPos = target.find('.');
+        const string firstComp = (dotPos != string::npos) ? target.substr(0, dotPos) : target;
+
+        if (dotPos == string::npos) return kDumpvarsRuntimeRoot.make(target);
+
+        // Step 4: Multi-component "X.y.z" where X might be the runtime root.
+        const string remaining = target.substr(dotPos + 1);
+        if (dumpvarsHasBareTarget(targetsp, firstComp)) {
+            string runtimeBaddot;
+            VSymEnt* runtimeMatchSymp = nullptr;
+            if (m_statep->findDotted(fl, m_statep->rootEntp(), remaining, runtimeBaddot,
+                                     runtimeMatchSymp, true)) {
+                return kDumpvarsRuntimeRoot.make(target);
+            }
+            return kDumpvarsMissing.make(target);
+        }
+
+        UINFO(5, "$dumpvars target '" << target << "' not found in hierarchy" << endl);
+        return target;
+    }
+
     // METHODS - Variables
     AstVar* createImplicitVar(VSymEnt* /*lookupSymp*/, AstParseRef* nodep, AstNodeModule* modp,
                               VSymEnt* moduleSymp, bool noWarn) {
@@ -6064,19 +6195,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
         for (AstNode* targetp = targetsp; targetp;) {
             AstNode* const nextp = targetp->nextp();
             if (nextp) nextp->unlinkFrBackWithNext();
-            const string target = dumpvarsTargetText(targetp);
-            if (!target.empty() && m_curSymp) {
-                string baddot;
-                VSymEnt* matchSymp = nullptr;
-                if (!m_statep->findDotted(nodep->fileline(), m_curSymp, target,
-                                          baddot, matchSymp, true)) {
-                    UINFO(5, "$dumpvars target '" << target
-                                                  << "' not found in hierarchy" << endl);
-                }
+            // Skip if already resolved to text.
+            if (VN_IS(targetp, Text)) {
+                newTargetsp = AstNode::addNextNull(newTargetsp, targetp);
+                targetp = nextp;
+                continue;
             }
+            const string target = dumpvarsTargetText(targetp);
+            const string linkedTarget = resolveDumpvarsTarget(nodep->fileline(), target, targetsp);
             VL_DO_DANGLING(pushDeletep(targetp), targetp);
             newTargetsp
-                = AstNode::addNextNull(newTargetsp, new AstText{nodep->fileline(), target});
+                = AstNode::addNextNull(newTargetsp, new AstText{nodep->fileline(), linkedTarget});
             targetp = nextp;
         }
         relinker.relink(newTargetsp);

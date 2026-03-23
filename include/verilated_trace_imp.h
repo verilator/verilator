@@ -422,11 +422,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_resolution(const std::string& 
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
-    if (level == 0 && hier.empty()) {
-        m_dumpvars.clear();  // empty = everything on
-    } else {
-        m_dumpvars.emplace_back(level, hier);
-    }
+    if (level == 0 && hier.empty()) m_dumpvars.clear();
+    m_dumpvars.emplace_back(level, hier);
 }
 
 template <>

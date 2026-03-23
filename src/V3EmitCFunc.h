@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3EmitCConstInit.h"
+#include "V3Dumpvars.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
 
@@ -903,8 +904,9 @@ public:
 
     static string dumpvarsHierPath(const string& scope, const string& target) {
         if (target.empty()) return scope;
+        if (kDumpvarsResolved.matches(target)) return kDumpvarsResolved.strip(target);
         if (scope.empty() || dumpvarsHasScopePrefix(target, scope)) return target;
-        return scope + "." + target;
+        return VString::dot(scope, ".", target);
     }
 
     // Emit C++ code that registers a $dumpvars filter at runtime.
@@ -923,6 +925,41 @@ public:
         puts(levelExpr);
         puts(", __vlDvHier); }\n");
     }
+    void emitDumpVarsAddRuntimeRoot(const AstDumpCtl* nodep, const string& target,
+                                    const string& levelExpr) {
+        const string::size_type dotPos = target.find('.');
+        const string rootName = dotPos == string::npos ? target : target.substr(0, dotPos);
+        const string suffix = dotPos == string::npos ? "" : target.substr(dotPos + 1);
+        putns(nodep, "{ const std::string __vlDvRoot{vlSymsp->name()};\n");
+        puts("if (__vlDvRoot != \"");
+        puts(V3OutFormatter::quoteNameControls(rootName));
+        puts("\") VL_FATAL_MT(\"");
+        puts(V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename())));
+        puts("\", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", \"\", \"$dumpvars target not found: ");
+        puts(V3OutFormatter::quoteNameControls(target));
+        puts("\");\n");
+        puts("std::string __vlDvHier{__vlDvRoot};\n");
+        if (!suffix.empty()) {
+            puts("__vlDvHier += '.';\n");
+            puts("__vlDvHier += \"");
+            puts(V3OutFormatter::quoteNameControls(suffix));
+            puts("\";\n");
+        }
+        puts("vlSymsp->_vm_contextp__->dumpvarsAdd(");
+        puts(levelExpr);
+        puts(", __vlDvHier); }\n");
+    }
+    void emitDumpVarsTargetMissing(const AstDumpCtl* nodep, const string& target) {
+        putns(nodep, "VL_FATAL_MT(\"");
+        puts(V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename())));
+        puts("\", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", \"\", \"$dumpvars target not found: ");
+        puts(V3OutFormatter::quoteNameControls(target));
+        puts("\");\n");
+    }
     // Emit $dumpvars filter logic when scope info is available.
     void emitDumpVarsWithScope(AstDumpCtl* nodep) {
         UASSERT_OBJ(nodep->scopeNamep(), nodep, "$dumpvars missing AstScopeName");
@@ -938,14 +975,29 @@ public:
             puts(";\n");
             levelExpr = "__vlDvLevel";
         }
-        // Emit one dumpvarsAdd call per target, or one for the scope itself
+        // Emit one dumpvarsAdd call per target, or one for the scope itself.
+        // The no-target $dumpvars(0) form is design-global and should not be
+        // narrowed to the lexical scope where it appears.
         if (nodep->targetsp()) {
             for (AstNode* tp = nodep->targetsp(); tp; tp = tp->nextp()) {
                 const string target = VN_AS(tp, Text)->text();
-                emitDumpVarsAdd(nodep, dumpvarsHierPath(scope, target), levelExpr);
+                if (kDumpvarsMissing.matches(target)) {
+                    emitDumpVarsTargetMissing(nodep, kDumpvarsMissing.strip(target));
+                } else if (kDumpvarsRuntimeRoot.matches(target)) {
+                    emitDumpVarsAddRuntimeRoot(nodep, kDumpvarsRuntimeRoot.strip(target),
+                                               levelExpr);
+                } else {
+                    emitDumpVarsAdd(nodep, dumpvarsHierPath(scope, target), levelExpr);
+                }
             }
         } else {
-            emitDumpVarsAdd(nodep, scope, levelExpr);
+            if (levelp && levelp->toUInt() == 0 && scope.find('.') == string::npos) {
+                putns(nodep, "vlSymsp->_vm_contextp__->dumpvarsAdd(");
+                puts(levelExpr);
+                puts(", \"\"s);\n");
+            } else {
+                emitDumpVarsAdd(nodep, scope, levelExpr);
+            }
         }
         if (!levelp) puts("}\n");
         putns(nodep, "vlSymsp->_traceDumpClose();\n");
