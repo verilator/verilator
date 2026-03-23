@@ -394,7 +394,7 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     AstNodeExpr* getFourStateExpressionEqCaseValue(AstEqCase* const eqCasep) {
-        // (a.xz == b.xz) & (a.value == b.value )
+        // (a.xz == b.xz) & (a.value == b.value)
         FileLine* const flp = eqCasep->fileline();
         return new AstLogAnd{flp,
                              new AstEq{flp, getFourStateExpressionXZ(eqCasep->lhsp()),
@@ -406,6 +406,23 @@ class FourstateVisitor final : public VNVisitor {
     AstNodeExpr* getFourStateExpressionEqCaseXZ(AstEqCase* const eqp) {
         // 0
         FileLine* const flp = eqp->fileline();
+        return new AstConst{flp, AstConst::BitFalse{}};
+    }
+
+    AstNodeExpr* getFourStateExpressionNeqCaseValue(AstNeqCase* const neqp) {
+        // |((a.value ^ b.value) | (a.xz ^ b.xz))
+        FileLine* const flp = neqp->fileline();
+        return new AstRedOr{flp,
+                            new AstOr{flp,
+                                      new AstXor{flp, getFourStateExpressionValue(neqp->lhsp()),
+                                                 getFourStateExpressionValue(neqp->rhsp())},
+                                      new AstXor{flp, getFourStateExpressionXZ(neqp->lhsp()),
+                                                 getFourStateExpressionXZ(neqp->rhsp())}}};
+    }
+
+    AstNodeExpr* getFourStateExpressionNeqCaseXZ(AstNeqCase* const neqp) {
+        // 0
+        FileLine* const flp = neqp->fileline();
         return new AstConst{flp, AstConst::BitFalse{}};
     }
 
@@ -476,6 +493,8 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionEqValue(eqp);
         } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
             result = getFourStateExpressionEqCaseValue(eqCasep);
+        } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
+            result = getFourStateExpressionNeqCaseValue(neqCasep);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -532,6 +551,8 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionEqXZ(eqp);
         } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
             result = getFourStateExpressionEqCaseXZ(eqCasep);
+        } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
+            result = getFourStateExpressionNeqCaseXZ(neqCasep);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -693,7 +714,28 @@ class FourstateVisitor final : public VNVisitor {
     void visit(AstEqCase* const nodep) override {
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        relinker.relink(getFourStateExpressionValue(nodep));
+        if (!nodep->lhsp()->dtypep()->isFourstate() && !nodep->rhsp()->dtypep()->isFourstate()) {
+            AstEq* const newp = new AstEq{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                          nodep->rhsp()->unlinkFrBack()};
+            relinker.relink(newp);
+            iterateChildren(newp);
+        } else {
+            relinker.relink(getFourStateExpressionValue(nodep, false));
+        }
+        nodep->deleteTree();
+    }
+
+    void visit(AstNeqCase* const nodep) override {
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        if (!nodep->lhsp()->dtypep()->isFourstate() && !nodep->rhsp()->dtypep()->isFourstate()) {
+            AstNeq* const newp = new AstNeq{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                            nodep->rhsp()->unlinkFrBack()};
+            relinker.relink(newp);
+            iterateChildren(newp);
+        } else {
+            relinker.relink(getFourStateExpressionValue(nodep, false));
+        }
         nodep->deleteTree();
     }
 
