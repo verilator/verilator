@@ -997,6 +997,48 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 // ######################################################################
 
+class VCStmtType final {
+public:
+    enum en : uint8_t {
+        NONE,  // Unknown or not applicable
+        CTOR_VAR_RESET_CALL,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Statement's enum mnemonic, for checking
+        const char* m_name;  // Statements name, for debugging
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCStmtType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCStmtType(en _e)
+        : m_e{_e} {}
+    explicit VCStmtType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        return names[m_e];
+    }
+    bool isNone() const { return m_e == NONE; }
+};
+constexpr bool operator==(const VCStmtType& lhs, const VCStmtType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCStmtType& lhs, VCStmtType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCStmtType::en lhs, const VCStmtType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCStmtType& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t {

@@ -280,6 +280,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
+    bool m_ctorVarReset : 1;  // Ctor needs to call ctor_var_reset
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
@@ -301,6 +302,7 @@ protected:
         , m_modPublic{false}
         , m_modTrace{false}
         , m_inLibrary{false}
+        , m_ctorVarReset{false}
         , m_dead{false}
         , m_hasGParam{false}
         , m_hasParameterList{false}
@@ -336,6 +338,8 @@ public:
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modTrace() const { return m_modTrace; }
     void modTrace(bool flag) { m_modTrace = flag; }
+    bool ctorVarReset() const { return m_ctorVarReset; }
+    void ctorVarReset(bool flag) { m_ctorVarReset = flag; }
     bool dead() const { return m_dead; }
     void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }

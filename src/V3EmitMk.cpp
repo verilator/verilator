@@ -285,7 +285,7 @@ private:
         if (m_logp) *m_logp << "Buckets assigned to Work Lists:\n";
         int availableBuckets = v3Global.opt.outputGroups();
         for (WorkList* listp : m_concatenableListsByDescSize) {
-            if (availableBuckets > 0) {
+            if (availableBuckets > 0 && idealBucketScore > 0) {
                 listp->m_bucketsNum = std::min(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
