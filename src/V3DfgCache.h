@@ -339,7 +339,7 @@ public:
         for (DfgVertex& vtx : m_dfg.opVertices()) cache(&vtx);
     }
 
-    // Add an existing vertex to the cache. If an equivalent already exists,
+    // Add an existing vertex to the cache. If an equivalent (but different) already exists,
     // it is returned and the cache is not updated.
     DfgVertex* cache(DfgVertex* vtxp) { return m_vtxType2Cachep[vtxp->type()]->cache(vtxp); }
 
