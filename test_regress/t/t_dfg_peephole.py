@@ -32,6 +32,9 @@ with open(hdrFile, 'r', encoding="utf8") as hdrFh:
         if prevOpt > opt:
             test.error(hdrFile + ":" + str(lineno) + ": '" + opt + "; is not in sorted order")
         prevOpt = opt
+        # Trivial, but also hard to trigger on purpose as it depends on rewrite order
+        if opt == "REPLACE_WITH_EQUIVALENT":
+            continue
         optimizations.append(opt)
 
 if len(optimizations) < 1:

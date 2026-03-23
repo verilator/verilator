@@ -29,6 +29,7 @@
 #include "V3DfgPeepholePatterns.h"
 #include "V3Stats.h"
 
+#include <algorithm>
 #include <cctype>
 #include <vector>
 
@@ -130,8 +131,8 @@ template <> void foldOp<DfgXor>        (V3Number& out, const V3Number& lhs, cons
 class V3DfgPeephole final : public DfgVisitor {
     // TYPES
     struct VertexInfo final {
-        // Position of this vertx in the work list. Zero means not in the list.
-        size_t m_workListIndex = 0;
+        size_t m_workListIndex = 0;  // Position of this vertx m_wlist (0 means not in list)
+        size_t m_generation = 0;  // Generation number of this vertex
     };
 
     // STATE
@@ -142,6 +143,7 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgUserMap<VertexInfo> m_vInfo = m_dfg.makeUserMap<VertexInfo>();  // Map to VertexInfo
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
+    size_t m_currentGeneration = 0;  // Current generation number
 
     // STATIC STATE
     static V3DebugBisect s_debugBisect;  // Debug aid
@@ -156,6 +158,11 @@ class V3DfgPeephole final : public DfgVisitor {
         return true;
     }
 
+    void incrementGeneration() {
+        ++m_currentGeneration;
+        // TODO: could sweep on overflow
+    }
+
     void addToWorkList(DfgVertex* vtxp) {
         VertexInfo& vInfo = m_vInfo[*vtxp];
         // If already on work list, ignore
@@ -163,6 +170,13 @@ class V3DfgPeephole final : public DfgVisitor {
         // Add to work list
         vInfo.m_workListIndex = m_wlist.size();
         m_wlist.push_back(vtxp);
+    }
+
+    void removeFromWorkList(DfgVertex* vtxp) {
+        VertexInfo& vInfo = m_vInfo[*vtxp];
+        // m_wlist[0] is always nullptr, fine to assign same here
+        m_wlist[vInfo.m_workListIndex] = nullptr;
+        vInfo.m_workListIndex = 0;
     }
 
     void addSourcesToWorkList(DfgVertex* vtxp) {
@@ -181,21 +195,56 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void deleteVertex(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_vInfo[vtxp].m_workListIndex, vtxp, "Deleted Vertex is in work list");
-        // Inputs should have been reset
-        UASSERT_OBJ(vtxp->is<DfgVertexVar>() || !vtxp->nInputs(), vtxp,
-                    "Operation Vertx should not have sources when being deleted");
-        // Should not have sinks
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
-        // Otherwise we can delete it now.
+
+        // Invalidate cache entry
+        m_cache.invalidate(vtxp);
+
+        // Gather source vertices - they might be duplicates, make unique using generation number
+        incrementGeneration();
+        std::vector<DfgVertex*> srcps;
+        srcps.reserve(vtxp->nInputs());
+        vtxp->foreachSource([&](DfgVertex& src) {
+            // If it's a variable, add to work list to see if it became redundant
+            if (src.is<DfgVertexVar>()) {
+                addToWorkList(&src);
+                return false;
+            }
+            // Gather unique sources
+            VertexInfo& vInfo = m_vInfo[src];
+            if (vInfo.m_generation != m_currentGeneration) srcps.push_back(&src);
+            vInfo.m_generation = m_currentGeneration;
+            return false;
+        });
+
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
         // to the variable and no references in other graph then delete the Ast var too.
         const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
-        AstNode* const nodep
-            = varp && !varp->isVolatile() && !varp->hasDfgRefs() ? varp->nodep() : nullptr;
-        // Delete vertex and Ast variable if any
-        VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
-        if (nodep) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (varp && !varp->isVolatile() && !varp->hasDfgRefs()) {
+            AstNode* const nodep = varp->nodep();
+            VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else {
+            VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+        }
+
+        // Partition sources into used/unused after removing the vertex
+        const auto mid
+            = std::stable_partition(srcps.begin(), srcps.end(), [](DfgVertex* srcp) {  //
+                  return srcp->hasSinks();
+              });
+
+        // Add used sources to the work list
+        for (auto it = srcps.begin(); it != mid; ++it) addToWorkList(*it);
+
+        // Recursively delete unused sources
+        for (auto it = mid; it != srcps.end(); ++it) {
+            // Remove from work list
+            removeFromWorkList(*it);
+            // Delete vertex
+            deleteVertex(*it);
+        }
     }
 
     // Replace 'm_vtxp' with the given vertex
@@ -214,29 +263,28 @@ class V3DfgPeephole final : public DfgVisitor {
         };
         if (VL_UNLIKELY(s_debugBisect.stop(debugCallback))) return;
 
-        // Add sinks of replaced vertex to the work list
-        addSinksToWorkList(m_vtxp);
-        // Add replacement to the work list
-        addToWorkList(resp);
-        // Add all sources to the work list
-        addSourcesToWorkList(m_vtxp);
-        // Remove this and sinks from cache
-        m_cache.invalidate(m_vtxp);
-        m_vtxp->foreachSink([&](DfgVertex& sink) {
-            m_cache.invalidate(&sink);
+        // Remove sinks from cache, their inputs are about to change
+        m_vtxp->foreachSink([&](DfgVertex& dst) {
+            m_cache.invalidate(&dst);
             return false;
         });
         // Replace vertex with the replacement
         m_vtxp->replaceWith(resp);
-        // Unlink and reset all inputs of the replaced vertex so it doesn't get iterated again
-        m_vtxp->resetInputs();
         // Re-cache all sinks of the replacement
-        resp->foreachSink([&](DfgVertex& sink) {
-            m_cache.cache(&sink);
+        resp->foreachSink([&](DfgVertex& dst) {
+            m_cache.cache(&dst);
             return false;
         });
-        // Vertex is now unused, so delete it
+
+        // Original vertex is now unused, so delete it
         deleteVertex(m_vtxp);
+
+        // Add all sources to the work list
+        addSourcesToWorkList(resp);
+        // Add replacement to the work list
+        addToWorkList(resp);
+        // Add sinks of replaced vertex to the work list
+        addSinksToWorkList(resp);
     }
 
     // Create a 32-bit DfgConst vertex
@@ -917,19 +965,20 @@ class V3DfgPeephole final : public DfgVisitor {
                 if (varp->tmpForp() && varp->srcp()) splicep = varp->srcp()->as<DfgSplicePacked>();
             }
             if (splicep) {
-                DfgSel* resp = nullptr;
+                DfgVertex* driverp = nullptr;
+                uint32_t driverLsb = 0;
                 splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
                     const uint32_t dMsb = dLsb + src.width() - 1;
                     // If it does not cover the whole searched bit range, move on
                     if (lsb < dLsb || dMsb < msb) return false;
-                    // Replace with sel from driver
-                    resp = make<DfgSel>(vtxp, &src, lsb - dLsb);
+                    // Save the driver
+                    driverp = &src;
+                    driverLsb = dLsb;
                     return true;
                 });
-                if (resp) {
-                    // Replace with sel from driver
+                if (driverp) {
                     APPLYING(PUSH_SEL_THROUGH_SPLICE) {
-                        replace(resp);
+                        replace(make<DfgSel>(vtxp, driverp, lsb - driverLsb));
                         return;
                     }
                 }
@@ -1264,47 +1313,47 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        {
-            const auto joinSels = [this](DfgSel* lSelp, DfgSel* rSelp, FileLine* flp) -> DfgSel* {
+        if (DfgSel* const lSelp = lhsp->cast<DfgSel>()) {
+            if (DfgSel* const rSelp = rhsp->cast<DfgSel>()) {
                 if (isSame(lSelp->fromp(), rSelp->fromp())) {
                     if (lSelp->lsb() == rSelp->lsb() + rSelp->width()) {
-                        // Two consecutive Sels, make a single Sel.
-                        const uint32_t width = lSelp->width() + rSelp->width();
-                        return make<DfgSel>(flp, DfgDataType::packed(width), rSelp->fromp(),
-                                            rSelp->lsb());
-                    }
-                }
-                return nullptr;
-            };
-
-            DfgSel* const lSelp = lhsp->cast<DfgSel>();
-            DfgSel* const rSelp = rhsp->cast<DfgSel>();
-            if (lSelp && rSelp) {
-                if (DfgSel* const jointSelp = joinSels(lSelp, rSelp, flp)) {
-                    APPLYING(REMOVE_CONCAT_OF_ADJOINING_SELS) {
-                        replace(jointSelp);
-                        return;
+                        APPLYING(REMOVE_CONCAT_OF_ADJOINING_SELS) {
+                            replace(make<DfgSel>(vtxp, rSelp->fromp(), rSelp->lsb()));
+                            return;
+                        }
                     }
                 }
             }
-            if (lSelp) {
-                if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
-                    if (DfgSel* const rlSelp = rConcatp->lhsp()->cast<DfgSel>()) {
-                        if (DfgSel* const jointSelp = joinSels(lSelp, rlSelp, flp)) {
+
+            if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
+                if (DfgSel* const rlSelp = rConcatp->lhsp()->cast<DfgSel>()) {
+                    if (isSame(lSelp->fromp(), rlSelp->fromp())) {
+                        if (lSelp->lsb() == rlSelp->lsb() + rlSelp->width()) {
                             APPLYING(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS) {
-                                replace(make<DfgConcat>(vtxp, jointSelp, rConcatp->rhsp()));
+                                const uint32_t width = lSelp->width() + rlSelp->width();
+                                const DfgDataType& dtype = DfgDataType::packed(width);
+                                DfgSel* const selp
+                                    = make<DfgSel>(flp, dtype, rlSelp->fromp(), rlSelp->lsb());
+                                replace(make<DfgConcat>(vtxp, selp, rConcatp->rhsp()));
                                 return;
                             }
                         }
                     }
                 }
             }
-            if (rSelp) {
-                if (DfgConcat* const lConcatp = lhsp->cast<DfgConcat>()) {
-                    if (DfgSel* const lrlSelp = lConcatp->rhsp()->cast<DfgSel>()) {
-                        if (DfgSel* const jointSelp = joinSels(lrlSelp, rSelp, flp)) {
+        }
+
+        if (DfgSel* const rSelp = rhsp->cast<DfgSel>()) {
+            if (DfgConcat* const lConcatp = lhsp->cast<DfgConcat>()) {
+                if (DfgSel* const lrSelp = lConcatp->rhsp()->cast<DfgSel>()) {
+                    if (isSame(lrSelp->fromp(), rSelp->fromp())) {
+                        if (lrSelp->lsb() == rSelp->lsb() + rSelp->width()) {
                             APPLYING(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS) {
-                                replace(make<DfgConcat>(vtxp, lConcatp->lhsp(), jointSelp));
+                                const uint32_t width = lrSelp->width() + rSelp->width();
+                                const DfgDataType& dtype = DfgDataType::packed(width);
+                                DfgSel* const selp
+                                    = make<DfgSel>(flp, dtype, rSelp->fromp(), rSelp->lsb());
+                                replace(make<DfgConcat>(vtxp, lConcatp->lhsp(), selp));
                                 return;
                             }
                         }
@@ -1783,7 +1832,6 @@ class V3DfgPeephole final : public DfgVisitor {
         // If undriven, or driven from another var, it is completely redundant.
         if (!vtxp->srcp() || vtxp->srcp()->is<DfgVertexVar>()) {
             APPLYING(REMOVE_VAR) {
-                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
@@ -1802,14 +1850,11 @@ class V3DfgPeephole final : public DfgVisitor {
         });
         if (!keep) {
             APPLYING(REMOVE_VAR) {
-                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
         }
     }
-
-#undef APPLYING
 
     V3DfgPeephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx)
         : m_dfg{dfg}
@@ -1817,6 +1862,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Initialize the work list
         m_wlist.reserve(m_dfg.size() * 4);
+
         // Need a nullptr at index 0 so VertexInfo::m_workListIndex can be used to check membership
         m_wlist.push_back(nullptr);
 
@@ -1843,27 +1889,23 @@ class V3DfgPeephole final : public DfgVisitor {
                 continue;
             }
 
-            // Remove unused operations as we go
-            if (!m_vtxp->hasSinks()) {
-                if (m_vtxp->nInputs()) {
-                    addSourcesToWorkList(m_vtxp);
-                    m_cache.invalidate(m_vtxp);
-                    m_vtxp->resetInputs();
-                }
-                deleteVertex(m_vtxp);
-                continue;
-            }
+            // Unsued vertices should have been removed immediately
+            UASSERT_OBJ(m_vtxp->hasSinks(), m_vtxp, "Operation vertex should have sinks");
 
             // Check if an equivalent vertex exists, if so replace this vertex with it
             if (DfgVertex* const sampep = m_cache.cache(m_vtxp)) {
-                replace(sampep);
-                continue;
+                APPLYING(REPLACE_WITH_EQUIVALENT) {
+                    replace(sampep);
+                    continue;
+                }
             }
 
             // Visit vertex, might get deleted in the process
             iterate(m_vtxp);
         }
     }
+
+#undef APPLYING
 
 public:
     static void apply(DfgGraph& dfg, V3DfgPeepholeContext& ctx) { V3DfgPeephole{dfg, ctx}; }
