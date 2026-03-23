@@ -5900,7 +5900,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     if (foundp) {
                         UINFO(1, "Found sym node: " << foundp->nodep());
-                        nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
+                        nodep->v3error("Expecting a data type: "
+                                       << nodep->prettyNameQ()
+                                       << ", found: " << foundp->nodep()->prettyTypeName());
                     } else {
                         nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                     }
