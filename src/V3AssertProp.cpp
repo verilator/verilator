@@ -373,7 +373,8 @@ class RangeDelayExpander final : public VNVisitor {
     //
     // For range delay at step[idx], the checked expression is step[idx+1].exprp,
     // and on success the continuation is delay(step[idx+1].delay) --> steps[idx+2..end].
-    AstNode* buildContinuation(FileLine* flp, const std::vector<SeqStep>& steps, size_t idx) {
+    AstNode* buildContinuation(AstNode* origNodep, FileLine* flp,
+                               const std::vector<SeqStep>& steps, size_t idx) {
         if (idx >= steps.size()) return new AstPExprClause{flp, true};
 
         const SeqStep& step = steps[idx];
@@ -388,17 +389,19 @@ class RangeDelayExpander final : public VNVisitor {
         }
 
         if (step.isRange) {
-            // Range delay at step[idx]:
+            // Range delay at step[idx]: counter-based loop (O(1) code size)
             //   1. Check step[idx].exprp (if present, i.e. binary form)
             //   2. Wait rangeMin cycles
-            //   3. Check step[idx+1].exprp -- if pass, go to after-pass continuation
-            //      If fail, wait 1 cycle and retry, up to rangeWidth times
+            //   3. Loop up to rangeWidth+1 times:
+            //      - if step[idx+1].exprp matches -> after-pass continuation
+            //      - if counter == 0 -> FAIL
+            //      - else @(clk); counter--
             //   4. After-pass continuation = delay(step[idx+1].delay) + steps[idx+2..end]
             UASSERT(idx + 1 < steps.size(), "Range delay must have next step");
             const SeqStep& nextStep = steps[idx + 1];
 
             // Build after-pass: what happens after the range check succeeds
-            AstNode* afterPassp = buildContinuation(flp, steps, idx + 2);
+            AstNode* afterPassp = buildContinuation(origNodep, flp, steps, idx + 2);
             if (nextStep.delay > 0) {
                 AstBegin* const wrapperp = new AstBegin{flp, "", nullptr, true};
                 wrapperp->addStmtsp(makeCycleDelay(flp, nextStep.delay));
@@ -406,27 +409,57 @@ class RangeDelayExpander final : public VNVisitor {
                 afterPassp = wrapperp;
             }
 
-            // Build check chain from innermost to outermost
-            AstNode* chainp = nullptr;
+            // Counter-based loop: check nextExpr each cycle, up to rangeWidth retries
             const int rangeWidth = step.rangeMax - step.rangeMin;
-            for (int i = rangeWidth; i >= 0; --i) {
-                AstNode* const passBranchp = (i == 0) ? afterPassp : afterPassp->cloneTree(false);
-                if (i == rangeWidth) {
-                    chainp = new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
-                                       passBranchp, new AstPExprClause{flp, false}};
-                } else {
-                    AstBegin* const retryBlock = new AstBegin{flp, "", nullptr, true};
-                    retryBlock->addStmtsp(makeCycleDelay(flp, 1));
-                    retryBlock->addStmtsp(chainp);
-                    chainp = new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
-                                       passBranchp, retryBlock};
-                }
-            }
+            const std::string cntName = m_names.get(nextStep.exprp);
+            AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, cntName + "__cnt",
+                                               origNodep->findBasicDType(VBasicDTypeKwd::INTEGER)};
+            cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            AstVar* const matchVarp = new AstVar{flp, VVarType::BLOCKTEMP, cntName + "__match",
+                                                 origNodep->findBasicDType(VBasicDTypeKwd::BIT)};
+            matchVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-            // Add initial delay(rangeMin) before the check chain
+            AstBegin* const loopBlockp = new AstBegin{flp, "", nullptr, true};
+            loopBlockp->addStmtsp(cntVarp);
+            loopBlockp->addStmtsp(matchVarp);
+            loopBlockp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                              new AstConst{flp, static_cast<uint32_t>(rangeWidth)}});
+            loopBlockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, matchVarp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitFalse{}}});
+
+            // loop { loopTest(!match && cnt >= 0); if (b) match=1; else { @clk; cnt--; } }
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp,
+                new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, matchVarp, VAccess::READ}},
+                           new AstGtS{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                      new AstConst{flp, AstConst::Signed32{}, -1}}}});
+            // if (nextExpr) match = 1
+            loopp->addStmtsp(
+                new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
+                          new AstAssign{flp, new AstVarRef{flp, matchVarp, VAccess::WRITE},
+                                        new AstConst{flp, AstConst::BitTrue{}}},
+                          nullptr});
+            // if (!match) { @(clk); cnt--; }
+            AstBegin* const retryp = new AstBegin{flp, "", nullptr, true};
+            retryp->addStmtsp(makeCycleDelay(flp, 1));
+            retryp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                              new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                         new AstConst{flp, 1}}});
+            loopp->addStmtsp(
+                new AstIf{flp, new AstNot{flp, new AstVarRef{flp, matchVarp, VAccess::READ}},
+                          retryp, nullptr});
+            loopBlockp->addStmtsp(loopp);
+            // After loop: if (matched) afterPass else FAIL
+            loopBlockp->addStmtsp(new AstIf{flp, new AstVarRef{flp, matchVarp, VAccess::READ},
+                                            afterPassp, new AstPExprClause{flp, false}});
+
+            // Add initial delay(rangeMin) before the loop
             AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
             if (step.rangeMin > 0) blockp->addStmtsp(makeCycleDelay(flp, step.rangeMin));
-            blockp->addStmtsp(chainp);
+            blockp->addStmtsp(loopBlockp);
 
             // Wrap with pre-expression check if present
             if (step.exprp) {
@@ -436,7 +469,7 @@ class RangeDelayExpander final : public VNVisitor {
             return blockp;
         } else {
             // Fixed delay: check expr, delay(N), then continue
-            AstNode* const continuationp = buildContinuation(flp, steps, idx + 1);
+            AstNode* const continuationp = buildContinuation(origNodep, flp, steps, idx + 1);
             AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
             if (step.delay > 0) blockp->addStmtsp(makeCycleDelay(flp, step.delay));
             blockp->addStmtsp(continuationp);
@@ -504,7 +537,7 @@ class RangeDelayExpander final : public VNVisitor {
         }
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const bodyContentp = buildContinuation(flp, steps, 0);
+        AstNode* const bodyContentp = buildContinuation(nodep, flp, steps, 0);
         AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
         bodyp->addStmtsp(bodyContentp);
         AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};

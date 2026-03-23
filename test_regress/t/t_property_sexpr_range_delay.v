@@ -43,4 +43,10 @@ module t;
 
   a4: assert property (@(e4) ##[1:2] 1 ##1 1);
 
+  // --- Test 5: large range ##[1:10000] (scalability, O(1) code size) ---
+  logic b5 = 0;
+  always @(posedge clk) if (cyc == 50) b5 <= 1;
+
+  a5: assert property (@(posedge clk) cyc == 1 |-> ##[1:10000] b5);
+
 endmodule
