@@ -3272,9 +3272,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!resolved.empty()) return kDumpvarsResolved.make(resolved);
         }
 
-        // Step 3: Single-component name — defer to runtime root matching
-        // unless Verilator generates the main (--main/--binary), in which case
-        // the root name is known at compile time and we can reject mismatches.
+        // Step 3: Defer single component to root lookup if available.
         const string::size_type dotPos = target.find('.');
         const string firstComp = (dotPos != string::npos) ? target.substr(0, dotPos) : target;
 
