@@ -183,7 +183,6 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep, bool isScan) {
         puts(",");
     } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
         isStmt = false;
-        checkMaxWords(dispp->fromp());
         putns(nodep, "VL_SSCANF_I");
         emitIQW(dispp->fromp());
         puts("NX(");
