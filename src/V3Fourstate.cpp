@@ -193,6 +193,12 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
+    static AstConst* createConst(FileLine* const flp, int width, const bool ones = false) {
+        AstConst* const resultp = new AstConst{flp, AstConst::WidthedValue{}, width, 0};
+        if (ones) resultp->num().setAllBits1();
+        return resultp;
+    }
+
     void assignWConflictResolution(AstVar* const varp, AstAssignW* const assignwValuep,
                                    AstAssignW* const assignwXzp) {
         // Assignments to different things are unsupported
@@ -501,6 +507,30 @@ class FourstateVisitor final : public VNVisitor {
         return new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false)};
     }
 
+    AstNodeExpr* getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
+        // (a.xz | b.xz) ? '1 : (a op b)
+        FileLine* const flp = biop->fileline();
+        AstNodeBiop* const newp = biop->cloneTree(false);
+        newp->dtypeSetBitSized(biop->width(), biop->dtypep()->numeric());
+        newp->lhsp()->unlinkFrBack()->deleteTree();
+        newp->rhsp()->unlinkFrBack()->deleteTree();
+        newp->lhsp(getFourStateExpressionValue(biop->lhsp(), false));
+        newp->rhsp(getFourStateExpressionValue(biop->rhsp(), false));
+        return new AstCond{flp,
+                           new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                                       getFourStateExpressionXZ(biop->rhsp())}},
+                           createConst(flp, biop->width(), true), newp};
+    }
+
+    AstNodeExpr* getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {
+        // (a.xz | b.xz) ? '1 : '0
+        FileLine* const flp = biop->fileline();
+        return new AstCond{flp,
+                           new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                                       getFourStateExpressionXZ(biop->rhsp())}},
+                           createConst(flp, biop->width(), true), createConst(flp, biop->width())};
+    }
+
     void getFourStateExpressionFuncRefHandler(AstNodeFTaskRef* const funcp) {
         // Its ok to use this instead of output since we only need width which is the same
         AstVar* const functionReturnVarp = VN_AS(VN_AS(funcp->taskp(), Func)->fvarp(), Var);
@@ -578,12 +608,18 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionExtendValue(extendp);
         } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
             result = getFourStateExpressionExtendSValue(extendsp);
+        } else if (AstAdd* const addp = VN_CAST(exprp, Add)) {
+            result = getFourStateExpressionArithmeticValue(addp);
+        } else if (AstSub* const subp = VN_CAST(exprp, Sub)) {
+            result = getFourStateExpressionArithmeticValue(subp);
+        } else if (AstMul* const mulp = VN_CAST(exprp, Mul)) {
+            result = getFourStateExpressionArithmeticValue(mulp);
+        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
+            result = cresetp->cloneTree(false);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
             return VN_AS(exprp->user1p(), NodeExpr)->cloneTree(false);
-        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
-            result = cresetp->cloneTree(false);
         } else {
             exprp->v3warn(E_UNSUPPORTED,
                           "Unsupported: Operator not supported in the four-state mode");
@@ -647,12 +683,18 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionExtendXZ(extendp);
         } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
             result = getFourStateExpressionExtendSXZ(extendsp);
+        } else if (AstAdd* const addp = VN_CAST(exprp, Add)) {
+            result = getFourStateExpressionArithmeticXZ(addp);
+        } else if (AstSub* const subp = VN_CAST(exprp, Sub)) {
+            result = getFourStateExpressionArithmeticXZ(subp);
+        } else if (AstMul* const mulp = VN_CAST(exprp, Mul)) {
+            result = getFourStateExpressionArithmeticXZ(mulp);
+        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
+            result = cresetp->cloneTree(false);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
             return VN_AS(exprp->user2p(), NodeExpr)->cloneTree(false);
-        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
-            result = cresetp->cloneTree(false);
         } else {
             exprp->v3warn(E_UNSUPPORTED,
                           "Unsupported: Operator not supported in the four-state mode");
