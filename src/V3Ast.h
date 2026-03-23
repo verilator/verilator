@@ -756,6 +756,7 @@ public:
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
     void dtypeSetBit() { dtypep(findBitDType()); }
+    void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetSigned32() { dtypep(findSigned32DType()); }
@@ -767,6 +768,7 @@ public:
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
+    AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }

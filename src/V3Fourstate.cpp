@@ -364,6 +364,22 @@ class FourstateVisitor final : public VNVisitor {
                        new AstNot{flp, getFourStateExpressionValue(orp->lhsp())}}};
     }
 
+    AstNodeExpr* getFourStateExpressionXorValue(AstXor* const xorp) {
+        // (a.value ^ b.value) | a.xz | b.xz
+        FileLine* const flp = xorp->fileline();
+        return new AstOr{flp,
+                         new AstXor{flp, getFourStateExpressionValue(xorp->lhsp(), false),
+                                    getFourStateExpressionValue(xorp->rhsp(), false)},
+                         getFourStateExpressionXorXZ(xorp)};
+    }
+
+    AstNodeExpr* getFourStateExpressionXorXZ(AstXor* const xorp) {
+        // a.xz | b.xz
+        FileLine* const flp = xorp->fileline();
+        return new AstOr{flp, getFourStateExpressionXZ(xorp->lhsp()),
+                         getFourStateExpressionXZ(xorp->rhsp())};
+    }
+
     AstNodeExpr* getFourStateExpressionNotValue(AstNot* const notp) {
         // ~a.value | a.xz
         FileLine* const flp = notp->fileline();
@@ -390,6 +406,23 @@ class FourstateVisitor final : public VNVisitor {
         return new AstNeq{flp,
                           new AstOr{flp, getFourStateExpressionXZ(eqp->lhsp()),
                                     getFourStateExpressionXZ(eqp->rhsp())},
+                          new AstConst{flp, AstConst::BitFalse{}}};
+    }
+
+    AstNodeExpr* getFourStateExpressionNeqValue(AstNeq* const neqp) {
+        // (a.xz | b.xz != 0) | (a.value != b.value )
+        FileLine* const flp = neqp->fileline();
+        return new AstOr{flp, getFourStateExpressionNeqXZ(neqp),
+                         new AstNeq{flp, getFourStateExpressionValue(neqp->lhsp()),
+                                    getFourStateExpressionValue(neqp->rhsp())}};
+    }
+
+    AstNodeExpr* getFourStateExpressionNeqXZ(AstNeq* const neqp) {
+        // a.xz | b.xz != 0
+        FileLine* const flp = neqp->fileline();
+        return new AstNeq{flp,
+                          new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
+                                    getFourStateExpressionXZ(neqp->rhsp())},
                           new AstConst{flp, AstConst::BitFalse{}}};
     }
 
@@ -424,6 +457,26 @@ class FourstateVisitor final : public VNVisitor {
         // 0
         FileLine* const flp = neqp->fileline();
         return new AstConst{flp, AstConst::BitFalse{}};
+    }
+
+    AstNodeExpr* getFourStateExpressionExtendValue(AstExtend* const extendp) {
+        FileLine* const flp = extendp->fileline();
+        return new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
+    }
+
+    AstNodeExpr* getFourStateExpressionExtendXZ(AstExtend* const extendp) {
+        FileLine* const flp = extendp->fileline();
+        return new AstExtend{flp, getFourStateExpressionXZ(extendp->lhsp(), false)};
+    }
+
+    AstNodeExpr* getFourStateExpressionExtendSValue(AstExtendS* const extendsp) {
+        FileLine* const flp = extendsp->fileline();
+        return new AstExtendS{flp, getFourStateExpressionValue(extendsp->lhsp(), false)};
+    }
+
+    AstNodeExpr* getFourStateExpressionExtendSXZ(AstExtendS* const extendsp) {
+        FileLine* const flp = extendsp->fileline();
+        return new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false)};
     }
 
     void getFourStateExpressionFuncRefHandler(AstNodeFTaskRef* const funcp) {
@@ -487,14 +540,22 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionAndValue(andp);
         } else if (AstOr* const orp = VN_CAST(exprp, Or)) {
             result = getFourStateExpressionOrValue(orp);
+        } else if (AstXor* const xorp = VN_CAST(exprp, Xor)) {
+            result = getFourStateExpressionXorValue(xorp);
         } else if (AstNot* const notp = VN_CAST(exprp, Not)) {
             result = getFourStateExpressionNotValue(notp);
         } else if (AstEq* const eqp = VN_CAST(exprp, Eq)) {
             result = getFourStateExpressionEqValue(eqp);
+        } else if (AstNeq* const neqp = VN_CAST(exprp, Neq)) {
+            result = getFourStateExpressionNeqValue(neqp);
         } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
             result = getFourStateExpressionEqCaseValue(eqCasep);
         } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
             result = getFourStateExpressionNeqCaseValue(neqCasep);
+        } else if (AstExtend* const extendp = VN_CAST(exprp, Extend)) {
+            result = getFourStateExpressionExtendValue(extendp);
+        } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
+            result = getFourStateExpressionExtendSValue(extendsp);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -545,14 +606,22 @@ class FourstateVisitor final : public VNVisitor {
             result = getFourStateExpressionAndXZ(andp);
         } else if (AstOr* const orp = VN_CAST(exprp, Or)) {
             result = getFourStateExpressionOrXZ(orp);
+        } else if (AstXor* const xorp = VN_CAST(exprp, Xor)) {
+            result = getFourStateExpressionXorXZ(xorp);
         } else if (AstNot* const notp = VN_CAST(exprp, Not)) {
             result = getFourStateExpressionNotXZ(notp);
         } else if (AstEq* const eqp = VN_CAST(exprp, Eq)) {
             result = getFourStateExpressionEqXZ(eqp);
+        } else if (AstNeq* const neqp = VN_CAST(exprp, Neq)) {
+            result = getFourStateExpressionNeqXZ(neqp);
         } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
             result = getFourStateExpressionEqCaseXZ(eqCasep);
         } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
             result = getFourStateExpressionNeqCaseXZ(neqCasep);
+        } else if (AstExtend* const extendp = VN_CAST(exprp, Extend)) {
+            result = getFourStateExpressionExtendXZ(extendp);
+        } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
+            result = getFourStateExpressionExtendSXZ(extendsp);
         } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
             // Everything is handled by the function
             getFourStateExpressionFuncRefHandler(funcp);
@@ -578,6 +647,13 @@ class FourstateVisitor final : public VNVisitor {
         FileLine* const flp = exprp->fileline();
         return new AstLogAnd{flp, getFourStateExpressionValue(exprp, false),
                              new AstLogNot{flp, getFourStateExpressionXZ(exprp, false)}};
+    }
+
+    AstNodeExpr* getTwoStateCast(AstNodeExpr* const exprp) {
+        // (a.value & (~a.xz))
+        FileLine* const flp = exprp->fileline();
+        return new AstAnd{flp, getFourStateExpressionValue(exprp, false),
+                          new AstNot{flp, getFourStateExpressionXZ(exprp, false)}};
     }
 
     void visit(AstNodeFTask* const nodep) override {
@@ -737,6 +813,60 @@ class FourstateVisitor final : public VNVisitor {
             relinker.relink(getFourStateExpressionValue(nodep, false));
         }
         nodep->deleteTree();
+    }
+
+    void visit(AstEq* const nodep) override {
+        if (nodep->lhsp()->dtypep()->isFourstate() || nodep->rhsp()->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(getTruthExpr(nodep));
+            nodep->deleteTree();
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
+    void visit(AstNeq* const nodep) override {
+        if (nodep->lhsp()->dtypep()->isFourstate() || nodep->rhsp()->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(getTruthExpr(nodep));
+            nodep->deleteTree();
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
+    void handleTwoStateSubExprOperand(AstNodeExpr* const exprp) {
+        if (exprp->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            AstNodeExpr* oldp = exprp->unlinkFrBack(&relinker);
+            relinker.relink(getTwoStateCast(oldp));
+            oldp->deleteTree();
+        } else {
+            iterate(exprp);
+        }
+    }
+
+    void visit(AstNodeUniop* const nodep) override {
+        UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
+                    "This visitor shall only be reached for two-state expressions");
+        handleTwoStateSubExprOperand(nodep->lhsp());
+    }
+
+    void visit(AstNodeBiop* const nodep) override {
+        UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
+                    "This visitor shall only be reached for two-state expressions");
+        handleTwoStateSubExprOperand(nodep->lhsp());
+        handleTwoStateSubExprOperand(nodep->rhsp());
+    }
+
+    void visit(AstNodeTriop* const nodep) override {
+        UASSERT_OBJ(!nodep->dtypep()->isFourstate(), nodep,
+                    "This visitor shall only be reached for two-state expressions");
+        handleTwoStateSubExprOperand(nodep->lhsp());
+        handleTwoStateSubExprOperand(nodep->rhsp());
+        handleTwoStateSubExprOperand(nodep->thsp());
     }
 
     void visit(AstNodeIf* const nodep) override {
