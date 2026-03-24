@@ -345,192 +345,6 @@ class FourstateVisitor final : public VNVisitor {
         return getSplittedValue(varp)->fourStateComplement();
     }
 
-    AstNodeExpr* getFourStateExpressionAndValue(AstAnd* const andp) {
-        // (a.value | a.xz) & (b.value | b.xz)
-        FileLine* const flp = andp->fileline();
-        return new AstAnd{flp,
-                          new AstOr{flp, getFourStateExpressionValue(andp->lhsp()),
-                                    getFourStateExpressionXZ(andp->lhsp())},
-                          new AstOr{flp, getFourStateExpressionValue(andp->rhsp()),
-                                    getFourStateExpressionXZ(andp->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionAndXZ(AstAnd* const andp) {
-        // (a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz)
-        FileLine* const flp = andp->fileline();
-        return new AstOr{flp,
-                         new AstOr{flp,
-                                   new AstAnd{flp, getFourStateExpressionValue(andp->lhsp()),
-                                              getFourStateExpressionXZ(andp->rhsp())},
-                                   new AstAnd{flp, getFourStateExpressionValue(andp->rhsp()),
-                                              getFourStateExpressionXZ(andp->lhsp())}},
-                         new AstAnd{flp, getFourStateExpressionXZ(andp->lhsp()),
-                                    getFourStateExpressionXZ(andp->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionOrValue(AstOr* const orp) {
-        // a.value | b.value | a.xz | b.xz
-        FileLine* const flp = orp->fileline();
-        return new AstOr{flp,
-                         new AstOr{flp, getFourStateExpressionValue(orp->lhsp()),
-                                   getFourStateExpressionValue(orp->rhsp())},
-                         new AstOr{flp, getFourStateExpressionXZ(orp->lhsp()),
-                                   getFourStateExpressionXZ(orp->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionOrXZ(AstOr* const orp) {
-        // (a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value)
-        FileLine* const flp = orp->fileline();
-        return new AstOr{
-            flp,
-            new AstOr{flp,
-                      new AstAnd{flp, getFourStateExpressionXZ(orp->lhsp()),
-                                 getFourStateExpressionXZ(orp->rhsp())},
-                      new AstAnd{flp, getFourStateExpressionXZ(orp->lhsp()),
-                                 new AstNot{flp, getFourStateExpressionValue(orp->rhsp())}}},
-            new AstAnd{flp, getFourStateExpressionXZ(orp->rhsp()),
-                       new AstNot{flp, getFourStateExpressionValue(orp->lhsp())}}};
-    }
-
-    AstNodeExpr* getFourStateExpressionXorValue(AstXor* const xorp) {
-        // (a.value ^ b.value) | a.xz | b.xz
-        FileLine* const flp = xorp->fileline();
-        return new AstOr{flp,
-                         new AstXor{flp, getFourStateExpressionValue(xorp->lhsp(), false),
-                                    getFourStateExpressionValue(xorp->rhsp(), false)},
-                         getFourStateExpressionXorXZ(xorp)};
-    }
-
-    AstNodeExpr* getFourStateExpressionXorXZ(AstXor* const xorp) {
-        // a.xz | b.xz
-        FileLine* const flp = xorp->fileline();
-        return new AstOr{flp, getFourStateExpressionXZ(xorp->lhsp()),
-                         getFourStateExpressionXZ(xorp->rhsp())};
-    }
-
-    AstNodeExpr* getFourStateExpressionNotValue(AstNot* const notp) {
-        // ~a.value | a.xz
-        FileLine* const flp = notp->fileline();
-        return new AstOr{flp, new AstNot{flp, getFourStateExpressionValue(notp->lhsp())},
-                         getFourStateExpressionXZ(notp->lhsp())};
-    }
-
-    AstNodeExpr* getFourStateExpressionNotXZ(AstNot* const notp) {
-        // a.xz
-        return getFourStateExpressionXZ(notp->lhsp());
-    }
-
-    AstNodeExpr* getFourStateExpressionEqValue(AstEq* const eqp) {
-        // (a.xz | b.xz != 0) | (a.value == b.value )
-        FileLine* const flp = eqp->fileline();
-        return new AstOr{flp, getFourStateExpressionEqXZ(eqp),
-                         new AstEq{flp, getFourStateExpressionValue(eqp->lhsp()),
-                                   getFourStateExpressionValue(eqp->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionEqXZ(AstEq* const eqp) {
-        // a.xz | b.xz != 0
-        FileLine* const flp = eqp->fileline();
-        return new AstNeq{flp,
-                          new AstOr{flp, getFourStateExpressionXZ(eqp->lhsp()),
-                                    getFourStateExpressionXZ(eqp->rhsp())},
-                          new AstConst{flp, AstConst::BitFalse{}}};
-    }
-
-    AstNodeExpr* getFourStateExpressionNeqValue(AstNeq* const neqp) {
-        // (a.xz | b.xz != 0) | (a.value != b.value )
-        FileLine* const flp = neqp->fileline();
-        return new AstOr{flp, getFourStateExpressionNeqXZ(neqp),
-                         new AstNeq{flp, getFourStateExpressionValue(neqp->lhsp()),
-                                    getFourStateExpressionValue(neqp->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionNeqXZ(AstNeq* const neqp) {
-        // a.xz | b.xz != 0
-        FileLine* const flp = neqp->fileline();
-        return new AstNeq{flp,
-                          new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
-                                    getFourStateExpressionXZ(neqp->rhsp())},
-                          new AstConst{flp, AstConst::BitFalse{}}};
-    }
-
-    AstNodeExpr* getFourStateExpressionEqCaseValue(AstEqCase* const eqCasep) {
-        // (a.xz == b.xz) & (a.value == b.value)
-        FileLine* const flp = eqCasep->fileline();
-        return new AstLogAnd{flp,
-                             new AstEq{flp, getFourStateExpressionXZ(eqCasep->lhsp()),
-                                       getFourStateExpressionXZ(eqCasep->rhsp())},
-                             new AstEq{flp, getFourStateExpressionValue(eqCasep->lhsp()),
-                                       getFourStateExpressionValue(eqCasep->rhsp())}};
-    }
-
-    AstNodeExpr* getFourStateExpressionEqCaseXZ(AstEqCase* const eqp) {
-        // 0
-        FileLine* const flp = eqp->fileline();
-        return new AstConst{flp, AstConst::BitFalse{}};
-    }
-
-    AstNodeExpr* getFourStateExpressionNeqCaseValue(AstNeqCase* const neqp) {
-        // |((a.value ^ b.value) | (a.xz ^ b.xz))
-        FileLine* const flp = neqp->fileline();
-        return new AstRedOr{flp,
-                            new AstOr{flp,
-                                      new AstXor{flp, getFourStateExpressionValue(neqp->lhsp()),
-                                                 getFourStateExpressionValue(neqp->rhsp())},
-                                      new AstXor{flp, getFourStateExpressionXZ(neqp->lhsp()),
-                                                 getFourStateExpressionXZ(neqp->rhsp())}}};
-    }
-
-    AstNodeExpr* getFourStateExpressionNeqCaseXZ(AstNeqCase* const neqp) {
-        // 0
-        FileLine* const flp = neqp->fileline();
-        return new AstConst{flp, AstConst::BitFalse{}};
-    }
-
-    AstNodeExpr* getFourStateExpressionExtendValue(AstExtend* const extendp) {
-        FileLine* const flp = extendp->fileline();
-        return new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
-    }
-
-    AstNodeExpr* getFourStateExpressionExtendXZ(AstExtend* const extendp) {
-        FileLine* const flp = extendp->fileline();
-        return new AstExtend{flp, getFourStateExpressionXZ(extendp->lhsp(), false)};
-    }
-
-    AstNodeExpr* getFourStateExpressionExtendSValue(AstExtendS* const extendsp) {
-        FileLine* const flp = extendsp->fileline();
-        return new AstExtendS{flp, getFourStateExpressionValue(extendsp->lhsp(), false)};
-    }
-
-    AstNodeExpr* getFourStateExpressionExtendSXZ(AstExtendS* const extendsp) {
-        FileLine* const flp = extendsp->fileline();
-        return new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false)};
-    }
-
-    AstNodeExpr* getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
-        // (a.xz | b.xz) ? '1 : (a op b)
-        FileLine* const flp = biop->fileline();
-        AstNodeBiop* const newp = biop->cloneTree(false);
-        newp->dtypeSetBitSized(biop->width(), biop->dtypep()->numeric());
-        newp->lhsp()->unlinkFrBack()->deleteTree();
-        newp->rhsp()->unlinkFrBack()->deleteTree();
-        newp->lhsp(getFourStateExpressionValue(biop->lhsp(), false));
-        newp->rhsp(getFourStateExpressionValue(biop->rhsp(), false));
-        return new AstCond{flp,
-                           new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
-                                                       getFourStateExpressionXZ(biop->rhsp())}},
-                           createConst(flp, biop->width(), true), newp};
-    }
-
-    AstNodeExpr* getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {
-        // (a.xz | b.xz) ? '1 : '0
-        FileLine* const flp = biop->fileline();
-        return new AstCond{flp,
-                           new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
-                                                       getFourStateExpressionXZ(biop->rhsp())}},
-                           createConst(flp, biop->width(), true), createConst(flp, biop->width())};
-    }
-
     void getFourStateExpressionFuncRefHandler(AstNodeFTaskRef* const funcp) {
         // Its ok to use this instead of output since we only need width which is the same
         AstVar* const functionReturnVarp = VN_AS(VN_AS(funcp->taskp(), Func)->fvarp(), Var);
@@ -561,158 +375,387 @@ class FourstateVisitor final : public VNVisitor {
         funcp->user2p(varRefXzp);
     }
 
-    AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp, bool putIntoTmp = true) {
-        // VN_AS is expected to be here (instead of VN_CAST)
-        if (AstNodeExpr* result = VN_AS(exprp->user1p(), NodeExpr)) {
-            return result->cloneTree(false);
+    inline AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
+                                                    bool putIntoTmp = false) {
+        return m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(exprp, putIntoTmp);
+    }
+
+    inline AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp,
+                                                 bool putIntoTmp = false) {
+        return m_fourstateGeneratorXZVisitor.getFourStateExpressionXZ(exprp, putIntoTmp);
+    }
+
+    class FourstateExpressionVisitor VL_NOT_FINAL : public VNVisitor {
+    protected:
+        FourstateVisitor& m_fourstateVisitor;
+        AstNodeExpr* m_result = nullptr;
+
+    private:
+        bool m_noTmp = false;
+
+        void visit(AstNodeExpr* const nodep) final {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Operator not supported in the four-state mode");
+            // Workaround to avaoid Internal errors
+            m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         }
-        AstNodeExpr* result;
-        if (AstNodeVarRef* const varRefp = VN_CAST(exprp, NodeVarRef)) {
-            putIntoTmp = false;
-            if (varRefp->varp()->dtypep()->isFourstate()) {
-                splitVar(varRefp->varp());
-                AstNodeVarRef* const newp = varRefp->cloneTree(false);
-                newp->varp(getSplittedValue(varRefp->varp()));
-                newp->dtypeSetBitSized(varRefp->varp()->width(),
-                                       varRefp->varp()->dtypep()->numeric());
-                result = newp;
-            } else {
-                AstNodeVarRef* const newp = varRefp->cloneTree(false);
-                varRefp->dtypeSetBitSized(varRefp->width(), varRefp->dtypep()->numeric());
-                result = newp;
+
+        void visit(AstNode* const nodep) final {
+            nodep->v3fatalSrc("This node shall be unreachable in this visitor");
+        }
+
+        virtual AstNodeExpr* getCache(const AstNodeExpr* keyp) = 0;
+        virtual void setCache(AstNodeExpr* keyp, AstNodeExpr* valuep) = 0;
+
+    protected:
+        void noTmp() { m_noTmp = true; }
+
+        AstNodeExpr* get(AstNodeExpr* const exprp, bool putIntoTmp = true) {
+            // VN_AS is expected to be here (instead of VN_CAST)
+            if (AstNodeExpr* result = getCache(exprp)) return result->cloneTree(false);
+            m_result = nullptr;
+            VL_RESTORER(m_noTmp);
+            m_noTmp = false;
+            iterate(exprp);
+            UASSERT_OBJ(m_result, exprp,
+                        "Result shall always be returned - even if it is just a place holder");
+            if (putIntoTmp && !m_noTmp) {
+                FileLine* const flp = exprp->fileline();
+                AstVar* const varp = m_fourstateVisitor.createTmp(exprp);
+                m_fourstateVisitor.m_currentStmtp->addHereThisAsNext(
+                    new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, m_result});
+                m_result = new AstVarRef{flp, varp, VAccess::READ};
             }
-        } else if (AstConst* const constp = VN_CAST(exprp, Const)) {
-            putIntoTmp = false;
+            setCache(exprp, m_result);
+            return m_result;
+        }
+
+    public:
+        explicit FourstateExpressionVisitor(FourstateVisitor& fourstateVisitor)
+            : m_fourstateVisitor{fourstateVisitor} {}
+        ~FourstateExpressionVisitor() override = default;
+
+        virtual AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
+                                                         bool putIntoTmp = true) {
+            return m_fourstateVisitor.m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(
+                exprp, putIntoTmp);
+        }
+
+        virtual AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp,
+                                                      const bool putIntoTmp = true) {
+            return m_fourstateVisitor.m_fourstateGeneratorXZVisitor.getFourStateExpressionXZ(
+                exprp, putIntoTmp);
+        }
+    };
+
+    class FourstateExpressionValueVisitor final : public FourstateExpressionVisitor {
+
+        void visit(AstAnd* const andp) override {
+            // (a.value | a.xz) & (b.value | b.xz)
+            FileLine* const flp = andp->fileline();
+            m_result = new AstAnd{flp,
+                                  new AstOr{flp, getFourStateExpressionValue(andp->lhsp()),
+                                            getFourStateExpressionXZ(andp->lhsp())},
+                                  new AstOr{flp, getFourStateExpressionValue(andp->rhsp()),
+                                            getFourStateExpressionXZ(andp->rhsp())}};
+        }
+
+        void visit(AstOr* const orp) override {
+            // a.value | b.value | a.xz | b.xz
+            FileLine* const flp = orp->fileline();
+            m_result = new AstOr{flp,
+                                 new AstOr{flp, getFourStateExpressionValue(orp->lhsp()),
+                                           getFourStateExpressionValue(orp->rhsp())},
+                                 new AstOr{flp, getFourStateExpressionXZ(orp->lhsp()),
+                                           getFourStateExpressionXZ(orp->rhsp())}};
+        }
+
+        void visit(AstXor* const xorp) override {
+            // (a.value ^ b.value) | a.xz | b.xz
+            FileLine* const flp = xorp->fileline();
+            m_result = new AstOr{flp,
+                                 new AstXor{flp, getFourStateExpressionValue(xorp->lhsp(), false),
+                                            getFourStateExpressionValue(xorp->rhsp(), false)},
+                                 getFourStateExpressionXZ(xorp)};
+        }
+
+        void visit(AstNot* const notp) override {
+            // ~a.value | a.xz
+            FileLine* const flp = notp->fileline();
+            m_result = new AstOr{flp, new AstNot{flp, getFourStateExpressionValue(notp->lhsp())},
+                                 getFourStateExpressionXZ(notp->lhsp())};
+        }
+
+        void visit(AstEq* const eqp) override {
+            // (a.xz | b.xz != 0) | (a.value == b.value )
+            FileLine* const flp = eqp->fileline();
+            m_result = new AstOr{flp, getFourStateExpressionXZ(eqp),
+                                 new AstEq{flp, getFourStateExpressionValue(eqp->lhsp()),
+                                           getFourStateExpressionValue(eqp->rhsp())}};
+        }
+
+        void visit(AstNeq* const neqp) override {
+            // (a.xz | b.xz != 0) | (a.value != b.value )
+            FileLine* const flp = neqp->fileline();
+            m_result = new AstOr{flp, getFourStateExpressionXZ(neqp),
+                                 new AstNeq{flp, getFourStateExpressionValue(neqp->lhsp()),
+                                            getFourStateExpressionValue(neqp->rhsp())}};
+        }
+
+        void visit(AstEqCase* const eqCasep) override {
+            // (a.xz == b.xz) & (a.value == b.value)
+            FileLine* const flp = eqCasep->fileline();
+            m_result = new AstLogAnd{flp,
+                                     new AstEq{flp, getFourStateExpressionXZ(eqCasep->lhsp()),
+                                               getFourStateExpressionXZ(eqCasep->rhsp())},
+                                     new AstEq{flp, getFourStateExpressionValue(eqCasep->lhsp()),
+                                               getFourStateExpressionValue(eqCasep->rhsp())}};
+        }
+
+        void visit(AstNeqCase* const neqp) override {
+            // |((a.value ^ b.value) | (a.xz ^ b.xz))
+            FileLine* const flp = neqp->fileline();
+            m_result = new AstRedOr{
+                flp, new AstOr{flp,
+                               new AstXor{flp, getFourStateExpressionValue(neqp->lhsp()),
+                                          getFourStateExpressionValue(neqp->rhsp())},
+                               new AstXor{flp, getFourStateExpressionXZ(neqp->lhsp()),
+                                          getFourStateExpressionXZ(neqp->rhsp())}}};
+        }
+
+        void visit(AstExtend* const extendp) override {
+            FileLine* const flp = extendp->fileline();
+            m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
+        }
+
+        void visit(AstExtendS* const extendsp) override {
+            FileLine* const flp = extendsp->fileline();
+            m_result = new AstExtendS{flp, getFourStateExpressionValue(extendsp->lhsp(), false)};
+        }
+
+        void visit(AstCReset* const cresetp) override {
+            m_result = cresetp->cloneTree(false);
+            m_result->dtypeSetBitSized(cresetp->width(), cresetp->dtypep()->numeric());
+        }
+
+        void visit(AstConst* const constp) override {
+            noTmp();
             AstConst* const newp = constp->cloneTree(false);
             newp->num().opBitsOneX(constp->num());
             newp->dtypeSetBitUnsized(newp->width(), newp->dtypep()->widthMin(),
                                      newp->dtypep()->numeric());
-            result = newp;
-        } else if (AstAnd* const andp = VN_CAST(exprp, And)) {
-            result = getFourStateExpressionAndValue(andp);
-        } else if (AstOr* const orp = VN_CAST(exprp, Or)) {
-            result = getFourStateExpressionOrValue(orp);
-        } else if (AstXor* const xorp = VN_CAST(exprp, Xor)) {
-            result = getFourStateExpressionXorValue(xorp);
-        } else if (AstNot* const notp = VN_CAST(exprp, Not)) {
-            result = getFourStateExpressionNotValue(notp);
-        } else if (AstEq* const eqp = VN_CAST(exprp, Eq)) {
-            result = getFourStateExpressionEqValue(eqp);
-        } else if (AstNeq* const neqp = VN_CAST(exprp, Neq)) {
-            result = getFourStateExpressionNeqValue(neqp);
-        } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
-            result = getFourStateExpressionEqCaseValue(eqCasep);
-        } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
-            result = getFourStateExpressionNeqCaseValue(neqCasep);
-        } else if (AstExtend* const extendp = VN_CAST(exprp, Extend)) {
-            result = getFourStateExpressionExtendValue(extendp);
-        } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
-            result = getFourStateExpressionExtendSValue(extendsp);
-        } else if (AstAdd* const addp = VN_CAST(exprp, Add)) {
-            result = getFourStateExpressionArithmeticValue(addp);
-        } else if (AstSub* const subp = VN_CAST(exprp, Sub)) {
-            result = getFourStateExpressionArithmeticValue(subp);
-        } else if (AstMul* const mulp = VN_CAST(exprp, Mul)) {
-            result = getFourStateExpressionArithmeticValue(mulp);
-        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
-            result = cresetp->cloneTree(false);
-            result->dtypeSetBitSized(exprp->width(), exprp->dtypep()->numeric());
-        } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
-            // Everything is handled by the function
-            getFourStateExpressionFuncRefHandler(funcp);
-            return VN_AS(exprp->user1p(), NodeExpr)->cloneTree(false);
-        } else {
-            exprp->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
-            // Workaround to avaoid Internal errors
-            result = new AstConst{exprp->fileline(), AstConst::BitFalse{}};
+            m_result = newp;
         }
-        if (putIntoTmp) {
-            FileLine* const flp = exprp->fileline();
-            AstVar* const varp = createTmp(exprp);
-            m_currentStmtp->addHereThisAsNext(
-                new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, result});
-            result = new AstVarRef{flp, varp, VAccess::READ};
-        }
-        exprp->user1p(result);
-        return result;
-    }
 
-    AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp, bool putIntoTmp = true) {
-        // VN_AS is expected to be here (instead of VN_CAST)
-        if (AstNodeExpr* result = VN_AS(exprp->user2p(), NodeExpr)) {
-            return result->cloneTree(false);
+        void visit(AstNodeFTaskRef* const funcp) override {
+            m_fourstateVisitor.getFourStateExpressionFuncRefHandler(funcp);
+            noTmp();
+            m_result = VN_AS(funcp->user1p(), NodeExpr)->cloneTree(false);
         }
-        AstNodeExpr* result;
-        if (AstNodeVarRef* const varRefp = VN_CAST(exprp, NodeVarRef)) {
-            putIntoTmp = false;
+
+        void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
+            // (a.xz | b.xz) ? '1 : (a op b)
+            FileLine* const flp = biop->fileline();
+            AstNodeBiop* const newp = biop->cloneTree(false);
+            newp->dtypeSetBitSized(biop->width(), biop->dtypep()->numeric());
+            newp->lhsp()->unlinkFrBack()->deleteTree();
+            newp->rhsp()->unlinkFrBack()->deleteTree();
+            newp->lhsp(getFourStateExpressionValue(biop->lhsp(), false));
+            newp->rhsp(getFourStateExpressionValue(biop->rhsp(), false));
+            m_result = new AstCond{
+                flp,
+                new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                            getFourStateExpressionXZ(biop->rhsp())}},
+                createConst(flp, biop->width(), true), newp};
+        }
+
+        void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticValue(addp); }
+        void visit(AstSub* const subp) override { getFourStateExpressionArithmeticValue(subp); }
+        void visit(AstMul* const mulp) override { getFourStateExpressionArithmeticValue(mulp); }
+
+        void visit(AstNodeVarRef* const varRefp) override {
+            noTmp();
             if (varRefp->varp()->dtypep()->isFourstate()) {
-                splitVar(varRefp->varp());
+                m_fourstateVisitor.splitVar(varRefp->varp());
+                AstNodeVarRef* const newp = varRefp->cloneTree(false);
+                newp->varp(getSplittedValue(varRefp->varp()));
+                newp->dtypeSetBitSized(varRefp->varp()->width(),
+                                       varRefp->varp()->dtypep()->numeric());
+                m_result = newp;
+            } else {
+                AstNodeVarRef* const newp = varRefp->cloneTree(false);
+                varRefp->dtypeSetBitSized(varRefp->width(), varRefp->dtypep()->numeric());
+                m_result = newp;
+            }
+        }
+
+        AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
+            return VN_AS(keyp->user1p(), NodeExpr);
+        }
+        void setCache(AstNodeExpr* keyp, AstNodeExpr* const valuep) override {
+            keyp->user1p(valuep);
+        }
+
+    public:
+        using FourstateExpressionVisitor::FourstateExpressionVisitor;
+        ~FourstateExpressionValueVisitor() override = default;
+
+        AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
+                                                 bool putIntoTmp = true) override {
+            return get(exprp, putIntoTmp);
+        }
+    };
+
+    class FourstateExpressionXZVisitor : public FourstateExpressionVisitor {
+
+        void visit(AstAnd* const andp) override {
+            // (a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz)
+            FileLine* const flp = andp->fileline();
+            m_result
+                = new AstOr{flp,
+                            new AstOr{flp,
+                                      new AstAnd{flp, getFourStateExpressionValue(andp->lhsp()),
+                                                 getFourStateExpressionXZ(andp->rhsp())},
+                                      new AstAnd{flp, getFourStateExpressionValue(andp->rhsp()),
+                                                 getFourStateExpressionXZ(andp->lhsp())}},
+                            new AstAnd{flp, getFourStateExpressionXZ(andp->lhsp()),
+                                       getFourStateExpressionXZ(andp->rhsp())}};
+        }
+
+        void visit(AstOr* const orp) override {
+            // (a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value)
+            FileLine* const flp = orp->fileline();
+            m_result = new AstOr{
+                flp,
+                new AstOr{flp,
+                          new AstAnd{flp, getFourStateExpressionXZ(orp->lhsp()),
+                                     getFourStateExpressionXZ(orp->rhsp())},
+                          new AstAnd{flp, getFourStateExpressionXZ(orp->lhsp()),
+                                     new AstNot{flp, getFourStateExpressionValue(orp->rhsp())}}},
+                new AstAnd{flp, getFourStateExpressionXZ(orp->rhsp()),
+                           new AstNot{flp, getFourStateExpressionValue(orp->lhsp())}}};
+        }
+
+        void visit(AstXor* const xorp) override {
+            // a.xz | b.xz
+            FileLine* const flp = xorp->fileline();
+            m_result = new AstOr{flp, getFourStateExpressionXZ(xorp->lhsp()),
+                                 getFourStateExpressionXZ(xorp->rhsp())};
+        }
+
+        void visit(AstNot* const notp) override {
+            // a.xz
+            m_result = getFourStateExpressionXZ(notp->lhsp());
+        }
+
+        void visit(AstEq* const eqp) override {
+            // a.xz | b.xz != 0
+            FileLine* const flp = eqp->fileline();
+            m_result = new AstNeq{flp,
+                                  new AstOr{flp, getFourStateExpressionXZ(eqp->lhsp()),
+                                            getFourStateExpressionXZ(eqp->rhsp())},
+                                  new AstConst{flp, AstConst::BitFalse{}}};
+        }
+
+        void visit(AstNeq* const neqp) override {
+            // a.xz | b.xz != 0
+            FileLine* const flp = neqp->fileline();
+            m_result = new AstNeq{flp,
+                                  new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
+                                            getFourStateExpressionXZ(neqp->rhsp())},
+                                  new AstConst{flp, AstConst::BitFalse{}}};
+        }
+
+        void visit(AstEqCase* const eqp) override {
+            // 0
+            FileLine* const flp = eqp->fileline();
+            m_result = new AstConst{flp, AstConst::BitFalse{}};
+        }
+
+        void visit(AstNeqCase* const neqp) override {
+            // 0
+            FileLine* const flp = neqp->fileline();
+            m_result = new AstConst{flp, AstConst::BitFalse{}};
+        }
+
+        void visit(AstExtend* const extendp) override {
+            FileLine* const flp = extendp->fileline();
+            m_result = new AstExtend{flp, getFourStateExpressionXZ(extendp->lhsp(), false)};
+        }
+
+        void visit(AstExtendS* const extendsp) override {
+            FileLine* const flp = extendsp->fileline();
+            m_result = new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false)};
+        }
+
+        void visit(AstCReset* const cresetp) override {
+            m_result = cresetp->cloneTree(false);
+            m_result->dtypeSetBitSized(cresetp->width(), cresetp->dtypep()->numeric());
+        }
+
+        void visit(AstConst* const constp) override {
+            noTmp();
+            AstConst* const newp = constp->cloneTree(false);
+            newp->num().opBitsXZ(constp->num());
+            newp->dtypeSetBitSized(newp->width(), newp->dtypep()->numeric());
+            m_result = newp;
+        }
+
+        void getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {
+            // (a.xz | b.xz) ? '1 : '0
+            FileLine* const flp = biop->fileline();
+            m_result = new AstCond{
+                flp,
+                new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                            getFourStateExpressionXZ(biop->rhsp())}},
+                createConst(flp, biop->width(), true), createConst(flp, biop->width())};
+        }
+
+        void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticXZ(addp); }
+        void visit(AstSub* const subp) override { getFourStateExpressionArithmeticXZ(subp); }
+        void visit(AstMul* const mulp) override { getFourStateExpressionArithmeticXZ(mulp); }
+
+        void visit(AstNodeFTaskRef* const funcp) override {
+            m_fourstateVisitor.getFourStateExpressionFuncRefHandler(funcp);
+            noTmp();
+            m_result = VN_AS(funcp->user2p(), NodeExpr)->cloneTree(false);
+        }
+
+        void visit(AstNodeVarRef* const varRefp) override {
+            noTmp();
+            if (varRefp->varp()->dtypep()->isFourstate()) {
+                m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
                 newp->varp(getSplittedXZ(varRefp->varp()));
                 newp->dtypeSetBitSized(varRefp->varp()->width(),
                                        varRefp->varp()->dtypep()->numeric());
-                result = newp;
+                m_result = newp;
             } else {
                 AstConst* const newp = new AstConst{varRefp->fileline(), AstConst::WidthedValue{},
                                                     varRefp->width(), 0};
-                result = newp;
+                m_result = newp;
             }
-        } else if (AstConst* const constp = VN_CAST(exprp, Const)) {
-            putIntoTmp = false;
-            AstConst* const newp = constp->cloneTree(false);
-            newp->num().opBitsXZ(constp->num());
-            newp->dtypeSetBitSized(newp->width(), newp->dtypep()->numeric());
-            result = newp;
-        } else if (AstAnd* const andp = VN_CAST(exprp, And)) {
-            result = getFourStateExpressionAndXZ(andp);
-        } else if (AstOr* const orp = VN_CAST(exprp, Or)) {
-            result = getFourStateExpressionOrXZ(orp);
-        } else if (AstXor* const xorp = VN_CAST(exprp, Xor)) {
-            result = getFourStateExpressionXorXZ(xorp);
-        } else if (AstNot* const notp = VN_CAST(exprp, Not)) {
-            result = getFourStateExpressionNotXZ(notp);
-        } else if (AstEq* const eqp = VN_CAST(exprp, Eq)) {
-            result = getFourStateExpressionEqXZ(eqp);
-        } else if (AstNeq* const neqp = VN_CAST(exprp, Neq)) {
-            result = getFourStateExpressionNeqXZ(neqp);
-        } else if (AstEqCase* const eqCasep = VN_CAST(exprp, EqCase)) {
-            result = getFourStateExpressionEqCaseXZ(eqCasep);
-        } else if (AstNeqCase* const neqCasep = VN_CAST(exprp, NeqCase)) {
-            result = getFourStateExpressionNeqCaseXZ(neqCasep);
-        } else if (AstExtend* const extendp = VN_CAST(exprp, Extend)) {
-            result = getFourStateExpressionExtendXZ(extendp);
-        } else if (AstExtendS* const extendsp = VN_CAST(exprp, ExtendS)) {
-            result = getFourStateExpressionExtendSXZ(extendsp);
-        } else if (AstAdd* const addp = VN_CAST(exprp, Add)) {
-            result = getFourStateExpressionArithmeticXZ(addp);
-        } else if (AstSub* const subp = VN_CAST(exprp, Sub)) {
-            result = getFourStateExpressionArithmeticXZ(subp);
-        } else if (AstMul* const mulp = VN_CAST(exprp, Mul)) {
-            result = getFourStateExpressionArithmeticXZ(mulp);
-        } else if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
-            result = cresetp->cloneTree(false);
-            result->dtypeSetBitSized(exprp->width(), exprp->dtypep()->numeric());
-        } else if (AstNodeFTaskRef* const funcp = VN_CAST(exprp, NodeFTaskRef)) {
-            // Everything is handled by the function
-            getFourStateExpressionFuncRefHandler(funcp);
-            return VN_AS(exprp->user2p(), NodeExpr)->cloneTree(false);
-        } else {
-            exprp->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
-            // Workaround to avaoid Internal errors
-            result = new AstConst{exprp->fileline(), AstConst::BitFalse{}};
         }
-        if (putIntoTmp) {
-            FileLine* const flp = exprp->fileline();
-            AstVar* const varp = createTmp(exprp);
-            m_currentStmtp->addHereThisAsNext(
-                new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, result});
-            result = new AstVarRef{flp, varp, VAccess::READ};
+
+        AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
+            return VN_AS(keyp->user2p(), NodeExpr);
         }
-        exprp->user2p(result);
-        return result;
-    }
+        void setCache(AstNodeExpr* keyp, AstNodeExpr* const valuep) override {
+            keyp->user2p(valuep);
+        }
+
+    public:
+        using FourstateExpressionVisitor::FourstateExpressionVisitor;
+        ~FourstateExpressionXZVisitor() override = default;
+
+        AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp,
+                                              bool putIntoTmp = true) override {
+            return get(exprp, putIntoTmp);
+        }
+    };
+
+    FourstateExpressionValueVisitor m_fourstateGeneratorValueVisitor;
+    FourstateExpressionXZVisitor m_fourstateGeneratorXZVisitor;
 
     AstNodeExpr* getTruthExpr(AstNodeExpr* const exprp) {
         // a.value && !a.xz
@@ -990,7 +1033,9 @@ class FourstateVisitor final : public VNVisitor {
 
 public:
     explicit FourstateVisitor(AstNetlist* const netlistp)
-        : m_tmpNames{"__VfourStateTmp"} {
+        : m_tmpNames{"__VfourStateTmp"}
+        , m_fourstateGeneratorValueVisitor{*this}
+        , m_fourstateGeneratorXZVisitor{*this} {
         iterate(netlistp);
         triorTriandReduce(m_assignWToTriand, triandReducer);
         triorTriandReduce(m_assignWToTrior, triorReducer);
