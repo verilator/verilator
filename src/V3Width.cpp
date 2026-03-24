@@ -241,6 +241,7 @@ class WidthVisitor final : public VNVisitor {
     std::map<const AstNode*, const AstClass*>
         m_containingClassp;  // Containing class cache for containingClass() function
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_set<const AstVar*> m_ifaceVars;  // Variables declared inside interfaces
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -2832,7 +2833,13 @@ class WidthVisitor final : public VNVisitor {
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
-            nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: " << nodep->prettyNameQ());
+            // Driving an interface input port from the instantiating scope is legal
+            // (IEEE 1800-2023 25.4). Skip ASSIGNIN when the variable belongs to an
+            // interface and the current module is not that interface.
+            if (!m_ifaceVars.count(nodep->varp()) || VN_IS(m_modep, Iface)) {
+                nodep->v3warn(ASSIGNIN,
+                              "Assigning to input/const variable: " << nodep->prettyNameQ());
+            }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic)
@@ -7345,6 +7352,12 @@ class WidthVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_modep);
             m_modep = nodep;
+            // Collect interface variables so ASSIGNIN can distinguish
+            // external drives (legal per IEEE 1800-2023 25.4) from
+            // internal drives (illegal).
+            if (VN_IS(nodep, Iface)) {
+                nodep->foreach([this](const AstVar* varp) { m_ifaceVars.insert(varp); });
+            }
             userIterateChildren(nodep, nullptr);
         }
     }
