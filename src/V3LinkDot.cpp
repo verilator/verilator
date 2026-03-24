@@ -80,6 +80,23 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+static string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
+    if (AstParseRef* const refp = VN_CAST(nodep, ParseRef)) {
+        return refp->name();
+    } else if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+        return refp->name();
+    } else if (AstDot* const dotp = VN_CAST(nodep, Dot)) {
+        const string lhs = extractDottedPath(dotp->lhsp(), hasPartSelect);
+        const string rhs = extractDottedPath(dotp->rhsp(), hasPartSelect);
+        return VString::dot(lhs, ".", rhs);
+    } else if (VN_IS(nodep, SelBit) || VN_IS(nodep, SelExtract) || VN_IS(nodep, SelPlus)
+               || VN_IS(nodep, SelMinus)) {
+        hasPartSelect = true;
+        return "";
+    }
+    return "";
+}
+
 // ######################################################################
 //  Matcher classes (for suggestion matching)
 
@@ -2401,19 +2418,26 @@ class LinkDotParamVisitor final : public VNVisitor {
                                     << nodep->warnMore()
                                     << "... Suggest use instantiation with #(."
                                     << nodep->prettyName() << "(...etc...))");
-        VSymEnt* const foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
+        bool hasPartSelect = false;
+        const string path = extractDottedPath(nodep->pathp(), hasPartSelect);
+        UASSERT_OBJ(!hasPartSelect && !path.empty(), nodep, "Unexpected defparam path shape");
+        string baddot;
+        VSymEnt* okSymp = nullptr;
+        VSymEnt* const foundp = m_statep->findDotted(
+            nodep->fileline(), m_statep->getNodeSym(nodep), path, baddot, okSymp, true);
         AstCell* const cellp = foundp ? VN_AS(foundp->nodep(), Cell) : nullptr;
         if (!cellp) {
-            nodep->v3error("In defparam, instance " << nodep->path() << " never declared");
+            nodep->v3error("In defparam, instance " << path << " never declared");
         } else {
             AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
-            UINFO(9, "Defparam cell " << nodep->path() << "." << nodep->name() << " attach-to "
-                                      << cellp << "  <= " << exprp);
+            UINFO(9, "Defparam cell " << path << "." << nodep->name() << " attach-to " << cellp
+                                      << "  <= " << exprp);
             // Don't need to check the name of the defparam exists.  V3Param does.
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
                                             nodep->name(), exprp};
             pinp->param(true);
+            pinp->paramPath(path);
             cellp->addParamsp(pinp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -2797,26 +2821,6 @@ class LinkDotIfaceVisitor final : public VNVisitor {
         }
     }
 
-    // Helper to extract a dotted path string from an AstDot tree
-    // Returns empty string and sets hasPartSelect=true if part-select detected
-    string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
-        if (AstParseRef* const refp = VN_CAST(nodep, ParseRef)) {
-            return refp->name();
-        } else if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            return refp->name();
-        } else if (AstDot* const dotp = VN_CAST(nodep, Dot)) {
-            const string lhs = extractDottedPath(dotp->lhsp(), hasPartSelect);
-            const string rhs = extractDottedPath(dotp->rhsp(), hasPartSelect);
-            if (lhs.empty()) return rhs;
-            if (rhs.empty()) return lhs;
-            return lhs + "." + rhs;
-        } else if (VN_IS(nodep, SelBit) || VN_IS(nodep, SelExtract)) {
-            hasPartSelect = true;
-            return "";
-        }
-        return "";
-    }
-
     // Helper to resolve remaining path through a nested interface
     // When findDotted() partially matches (okSymp set, baddot non-empty),
     // this follows the interface type to resolve the remaining path.
@@ -3080,6 +3084,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_insideClassExtParam = false;  // Inside a class from m_extendsParam
     AstNew* m_explicitSuperNewp = nullptr;  // Hit a "super.new" call inside a "new" function
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
+    std::map<AstNode*, std::map<std::string, AstPin*>> m_usedDefParamPins;
+    // Defparam pins used for a given formal, by hierarchical path
     std::map<std::string, AstNodeModule*> m_modulesToRevisit;  // Modules to revisit a second time
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
     AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
@@ -3313,16 +3319,34 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return foundNodep;
     }
+    void duplicatePinError(AstPin* nodep, AstNode* origp, const char* whatp) {
+        nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << '\n'
+                                    << nodep->warnContextPrimary() << '\n'
+                                    << origp->warnOther() << "... Location of original " << whatp
+                                    << " connection\n"
+                                    << origp->warnContextSecondary());
+    }
     void markAndCheckPinDup(AstPin* nodep, AstNode* refp, const char* whatp) {
         const auto pair = m_usedPins.emplace(refp, nodep);
-        if (!pair.second) {
+        if (pair.second) {
+            if (!nodep->paramPath().empty())
+                m_usedDefParamPins[refp].emplace(nodep->paramPath(), nodep);
+            return;
+        } else {
             AstNode* const origp = pair.first->second;
-            nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << '\n'
-                                        << nodep->warnContextPrimary() << '\n'
-                                        << origp->warnOther() << "... Location of original "
-                                        << whatp << " connection\n"
-                                        << origp->warnContextSecondary());
+            if (nodep->paramPath().empty() || VN_AS(origp, Pin)->paramPath().empty()) {
+                duplicatePinError(nodep, origp, whatp);
+                return;
+            }
         }
+
+        auto& defParamPins = m_usedDefParamPins[refp];
+        const auto defParamIt = defParamPins.find(nodep->paramPath());
+        if (defParamIt != defParamPins.end()) {
+            duplicatePinError(nodep, defParamIt->second, whatp);
+            return;
+        }
+        defParamPins.emplace(nodep->paramPath(), nodep);
     }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
         AstVar* const eventp = clockingp->ensureEventp(true);
@@ -3698,7 +3722,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
         VL_RESTORER(m_usedPins);
+        VL_RESTORER(m_usedDefParamPins);
         m_usedPins.clear();
+        m_usedDefParamPins.clear();
         UASSERT_OBJ(nodep->modp(), nodep,
                     "Instance has unlinked module");  // V3LinkCell should have errored out
         VL_RESTORER(m_cellp);
@@ -3736,7 +3762,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         // Can be under dot if called as package::class and that class resolves, so no checkNoDot
         VL_RESTORER(m_usedPins);
+        VL_RESTORER(m_usedDefParamPins);
         m_usedPins.clear();
+        m_usedDefParamPins.clear();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp() || V3Error::errorCount(), nodep,
                     "class reference parameter not removed by V3Param");
@@ -4620,7 +4648,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(8, indent() << "visit " << nodep);
         UINFO(9, indent() << m_ds.ascii());
         VL_RESTORER(m_usedPins);
+        VL_RESTORER(m_usedDefParamPins);
         m_usedPins.clear();
+        m_usedDefParamPins.clear();
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
                     "class reference parameter not removed by V3Param");
         {
@@ -5900,7 +5930,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     if (foundp) {
                         UINFO(1, "Found sym node: " << foundp->nodep());
-                        nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
+                        nodep->v3error("Expecting a data type: "
+                                       << nodep->prettyNameQ()
+                                       << ", found: " << foundp->nodep()->prettyTypeName());
                     } else {
                         nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                     }
@@ -6034,7 +6066,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (ifacep->dead()) return;
             checkNoDot(nodep);
             VL_RESTORER(m_usedPins);
+            VL_RESTORER(m_usedDefParamPins);
             m_usedPins.clear();
+            m_usedDefParamPins.clear();
             VL_RESTORER(m_pinSymp);
             m_pinSymp = m_statep->getNodeSym(ifacep);
             iterateAndNextNull(nodep->paramsp());

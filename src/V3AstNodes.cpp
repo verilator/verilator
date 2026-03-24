@@ -2312,12 +2312,14 @@ void AstPin::dump(std::ostream& str) const {
     } else {
         str << " ->UNLINKED";
     }
+    if (!paramPath().empty()) str << " paramPath=" << paramPath();
     if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, svDotName);
     dumpJsonBoolFuncIf(str, svImplicit);
+    if (!paramPath().empty()) dumpJsonStr(str, "paramPath", paramPath());
     dumpJsonGen(str);
 }
 string AstPin::prettyOperatorName() const {
@@ -2633,6 +2635,7 @@ void AstNodeModule::dump(std::ostream& str) const {
     str << " D" << depth();
     if (modPublic()) str << " [P]";
     if (inLibrary()) str << " [LIB]";
+    if (ctorVarReset()) str << " [CVRESET]";
     if (dead()) str << " [DEAD]";
     if (recursiveClone()) {
         str << " [RECURSIVE-CLONE]";
@@ -2650,6 +2653,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, level);
     dumpJsonBoolFuncIf(str, modPublic);
     dumpJsonBoolFuncIf(str, inLibrary);
+    dumpJsonBoolFuncIf(str, ctorVarReset);
     dumpJsonBoolFuncIf(str, dead);
     dumpJsonBoolFuncIf(str, recursiveClone);
     dumpJsonBoolFuncIf(str, recursive);
@@ -3398,6 +3402,14 @@ void AstCMethodHard::setPurity() {
     }
 }
 
+void AstCStmt::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (!stmtType().isNone()) str << " [" << stmtType().ascii() << "]";
+}
+void AstCStmt::dumpJson(std::ostream& str) const {
+    dumpJsonGen(str);
+    if (!stmtType().isNone()) dumpJsonStr(str, "stmtType", stmtType().ascii());
+}
 void AstCUse::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << useType() << "]";

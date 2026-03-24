@@ -2,12 +2,6 @@
    34 |     a within(b);
       |       ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:38:7: Unsupported: and (in sequence expression)
-   38 |     a and b;
-      |       ^~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:42:7: Unsupported: or (in sequence expression)
-   42 |     a or b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:46:7: Unsupported: throughout (in sequence expression)
    46 |     a throughout b;
       |       ^~~~~~~~~~

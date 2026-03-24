@@ -696,6 +696,7 @@ class VlTest:
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
         self._start_time = time.time()
+        self._uses_asan = False
         self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
@@ -1126,6 +1127,9 @@ class VlTest:
             self.trace_format = 'vcd-sc'  # pylint: disable=attribute-defined-outside-init
         else:
             self.trace_format = 'vcd-c'  # pylint: disable=attribute-defined-outside-init
+
+        if re.search(r'-runtime-debug', checkflags):
+            self._uses_asan = True
 
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
@@ -1852,6 +1856,10 @@ class VlTest:
 
         if entering:
             print("driver: Entering directory '" + os.path.abspath(entering) + "'")
+
+        if self._uses_asan and platform.system() == "Darwin":
+            # Otherwise asan prints warning that causes mismatch with expected output
+            os.environ['MallocNanoZone'] = '0'
 
         # Execute command redirecting output, keeping order between stderr and stdout.
         # Must do low-level IO so GCC interaction works (can't be line-based)
@@ -3164,5 +3172,9 @@ if __name__ == '__main__':
     else:
         # Speed up single-test makes
         Args.driver_build_jobs_n = calc_jobs()
+
+    if Capabilities.have_dev_asan and platform.system() == "Darwin":
+        # Otherwise asan prints warning that causes mismatch with expected output
+        os.environ['MallocNanoZone'] = '0'
 
     run_them()

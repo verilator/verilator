@@ -823,6 +823,8 @@ private:
             AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
+            // Don't iterate pexprp here -- it was already iterated when created
+            // (in visit(AstSExpr*)), so delays and disable iff are already processed.
         } else if (nodep->isOverlapped()) {
             nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
         } else {

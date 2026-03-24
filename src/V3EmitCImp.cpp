@@ -92,8 +92,9 @@ class EmitCImp final : public EmitCFunc {
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
-        m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                         "(" + modName + "* vlSelf);");
+        if (modp->ctorVarReset())
+            m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
+                             "(" + modName + "* vlSelf);");
         puts("\n");
 
         const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
@@ -148,7 +149,7 @@ class EmitCImp final : public EmitCFunc {
         }
 
         putsDecoration(modp, "// Reset structure values\n");
-        puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
+        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");

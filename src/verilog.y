@@ -3215,19 +3215,26 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                defparamIdRange '.' defparamIdRange '=' expr
-                        { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
+                defparamIdRangeList '.' defparamIdRange '=' expr
+                        { $$ = new AstDefParam{$4, $1, *$3, $5}; }
         |       defparamIdRange '=' expr
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
                           DEL($3); }
-        |       defparamIdRange '.' defparamIdRange '.' defparamIdRangeList '=' expr
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot");
-                          DEL($7); }
         ;
 
-defparamIdRangeList<strp>:  // IEEE: part of defparam_assignment
-                defparamIdRange                         { $$ = $1; }
-        |       defparamIdRangeList '.' defparamIdRange  { $$ = $3; }
+defparamIdRangeList<nodeExprp>:  // IEEE: part of defparam_assignment
+                defparamIdRangeExpr                     { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRangeExpr
+                        { $$ = new AstDot{$2, false, $1, $3}; }
+        ;
+
+defparamIdRangeExpr<nodeExprp>:  // IEEE: part of defparam_assignment
+                idAny
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       idAny part_select_rangeList
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr};
+                          BBUNSUP($2, "Unsupported: defparam with arrayed instance");
+                          DEL($2); }
         ;
 
 defparamIdRange<strp>:  // IEEE: part of defparam_assignment
@@ -6815,13 +6822,14 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       '(' ~p~sexpr ',' sequence_match_itemList ')'
                         { $$ = new AstExprStmt{$3, $4, $2}; }
         //
-        //                      // AND/OR are between pexprs OR sexprs
+        //                      // AND/OR are between pexprs OR sexprs (IEEE 1800-2023 16.9.2, 16.11.2)
+        //                      // For expression-level (boolean) operands, AstLogAnd/AstLogOr is correct.
+        //                      // For temporal sequence operands (containing ##), the downstream
+        //                      // V3Width "Implication with sequence expression" check will catch them.
         |       ~p~sexpr yAND ~p~sexpr
-                        { $$ = new AstLogAnd{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: and (in sequence expression)"); }
+                        { $$ = new AstSAnd{$2, $1, $3}; }
         |       ~p~sexpr yOR ~p~sexpr
-                        { $$ = new AstLogOr{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: or (in sequence expression)"); }
+                        { $$ = new AstSOr{$2, $1, $3}; }
         //                      // Intersect always has an sexpr rhs
         |       ~p~sexpr yINTERSECT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); DEL($3); }

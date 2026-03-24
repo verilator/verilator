@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sequence_nonconst_delay_unsup.v:14:40: Unsupported: non-constant cycle delay in sequence and/or
+                                                             : ... note: In instance 't'
+   14 |   assert property (@(posedge clk) (a ##delay b) and (c ##1 d));
+      |                                        ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

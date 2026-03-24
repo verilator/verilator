@@ -4,6 +4,14 @@
 // SPDX-FileCopyrightText: 2024 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
+// verilog_format: on
+
 virtual class Base;
   pure virtual function int get_param;
 endclass
@@ -11,7 +19,7 @@ class Foo #(
     int N = 17
 ) extends Base;
   function int get_param;
-    return N;
+    return `no_optimize(N);
   endfunction
 endclass
 

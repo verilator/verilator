@@ -758,6 +758,7 @@ public:
         ARRAY_FIRST,
         ARRAY_INSIDE,
         ARRAY_LAST,
+        ARRAY_MAP,
         ARRAY_MAX,
         ARRAY_MIN,
         ARRAY_NEXT,
@@ -815,6 +816,7 @@ public:
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
+        FORK_ON_KILL,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
@@ -902,6 +904,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {ARRAY_FIRST, "first", false}, \
            {ARRAY_INSIDE, "inside", true}, \
            {ARRAY_LAST, "last", false}, \
+           {ARRAY_MAP, "map", true}, \
            {ARRAY_MAX, "max", true}, \
            {ARRAY_MIN, "min", true}, \
            {ARRAY_NEXT, "next", false}, \
@@ -959,6 +962,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
+           {FORK_ON_KILL, "onKill", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
@@ -994,6 +998,48 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \
            {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
+class VCStmtType final {
+public:
+    enum en : uint8_t {
+        NONE,  // Unknown or not applicable
+        CTOR_VAR_RESET_CALL,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Statement's enum mnemonic, for checking
+        const char* m_name;  // Statements name, for debugging
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCStmtType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCStmtType(en _e)
+        : m_e{_e} {}
+    explicit VCStmtType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        return names[m_e];
+    }
+    bool isNone() const { return m_e == NONE; }
+};
+constexpr bool operator==(const VCStmtType& lhs, const VCStmtType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCStmtType& lhs, VCStmtType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCStmtType::en lhs, const VCStmtType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCStmtType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 

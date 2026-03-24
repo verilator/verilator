@@ -103,6 +103,338 @@ public:
     string dotColor() const override { return m_ifBranch ? "green" : "red"; }
 };
 
+// Check whether a subtree contains any AstSExpr (multi-cycle sequence)
+static bool containsSExpr(const AstNode* nodep) {
+    return !nodep->forall([](const AstSExpr*) { return false; });
+}
+
+// A single step in a sequence timeline: delay cycles followed by an expression check
+struct SeqStep final {
+    int delayCycles;  // Cycle delay before this check (0 for first step)
+    AstNodeExpr* exprp;  // Expression to evaluate at this step
+};
+
+// Extract a timeline of (delay, expression) pairs from a sequence expression.
+// For a plain expression, returns a single step with delay 0.
+// For AstSExpr chains like `a ##1 b ##2 c`, returns [{0,a}, {1,b}, {2,c}].
+static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
+    std::vector<SeqStep> timeline;
+    if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
+        // Recursively extract from the inner (preExprp) chain first
+        if (sexprp->preExprp()) {
+            if (AstSExpr* const preSExprp = VN_CAST(sexprp->preExprp(), SExpr)) {
+                // preExprp is itself a sequence -- extract its timeline
+                timeline = extractTimeline(preSExprp);
+            } else {
+                // preExprp is a plain expression -- first step at cycle 0
+                timeline.push_back({0, sexprp->preExprp()});
+            }
+        }
+        // Get cycle delay from delayp
+        int cycles = 0;
+        if (AstDelay* const dlyp = VN_CAST(sexprp->delayp(), Delay)) {
+            if (AstConst* const constp = VN_CAST(dlyp->lhsp(), Const)) {
+                cycles = constp->toSInt();
+            } else {
+                dlyp->lhsp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: non-constant cycle delay in sequence and/or");
+            }
+        }
+        // The expression after the delay
+        if (AstSExpr* const innerSExprp = VN_CAST(sexprp->exprp(), SExpr)) {
+            // Nested SExpr: extract its timeline and offset by current delay
+            std::vector<SeqStep> inner = extractTimeline(innerSExprp);
+            if (!inner.empty()) {
+                inner[0].delayCycles += cycles;
+                for (auto& step : inner) timeline.push_back(step);
+            }
+        } else {
+            timeline.push_back({cycles, sexprp->exprp()});
+        }
+    } else {
+        // Plain boolean expression -- single step, no delay
+        timeline.push_back({0, nodep});
+    }
+    return timeline;
+}
+
+// Lower sequence and/or to AST
+class AssertPropLowerVisitor final : public VNVisitor {
+    // STATE
+    AstNodeModule* m_modp = nullptr;  // Current module
+    V3UniqueNames m_seqBrNames{"__VseqBr"};  // Sequence branch dead-tracking name generator
+
+    // Lower a multi-cycle sequence 'and' to an AstPExpr with interleaved if/delay AST.
+    void lowerSeqAnd(AstNodeBiop* nodep) {
+        FileLine* const flp = nodep->fileline();
+
+        // Extract timelines from both operands
+        const std::vector<SeqStep> lhsTimeline = extractTimeline(nodep->lhsp());
+        const std::vector<SeqStep> rhsTimeline = extractTimeline(nodep->rhsp());
+
+        // Compute absolute cycle for each step
+        struct AbsStep final {
+            int cycle;
+            AstNodeExpr* exprp;
+            int branchId;  // 0=lhs, 1=rhs
+        };
+        std::vector<AbsStep> allSteps;
+
+        int absCycle = 0;
+        for (const auto& step : lhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 0});
+        }
+        const int lhsMaxCycle = absCycle;
+
+        absCycle = 0;
+        for (const auto& step : rhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 1});
+        }
+        const int rhsMaxCycle = absCycle;
+        const int maxCycle = std::max(lhsMaxCycle, rhsMaxCycle);
+
+        // Sort by absolute cycle, then by branch id
+        std::stable_sort(allSteps.begin(), allSteps.end(), [](const AbsStep& a, const AbsStep& b) {
+            if (a.cycle != b.cycle) return a.cycle < b.cycle;
+            return a.branchId < b.branchId;
+        });
+
+        // Build AstPExprClause terminals
+        auto makePass = [&]() -> AstPExprClause* { return new AstPExprClause{flp, true}; };
+        auto makeFail = [&]() -> AstPExprClause* { return new AstPExprClause{flp, false}; };
+
+        {
+            // AND: all checks must pass. Generate nested if/delay chain.
+            // Group steps by cycle, combine same-cycle checks with LogAnd.
+            // Build from innermost (last cycle) outward.
+
+            // Group steps by cycle
+            std::map<int, std::vector<AstNodeExpr*>> cycleChecks;
+            for (const auto& step : allSteps) {
+                cycleChecks[step.cycle].push_back(step.exprp->cloneTree(false));
+            }
+
+            // Build from the last cycle inward
+            AstNode* innerp = makePass();
+            int prevCycle = maxCycle;
+
+            for (auto it = cycleChecks.rbegin(); it != cycleChecks.rend(); ++it) {
+                const int cycle = it->first;
+                auto& exprs = it->second;
+
+                // Combine all expressions at this cycle with LogAnd
+                AstNodeExpr* condp = new AstSampled{flp, exprs[0]};
+                condp->dtypeSetBit();
+                for (size_t i = 1; i < exprs.size(); ++i) {
+                    AstNodeExpr* const rp = new AstSampled{flp, exprs[i]};
+                    rp->dtypeSetBit();
+                    condp = new AstLogAnd{flp, condp, rp};
+                    condp->dtypeSetBit();
+                }
+
+                // Wrap in if: if (cond) { delay + inner } else { fail }
+                AstBegin* const thenp = new AstBegin{flp, "", nullptr, true};
+                // Add delay if needed (from this cycle to previous inner cycle)
+                if (prevCycle > cycle) {
+                    const int delayCycles = prevCycle - cycle;
+                    AstDelay* const dlyp = new AstDelay{
+                        flp, new AstConst{flp, static_cast<uint32_t>(delayCycles)}, true};
+                    thenp->addStmtsp(dlyp);
+                    dlyp->addStmtsp(innerp);
+                } else {
+                    thenp->addStmtsp(innerp);
+                }
+
+                AstIf* const ifp = new AstIf{flp, condp, thenp, makeFail()};
+                innerp = ifp;
+                prevCycle = cycle;
+            }
+
+            // Wrap in AstPExpr
+            AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+            bodyp->addStmtsp(innerp);
+            AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
+
+    // Lower a multi-cycle sequence 'or' to an AstPExpr with dead-tracking variables.
+    // IEEE 1800-2023 16.9.7: composite matches if at least one operand sequence matches.
+    // Both branches are evaluated independently from the same start cycle.
+    void lowerSeqOr(AstNodeBiop* nodep) {
+        UASSERT_OBJ(m_modp, nodep, "SOr not under a module");
+        FileLine* const flp = nodep->fileline();
+
+        // Extract timelines from both operands
+        const std::vector<SeqStep> lhsTimeline = extractTimeline(nodep->lhsp());
+        const std::vector<SeqStep> rhsTimeline = extractTimeline(nodep->rhsp());
+
+        // Compute absolute cycle for each step, mark which is last per branch
+        struct AbsStep final {
+            int cycle;
+            AstNodeExpr* exprp;
+            int branchId;
+        };
+        std::vector<AbsStep> allSteps;
+
+        int absCycle = 0;
+        for (const auto& step : lhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 0});
+        }
+        const int br0MaxCycle = absCycle;
+
+        absCycle = 0;
+        for (const auto& step : rhsTimeline) {
+            absCycle += step.delayCycles;
+            allSteps.push_back({absCycle, step.exprp, 1});
+        }
+        const int br1MaxCycle = absCycle;
+
+        // Group by cycle, preserving branch info
+        struct CycleEntry final {
+            int branchId;
+            AstNodeExpr* exprp;
+        };
+        std::map<int, std::vector<CycleEntry>> cycleChecks;
+        for (const auto& step : allSteps) {
+            cycleChecks[step.cycle].push_back({step.branchId, step.exprp});
+        }
+
+        // Create dead-tracking variables at module level
+        AstVar* const br0Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("0_dead"),
+                                            VFlagBitPacked{}, 1};
+        br0Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        AstVar* const br1Deadp = new AstVar{flp, VVarType::MODULETEMP, m_seqBrNames.get("1_dead"),
+                                            VFlagBitPacked{}, 1};
+        br1Deadp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(br0Deadp);
+        m_modp->addStmtsp(br1Deadp);
+
+        auto makePass = [&]() -> AstPExprClause* { return new AstPExprClause{flp, true}; };
+        auto makeFail = [&]() -> AstPExprClause* { return new AstPExprClause{flp, false}; };
+
+        // Build from innermost (last cycle) outward, same nesting pattern as and
+        AstNode* innerp = nullptr;
+        int nextCycle = -1;
+
+        for (auto rit = cycleChecks.rbegin(); rit != cycleChecks.rend(); ++rit) {
+            const int cycle = rit->first;
+            AstBegin* const cycleBlock = new AstBegin{flp, "", nullptr, true};
+
+            // For each branch's check at this cycle
+            for (const auto& entry : rit->second) {
+                AstVar* const deadVarp = (entry.branchId == 0) ? br0Deadp : br1Deadp;
+                const int brMaxCycle = (entry.branchId == 0) ? br0MaxCycle : br1MaxCycle;
+                const bool isLast = (cycle == brMaxCycle);
+
+                AstNodeExpr* const sampledp = new AstSampled{flp, entry.exprp->cloneTree(false)};
+                sampledp->dtypeSetBit();
+                AstNodeExpr* const alivep
+                    = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
+                alivep->dtypeSetBit();
+
+                if (isLast) {
+                    // Last check: alive && passes -> pass
+                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, sampledp};
+                    passCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(new AstIf{flp, passCond, makePass()});
+                    // alive && fails -> dead
+                    AstNodeExpr* const alive2p
+                        = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
+                    alive2p->dtypeSetBit();
+                    AstNodeExpr* const failCond = new AstLogAnd{
+                        flp, alive2p, new AstLogNot{flp, sampledp->cloneTree(false)}};
+                    failCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(
+                        new AstIf{flp, failCond,
+                                  new AstAssign{flp, new AstVarRef{flp, deadVarp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitTrue{}}}});
+                } else {
+                    // Non-last: alive && fails -> dead
+                    AstNodeExpr* const failCond
+                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, sampledp}};
+                    failCond->dtypeSetBit();
+                    cycleBlock->addStmtsp(
+                        new AstIf{flp, failCond,
+                                  new AstAssign{flp, new AstVarRef{flp, deadVarp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitTrue{}}}});
+                }
+            }
+
+            // Both dead -> fail
+            AstNodeExpr* const allDeadp
+                = new AstLogAnd{flp, new AstVarRef{flp, br0Deadp, VAccess::READ},
+                                new AstVarRef{flp, br1Deadp, VAccess::READ}};
+            allDeadp->dtypeSetBit();
+            cycleBlock->addStmtsp(new AstIf{flp, allDeadp, makeFail()});
+
+            // Nest delay + inner from later cycles
+            if (nextCycle > cycle && innerp) {
+                AstDelay* const dlyp = new AstDelay{
+                    flp, new AstConst{flp, static_cast<uint32_t>(nextCycle - cycle)}, true};
+                cycleBlock->addStmtsp(dlyp);
+                dlyp->addStmtsp(innerp);
+            }
+
+            innerp = cycleBlock;
+            nextCycle = cycle;
+        }
+
+        // Wrap in AstPExpr with initialization
+        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br0Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, br1Deadp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(innerp);
+        AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+
+    void visit(AstSAnd* nodep) override {
+        iterateChildren(nodep);
+        if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
+            lowerSeqAnd(nodep);
+        } else {
+            // Pure boolean operands: lower to LogAnd
+            AstLogAnd* const newp = new AstLogAnd{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                                  nodep->rhsp()->unlinkFrBack()};
+            newp->dtypeFrom(nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
+    void visit(AstSOr* nodep) override {
+        iterateChildren(nodep);
+        if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
+            lowerSeqOr(nodep);
+        } else {
+            // Pure boolean operands: lower to LogOr
+            AstLogOr* const newp = new AstLogOr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                                nodep->rhsp()->unlinkFrBack()};
+            newp->dtypeFrom(nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstConstPool* nodep) override {}
+
+public:
+    explicit AssertPropLowerVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~AssertPropLowerVisitor() override = default;
+};
+
 // Parse properties and ensemble a property tree graph
 class AssertPropBuildVisitor final : public VNVisitorConst {
     // STATE
@@ -174,6 +506,7 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
             m_lastVtxp = dlyVtxp;
         }
     }
+    void visit(AstSOr* nodep) override {}  // All SOr lowered by AssertPropLowerVisitor
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstConstPool* nodep) override {}
 
@@ -670,6 +1003,7 @@ public:
 void V3AssertProp::assertPropAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { RangeDelayExpander{nodep}; }
+    { AssertPropLowerVisitor{nodep}; }
     {
         V3Graph graph;
         { AssertPropBuildVisitor{nodep, graph}; }

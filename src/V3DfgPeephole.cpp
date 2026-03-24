@@ -208,9 +208,9 @@ class V3DfgPeephole final : public DfgVisitor {
         // Add all sources to the work list
         addSourcesToWorkList(vtxp);
         // Remove this and sinks from cache
-        m_cache.invalidateByValue(vtxp);
+        m_cache.invalidate(vtxp);
         vtxp->foreachSink([&](DfgVertex& sink) {
-            m_cache.invalidateByValue(&sink);
+            m_cache.invalidate(&sink);
             return false;
         });
         // Replace vertex with the replacement
@@ -1441,7 +1441,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgVertex* const newLhsp
                         = lWidth == lhsp->width()
                               ? lhsp
-                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0);
+                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0U);
 
                     // Create the new concatenation
                     DfgConcat* const newConcat = make<DfgConcat>(
@@ -1905,10 +1905,7 @@ class V3DfgPeephole final : public DfgVisitor {
         for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
 
         // Add all operation vertices to the work list and cache
-        for (DfgVertex& vtx : m_dfg.opVertices()) {
-            addToWorkList(&vtx);
-            m_cache.cache(&vtx);
-        }
+        for (DfgVertex& vtx : m_dfg.opVertices()) addToWorkList(&vtx);
 
         // Process the work list
         m_workList.foreach([&](DfgVertex& vtx) {
@@ -1916,7 +1913,7 @@ class V3DfgPeephole final : public DfgVisitor {
             if (!vtx.hasSinks() && !vtx.is<DfgVertexVar>()) {
                 if (vtx.nInputs()) {
                     addSourcesToWorkList(&vtx);
-                    m_cache.invalidateByValue(&vtx);
+                    m_cache.invalidate(&vtx);
                     vtx.resetInputs();
                 }
                 deleteVertex(&vtx);

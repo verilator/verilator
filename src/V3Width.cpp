@@ -293,6 +293,9 @@ class WidthVisitor final : public VNVisitor {
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     void visit(AstLogAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogOr* nodep) override { visit_log_and_or(nodep); }
+    // Sequence and/or (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
+    void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
@@ -4241,9 +4244,18 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)");
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            // map() - IEEE 1800-2023 7.12.5
+            // Returns a queue with same element count, each element is the with expression result
+            AstWith* const withp
+                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                   nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      VCMethod::ARRAY_MAP};
+            newp->withp(withp);
+            newp->dtypep(queueDTypeIndexedBy(withp ? withp->dtypep() : adtypep->subDTypep()));
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         }
         return newp;
     }

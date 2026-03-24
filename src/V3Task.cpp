@@ -1345,7 +1345,8 @@ class TaskVisitor final : public VNVisitor {
                 }
                 if (!isInterfaceClass) {
                     const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                    cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+                    cfuncp->addStmtsp(
+                        new AstCStmt{nodep->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL});
                 }
             }
         }
