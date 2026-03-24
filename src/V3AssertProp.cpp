@@ -104,9 +104,7 @@ public:
 
 // Check whether a subtree contains any AstSExpr (multi-cycle sequence)
 static bool containsSExpr(const AstNode* nodep) {
-    bool found = false;
-    nodep->foreach([&](const AstSExpr*) { found = true; });
-    return found;
+    return !nodep->forall([](const AstSExpr*) { return false; });
 }
 
 // A single step in a sequence timeline: delay cycles followed by an expression check
