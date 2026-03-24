@@ -651,6 +651,7 @@ public:
     bool isOutputter() override { return true; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
+    virtual bool cleanOut() const { return true; }
     bool sameNode(const AstNode* samep) const override {
         return ctlType() == VN_DBG_AS(samep, DumpCtl)->ctlType();
     }
