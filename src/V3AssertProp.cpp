@@ -939,7 +939,9 @@ class RangeDelayExpander final : public VNVisitor {
         UASSERT_OBJ(m_modp, nodep, "Range delay SExpr not under a module");
 
         // Find antecedent (if inside implication)
-        const auto [antExprp, isOverlapped] = findAntecedent(nodep);
+        const std::pair<AstNodeExpr*, bool> antResult = findAntecedent(nodep);
+        AstNodeExpr* const antExprp = antResult.first;
+        // const bool isOverlapped = antResult.second;  // Reserved for |=> support
 
         // Create module-level state variables
         const std::string baseName = m_names.get(nodep);
