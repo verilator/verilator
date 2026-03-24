@@ -111,16 +111,17 @@ class VerilatedVcdC;
 class VerilatedVcdSc;
 
 // Internal: One $dumpvars call.
-struct VerilatedTraceDumpvarsEntry final {
+struct VerilatedTraceDumpVarsEntry final {
     /// Maximum hierarchy depth to dump modules.
-    int m_level;
+    const int m_level;
     /// Hierarchy root to dump.
-    std::string m_hier;
+    const std::string m_hier;
 
-    VerilatedTraceDumpvarsEntry(int level, const std::string& hier)
+    VerilatedTraceDumpVarsEntry(int level, const std::string& hier)
         : m_level{level}
         , m_hier{hier} {}
 };
+using VerilatedTraceDumpVarsEntries = std::vector<VerilatedTraceDumpVarsEntry>;
 
 //=========================================================================
 // Basic types
@@ -416,7 +417,7 @@ protected:
     mutable VerilatedMutex m_timeDumpMutex;  // Protect misc slow strings
     std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeDumpMutex);  // $timeformat printf format
     std::string m_dumpfile VL_GUARDED_BY(m_timeDumpMutex);  // $dumpfile setting
-    std::vector<VerilatedTraceDumpvarsEntry>
+    VerilatedTraceDumpVarsEntries
         m_dumpvars VL_GUARDED_BY(m_timeDumpMutex);  // $dumpvars settings
 
     struct NonSerialized final {  // Non-serialized information
@@ -672,7 +673,7 @@ public:
 
     // Internal: $dumpvars
     void dumpvarsAdd(int level, const std::string& hier) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
-    std::vector<VerilatedTraceDumpvarsEntry> dumpvars() const
+    VerilatedTraceDumpVarsEntries dumpvars() const
         VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-exec related settings

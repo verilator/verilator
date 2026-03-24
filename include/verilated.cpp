@@ -2932,7 +2932,7 @@ void VerilatedContext::dumpvarsAdd(int level,
     if (level == 0 && hier.empty()) m_dumpvars.clear();
     m_dumpvars.emplace_back(level, hier);
 }
-std::vector<VerilatedTraceDumpvarsEntry>
+VerilatedTraceDumpVarsEntries
 VerilatedContext::dumpvars() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock{m_timeDumpMutex};
     return m_dumpvars;

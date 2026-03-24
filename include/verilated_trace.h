@@ -313,7 +313,7 @@ private:
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
     void* m_initUserp = nullptr;  // The callback userp of the instance currently being initialized
     // TODO: Should keep this as a Trie, that is how it's accessed all the time.
-    std::vector<VerilatedTraceDumpvarsEntry> m_dumpvars;  // dumpvar() entries
+    VerilatedTraceDumpVarsEntries m_dumpvars;  // dumpvar() entries
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
@@ -417,7 +417,7 @@ protected:
             return levels;
         }
 
-        bool matches(const VerilatedTraceDumpvarsEntry& entry) const {
+        bool matches(const VerilatedTraceDumpVarsEntry& entry) const {
             if (!matchesPrefix(entry.m_hier)) return false;
             return entry.m_level <= 0 || scopeLevelsBelow(entry.m_hier.size()) < entry.m_level;
         }
@@ -508,8 +508,8 @@ public:
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
-    void dumpvars(const std::vector<VerilatedTraceDumpvarsEntry>& entries) VL_MT_SAFE {
-        for (const VerilatedTraceDumpvarsEntry& entry : entries) {
+    void dumpvars(const VerilatedTraceDumpVarsEntries& entries) VL_MT_SAFE {
+        for (const VerilatedTraceDumpVarsEntry& entry : entries) {
             dumpvars(entry.m_level, entry.m_hier);
         }
     }
