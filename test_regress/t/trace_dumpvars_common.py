@@ -68,6 +68,16 @@ _DEFINE_ALIASES = {
     "task2_no_inl": "task2",
 }
 
+_ALT_TRACE_FORMATS = {"fst", "saif"}
+
+
+def _split_format(case):
+    """Split case into (base_case, trace_format)."""
+    for fmt in _ALT_TRACE_FORMATS:
+        if case.endswith("_" + fmt):
+            return case[:-(len(fmt) + 1)], fmt
+    return case, "vcd"
+
 
 def _case_name(test):
     name = os.path.splitext(os.path.basename(test.py_filename))[0]
@@ -85,14 +95,15 @@ def _define_name(case):
     return f"+define+TRACE_DUMPVARS_CASE_{token}"
 
 
-def _compile_flags(case):
+def _compile_flags(case, fmt="vcd"):
+    trace_flag = f"--trace-{fmt}"
     flags = ["--top-module", "t", _define_name(case)]
     if case == "add_module":
-        flags = ["--binary", "--timing", "--trace-vcd", *flags]
+        flags = ["--binary", "--timing", trace_flag, *flags]
     elif case in _CPPTOP_CASES:
-        flags = ["--cc", "--exe", "--trace-vcd", *flags, _SHARED_CPPTOP]
+        flags = ["--cc", "--exe", trace_flag, *flags, _SHARED_CPPTOP]
     else:
-        flags = ["--binary", "--trace-vcd", *flags]
+        flags = ["--binary", trace_flag, *flags]
 
     if case in _STRUCT_TRACE_CASES:
         flags.append("--trace-structs")
@@ -107,42 +118,50 @@ def _has_golden_trace(test):
 
 def run(test):
     case = _case_name(test)
-    if case == "top":
+    base_case, fmt = _split_format(case)
+
+    if base_case == "top":
         test.passes()
         return
 
     test.top_filename = _SHARED_TOP
-    compile_kwargs = {"verilator_flags2": _compile_flags(case)}
-    if case in _CPPTOP_CASES:
+    compile_kwargs = {"verilator_flags2": _compile_flags(base_case, fmt)}
+    if base_case in _CPPTOP_CASES:
         compile_kwargs["make_main"] = False
 
-    if case in _COMPILE_FAIL_CASES:
+    if base_case in _COMPILE_FAIL_CASES:
         test.compile(fails=True, expect_filename=test.golden_filename, **compile_kwargs)
         test.passes()
         return
 
     test.compile(**compile_kwargs)
 
-    if case in _EXECUTE_FAIL_CASES:
+    if base_case in _EXECUTE_FAIL_CASES:
         test.execute(fails=True, expect_filename=test.golden_filename)
         test.passes()
         return
 
     execute_kwargs = {}
-    if case == "nonconst_scope":
+    if base_case == "nonconst_scope":
         execute_kwargs["all_run_flags"] = ['+LEVEL=0']
 
     test.execute(**execute_kwargs)
 
-    if case == "add_module":
+    # For format variants, fall back to the base case's golden file
+    if fmt != "vcd" and not _has_golden_trace(test):
+        base_golden = os.path.join(test.t_dir, f"t_trace_dumpvars_{base_case}.out")
+        if os.path.exists(base_golden) and os.path.getsize(base_golden) > 0:
+            test.golden_filename = base_golden
+
+    if base_case == "add_module":
         test.vcd_identical(test.obj_dir + "/simx0.vcd",
                            test.t_dir + "/t_trace_dumpvars_add_module_0.out")
         test.vcd_identical(test.obj_dir + "/simx1.vcd",
                            test.t_dir + "/t_trace_dumpvars_add_module_1.out")
     elif _has_golden_trace(test):
-        if case in _FILE_COMPARE_CASES:
+        if base_case in _FILE_COMPARE_CASES:
             test.files_identical(test.trace_filename, test.golden_filename)
         else:
-            test.vcd_identical(test.trace_filename, test.golden_filename)
+            test.trace_identical(test.trace_filename, test.golden_filename)
 
     test.passes()
