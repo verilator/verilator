@@ -94,7 +94,10 @@ public:
 
     // Emit Prefix adjustments to unwind the path back to its original state
     void unwind() {
-        for (unsigned toPop = m_stack.size(); --toPop;) m_emit(new AstTracePopPrefix{m_flp});
+        while (m_stack.size() > 1) {
+            m_emit(new AstTracePopPrefix{m_flp});
+            m_stack.pop_back();
+        }
     }
 };
 
@@ -139,6 +142,8 @@ class TraceDeclVisitor final : public VNVisitor {
     uint32_t m_offset = std::numeric_limits<uint32_t>::max();  // Offset for types
     int m_topFuncSize = 0;  // Size of the top function currently being built
     int m_subFuncSize = 0;  // Size of the sub function currently being built
+    size_t m_topScopeRootFuncCount = 0;  // Top-scope init functions used only for wrapper IOs
+    bool m_topScopeRootPhase = false;  // Emitting top-scope wrapper IO declarations
     const int m_funcSizeLimit  // Maximum size of a function
         = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                            : std::numeric_limits<int>::max();
@@ -184,21 +189,21 @@ class TraceDeclVisitor final : public VNVisitor {
                 m_name = vcdName.substr(pathLen);
             }
 
-            // When creating a --lib-create library, drop the name of the top module (l2 name).
-            // This will be replaced by the instance name in the model that uses the library.
-            // This would be a bit murky when there are other top level entities ($unit,
-            // packages, which have an instance in all libs - a problem on its own). If
-            // --top-module was explicitly specified, then we will drop the prefix only for the
-            // actual top level module, and wrap the rest in '$libroot'. This way at least we get a
-            // usable dump of everything, with library instances showing in a right place, without
-            // pollution from other top level entities.
+            // When creating a --lib-create library, drop the name of the selected top module.
+            // This will be replaced by the instance name in the model that uses the library, or
+            // restored at runtime if the library itself is traced as the root model. Other top
+            // level entities ($unit, packages, ...) keep a '$libroot' wrapper so they still have
+            // a stable location in the dump.
             if (inTopScope && !v3Global.opt.libCreate().empty()) {
                 const size_t start = m_path.find(' ');
                 // Must have a prefix in the top scope with lib, as top wrapper signals not traced
                 UASSERT_OBJ(start != std::string::npos, nodep, "No prefix with --lib-create");
                 const std::string prefix = m_path.substr(0, start);
+                // Wrapper primary IOs stay under $rootio so a root-traced library can restore
+                // them under the runtime C++ instance name without affecting embedded use.
+                if (prefix == "$rootio") return;
                 m_path = m_path.substr(start + 1);
-                if (v3Global.opt.topModule() != prefix) m_path = "$libroot " + m_path;
+                if (v3Global.rootp()->traceLibTopName() != prefix) m_path = "$libroot " + m_path;
             }
         }
 
@@ -302,7 +307,11 @@ class TraceDeclVisitor final : public VNVisitor {
         if (m_subFuncps.empty()) {
             FileLine* const flp = m_currScopep->fileline();
             const string n = cvtToStr(m_subFuncps.size());
-            const string name{"trace_init_sub__" + m_currScopep->nameDotless() + "__" + n};
+            const string name
+                = m_currScopep == m_topScopep->scopep() && !v3Global.opt.libCreate().empty()
+                      ? (m_topScopeRootPhase ? "trace_init_leaf_root__" : "trace_init_leaf_top__")
+                            + n
+                      : "trace_init_sub__" + m_currScopep->nameDotless() + "__" + n;
             AstCFunc* const funcp = newCFunc(flp, name);
             funcp->addStmtsp(new AstCStmt{flp, "const int c = vlSymsp->__Vm_baseCode;"});
             m_subFuncps.push_back(funcp);
@@ -649,10 +658,11 @@ class TraceDeclVisitor final : public VNVisitor {
                 m_entries.begin(), m_entries.end(),
                 [](const TraceEntry& a, const TraceEntry& b) { return a.operatorCompare(b); });
 
-            // Build trace initialization functions for this AstScope
             FileLine* const flp = nodep->fileline();
             PathAdjustor pathAdjustor{flp, [&](AstNodeStmt* stmtp) { addToSubFunc(stmtp); }};
-            for (const TraceEntry& entry : m_entries) {
+            const bool splitRootPrimaryIos = nodep->isTop() && !v3Global.opt.libCreate().empty();
+            const auto emitEntry = [&](const TraceEntry& entry) {
+                AstVarScope* const vscp = entry.vscp();
                 // Adjust name prefix based on path in hierarchy
                 UINFO(9, "path='" << entry.path() << "' name='" << entry.name() << "' "
                                   << (entry.cellp() ? static_cast<AstNode*>(entry.cellp())
@@ -661,7 +671,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
                 m_traName = entry.name();
 
-                if (AstVarScope* const vscp = entry.vscp()) {
+                if (vscp) {
                     // This is a signal: build AstTraceDecl for it
                     m_traVscp = vscp;
                     const string& ignoreReason = vscIgnoreTrace(m_traVscp);
@@ -692,6 +702,23 @@ class TraceDeclVisitor final : public VNVisitor {
                     addToSubFunc(stmtp);
                     m_cellInitPlaceholders.emplace_back(nodep, cellp, stmtp);
                 }
+            };
+            if (splitRootPrimaryIos) {
+                m_topScopeRootPhase = true;
+                for (const TraceEntry& entry : m_entries) {
+                    AstVarScope* const vscp = entry.vscp();
+                    if (!(vscp && vscp->varp()->isPrimaryIO())) continue;
+                    emitEntry(entry);
+                }
+                m_topScopeRootPhase = false;
+                pathAdjustor.unwind();
+                m_topScopeRootFuncCount = m_subFuncps.size();
+                if (m_topScopeRootFuncCount) m_subFuncSize = m_funcSizeLimit + 1;
+            }
+            for (const TraceEntry& entry : m_entries) {
+                AstVarScope* const vscp = entry.vscp();
+                if (splitRootPrimaryIos && vscp && vscp->varp()->isPrimaryIO()) continue;
+                emitEntry(entry);
             }
             pathAdjustor.unwind();
             m_traVscp = nullptr;
@@ -752,8 +779,6 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // When creating a --lib-create library ...
         if (!v3Global.opt.libCreate().empty()) {
-            // Ignore the wrapper created primary IO ports
-            if (nodep->varp()->isPrimaryIO()) return;
             // Ignore parameters in packages. These will be traced at the top level.
             if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
         }
@@ -939,8 +964,22 @@ public:
         // push/pop pairs is a bit hard. It is cleaner to remove them.
         removeRedundantPrefixPushPop();
 
-        // Call the initialization functions of the root scope from the top function
-        for (AstCFunc* const funcp : m_scopeInitFuncps.at(m_topScopep->scopep())) {
+        const std::vector<AstCFunc*>& topScopeFuncps = m_scopeInitFuncps.at(m_topScopep->scopep());
+        AstCFunc* rootFuncp = nullptr;
+        if (!v3Global.opt.libCreate().empty()) {
+            rootFuncp = newCFunc(flp, "trace_init_root");
+            for (size_t i = 0; i < m_topScopeRootFuncCount; ++i) {
+                AstCCall* const callp = new AstCCall{flp, topScopeFuncps.at(i)};
+                callp->dtypeSetVoid();
+                callp->argTypes("tracep");
+                rootFuncp->addStmtsp(callp->makeStmt());
+            }
+            if (!m_topScopeRootFuncCount) rootFuncp->addStmtsp(new AstComment{flp, "Empty"});
+        }
+
+        // Call the non-wrapper initialization functions of the root scope from the top function
+        for (size_t i = m_topScopeRootFuncCount; i < topScopeFuncps.size(); ++i) {
+            AstCFunc* const funcp = topScopeFuncps.at(i);
             AstCCall* const callp = new AstCCall{flp, funcp};
             callp->dtypeSetVoid();
             callp->argTypes("tracep");
@@ -967,6 +1006,7 @@ public:
         AstCFunc* const topFuncp = m_topFuncps.front();
         topFuncp->name("trace_init_top");
 
+        if (rootFuncp && v3Global.opt.debugCheck()) checkCallsRecurse(rootFuncp);
         checkCalls(topFuncp);
     }
     ~TraceDeclVisitor() override {

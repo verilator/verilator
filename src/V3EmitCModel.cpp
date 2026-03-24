@@ -526,10 +526,17 @@ class EmitCModel final : public EmitCFunc {
 
     void emitTraceMethods(AstNodeModule* modp) {
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
+        const string topTraceName
+            = V3OutFormatter::quoteNameControls(v3Global.rootp()->traceLibTopName());
 
         putSectionDelimiter("Trace configuration");
 
         // Forward declaration
+        if (!v3Global.opt.libCreate().empty()) {
+            putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_init_root") + "("
+                            + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
+                            + "* tracep);\n");
+        }
         putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_decl_types") + "("
                         + v3Global.opt.traceClassBase() + "* tracep);\n");
         putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_init_top") + "("
@@ -551,11 +558,23 @@ class EmitCModel final : public EmitCFunc {
         puts("vlSymsp->__Vm_baseCode = code;\n");
         if (v3Global.opt.libCreate().empty()) {
             puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
+        } else {
+            puts("if (tracep->rootInit()) {\n");
+            puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
+            puts(topModNameProtected + "__" + protect("trace_init_root") + "(vlSelf, tracep);\n");
+            puts("tracep->pushPrefix(\"" + topTraceName
+                 + "\", VerilatedTracePrefixType::SCOPE_MODULE);\n");
+            puts("}\n");
         }
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
         if (v3Global.opt.libCreate().empty()) {  //
             puts("tracep->popPrefix();\n");
+        } else {
+            puts("if (tracep->rootInit()) {\n");
+            puts("tracep->popPrefix();\n");
+            puts("tracep->popPrefix();\n");
+            puts("}\n");
         }
         puts("}\n");
 

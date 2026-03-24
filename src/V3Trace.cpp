@@ -221,7 +221,37 @@ class TraceVisitor final : public VNVisitor {
     std::map<std::pair<const AstIface*, std::string>, std::vector<AstVarScope*>>
         m_ifaceMemberVscps;
 
+    class TraceInitDeclCollector final : public VNVisitor {
+        std::vector<AstTraceDecl*>& m_declps;
+        std::set<const AstCFunc*> m_seenFuncps;
+
+        void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }
+        void visit(AstCCall* nodep) override {
+            if (AstCFunc* const funcp = nodep->funcp()) collect(funcp);
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    public:
+        explicit TraceInitDeclCollector(std::vector<AstTraceDecl*>& declps)
+            : m_declps{declps} {}
+        void collect(AstCFunc* funcp) {
+            if (funcp && m_seenFuncps.insert(funcp).second) iterate(funcp);
+        }
+    };
+
     // METHODS
+
+    static bool sameRootInitAlias(const AstTraceDecl* rootDeclp, const AstTraceDecl* topDeclp) {
+        const VNumRange& rootBitRange = rootDeclp->bitRange();
+        const VNumRange& topBitRange = topDeclp->bitRange();
+        return rootDeclp->showname() == topDeclp->showname()
+               && rootDeclp->declDirection() == topDeclp->declDirection()
+               && rootDeclp->widthMin() == topDeclp->widthMin()
+               && rootBitRange.ranged() == topBitRange.ranged()
+               && (!rootBitRange.ranged()
+                   || (rootBitRange.left() == topBitRange.left()
+                       && rootBitRange.right() == topBitRange.right()));
+    }
 
     void detectDuplicates() {
         UINFO(9, "Finding duplicates");
@@ -1075,6 +1105,32 @@ class TraceVisitor final : public VNVisitor {
 
         // Create the full and incremental dump functions
         createNonConstTraceFunctions(traces, nNonConstCodes, m_parallelism);
+
+        // Root-traced libraries alias wrapper IOs onto the existing top-module codes.
+        if (!v3Global.opt.libCreate().empty()) {
+            std::vector<AstTraceDecl*> rootDeclps;
+            std::vector<AstTraceDecl*> topDeclps;
+            TraceInitDeclCollector rootCollector{rootDeclps};
+            TraceInitDeclCollector topCollector{topDeclps};
+            for (AstNode* blockp = m_topScopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                AstCFunc* const funcp = VN_CAST(blockp, CFunc);
+                if (funcp && VString::startsWith(funcp->name(), "trace_init_leaf_root__")) {
+                    rootCollector.collect(funcp);
+                } else if (funcp && VString::startsWith(funcp->name(), "trace_init_leaf_top__")) {
+                    topCollector.collect(funcp);
+                }
+            }
+
+            std::vector<bool> used(topDeclps.size(), false);
+            for (AstTraceDecl* const rootDeclp : rootDeclps) {
+                for (size_t i = 0; i < topDeclps.size(); ++i) {
+                    if (used[i] || !sameRootInitAlias(rootDeclp, topDeclps[i])) continue;
+                    rootDeclp->code(topDeclps[i]->code());
+                    used[i] = true;
+                    break;
+                }
+            }
+        }
 
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc
