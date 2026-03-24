@@ -21,7 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3Dumpvars.h"
+#include "V3DumpVars.h"
 #include "V3Error.h"
 
 //============================================================================

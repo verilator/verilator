@@ -23,11 +23,11 @@
 // Tagged $dumpvars target string.  During compile-time resolution in V3LinkDot
 // each target is tagged with a prefix that tells EmitC how to emit the
 // corresponding runtime code.
-struct DumpvarsTag final {
+struct VDumpVarsTag final {
     const char* const prefix;
     const size_t prefixLen;
     template <size_t N>
-    constexpr DumpvarsTag(const char (&s)[N])
+    constexpr VDumpVarsTag(const char (&s)[N])
         : prefix{s}
         , prefixLen{N - 1} {}
     bool matches(const string& target) const { return target.compare(0, prefixLen, prefix) == 0; }
@@ -38,8 +38,8 @@ struct DumpvarsTag final {
 };
 
 // Fully resolved to a compile-time hierarchy path
-constexpr DumpvarsTag kDumpvarsResolved{"@dumpvars:"};
+constexpr VDumpVarsTag kDumpvarsResolved{"@dumpvars:"};
 // First component must match the C++ wrapper root name at runtime
-constexpr DumpvarsTag kDumpvarsRuntimeRoot{"@dumpvars_root:"};
+constexpr VDumpVarsTag kDumpvarsRuntimeRoot{"@dumpvars_root:"};
 
 #endif  // Guard

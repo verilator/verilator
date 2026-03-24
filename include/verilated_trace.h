@@ -380,7 +380,6 @@ protected:
                    || type == VerilatedTracePrefixType::SCOPE_INTERFACE
                    || type == VerilatedTracePrefixType::ROOTIO_WRAPPER;
         }
-
         static char separator(VerilatedTracePrefixType type) {
             return (type == VerilatedTracePrefixType::ARRAY_PACKED
                     || type == VerilatedTracePrefixType::ARRAY_UNPACKED)
