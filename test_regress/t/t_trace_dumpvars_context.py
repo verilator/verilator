@@ -13,4 +13,3 @@ import trace_dumpvars_common
 test.scenarios('vlt')
 
 trace_dumpvars_common.run(test)
-
