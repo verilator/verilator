@@ -382,7 +382,7 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }
         } else if (m_ftaskp) {
-            if (m_ftaskp->exists([&](const AstNode* nodep) {return nodep->isTimingControl();})) {
+            if (m_ftaskp->lifetime().isStatic() && m_ftaskp->exists([&](const AstNode* nodep) {return nodep->isTimingControl();})) {
                 nodep->lifetime(VLifetime::STATIC_IMPLICIT);
             } else {
                 nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
