@@ -255,17 +255,16 @@ public:
 //######################################################################
 // Range delay expansion (runs before DFA builder)
 //
-// Expands ##[M:N] range delays by replacing the containing SExpr tree
-// with a PExpr that implements the range semantics as an if/delay chain.
-// The DFA builder never sees range delays.
+// Replaces ##[M:N] range delays with a module-level FSM (always block
+// + state/counter vars). No coroutine overhead -- one state advance
+// per clock cycle. The SExpr becomes a !fail combinational check.
 
 class RangeDelayExpander final : public VNVisitor {
     // STATE
     V3UniqueNames m_names{"__Vrangedly"};
+    AstNodeModule* m_modp = nullptr;  // Current module
+    std::vector<AstNode*> m_toDelete;  // Nodes to delete after traversal
 
-    // Linearize an SExpr tree into sequence steps.
-    // Returns steps in evaluation order: [(expr, delay, isRange, min, max), ...]
-    // The final expression (tail) has delay=0.
     struct SeqStep final {
         AstNodeExpr* exprp;  // Expression to check (nullptr if unary leading delay)
         int delay;  // Fixed delay after this expression (0 for tail)
@@ -274,7 +273,7 @@ class RangeDelayExpander final : public VNVisitor {
         int rangeMax;
     };
 
-    // Validate and extract delay bounds. Sets minVal/maxVal. Returns false on error.
+    // Extract delay bounds from AstDelay. Clones and constifies (does not modify original AST).
     bool extractDelayBounds(AstDelay* dlyp, bool& isRange, int& minVal, int& maxVal) {
         isRange = dlyp->isRangeDelay();
         if (isRange) {
@@ -316,15 +315,10 @@ class RangeDelayExpander final : public VNVisitor {
         return true;
     }
 
-    // Linearize an SExpr tree into steps.
-    // Tree structure: SExpr can have preExprp as SExpr (for multi-step from left)
-    // or exprp as SExpr (for chained sequences from right).
-    //
-    // Example: (##[1:2] b) ##1 c --> SExpr(pre=SExpr(##[1:2], b), ##1, c)
-    //   --> steps: [{nullptr, range[1:2]}, {b, delay=1}, {c, delay=0}]
-    //
-    // Example: a ##[1:2] (b ##1 c) --> SExpr(a, ##[1:2], SExpr(b, ##1, c))
-    //   --> steps: [{a, range[1:2]}, {b, delay=1}, {c, delay=0}]
+    // Flatten a (possibly nested) SExpr tree into a linear vector of SeqSteps.
+    // SExpr trees are left-recursive: (a ##[1:2] b) ##1 c becomes
+    //   SExpr(pre=SExpr(a, ##[1:2], b), ##1, c)
+    // Output for that example: [{a, range[1:2]}, {b, delay=1}, {c, delay=0}]
     bool linearize(AstSExpr* rootp, std::vector<SeqStep>& steps) {
         bool hasRange = false;
         linearizeImpl(rootp, steps, hasRange);
@@ -332,12 +326,9 @@ class RangeDelayExpander final : public VNVisitor {
     }
 
     bool linearizeImpl(AstSExpr* curp, std::vector<SeqStep>& steps, bool& hasRange) {
-        // If preExprp is an SExpr, linearize it first (handles left-recursive structure)
         if (AstSExpr* const prep = VN_CAST(curp->preExprp(), SExpr)) {
             if (!linearizeImpl(prep, steps, hasRange)) return false;
         }
-
-        // Extract this node's delay
         AstDelay* const dlyp = VN_CAST(curp->delayp(), Delay);
         UASSERT_OBJ(dlyp, curp, "Expected AstDelay");
         bool isRange = false;
@@ -345,209 +336,332 @@ class RangeDelayExpander final : public VNVisitor {
         if (!extractDelayBounds(dlyp, isRange, minVal, maxVal)) return false;
         if (isRange) hasRange = true;
 
-        // Add pre-expression step (if binary and preExprp is a simple expression)
         if (curp->preExprp() && !VN_IS(curp->preExprp(), SExpr)) {
             steps.push_back({curp->preExprp(), minVal, isRange, minVal, maxVal});
         } else {
-            // Unary form or preExprp was SExpr (already linearized above)
-            // The delay is between the last step from preExprp and the exprp
             steps.push_back({nullptr, minVal, isRange, minVal, maxVal});
         }
 
-        // Handle exprp
         if (AstSExpr* const nextp = VN_CAST(curp->exprp(), SExpr)) {
             return linearizeImpl(nextp, steps, hasRange);
         } else {
-            // Tail expression
             steps.push_back({curp->exprp(), 0, false, 0, 0});
             return true;
         }
     }
 
-    // Build the continuation PExpr body for steps[idx..end]
+    // Build FSM body as if/else chain on state variable.
+    // State 0 = IDLE. Each range delay adds 2 states (wait + check),
+    // each fixed delay adds 1 (wait), each tail expr adds 1 (check).
     //
-    // Each step has (expr, delay). The semantics are:
-    //   step[idx]: check expr, then wait delay cycles, then continue to step[idx+1]
-    //   For range delay steps: wait rangeMin, check next expr, if fail retry
-    //     up to rangeMax cycles, then continue with the rest
-    //
-    // For range delay at step[idx], the checked expression is step[idx+1].exprp,
-    // and on success the continuation is delay(step[idx+1].delay) --> steps[idx+2..end].
-    AstNode* buildContinuation(AstNode* origNodep, FileLine* flp,
-                               const std::vector<SeqStep>& steps, size_t idx) {
-        if (idx >= steps.size()) return new AstPExprClause{flp, true};
+    // Example: a ##[M:N] b ##1 c
+    //   steps: [{a, range[M:N]}, {b, delay=1}, {c, delay=0}]
+    //   State 1: WAIT_MIN (count down M cycles)
+    //   State 2: CHECK_RANGE (check b each cycle, up to N-M retries)
+    //   State 3: WAIT_FIXED (count down 1 cycle for ##1)
+    //   State 4: CHECK_TAIL (check c, report pass/fail)
+    AstNode* buildFsmBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp, AstVar* failVarp,
+                          const std::vector<SeqStep>& steps, AstSenItem* sensesp,
+                          AstNodeExpr* antExprp) {
 
-        const SeqStep& step = steps[idx];
+        AstNode* fsmChainp = nullptr;
+        int nextState = 1;
 
-        if (step.delay == 0 && !step.isRange) {
-            // Tail expression: if (expr) PASS else FAIL
-            if (step.exprp) {
-                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)},
-                                 new AstPExprClause{flp, true}, new AstPExprClause{flp, false}};
+        for (size_t i = 0; i < steps.size(); ++i) {
+            const SeqStep& step = steps[i];
+
+            if (step.isRange) {
+                // Range delay needs two states: WAIT_MIN and CHECK_RANGE
+                UASSERT(i + 1 < steps.size(), "Range must have next step");
+                const int waitState = nextState++;
+                const int checkState = nextState++;
+                const int rangeWidth = step.rangeMax - step.rangeMin;
+                const SeqStep& nextStep = steps[i + 1];
+
+                const int afterMatchState = nextState;
+
+                // WAIT_MIN: count down rangeMin cycles
+                {
+                    AstNode* const bodyp = new AstIf{
+                        flp,
+                        new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                  new AstConst{flp, 0}},
+                        makeStateTransition(flp, stateVarp, cntVarp, checkState, rangeWidth),
+                        new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                      new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                 new AstConst{flp, 1}}}};
+                    fsmChainp = chainState(flp, fsmChainp, stateVarp, waitState, bodyp);
+                }
+
+                // CHECK_RANGE: check expr each cycle, fail on timeout
+                {
+                    AstNode* matchActionp = nullptr;
+                    AstNode* const timeoutp = new AstBegin{flp, "", nullptr, true};
+                    VN_AS(timeoutp, Begin)
+                        ->addStmtsp(new AstAssign{flp,
+                                                  new AstVarRef{flp, failVarp, VAccess::WRITE},
+                                                  new AstConst{flp, AstConst::BitTrue{}}});
+                    VN_AS(timeoutp, Begin)
+                        ->addStmtsp(new AstAssign{flp,
+                                                  new AstVarRef{flp, stateVarp, VAccess::WRITE},
+                                                  new AstConst{flp, 0}});
+                    AstNode* const decrementp
+                        = new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                        new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                   new AstConst{flp, 1}}};
+
+                    AstIf* const failOrRetryp
+                        = new AstIf{flp,
+                                    new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                              new AstConst{flp, 0}},
+                                    timeoutp, decrementp};
+
+                    // On match: go to afterMatchState. If next step has a delay,
+                    // initialize counter for that delay; otherwise proceed directly.
+                    if (nextStep.delay > 0) {
+                        matchActionp = makeStateTransition(flp, stateVarp, cntVarp,
+                                                           afterMatchState, nextStep.delay - 1);
+                    } else {
+                        matchActionp
+                            = makeStateTransition(flp, stateVarp, cntVarp, afterMatchState, 0);
+                    }
+
+                    AstIf* const checkp
+                        = new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
+                                    matchActionp, failOrRetryp};
+
+                    fsmChainp = chainState(flp, fsmChainp, stateVarp, checkState, checkp);
+                }
+
+                // Skip next step (already consumed as the range check target)
+                ++i;
+                continue;
+
+            } else if (step.delay > 0) {
+                // Fixed delay: count down then advance
+                const int waitState = nextState++;
+                AstNode* const bodyp = new AstIf{
+                    flp,
+                    new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                              new AstConst{flp, 0}},
+                    new AstAssign{flp, new AstVarRef{flp, stateVarp, VAccess::WRITE},
+                                  new AstConst{flp, static_cast<uint32_t>(nextState)}},
+                    new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                  new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                             new AstConst{flp, 1}}}};
+
+                fsmChainp = chainState(flp, fsmChainp, stateVarp, waitState, bodyp);
+
+            } else if (i == steps.size() - 1 && step.exprp) {
+                // Tail: check final expression, pass or fail
+                const int checkState = nextState++;
+                AstNode* const passp = new AstAssign{
+                    flp, new AstVarRef{flp, stateVarp, VAccess::WRITE}, new AstConst{flp, 0}};
+                AstBegin* const failp = new AstBegin{flp, "", nullptr, true};
+                failp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, failVarp, VAccess::WRITE},
+                                               new AstConst{flp, AstConst::BitTrue{}}});
+                failp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, stateVarp, VAccess::WRITE},
+                                               new AstConst{flp, 0}});
+
+                AstIf* const bodyp = new AstIf{
+                    flp, new AstSampled{flp, step.exprp->cloneTree(false)}, passp, failp};
+
+                fsmChainp = chainState(flp, fsmChainp, stateVarp, checkState, bodyp);
             }
-            return new AstPExprClause{flp, true};
         }
 
-        if (step.isRange) {
-            // Range delay at step[idx]: counter-based loop (O(1) code size)
-            //   1. Check step[idx].exprp (if present, i.e. binary form)
-            //   2. Wait rangeMin cycles
-            //   3. Loop up to rangeWidth+1 times:
-            //      - if step[idx+1].exprp matches -> after-pass continuation
-            //      - if counter == 0 -> FAIL
-            //      - else @(clk); counter--
-            //   4. After-pass continuation = delay(step[idx+1].delay) + steps[idx+2..end]
-            UASSERT(idx + 1 < steps.size(), "Range delay must have next step");
-            const SeqStep& nextStep = steps[idx + 1];
-
-            // Build after-pass: what happens after the range check succeeds
-            AstNode* afterPassp = buildContinuation(origNodep, flp, steps, idx + 2);
-            if (nextStep.delay > 0) {
-                AstBegin* const wrapperp = new AstBegin{flp, "", nullptr, true};
-                wrapperp->addStmtsp(makeCycleDelay(flp, nextStep.delay));
-                wrapperp->addStmtsp(afterPassp);
-                afterPassp = wrapperp;
-            }
-
-            // Counter-based loop: check nextExpr each cycle, up to rangeWidth retries
-            const int rangeWidth = step.rangeMax - step.rangeMin;
-            const std::string cntName = m_names.get(nextStep.exprp);
-            AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, cntName + "__cnt",
-                                               origNodep->findBasicDType(VBasicDTypeKwd::INTEGER)};
-            cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            AstVar* const matchVarp = new AstVar{flp, VVarType::BLOCKTEMP, cntName + "__match",
-                                                 origNodep->findBasicDType(VBasicDTypeKwd::BIT)};
-            matchVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-
-            AstBegin* const loopBlockp = new AstBegin{flp, "", nullptr, true};
-            loopBlockp->addStmtsp(cntVarp);
-            loopBlockp->addStmtsp(matchVarp);
-            loopBlockp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                              new AstConst{flp, static_cast<uint32_t>(rangeWidth)}});
-            loopBlockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, matchVarp, VAccess::WRITE},
-                                                new AstConst{flp, AstConst::BitFalse{}}});
-
-            // loop { loopTest(!match && cnt >= 0); if (b) match=1; else { @clk; cnt--; } }
-            AstLoop* const loopp = new AstLoop{flp};
-            loopp->addStmtsp(new AstLoopTest{
-                flp, loopp,
-                new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, matchVarp, VAccess::READ}},
-                           new AstGtS{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                      new AstConst{flp, AstConst::Signed32{}, -1}}}});
-            // if (nextExpr) match = 1
-            loopp->addStmtsp(
-                new AstIf{flp, new AstSampled{flp, nextStep.exprp->cloneTree(false)},
-                          new AstAssign{flp, new AstVarRef{flp, matchVarp, VAccess::WRITE},
-                                        new AstConst{flp, AstConst::BitTrue{}}},
-                          nullptr});
-            // if (!match) { @(clk); cnt--; }
-            AstBegin* const retryp = new AstBegin{flp, "", nullptr, true};
-            retryp->addStmtsp(makeCycleDelay(flp, 1));
-            retryp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                              new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                         new AstConst{flp, 1}}});
-            loopp->addStmtsp(
-                new AstIf{flp, new AstNot{flp, new AstVarRef{flp, matchVarp, VAccess::READ}},
-                          retryp, nullptr});
-            loopBlockp->addStmtsp(loopp);
-            // After loop: if (matched) afterPass else FAIL
-            loopBlockp->addStmtsp(new AstIf{flp, new AstVarRef{flp, matchVarp, VAccess::READ},
-                                            afterPassp, new AstPExprClause{flp, false}});
-
-            // Add initial delay(rangeMin) before the loop
-            AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
-            if (step.rangeMin > 0) blockp->addStmtsp(makeCycleDelay(flp, step.rangeMin));
-            blockp->addStmtsp(loopBlockp);
-
-            // Wrap with pre-expression check if present
-            if (step.exprp) {
-                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)}, blockp,
-                                 new AstPExprClause{flp, false}};
-            }
-            return blockp;
+        // Build IDLE state (state 0): check trigger and start
+        AstNode* idleBodyp = nullptr;
+        const SeqStep& firstStep = steps[0];
+        int initCnt = 0;
+        if (firstStep.isRange) {
+            initCnt = firstStep.rangeMin - 1;
         } else {
-            // Fixed delay: check expr, delay(N), then continue
-            AstNode* const continuationp = buildContinuation(origNodep, flp, steps, idx + 1);
-            AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
-            if (step.delay > 0) blockp->addStmtsp(makeCycleDelay(flp, step.delay));
-            blockp->addStmtsp(continuationp);
-            if (step.exprp) {
-                return new AstIf{flp, new AstSampled{flp, step.exprp->cloneTree(false)}, blockp,
-                                 new AstPExprClause{flp, false}};
-            }
-            return blockp;
+            initCnt = firstStep.delay - 1;
         }
-    }
+        AstNode* const startActionp
+            = makeStateTransition(flp, stateVarp, cntVarp, 1, initCnt < 0 ? 0 : initCnt);
 
-    AstNode* wrapWithDelay(FileLine* flp, int cycles, AstNode* stmtp) {
-        if (cycles > 0) {
-            AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
-            blockp->addStmtsp(makeCycleDelay(flp, cycles));
-            blockp->addStmtsp(stmtp);
-            return blockp;
+        // Trigger = antecedent (from implication) AND/OR first step expression
+        AstNodeExpr* triggerp = nullptr;
+        if (antExprp && firstStep.exprp) {
+            triggerp = new AstAnd{flp, new AstSampled{flp, antExprp->cloneTree(false)},
+                                  new AstSampled{flp, firstStep.exprp->cloneTree(false)}};
+        } else if (antExprp) {
+            triggerp = new AstSampled{flp, antExprp->cloneTree(false)};
+        } else if (firstStep.exprp) {
+            triggerp = new AstSampled{flp, firstStep.exprp->cloneTree(false)};
         }
-        return stmtp;
+
+        if (triggerp) {
+            triggerp->dtypeSetBit();
+            idleBodyp = new AstIf{flp, triggerp, startActionp, nullptr};
+        } else {
+            // Unary form with no antecedent: start unconditionally each cycle
+            idleBodyp = startActionp;
+        }
+
+        // Chain: if (state == 0) idle else if (state == 1) ... else ...
+        AstIf* const idleIfp = new AstIf{
+            flp,
+            new AstEq{flp, new AstVarRef{flp, stateVarp, VAccess::READ}, new AstConst{flp, 0}},
+            idleBodyp, fsmChainp};
+
+        // Reset fail flag at top of each cycle
+        AstNode* const resetFailp
+            = new AstAssign{flp, new AstVarRef{flp, failVarp, VAccess::WRITE},
+                            new AstConst{flp, AstConst::BitFalse{}}};
+        resetFailp->addNext(idleIfp);
+        return resetFailp;
     }
 
-    AstDelay* makeCycleDelay(FileLine* flp, int cycles) {
-        return new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(cycles)}, true};
+    // Helper: generate state = newState; cnt = initCnt;
+    AstNode* makeStateTransition(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp, int newState,
+                                 int initCnt) {
+        AstBegin* const blockp = new AstBegin{flp, "", nullptr, true};
+        blockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, stateVarp, VAccess::WRITE},
+                                        new AstConst{flp, static_cast<uint32_t>(newState)}});
+        blockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                        new AstConst{flp, static_cast<uint32_t>(initCnt)}});
+        return blockp;
     }
 
-    // Check if an SExpr tree contains any range delays (checks both exprp and preExprp chains)
+    // Helper: chain a state check into the if/else chain
+    // Builds: if (state == stateNum) { body } else { existing chain }
+    AstNode* chainState(FileLine* flp, AstNode* existingChainp, AstVar* stateVarp, int stateNum,
+                        AstNode* bodyp) {
+        AstIf* const ifp = new AstIf{flp,
+                                     new AstEq{flp, new AstVarRef{flp, stateVarp, VAccess::READ},
+                                               new AstConst{flp, static_cast<uint32_t>(stateNum)}},
+                                     bodyp, existingChainp};
+        return ifp;
+    }
+
+    // Recursively check if any delay in the SExpr tree is a range delay
     static bool containsRangeDelay(AstSExpr* nodep) {
-        // Check this node's delay
         if (AstDelay* const dlyp = VN_CAST(nodep->delayp(), Delay)) {
             if (dlyp->isRangeDelay()) return true;
         }
-        // Recurse into preExprp (may be SExpr with range delay)
         if (AstSExpr* const prep = VN_CAST(nodep->preExprp(), SExpr)) {
             if (containsRangeDelay(prep)) return true;
         }
-        // Recurse into exprp (multi-step chain)
         if (AstSExpr* const exprp = VN_CAST(nodep->exprp(), SExpr)) {
             if (containsRangeDelay(exprp)) return true;
         }
         return false;
     }
 
+    // Find the clock sensitivity for this SExpr by searching up the tree
+    AstSenItem* findClock(AstNode* nodep) {
+        for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+            if (AstPropSpec* const specp = VN_CAST(curp, PropSpec)) {
+                if (specp->sensesp()) return specp->sensesp();
+            }
+        }
+        return nullptr;
+    }
+
+    // Find implication antecedent if this SExpr is the RHS of |-> or |=>
+    // The FSM absorbs the antecedent as its trigger so the implication node
+    // can be removed -- otherwise fail timing wouldn't align with the trigger.
+    std::pair<AstNodeExpr*, bool> findAntecedent(AstNode* nodep) {
+        for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+            if (AstImplication* const implp = VN_CAST(curp, Implication)) {
+                return {implp->lhsp(), implp->isOverlapped()};
+            }
+        }
+        return {nullptr, false};
+    }
+
     // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
+    }
+
     void visit(AstSExpr* nodep) override {
-        // Only process top-level SExprs that contain range delays
         if (!containsRangeDelay(nodep)) {
             iterateChildren(nodep);
             return;
         }
-        // Skip nested SExprs -- the outermost SExpr containing a range delay
-        // handles the entire tree via linearization
+        // Skip nested SExprs -- the outermost handles the whole tree via linearize
         if (AstSExpr* const parentp = VN_CAST(nodep->backp(), SExpr)) {
-            if (parentp->exprp() == nodep || parentp->preExprp() == nodep) {
-                // Don't iterate children -- parent will linearize the full tree
-                return;
-            }
+            if (parentp->exprp() == nodep || parentp->preExprp() == nodep) return;
         }
 
         std::vector<SeqStep> steps;
         if (!linearize(nodep, steps)) {
-            // Error in range validation -- replace with constant to prevent crash
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const bodyContentp = buildContinuation(nodep, flp, steps, 0);
-        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
-        bodyp->addStmtsp(bodyContentp);
-        AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
-        nodep->replaceWith(pexprp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+
+        // Find clock for the FSM (unclocked assertions are caught by V3Assert)
+        AstSenItem* const sensesp = findClock(nodep);
+        UASSERT_OBJ(sensesp, nodep, "Range delay SExpr without clocking event");
+
+        UASSERT_OBJ(m_modp, nodep, "Range delay SExpr not under a module");
+
+        // Find antecedent (if inside implication)
+        const auto [antExprp, isOverlapped] = findAntecedent(nodep);
+
+        // Create module-level state variables
+        const std::string baseName = m_names.get(nodep);
+        AstVar* const stateVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__state",
+                                             nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        stateVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__cnt",
+                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        AstVar* const failVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__fail",
+                                            nodep->findBasicDType(VBasicDTypeKwd::BIT)};
+        failVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+
+        // Build FSM body
+        AstNode* const fsmBodyp
+            = buildFsmBody(flp, stateVarp, cntVarp, failVarp, steps, sensesp, antExprp);
+
+        // Create Always block for the FSM (same scheduling as assertion always blocks)
+        AstAlways* const alwaysp = new AstAlways{
+            flp, VAlwaysKwd::ALWAYS, new AstSenTree{flp, sensesp->cloneTree(false)}, fsmBodyp};
+
+        // Add state vars and always block to module
+        m_modp->addStmtsp(stateVarp);
+        m_modp->addStmtsp(cntVarp);
+        m_modp->addStmtsp(failVarp);
+        m_modp->addStmtsp(alwaysp);
+
+        // Replace with !fail expression (combinational check).
+        // If inside an implication, replace the entire implication since
+        // the FSM already handles the antecedent.
+        AstNodeExpr* const checkp = new AstNot{flp, new AstVarRef{flp, failVarp, VAccess::READ}};
+        checkp->dtypeSetBit();
+
+        if (antExprp) {
+            // Find the implication, replace it with the check, defer deletion
+            for (AstNode* curp = nodep->backp(); curp; curp = curp->backp()) {
+                if (AstImplication* const implp = VN_CAST(curp, Implication)) {
+                    implp->replaceWith(checkp);
+                    m_toDelete.push_back(implp);
+                    break;
+                }
+            }
+        } else {
+            nodep->replaceWith(checkp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
     }
+
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit RangeDelayExpander(AstNetlist* nodep) { iterate(nodep); }
+    explicit RangeDelayExpander(AstNetlist* nodep) {
+        iterate(nodep);
+        for (AstNode* const np : m_toDelete) np->deleteTree();
+    }
 };
 
 //######################################################################
