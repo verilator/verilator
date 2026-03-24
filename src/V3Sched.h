@@ -312,6 +312,12 @@ public:
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
     void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
+
+    // Set the extra trigger bit at 'index' based on value-change comparison of instance VarScopes.
+    // Creates prev variables and compares: trigger = OR(inst_i != prev_i); prev_i = inst_i
+    void addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
+                                         const std::vector<AstVarScope*>& instanceVscps,
+                                         uint32_t index) const;
 };
 
 // Everything needed for combining timing with static scheduling.
@@ -353,28 +359,34 @@ class VirtIfaceTriggers final {
         const AstIface* m_ifacep;  // Interface type
         const AstVar* m_memberp;  // Member variable
 
-        // TODO: sorting by pointer is non-deterministic
         bool operator<(const IfaceMember& other) const {
-            if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
-            return m_memberp < other.m_memberp;
+            const int cmp = m_ifacep->name().compare(other.m_ifacep->name());
+            if (cmp != 0) return cmp < 0;
+            return m_memberp->name() < other.m_memberp->name();
         }
     };
 
 public:
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
 
-    std::vector<std::pair<IfaceMember, AstVarScope*>> m_memberTriggers;
+    // Per-member trigger info: instance VarScopes to monitor for value changes
+    struct MemberTriggerInfo final {
+        std::vector<AstVarScope*> m_instanceVscps;  // All interface instance VarScopes
+    };
 
-    void addMemberTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
-        m_memberTriggers.emplace_back(IfaceMember{ifacep, memberp}, vscp);
-    }
+    std::vector<std::pair<IfaceMember, MemberTriggerInfo>> m_memberTriggers;
 
-    AstVarScope* findMemberTrigger(const AstIface* ifacep, const AstVar* memberp) const {
-        for (const auto& pair : m_memberTriggers) {
-            const IfaceMember& item = pair.first;
-            if (item.m_ifacep == ifacep && item.m_memberp == memberp) return pair.second;
+    // Add an interface instance VarScope to monitor for a given member
+    void addInstanceVarScope(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
+        for (auto& pair : m_memberTriggers) {
+            if (pair.first.m_ifacep == ifacep && pair.first.m_memberp == memberp) {
+                pair.second.m_instanceVscps.push_back(vscp);
+                return;
+            }
         }
-        return nullptr;
+        MemberTriggerInfo info;
+        info.m_instanceVscps.push_back(vscp);
+        m_memberTriggers.emplace_back(IfaceMember{ifacep, memberp}, std::move(info));
     }
 
     IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,

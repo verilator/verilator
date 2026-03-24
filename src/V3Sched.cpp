@@ -394,13 +394,16 @@ void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 }
 
 //============================================================================
-// Helper that creates virtual interface trigger resets
+// Helper that creates virtual interface value-change triggers
 
-void addVirtIfaceTriggerAssignments(const VirtIfaceTriggers& virtIfaceTriggers,
+void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
+                                    const VirtIfaceTriggers& virtIfaceTriggers,
                                     uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
                                     const TriggerKit& trigKit) {
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
-        trigKit.addExtraTriggerAssignment(p.second, vifMemberTriggerIndex);
+        trigKit.addValueChangeTriggerAssignment(netlistp, initFuncp,
+                                                p.second.m_instanceVscps,
+                                                vifMemberTriggerIndex);
         ++vifMemberTriggerIndex;
     }
 }
@@ -516,7 +519,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex,
+    addVirtIfaceTriggerAssignments(netlistp, initFuncp, virtIfaceTriggers, firstVifTriggerIndex,
                                    firstVifMemberTriggerIndex, trigKit);
 
     // Remap sensitivities
@@ -972,7 +975,7 @@ void schedule(AstNetlist* netlistp) {
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex,
+    addVirtIfaceTriggerAssignments(netlistp, staticp, virtIfaceTriggers, firstVifTriggerIndex,
                                    firstVifMemberTriggerIndex, trigKit);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-triggers");
 

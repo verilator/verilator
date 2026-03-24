@@ -426,6 +426,109 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     m_compVecp->addStmtsp(setp);
 }
 
+// Value-change detection for virtual interface member triggers.
+// Parallel to SenExprBuilder::createTerm(ET_CHANGED) / getPrev(), but operates on
+// multiple interface instance VarScopes OR'd into a single extra trigger bit.
+void TriggerKit::addValueChangeTriggerAssignment(
+    AstNetlist* netlistp, AstCFunc* initFuncp,
+    const std::vector<AstVarScope*>& instanceVscps, uint32_t index) const {
+    UASSERT(!instanceVscps.empty(), "No instances for value-change trigger");
+
+    index += m_nSenseWords * WORD_SIZE;
+    const uint32_t wordIndex = index / WORD_SIZE;
+    const uint32_t bitIndex = index % WORD_SIZE;
+
+    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    FileLine* const flp = netlistp->fileline();
+
+    const auto rdInst = [flp](AstVarScope* vp) {
+        return new AstVarRef{flp, vp, VAccess::READ};
+    };
+    const auto wrPrev = [flp](AstVarScope* vp) {
+        return new AstVarRef{flp, vp, VAccess::WRITE};
+    };
+    const auto rdPrev = [flp](AstVarScope* vp) {
+        return new AstVarRef{flp, vp, VAccess::READ};
+    };
+
+    // Create prev variables and build: (inst0 != prev0) | (inst1 != prev1) | ...
+    AstNodeExpr* changedp = nullptr;
+    AstNode* updatesp = nullptr;
+    for (AstVarScope* const instVscp : instanceVscps) {
+        AstNodeDType* const dtypep = instVscp->dtypep()->skipRefp();
+
+        // Guard against unsupported complex types (dynamic arrays, queues, etc.)
+        // Interface members should only have synthesizable types at this point.
+        if (!VN_IS(dtypep, BasicDType) && !VN_IS(dtypep, PackArrayDType)
+            && !VN_IS(dtypep, UnpackArrayDType) && !VN_IS(dtypep, NodeUOrStructDType)) {
+            instVscp->v3fatalSrc("Unexpected complex type for virtual interface member trigger: "
+                                 << dtypep->prettyDTypeNameQ());
+        }
+
+        // Create a prev variable for this instance member
+        const std::string prevName = "__Vtrigprevvif_" + m_name + "_"
+                                     + instVscp->scopep()->nameDotless() + "__"
+                                     + instVscp->varp()->name();
+        AstVarScope* const prevVscp = scopeTopp->createTemp(prevName, instVscp->dtypep());
+
+        // Initialize prev = inst (in init function)
+        if (VN_IS(dtypep, UnpackArrayDType)) {
+            AstCMethodHard* const cmhp
+                = new AstCMethodHard{flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN,
+                                     rdInst(instVscp)};
+            cmhp->dtypeSetVoid();
+            initFuncp->addStmtsp(cmhp->makeStmt());
+        } else {
+            initFuncp->addStmtsp(
+                new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
+        }
+
+        // Build comparison: inst != prev (dtype-aware)
+        AstNodeExpr* neqp;
+        if (VN_IS(dtypep, UnpackArrayDType)) {
+            // Operand order: prev.neq(inst) -- see issue #5125
+            AstCMethodHard* const cmhp
+                = new AstCMethodHard{flp, rdPrev(prevVscp), VCMethod::UNPACKED_NEQ,
+                                     rdInst(instVscp)};
+            cmhp->dtypeSetBit();
+            neqp = cmhp;
+        } else {
+            neqp = new AstNeq{flp, rdInst(instVscp), rdPrev(prevVscp)};
+        }
+        changedp = changedp ? static_cast<AstNodeExpr*>(new AstOr{flp, changedp, neqp}) : neqp;
+
+        // Build post-update: prev = inst (dtype-aware)
+        if (VN_IS(dtypep, UnpackArrayDType)) {
+            AstCMethodHard* const cmhp
+                = new AstCMethodHard{flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN,
+                                     rdInst(instVscp)};
+            cmhp->dtypeSetVoid();
+            updatesp = AstNode::addNext(updatesp, cmhp->makeStmt());
+        } else {
+            updatesp = AstNode::addNext(
+                updatesp,
+                new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
+        }
+    }
+
+    if (!changedp) return;  // All instances had unsupported types
+
+    // Set trigger bit = (any instance changed)
+    AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
+    AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
+    AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
+    AstNode* const setp = new AstAssign{flp, trigLhsp, changedp};
+
+    // Chain: set trigger bit -> update all prev variables
+    setp->addNext(updatesp);
+
+    // Prepend before existing statements in the trigger computation function
+    if (AstNode* const nodep = m_compVecp->stmtsp()) {
+        setp->addNext(setp, nodep->unlinkFrBackWithNext());
+    }
+    m_compVecp->addStmtsp(setp);
+}
+
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
                        std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
