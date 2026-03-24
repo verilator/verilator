@@ -14,10 +14,25 @@
 //
 //*************************************************************************
 //
-// A pattern-matching based optimizer for DfgGraph. This is in some aspects similar to V3Const, but
-// more powerful in that it does not care about ordering combinational statement. This is also less
-// broadly applicable than V3Const, as it does not apply to procedural statements with sequential
-// execution semantics.
+// A pattern-matching based optimizer for DfgGraph. This is in some aspects
+// similar to V3Const, but more powerful in that it does not care about
+// ordering combinational statement. This is also less broadly applicable
+// than V3Const, as it does not apply to procedural statements with
+// sequential execution semantics.
+//
+// Each pattern can look at a certain number of source vertices to see
+// if a simplified form can be introduced. Some patterns also look at the
+// immediate sinks of some vertices. Ideally the algorithm should run to
+// fixed point (until nothing else changes). To do this efficiently, two
+// lists of vertices are maintained:
+// - the 'work' list contains vertices to be considered on the current
+//   iteration
+// - the 'iter' list contains vertices whose whole neighborhood could be
+//   considered on the next iteration
+// The 'work' list ensures simple cascading pattern applications are
+// handled in a single pass. The 'iter' list ensures the algorithm runs
+// to fixed point if no pattern looks deeper across the graph than the
+// neighborhood considered on the next iteration.
 //
 //*************************************************************************
 
@@ -131,16 +146,18 @@ template <> void foldOp<DfgXor>        (V3Number& out, const V3Number& lhs, cons
 class V3DfgPeephole final : public DfgVisitor {
     // TYPES
     struct VertexInfo final {
-        size_t m_workListIndex = 0;  // Position of this vertx m_wlist (0 means not in list)
-        size_t m_generation = 0;  // Generation number of this vertex
-        size_t m_id = 0;  // Unique vertex ID (0 means unassigned)
+        size_t m_workListIndex = 0;  // Position of this vertx m_workList (0 means not in list)
+        size_t m_iterListIndex = 0;  // Position of this vertx m_iterList (0 means not in list)
+        size_t m_generation = 0;  // Generation number of this vertex - for uniqueness check
+        size_t m_id = 0;  // Unique vertex ID (0 means unassigned) - for sorting
     };
 
     // STATE
     DfgGraph& m_dfg;  // The DfgGraph being visited
     V3DfgPeepholeContext& m_ctx;  // The config structure
     const DfgDataType& m_bitDType = DfgDataType::packed(1);  // Common, so grab it up front
-    std::vector<DfgVertex*> m_wlist;  // Using a manual work list as need special operations
+    std::vector<DfgVertex*> m_workList;  // List of vertices processed in current interation
+    std::vector<DfgVertex*> m_iterList;  // Vertices to start from on next iteration
     DfgUserMap<VertexInfo> m_vInfo = m_dfg.makeUserMap<VertexInfo>();  // Map to VertexInfo
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
@@ -170,29 +187,31 @@ class V3DfgPeephole final : public DfgVisitor {
         // If already on work list, ignore
         if (vInfo.m_workListIndex) return;
         // Add to work list
-        vInfo.m_workListIndex = m_wlist.size();
-        m_wlist.push_back(vtxp);
+        vInfo.m_workListIndex = m_workList.size();
+        m_workList.push_back(vtxp);
     }
 
     void removeFromWorkList(DfgVertex* vtxp) {
         VertexInfo& vInfo = m_vInfo[*vtxp];
-        // m_wlist[0] is always nullptr, fine to assign same here
-        m_wlist[vInfo.m_workListIndex] = nullptr;
+        // m_workList[0] is always nullptr, fine to assign same here
+        m_workList[vInfo.m_workListIndex] = nullptr;
         vInfo.m_workListIndex = 0;
     }
 
-    void addSourcesToWorkList(DfgVertex* vtxp) {
-        vtxp->foreachSource([&](DfgVertex& src) {
-            addToWorkList(&src);
-            return false;
-        });
+    void addToIterList(DfgVertex* vtxp) {
+        VertexInfo& vInfo = m_vInfo[*vtxp];
+        // If already on iter list, ignore
+        if (vInfo.m_iterListIndex) return;
+        // Add to iter list
+        vInfo.m_iterListIndex = m_iterList.size();
+        m_iterList.push_back(vtxp);
     }
 
-    void addSinksToWorkList(DfgVertex* vtxp) {
-        vtxp->foreachSink([&](DfgVertex& src) {
-            addToWorkList(&src);
-            return false;
-        });
+    void removeFromIterList(DfgVertex* vtxp) {
+        VertexInfo& vInfo = m_vInfo[*vtxp];
+        // m_iterList[0] is always nullptr, fine to assign same here
+        m_iterList[vInfo.m_iterListIndex] = nullptr;
+        vInfo.m_iterListIndex = 0;
     }
 
     void deleteVertex(DfgVertex* vtxp) {
@@ -201,6 +220,9 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Invalidate cache entry
         m_cache.invalidate(vtxp);
+
+        // It might be in the iter list, remove it
+        removeFromIterList(vtxp);
 
         // Gather source vertices - they might be duplicates, make unique using generation number
         incrementGeneration();
@@ -237,8 +259,8 @@ class V3DfgPeephole final : public DfgVisitor {
                   return srcp->hasSinks();
               });
 
-        // Add used sources to the work list
-        for (auto it = srcps.begin(); it != mid; ++it) addToWorkList(*it);
+        // Add used sources to the iter list - their sinks have changed
+        for (auto it = srcps.begin(); it != mid; ++it) addToIterList(*it);
 
         // Recursively delete unused sources
         for (auto it = mid; it != srcps.end(); ++it) {
@@ -265,7 +287,13 @@ class V3DfgPeephole final : public DfgVisitor {
         };
         if (VL_UNLIKELY(s_debugBisect.stop(debugCallback))) return;
 
-        // Remove sinks from cache, their inputs are about to change
+        // Add sources of the original vertex to the iter list - their sinks are changing
+        m_vtxp->foreachSource([&](DfgVertex& src) {
+            addToIterList(&src);
+            return false;
+        });
+
+        // Remove sinks of the original vertex from the cache - their inputs are changing
         m_vtxp->foreachSink([&](DfgVertex& dst) {
             m_cache.invalidate(&dst);
             return false;
@@ -281,12 +309,14 @@ class V3DfgPeephole final : public DfgVisitor {
         // Original vertex is now unused, so delete it
         deleteVertex(m_vtxp);
 
-        // Add all sources to the work list
-        addSourcesToWorkList(resp);
-        // Add replacement to the work list
+        // Add new vertex to iter list to consider neighborhood
+        addToIterList(resp);
+        // Add new vertex and sinks to work list as likely to match
         addToWorkList(resp);
-        // Add sinks of replaced vertex to the work list
-        addSinksToWorkList(resp);
+        resp->foreachSink([&](DfgVertex& dst) {
+            addToWorkList(&dst);
+            return false;
+        });
     }
 
     // Create a 32-bit DfgConst vertex
@@ -1922,48 +1952,91 @@ class V3DfgPeephole final : public DfgVisitor {
         // Assign vertex IDs
         m_dfg.forEachVertex([&](DfgVertex& vtx) { m_vInfo[vtx].m_id = ++m_lastId; });
 
-        // Initialize the work list
-        m_wlist.reserve(m_dfg.size() * 4);
+        // Initialize the work list and iter list. They can't get bigger than
+        // m_dfg.size(), but new vertices are created in the loop, so over alloacte
+        m_workList.reserve(m_dfg.size() * 2);
+        m_iterList.reserve(m_dfg.size() * 2);
 
-        // Need a nullptr at index 0 so VertexInfo::m_workListIndex can be used to check membership
-        m_wlist.push_back(nullptr);
+        // Need a nullptr at index 0 so VertexInfo::m_*ListIndex == 0 can check membership
+        m_workList.push_back(nullptr);
+        m_iterList.push_back(nullptr);
 
-        // Add all variable vertices to the work list. Do this first so they are processed last.
-        // This order has a better chance of preserving original variables in case they are needed.
+        // Add all variable vertices to the work list. Do this first so they are processed
+        // last. This order has a better chance of preserving original variables in case
+        // they are needed to hold intermediate results.
         for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
 
         // Add all operation vertices to the work list
         for (DfgVertex& vtx : m_dfg.opVertices()) addToWorkList(&vtx);
 
-        // Process the work list
-        while (!m_wlist.empty()) {
-            VL_RESTORER(m_vtxp);
+        // Process iteratively
+        while (true) {
+            // Process the work list - keep the placeholder at index 0
+            while (m_workList.size() > 1) {
+                VL_RESTORER(m_vtxp);
 
-            // Pop up head of work list
-            m_vtxp = m_wlist.back();
-            m_wlist.pop_back();
-            if (!m_vtxp) continue;  // If removed from worklist, move on
-            m_vInfo[m_vtxp].m_workListIndex = 0;  // No longer on work list
+                // Pop up head of work list
+                m_vtxp = m_workList.back();
+                m_workList.pop_back();
+                if (!m_vtxp) continue;  // If removed from worklist (deleted), move on
+                m_vInfo[m_vtxp].m_workListIndex = 0;  // No longer on work list
 
-            // Variables are special, just visit them, the visit might delete them
-            if (DfgVertexVar* const varp = m_vtxp->cast<DfgVertexVar>()) {
-                visit(varp);
-                continue;
+                // Variables are special, just visit them, the visit might delete them
+                if (DfgVertexVar* const varp = m_vtxp->cast<DfgVertexVar>()) {
+                    visit(varp);
+                    continue;
+                }
+
+                // Unsued vertices should have been removed immediately
+                UASSERT_OBJ(m_vtxp->hasSinks(), m_vtxp, "Operation vertex should have sinks");
+
+                // Check if an equivalent vertex exists, if so replace this vertex with it
+                if (DfgVertex* const sampep = m_cache.cache(m_vtxp)) {
+                    APPLYING(REPLACE_WITH_EQUIVALENT) {
+                        replace(sampep);
+                        continue;
+                    }
+                }
+
+                // Visit vertex, might get deleted in the process
+                iterate(m_vtxp);
             }
 
-            // Unsued vertices should have been removed immediately
-            UASSERT_OBJ(m_vtxp->hasSinks(), m_vtxp, "Operation vertex should have sinks");
+            // If nothing was added to the iter list, we can stop
+            if (m_iterList.size() == 1) break;
 
-            // Check if an equivalent vertex exists, if so replace this vertex with it
-            if (DfgVertex* const sampep = m_cache.cache(m_vtxp)) {
-                APPLYING(REPLACE_WITH_EQUIVALENT) {
-                    replace(sampep);
-                    continue;
+            // Expand the iter list to visit the whole neighborhood of vertices
+            // within a fixed number of hops from the enqueued vertices. This
+            // enables patterns that look deeper across the graph to be reconsidered.
+            {
+                size_t begin = 0;
+                size_t end = m_iterList.size();
+                for (size_t hops = 1; hops <= 4; ++hops) {
+                    for (size_t i = begin; i < end; ++i) {
+                        DfgVertex* const vtxp = m_iterList[i];
+                        if (!vtxp) continue;
+                        vtxp->foreachSink([&](DfgVertex& dst) {
+                            addToIterList(&dst);
+                            return false;
+                        });
+                        vtxp->foreachSource([&](DfgVertex& src) {
+                            addToIterList(&src);
+                            return false;
+                        });
+                    }
+                    begin = end;
+                    end = m_iterList.size();
                 }
             }
 
-            // Visit vertex, might get deleted in the process
-            iterate(m_vtxp);
+            // Move vertices in the iter list to the work list for the next iteration
+            for (DfgVertex* const vtxp : m_iterList) {
+                if (!vtxp) continue;
+                removeFromIterList(vtxp);
+                addToWorkList(vtxp);
+            }
+            // Reset the iter list
+            m_iterList.resize(1);
         }
     }
 
