@@ -4241,9 +4241,18 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)");
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            // map() - IEEE 1800-2023 7.12.5
+            // Returns a queue with same element count, each element is the with expression result
+            AstWith* const withp
+                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                   nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      VCMethod::ARRAY_MAP};
+            newp->withp(withp);
+            newp->dtypep(queueDTypeIndexedBy(withp ? withp->dtypep() : adtypep->subDTypep()));
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         }
         return newp;
     }

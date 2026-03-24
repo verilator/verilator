@@ -804,6 +804,17 @@ public:
         }
         return VlQueue<IData>{};
     }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            out.push_back(with_func(index, i));
+            ++index;
+        }
+        return out;
+    }
 
     // Reduction operators
     VlQueue min() const {
@@ -1531,6 +1542,13 @@ public:
             if (with_func(i, m_storage[i])) return VlQueue<IData>::consV(i);
         }
         return VlQueue<T_Key>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (IData i = 0; i < N_Depth; ++i) out.push_back(with_func(i, m_storage[i]));
+        return out;
     }
 
     // Reduction operators
