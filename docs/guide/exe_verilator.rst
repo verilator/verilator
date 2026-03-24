@@ -751,9 +751,11 @@ Summary:
 
 .. option:: --fourstate
 
+   Enables four-state logic support. Experimental, for developer use only.
+
 .. option:: --no-fourstate
 
-   Enables/Disables four-state logic support.
+   Disables four-state logic support which is the default. Exists for forward compatibility.
 
 .. option:: --fslice-element-limit
 

@@ -1056,6 +1056,10 @@ void V3Options::notify() VL_MT_DISABLED {
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 
+    if (fourstate()) {
+        cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
+    }
+
     if (coverage() && savable()) {
         cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
