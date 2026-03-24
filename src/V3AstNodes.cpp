@@ -2312,12 +2312,14 @@ void AstPin::dump(std::ostream& str) const {
     } else {
         str << " ->UNLINKED";
     }
+    if (!paramPath().empty()) str << " paramPath=" << paramPath();
     if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, svDotName);
     dumpJsonBoolFuncIf(str, svImplicit);
+    if (!paramPath().empty()) dumpJsonStr(str, "paramPath", paramPath());
     dumpJsonGen(str);
 }
 string AstPin::prettyOperatorName() const {

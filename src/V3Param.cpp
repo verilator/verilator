@@ -530,6 +530,32 @@ class ParamProcessor final {
             }
         }
     }
+    static bool hasDescendantDefparams(const AstNodeModule* modp,
+                                       std::set<const AstNodeModule*>& visited) {
+        if (!visited.insert(modp).second) return false;
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstCell* const cellp = VN_CAST(stmtp, Cell);
+            if (!cellp) continue;
+            for (AstPin* pinp = cellp->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (!pinp->paramPath().empty()) {
+                    visited.erase(modp);
+                    return true;
+                }
+            }
+            if (AstNodeModule* const childModp = cellp->modp()) {
+                if (hasDescendantDefparams(childModp, visited)) {
+                    visited.erase(modp);
+                    return true;
+                }
+            }
+        }
+        visited.erase(modp);
+        return false;
+    }
+    static bool hasDescendantDefparams(const AstNodeModule* modp) {
+        std::set<const AstNodeModule*> visited;
+        return hasDescendantDefparams(modp, visited);
+    }
     // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
         // InitArray is not supported because that can not be set via -G
@@ -1609,6 +1635,10 @@ class ParamProcessor final {
                 }
             }
         }
+        if (!any_overrides && VN_IS(nodep, Cell) && hasDescendantDefparams(srcModp)) {
+            longname += "__Vdefparam" + V3Hash{srcModp->someInstanceName()}.toString();
+            any_overrides = true;
+        }
 
         UINFO(9, "nodeDeparamCommon: " << srcModp->prettyNameQ() << " overrides=" << any_overrides
                                        << endl);
@@ -1825,6 +1855,23 @@ public:
                      << " parentSomeInstanceName='"
                      << (modp ? modp->someInstanceName() : string("<null>")) << "'"
                      << " inputSomeInstanceName='" << someInstanceName << "'" << endl);
+        string nodeName = nodep->name();
+        if (AstIfaceRefDType* const ifaceRefp = VN_CAST(nodep, IfaceRefDType)) {
+            if (nodeName.empty()) nodeName = ifaceRefp->cellName();
+        }
+        const string instanceName
+            = nodeName.empty() ? someInstanceName : (someInstanceName + "." + nodeName);
+
+        if (AstCell* const cellp = VN_CAST(nodep, Cell)) {
+            for (AstPin* pinp = cellp->paramsp(); pinp;) {
+                AstPin* const nextp = VN_AS(pinp->nextp(), Pin);
+                if (!pinp->paramPath().empty() && instanceName != pinp->paramPath()
+                    && !VString::endsWith(instanceName, "." + pinp->paramPath())) {
+                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                }
+                pinp = nextp;
+            }
+        }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
         // Evaluate all module constants
@@ -1834,12 +1881,6 @@ public:
         // so use cellName() which is the actual cell instance name.
         // If both are empty (interface port, not a cell), skip appending
         // to avoid double-dots in the path.
-        string nodeName = nodep->name();
-        if (AstIfaceRefDType* const ifaceRefp = VN_CAST(nodep, IfaceRefDType)) {
-            if (nodeName.empty()) nodeName = ifaceRefp->cellName();
-        }
-        const string instanceName
-            = nodeName.empty() ? someInstanceName : (someInstanceName + "." + nodeName);
         srcModp->someInstanceName(instanceName);
         UINFO(9, "nodeDeparam SET-SRC-INST srcMod="
                      << srcModp->prettyNameQ() << " someInstanceName='"

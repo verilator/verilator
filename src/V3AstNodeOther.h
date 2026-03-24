@@ -1024,19 +1024,18 @@ class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := pathp : AstNodeExpr
     string m_name;  // Name of variable getting set
-    string m_path;  // Dotted cellname to set parameter of
 public:
-    AstDefParam(FileLine* fl, const string& path, const string& name, AstNodeExpr* rhsp)
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name}
-        , m_path{path} {
+        , m_name{name} {
         this->rhsp(rhsp);
+        this->pathp(pathp);
     }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
-    string path() const { return m_path; }
 };
 class AstDefaultDisable final : public AstNode {
     // @astgen op1 := condp : AstNodeExpr
@@ -1390,6 +1389,7 @@ class AstPin final : public AstNode {
     // @astgen ptr := m_modPTypep : Optional[AstParamTypeDType]  // Param type connects to on sub
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
+    string m_paramPath;  // Original defparam cell path, if this pin came from a defparam
     bool m_param = false;  // Pin connects to parameter
     bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
     bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
@@ -1416,6 +1416,8 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    const string& paramPath() const { return m_paramPath; }
+    void paramPath(const string& path) { m_paramPath = path; }
     bool svDotName() const { return m_svDotName; }
     void svDotName(bool flag) { m_svDotName = flag; }
     bool svImplicit() const { return m_svImplicit; }
