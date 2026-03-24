@@ -491,7 +491,6 @@ public:
         return *this;
     }
 
-
     // Construct new object from _V_alue and/or _C_ontainer child objects
     static VlQueue consV(const T_Value& lhs) {
         VlQueue out;
