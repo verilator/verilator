@@ -51,7 +51,7 @@ for line in sys.stdin:
     # Change int to size_t on LexerInput/LexerOutput when using macOS Tahoe
     if platform.system() == "Darwin":
         try:
-            osv = platform.mac_ver()[0] # Example "26.2"
+            osv = platform.mac_ver()[0]  # Example "26.2"
             if len(osv) > 2 and osv[2] == "." and int(osv[:2]) >= 26:
                 if "::LexerInput(" in line or "::LexerOutput(" in line:
                     line = re.sub(r'int ', r'size_t ', line)
