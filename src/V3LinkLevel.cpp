@@ -167,6 +167,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         UINFO(1, "No module found to wrap");
         return;
     }
+    rootp->resolvedTopModuleName(oldmodp->name());
 
     AstNodeModule* const newmodp = new AstModule{oldmodp->fileline(), "$root", oldmodp->libname()};
     newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
