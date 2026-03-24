@@ -133,6 +133,7 @@ class V3DfgPeephole final : public DfgVisitor {
     struct VertexInfo final {
         size_t m_workListIndex = 0;  // Position of this vertx m_wlist (0 means not in list)
         size_t m_generation = 0;  // Generation number of this vertex
+        size_t m_id = 0;  // Unique vertex ID (0 means unassigned)
     };
 
     // STATE
@@ -144,6 +145,7 @@ class V3DfgPeephole final : public DfgVisitor {
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
     size_t m_currentGeneration = 0;  // Current generation number
+    size_t m_lastId = 0;  // Last unique vertex ID assigned
 
     // STATIC STATE
     static V3DebugBisect s_debugBisect;  // Debug aid
@@ -303,6 +305,9 @@ class V3DfgPeephole final : public DfgVisitor {
         // Sanity check
         UASSERT_OBJ(vtxp->dtype() == dtype, vtxp, "Vertex dtype mismatch");
         if (VL_UNLIKELY(v3Global.opt.debugCheck())) vtxp->typeCheck(m_dfg);
+        // Assign vertex ID
+        VertexInfo& vInfo = m_vInfo[vtxp];
+        if (!vInfo.m_id) vInfo.m_id = ++m_lastId;
         // Add to work list
         addToWorkList(vtxp);
         // Return new node
@@ -457,17 +462,40 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // if (a OP (b OP c)), check if (a OP b) exists and if so replace with (a OP b) OP c
-        if (Vertex* rVtxp = vtxp->rhsp()->template cast<Vertex>()) {
-            const DfgDataType& dtype
-                = std::is_same<Vertex, DfgConcat>::value
-                      ? DfgDataType::packed(lhsp->width() + rVtxp->lhsp()->width())
-                      : vtxp->dtype();
-            if (Vertex* const cVtxp = m_cache.get<Vertex>(dtype, lhsp, rVtxp->lhsp())) {
-                if (cVtxp->hasSinks() && cVtxp != rhsp) {
-                    APPLYING(REUSE_ASSOC_BINARY) {
-                        replace(make<Vertex>(vtxp, cVtxp, rVtxp->rhsp()));
-                        return true;
+        // Attempt to reuse associative binary expressions if hey already exist, e.g.:
+        // '(a OP (b OP c))' -> '(a OP b) OP c', iff '(a OP b)' already exists, or
+        // '(a OP c) OP b' iff '(a OP c)' already exists and the vertex is commutative.
+        // Only do this is 'b OP c' has a single use and can subsequently be removed,
+        // otherwise there is no improvement.
+        if (!rhsp->hasMultipleSinks()) {
+            if (Vertex* rVtxp = rhsp->template cast<Vertex>()) {
+                DfgVertex* const rlVtxp = rVtxp->lhsp();
+                DfgVertex* const rrVtxp = rVtxp->rhsp();
+
+                const DfgDataType& dtype
+                    = std::is_same<Vertex, DfgConcat>::value
+                          ? DfgDataType::packed(lhsp->width() + rlVtxp->width())
+                          : vtxp->dtype();
+
+                if (Vertex* const existingp = m_cache.get<Vertex>(dtype, lhsp, rlVtxp)) {
+                    UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
+                    if (existingp != rhsp) {
+                        APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_LHS_OF_RHS) {
+                            replace(make<Vertex>(vtxp, existingp, rrVtxp));
+                            return true;
+                        }
+                    }
+                }
+                // Concat is not commutative
+                if VL_CONSTEXPR_CXX17 (!std::is_same<Vertex, DfgConcat>::value) {
+                    if (Vertex* const existingp = m_cache.get<Vertex>(dtype, lhsp, rrVtxp)) {
+                        UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
+                        if (existingp != rhsp) {
+                            APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_RHS_OF_RHS) {
+                                replace(make<Vertex>(vtxp, existingp, rlVtxp));
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -484,29 +512,59 @@ class V3DfgPeephole final : public DfgVisitor {
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
+
         // Ensure Const is on left-hand side to simplify other patterns
-        if (lhsp->is<DfgConst>()) return false;
-        if (rhsp->is<DfgConst>()) {
-            APPLYING(SWAP_CONST_IN_COMMUTATIVE_BINARY) {
-                replace(make<Vertex>(vtxp, rhsp, lhsp));
-                return true;
+        {
+            const bool lIsConst = lhsp->is<DfgConst>();
+            const bool rIsConst = rhsp->is<DfgConst>();
+            if (lIsConst != rIsConst) {
+                if (rIsConst) {
+                    APPLYING(SWAP_CONST_IN_COMMUTATIVE_BINARY) {
+                        replace(make<Vertex>(vtxp, rhsp, lhsp));
+                        return true;
+                    }
+                }
+                return false;
             }
         }
+
         // Ensure Not is on the left-hand side to simplify other patterns
-        if (lhsp->is<DfgNot>()) return false;
-        if (rhsp->is<DfgNot>()) {
-            APPLYING(SWAP_NOT_IN_COMMUTATIVE_BINARY) {
-                replace(make<Vertex>(vtxp, rhsp, lhsp));
-                return true;
+        {
+            const bool lIsNot = lhsp->is<DfgNot>();
+            const bool rIsNot = rhsp->is<DfgNot>();
+            if (lIsNot != rIsNot) {
+                if (rIsNot) {
+                    APPLYING(SWAP_NOT_IN_COMMUTATIVE_BINARY) {
+                        replace(make<Vertex>(vtxp, rhsp, lhsp));
+                        return true;
+                    }
+                }
+                return false;
             }
         }
-        // If both sides are variable references, order the side in some defined way. This
-        // allows CSE to later merge 'a op b' with 'b op a'.
-        if (lhsp->is<DfgVertexVar>() && rhsp->is<DfgVertexVar>()) {
-            const AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
-            const AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
-            if (lVarp->name() > rVarp->name()) {
-                APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
+
+        // Ensure same vertex is on the right-hand side to simplify other patterns
+        {
+            const bool lIsSame = lhsp->is<Vertex>();
+            const bool rIsSame = rhsp->is<Vertex>();
+            if (lIsSame != rIsSame) {
+                if (lIsSame) {
+                    APPLYING(SWAP_SAME_IN_COMMUTATIVE_BINARY) {
+                        replace(make<Vertex>(vtxp, rhsp, lhsp));
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        // Otherwise put sides in order based on unique iD, this makes
+        // 'a op b' and 'b op a' end up the same for better combining.
+        {
+            const VertexInfo& lInfo = m_vInfo[lhsp];
+            const VertexInfo& rInfo = m_vInfo[rhsp];
+            if (lInfo.m_id > rInfo.m_id) {
+                APPLYING(SWAP_SIDE_IN_COMMUTATIVE_BINARY) {
                     replace(make<Vertex>(vtxp, rhsp, lhsp));
                     return true;
                 }
@@ -1443,6 +1501,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgVertex::ScopeCache scopeCache;
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     sp->addDriver(catp, lsb, flp);
+                    m_vInfo[sp].m_id = ++m_lastId;
                     replace(sp);
                     return;
                 }
@@ -1859,6 +1918,9 @@ class V3DfgPeephole final : public DfgVisitor {
     V3DfgPeephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
+
+        // Assign vertex IDs
+        m_dfg.forEachVertex([&](DfgVertex& vtx) { m_vInfo[vtx].m_id = ++m_lastId; });
 
         // Initialize the work list
         m_wlist.reserve(m_dfg.size() * 4);

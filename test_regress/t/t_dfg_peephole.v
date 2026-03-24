@@ -218,20 +218,33 @@ module t (
   `signal(REPLACE_LOGOR_WITH_OR, rand_a[0] || rand_a[1]);
   `signal(RIGHT_LEANING_ASSOC, (((rand_a + rand_b) + rand_a) + rand_b));
   `signal(RIGHT_LEANING_CONCET, {{{rand_a, rand_b}, rand_a}, rand_b});
-  `signal(REUSE_ASSOC_ADD_COMMON, rand_a[23:4] + ~rand_b[23:4]);
-  `signal(REUSE_ASSOC_ADD, rand_a[23:4] + (~rand_b[23:4] + rand_a[39:20]));
-  `signal(REUSE_ASSOC_MUL_COMMON, rand_a[23:4] * ~rand_b[23:4]);
-  `signal(REUSE_ASSOC_MUL, rand_a[23:4] * (~rand_b[23:4] * rand_a[39:20]));
-  `signal(REUSE_ASSOC_MULS_COMMON, srand_a[23:4] * ~srand_b[23:4]);
-  `signal(REUSE_ASSOC_MULS, srand_a[23:4] * (~srand_b[23:4] * srand_a[39:20]));
-  `signal(REUSE_ASSOC_AND_COMMON, rand_a[23:4] & ~rand_b[23:4]);
-  `signal(REUSE_ASSOC_AND, rand_a[23:4] & (~rand_b[23:4] & rand_a[39:20]));
-  `signal(REUSE_ASSOC_OR_COMMON, rand_a[23:4] | ~rand_b[23:4]);
-  `signal(REUSE_ASSOC_OR, rand_a[23:4] | (~rand_b[23:4] | rand_a[39:20]));
-  `signal(REUSE_ASSOC_XOR_COMMON, rand_a[23:4] ^ ~rand_b[23:4]);
-  `signal(REUSE_ASSOC_XOR, rand_a[23:4] ^ (~rand_b[23:4] ^ rand_a[39:20]));
-  `signal(REUSE_ASSOC_CAT_COMMON, {rand_a[23:4], ~rand_b[23:4]});
-  `signal(REUSE_ASSOC_CAT, {rand_a[23:4], {~rand_b[23:4], rand_a[39:20]}});
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_ADD_COMMON, rand_a[23:4] + ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_ADD, rand_a[23:4] + (~rand_b[23:4] + rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_MUL_COMMON, rand_a[23:4] * ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_MUL, rand_a[23:4] * (~rand_b[23:4] * rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_MULS_COMMON, srand_a[23:4] * ~srand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_MULS, srand_a[23:4] * (~srand_b[23:4] * srand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_AND_COMMON, rand_a[23:4] & ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_AND, rand_a[23:4] & (~rand_b[23:4] & rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_OR_COMMON, rand_a[23:4] | ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_OR, rand_a[23:4] | (~rand_b[23:4] | rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_XOR_COMMON, rand_a[23:4] ^ ~rand_b[23:4]);
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_XOR, rand_a[23:4] ^ (~rand_b[23:4] ^ rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_CAT_COMMON, {rand_a[23:4], ~rand_b[23:4]});
+  `signal(REUSE_ASSOC_LHS_WITH_LHS_OF_RHS_CAT, {rand_a[23:4], {~rand_b[23:4], rand_a[39:20]}});
+
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_ADD_COMMON, rand_a[23:4] + rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_ADD, rand_a[23:4] + (~rand_b[24:5] + rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_MUL_COMMON, rand_a[23:4] * rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_MUL, rand_a[23:4] * (~rand_b[24:5] * rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_MULS_COMMON, srand_a[23:4] * rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_MULS, srand_a[23:4] * (~srand_b[24:5] * srand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_AND_COMMON, rand_a[23:4] & rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_AND, rand_a[23:4] & (~rand_b[24:5] & rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_OR_COMMON, rand_a[23:4] | rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_OR, rand_a[23:4] | (~rand_b[24:5] | rand_a[39:20]));
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR_COMMON, rand_a[23:4] ^ rand_a[39:20]);
+  `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR, rand_a[23:4] ^ (~rand_b[24:5] ^ rand_a[39:20]));
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
