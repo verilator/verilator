@@ -335,7 +335,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 
     // Apply enables
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
-    if (!m_sigs_enabledVec.empty()) {
+    if (!m_sigs_enabledVec.empty() || !m_dumpvars.empty()) {
         // Else if was empty, m_sigs_enabledp = nullptr to short circuit tests
         // But it isn't, so alloc one bit for each code to indicate enablement
         // We don't want to still use m_signs_enabledVec as std::vector<bool> is not

@@ -3218,6 +3218,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return false;
     }
 
+    static string dumpvarsBracketToInternal(const string& ident) {
+        const string::size_type lbr = ident.find('[');
+        if (lbr == string::npos) return ident;
+        const string::size_type rbr = ident.find(']', lbr);
+        if (rbr == string::npos) return ident;
+        return ident.substr(0, lbr) + "__BRA__" + ident.substr(lbr + 1, rbr - lbr - 1)
+               + "__KET__" + dumpvarsBracketToInternal(ident.substr(rbr + 1));
+    }
+
     VSymEnt* findDumpvarsLocal(FileLine* refLocationp, const string& dotname, string& baddot,
                                VSymEnt*& okSymp) {
         if (!m_curSymp) return nullptr;
@@ -3237,6 +3246,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         string altIdent;
         if (m_statep->forPrearray()) {
             if ((pos = ident.rfind("__BRA__")) != string::npos) altIdent = ident.substr(0, pos);
+            if (altIdent.empty() && ident.find('[') != string::npos)
+                altIdent = ident.substr(0, ident.find('['));
         }
 
         VSymEnt* symp = nullptr;
@@ -3244,6 +3255,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             symp = m_curSymp;
         } else {
             symp = m_curSymp->findIdFallback(ident);
+            if (!symp && ident.find('[') != string::npos)
+                symp = m_curSymp->findIdFallback(dumpvarsBracketToInternal(ident));
             if (!symp && !altIdent.empty()) symp = m_curSymp->findIdFallback(altIdent);
         }
         if (!symp) return nullptr;
@@ -3286,6 +3299,61 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         // Step 4: Multi-component "X.y.z" where X might be the runtime root.
         const string remaining = target.substr(dotPos + 1);
+
+        // With --main, if the first component matches the local module,
+        // walk the remaining path through cell scopes to validate it.
+        if (!dumpvarsHasBareTarget(targetsp, firstComp) && v3Global.opt.main()
+            && dumpvarsMatchesLocalModule(m_curSymp, firstComp)) {
+            string walkPath = remaining;
+            VSymEnt* walkSymp = m_curSymp;
+            bool errorOut = false;
+            while (!walkPath.empty() && walkSymp) {
+                // Extract first identifier (strip dots, brackets, __BRA__)
+                string ident = walkPath;
+                {
+                    string::size_type cutPos = string::npos;
+                    const string::size_type dp = ident.find('.');
+                    if (dp != string::npos && dp < cutPos) cutPos = dp;
+                    const string::size_type bp = ident.find('[');
+                    if (bp != string::npos && (cutPos == string::npos || bp < cutPos))
+                        cutPos = bp;
+                    const string::size_type brp = ident.find("__BRA__");
+                    if (brp != string::npos && (cutPos == string::npos || brp < cutPos))
+                        cutPos = brp;
+                    if (cutPos != string::npos) ident = ident.substr(0, cutPos);
+                }
+                VSymEnt* const childSymp = walkSymp->findIdFallback(ident);
+                if (!childSymp) {
+                    errorOut = true;
+                    break;
+                }
+                walkPath = walkPath.substr(ident.size());
+                if (!walkPath.empty() && walkPath[0] == '.') walkPath = walkPath.substr(1);
+                // Skip array subscript if present
+                if (!walkPath.empty() && walkPath[0] == '[') {
+                    const string::size_type rb = walkPath.find(']');
+                    if (rb != string::npos) walkPath = walkPath.substr(rb + 1);
+                    if (!walkPath.empty() && walkPath[0] == '.') walkPath = walkPath.substr(1);
+                }
+                if (walkPath.substr(0, 7) == "__BRA__") {
+                    const string::size_type ke = walkPath.find("__KET__");
+                    if (ke != string::npos) walkPath = walkPath.substr(ke + 7);
+                    if (!walkPath.empty() && walkPath[0] == '.') walkPath = walkPath.substr(1);
+                }
+                if (!VN_IS(childSymp->nodep(), Cell)
+                    && !VN_IS(childSymp->nodep(), CellInline)
+                    && !VN_IS(childSymp->nodep(), NodeModule)) {
+                    return target;
+                }
+                walkSymp = childSymp;
+            }
+            if (errorOut) {
+                fl->v3error("$dumpvars target not found: " << target);
+                return target;
+            }
+            return target;
+        }
+
         if (dumpvarsHasBareTarget(targetsp, firstComp)) {
             string runtimeBaddot;
             VSymEnt* runtimeMatchSymp = nullptr;
@@ -3297,8 +3365,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
             return target;
         }
 
-        UINFO(5, "$dumpvars target '" << target << "' not found in hierarchy" << endl);
-        return target;
+        string localBaddot;
+        VSymEnt* localSymp = nullptr;
+        if (findDumpvarsLocal(fl, firstComp, localBaddot, localSymp)
+            && !VN_IS(localSymp->nodep(), Cell) && !VN_IS(localSymp->nodep(), CellInline)
+            && !VN_IS(localSymp->nodep(), NodeModule)) {
+            return target;
+        }
+
+        if (v3Global.opt.main()) {
+            fl->v3error("$dumpvars target not found: " << target);
+            return target;
+        }
+        // First component may be a runtime root name from C++; defer validation to runtime.
+        return kDumpvarsRuntimeRoot.make(target);
     }
 
     // METHODS - Variables
