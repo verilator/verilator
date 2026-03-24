@@ -301,10 +301,8 @@ class BeginVisitor final : public VNVisitor {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
             if (nodep->user1()) {
-                // UINFO(0, "RETURN");
                 return;
             }
-            // UINFO(0, "TASK IS STATIC " << m_ftaskp->lifetime().isStatic());
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             if (m_ftaskp->lifetime().isStatic() && nodep->isIO()) {
