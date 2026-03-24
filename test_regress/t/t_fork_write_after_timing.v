@@ -11,17 +11,21 @@ module t;
     x2 = -1;
     x3 = -1;
     x4 = -1;
+
     #1 t1(x1);
     t2(x2);
     t3(x3);
     t4(x4);
+
     #10 t1(x1);
     t2(x1);
     t3(x1);
     t4(x1);
-
     t5(x2);
     t6(x2);
+
+    #5 $write("*-* All Finished *-*\n");
+    $finish;
   end
 
   task t1(output int x);

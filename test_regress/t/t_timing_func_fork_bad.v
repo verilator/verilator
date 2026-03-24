@@ -6,7 +6,7 @@
 
 module t;
 
-  function int f1(output int o1);
+  function automatic int f1(output int o1);
     fork
       begin
         #1 $stop;
@@ -16,7 +16,7 @@ module t;
     join_none
   endfunction
 
-  function int f2(inout io2);
+  function automatic int f2(inout io2);
     fork
       begin
         f2 = #5 0;
@@ -27,7 +27,7 @@ module t;
   endfunction
 
   event e;
-  function int f3(output int o3);
+  function automatic int f3(output int o3);
     fork
       begin
         @e $stop;
@@ -37,7 +37,7 @@ module t;
     join_none
   endfunction
 
-  function int f4(inout int io4);
+  function automatic int f4(inout int io4);
     fork
       begin
         f4 = @e 0;
@@ -49,7 +49,7 @@ module t;
 
   int i;
 
-  function int f5(output int o5);
+  function automatic int f5(output int o5);
     fork
       begin
         wait (i == 0) $stop;
