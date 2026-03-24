@@ -8,10 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import trace_dumpvars_common
 
 test.scenarios('vlt')
 
-test.compile(fails=True, verilator_flags2=['--binary --trace-vcd'],
-             expect_filename=test.golden_filename)
-
-test.passes()
+trace_dumpvars_common.run(test)

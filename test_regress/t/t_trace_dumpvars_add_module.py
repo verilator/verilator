@@ -8,14 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import trace_dumpvars_common
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--binary --timing --trace-vcd'])
-
-test.execute()
-
-test.vcd_identical(test.obj_dir + '/simx0.vcd', test.t_dir + '/t_trace_dumpvars_add_module_0.out')
-test.vcd_identical(test.obj_dir + '/simx1.vcd', test.t_dir + '/t_trace_dumpvars_add_module_1.out')
-
-test.passes()
+trace_dumpvars_common.run(test)

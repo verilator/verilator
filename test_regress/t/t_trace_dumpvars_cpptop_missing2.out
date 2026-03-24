@@ -1,5 +1,5 @@
-%Error: t/t_trace_dumpvars_cpptop_missing2.v:28:17: Can't find definition of 'missingname' in dotted variable/method: 't.missingname'
-   28 |     $dumpvars(t.missingname);
+%Error: t/t_trace_dumpvars.v:276:17: Can't find definition of 'missingname' in dotted variable/method: 't.missingname'
+  276 |     $dumpvars(t.missingname);
       |                 ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,5 +1,5 @@
-%Error: t/t_trace_dumpvars_missing5.v:28:5: $dumpvars target not found: missing.child
-   28 |     $dumpvars(0, missing.child);
+%Error: t/t_trace_dumpvars.v:268:5: $dumpvars target not found: missing.child
+  268 |     $dumpvars(0, missing.child);
       |     ^~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

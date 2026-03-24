@@ -1,5 +1,5 @@
-%Error: t/t_trace_dumpvars_cpptop2.v:27:5: $dumpvars target not found: cpptop.notfound
-   27 |     $dumpvars(0, cpptop, cpptop.notfound);
+%Error: t/t_trace_dumpvars.v:272:5: $dumpvars target not found: cpptop.notfound
+  272 |     $dumpvars(0, cpptop, cpptop.notfound);
       |     ^~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

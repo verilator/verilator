@@ -8,21 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import trace_dumpvars_common
 
 test.scenarios('vlt')
 
-test.compile(
-    make_main=False,
-    verilator_flags2=[
-        '--cc',
-        '--exe',
-        '--trace-vcd',
-        '--trace-structs',
-        't/t_trace_dumpvars_cpptop_hier_struct.cpp',
-    ])
-
-test.execute()
-
-test.vcd_identical(test.trace_filename, test.golden_filename)
-
-test.passes()
+trace_dumpvars_common.run(test)

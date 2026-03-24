@@ -1,5 +1,5 @@
-%Error: t/t_trace_dumpvars_t.v:28:15: Can't find definition of variable: 't'
-   28 |     $dumpvars(t);
+%Error: t/t_trace_dumpvars.v:258:15: Can't find definition of variable: 't'
+  258 |     $dumpvars(t);
       |               ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,2 +1,2 @@
-%Error: t/t_trace_dumpvars_cpptop_missing3.v:28: $dumpvars target not found: t.missing
+%Error: t/t_trace_dumpvars.v:278: $dumpvars target not found: t.missing
 Aborting...
