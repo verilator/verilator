@@ -55,7 +55,7 @@ for line in sys.stdin:
             if len(osv) > 2 and osv[2] == "." and int(osv[:2]) >= 26:
                 if "::LexerInput(" in line or "::LexerOutput(" in line:
                     line = re.sub(r'int ', r'size_t ', line)
-        except:
-            pass
+        except Exception as e:
+            print(f"Unexpected exception {e}")
 
     print(line, end='')
