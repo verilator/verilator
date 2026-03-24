@@ -3519,6 +3519,25 @@ class WidthVisitor final : public VNVisitor {
                     nodep->didWidth(true);
                     return;
                 }
+                if (AstModport* const modportp = VN_CAST(foundp, Modport)) {
+                    // Modport selection on a virtual interface handle
+                    // (e.g. vif.passive_mp) is a compile-time type narrowing:
+                    // the runtime value is unchanged, only the type gains modport
+                    // qualification.  Replace MemberSel with fromp re-typed.
+                    AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
+                        nodep->fileline(), nodep->fileline(), adtypep->cellName(),
+                        adtypep->ifaceName(), modportp->name()};
+                    newDtypep->ifacep(adtypep->ifacep());
+                    newDtypep->cellp(adtypep->cellp());
+                    newDtypep->modportp(modportp);
+                    newDtypep->isVirtual(adtypep->isVirtual());
+                    v3Global.rootp()->typeTablep()->addTypesp(newDtypep);
+                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                    fromp->dtypep(newDtypep);
+                    nodep->replaceWith(fromp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
