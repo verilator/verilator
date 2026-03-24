@@ -490,14 +490,7 @@ public:
         if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
         return *this;
     }
-    // Converting assignment from queue of different element type (e.g. result of map())
-    template <typename T_Other, size_t N_RhsMaxSize = 0>
-    VlQueue operator=(const VlQueue<T_Other, N_RhsMaxSize>& rhs) {
-        clear();
-        for (const auto& i : rhs) m_deque.push_back(static_cast<T_Value>(i));
-        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
-        return *this;
-    }
+
 
     // Construct new object from _V_alue and/or _C_ontainer child objects
     static VlQueue consV(const T_Value& lhs) {

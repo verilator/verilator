@@ -254,6 +254,16 @@ module t;
     b = string_q.product with (item inside {"a", "bc", "def", "ghij"});
     `checkh(b, 1'b1);
 
+    // map method
+    q = '{1, 2, 3, 4, 5};
+    qv = q.map() with (item * 2);
+    `checkp(qv, "'{'h2, 'h4, 'h6, 'h8, 'ha}");
+    qv = q.map(x) with (x + x.index);
+    `checkp(qv, "'{'h1, 'h3, 'h5, 'h7, 'h9}");
+    qe.delete();
+    qv = qe.map() with (item * 2);
+    `checkh(qv.size, 0);
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

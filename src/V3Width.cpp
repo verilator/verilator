@@ -4243,8 +4243,9 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->name() == "map") {
             // map() - IEEE 1800-2023 7.12.5
             // Returns a queue with same element count, each element is the with expression result
-            AstWith* const withp = methodWithClause(
-                nodep, true, true, nullptr, nodep->findUInt32DType(), adtypep->subDTypep());
+            AstWith* const withp
+                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                   nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
