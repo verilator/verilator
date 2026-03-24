@@ -5769,8 +5769,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                // Also defer if target is a typedef to a parameterized class (#5977)
-                if (m_statep->forPrimary() && isParamedClassRef(cpackagerefp)) {
+                // Defer non-typedef references through typedef aliases of parameterized classes.
+                if (m_statep->forPrimary() && !VN_IS(nodep->backp(), Typedef)
+                    && isParamedClassRef(cpackagerefp)) {
                     iterate(cpackagep);
                     return;
                 }
