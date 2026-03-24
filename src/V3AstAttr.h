@@ -758,6 +758,7 @@ public:
         ARRAY_FIRST,
         ARRAY_INSIDE,
         ARRAY_LAST,
+        ARRAY_MAP,
         ARRAY_MAX,
         ARRAY_MIN,
         ARRAY_NEXT,
@@ -902,6 +903,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {ARRAY_FIRST, "first", false}, \
            {ARRAY_INSIDE, "inside", true}, \
            {ARRAY_LAST, "last", false}, \
+           {ARRAY_MAP, "map", true}, \
            {ARRAY_MAX, "max", true}, \
            {ARRAY_MIN, "min", true}, \
            {ARRAY_NEXT, "next", false}, \

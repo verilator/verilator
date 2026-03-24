@@ -490,6 +490,14 @@ public:
         if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
         return *this;
     }
+    // Converting assignment from queue of different element type (e.g. result of map())
+    template <typename T_Other, size_t N_RhsMaxSize = 0>
+    VlQueue operator=(const VlQueue<T_Other, N_RhsMaxSize>& rhs) {
+        m_deque.clear();
+        for (const auto& i : rhs) m_deque.push_back(static_cast<T_Value>(i));
+        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
+        return *this;
+    }
 
     // Construct new object from _V_alue and/or _C_ontainer child objects
     static VlQueue consV(const T_Value& lhs) {
@@ -794,6 +802,17 @@ public:
             --index;
         }
         return VlQueue<IData>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            out.push_back(with_func(index, i));
+            ++index;
+        }
+        return out;
     }
 
     // Reduction operators
@@ -1522,6 +1541,15 @@ public:
             if (with_func(i, m_storage[i])) return VlQueue<IData>::consV(i);
         }
         return VlQueue<T_Key>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (IData i = 0; i < N_Depth; ++i) {
+            out.push_back(with_func(i, m_storage[i]));
+        }
+        return out;
     }
 
     // Reduction operators
