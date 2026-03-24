@@ -1546,9 +1546,7 @@ public:
     template <typename T_Func>
     VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
         VlQueue<WithFuncReturnType<T_Func>> out;
-        for (IData i = 0; i < N_Depth; ++i) {
-            out.push_back(with_func(i, m_storage[i]));
-        }
+        for (IData i = 0; i < N_Depth; ++i) { out.push_back(with_func(i, m_storage[i])); }
         return out;
     }
 
