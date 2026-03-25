@@ -317,10 +317,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (excluded.find(v) != excluded.end()) continue;
 
                 // Create single-value bin
-                AstConst* const valConstp = new AstConst{coverpointp->fileline(),
-                                                   V3Number(coverpointp->fileline(), width, v)};
-                AstConst* const valConstp2 = new AstConst{coverpointp->fileline(),
-                                                    V3Number(coverpointp->fileline(), width, v)};
+                AstConst* const valConstp = new AstConst{
+                    coverpointp->fileline(), V3Number(coverpointp->fileline(), width, v)};
+                AstConst* const valConstp2 = new AstConst{
+                    coverpointp->fileline(), V3Number(coverpointp->fileline(), width, v)};
 
                 AstInsideRange* const rangep
                     = new AstInsideRange{coverpointp->fileline(), valConstp, valConstp2};
@@ -360,10 +360,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
 
                 // Create constants for range
-                AstConst* const loConstp = new AstConst{coverpointp->fileline(),
-                                                  V3Number(coverpointp->fileline(), width, lo)};
-                AstConst* const hiConstp = new AstConst{coverpointp->fileline(),
-                                                  V3Number(coverpointp->fileline(), width, hi)};
+                AstConst* const loConstp = new AstConst{
+                    coverpointp->fileline(), V3Number(coverpointp->fileline(), width, lo)};
+                AstConst* const hiConstp = new AstConst{
+                    coverpointp->fileline(), V3Number(coverpointp->fileline(), width, hi)};
 
                 // Create InsideRange [lo:hi]
                 AstInsideRange* const rangep
@@ -1194,8 +1194,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UINFO(4, "      Created cross bin variable: " << varName << endl);
 
         // Track this for coverage computation
-        AstCoverBin* const pseudoBinp = new AstCoverBin{crossp->fileline(), binName,
-                                                  static_cast<AstNode*>(nullptr), false, false};
+        AstCoverBin* const pseudoBinp = new AstCoverBin{
+            crossp->fileline(), binName, static_cast<AstNode*>(nullptr), false, false};
         m_binInfos.push_back(BinInfo(pseudoBinp, varp, 1, nullptr, crossp));
 
         // Generate matching code: if (bin1 && bin2 && ... && binN) varName++;
@@ -1601,11 +1601,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         + std::to_string(fl->firstColumn()) + "\", ");
             const std::string crossSuffix = crossp ? ", \"cross\", \"1\"" : "";
             if (binp->binsType() == VCoverBinsType::BINS_IGNORE) {
-                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\""
-                            + crossSuffix + ");");
+                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\"" + crossSuffix
+                            + ");");
             } else if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"illegal\""
-                            + crossSuffix + ");");
+                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"illegal\"" + crossSuffix
+                            + ");");
             } else {
                 cstmtp->add("\"bin\", \"" + binName + "\"" + crossSuffix + ");");
             }
