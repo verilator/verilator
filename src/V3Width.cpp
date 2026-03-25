@@ -2833,9 +2833,7 @@ class WidthVisitor final : public VNVisitor {
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
-            // Driving an interface input port from the instantiating scope is legal
-            // (IEEE 1800-2023 25.4). Skip ASSIGNIN when the variable belongs to an
-            // interface and the current module is not that interface.
+            // Interface input ports may be driven from the instantiating scope (IEEE 1800-2023 25.4)
             if (!m_ifaceVars.count(nodep->varp()) || VN_IS(m_modep, Iface)) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
@@ -7352,9 +7350,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_modep);
             m_modep = nodep;
-            // Collect interface variables so ASSIGNIN can distinguish
-            // external drives (legal per IEEE 1800-2023 25.4) from
-            // internal drives (illegal).
+            // Collect interface variables for ASSIGNIN exemption check
             if (VN_IS(nodep, Iface)) {
                 nodep->foreach([this](const AstVar* varp) { m_ifaceVars.insert(varp); });
             }
