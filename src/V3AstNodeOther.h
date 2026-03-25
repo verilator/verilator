@@ -1186,8 +1186,6 @@ public:
         this->eventp(eventp);
     }
     ASTGEN_MEMBERS_AstCovergroup;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool maybePointedTo() const override { return true; }
