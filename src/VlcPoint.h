@@ -66,6 +66,10 @@ public:
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
     string page() const { return keyExtract("page", m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
+    // Covergroup-specific key accessors (long keys, no short-key alias)
+    string bin() const { return keyExtract("bin", m_name.c_str()); }
+    string binType() const { return keyExtract("bin_type", m_name.c_str()); }
+    bool isCross() const { return !keyExtract("cross", m_name.c_str()).empty(); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());

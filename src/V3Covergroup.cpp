@@ -1599,12 +1599,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         + "\", "
                           "\"column\", \""
                         + std::to_string(fl->firstColumn()) + "\", ");
+            const std::string crossSuffix = crossp ? ", \"cross\", \"1\"" : "";
             if (binp->binsType() == VCoverBinsType::BINS_IGNORE) {
-                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\");");
+                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\""
+                            + crossSuffix + ");");
             } else if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"illegal\");");
+                cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"illegal\""
+                            + crossSuffix + ");");
             } else {
-                cstmtp->add("\"bin\", \"" + binName + "\");");
+                cstmtp->add("\"bin\", \"" + binName + "\"" + crossSuffix + ");");
             }
 
             // Add to constructor
