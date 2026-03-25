@@ -73,9 +73,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void clearBinInfos() {
         // Delete pseudo-bins created for cross coverage (they're never inserted into the AST)
         for (const BinInfo& bi : m_binInfos) {
-            if (!bi.coverpointp && bi.crossp && bi.binp) {
-                VL_DO_DANGLING(bi.binp->deleteTree(), bi.binp);
-            }
+            if (!bi.coverpointp && bi.crossp && bi.binp) { pushDeletep(bi.binp); }
         }
         m_binInfos.clear();
     }
@@ -187,7 +185,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
                 // Remove the AUTO bin from the list
                 binp->unlinkFrBack();
-                VL_DO_DANGLING(binp->deleteTree(), binp);
+                VL_DO_DANGLING(pushDeletep(binp), binp);
             } else {
                 prevBinp = binp;
             }
@@ -862,7 +860,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstNodeExpr* buildTransitionItemCondition(AstCoverTransItem* itemp, AstVar* varp) {
         AstNodeExpr* varRefp = new AstVarRef{varp->fileline(), varp, VAccess::READ};
         AstNodeExpr* const condp = buildTransitionItemCondition(itemp, varRefp);
-        VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+        VL_DO_DANGLING(pushDeletep(varRefp), varRefp);
         return condp;
     }
 
@@ -1268,7 +1266,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 coverpointRefs.push_back(foundCpp);
 
                 // Delete the reference node - it's no longer needed
-                VL_DO_DANGLING(refp->unlinkFrBack()->deleteTree(), refp);
+                VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
             }
             itemp = nextp;
         }
@@ -1672,7 +1670,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     }
                     // Remove the AstCovergroup node - either unsupported event or no event
                     cgp->unlinkFrBack();
-                    VL_DO_DANGLING(cgp->deleteTree(), cgp);
+                    VL_DO_DANGLING(pushDeletep(cgp), cgp);
                 }
                 itemp = nextp;
             }
@@ -1683,11 +1681,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 iterateChildren(nodep);
                 for (AstCoverpoint* cpp : m_coverpoints) {
                     cpp->unlinkFrBack();
-                    VL_DO_DANGLING(cpp->deleteTree(), cpp);
+                    VL_DO_DANGLING(pushDeletep(cpp), cpp);
                 }
                 for (AstCoverCross* crossp : m_coverCrosses) {
                     crossp->unlinkFrBack();
-                    VL_DO_DANGLING(crossp->deleteTree(), crossp);
+                    VL_DO_DANGLING(pushDeletep(crossp), crossp);
                 }
                 return;
             }
@@ -1704,11 +1702,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // fully translated into C++ code and must not reach downstream passes
             for (AstCoverpoint* cpp : m_coverpoints) {
                 cpp->unlinkFrBack();
-                VL_DO_DANGLING(cpp->deleteTree(), cpp);
+                VL_DO_DANGLING(pushDeletep(cpp), cpp);
             }
             for (AstCoverCross* crossp : m_coverCrosses) {
                 crossp->unlinkFrBack();
-                VL_DO_DANGLING(crossp->deleteTree(), crossp);
+                VL_DO_DANGLING(pushDeletep(crossp), crossp);
             }
         } else {
             iterateChildren(nodep);
