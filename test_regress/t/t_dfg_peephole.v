@@ -295,6 +295,16 @@ module t (
   `signal(REPLACE_ADD_WITH_COUNT_ONES_B, 32'(rand_a[63]) + 32'(rand_a[62]) + 32'(rand_a[61]));
   `signal(REPLACE_ADD_WITH_COUNT_ONES_C, 200'(rand_a[63]) + 200'(rand_a[62]) + 200'(rand_a[61]));
   `signal(REPLACE_ADD_WITH_COUNT_ONES_D, 1'(rand_a[63]) + 1'(rand_a[62]) + 1'(rand_a[61]));
+  `signal(FOLD_SELF_EQ, rand_a == rand_a);
+  `signal(FOLD_SELF_NEQ, rand_a != rand_a);
+  `signal(FOLD_SELF_GT, rand_a > rand_a);
+  `signal(FOLD_SELF_GTS, srand_a > srand_a);
+  `signal(FOLD_SELF_GE, rand_a >= rand_a);
+  `signal(FOLD_SELF_GES, srand_a >= srand_a);
+  `signal(FOLD_SELF_LT, rand_a < rand_a);
+  `signal(FOLD_SELF_LTS, srand_a < srand_a);
+  `signal(FOLD_SELF_LE, rand_a <= rand_a);
+  `signal(FOLD_SELF_LES, srand_a <= srand_a);
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
