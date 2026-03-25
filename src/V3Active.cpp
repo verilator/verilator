@@ -623,8 +623,7 @@ public:
 // Shared state for covergroup sampling passes
 
 struct CovergroupState final {
-    std::unordered_map<const AstClass*, AstCFunc*>
-        m_sampleFuncs;  // Class -> sample CFunc
+    std::unordered_map<const AstClass*, AstCFunc*> m_sampleFuncs;  // Class -> sample CFunc
     std::unordered_map<const AstClass*, AstSenTree*>
         m_samplingEvents;  // Class -> owned sampling event (if any)
 };
@@ -773,7 +772,7 @@ void V3Active::activeAll(AstNetlist* nodep) {
         // Add automatic covergroup sampling in two focused passes
         CovergroupState state;
         CovergroupCollectVisitor{nodep, state};  // Pass 1: collect CFuncs and events
-        CovergroupInjectVisitor{nodep, state};   // Pass 2: inject sample() calls
+        CovergroupInjectVisitor{nodep, state};  // Pass 2: inject sample() calls
         for (const auto& itpair : state.m_samplingEvents) itpair.second->deleteTree();
     }
     V3Global::dumpCheckGlobalTree("active", 0, dumpTreeEitherLevel() >= 3);

@@ -304,8 +304,10 @@ void VlcTop::covergroup() {
             grandTotal += cp.normalTotal;
             grandCovered += cp.normalCovered;
             for (const auto& bin : cp.bins) {
-                if (bin.binType == "ignore") ++grandIgnored;
-                else if (bin.binType == "illegal") ++grandIllegal;
+                if (bin.binType == "ignore")
+                    ++grandIgnored;
+                else if (bin.binType == "illegal")
+                    ++grandIllegal;
             }
         }
     }
@@ -324,8 +326,8 @@ void VlcTop::covergroup() {
     std::cout << "COVERGROUP COVERAGE REPORT\n";
     std::cout << "==========================\n";
     std::cout << "\n";
-    std::cout << "TOTAL: " << grandCovered << "/" << grandTotal
-              << " bins covered (" << pctStr(grandCovered, grandTotal) << "%)\n";
+    std::cout << "TOTAL: " << grandCovered << "/" << grandTotal << " bins covered ("
+              << pctStr(grandCovered, grandTotal) << "%)\n";
     if (grandIgnored || grandIllegal)
         std::cout << "       (" << grandIgnored << " ignored, " << grandIllegal << " illegal)\n";
 
@@ -340,16 +342,16 @@ void VlcTop::covergroup() {
         }
 
         std::cout << "\n" << divider << "\n";
-        std::cout << "Covergroup Type: " << cg.typeName
-                  << "  [" << cg.filename << ":" << cg.lineno << "]\n";
-        std::cout << "  Type Coverage: " << cgCovered << "/" << cgTotal
-                  << " bins (" << pctStr(cgCovered, cgTotal) << "%)\n";
+        std::cout << "Covergroup Type: " << cg.typeName << "  [" << cg.filename << ":" << cg.lineno
+                  << "]\n";
+        std::cout << "  Type Coverage: " << cgCovered << "/" << cgTotal << " bins ("
+                  << pctStr(cgCovered, cgTotal) << "%)\n";
 
         for (const auto& cp : cg.coverpoints) {
             std::cout << "\n";
             std::cout << "  " << (cp.isCross ? "Cross" : "Coverpoint") << ": " << cp.name << "\n";
-            std::cout << "    Coverage: " << cp.normalCovered << "/" << cp.normalTotal
-                      << " bins (" << pctStr(cp.normalCovered, cp.normalTotal) << "%)\n";
+            std::cout << "    Coverage: " << cp.normalCovered << "/" << cp.normalTotal << " bins ("
+                      << pctStr(cp.normalCovered, cp.normalTotal) << "%)\n";
             std::cout << "    Bins:\n";
 
             // Align bin name column to max name length in this coverpoint
@@ -359,14 +361,18 @@ void VlcTop::covergroup() {
 
             for (const auto& bin : cp.bins) {
                 const char* status;
-                if (bin.binType == "ignore") status = "IGNORE ";
-                else if (bin.binType == "illegal") status = "ILLEGAL";
-                else if (bin.covered) status = "COVERED";
-                else status = "ZERO   ";
+                if (bin.binType == "ignore")
+                    status = "IGNORE ";
+                else if (bin.binType == "illegal")
+                    status = "ILLEGAL";
+                else if (bin.covered)
+                    status = "COVERED";
+                else
+                    status = "ZERO   ";
 
-                std::cout << "      " << status << "  "
-                          << std::left << std::setw(static_cast<int>(maxNameLen)) << bin.name
-                          << std::right << "  " << bin.count << " hits\n";
+                std::cout << "      " << status << "  " << std::left
+                          << std::setw(static_cast<int>(maxNameLen)) << bin.name << std::right
+                          << "  " << bin.count << " hits\n";
             }
         }
     }
