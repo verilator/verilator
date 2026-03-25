@@ -1274,6 +1274,33 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgMux* const vtxp) override {
+        DfgVertex* const fromp = vtxp->fromp();
+        DfgVertex* const lsbp = vtxp->lsbp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const lsbConstp = lsbp->cast<DfgConst>()) {
+            APPLYING(REPLACE_MUX_WITH_SEL) {
+                replace(make<DfgSel>(vtxp, fromp, lsbConstp->num().toUInt()));
+                return;
+            }
+        }
+
+        if (isZero(fromp)) {
+            APPLYING(FOLD_MUX_FROM_ZERO) {
+                replace(makeZero(flp, vtxp->width()));
+                return;
+            }
+        }
+
+        if (isOnes(fromp)) {
+            APPLYING(FOLD_MUX_FROM_ONES) {
+                replace(makeOnes(flp, vtxp->width()));
+                return;
+            }
+        }
+    }
+
     //=========================================================================
     //  DfgVertexBinary - bitwise
     //=========================================================================
