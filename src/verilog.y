@@ -1437,16 +1437,16 @@ port<nodep>:                    // ==IEEE: port
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE
                         { $$ = $3;
@@ -1955,10 +1955,10 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
         /*mid*/         { VARDTYPE($3); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $5; }
         |       port_directionReset port_declNetE yVAR data_type
-        /*mid*/         { VARDTYPE($4); }
+        /*mid*/         { VARDECL(VAR); VARDTYPE($4); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $6; }
         |       port_directionReset port_declNetE yVAR implicit_typeE
-        /*mid*/         { VARDTYPE($4); }
+        /*mid*/         { VARDECL(VAR); VARDTYPE($4); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $6; }
         |       port_directionReset port_declNetE signingE rangeList
         /*mid*/         { AstNodeDType* const dtp = GRAMMARP->addRange(
