@@ -65,9 +65,9 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:10000] 1'b1);
 
-  // Range delay followed by fixed delay > 1 (covers nextStep.delay > 0 path)
+  // Range with binary SExpr: nextStep has delay > 0 after range match
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[1:2] 1'b1 ##3 1'b1);
+      a |-> b ##[1:2] 1'b1 ##3 1'b1);
 
   // Binary SExpr without implication (covers firstStep.exprp path without antecedent)
   assert property (@(posedge clk) disable iff (cyc < 2)
@@ -76,5 +76,13 @@ module t (
   // Implication with binary SExpr RHS (covers antExprp AND firstStep.exprp)
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> b ##[1:2] 1'b1);
+
+  // Fixed delay before range (covers firstStep.delay path in IDLE)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##2 1'b1 ##[1:3] 1'b1);
+
+  // Unary range with no antecedent and no preExpr (covers unconditional start)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      ##[1:3] 1'b1);
 
 endmodule

@@ -673,9 +673,8 @@ class RangeDelayExpander final : public VNVisitor {
             steps.push_back({nullptr, minVal, isRange, minVal, maxVal});
         }
 
-        if (VN_IS(curp->exprp(), SExpr)) {
-            curp->v3fatalSrc("Right-recursive SExpr not expected from parser");
-            return false;
+        if (AstSExpr* const nextp = VN_CAST(curp->exprp(), SExpr)) {
+            return linearizeImpl(nextp, steps, hasRange);
         }
         steps.push_back({curp->exprp(), 0, false, 0, 0});
         return true;
@@ -747,8 +746,6 @@ class RangeDelayExpander final : public VNVisitor {
                                               new AstConst{flp, 0}},
                                     timeoutp, decrementp};
 
-                    // On match: go to afterMatchState. If next step has a delay,
-                    // initialize counter for that delay; otherwise proceed directly.
                     if (nextStep.delay > 0) {
                         matchActionp = makeStateTransition(flp, stateVarp, cntVarp,
                                                            afterMatchState, nextStep.delay - 1);
@@ -889,6 +886,7 @@ class RangeDelayExpander final : public VNVisitor {
                 if (specp->sensesp()) return specp->sensesp();
             }
         }
+        nodep->v3fatalSrc("Range delay SExpr without clocking event");
         return nullptr;
     }
 
