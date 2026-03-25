@@ -2823,7 +2823,13 @@ class VlTest:
                 continue
             hier = h_m.group(1)
             bt_m = re.search(r'\x01bin_type\x02([^\x01]+)', entry)
-            label = f"{hier} [{bt_m.group(1)}]" if bt_m else hier
+            cross_m = re.search(r'\x01cross\x021', entry)
+            annotations = []
+            if bt_m:
+                annotations.append(bt_m.group(1))
+            if cross_m:
+                annotations.append("cross")
+            label = f"{hier} [{','.join(annotations)}]" if annotations else hier
             entries.append((hier, label, int(count)))
         entries.sort()
         with open(outfile, 'w', encoding='utf-8') as fh:
