@@ -327,6 +327,13 @@ class V3DfgPeephole final : public DfgVisitor {
         return new DfgConst{m_dfg, flp, width, 0};
     }
 
+    // Create a DfgConst vertex with the given width and value all ones
+    DfgConst* makeOnes(FileLine* flp, uint32_t width) {
+        DfgConst* const resp = makeZero(flp, width);
+        resp->num().setAllBits1();
+        return resp;
+    }
+
     // Create a new vertex of the given type
     template <typename Vertex, typename... Operands>
     Vertex* make(FileLine* flp, const DfgDataType& dtype, Operands... operands) {
@@ -1850,6 +1857,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_EQ) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
 
         if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
             if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
@@ -1860,18 +1875,62 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgGt* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GT) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgGtS* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTS) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgGte* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTE) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgGteS* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTES) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgLogAnd* const vtxp) override {
@@ -1912,18 +1971,62 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgLt* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LT) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgLtS* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTS) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgLte* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTE) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgLteS* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTES) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgModDiv* const vtxp) override {
@@ -1948,6 +2051,17 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgNeq* const vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_NEQ) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
     }
 
     void visit(DfgPow* const vtxp) override {
