@@ -369,7 +369,44 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 
 AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
-    orderSequentially(funcp, logicClasses.m_static);
+
+    const LogicByScope& orig = logicClasses.m_static;
+    if (orig.size() <= 1) {
+        orderSequentially(funcp, orig);
+        return funcp;
+    }
+
+    // Sort static initializer entries so that packages are evaluated in source
+    // (compilation) order.  The module list may have been reordered by level-based
+    // sorting (V3LinkLevel, V3Param), which can place a package that imports another
+    // package *before* the imported package.  When a package's static initialization
+    // has side effects in another package (e.g. UVM factory registration via
+    // uvm_coreservice_t::get -> uvm_init), wrong ordering causes the imported
+    // package's state to be reset after the side effect, leading to lost state.
+    // Sorting packages by file position restores the IEEE 1800-2023 26.3 requirement
+    // that imported packages are elaborated before importing packages.
+    std::vector<size_t> indices(orig.size());
+    for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
+    std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+        const AstNodeModule* const modA = orig[a].first->modp();
+        const AstNodeModule* const modB = orig[b].first->modp();
+        const bool isPkgA = VN_IS(modA, Package);
+        const bool isPkgB = VN_IS(modB, Package);
+        if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
+        if (isPkgA && isPkgB) {
+            // Sort packages by source file position (compilation order)
+            const int fileA = modA->fileline()->filenameno();
+            const int fileB = modB->fileline()->filenameno();
+            if (fileA != fileB) return fileA < fileB;
+            return modA->fileline()->firstLineno() < modB->fileline()->firstLineno();
+        }
+        return false;  // Both non-package: preserve original order
+    });
+    LogicByScope sorted;
+    sorted.reserve(orig.size());
+    for (const size_t i : indices) sorted.emplace_back(orig[i].first, orig[i].second);
+
+    orderSequentially(funcp, sorted);
     return funcp;  // Not splitting yet as it is not final
 }
 
