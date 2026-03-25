@@ -3520,10 +3520,8 @@ class WidthVisitor final : public VNVisitor {
                     return;
                 }
                 if (AstModport* const modportp = VN_CAST(foundp, Modport)) {
-                    // Modport selection on a virtual interface handle
-                    // (e.g. vif.passive_mp) is a compile-time type narrowing:
-                    // the runtime value is unchanged, only the type gains modport
-                    // qualification.  Replace MemberSel with fromp re-typed.
+                    // Modport selection (e.g. vif.passive_mp) is compile-time
+                    // type narrowing: replace MemberSel with fromp re-typed.
                     AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
                         nodep->fileline(), nodep->fileline(), adtypep->cellName(),
                         adtypep->ifaceName(), modportp->name()};
