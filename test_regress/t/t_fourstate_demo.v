@@ -121,6 +121,7 @@ module t;
     else if (t | one) $write("Bye\n");
     else $stop;
     #100;
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule

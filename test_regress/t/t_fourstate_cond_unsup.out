@@ -1,0 +1,9 @@
+%Error-UNSUPPORTED: t/t_fourstate_cond_unsup.v:9:12: Unsuppored: ?: with four-state value as a condition
+                                                   : ... note: In instance 't'
+    9 |     if ('x ? 1 : 0) $stop;
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_fourstate_cond_unsup.v:9:12: Unsupported: Operator not supported in the four-state mode
+    9 |     if ('x ? 1 : 0) $stop;
+      |            ^
+%Error: Exiting due to
