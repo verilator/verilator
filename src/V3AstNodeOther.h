@@ -2747,9 +2747,11 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
 };
 class AstCoverCross final : public AstNodeFuncCovItem {
-    // @astgen op1 := itemsp : List[AstCoverpointRef]
-    // @astgen op2 := binsp : List[AstCoverCrossBins]
-    // @astgen op3 := optionsp : List[AstCoverOption]
+    // @astgen op1 := itemsp   : List[AstCoverpointRef]
+    // @astgen op2 := binsp    : List[AstCoverCrossBins]  // post-LinkParse only
+    // @astgen op3 := optionsp : List[AstCoverOption]     // post-LinkParse only
+    // @astgen op4 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
+    //                                          // post-LinkParse: empty
 public:
     AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)
         : ASTGEN_SUPER_CoverCross(fl, name) {
@@ -2766,9 +2768,12 @@ class AstCoverpoint final : public AstNodeFuncCovItem {
     // @astgen op3 := iffp : Optional[AstNodeExpr]
     // @astgen op4 := optionsp : List[AstCoverOption]
 public:
-    AstCoverpoint(FileLine* fl, const string& name, AstNodeExpr* exprp)
+    AstCoverpoint(FileLine* fl, const string& name, AstNodeExpr* exprp,
+                  AstNodeExpr* iffp = nullptr, AstNode* binsp = nullptr)
         : ASTGEN_SUPER_Coverpoint(fl, name) {
         this->exprp(exprp);
+        this->iffp(iffp);
+        if (binsp) addBinsp(binsp);
     }
     ASTGEN_MEMBERS_AstCoverpoint;
     void dump(std::ostream& str) const override;
