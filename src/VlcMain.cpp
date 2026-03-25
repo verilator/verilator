@@ -66,6 +66,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-annotate-all", OnOff, &m_annotateAll);
     DECL_OPTION("-annotate-min", Set, &m_annotateMin);
     DECL_OPTION("-annotate-points", OnOff, &m_annotatePoints);
+    DECL_OPTION("-covergroup", OnOff, &m_covergroup);
     DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
@@ -147,6 +148,8 @@ int main(int argc, char** argv) {
 
     V3Error::abortIfWarnings();
     if (!top.opt.annotateOut().empty()) top.annotate(top.opt.annotateOut());
+
+    if (top.opt.covergroup()) top.covergroup();
 
     if (top.opt.rank()) {
         top.rank();

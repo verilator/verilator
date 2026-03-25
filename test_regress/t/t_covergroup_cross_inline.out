@@ -6,19 +6,19 @@ cg.cp_b.b0: 21
 cg.cp_b.b1: 0
 cg.cp_b.b2: 0
 cg.cp_b.b3: 0
-cg.cross_ab.a0_x_b0: 9
-cg.cross_ab.a0_x_b1: 0
-cg.cross_ab.a0_x_b2: 0
-cg.cross_ab.a0_x_b3: 0
-cg.cross_ab.a1_x_b0: 4
-cg.cross_ab.a1_x_b1: 0
-cg.cross_ab.a1_x_b2: 0
-cg.cross_ab.a1_x_b3: 0
-cg.cross_ab.a2_x_b0: 4
-cg.cross_ab.a2_x_b1: 0
-cg.cross_ab.a2_x_b2: 0
-cg.cross_ab.a2_x_b3: 0
-cg.cross_ab.a3_x_b0: 4
-cg.cross_ab.a3_x_b1: 0
-cg.cross_ab.a3_x_b2: 0
-cg.cross_ab.a3_x_b3: 0
+cg.cross_ab.a0_x_b0 [cross]: 9
+cg.cross_ab.a0_x_b1 [cross]: 0
+cg.cross_ab.a0_x_b2 [cross]: 0
+cg.cross_ab.a0_x_b3 [cross]: 0
+cg.cross_ab.a1_x_b0 [cross]: 4
+cg.cross_ab.a1_x_b1 [cross]: 0
+cg.cross_ab.a1_x_b2 [cross]: 0
+cg.cross_ab.a1_x_b3 [cross]: 0
+cg.cross_ab.a2_x_b0 [cross]: 4
+cg.cross_ab.a2_x_b1 [cross]: 0
+cg.cross_ab.a2_x_b2 [cross]: 0
+cg.cross_ab.a2_x_b3 [cross]: 0
+cg.cross_ab.a3_x_b0 [cross]: 4
+cg.cross_ab.a3_x_b1 [cross]: 0
+cg.cross_ab.a3_x_b2 [cross]: 0
+cg.cross_ab.a3_x_b3 [cross]: 0
