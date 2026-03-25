@@ -401,8 +401,7 @@ void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
                                     uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
                                     const TriggerKit& trigKit) {
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
-        trigKit.addValueChangeTriggerAssignment(netlistp, initFuncp,
-                                                p.second.m_instanceVscps,
+        trigKit.addValueChangeTriggerAssignment(netlistp, initFuncp, p.second.m_instanceVscps,
                                                 vifMemberTriggerIndex);
         ++vifMemberTriggerIndex;
     }

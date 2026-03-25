@@ -429,9 +429,9 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
 // Value-change detection for virtual interface member triggers.
 // Parallel to SenExprBuilder::createTerm(ET_CHANGED) / getPrev(), but operates on
 // multiple interface instance VarScopes OR'd into a single extra trigger bit.
-void TriggerKit::addValueChangeTriggerAssignment(
-    AstNetlist* netlistp, AstCFunc* initFuncp,
-    const std::vector<AstVarScope*>& instanceVscps, uint32_t index) const {
+void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
+                                                 const std::vector<AstVarScope*>& instanceVscps,
+                                                 uint32_t index) const {
     UASSERT(!instanceVscps.empty(), "No instances for value-change trigger");
 
     index += m_nSenseWords * WORD_SIZE;
@@ -441,15 +441,9 @@ void TriggerKit::addValueChangeTriggerAssignment(
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
     FileLine* const flp = netlistp->fileline();
 
-    const auto rdInst = [flp](AstVarScope* vp) {
-        return new AstVarRef{flp, vp, VAccess::READ};
-    };
-    const auto wrPrev = [flp](AstVarScope* vp) {
-        return new AstVarRef{flp, vp, VAccess::WRITE};
-    };
-    const auto rdPrev = [flp](AstVarScope* vp) {
-        return new AstVarRef{flp, vp, VAccess::READ};
-    };
+    const auto rdInst = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::READ}; };
+    const auto wrPrev = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::WRITE}; };
+    const auto rdPrev = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::READ}; };
 
     // Create prev variables and build: (inst0 != prev0) | (inst1 != prev1) | ...
     AstNodeExpr* changedp = nullptr;
@@ -473,23 +467,20 @@ void TriggerKit::addValueChangeTriggerAssignment(
 
         // Initialize prev = inst (in init function)
         if (VN_IS(dtypep, UnpackArrayDType)) {
-            AstCMethodHard* const cmhp
-                = new AstCMethodHard{flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN,
-                                     rdInst(instVscp)};
+            AstCMethodHard* const cmhp = new AstCMethodHard{
+                flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
             cmhp->dtypeSetVoid();
             initFuncp->addStmtsp(cmhp->makeStmt());
         } else {
-            initFuncp->addStmtsp(
-                new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
+            initFuncp->addStmtsp(new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
         }
 
         // Build comparison: inst != prev (dtype-aware)
         AstNodeExpr* neqp;
         if (VN_IS(dtypep, UnpackArrayDType)) {
             // Operand order: prev.neq(inst) -- see issue #5125
-            AstCMethodHard* const cmhp
-                = new AstCMethodHard{flp, rdPrev(prevVscp), VCMethod::UNPACKED_NEQ,
-                                     rdInst(instVscp)};
+            AstCMethodHard* const cmhp = new AstCMethodHard{
+                flp, rdPrev(prevVscp), VCMethod::UNPACKED_NEQ, rdInst(instVscp)};
             cmhp->dtypeSetBit();
             neqp = cmhp;
         } else {
@@ -499,15 +490,13 @@ void TriggerKit::addValueChangeTriggerAssignment(
 
         // Build post-update: prev = inst (dtype-aware)
         if (VN_IS(dtypep, UnpackArrayDType)) {
-            AstCMethodHard* const cmhp
-                = new AstCMethodHard{flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN,
-                                     rdInst(instVscp)};
+            AstCMethodHard* const cmhp = new AstCMethodHard{
+                flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
             cmhp->dtypeSetVoid();
             updatesp = AstNode::addNext(updatesp, cmhp->makeStmt());
         } else {
-            updatesp = AstNode::addNext(
-                updatesp,
-                new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
+            updatesp = AstNode::addNext(updatesp,
+                                        new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
         }
     }
 
