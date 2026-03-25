@@ -3736,10 +3736,6 @@ void AstWith::dumpJson(std::ostream& str) const {
 //######################################################################
 // Functional coverage dump methods
 
-void AstCovergroup::dump(std::ostream& str) const { this->AstNode::dump(str); }
-
-void AstCovergroup::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-
 void AstCoverpoint::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
 
 void AstCoverpoint::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
