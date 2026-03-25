@@ -5277,6 +5277,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     string emitVerilog() override { return "(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSMT() const override { return "%l"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
