@@ -1361,6 +1361,26 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstCoverCross* nodep) override {
+        cleanFileline(nodep);
+        // Distribute the parse-time raw cross_body list (rawBodyp, op4) into the
+        // typed binsp and optionsp slots.  Nodes are properly in-tree here so
+        // unlinkFrBack() works cleanly with no bison-list hackery.
+        for (AstNode *itemp = nodep->rawBodyp(), *nextp; itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            itemp->unlinkFrBack();
+            if (AstCoverOption* const optp = VN_CAST(itemp, CoverOption)) {
+                nodep->addOptionsp(optp);
+            } else if (AstCoverCrossBins* const binp = VN_CAST(itemp, CoverCrossBins)) {
+                nodep->addBinsp(binp);
+            } else {
+                // AstCgOptionAssign, AstFunc, and other unsupported items
+                VL_DO_DANGLING(itemp->deleteTree(), itemp);
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);

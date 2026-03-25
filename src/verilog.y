@@ -7000,46 +7000,25 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
 cover_point<nodep>:  // ==IEEE: cover_point
         //              // [ [ data_type_or_implicit ] cover_point_identifier ':' ] yCOVERPOINT
                 yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>1, "", $2};
-                          if ($3) cp->iffp($3);
-                          if ($4) cp->addBinsp($4);
-                          $$ = cp; }
+                        { $$ = new AstCoverpoint{$<fl>1, "", $2, $3, $4}; }
         //                      // IEEE-2012: class_scope before an ID
         |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>3, *$1, $4};
-                          if ($5) cp->iffp($5);
-                          if ($6) cp->addBinsp($6);
-                          $$ = cp; }
+                        { $$ = new AstCoverpoint{$<fl>3, *$1, $4, $5, $6}; }
         //                      // data_type_or_implicit expansion
         |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
-                          if ($6) cp->iffp($6);
-                          if ($7) cp->addBinsp($7);
-                          $$ = cp;
+                        { $$ = new AstCoverpoint{$<fl>4, *$2, $5, $6, $7};
                           DEL($1); }
         |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
-                          if ($7) cp->iffp($7);
-                          if ($8) cp->addBinsp($8);
-                          $$ = cp;
+                        { $$ = new AstCoverpoint{$<fl>5, *$3, $6, $7, $8};
                           DEL($2); }
         |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
-                          if ($7) cp->iffp($7);
-                          if ($8) cp->addBinsp($8);
-                          $$ = cp;
+                        { $$ = new AstCoverpoint{$<fl>5, *$3, $6, $7, $8};
                           DEL($2); }
         |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
-                          if ($7) cp->iffp($7);
-                          if ($8) cp->addBinsp($8);
-                          $$ = cp;
+                        { $$ = new AstCoverpoint{$<fl>5, *$3, $6, $7, $8};
                           DEL($2); }
         |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
-                          if ($6) cp->iffp($6);
-                          if ($7) cp->addBinsp($7);
-                          $$ = cp; }
+                        { $$ = new AstCoverpoint{$<fl>4, *$2, $5, $6, $7}; }
         //                      // IEEE-2012:
         |       bins_or_empty                           { $$ = $1; }
         ;
@@ -7224,40 +7203,7 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>3, *$1,
                                                           VN_AS($4, CoverpointRef)};
-                          if ($6) {  // cross_body items (options, bins)
-                              for (AstNode* itemp = $6; itemp; ) {
-                                  AstNode* const nextp = itemp->nextp();
-                                  // Helper: unlink itemp from the standalone bison list.
-                                  // Head nodes have m_backp==nullptr; use nextp->unlinkFrBackWithNext()
-                                  // to detach the rest of the list so itemp->m_nextp becomes null.
-                                  const auto unlinkItem = [&]() {
-                                      if (itemp->backp()) {
-                                          itemp->unlinkFrBack();
-                                      } else if (nextp) {
-                                          nextp->unlinkFrBackWithNext();
-                                      }
-                                  };
-                                  if (AstCoverOption* optp = VN_CAST(itemp, CoverOption)) {
-                                      unlinkItem();
-                                      nodep->addOptionsp(optp);
-                                  } else if (AstCoverCrossBins* binp = VN_CAST(itemp, CoverCrossBins)) {
-                                      unlinkItem();
-                                      nodep->addBinsp(binp);
-                                  } else if (VN_IS(itemp, CgOptionAssign)) {
-                                      unlinkItem();
-                                      VL_DO_DANGLING(itemp->deleteTree(), itemp);
-                                  } else if (VN_IS(itemp, Func)) {
-                                      // Function declarations in cross bodies are unsupported
-                                      // Skip them - they will be deleted when bins expressions referencing
-                                      // them are deleted via DEL() in the cross_body_item rules
-                                  } else {
-                                      // Delete other unsupported items
-                                      unlinkItem();
-                                      VL_DO_DANGLING(itemp->deleteTree(), itemp);
-                                  }
-                                  itemp = nextp;
-                              }
-                          }
+                          if ($6) nodep->addRawBodyp($6);
                           if ($5) {
                               $5->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
                               VL_DO_DANGLING($5->deleteTree(), $5);
@@ -7269,40 +7215,7 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>1,
                                                           "__cross" + cvtToStr(GRAMMARP->s_typeImpNum++),
                                                           VN_AS($2, CoverpointRef)};
-                          if ($4) {  // cross_body items (options, bins)
-                              for (AstNode* itemp = $4; itemp; ) {
-                                  AstNode* const nextp = itemp->nextp();
-                                  // Helper: unlink itemp from the standalone bison list.
-                                  // Head nodes have m_backp==nullptr; use nextp->unlinkFrBackWithNext()
-                                  // to detach the rest of the list so itemp->m_nextp becomes null.
-                                  const auto unlinkItem = [&]() {
-                                      if (itemp->backp()) {
-                                          itemp->unlinkFrBack();
-                                      } else if (nextp) {
-                                          nextp->unlinkFrBackWithNext();
-                                      }
-                                  };
-                                  if (AstCoverOption* optp = VN_CAST(itemp, CoverOption)) {
-                                      unlinkItem();
-                                      nodep->addOptionsp(optp);
-                                  } else if (AstCoverCrossBins* binp = VN_CAST(itemp, CoverCrossBins)) {
-                                      unlinkItem();
-                                      nodep->addBinsp(binp);
-                                  } else if (VN_IS(itemp, CgOptionAssign)) {
-                                      unlinkItem();
-                                      VL_DO_DANGLING(itemp->deleteTree(), itemp);
-                                  } else if (VN_IS(itemp, Func)) {
-                                      // Function declarations in cross bodies are unsupported
-                                      // Skip them - they will be deleted when bins expressions referencing
-                                      // them are deleted via DEL() in the cross_body_item rules
-                                  } else {
-                                      // Delete other unsupported items
-                                      unlinkItem();
-                                      VL_DO_DANGLING(itemp->deleteTree(), itemp);
-                                  }
-                                  itemp = nextp;
-                              }
-                          }
+                          if ($4) nodep->addRawBodyp($4);
                           if ($3) {
                               $3->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
                               VL_DO_DANGLING($3->deleteTree(), $3);
