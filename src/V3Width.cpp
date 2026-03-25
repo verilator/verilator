@@ -2833,7 +2833,8 @@ class WidthVisitor final : public VNVisitor {
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
-            // Interface input ports may be driven from the instantiating scope (IEEE 1800-2023 25.4)
+            // Interface input ports may be driven from the instantiating scope (IEEE
+            // 1800-2023 25.4)
             if (!m_ifaceVars.count(nodep->varp()) || VN_IS(m_modep, Iface)) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
