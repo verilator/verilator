@@ -342,7 +342,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         // guaranteed to be fast
         m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
         m_sigs_enabledVec.reserve(nextCode());
-        for (size_t code = 0; code < nextCode(); ++code) {
+        size_t iter = nextCode() > m_sigs_enabledVec.size() ? m_sigs_enabledVec.size() : nextCode();
+        for (size_t code = 0; code < iter; ++code) {
             if (m_sigs_enabledVec[code]) {
                 m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
             }
