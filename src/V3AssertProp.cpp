@@ -612,8 +612,7 @@ class RangeDelayExpander final : public VNVisitor {
         AstNodeExpr* const minExprp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
         const AstConst* const minConstp = VN_CAST(minExprp, Const);
         if (isRange) {
-            AstNodeExpr* const maxExprp
-                = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
+            AstNodeExpr* const maxExprp = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
             const AstConst* const maxConstp = VN_CAST(maxExprp, Const);
             if (!minConstp || !maxConstp) {
                 dlyp->v3error("Range delay bounds must be elaboration-time constants"
