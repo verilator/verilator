@@ -376,15 +376,9 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
         return funcp;
     }
 
-    // Sort static initializer entries so that packages are evaluated in source
-    // (compilation) order.  The module list may have been reordered by level-based
-    // sorting (V3LinkLevel, V3Param), which can place a package that imports another
-    // package *before* the imported package.  When a package's static initialization
-    // has side effects in another package (e.g. UVM factory registration via
-    // uvm_coreservice_t::get -> uvm_init), wrong ordering causes the imported
-    // package's state to be reset after the side effect, leading to lost state.
-    // Sorting packages by file position restores the IEEE 1800-2023 26.3 requirement
-    // that imported packages are elaborated before importing packages.
+    // Level-based module sorting can reorder packages so that an importing
+    // package runs before the imported one.  Re-sort package entries by source
+    // file position to restore compilation order (IEEE 1800-2023 26.3).
     std::vector<size_t> indices(orig.size());
     for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
     std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {

@@ -9,12 +9,8 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// Test that package static initialization respects source-order
-// dependencies.  When package B imports package A and creates an object
-// during static init that triggers lazy initialization in A, A's
-// variables must already be at their initial values -- not reset after
-// the side effect.  This mirrors the UVM factory registration pattern
-// (uvm_coreservice_t::get -> uvm_init -> deferred queue processing).
+// Test package static init ordering with cross-package side effects.
+// Mirrors the UVM factory pattern (uvm_coreservice_t / uvm_init).
 
 package pkg_a;
   typedef enum int {
