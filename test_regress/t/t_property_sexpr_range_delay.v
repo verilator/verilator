@@ -4,49 +4,65 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
-  logic clk = 0;
-  always #5 clk = ~clk;
+module t (
+    input clk
+);
+  integer cyc = 0;
+  reg [63:0] crc = '0;
+  reg [63:0] sum = '0;
 
-  int cyc = 0;
+  // Derive test signals from CRC
+  wire a = crc[0];
+  wire b = crc[1];
+  wire c = crc[2];
 
-  always @(posedge clk) begin
+  wire [63:0] result = {61'h0, c, b, a};
+
+  always_ff @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b\n",
+           $time, cyc, crc, a, b, c);
+`endif
     cyc <= cyc + 1;
-    if (cyc == 100) begin
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
+
+    if (cyc == 0) begin
+      crc <= 64'h5aef0c8d_d70a4497;
+      sum <= '0;
+    end else if (cyc < 10) begin
+      sum <= '0;
+    end else if (cyc == 99) begin
+      `checkh(crc, 64'hc77bb9b3784ea091);
+      `checkh(sum, 64'h38c614665c6b71ad);
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
 
-  // --- Test 1: basic ##[1:3] with trivially-true expression ---
-  event e1;
-  always @(negedge clk) if (cyc >= 1 && cyc <= 20) ->e1;
+  // Basic ##[1:3] range delay (CRC-driven, always-true consequent)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[1:3] 1'b1);
 
-  a1: assert property (@(e1) ##[1:3] 1);
+  // ##[2:4] range delay
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      b |-> ##[2:4] 1'b1);
 
-  // --- Test 2: ##[2:4] with trivially-true expression ---
-  event e2;
-  always @(negedge clk) if (cyc >= 30 && cyc <= 50) ->e2;
+  // Degenerate ##[2:2] (equivalent to ##2)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[2:2] 1'b1);
 
-  a2: assert property (@(e2) ##[2:4] 1);
+  // Multi-step: ##[1:2] then ##1 (both consequents always true)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[1:2] 1'b1 ##1 1'b1);
 
-  // --- Test 3: degenerate ##[2:2] (equivalent to ##2) ---
-  event e3;
-  always @(negedge clk) if (cyc >= 60 && cyc <= 80) ->e3;
-
-  a3: assert property (@(e3) ##[2:2] 1);
-
-  // --- Test 4: multi-step ##[1:2] b ##1 c (both b and c always true) ---
-  event e4;
-  always @(negedge clk) if (cyc >= 1 && cyc <= 20) ->e4;
-
-  a4: assert property (@(e4) ##[1:2] 1 ##1 1);
-
-  // --- Test 5: large range ##[1:10000] (scalability, O(1) code size) ---
-  logic b5 = 0;
-  always @(posedge clk) if (cyc == 50) b5 <= 1;
-
-  a5: assert property (@(posedge clk) cyc == 1 |-> ##[1:10000] b5);
+  // Large range ##[1:10000] (scalability, O(1) code size)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[1:10000] 1'b1);
 
 endmodule

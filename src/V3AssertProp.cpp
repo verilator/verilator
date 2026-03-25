@@ -609,10 +609,11 @@ class RangeDelayExpander final : public VNVisitor {
     // Extract delay bounds from AstDelay. Clones and constifies (does not modify original AST).
     bool extractDelayBounds(AstDelay* dlyp, bool& isRange, int& minVal, int& maxVal) {
         isRange = dlyp->isRangeDelay();
+        AstNodeExpr* const minExprp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
+        const AstConst* const minConstp = VN_CAST(minExprp, Const);
         if (isRange) {
-            AstNodeExpr* minExprp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
-            AstNodeExpr* maxExprp = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
-            const AstConst* const minConstp = VN_CAST(minExprp, Const);
+            AstNodeExpr* const maxExprp
+                = V3Const::constifyEdit(dlyp->rhsp()->cloneTree(false));
             const AstConst* const maxConstp = VN_CAST(maxExprp, Const);
             if (!minConstp || !maxConstp) {
                 dlyp->v3error("Range delay bounds must be elaboration-time constants"
@@ -640,10 +641,8 @@ class RangeDelayExpander final : public VNVisitor {
                 return false;
             }
         } else {
-            AstNodeExpr* const valp = V3Const::constifyEdit(dlyp->lhsp()->cloneTree(false));
-            const AstConst* const constp = VN_CAST(valp, Const);
-            minVal = maxVal = constp ? constp->toSInt() : 0;
-            VL_DO_DANGLING(valp->deleteTree(), valp);
+            minVal = maxVal = minConstp ? minConstp->toSInt() : 0;
+            VL_DO_DANGLING(minExprp->deleteTree(), minExprp);
         }
         return true;
     }
@@ -654,7 +653,7 @@ class RangeDelayExpander final : public VNVisitor {
     // Output for that example: [{a, range[1:2]}, {b, delay=1}, {c, delay=0}]
     bool linearize(AstSExpr* rootp, std::vector<SeqStep>& steps) {
         bool hasRange = false;
-        linearizeImpl(rootp, steps, hasRange);
+        linearizeImpl(rootp, steps, hasRange /*ref*/);
         return hasRange;
     }
 
