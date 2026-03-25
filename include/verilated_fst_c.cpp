@@ -180,23 +180,28 @@ void VerilatedFst::pushPrefix(const char* namep, VerilatedTracePrefixType type, 
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_INTERFACE, name, std::string{});
         break;
     case VerilatedTracePrefixType::STRUCT_PACKED:
-        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK,
+                            fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_STRUCT, name, std::string{});
         break;
     case VerilatedTracePrefixType::STRUCT_UNPACKED:
-        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_UNPACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK,
+                            fst::Hierarchy::AttrSubType::PACK_UNPACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_STRUCT, name, std::string{});
         break;
     case VerilatedTracePrefixType::UNION_PACKED:
-        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK,
+                            fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_UNION, name, std::string{});
         break;
     case VerilatedTracePrefixType::ARRAY_PACKED:
-        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_PACKED, "bounds", lr);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY,
+                            fst::Hierarchy::AttrSubType::ARRAY_PACKED, "bounds", lr);
         m_fst->setScope(fst::Hierarchy::ScopeType::SV_ARRAY, name, std::string{});
         break;
     case VerilatedTracePrefixType::ARRAY_UNPACKED:
-        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_UNPACKED, "bounds", lr);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY,
+                            fst::Hierarchy::AttrSubType::ARRAY_UNPACKED, "bounds", lr);
         m_fst->setScope(fst::Hierarchy::ScopeType::SV_ARRAY, name, std::string{});
         break;
     default: break;
@@ -230,9 +235,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
     const std::string name_str = name_ss.str();
 
-    if (dtypenum > 0) {
-        m_fst->emitEnumTableRef(m_local2fstdtype.at(initUserp()).at(dtypenum));
-    }
+    if (dtypenum > 0) { m_fst->emitEnumTableRef(m_local2fstdtype.at(initUserp()).at(dtypenum)); }
 
     fst::Hierarchy::VarDirection varDir = fst::Hierarchy::VarDirection::IMPLICIT;
     switch (direction) {
