@@ -33,6 +33,8 @@ module t (
   wire        logic [127:0] rand_aa = {2{rand_a}};
   wire        logic [63:0] const_a;
   wire        logic [63:0] const_b;
+  wire        logic [63:0] zero;
+  wire        logic [63:0] ones;
   wire        logic signed [63:0] sconst_a;
   wire        logic signed [63:0] sconst_b;
              logic [63:0] array [3:0];
@@ -305,6 +307,9 @@ module t (
   `signal(FOLD_SELF_LTS, srand_a < srand_a);
   `signal(FOLD_SELF_LE, rand_a <= rand_a);
   `signal(FOLD_SELF_LES, srand_a <= srand_a);
+  `signal(FOLD_MUX_FROM_ONES, ones[rand_a[5:0]]);
+  `signal(FOLD_MUX_FROM_ZERO, zero[rand_a[5:0]]);
+  `signal(REPLACE_MUX_WITH_SEL, rand_a[const_a[5:0]]);
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
@@ -366,4 +371,6 @@ module t (
   assign const_b  = 64'h98badefc10325647;
   assign sconst_a = 64'hfedcba9876543210;
   assign sconst_b = 64'hba0123456789cdef;
+  assign zero = '0;
+  assign ones = '1;
 endmodule
