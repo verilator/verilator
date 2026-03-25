@@ -375,13 +375,11 @@ class FourstateVisitor final : public VNVisitor {
         funcp->user2p(varRefXzp);
     }
 
-    inline AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
-                                                    bool putIntoTmp = false) {
+    AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp, bool putIntoTmp = false) {
         return m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(exprp, putIntoTmp);
     }
 
-    inline AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp,
-                                                 bool putIntoTmp = false) {
+    AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp, bool putIntoTmp = false) {
         return m_fourstateGeneratorXZVisitor.getFourStateExpressionXZ(exprp, putIntoTmp);
     }
 
@@ -393,14 +391,14 @@ class FourstateVisitor final : public VNVisitor {
     private:
         bool m_noTmp = false;
 
-        void visit(AstNodeExpr* const nodep) final {
+        void visit(AstNodeExpr* const nodep) override {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Operator not supported in the four-state mode");
             // Workaround to avaoid Internal errors
             m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         }
 
-        void visit(AstNode* const nodep) final {
+        void visit(AstNode* const nodep) override {
             nodep->v3fatalSrc("This node shall be unreachable in this visitor");
         }
 
@@ -606,7 +604,7 @@ class FourstateVisitor final : public VNVisitor {
         }
     };
 
-    class FourstateExpressionXZVisitor : public FourstateExpressionVisitor {
+    class FourstateExpressionXZVisitor final : public FourstateExpressionVisitor {
 
         void visit(AstAnd* const andp) override {
             // (a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz)
