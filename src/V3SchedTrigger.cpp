@@ -451,12 +451,15 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     for (AstVarScope* const instVscp : instanceVscps) {
         AstNodeDType* const dtypep = instVscp->dtypep()->skipRefp();
 
-        // Guard against unsupported complex types (dynamic arrays, queues, etc.)
-        // Interface members should only have synthesizable types at this point.
-        if (!VN_IS(dtypep, BasicDType) && !VN_IS(dtypep, PackArrayDType)
-            && !VN_IS(dtypep, UnpackArrayDType) && !VN_IS(dtypep, NodeUOrStructDType)) {
-            instVscp->v3fatalSrc("Unexpected complex type for virtual interface member trigger: "
-                                 << dtypep->prettyDTypeNameQ());
+        // Skip types that do not support value-change comparison (events, chandles, strings)
+        if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
+            if (bdtypep->isEvent() || bdtypep->isString()
+                || bdtypep->keyword() == VBasicDTypeKwd::CHANDLE) {
+                continue;
+            }
+        } else if (!VN_IS(dtypep, PackArrayDType) && !VN_IS(dtypep, UnpackArrayDType)
+                   && !VN_IS(dtypep, NodeUOrStructDType) && !VN_IS(dtypep, ClassRefDType)) {
+            continue;  // Skip unsupported complex types (dynamic arrays, queues, etc.)
         }
 
         // Create a prev variable for this instance member
