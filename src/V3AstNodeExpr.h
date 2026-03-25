@@ -1610,6 +1610,25 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
 };
+class AstFourstateExpr final : public AstNodeExpr {
+    // @astgen op1 := valuep : AstNodeExpr // file (must be a VarRef)
+    // @astgen op2 := xzp : AstNodeExpr // file (must be a VarRef)
+public:
+    AstFourstateExpr(FileLine* fl, AstNodeExpr* const valuePartp, AstNodeExpr* const xzPartp)
+        : ASTGEN_SUPER_FourstateExpr(fl) {
+        UASSERT_OBJ(valuePartp->width() == xzPartp->width(), this,
+                    "Value and XZ part shall have same width but they have: "
+                        << valuePartp->width() << " and " << xzPartp->width());
+        valuep(valuePartp);
+        xzp(xzPartp);
+        dtypeSetLogicUnsized(valuePartp->width(), valuePartp->dtypep()->widthMin(),
+                             valuePartp->dtypep()->numeric());
+    }
+    ASTGEN_MEMBERS_AstFourstateExpr;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstFuture final : public AstNodeExpr {
     // Verilog $future_gclk
     // @astgen op1 := exprp : AstNodeExpr
@@ -3922,7 +3941,12 @@ class AstEq final : public AstNodeBiCom {
 public:
     AstEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Eq(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp && rhsp && lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstEq;
     // Return AstEq/AstEqD
@@ -4045,7 +4069,12 @@ class AstNeq final : public AstNodeBiCom {
 public:
     AstNeq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Neq(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp && rhsp && lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstNeq;
     static AstNodeBiop* newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp);

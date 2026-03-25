@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.lint(verilator_flags2=['--fourstate'], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--fourstate', '--trace-vcd'])
+
+test.execute(expect_filename=test.golden_filename)
+
+test.vcd_identical(test.trace_filename, test.golden_filename + '.vcd')
 
 test.passes()

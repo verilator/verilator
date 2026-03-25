@@ -2,9 +2,9 @@
  "modulesp": [
   {"type":"MODULE","name":"$root","addr":"(F)","loc":"d,11:8,11:11","origName":"$root","verilogName":"$root","level":1,"modPublic":true,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"i_clk","addr":"(G)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"top.i_clk","addr":"(I)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"top.f.i_clk","addr":"(J)","loc":"d,7:24,7:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"i_clk","addr":"(G)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","fourStateComplement":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"top.i_clk","addr":"(I)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","fourStateComplement":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"top.f.i_clk","addr":"(J)","loc":"d,7:24,7:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","fourStateComplement":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"TOPSCOPE","name":"","addr":"(E)","loc":"d,11:8,11:11","senTreesp": [],
      "scopep": [
       {"type":"SCOPE","name":"TOP","addr":"(K)","loc":"d,11:8,11:11","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(F)",

@@ -1269,6 +1269,8 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
+    const VBasicDTypeKwd m_dtypeKwd;
+
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
@@ -1278,7 +1280,8 @@ public:
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_varType{varp->varType()}
-        , m_declDirection{varp->declDirection()} {
+        , m_declDirection{varp->declDirection()}
+        , m_dtypeKwd{varp->fourstateOriginalDTypeKwd()} {
         dtypeFrom(valuep);
         this->valuep(valuep);
     }
@@ -1300,12 +1303,15 @@ public:
     uint32_t codeInc() const {
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
+               * (1 + VN_IS(valuep(), FourstateExpr))  // Fourstate variables take twise
+                                                       // as much space as they are wide
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
     }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
     VDirection declDirection() const { return m_declDirection; }
+    VBasicDTypeKwd dtypeKwd() const { return m_dtypeKwd; }
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
