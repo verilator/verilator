@@ -673,12 +673,12 @@ class RangeDelayExpander final : public VNVisitor {
             steps.push_back({nullptr, minVal, isRange, minVal, maxVal});
         }
 
-        if (AstSExpr* const nextp = VN_CAST(curp->exprp(), SExpr)) {
-            return linearizeImpl(nextp, steps, hasRange);
-        } else {
-            steps.push_back({curp->exprp(), 0, false, 0, 0});
-            return true;
+        if (VN_IS(curp->exprp(), SExpr)) {
+            curp->v3fatalSrc("Right-recursive SExpr not expected from parser");
+            return false;
         }
+        steps.push_back({curp->exprp(), 0, false, 0, 0});
+        return true;
     }
 
     // Build FSM body as if/else chain on state variable.

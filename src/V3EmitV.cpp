@@ -1128,15 +1128,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         VL_RESTORER(m_prefixed);
         m_prefixed = false;
-        if (nodep->rhsp()) {
-            puts("[");
-            iterateConst(nodep->lhsp());
-            puts(":");
-            iterateConst(nodep->rhsp());
-            puts("]");
-        } else {
-            iterateConst(nodep->lhsp());
-        }
+        iterateConst(nodep->lhsp());
         if (!m_suppressSemi) {
             puts(";\n");
         } else {
