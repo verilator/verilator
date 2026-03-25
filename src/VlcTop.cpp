@@ -218,20 +218,20 @@ void VlcTop::rank() {
 void VlcTop::covergroup() {
     UINFO(2, "covergroup...");
     // Structs for accumulating report data
-    struct BinEntry {
+    struct BinEntry final {
         std::string name;
         std::string binType;  // "ignore", "illegal", or "" (normal)
         bool covered = false;
         uint64_t count = 0;
     };
-    struct CpEntry {
+    struct CpEntry final {
         std::string name;
         bool isCross = false;
         std::vector<BinEntry> bins;
         uint64_t normalTotal = 0;
         uint64_t normalCovered = 0;
     };
-    struct CgEntry {
+    struct CgEntry final {
         std::string typeName;
         std::string filename;
         int lineno = 0;
