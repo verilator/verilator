@@ -102,16 +102,12 @@
 
 // Compatibility layer for unreachable code hint
 #if defined(__cplusplus) && __cplusplus >= 202302L
-// Prefer the standard library version if available
 #	include <utility>
 #	define FST_UNREACHABLE std::unreachable()
-#elif defined(__GNUC__) || defined(__clang__)
-// --- GCC / Clang ---
+#elif USE_GCC_INTRINSIC
 #	define FST_UNREACHABLE __builtin_unreachable()
-#elif defined(_MSC_VER)
-// --- MSVC ---
-#	define FST_UNREACHABLE __assume(0)
+// TODO: implement MSVC version
+// #elif USE_MSVC_INTRINSIC
 #else
-// --- Fallback ---
 #	define FST_UNREACHABLE std::abort()
 #endif

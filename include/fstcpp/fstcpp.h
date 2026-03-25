@@ -13,6 +13,17 @@
 #include <string>
 // Other libraries' .h files.
 // Your project's .h files.
+#if defined(MSC_VER_) || defined(FORCE_MSC_VER_)
+#	define USE_GCC_INTRINSIC 0
+// Note: we do not support MSVC intrinsic for now
+#	define USE_MSVC_INTRINSIC 0
+#elif defined(__GNUC__) || defined(__clang__)
+#	define USE_GCC_INTRINSIC 1
+#	define USE_MSVC_INTRINSIC 0
+#else
+#	define USE_GCC_INTRINSIC 0
+#	define USE_MSVC_INTRINSIC 0
+#endif
 
 // Remove these when we upgrade to C++20
 #pragma GCC diagnostic ignored "-Wpragmas"

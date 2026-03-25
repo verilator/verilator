@@ -6,10 +6,10 @@
 #pragma once
 // direct include
 // C system headers
-#ifdef _MSC_VER
-#	include <intrin.h>
-#endif
 // C++ standard library headers
+#if defined(__cplusplus) && __cplusplus >= 202302L
+#	include <bit>
+#endif
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -28,22 +28,24 @@ namespace platform {
 // clang-format off
 template <typename U> U to_big_endian(U u) { return u; }
 #else
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__cplusplus) && __cplusplus >= 202302L
+template <typename U, size_t S>
+U to_big_endian(U u, std::integral_constant<size_t, S>) {
+	return std::byteswap(u);
+}
+#elif USE_GCC_INTRINSIC
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 1>) { return u; }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 2>) { return __builtin_bswap16(u); }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 4>) { return __builtin_bswap32(u); }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 8>) { return __builtin_bswap64(u); }
-#elif defined(_MSC_VER) // MSVC
-template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 1>) { return u; }
-template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 2>) { return _byteswap_ushort(u); }
-template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 4>) { return _byteswap_ulong(u); }
-template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 8>) { return _byteswap_uint64(u); }
+// TODO: implement MSVC version
+// #elif USE_MSVC_INTRINSIC
 #else
-template<typename U, size_t S> U to_big_endian(U u, std::integral_constant<size_t, S>) {
-	U ret{ 0 };
+template <typename U, size_t S>
+U to_big_endian(U u, std::integral_constant<size_t, S>) {
+	U ret{0};
 	for (size_t i = 0; i < S; ++i) {
-		ret |= u & 0xff;
-		ret <<= 8;
+		ret = (ret << 8) | (u & 0xff);
 		u >>= 8;
 	}
 	return ret;

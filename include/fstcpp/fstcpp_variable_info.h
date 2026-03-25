@@ -7,10 +7,10 @@
 // direct include
 #include "fstcpp/fstcpp.h"
 // C system headers
-#ifdef _MSC_VER
-#	include <intrin.h>
-#endif
 // C++ standard library headers
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#	include <bit>
+#endif
 #include <algorithm>
 #include <cstdint>
 #include <limits>
@@ -26,19 +26,29 @@ namespace platform {
 
 // Can be replaced with std::bit_width when C++20 is available
 inline uint64_t clog2(uint64_t x) {
-#if defined(__GNUC__) || defined(__clang__)
-	return 64 - __builtin_clzll(x - 1);
-#elif defined(_MSC_VER)  // MSVC
 	if (x <= 1) return 0;
-	unsigned long index;
-	_BitScanReverse64(&index, x - 1);
-	return static_cast<uint64_t>(index + 1);
+#if defined(__cplusplus) && __cplusplus >= 202002L
+	return std::bit_width(x - 1);
+#elif USE_GCC_INTRINSIC
+	return 64 - __builtin_clzll(x - 1);
+// TODO: implement MSVC version
+// #elif USE_MSVC_INTRINSIC
 #else
 	uint64_t r = 0;
-	while (x > 1) {
-		x >>= 1;
-		r++;
-	}
+	x -= 1;
+	auto CheckAndShift = [&](uint64_t shift) {
+		if (x >> shift) {
+			r += shift;
+			x >>= shift;
+		}
+	};
+	CheckAndShift(32);
+	CheckAndShift(16);
+	CheckAndShift(8);
+	CheckAndShift(4);
+	CheckAndShift(2);
+	CheckAndShift(1);
+	r += x;
 	return r;
 #endif
 }
