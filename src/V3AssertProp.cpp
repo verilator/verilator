@@ -916,7 +916,8 @@ class RangeDelayExpander final : public VNVisitor {
         }
         // Skip nested SExprs -- the outermost handles the whole tree via linearize
         if (AstSExpr* const parentp = VN_CAST(nodep->backp(), SExpr)) {
-            if (parentp->exprp() == nodep || parentp->preExprp() == nodep) return;  // LCOV_EXCL_LINE
+            if (parentp->exprp() == nodep || parentp->preExprp() == nodep)
+                return;  // LCOV_EXCL_LINE
         }
 
         std::vector<SeqStep> steps;
