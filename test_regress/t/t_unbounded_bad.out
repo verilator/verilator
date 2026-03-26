@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_unbounded_bad.v:9:9: Unsupported/illegal unbounded ('$') in this context.
+%Error-UNSUPPORTED: t/t_unbounded_bad.v:9:9: Unsupported: Unbounded ('$') outside of queue or string operations
                                            : ... note: In instance 't'
     9 |     if ($) $stop;
       |         ^
