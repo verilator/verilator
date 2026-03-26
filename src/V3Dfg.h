@@ -68,37 +68,6 @@ class DfgVisitor;
 template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
 class DfgUserMap;
 
-namespace V3Dfg {
-//-----------------------------------------------------------------------
-// Functions for compatibility tests
-
-// Returns true if variable can be represented in the graph
-inline bool isSupported(const AstVar* varp) {
-    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
-    if (varp->delayp()) return false;  // Cannot handle delayed variables
-    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
-    if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
-    return DfgDataType::fromAst(varp->dtypep());
-}
-
-// Returns true if variable can be represented in the graph
-inline bool isSupported(const AstVarScope* vscp) {
-    const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module)) {
-        // Regular module supported
-    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
-        // Interfaces supported if there are no virtual interfaces for
-        // them, otherwise they cannot be resovled statically.
-        if (ifacep->hasVirtualRef()) return false;
-    } else {
-        return false;  // Anything else (package, class, etc) not supported
-    }
-    // Check the AstVar
-    return isSupported(vscp->varp());
-}
-
-}  //namespace V3Dfg
-
 //------------------------------------------------------------------------------
 // Dataflow graph vertex type enum
 
@@ -573,6 +542,39 @@ public:
     std::unique_ptr<std::unordered_set<const DfgVertex*>>
     sinkCone(const std::vector<const DfgVertex*>&) const VL_MT_DISABLED;
 };
+
+namespace V3Dfg {
+//-----------------------------------------------------------------------
+// Functions for compatibility tests
+
+// Returns true if variable can be represented in the graph
+inline bool isSupported(const AstVar* varp) {
+    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    if (varp->delayp()) return false;  // Cannot handle delayed variables
+    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
+    if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
+    if (DfgVertexVar::hasRWRefs(varp)) return false;  // Referenced via READWRITE references
+    return DfgDataType::fromAst(varp->dtypep());
+}
+
+// Returns true if variable can be represented in the graph
+inline bool isSupported(const AstVarScope* vscp) {
+    const AstNodeModule* const modp = vscp->scopep()->modp();
+    if (VN_IS(modp, Module)) {
+        // Regular module supported
+    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
+        // Interfaces supported if there are no virtual interfaces for
+        // them, otherwise they cannot be resovled statically.
+        if (ifacep->hasVirtualRef()) return false;
+    } else {
+        return false;  // Anything else (package, class, etc) not supported
+    }
+    if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
+    // Check the AstVar
+    return isSupported(vscp->varp());
+}
+
+}  //namespace V3Dfg
 
 //------------------------------------------------------------------------------
 // Map from DfgVertices to T_Value implemeneted via DfgVertex::m_userStorage

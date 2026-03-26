@@ -145,6 +145,7 @@ class AstToDfgConverter final : public VNVisitor {
     // Returns {nullptr, 0}, if the given LValue expression is not supported.
     std::pair<DfgVertexSplice*, uint32_t> convertLValue(AstNodeExpr* nodep) {
         if (const AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
+            UASSERT_OBJ(vrefp->access().isWriteOnly(), vrefp, "Non-WriteOnly reference");
             if (!isSupported(vrefp)) {
                 ++m_ctx.m_conv.nonRepLValue;
                 return {nullptr, 0};
@@ -366,7 +367,8 @@ class AstToDfgConverter final : public VNVisitor {
         UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
         if (unhandled(nodep)) return;
         // This visit method is only called on RValues, where only read refs are supported
-        if (!nodep->access().isReadOnly() || !isSupported(nodep)) {
+        UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Non-ReadOnly reference");
+        if (!isSupported(nodep)) {
             m_foundUnhandled = true;
             ++m_ctx.m_conv.nonRepVarRef;
             return;
