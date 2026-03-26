@@ -305,7 +305,7 @@ class BeginVisitor final : public VNVisitor {
             }
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
-            if (m_ftaskp->lifetime().isStatic() && nodep->isIO()) {
+            if (nodep->isIO()) {
                 AstVar* keepAsPort = nodep->cloneTreePure(false);
                 nodep->replaceWith(keepAsPort);
                 m_statep->userMarkChanged(keepAsPort);
