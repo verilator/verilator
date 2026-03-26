@@ -329,7 +329,6 @@ class BeginVisitor final : public VNVisitor {
             nodep->name(newName);
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
-            // m_statep->userMarkChanged(nodep);
         } else if (m_unnamedScope != "") {
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
