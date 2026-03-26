@@ -306,20 +306,21 @@ class BeginVisitor final : public VNVisitor {
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             if (nodep->isIO()) {
-                AstVar* keepAsPort = nodep->cloneTreePure(false);
-                nodep->replaceWith(keepAsPort);
-                m_statep->userMarkChanged(keepAsPort);
+                // Create a port that is used for passing value between argument and static variable
+                AstVar* const portp = nodep->cloneTreePure(false);
+                portp->user1(true);
+                nodep->replaceWith(portp);
 
                 if (nodep->isInput() || nodep->isInout()) {
                     AstAssign* initAssignp = new AstAssign{nodep->fileline(),
                         new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
-                        new AstVarRef{keepAsPort->fileline(), keepAsPort, VAccess::READ}};
-                    keepAsPort->addNextHere(initAssignp);
+                        new AstVarRef{portp->fileline(), portp, VAccess::READ}};
+                    portp->addNextHere(initAssignp);
                 }
 
                 if (nodep->isWritable()) {
                     AstAssign* endAssignp = new AstAssign{nodep->fileline(),
-                        new AstVarRef{keepAsPort->fileline(), keepAsPort, VAccess::WRITE},
+                        new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
                         new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
                     m_ftaskp->addStmtsp(endAssignp);
                 }
