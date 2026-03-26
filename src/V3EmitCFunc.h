@@ -985,17 +985,7 @@ public:
         puts(")");
     }
     void visit(AstFGetS* nodep) override {
-        checkMaxWords(nodep);
         emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
-    }
-
-    void checkMaxWords(AstNode* nodep) {
-        if (nodep->widthWords() > VL_VALUE_STRING_MAX_WORDS) {
-            nodep->v3error(
-                "String of "
-                << nodep->width()
-                << " bits exceeds hardcoded limit VL_VALUE_STRING_MAX_WORDS in verilatedos.h");
-        }
     }
     void visit(AstFOpen* nodep) override {
         putns(nodep, "VL_FOPEN_NN(");
@@ -1144,7 +1134,6 @@ public:
             puts(cvtToStr(nodep->lhsp()->widthWords()));
             putbs(", ");
         }
-        checkMaxWords(nodep->lhsp());
         iterateAndNextConstNull(nodep->lhsp());
         puts(");\n");
     }
@@ -1156,7 +1145,6 @@ public:
             puts(cvtToStr(nodep->lhsp()->widthWords()));
             putbs(", ");
         }
-        checkMaxWords(nodep->lhsp());
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");
     }

@@ -3081,23 +3081,19 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     if (valuep->format == vpiVectorVal) {
         // Vector pointer must come from our memory pool
         // It only needs to persist until the next vpi_get_value
-        static thread_local t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
-        valuep->value.vector = t_out;
+        static thread_local std::vector<t_vpi_vecval> t_out;
         if (varp->vltype() == VLVT_WDATA) {
             const int words = VL_WORDS_I(varBits);
-            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
-                VL_VPI_ERROR_(
-                    __FILE__, __LINE__,
-                    "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                    "recompile");
-                return;
-            }
+            t_out.resize(words);
+            valuep->value.vector = t_out.data();
             for (int i = 0; i < words; ++i) {
                 t_out[i].aval = get_word(vop, 32, i * 32);
                 t_out[i].bval = 0;
             }
             return;
         } else if (varp->vltype() == VLVT_UINT64 && varBits > 32) {
+            t_out.resize(2);
+            valuep->value.vector = t_out.data();
             const QData data = get_word(vop, 64, 0);
             t_out[1].aval = static_cast<IData>(data >> 32ULL);
             t_out[1].bval = 0;
@@ -3105,6 +3101,8 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             t_out[0].bval = 0;
             return;
         } else {
+            t_out.resize(1);
+            valuep->value.vector = t_out.data();
             t_out[0].aval = get_word(vop, 32, 0);
             t_out[0].bval = 0;
             return;
@@ -3737,7 +3735,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
     const VerilatedVar* const varp = vop->varp();
 
-    static thread_local EData t_out_data[VL_VALUE_STRING_MAX_WORDS * 2];
+    static thread_local std::vector<EData> t_out_data;
 
     const unsigned size = vop->size();
     if (VL_UNCOVERABLE(num > size)) {
@@ -3751,13 +3749,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
         = leftIsLow ? index_p[0] - vop->rangep()->left() : vop->rangep()->left() - index_p[0];
 
     if (arrayvalue_p->format == vpiShortIntVal) {
-        if (VL_UNCOVERABLE((sizeof(PLI_INT16) * num) >= VL_VALUE_STRING_MAX_CHARS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize(num * sizeof(PLI_INT16) / sizeof(EData));
 
-        PLI_INT16* shortintsp = reinterpret_cast<PLI_INT16*>(t_out_data);
+        PLI_INT16* shortintsp = reinterpret_cast<PLI_INT16*>(t_out_data.data());
         arrayvalue_p->value.shortints = shortintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3770,13 +3764,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         return;
     } else if (arrayvalue_p->format == vpiIntVal) {
-        if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize(num * sizeof(PLI_INT32) / sizeof(EData));
 
-        PLI_INT32* integersp = reinterpret_cast<PLI_INT32*>(t_out_data);
+        PLI_INT32* integersp = reinterpret_cast<PLI_INT32*>(t_out_data.data());
         arrayvalue_p->value.integers = integersp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3792,13 +3782,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         return;
     } else if (arrayvalue_p->format == vpiLongIntVal) {
-        if (VL_UNCOVERABLE((sizeof(PLI_INT64) * num) >= VL_VALUE_STRING_MAX_CHARS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize(num * sizeof(PLI_INT64) / sizeof(EData));
 
-        PLI_INT64* longintsp = reinterpret_cast<PLI_INT64*>(t_out_data);
+        PLI_INT64* longintsp = reinterpret_cast<PLI_INT64*>(t_out_data.data());
         arrayvalue_p->value.longints = longintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3817,13 +3803,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         return;
     } else if (arrayvalue_p->format == vpiVectorVal) {
-        if (VL_UNCOVERABLE((VL_WORDS_I(varp->entBits()) * 2 * num) >= VL_VALUE_STRING_MAX_WORDS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize((VL_WORDS_I(varp->entBits()) * 4 * num));
 
-        p_vpi_vecval vectorsp = reinterpret_cast<p_vpi_vecval>(t_out_data);
+        p_vpi_vecval vectorsp = reinterpret_cast<p_vpi_vecval>(t_out_data.data());
         arrayvalue_p->value.vectors = vectorsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3845,13 +3827,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         return;
     } else if (arrayvalue_p->format == vpiRawFourStateVal) {
-        if (VL_UNCOVERABLE((VL_BYTES_I(varp->entBits()) * 2 * num) >= VL_VALUE_STRING_MAX_CHARS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize((VL_BYTES_I(varp->entBits()) * 4 * num) / sizeof(EData));
 
-        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data);
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data.data());
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3873,13 +3851,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         return;
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
-        if (VL_UNCOVERABLE((VL_BYTES_I(varp->entBits()) * num) >= VL_VALUE_STRING_MAX_CHARS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
+        t_out_data.resize((VL_BYTES_I(varp->entBits()) * 2 * num) / sizeof(EData));
 
-        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data);
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data.data());
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {

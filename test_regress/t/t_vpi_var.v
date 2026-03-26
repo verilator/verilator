@@ -59,7 +59,7 @@ extern "C" int mon_check();
   reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
   reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
   reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
-  reg [2047:0]    too_big      /*verilator public_flat_rw @(posedge clk) */;
+  reg [2047:0]    big      /*verilator public_flat_rw @(posedge clk) */;
 
   integer        status;
 
@@ -96,7 +96,7 @@ extern "C" int mon_check();
     text_word = "Word";
     text_long = "Long64b";
     text = "Verilog Test module";
-    too_big = "some text";
+    big = "some text";
 
     bit1 = 1;
     integer1 = 123;
