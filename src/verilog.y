@@ -6864,10 +6864,9 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // UNSUP: This causes a big grammar ambiguity
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
-        |       yP_POUNDPOUND anyrange
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          DEL($2);
-                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
+        |       yP_POUNDPOUND '[' constExpr ':' constExpr ']'
+                        { $$ = new AstDelay{$1, $3, true};
+                          $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
                         { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
