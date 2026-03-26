@@ -69,6 +69,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_randSequenceNum = 0;  // RandSequence uniqify number
     VLifetime m_lifetime = VLifetime::STATIC_IMPLICIT;  // Propagating lifetime
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
+    bool m_hasTimingControl = false;  // If current task has timing control
     bool m_moduleWithGenericIface = false;  // If current module contains generic interface
     std::set<AstVar*> m_portDups;  // Non-ANSI port datatype duplicating input/output decls
 
@@ -248,6 +249,8 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         m_lifetimeAllowed = true;
+        VL_RESTORER(m_hasTimingControl);
+        m_hasTimingControl = nodep->exists([&](const AstNode* const nodep) {return nodep->isTimingControl();});
         if (!nodep->lifetime().isNone()) {
             m_lifetime = nodep->lifetime().makeImplicit();
         } else {
@@ -382,7 +385,7 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }
         } else if (m_ftaskp) {
-            if (m_ftaskp->lifetime().isStatic() && m_ftaskp->exists([&](const AstNode* nodep) {return nodep->isTimingControl();})) {
+            if (m_ftaskp->lifetime().isStatic() && m_hasTimingControl) {
                 nodep->lifetime(VLifetime::STATIC_IMPLICIT);
             } else {
                 nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
