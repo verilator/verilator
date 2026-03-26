@@ -321,11 +321,7 @@ class BeginVisitor final : public VNVisitor {
                     AstAssign* endAssignp = new AstAssign{nodep->fileline(),
                         new AstVarRef{keepAsPort->fileline(), keepAsPort, VAccess::WRITE},
                         new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
-                    AstNode* endp = keepAsPort;
-                    while (endp->nextp()) {
-                        endp = endp->nextp();
-                    }
-                    endp->addNextHere(endAssignp);
+                    m_ftaskp->addStmtsp(endAssignp);
                 }
             } else {
                 nodep->unlinkFrBack();
