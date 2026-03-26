@@ -146,6 +146,8 @@ public:
     VDouble0 m_outputVariables;  // Number of output variables
     VDouble0 m_outputVariablesWithDefault;  // Number of outptu variables with a default driver
     VDouble0 m_resultEquations;  // Number of result combinational equations
+    VDouble0 m_expressionsInlined;  // Number of expressions inlined directly into the Ast
+    VDouble0 m_varRefsSubstituted;  // Number of variable references substituted in the Ast
 
 private:
     V3DfgDfgToAstContext(V3DfgContext& ctx, const std::string& label)
@@ -154,6 +156,8 @@ private:
         addStat("output variables", m_outputVariables);
         addStat("output variables with default driver", m_outputVariablesWithDefault);
         addStat("result equations", m_resultEquations);
+        addStat("expressions inlined", m_expressionsInlined);
+        addStat("var refs substituted", m_varRefsSubstituted);
     }
 };
 class V3DfgPeepholeContext final : public V3DfgSubContext {
@@ -166,6 +170,7 @@ public:
     std::array<bool, VDfgPeepholePattern::_ENUM_END> m_enabled;
     // Count of applications for each optimization (for statistics)
     std::array<VDouble0, VDfgPeepholePattern::_ENUM_END> m_count;
+    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
 
 private:
     V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label) VL_MT_DISABLED;
@@ -193,13 +198,10 @@ class V3DfgRegularizeContext final : public V3DfgSubContext {
 
 public:
     // STATE
-    VDouble0 m_temporariesOmitted;  // Number of temporaries omitted as cheaper to re-compute
-    VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
-
     std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
-    VDouble0 m_usedVarsReplaced;  // Number of used variables replaced with equivalent ones
     VDouble0 m_usedVarsInlined;  // Number of used variables inlined
     VDouble0 m_unusedRemoved;  // Number of unused vertices remoevd
+    VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced for reuse
 
 private:
     V3DfgRegularizeContext(V3DfgContext& ctx, const std::string& label)
@@ -208,11 +210,8 @@ private:
         for (AstNode* const nodep : m_deleteps) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
-        addStat("used variables replaced", m_usedVarsReplaced);
         addStat("used variables inlined", m_usedVarsInlined);
         addStat("unused vertices removed", m_unusedRemoved);
-
-        addStat("temporaries omitted", m_temporariesOmitted);
         addStat("temporaries introduced", m_temporariesIntroduced);
     }
 };

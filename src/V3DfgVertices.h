@@ -121,14 +121,9 @@ public:
     bool hasDfgRefs() const { return nodep()->user1() >> 6; }  // I.e.: (nodep()->user1() >> 5) > 1
 
     // Variable referenced from Ast code in the same module/netlist
-    static bool hasModRdRefs(const AstNode* nodep) { return nodep->user1() & 0x04; }
     static bool hasModWrRefs(const AstNode* nodep) { return nodep->user1() & 0x08; }
-    static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
     static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
-    bool hasModRdRefs() const { return hasModRdRefs(nodep()); }
     bool hasModWrRefs() const { return hasModWrRefs(nodep()); }
-    bool hasModRefs() const { return hasModRdRefs() || hasModWrRefs(); }
-    void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
     void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
 
     // Variable referenced outside the containing module/netlist.
@@ -149,7 +144,7 @@ public:
         // A DfgVarVertex is written in exactly one DfgGraph, and might be read in an arbitrary
         // number of other DfgGraphs. If it's driven in this DfgGraph, it's read in others.
         if (hasDfgRefs()) return srcp() || defaultp();
-        return hasExtRdRefs() || hasModRdRefs();
+        return hasExtRdRefs();
     }
 
     // The value of this vertex might differ from what is defined by its drivers
@@ -191,6 +186,48 @@ public:
         UASSERT_OBJ(isPacked(), vscp, "Non-packed DfgVarPacked");
     }
     ASTGEN_MEMBERS_DfgVarPacked;
+};
+
+//------------------------------------------------------------------------------
+// Ast reference vertices
+
+class DfgVertexAst VL_NOT_FINAL : public DfgVertex {
+    // Represents a reference in the Ast
+
+    AstNodeExpr* m_exprp;  // The AstNodeExpr representing this reference
+
+public:
+    DfgVertexAst(DfgGraph& dfg, VDfgType type, AstNodeExpr* exprp)
+        : DfgVertex{dfg, type, exprp->fileline(), *DfgDataType::fromAst(exprp->dtypep())}
+        , m_exprp{exprp} {}
+    ASTGEN_MEMBERS_DfgVertexAst;
+
+    AstNodeExpr* exprp() const { return m_exprp; }
+    void exprp(AstNodeExpr* exprp) { m_exprp = exprp; }
+};
+
+class DfgAstRd final : public DfgVertexAst {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+    const bool m_inSenItem;  // Reference is in a sensitivity list
+    const bool m_inLoop;  // Reference is in a loop
+
+public:
+    DfgAstRd(DfgGraph& dfg, AstNodeExpr* exprp, bool inSenItem, bool inLoop)
+        : DfgVertexAst{dfg, dfgType(), exprp}
+        , m_inSenItem{inSenItem}
+        , m_inLoop{inLoop} {
+        // Allocate sources
+        newInput();
+    }
+    ASTGEN_MEMBERS_DfgAstRd;
+
+    DfgVertex* srcp() const { return inputp(0); }
+    void srcp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    std::string srcName(size_t) const override final { return ""; }
+    bool inSenItem() const { return m_inSenItem; }
+    bool inLoop() const { return m_inLoop; }
 };
 
 //------------------------------------------------------------------------------
