@@ -241,6 +241,7 @@ class WidthVisitor final : public VNVisitor {
     std::map<const AstNode*, const AstClass*>
         m_containingClassp;  // Containing class cache for containingClass() function
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -2835,7 +2836,18 @@ class WidthVisitor final : public VNVisitor {
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
-            nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: " << nodep->prettyNameQ());
+            // Skip ASSIGNIN for continuous assignments to net-type input ports
+            // via hierarchical reference. Net ports allow multiple continuous
+            // drivers (IEEE 1800-2023 23.3.3.3). Input ports default to net
+            // when port kind is omitted (23.2.2.3, PORT type).
+            const bool hierRef = !m_curModVars.count(nodep->varp());
+            const bool netPort
+                = nodep->varp()->isNet() || nodep->varp()->varType() == VVarType::PORT;
+            const bool contAssign = VN_IS(nodep->abovep(), AssignW);
+            if (!(hierRef && netPort && contAssign)) {
+                nodep->v3warn(ASSIGNIN,
+                              "Assigning to input/const variable: " << nodep->prettyNameQ());
+            }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic)
@@ -7374,6 +7386,9 @@ class WidthVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_modep);
             m_modep = nodep;
+            // Collect local variables for ASSIGNIN hierarchical reference check
+            m_curModVars.clear();
+            nodep->foreach([this](const AstVar* varp) { m_curModVars.insert(varp); });
             userIterateChildren(nodep, nullptr);
         }
     }
