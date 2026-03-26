@@ -1666,7 +1666,8 @@ class WidthVisitor final : public VNVisitor {
             if (VN_IS(selp->fromp()->dtypep()->skipRefp(), QueueDType)) return;
         }
         // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+        nodep->v3warn(E_UNSUPPORTED,
+                     "Unsupported: Unbounded ('$') outside of queue or string operations");
     }
     void visit(AstInferredDisable* nodep) override {
         assertAtExpr(nodep);

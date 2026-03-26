@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_event_control_star.v:19:5: Unsupported: no sense equation (@*)
+%Error-UNSUPPORTED: t/t_event_control_star.v:19:5: Unsupported: Event control with implicit sensitivity (@*) in this context; use an explicit sensitivity list instead
    19 |     @* a = c;   
       |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
