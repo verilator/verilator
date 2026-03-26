@@ -1,41 +1,41 @@
-%Error: t/t_timing_func_fork_bad.v:13:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:13:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    13 |         f1 = 0;
       |         ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_timing_func_fork_bad.v:14:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:14:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    14 |         o1 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:22:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:22:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    22 |         f2 = #5 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:24:9: Writing to an inout variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:24:9: Writing to an inout automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    24 |         io2 = 0;
       |         ^~~
-%Error: t/t_timing_func_fork_bad.v:34:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:34:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    34 |         f3 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:35:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:35:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    35 |         o3 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:43:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:43:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    43 |         f4 = @e 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:45:9: Writing to an inout variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:45:9: Writing to an inout automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    45 |         io4 = 0;
       |         ^~~
-%Error: t/t_timing_func_fork_bad.v:56:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:56:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    56 |         f5 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:57:9: Writing to an output variable of a function after a timing control is not allowed
+%Error: t/t_timing_func_fork_bad.v:57:9: Writing to an output automatic variable of a function after a timing control is not allowed
                                        : ... note: In instance 't'
    57 |         o5 = 0;
       |         ^~
