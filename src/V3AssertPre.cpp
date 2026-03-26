@@ -718,6 +718,7 @@ private:
         if (!constp) {
             nodep->v3error("Goto repetition count is not an elaboration-time constant"
                            " (IEEE 1800-2023 16.9.2)");
+            VL_DO_DANGLING(pushDeletep(countp), countp);
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;
@@ -725,6 +726,7 @@ private:
         if (constp->isZero()) {
             nodep->v3error("Goto repetition count must be greater than zero"
                            " (IEEE 1800-2023 16.9.2)");
+            VL_DO_DANGLING(pushDeletep(countp), countp);
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;

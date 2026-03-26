@@ -4,61 +4,62 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
-  logic clk = 0;
-  always #5 clk = ~clk;
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
-  int cyc = 0;
+module t (
+    input clk
+);
 
-  // Signals
-  logic req1, ack1;
-  logic b2;
-  logic req3, done3;
-  logic sig4, resp4;
+  int cyc;
+  reg [63:0] crc;
 
-  // Test 1: req[->2] |-> ack (overlapping, 2 non-consecutive occurrences)
-  assert property (@(posedge clk) req1[->2] |-> ack1)
-    else $error("[%0t] cyc=%0d FAIL test1", $time, cyc);
+  // Derive signals from non-adjacent CRC bits (lesson 17: avoid shift correlation)
+  wire a = crc[0];
+  wire b = crc[4];
+  wire c = crc[8];
+  wire d = crc[12];
 
-  // Test 2: b[->1] |-> 1 (trivial single occurrence)
-  assert property (@(posedge clk) b2[->1] |-> 1)
-    else $error("[%0t] cyc=%0d FAIL test2", $time, cyc);
+  int count_fail1 = 0;
+  int count_fail2 = 0;
+  int count_fail3 = 0;
+  int count_fail4 = 0;
 
-  // Test 3: req[->3] |-> done (3 non-consecutive occurrences)
-  assert property (@(posedge clk) req3[->3] |-> done3)
-    else $error("[%0t] cyc=%0d FAIL test3", $time, cyc);
+  // Test 1: a[->2] |-> b (overlapping implication, 2 non-consecutive occurrences)
+  assert property (@(posedge clk) a[->2] |-> b)
+    else count_fail1 <= count_fail1 + 1;
 
-  // Test 4: sig[->2] |=> resp (non-overlapping implication)
-  assert property (@(posedge clk) sig4[->2] |=> resp4)
-    else $error("[%0t] cyc=%0d FAIL test4", $time, cyc);
+  // Test 2: a[->1] |-> c (single occurrence, overlapping)
+  assert property (@(posedge clk) a[->1] |-> c)
+    else count_fail2 <= count_fail2 + 1;
+
+  // Test 3: a[->3] |=> d (3 occurrences, non-overlapping implication)
+  assert property (@(posedge clk) a[->3] |=> d)
+    else count_fail3 <= count_fail3 + 1;
+
+  // Test 4: standalone goto rep (no implication) -- exercises standalone visitor
+  assert property (@(posedge clk) b[->2])
+    else count_fail4 <= count_fail4 + 1;
 
   always @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n",
+           $time, cyc, crc, a, b, c, d);
+`endif
     cyc <= cyc + 1;
-
-    // Default: all signals low
-    req1 <= 0; ack1 <= 0;
-    b2 <= 0;
-    req3 <= 0; done3 <= 0;
-    sig4 <= 0; resp4 <= 0;
-
-    // Test 1: req1 high at cyc 2 and 4, ack1 high at cyc 4
-    if (cyc == 2) req1 <= 1;
-    if (cyc == 4) begin req1 <= 1; ack1 <= 1; end
-
-    // Test 2: b2 high at cyc 6
-    if (cyc == 6) b2 <= 1;
-
-    // Test 3: req3 high at cyc 8, 10, 11; done3 high at cyc 11
-    if (cyc == 8) req3 <= 1;
-    if (cyc == 10) req3 <= 1;
-    if (cyc == 11) begin req3 <= 1; done3 <= 1; end
-
-    // Test 4: sig4 high at cyc 13, 16; resp4 high at cyc 17 (|=> one cycle later)
-    if (cyc == 13) sig4 <= 1;
-    if (cyc == 16) sig4 <= 1;
-    if (cyc == 17) resp4 <= 1;
-
-    if (cyc == 20) begin
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    if (cyc == 0) begin
+      crc <= 64'h5aef0c8d_d70a4497;
+    end
+    else if (cyc == 99) begin
+      `checkh(crc, 64'hc77bb9b3784ea091);
+      `checkd(count_fail1, 20);
+      `checkd(count_fail2, 40);
+      `checkd(count_fail3, 19);
+      `checkd(count_fail4, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end
