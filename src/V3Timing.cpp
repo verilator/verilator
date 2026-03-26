@@ -625,15 +625,6 @@ class TimingControlVisitor final : public VNVisitor {
             return !nodep->isPure();
         });
     }
-    // Returns true if the given trigger expression needs a destructive post update after trigger
-    // evaluation. Currently this only applies to named events.
-    bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNode* const nodep) {
-            const AstNodeDType* const dtypep = nodep->dtypep();
-            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
-            return basicp && basicp->isEvent();
-        });
-    }
     // Creates a trigger scheduler variable
     AstVarScope* getCreateTriggerSchedulerp(AstSenTree* const sentreep) {
         if (!sentreep->user1p()) {
@@ -1083,6 +1074,16 @@ class TimingControlVisitor final : public VNVisitor {
             for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 nodep->addHereThisAsNext(stmtp);
             }
+            // If post updates are destructive (e.g. clearFired on events), perform a
+            // conservative pre-clear once before entering the wait loop so stale state from a
+            // previous wait does not cause an immediate false-positive trigger.
+            const bool hasDestructivePostUpdates
+                = !senResults.m_destructivePostUpdates.empty();
+            if (hasDestructivePostUpdates) {
+                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
+                    nodep->addHereThisAsNext(stmtp);
+                }
+            }
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
             AstNodeExpr* const condp
@@ -1103,7 +1104,7 @@ class TimingControlVisitor final : public VNVisitor {
             loopp->addStmtsp(anyTriggeredMethodp->makeStmt());
             // If the post update is destructive (e.g. event vars are cleared), create an await for
             // the post update step
-            if (destructivePostUpdate(sentreep)) {
+            if (hasDestructivePostUpdates) {
                 AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->method(VCMethod::SCHED_POST_UPDATE);
                 loopp->addStmtsp(awaitPostUpdatep);
