@@ -38,8 +38,7 @@
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 #define RISEFALLDLYUNSUP(nodep) \
     if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
-        nodep->v3warn(RISEFALLDLY, \
-                      "Unsupported: rising/falling/turn-off delays. Using the first delay"); \
+        nodep->v3warn(RISEFALLDLY, "Unsupported: turn-off delays. Ignoring the third delay"); \
     }
 #define MINTYPMAXDLYUNSUP(nodep) \
     if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
@@ -3043,9 +3042,10 @@ delay_control<delayp>:   //== IEEE: delay_control
         |       '#' '(' minTypMax ')'
                         { $$ = new AstDelay{$<fl>1, $3, false}; }
         |       '#' '(' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); }
+                        { $$ = new AstDelay{$<fl>1, $3, false};
+                          $$->fallDelay($5); }
         |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $5, false}; RISEFALLDLYUNSUP($5); DEL($3); DEL($7); }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; $$->fallDelay($5); RISEFALLDLYUNSUP($7); DEL($7); }
         ;
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
@@ -6883,7 +6883,7 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND '[' constExpr ':' constExpr ']'
                         { $$ = new AstDelay{$1, $3, true};
-                          $$->rhsp($5); }
+                                                                                                        $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
                         { $$ = new AstDelay{$1, new AstConst{$1, 0}, true};
                           $$->rhsp(new AstUnbounded{$1}); }
