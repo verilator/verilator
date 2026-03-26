@@ -1047,8 +1047,8 @@ class TimingControlVisitor final : public VNVisitor {
         // go out of scope before that happens
         if (!nodep->sentreep()) {
             nodep->v3warn(E_UNSUPPORTED,
-                         "Unsupported: Event control with implicit sensitivity (@*)"
-                         " in this context; use an explicit sensitivity list instead");
+                          "Unsupported: Event control with implicit sensitivity (@*)"
+                          " in this context; use an explicit sensitivity list instead");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
