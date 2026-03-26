@@ -4,10 +4,7 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Verilator lint_off COVERIGN
-
 module t;
-  // verilator lint_off COVERIGN
   covergroup cg();
   endgroup
 

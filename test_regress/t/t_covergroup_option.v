@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  // verilator lint_off COVERIGN
   covergroup cg();
     option.name = "decl_name";
   endgroup

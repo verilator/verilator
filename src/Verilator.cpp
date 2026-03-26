@@ -36,6 +36,7 @@
 #include "V3Common.h"
 #include "V3Const.h"
 #include "V3Control.h"
+#include "V3CoverAtat.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
 #include "V3Dead.h"
@@ -213,6 +214,7 @@ static void process() {
 
         // Commit to the widths we've chosen; Make widthMin==width
         V3WidthCommit::widthCommit(v3Global.rootp());
+        V3CoverAtat::coverAtat(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
 

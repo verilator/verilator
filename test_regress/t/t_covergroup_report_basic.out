@@ -1,0 +1,52 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 OpenAI
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t;
+        
+          covergroup cg with function sample(int a, int b);
+            option.per_instance = 1;
+        
+            cpa: coverpoint a {
+%000002       bins zero = {0};
+-000002  point: type=covergroup comment=cpa.zero hier=top.t::cg__Vclpkg.cpa.zero
+%000002       bins one = {1};
+-000002  point: type=covergroup comment=cpa.one hier=top.t::cg__Vclpkg.cpa.one
+            }
+        
+            cpb: coverpoint b {
+%000002       bins zero = {0};
+-000002  point: type=covergroup comment=cpb.zero hier=top.t::cg__Vclpkg.cpb.zero
+%000002       bins one = {1};
+-000002  point: type=covergroup comment=cpb.one hier=top.t::cg__Vclpkg.cpb.one
+            }
+        
+%000001     ab: cross cpa, cpb;
+-000001  point: type=covergroup comment=ab.__auto[1] hier=top.t::cg__Vclpkg.ab.__auto[1]
+-000001  point: type=covergroup comment=ab.__auto[2] hier=top.t::cg__Vclpkg.ab.__auto[2]
+-000001  point: type=covergroup comment=ab.__auto[3] hier=top.t::cg__Vclpkg.ab.__auto[3]
+-000001  point: type=covergroup comment=ab.__auto[0] hier=top.t::cg__Vclpkg.ab.__auto[0]
+          endgroup
+        
+          cg cov = new;
+        
+          initial begin
+            cov.sample(0, 0);
+            cov.sample(0, 1);
+            cov.sample(1, 0);
+            cov.sample(1, 1);
+        
+            if (cov.cpa.get_inst_coverage() != 100.0) $stop;
+            if (cov.cpb.get_inst_coverage() != 100.0) $stop;
+            if (cov.ab.get_inst_coverage() != 100.0) $stop;
+            if (cov.get_inst_coverage() != 100.0) $stop;
+        
+            $write("*-* All Finished *-*\n");
+            $finish;
+          end
+        
+        endmodule
+        

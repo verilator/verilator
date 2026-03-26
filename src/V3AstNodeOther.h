@@ -2372,6 +2372,7 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Used for other than toggle types of coverage
     string m_linescov;
     int m_offset;  // Offset column numbers to uniq-ify IFs
+    int m_crossNumPrintMissing = 0;  // Cross option metadata for report filtering
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,
                       const string& linescov, int offset)
@@ -2384,9 +2385,12 @@ public:
     int offset() const { return m_offset; }
     int size() const override { return 1; }
     const string& linescov() const { return m_linescov; }
+    int crossNumPrintMissing() const { return m_crossNumPrintMissing; }
+    void crossNumPrintMissing(int flag) { m_crossNumPrintMissing = flag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
-        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
+        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov()
+               && crossNumPrintMissing() == asamep->crossNumPrintMissing();
     }
 };
 class AstCoverToggleDecl final : public AstNodeCoverDecl {

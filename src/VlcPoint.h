@@ -63,6 +63,9 @@ public:
     // KEY ACCESSORS
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
+    string crossNumPrintMissing() const {
+        return keyExtract(VL_CIK_CROSS_NUM_PRINT_MISSING, m_name.c_str());
+    }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
     string thresh() const {

@@ -197,7 +197,8 @@ class EmitCHeader final : public EmitCConstInit {
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp);\n");
+                 "linescovp,\n");
+            puts("const char* crossNumPrintMissingp);\n");
         }
 
         if (v3Global.opt.coverageToggle() && !VN_IS(modp, Class)) {

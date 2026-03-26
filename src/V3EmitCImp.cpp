@@ -180,7 +180,8 @@ class EmitCImp final : public EmitCFunc {
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp) {\n");
+                 "linescovp,\n");
+            puts("const char* crossNumPrintMissingp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -194,14 +195,20 @@ class EmitCImp final : public EmitCFunc {
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
-            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), vlNamep, count32p,");
-            puts("  \"filename\",filenamep,");
-            puts("  \"lineno\",lineno,");
-            puts("  \"column\",column,\n");
-            puts("\"hier\",fullhier,");
-            puts("  \"page\",pagep,");
-            puts("  \"comment\",commentp,");
-            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
+            puts("auto* const covp = vlSymsp->_vm_contextp__->coveragep();\n");
+            puts("covp->_inserti(count32p);\n");
+            puts("covp->_insertf(__FILE__, __LINE__);\n");
+            puts("const std::string linenoStr = std::to_string(lineno);\n");
+            puts("const std::string columnStr = std::to_string(column);\n");
+            puts("covp->_insertp(\"hier\", fullhier.c_str(),");
+            puts("  \"filename\", filenamep,");
+            puts("  \"lineno\", linenoStr.c_str(),");
+            puts("  \"column\", columnStr.c_str(),");
+            puts("  \"page\", pagep,");
+            puts("  \"comment\", commentp,");
+            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp,");
+            puts("  (crossNumPrintMissingp[0] ? \"cross_num_print_missing\" : \"\"),");
+            puts("  crossNumPrintMissingp);\n");
             puts("}\n");
         }
         if (v3Global.opt.coverageToggle()) {

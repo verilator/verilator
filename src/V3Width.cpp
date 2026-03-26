@@ -1699,9 +1699,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
-        // We report COVERIGN on the whole covergroup; if get more fine-grained add this
-        // nodep->v3warn(COVERIGN, "Ignoring unsupported: coverage option");
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        userIterateAndNext(nodep->valuep(), WidthVP{CONTEXT_DET, PRELIM}.p());
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -3765,6 +3763,146 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetVoid();
         }
     }
+    static AstClass* covergroupOwnerClass(AstClass* covergroupp) {
+        AstNode* ownerNodep = covergroupp ? covergroupp->backp() : nullptr;
+        while (ownerNodep && !VN_IS(ownerNodep, Class)) ownerNodep = ownerNodep->backp();
+        AstClass* const ownerp = VN_CAST(ownerNodep, Class);
+        return (ownerp && !ownerp->isCovergroup()) ? ownerp : nullptr;
+    }
+    static AstNode* qualifyCovergroupImplicitArgs(AstNode* treep, AstNodeExpr* objRefp,
+                                                  AstClass* classp) {
+        if (!treep || !objRefp || !classp) return treep;
+        if (AstParseRef* const refp = VN_CAST(treep, ParseRef)) {
+            AstVar* foundp = nullptr;
+            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (varp && varp->name() == refp->name()) {
+                    foundp = varp;
+                    break;
+                }
+            }
+            if (!foundp) return treep;
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), foundp};
+            selp->access(VAccess::READ);
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+            treep = selp;
+        } else if (AstVarRef* const refp = VN_CAST(treep, VarRef)) {
+            if (refp->varp() && refp->varp()->isClassMember() && !refp->varp()->isFuncLocal()) {
+                AstMemberSel* const selp = new AstMemberSel{refp->fileline(),
+                                                            objRefp->cloneTreePure(false),
+                                                            refp->varp()};
+                selp->access(refp->access());
+                refp->replaceWith(selp);
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+                treep = selp;
+            }
+        }
+        std::vector<AstParseRef*> parseRefs;
+        treep->foreach([&](AstParseRef* refp) {
+            if (!refp->lhsp()) parseRefs.push_back(refp);
+        });
+        for (AstParseRef* const refp : parseRefs) {
+            AstVar* foundp = nullptr;
+            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (varp && varp->name() == refp->name()) {
+                    foundp = varp;
+                    break;
+                }
+            }
+            if (!foundp) continue;
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), foundp};
+            selp->access(VAccess::READ);
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        std::vector<AstVarRef*> varRefs;
+        treep->foreach([&](AstVarRef* refp) {
+            if (refp->varp() && refp->varp()->isClassMember() && !refp->varp()->isFuncLocal()) {
+                varRefs.push_back(refp);
+            }
+        });
+        for (AstVarRef* const refp : varRefs) {
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), refp->varp()};
+            selp->access(refp->access());
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        return treep;
+    }
+    static AstNodeExpr* covergroupOwnerExprForSample(AstMethodCall* nodep, AstClass* ownerClassp) {
+        if (!nodep || !ownerClassp) return nullptr;
+        AstNodeExpr* fromp = nodep->fromp();
+        while (AstNullCheck* const nullp = VN_CAST(fromp, NullCheck)) fromp = nullp->lhsp();
+        if (AstMemberSel* const selp = VN_CAST(fromp, MemberSel)) {
+            return selp->fromp()->cloneTreePure(false);
+        }
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
+            const AstVar* const varp = refp->varp();
+            if (varp && varp->isClassMember()) {
+                AstClassRefDType* const dtypep
+                    = new AstClassRefDType{nodep->fileline(), ownerClassp, nullptr};
+                return new AstThisRef{nodep->fileline(), VFlagChildDType{}, dtypep};
+            }
+        }
+        return nullptr;
+    }
+    void maybeBindCovergroupImplicitSampleArgs(AstMethodCall* nodep, AstClass* covergroupp) {
+        if (!nodep || nodep->name() != "sample" || !covergroupp) return;
+        AstClass* const ownerClassp = covergroupOwnerClass(covergroupp);
+        AstNodeExpr* const ownerExprp = covergroupOwnerExprForSample(nodep, ownerClassp);
+        if (!ownerExprp) return;
+        userIterate(ownerExprp, WidthVP{SELF, BOTH}.p());
+        std::vector<AstArg*> actualArgs;
+        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            actualArgs.push_back(argp);
+        }
+        std::vector<AstVar*> formalArgs;
+        for (AstNode* stmtp = nodep->taskp() ? nodep->taskp()->stmtsp() : nullptr; stmtp;
+             stmtp = stmtp->nextp()) {
+            AstVar* const varp = VN_CAST(stmtp, Var);
+            if (varp && varp->isIO()) formalArgs.push_back(varp);
+        }
+        if (actualArgs.empty() || actualArgs.size() != formalArgs.size()) {
+            VL_DO_DANGLING(pushDeletep(ownerExprp), ownerExprp);
+            return;
+        }
+        const string prefix = "verilator_cov_cg_owner_";
+        for (size_t i = 0; i < actualArgs.size(); ++i) {
+            AstVar* const formalp = formalArgs[i];
+            if (!VString::startsWith(formalp->name(), prefix)) continue;
+            const size_t sep = formalp->name().rfind("__");
+            if (sep == string::npos || sep <= prefix.length()) continue;
+            const string memberName = formalp->name().substr(prefix.length(), sep - prefix.length());
+            AstVar* memberVarp = nullptr;
+            for (AstNode* memberp = ownerClassp->membersp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (varp && varp->name() == memberName) {
+                    memberVarp = varp;
+                    break;
+                }
+            }
+            if (!memberVarp) continue;
+            AstMemberSel* const newExprp
+                = new AstMemberSel{actualArgs[i]->fileline(), ownerExprp->cloneTreePure(false), memberVarp};
+            newExprp->access(VAccess::READ);
+            AstNodeDType* const memberDtp = memberVarp->dtypep()
+                                             ? iterateEditMoveDTypep(memberVarp, memberVarp->dtypep())
+                                             : memberVarp->subDTypep();
+            if (memberDtp) newExprp->dtypep(memberDtp);
+            if (AstNodeExpr* const oldExprp = actualArgs[i]->exprp()) {
+                oldExprp->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(oldExprp), oldExprp);
+            }
+            actualArgs[i]->exprp(newExprp);
+        }
+        VL_DO_DANGLING(pushDeletep(ownerExprp), ownerExprp);
+    }
+
     AstWith* methodWithClause(AstNodeFTaskRef* nodep, bool required, bool arbReturn,
                               AstNodeDType* returnDtp, AstNodeDType* indexDtp,
                               AstNodeDType* valueDtp) {
@@ -4592,6 +4730,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                     if (withp) nodep->withp(withp);
                     processFTaskRefArgs(nodep);
+                    maybeBindCovergroupImplicitSampleArgs(nodep, classp);
                 }
                 return;
             } else if (nodep->name() == "get_randstate") {

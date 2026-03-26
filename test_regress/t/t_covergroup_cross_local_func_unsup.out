@@ -1,0 +1,5 @@
+%Error: t/t_covergroup_cross_local_func_unsup.v:16:7: Coverage select function call 'crossfunc' is not supported in cross bin selections
+   16 |       bins one = crossfunc();
+      |       ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

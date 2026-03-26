@@ -17,8 +17,13 @@ module t (
 
   Packet p;
   logic rst;
+`ifdef T_COVERGROUP_UNSUP_IGN
+  byte a;
+  byte b;
+`else
   int  a;
   int  b;
+`endif
   logic c;
   int cyc = 0;
 
@@ -103,12 +108,8 @@ module t (
   covergroup cg_cross3;
     cross a, b { option.comment = "cross"; option.weight = 12; }
   endgroup
-  covergroup cg_cross4;
-    cross a, b {
-      function void crossfunc; endfunction
-      bins one = crossfunc();
-    }
-  endgroup
+`ifndef T_COVERGROUP_UNSUP_IGN
+`endif
   covergroup cg_cross_id;
     my_cg_id: cross a, b iff (!rst);
   endgroup

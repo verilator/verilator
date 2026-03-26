@@ -68,6 +68,7 @@ set(HEADERS
     V3Const.h
     V3Container.h
     V3Control.h
+    V3CoverAtat.h
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
@@ -234,6 +235,7 @@ set(COMMON_SOURCES
     V3Common.cpp
     V3Control.cpp
     V3Const__gen.cpp
+    V3CoverAtat.cpp
     V3Coverage.cpp
     V3CoverageJoin.cpp
     V3Dead.cpp

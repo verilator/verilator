@@ -70,6 +70,7 @@
 #include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
+#include "V3ParseGrammar.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3SymTable.h"
@@ -4909,6 +4910,151 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    static AstClass* covergroupOwnerClass(AstClass* covergroupp) {
+        AstNode* ownerNodep = covergroupp ? covergroupp->backp() : nullptr;
+        while (ownerNodep && !VN_IS(ownerNodep, Class)) ownerNodep = ownerNodep->backp();
+        AstClass* const ownerp = VN_CAST(ownerNodep, Class);
+        return (ownerp && !ownerp->isCovergroup()) ? ownerp : nullptr;
+    }
+    static AstNode* qualifyCovergroupImplicitArgs(AstNode* treep, AstNodeExpr* objRefp,
+                                                  AstClass* classp) {
+        if (!treep || !objRefp || !classp) return treep;
+        if (AstParseRef* const refp = VN_CAST(treep, ParseRef)) {
+            AstVar* foundp = nullptr;
+            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (varp && varp->name() == refp->name()) {
+                    foundp = varp;
+                    break;
+                }
+            }
+            if (!foundp) return treep;
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), foundp};
+            selp->access(VAccess::READ);
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+            treep = selp;
+        } else if (AstVarRef* const refp = VN_CAST(treep, VarRef)) {
+            if (refp->varp() && refp->varp()->isClassMember() && !refp->varp()->isFuncLocal()) {
+                AstMemberSel* const selp = new AstMemberSel{refp->fileline(),
+                                                            objRefp->cloneTreePure(false),
+                                                            refp->varp()};
+                selp->access(refp->access());
+                refp->replaceWith(selp);
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+                treep = selp;
+            }
+        }
+        std::vector<AstParseRef*> parseRefs;
+        treep->foreach([&](AstParseRef* refp) {
+            if (!refp->lhsp()) parseRefs.push_back(refp);
+        });
+        for (AstParseRef* const refp : parseRefs) {
+            AstVar* foundp = nullptr;
+            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (varp && varp->name() == refp->name()) {
+                    foundp = varp;
+                    break;
+                }
+            }
+            if (!foundp) continue;
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), foundp};
+            selp->access(VAccess::READ);
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        std::vector<AstVarRef*> varRefs;
+        treep->foreach([&](AstVarRef* refp) {
+            if (refp->varp() && refp->varp()->isClassMember() && !refp->varp()->isFuncLocal()) {
+                varRefs.push_back(refp);
+            }
+        });
+        for (AstVarRef* const refp : varRefs) {
+            AstMemberSel* const selp
+                = new AstMemberSel{refp->fileline(), objRefp->cloneTreePure(false), refp->varp()};
+            selp->access(refp->access());
+            refp->replaceWith(selp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        return treep;
+    }
+    static AstNodeExpr* covergroupOwnerExprForSample(AstMethodCall* nodep, AstClass* ownerClassp) {
+        if (!nodep || !ownerClassp) return nullptr;
+        AstNodeExpr* fromp = nodep->fromp();
+        while (AstNullCheck* const nullp = VN_CAST(fromp, NullCheck)) fromp = nullp->lhsp();
+        if (AstMemberSel* const selp = VN_CAST(fromp, MemberSel)) {
+            return selp->fromp()->cloneTreePure(false);
+        }
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
+            const AstVar* const varp = refp->varp();
+            if (varp && varp->isClassMember()) {
+                AstClassRefDType* const dtypep
+                    = new AstClassRefDType{nodep->fileline(), ownerClassp, nullptr};
+                return new AstThisRef{nodep->fileline(), VFlagChildDType{}, dtypep};
+            }
+        }
+        return nullptr;
+    }
+    void maybeAppendCovergroupImplicitSampleArgs(AstMethodCall* nodep) {
+        if (!nodep || nodep->name() != "sample") return;
+        const AstNodeDType* dtypep = nodep->fromp() ? nodep->fromp()->dtypep() : nullptr;
+        const AstArg* implicitArgsp = V3ParseGrammar::cloneCovergroupImplicitSampleArgs(dtypep);
+        AstClass* covergroupp = nullptr;
+        if (AstNodeFTask* const taskp = nodep->taskp()) {
+            AstNode* ownerp = taskp->backp();
+            while (ownerp && !VN_IS(ownerp, Class)) ownerp = ownerp->backp();
+            covergroupp = VN_CAST(ownerp, Class);
+        }
+        if (!implicitArgsp && covergroupp) {
+            implicitArgsp = V3ParseGrammar::cloneCovergroupImplicitSampleArgs(covergroupp->name());
+        }
+        if (!implicitArgsp) return;
+        if (!covergroupp) {
+            const AstClassRefDType* const classRefp
+                = dtypep ? VN_CAST(dtypep->skipRefp(), ClassRefDType) : nullptr;
+            covergroupp = classRefp ? classRefp->classp() : nullptr;
+        }
+        AstClass* const ownerClassp = covergroupOwnerClass(covergroupp);
+        AstNodeExpr* const ownerExprp = covergroupOwnerExprForSample(nodep, ownerClassp);
+        if (!ownerExprp) return;
+        std::vector<AstArg*> actualArgs;
+        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) actualArgs.push_back(argp);
+        std::vector<const AstArg*> implicitArgs;
+        for (const AstArg* argp = implicitArgsp; argp; argp = VN_AS(argp->nextp(), Arg)) implicitArgs.push_back(argp);
+        if (actualArgs.size() >= implicitArgs.size()) {
+            const size_t offset = actualArgs.size() - implicitArgs.size();
+            for (size_t i = 0; i < implicitArgs.size(); ++i) {
+                AstArg* const actualArgp = actualArgs[offset + i];
+                AstArg* const replArgp
+                    = static_cast<AstArg*>(const_cast<AstArg*>(implicitArgs[i])->cloneTree(false));
+                qualifyCovergroupImplicitArgs(replArgp->exprp(), ownerExprp->cloneTreePure(false),
+                                              ownerClassp);
+                AstNodeExpr* const newExprp = replArgp->exprp()->unlinkFrBack();
+                if (AstNodeExpr* const oldExprp = actualArgp->exprp()) {
+                    oldExprp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(oldExprp), oldExprp);
+                }
+                actualArgp->exprp(newExprp);
+                VL_DO_DANGLING(pushDeletep(replArgp), replArgp);
+            }
+        } else {
+            AstArg* const clonedArgsp
+                = static_cast<AstArg*>(const_cast<AstArg*>(implicitArgsp)->cloneTree(true));
+            for (AstArg* argp = clonedArgsp; argp; argp = VN_AS(argp->nextp(), Arg)) {
+                qualifyCovergroupImplicitArgs(argp->exprp(), ownerExprp->cloneTreePure(false),
+                                              ownerClassp);
+            }
+            if (nodep->argsp()) {
+                AstNode::addNext<AstArg, AstArg>(nodep->argsp(), clonedArgsp);
+            } else {
+                nodep->addArgsp(clonedArgsp);
+            }
+        }
+        VL_DO_DANGLING(pushDeletep(ownerExprp), ownerExprp);
+    }
     void visit(AstMethodCall* nodep) override {
         // Created here so should already be resolved.
         LINKDOT_VISIT_START();
@@ -4952,6 +5098,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             iterateChildren(nodep);
+            maybeAppendCovergroupImplicitSampleArgs(nodep);
         }
     }
     void visit(AstVar* nodep) override {
@@ -5046,7 +5193,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (argsp) argsp->unlinkFrBackWithNext();
             AstMethodCall* const newp = new AstMethodCall{nodep->fileline(), varEtcp,
                                                           VFlagChildDType{}, nodep->name(), argsp};
+            newp->taskp(nodep->taskp());
+            newp->classOrPackagep(nodep->classOrPackagep());
             if (AstWith* const withp = nodep->withp()) newp->withp(withp->unlinkFrBack());
+            maybeAppendCovergroupImplicitSampleArgs(newp);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -5497,6 +5647,46 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_statep->forPrimary()) {
             if (nodep->childDTypep()) return;
             AstNode* cprp = nodep->classOrPkgsp();
+            auto resolveCovergroupBaseClass = [&](const AstClassOrPackageRef* refp) -> AstClass* {
+                AstClass* const covergroupp = VN_CAST(m_modp, Class);
+                if (!covergroupp || !covergroupp->isCovergroup()) return nullptr;
+                AstNode* ownerNodep = covergroupp->backp();
+                while (ownerNodep && !VN_IS(ownerNodep, Class)) ownerNodep = ownerNodep->backp();
+                AstClass* const ownerp = VN_CAST(ownerNodep, Class);
+                if (!ownerp) return nullptr;
+                for (AstClassExtends* cextp = ownerp->extendsp(); cextp;
+                     cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                    if (cextp->isImplements()) continue;
+                    AstClass* const baseClassp = cextp->classp();
+                    if (!baseClassp) continue;
+                    AstClass* foundBasep = nullptr;
+                    baseClassp->foreachMember([&](AstClass*, AstClass* memberp) {
+                        if (!foundBasep && memberp->isCovergroup()
+                            && (memberp->name() == refp->name()
+                                || memberp->name() == "__vlAnonCG_" + refp->name())) {
+                            foundBasep = memberp;
+                        }
+                    });
+                    if (foundBasep) return foundBasep;
+                }
+                return nullptr;
+            };
+            if (AstClassOrPackageRef* const simpleRefp = VN_CAST(cprp, ClassOrPackageRef)) {
+                if (AstClass* const baseClassp = resolveCovergroupBaseClass(simpleRefp)) {
+                    if (baseClassp->name().rfind("__vlAnonCG_", 0) == 0) {
+                        nodep->v3warn(V3ErrorCode::COVERIGN,
+                                      "Ignoring unsupported: covergroup extends");
+                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                        return;
+                    }
+                    AstPin* paramsp = simpleRefp->paramsp();
+                    if (paramsp) paramsp = paramsp->cloneTree(true);
+                    nodep->childDTypep(new AstClassRefDType{nodep->fileline(), baseClassp, paramsp});
+                    iterate(nodep->childDTypep());
+                    nodep->classOrPkgsp()->unlinkFrBack()->deleteTree();
+                    return;
+                }
+            }
             VSymEnt* lookSymp = m_curSymp;
             if (AstDot* const dotp = VN_CAST(cprp, Dot)) {
                 dotp->user3(true);
@@ -5525,11 +5715,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             VSymEnt* const foundp = m_statep->resolveClassOrPackage(lookSymp, cpackagerefp, true,
                                                                     true, nodep->verilogKwd());
-            if (!foundp) {
+            AstClass* const covergroupBasep = !foundp ? resolveCovergroupBaseClass(cpackagerefp) : nullptr;
+            if (!foundp && !covergroupBasep) {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
-            if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
+            if (AstClass* const classp = foundp ? VN_CAST(foundp->nodep(), Class) : covergroupBasep) {
                 AstPin* paramsp = cpackagerefp->paramsp();
                 if (paramsp) {
                     paramsp = paramsp->cloneTree(true);
@@ -5608,13 +5799,26 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_ifClassImpNames);
         VL_RESTORER(m_insideClassExtParam);
         {
+            VSymEnt* const classSymp = m_statep->getNodeSym(nodep);
+            VSymEnt* const covergroupExtendSymp = [&]() -> VSymEnt* {
+                if (!nodep->isCovergroup()) return nullptr;
+                AstNode* ownerNodep = nodep->backp();
+                while (ownerNodep && !VN_IS(ownerNodep, Class)) ownerNodep = ownerNodep->backp();
+                AstClass* const ownerp = VN_CAST(ownerNodep, Class);
+                return ownerp ? m_statep->getNodeSym(ownerp) : nullptr;
+            }();
             m_ds.init(m_curSymp);
             // Until overridden by a SCOPE
-            m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
+            m_ds.m_dotSymp = m_curSymp = m_modSymp = classSymp;
             m_modp = nodep;
             int next = 0;
             for (AstClassExtends* cextp = nodep->extendsp(); cextp;
                  cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                if (covergroupExtendSymp) {
+                    m_curSymp = covergroupExtendSymp;
+                    m_ds.init(m_curSymp);
+                    m_ds.m_dotSymp = m_curSymp;
+                }
                 // Replace abstract reference with hard pointer
                 // Will need later resolution when deal with parameters
                 if (++next == 2 && !nodep->isInterfaceClass() && !cextp->isImplements()) {
@@ -5642,6 +5846,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
 
+                if (covergroupExtendSymp) {
+                    m_curSymp = classSymp;
+                    m_ds.init(m_curSymp);
+                    m_ds.m_dotSymp = m_curSymp;
+                }
                 if (AstClass* const baseClassp = cextp->classOrNullp()) {
                     // Already converted. Update symbol table to link unlinked members.
                     // Base class has to be visited in a case if its extends statement
@@ -5669,7 +5878,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             m_ds.m_dotSymp = m_curSymp;
-
             iterateChildren(nodep);
         }
         // V3Width when determines types needs to find enum values and such

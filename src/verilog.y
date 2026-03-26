@@ -3942,24 +3942,24 @@ value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' expr ':' '$' ']'
         |       '[' expr yP_PLUSSLASHMINUS expr ']'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: +/- range"); DEL($2, $4); }
+                        { $$ = GRAMMARP->makeCoverPlusMinusRange($1, $2, $4); }
         |       '[' expr yP_PLUSPCTMINUS expr ']'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: +%- range"); DEL($2, $4); }
+                        { $$ = GRAMMARP->makeCoverPctPlusMinusRange($1, $2, $4); }
         ;
 
 covergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
                 cgexpr                                  { $$ = $1; }
         |       '[' cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DEL($2, $4); }
+                        { $$ = new AstInsideRange{$1, $2, $4}; }
         //                      // IEEE-2023: added all four:
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' '$' ':' cgexpr ']'
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' cgexpr ':' '$' ']'
         |       '[' cgexpr yP_PLUSSLASHMINUS cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DEL($2, $4); }
+                        { $$ = GRAMMARP->makeCoverPlusMinusRange($1, $2, $4); }
         |       '[' cgexpr yP_PLUSPCTMINUS cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DEL($2, $4); }
+                        { $$ = GRAMMARP->makeCoverPctPlusMinusRange($1, $2, $4); }
         ;
 
 caseCondList<nodeExprp>:        // IEEE: part of case_item
@@ -6910,41 +6910,19 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
 
 covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                  yCOVERGROUP idAny cgPortListE coverage_eventE ';'
+                        { GRAMMARP->beginCovergroup($<fl>2, *$2, $3, $4); }
         /*cont*/    coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
-                        { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
-                          cgClassp->isCovergroup(true);
-                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
-                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-                          newp->classMethod(true);
-                          newp->isConstructor(true);
-                          newp->dtypep(cgClassp->dtypep());
-                          newp->addStmtsp($3);
-                          newp->addStmtsp($6);
-                          cgClassp->addMembersp(newp);
-                          GRAMMARP->createCoverGroupMethods(cgClassp, $4);
-
-                          $$ = cgClassp;
-                          GRAMMARP->endLabel($<fl>8, $$, $8);
-                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
+                        { $$ = GRAMMARP->finishCovergroup();
+                          GRAMMARP->endLabel($<fl>9, $$, $9);
                         }
         |        yCOVERGROUP yEXTENDS idAny ';'
+                        { GRAMMARP->beginCovergroup($<fl>3, *$3, nullptr, nullptr); }
+        /*mid*/         { GRAMMARP->markCovergroupUnsupportedExtends(); }
         /*cont*/     coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
-                        { AstClass *cgClassp = new AstClass{$<fl>3, *$3, PARSEP->libname()};
-                          cgClassp->isCovergroup(true);
-                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
-                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-                          newp->classMethod(true);
-                          newp->isConstructor(true);
-                          newp->dtypep(cgClassp->dtypep());
-                          newp->addStmtsp($5);
-                          cgClassp->addMembersp(newp);
-                          GRAMMARP->createCoverGroupMethods(cgClassp, nullptr);
-
-                          $$ = cgClassp;
-                          GRAMMARP->endLabel($<fl>7, $$, $7);
-                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
+                        { $$ = GRAMMARP->finishCovergroup();
+                          GRAMMARP->endLabel($<fl>9, $$, $9);
                         }
         ;
 
@@ -6978,43 +6956,49 @@ coverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
 coverage_option<nodep>:  // ==IEEE: coverage_option
         //                      // option/type_option aren't really keywords
                 id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr
-                        { if (*$1 == "option") {
-                              $$ = new AstCgOptionAssign{$<fl>1, false, *$3, $5};
-                          } else if (*$1 == "type_option") {
-                              $$ = new AstCgOptionAssign{$<fl>1, true, *$3, $5};
-                          } else {
-                              $$ = nullptr;
-                              $<fl>1->v3error("Syntax error; expected 'option' or 'type_option': '" << *$1 << "'");
-                              DEL($5);
-                          } }
+                        { $$ = GRAMMARP->coverageOptionAssign($<fl>1, *$1, *$3, $5); }
         ;
 
 cover_point<nodep>:  // ==IEEE: cover_point
         //              // [ [ data_type_or_implicit ] cover_point_identifier ':' ] yCOVERPOINT
-                yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverpoint"); DEL($2, $3, $4); }
+                yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>1, "", $2, $3); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
         //                      // IEEE-2012: class_scope before an ID
-        |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: coverpoint"); DEL($4, $5, $6);}
+        |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>3, *$1, $4, $5); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
         //                      // data_type_or_implicit expansion
-        |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); DEL($1, $5, $6, $7);}
-        |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DEL($2, $6, $7, $8); }
-        |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DEL($2, $6, $7, $8); }
-        |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DEL($2, $6, $7, $8); }
-        |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); DEL($5, $6, $7); }
+        |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>4, *$2, $5, $6); DEL($1); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
+        |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>5, *$3, $6, $7); DEL($2); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
+        |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>5, *$3, $6, $7); DEL($2); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
+        |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>5, *$3, $6, $7); DEL($2); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
+        |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE
+                        { GRAMMARP->startCoverpoint($<fl>4, *$2, $5, $6); }
+                bins_or_empty
+                        { $$ = GRAMMARP->finishCoverpoint(); }
         //                      // IEEE-2012:
         |       bins_or_empty                           { $$ = $1; }
         ;
 
-iffE<nodep>:  // IEEE: part of cover_point, others
+iffE<nodeExprp>:  // IEEE: part of cover_point, others
                 /* empty */                             { $$ = nullptr; }
         |       yIFF '(' expr ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover 'iff'"); DEL($3); }
+                        { $$ = $3; }
         ;
 
 bins_or_empty<nodep>:  // ==IEEE: bins_or_empty
@@ -7038,39 +7022,50 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         //                      // Superset of IEEE - we allow []'s in more places
                 coverage_option                         { $$ = $1; }
         //                      // Can't use wildcardE as results in conflicts
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin specification"); DEL($3, $6, $8); }
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>8, "Ignoring unsupported: cover bin 'with' specification"); DEL($3, $6, $10, $12); }
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>6, "Ignoring unsupported: cover bin 'with' specification"); DEL($3, $8, $10); }
-        |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'wildcard' specification"); DEL($4, $7, $9); }
-        |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>9, "Ignoring unsupported: cover bin 'wildcard' 'with' specification"); DEL($4, $7, $11, $13); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, $6, nullptr, $8,
+                                                          V3ParseGrammar::CoverBinKind::NORMAL); }
+        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, $6, nullptr, $8,
+                                                          V3ParseGrammar::CoverBinKind::ILLEGAL); }
+        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, $6, nullptr, $8,
+                                                          V3ParseGrammar::CoverBinKind::IGNORE); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, $6, $10, $12,
+                                                          V3ParseGrammar::CoverBinKind::NORMAL); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->addCoverpointBin(
+                              $1, *$2, $3, nullptr, $8, $10,
+                              V3ParseGrammar::CoverBinKind::NORMAL, false,
+                              new AstParseRef{$<fl>5, *$5, nullptr, nullptr}); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($2, *$3, $4, $7, nullptr, $9,
+                                                          V3ParseGrammar::CoverBinKind::NORMAL, true); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->addCoverpointBin($2, *$3, $4, $7, $11, $13,
+                                                          V3ParseGrammar::CoverBinKind::NORMAL, true); }
         //
         //                      // cgexpr part of trans_list
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin trans list"); DEL($3, $5, $6); }
-        |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover bin 'wildcard' trans list"); DEL($4, $6, $7);}
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
+                        { $$ = GRAMMARP->addCoverpointTransitionBin($1, *$2, $3, $5, $6); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
+                        { $$ = GRAMMARP->addCoverpointTransitionBin($2, *$3, $4, $6, $7,
+                                                                    V3ParseGrammar::CoverBinKind::NORMAL, true); }
         //
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'default'"); DEL($3, $6); }
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>6, "Ignoring unsupported: cover bin 'default' 'sequence'"); DEL($3, $7); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, nullptr, nullptr, $6,
+                                                          V3ParseGrammar::CoverBinKind::DEFAULT); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
+                        { $$ = GRAMMARP->addCoverpointBin($1, *$2, $3, nullptr, nullptr, $7,
+                                                          V3ParseGrammar::CoverBinKind::DEFAULT,
+                                                          false, nullptr, true); }
         ;
 
 bins_orBraE<nodep>:  // IEEE: part of bins_or_options:
                 /* empty */                             { $$ = nullptr; }
-        |       '[' ']'                                 { $$ = nullptr; /*UNSUP*/ }
-        |       '[' cgexpr ']'                          { $$ = nullptr; /*UNSUP*/ DEL($2); }
-        ;
-
-bins_keyword<fl>:  // ==IEEE: bins_keyword
-                yBINS                                   { $$ = $1; /*UNSUP*/ }
-        |       yILLEGAL_BINS                           { $$ = $1; /*UNSUP*/ }
-        |       yIGNORE_BINS                            { $$ = $1; /*UNSUP*/ }
+        |       '[' ']'                                 { $$ = new AstEmpty{$1}; }
+        |       '[' cgexpr ']'                          { $$ = $2; }
         ;
 
 trans_list<nodep>:  // ==IEEE: trans_list
@@ -7079,26 +7074,44 @@ trans_list<nodep>:  // ==IEEE: trans_list
         ;
 
 trans_set<nodep>:  // ==IEEE: trans_set
-                trans_range_list                        { $$ = $1; }
+                trans_range_list
+                        { $$ = GRAMMARP->makeCoverTransStep($1); }
         //                      // Note the { => } in the grammar, this is really a list
         |       trans_set yP_EQGT trans_range_list
-                        { $$ = $1; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover trans set '=>'"); DEL($3); }
+                        { if (!$1 || !$3) {
+                            $$ = nullptr;
+                            DEL($1, $3);
+                          } else {
+                            $$ = addNextNull($1, GRAMMARP->makeCoverTransStep($3));
+                          } }
         ;
 
 trans_range_list<nodep>:  // ==IEEE: trans_range_list
                 trans_item                              { $$ = $1; }
         |       trans_item yP_BRASTAR cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); DEL($1, $3); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::CONSEC,
+                                                                  $3, nullptr); }
         |       trans_item yP_BRASTAR cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); DEL($1, $3, $5); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::CONSEC,
+                                                                  $3, $5); }
         |       trans_item yP_BRAMINUSGT cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); DEL($1, $3); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::GOTO,
+                                                                  $3, nullptr); }
         |       trans_item yP_BRAMINUSGT cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); DEL($1, $3, $5); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::GOTO,
+                                                                  $3, $5); }
         |       trans_item yP_BRAEQ cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); DEL($1, $3); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::NONCONSEC,
+                                                                  $3, nullptr); }
         |       trans_item yP_BRAEQ cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); DEL($1, $3, $5); }
+                        { $$ = GRAMMARP->makeCoverTransRepeatStep($<fl>2, $1,
+                                                                  V3ParseGrammar::CoverTransRepeatKind::NONCONSEC,
+                                                                  $3, $5); }
         ;
 
 trans_item<nodep>:  // ==IEEE: range_list
@@ -7112,10 +7125,14 @@ covergroup_range_list<nodep>:  // ==IEEE: covergroup_range_list
 
 
 cover_cross<nodep>:  // ==IEEE: cover_cross
-                id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body
-                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: cover cross"); DEL($4, $5, $6); }
-        |       yCROSS list_of_cross_items iffE cross_body
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover cross"); DEL($2, $3, $4); }
+                id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE
+                        { GRAMMARP->startCoverCross($<fl>3, *$1, $4, $5); }
+                cross_body
+                        { $$ = GRAMMARP->finishCoverCross(); }
+        |       yCROSS list_of_cross_items iffE
+                        { GRAMMARP->startCoverCross($<fl>1, "", $2, $3); }
+                cross_body
+                        { $$ = GRAMMARP->finishCoverCross(); }
         ;
 
 list_of_cross_items<nodep>:  // ==IEEE: list_of_cross_items
@@ -7130,7 +7147,7 @@ cross_itemList<nodep>:  // IEEE: part of list_of_cross_items
         ;
 
 cross_item<nodep>:  // ==IEEE: cross_item
-                idDotted/*cover_point_identifier or variable_identifier*/  { $1->deleteTree(); $$ = nullptr; /*UNSUP*/ }
+                idDotted/*cover_point_identifier or variable_identifier*/  { $$ = $1; }
         ;
 
 cross_body<nodep>:  // ==IEEE: cross_body
@@ -7150,12 +7167,18 @@ cross_body_itemList<nodep>:  // IEEE: part of cross_body
 
 cross_body_item<nodep>:  // ==IEEE: cross_body_item
                 function_declaration
-                        { $$ = $1; BBCOVERIGN($1->fileline(), "Ignoring unsupported: coverage cross 'function' declaration"); }
+                        { GRAMMARP->addCoverCrossBodyFunction($1); $$ = nullptr; }
         //                      // IEEE: bins_selection_or_option
         |       coverage_option ';'                     { $$ = $1; }
         //                      // IEEE: bins_selection
-        |       bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage cross bin"); DEL($4, $5); }
+        |       yBINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
+                        { $$ = GRAMMARP->addCoverCrossBodyBin($1, *$2, $4, $5); }
+        |       yILLEGAL_BINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
+                        { $$ = GRAMMARP->addCoverCrossBodyBin($1, *$2, $4, $5,
+                                                              V3ParseGrammar::CoverBinKind::ILLEGAL); }
+        |       yIGNORE_BINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
+                        { $$ = GRAMMARP->addCoverCrossBodyBin($1, *$2, $4, $5,
+                                                              V3ParseGrammar::CoverBinKind::IGNORE); }
         |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
@@ -7163,28 +7186,33 @@ select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
         |       select_expression yP_ANDAND select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DEL($1, $3); }
+                        { $$ = ($1 && $3) ? addNextNull($1, $3) : nullptr;
+                          if (!$$) { BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DEL($1, $3); } }
         |       select_expression yP_OROR   select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DEL($1, $3); }
+                        { $$ = ($1 && $3)
+                                   ? addNextNull(addNextNull($1, GRAMMARP->makeCoverCrossSelectOrMarker($2)), $3)
+                                   : nullptr;
+                          if (!$$) { BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DEL($1, $3); } }
         ;
 
 // This non-terminal exists to disambiguate select_expression and make "with" bind tighter
 select_expression_r<nodep>:
         //                      // IEEE: select_condition expanded here
                 yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); DEL($3); }
+                        { $$ = GRAMMARP->makeCoverCrossSelectExpr(VN_AS($3, NodeExpr)); }
         |       '!' yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); DEL($4); }
+                        { $$ = GRAMMARP->makeCoverCrossSelectExpr(VN_AS($4, NodeExpr), nullptr, true); }
         |       yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'
-                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); DEL($3, $7); }
-        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'    { }
-                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); DEL($4, $8); }
+                        { $$ = GRAMMARP->makeCoverCrossSelectExpr(VN_AS($3, NodeExpr), $7); }
+        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'
+                        { $$ = GRAMMARP->makeCoverCrossSelectExpr(VN_AS($4, NodeExpr), $8, true); }
         |       yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DEL($3); }
+                        { $$ = new AstArg{$1, "", $3}; }
         |       '!' yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DEL($4); }
+                          { $$ = new AstArg{$1, "", V3ParseGrammar::makeCoverLogNot($1, $4)}; }
         |       select_expression_r yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression with"); DEL($1, $4); }
+                          { $$ = $1 ? GRAMMARP->appendCoverCrossWith($1, $2, $4) : nullptr;
+                            if (!$$) { BBCOVERIGN($2, "Ignoring unsupported: coverage select expression with"); DEL($4); } }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -7202,7 +7230,7 @@ select_expression_r<nodep>:
         //UNSUP  cgexpr yMATCHES cgexpr    {..}
         //UNSUP                 // Below are all removed
         |       idAny '(' list_of_argumentsE ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage select function call"); DEL($3); }
+                        { $$ = GRAMMARP->makeCoverCrossSelectFunctionCall($<fl>1, *$1, $3); }
         //UNSUP                 // Above are all removed, replace with:
         ;
 
@@ -7215,13 +7243,13 @@ bins_expression<nodep>:  // ==IEEE: bins_expression
         // Verilator supports hierarchical reference in a place of variable identifier.
         // This is an extension based on other simulators.
                idDotted
-                        { $$ = nullptr; /*UNSUP*/ DEL($1); }
+                        { $$ = $1; }
         ;
 
 coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                 /* empty */                             { $$ = nullptr; }
         |       clocking_event
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage clocking event"); DEL($1); }
+                        { $$ = $1; }
         |       yWITH__ETC yFUNCTION idAny/*"sample"*/ '(' tf_port_listE ')'
                         { if (*$3 != "sample") {
                             $<fl>3->v3error("Coverage sampling function must be named 'sample'");
@@ -7229,26 +7257,31 @@ coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                             DEL($5);
                           } else {
                             $$ = $5;
-                          }
+                            }
                         }
         |       yP_ATAT '(' block_event_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage '@@' events"); DEL($3); }
+                        { $$ = $3; }
         ;
 
 block_event_expression<nodep>:  // ==IEEE: block_event_expression
-                block_event_expressionTerm              { $$ = nullptr; /*UNSUP @@*/ DEL($1); }
-        |       block_event_expression yOR block_event_expressionTerm   { $$ = nullptr; /*UNSUP @@*/ DEL($1, $3);  }
+                block_event_expressionTerm              { $$ = $1; }
+        |       block_event_expression yOR block_event_expressionTerm   { $$ = addNextNull($1, $3);  }
         ;
 
 block_event_expressionTerm<nodep>:  // IEEE: part of block_event_expression
-                yBEGIN hierarchical_btf_identifier      { $$ = nullptr; /*UNSUP @@*/ DEL($2); }
-        |       yEND   hierarchical_btf_identifier      { $$ = nullptr; /*UNSUP @@*/ DEL($2); }
+                yBEGIN hierarchical_btf_identifier
+                        { $$ = GRAMMARP->makeCovergroupAtAtEvent($1, true, VN_AS($2, NodeExpr)); }
+        |       yEND   hierarchical_btf_identifier
+                        { $$ = GRAMMARP->makeCovergroupAtAtEvent($1, false, VN_AS($2, NodeExpr)); }
         ;
 
 hierarchical_btf_identifier<nodep>:  // ==IEEE: hierarchical_btf_identifier
         //                      // hierarchical_tf_identifier + hierarchical_block_identifier
         //                      // method_identifier
-                packageClassScopeE idAny                { $$ = nullptr; /*UNSUP*/ DEL($1); }
+                packageClassScopeE idAny
+                        { AstNodeExpr* const refp = new AstParseRef{$<fl>2, *$2, nullptr, nullptr};
+                          $$ = $1 ? static_cast<AstNode*>(AstDot::newIfPkg($<fl>2, $1, refp))
+                                  : static_cast<AstNode*>(refp); }
         ;
 
 //**********************************************************************
@@ -7534,12 +7567,14 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                 classFront parameter_port_listE classExtendsE classImplementsE ';'
         /*mid*/         { // Allow resolving types declared in base extends class
                           $1->hasParameterList($<flag>2);
+                          GRAMMARP->enterClassDecl($1);
                         }
         /*cont*/    class_itemListEnd endLabelE
                         { $$ = $1; $1->addMembersp($2);
                           $1->addExtendsp($3);
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
+                          GRAMMARP->leaveClassDecl();
                           GRAMMARP->endLabel($<fl>8, $1, $8); }
         ;
 
@@ -7729,13 +7764,15 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       class_declaration                       { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
-                        {
-                          const string cgName = $1->name();
-                          $1->name("__vlAnonCG_" + cgName);
-                          AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
-                              VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
-                          $$ = addNextNull($1, newp);
-                        }
+                          {
+                            const string cgName = $1->name();
+                            $1->name("__vlAnonCG_" + cgName);
+                            GRAMMARP->renameCovergroupAutosample(cgName, $1->name());
+                            AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
+                                VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
+                            GRAMMARP->maybeAddCovergroupAutosample(newp);
+                            $$ = addNextNull($1, newp);
+                          }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }
         |       ';'                                     { $$ = nullptr; }

@@ -40,6 +40,7 @@ VLCOVGEN_ITEM("'name':'thresh',      'short':'s',  'group':1, 'default':None, 'd
 VLCOVGEN_ITEM("'name':'type',        'short':'t',  'group':1, 'default':'',   'descr':'Type of coverage (block, line, fsm, etc)'")
 // Bin attributes
 VLCOVGEN_ITEM("'name':'comment',     'short':'o',  'group':0, 'default':'',   'descr':'Textual description for the item'")
+VLCOVGEN_ITEM("'name':'cross_num_print_missing', 'short':'M',  'group':0, 'default':0,    'descr':'Maximum number of missing cross bins to print during annotation'")
 VLCOVGEN_ITEM("'name':'hier',        'short':'h',  'group':0, 'default':'',   'descr':'Hierarchy path name for the item'")
 VLCOVGEN_ITEM("'name':'lineno',      'short':'l',  'group':0, 'default':0,    'descr':'Line number for the item'")
 VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'descr':'For totaling items, weight of this item'")
@@ -48,6 +49,7 @@ VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'd
 // VLCOVGEN_CIK_AUTO_EDIT_BEGIN
 #define VL_CIK_COLUMN "n"
 #define VL_CIK_COMMENT "o"
+#define VL_CIK_CROSS_NUM_PRINT_MISSING "M"
 #define VL_CIK_FILENAME "f"
 #define VL_CIK_HIER "h"
 #define VL_CIK_LINENO "l"
@@ -69,6 +71,7 @@ public:
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
         if (key == "column") return VL_CIK_COLUMN;
         if (key == "comment") return VL_CIK_COMMENT;
+        if (key == "cross_num_print_missing") return VL_CIK_CROSS_NUM_PRINT_MISSING;
         if (key == "filename") return VL_CIK_FILENAME;
         if (key == "hier") return VL_CIK_HIER;
         if (key == "lineno") return VL_CIK_LINENO;

@@ -25,7 +25,9 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 //######################################################################
@@ -92,7 +94,8 @@ void VlcTop::writeInfo(const string& filename) {
         return;
     }
 
-    annotateCalc();
+    sources().clear();
+    annotateCalc(false);
 
     // See 'man lcov' for format details
     // TN:<trace_file_name>
@@ -207,10 +210,11 @@ void VlcTop::rank() {
 
 //######################################################################
 
-void VlcTop::annotateCalc() {
+void VlcTop::annotateCalc(bool includeFunctional) {
     // Calculate per-line information into filedata structure
     for (const auto& i : m_points) {
         const VlcPoint& point = m_points.pointNumber(i.second);
+        if (!includeFunctional && point.type() == "covergroup") continue;
         const string filename = point.filename();
         const int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
@@ -324,7 +328,46 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 os << std::setfill('0') << std::setw(6) << sc.maxCount() << " " << line << '\n';
 
                 if (opt.annotatePoints()) {
-                    for (auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
+                    struct MissingCrossState final {
+                        int limit = 0;
+                        int printed = 0;
+                        int suppressed = 0;
+                    };
+                    std::map<string, MissingCrossState> missingCrossStates;
+                    for (auto& pit : sc.points()) {
+                        const string crossNumPrintMissing = pit->crossNumPrintMissing();
+                        if (crossNumPrintMissing.empty() || pit->ok(opt.annotateMin())) {
+                            pit->dumpAnnotate(os, opt.annotateMin());
+                            continue;
+                        }
+
+                        const int limit = std::atoi(crossNumPrintMissing.c_str());
+                        if (limit <= 0) {
+                            pit->dumpAnnotate(os, opt.annotateMin());
+                            continue;
+                        }
+
+                        string owner = pit->hier();
+                        if (const string::size_type dotPos = owner.rfind('.');
+                            dotPos != string::npos) {
+                            owner.erase(dotPos);
+                        }
+                        auto& state = missingCrossStates[owner];
+                        if (state.limit == 0) state.limit = limit;
+                        if (state.printed < state.limit) {
+                            pit->dumpAnnotate(os, opt.annotateMin());
+                            ++state.printed;
+                        } else {
+                            ++state.suppressed;
+                        }
+                    }
+                    for (const auto& it : missingCrossStates) {
+                        const MissingCrossState& state = it.second;
+                        if (state.suppressed == 0) continue;
+                        os << "-000000  point: type=covergroup comment=<suppressed missing cross bins>"
+                           << " hier=" << it.first << " suppressed=" << state.suppressed
+                           << " cross_num_print_missing=" << state.limit << '\n';
+                    }
                 }
             }
         }
@@ -333,6 +376,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
 void VlcTop::annotate(const string& dirname) {
     // Calculate per-line information into filedata structure
+    sources().clear();
     annotateCalc();
     annotateCalcNeeded();
     annotateOutputFiles(dirname);

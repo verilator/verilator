@@ -119,6 +119,7 @@ public:
     ~VlcSources() = default;
 
     // METHODS
+    void clear() { m_sources.clear(); }
     VlcSource& findNewSource(const string& name) {
         NameMap::iterator iter = m_sources.find(name);
         if (iter != m_sources.end()) {

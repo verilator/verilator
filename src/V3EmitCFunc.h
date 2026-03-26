@@ -817,6 +817,8 @@ public:
         putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(", ");
         putsQuoted(nodep->linescov());
+        puts(", ");
+        putsQuoted(nodep->crossNumPrintMissing() > 0 ? cvtToStr(nodep->crossNumPrintMissing()) : "");
         puts(");\n");
     }
     void visit(AstCoverToggleDecl* nodep) override {

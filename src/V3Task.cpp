@@ -1873,6 +1873,19 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
 
     if (!makeChanges) return tconnects;
 
+    const auto isOptionalCoverageRefArg = [&](const AstVar* portp) -> bool {
+        if (!(portp->isRef() || portp->isConstRef())) return false;
+        const AstNodeFTask* const taskp = nodep->taskp();
+        if (!taskp) return false;
+        const string& taskName = taskp->name();
+        if (taskName != "get_coverage" && taskName != "get_type_coverage"
+            && taskName != "get_inst_coverage") {
+            return false;
+        }
+        const string& portName = portp->name();
+        return portName == "covered_bins" || portName == "total_bins";
+    };
+
     // Connect missing ones
     VInsertionSet<const AstVar*> argWrap;  // Which ports are defaulted; need arg wrapper creation
     for (int i = 0; i < tpinnum; ++i) {
@@ -1880,10 +1893,17 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
             AstNodeExpr* newvaluep = nullptr;
             if (!portp->valuep()) {
-                nodep->v3error("Missing argument on non-defaulted argument "
-                               << portp->prettyNameQ() << " in function call to "
-                               << nodep->taskp()->prettyTypeName());
-                newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
+                if (statep && isOptionalCoverageRefArg(portp)) {
+                    portp->pinNum(i + 1);  // Make sure correct, will use to build name
+                    UINFO(9, "taskConnects coverage optional ref wrapper needed " << portp);
+                    argWrap.insert(portp);
+                    newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
+                } else {
+                    nodep->v3error("Missing argument on non-defaulted argument "
+                                   << portp->prettyNameQ() << " in function call to "
+                                   << nodep->taskp()->prettyTypeName());
+                    newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
+                }
             } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
                 const AstNodeFTask* const funcp = funcRefp->taskp();
                 if (funcp->classMethod() && funcp->isStatic()) newvaluep = funcRefp;
@@ -2045,7 +2065,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             if (newPortp->valuep()) newPortp->valuep()->unlinkFrBack()->deleteTree();
             newTaskp->addStmtsp(newPortp);
         } else {  // Defaulting arg
-            AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
+            AstNodeExpr* const valuep = VN_CAST(portp->valuep(), NodeExpr);
             // Create local temporary
             newPortp = new AstVar{portp->fileline(), VVarType::BLOCKTEMP, portp->name(),
                                   portp->dtypep()};
@@ -2053,7 +2073,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newPortp->funcLocal(true);
             newTaskp->addStmtsp(newPortp);
             // Runtime-assign it to the default
-            if (!VN_IS(valuep, EmptyQueue)) {
+            if (valuep && !VN_IS(valuep, EmptyQueue)) {
                 AstAssign* const newAssignp
                     = new AstAssign{valuep->fileline(),
                                     new AstVarRef{valuep->fileline(), newPortp, VAccess::WRITE},

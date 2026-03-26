@@ -1,0 +1,9 @@
+# SystemC::Coverage-3
+C 'ft/t_covergroup_report_basic.vl13n7tcovergrouppagev_covergroup/cgocpa.zerohtop.t::cg__Vclpkg.cpa.zero' 2
+C 'ft/t_covergroup_report_basic.vl14n8tcovergrouppagev_covergroup/cgocpa.onehtop.t::cg__Vclpkg.cpa.one' 2
+C 'ft/t_covergroup_report_basic.vl18n7tcovergrouppagev_covergroup/cgocpb.zerohtop.t::cg__Vclpkg.cpb.zero' 2
+C 'ft/t_covergroup_report_basic.vl19n8tcovergrouppagev_covergroup/cgocpb.onehtop.t::cg__Vclpkg.cpb.one' 2
+C 'ft/t_covergroup_report_basic.vl22n10tcovergrouppagev_covergroup/cgoab.__auto[1]htop.t::cg__Vclpkg.ab.__auto[1]' 1
+C 'ft/t_covergroup_report_basic.vl22n11tcovergrouppagev_covergroup/cgoab.__auto[2]htop.t::cg__Vclpkg.ab.__auto[2]' 1
+C 'ft/t_covergroup_report_basic.vl22n12tcovergrouppagev_covergroup/cgoab.__auto[3]htop.t::cg__Vclpkg.ab.__auto[3]' 1
+C 'ft/t_covergroup_report_basic.vl22n9tcovergrouppagev_covergroup/cgoab.__auto[0]htop.t::cg__Vclpkg.ab.__auto[0]' 1

@@ -4,7 +4,6 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-// verilator lint_off COVERIGN
 module t;
 
   covergroup cg(int var1, int var2 = 42);
@@ -25,6 +24,9 @@ module t;
     void'(cov2.get_coverage());
     r = cov2.get_coverage();
     r = cov2.get_coverage(i, j);
+    void'(cov2.get_type_coverage());
+    r = cov2.get_type_coverage();
+    r = cov2.get_type_coverage(i, j);
     // verilator lint_off IGNOREDRETURN
     cov2.get_inst_coverage();
     // verilator lint_on IGNOREDRETURN
@@ -33,6 +35,9 @@ module t;
     cg::get_coverage();
     r = cg::get_coverage();
     r = cg::get_coverage(i, j);
+    cg::get_type_coverage();
+    r = cg::get_type_coverage();
+    r = cg::get_type_coverage(i, j);
   endfunction
 
 endmodule

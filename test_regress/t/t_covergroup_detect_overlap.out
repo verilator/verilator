@@ -1,0 +1,9 @@
+%Warning-CASEOVERLAP: t/t_covergroup_detect_overlap.v:15:7: Coverage bins overlap: 'low' and 'mid'
+                      t/t_covergroup_detect_overlap.v:16:7: ... Location of overlapping coverage bin 'mid'
+   16 |       bins mid = {[2:4]};
+      |       ^~~~
+   15 |       bins low = {[0:2]};
+      |       ^~~~
+                      ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
+                      ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -302,4 +302,119 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
     string comment;
   } vl_cross_type_options_t;
 
+  // Functional coverage helper used to back supported coverpoint subsets.
+  class vl_coverpoint_t;
+    vl_coverpoint_options_t option;
+    vl_coverpoint_type_options_t type_option;
+
+    protected vl_coverpoint_t __Vtypep;
+    protected int __Vcovered_bins;
+    protected int __Vtotal_bins;
+    protected int __Vhits[];
+
+    function new(int total_bins = 0, vl_coverpoint_t typep = null);
+      option.weight = 1;
+      option.goal = 100;
+      option.at_least = 1;
+      option.auto_bin_max = 64;
+      type_option.weight = 1;
+      type_option.goal = 100;
+      __Vtypep = typep;
+      __Vcovered_bins = 0;
+      __Vtotal_bins = total_bins;
+      __Vhits = new[total_bins];
+    endfunction
+
+    function void verilator_cov_hit(int index);
+      if (index < 0 || index >= __Vtotal_bins) return;
+      __Vhits[index] += 1;
+      if (__Vhits[index] == option.at_least) __Vcovered_bins += 1;
+    endfunction
+
+    function void verilator_cov_hit_once(int index);
+      if (index < 0 || index >= __Vtotal_bins) return;
+      __Vhits[index] += 1;
+      if (__Vhits[index] == 1) __Vcovered_bins += 1;
+    endfunction
+
+    function int verilator_cov_covered_bins();
+      return __Vcovered_bins;
+    endfunction
+
+    function int verilator_cov_total_bins();
+      return __Vtotal_bins;
+    endfunction
+
+    function real get_inst_coverage();
+      if (__Vtotal_bins == 0) return 100.0;
+      return 100.0 * __Vcovered_bins / __Vtotal_bins;
+    endfunction
+
+    function real get_coverage();
+      if (__Vtypep == null) return get_inst_coverage();
+      return __Vtypep.get_inst_coverage();
+    endfunction
+
+    function real get_type_coverage();
+      return get_coverage();
+    endfunction
+  endclass
+
+  // Functional coverage helper used to back supported cross subsets.
+  class vl_cross_t;
+    vl_cross_options_t option;
+    vl_cross_type_options_t type_option;
+
+    protected vl_cross_t __Vtypep;
+    protected int __Vcovered_bins;
+    protected int __Vtotal_bins;
+    protected int __Vhits[];
+
+    function new(int total_bins = 0, vl_cross_t typep = null);
+      option.weight = 1;
+      option.goal = 100;
+      option.at_least = 1;
+      type_option.weight = 1;
+      type_option.goal = 100;
+      __Vtypep = typep;
+      __Vcovered_bins = 0;
+      __Vtotal_bins = total_bins;
+      __Vhits = new[total_bins];
+    endfunction
+
+    function void verilator_cov_hit(int index);
+      if (index < 0 || index >= __Vtotal_bins) return;
+      __Vhits[index] += 1;
+      if (__Vhits[index] == option.at_least) __Vcovered_bins += 1;
+    endfunction
+
+    function void verilator_cov_hit_once(int index);
+      if (index < 0 || index >= __Vtotal_bins) return;
+      __Vhits[index] += 1;
+      if (__Vhits[index] == 1) __Vcovered_bins += 1;
+    endfunction
+
+    function int verilator_cov_covered_bins();
+      return __Vcovered_bins;
+    endfunction
+
+    function int verilator_cov_total_bins();
+      return __Vtotal_bins;
+    endfunction
+
+    function real get_inst_coverage();
+      if (__Vtotal_bins == 0) return 100.0;
+      return 100.0 * __Vcovered_bins / __Vtotal_bins;
+    endfunction
+
+    function real get_coverage();
+      if (__Vtypep == null) return get_inst_coverage();
+      return __Vtypep.get_inst_coverage();
+    endfunction
+
+    function real get_type_coverage();
+      return get_coverage();
+    endfunction
+  endclass
+
 endpackage
