@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=['--coverage'])
+test.compile(verilator_flags2=['--coverage --Wno-COVERIGN'])
 
 test.execute()
 

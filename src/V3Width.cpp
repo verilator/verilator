@@ -1838,19 +1838,18 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
-        // Extract covergroup option values and store in AstClass before deleting
-        if (m_cgClassp) {
-            // Process supported options
-            if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
-                // Extract constant value
-                if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
-                    m_cgClassp->cgAutoBinMax(constp->toSInt());
-                    UINFO(6, "  Covergroup " << m_cgClassp->name() << " option.auto_bin_max = "
-                                             << constp->toSInt() << endl);
-                }
+        // Extract covergroup option values and store in AstClass before deleting.
+        // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
+        // class bodies, and visitClass sets m_cgClassp before iterating children.
+        if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
+            // Extract constant value
+            if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
+                m_cgClassp->cgAutoBinMax(constp->toSInt());
+                UINFO(6, "  Covergroup " << m_cgClassp->name() << " option.auto_bin_max = "
+                                         << constp->toSInt() << endl);
             }
-            // Add more options here as needed (weight, goal, at_least, per_instance, comment)
         }
+        // Add more options here as needed (weight, goal, at_least, per_instance, comment)
 
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);

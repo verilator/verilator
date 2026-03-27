@@ -19,6 +19,12 @@ module t;
 
       // Match specific pattern with don't cares
       wildcard bins pattern = {8'b10?0_11??};
+
+      // Non-wildcard range bin: InsideRange [min:max] where min != max (line 1318)
+      bins mid_range = {[8'h40 : 8'h4F]};
+
+      // Wildcard bin using single-value InsideRange [5:5] (min==max, line 1312)
+      wildcard bins wc_point = {[8'd5 : 8'd5]};
     }
   endgroup
 
@@ -41,6 +47,14 @@ module t;
 
     // Verify another pattern match
     data = 8'b1010_1111;  // Should also match 'pattern' (10[1]0_11[1]1)
+    cg_inst.sample();
+
+    // Test mid_range bin: [0x40:0x4F]
+    data = 8'h45;  // Should match 'mid_range'
+    cg_inst.sample();
+
+    // Test wc_point bin: exact value 5
+    data = 8'd5;  // Should match 'wc_point'
     cg_inst.sample();
 
     // Verify non-matching value doesn't change coverage
