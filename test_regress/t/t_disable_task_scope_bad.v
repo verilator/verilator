@@ -24,13 +24,13 @@ module Inner;
 endmodule
 
 module Outer;
-  Inner inner();
+  Inner inner ();
 endmodule
 
 module t;
-  Ifc ifc1();
-  Prog prog1();
-  Outer outer1();
+  Ifc ifc1 ();
+  Prog prog1 ();
+  Outer outer1 ();
 
   initial begin
     disable ifc1.missing_task;
