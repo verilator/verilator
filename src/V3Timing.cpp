@@ -1077,8 +1077,7 @@ class TimingControlVisitor final : public VNVisitor {
             // If post updates are destructive (e.g. clearFired on events), perform a
             // conservative pre-clear once before entering the wait loop so stale state from a
             // previous wait does not cause an immediate false-positive trigger.
-            const bool hasDestructivePostUpdates
-                = !senResults.m_destructivePostUpdates.empty();
+            const bool hasDestructivePostUpdates = !senResults.m_destructivePostUpdates.empty();
             if (hasDestructivePostUpdates) {
                 for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
                     nodep->addHereThisAsNext(stmtp);
