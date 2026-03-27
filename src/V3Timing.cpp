@@ -892,9 +892,8 @@ class TimingControlVisitor final : public VNVisitor {
         m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
         // TODO: Disallow killing `always` at runtime (throw an error)
-        // Do not make combinational always blocks (always @*) suspendable just because
-        // they need process context (e.g. for uvm_fatal's process::self()). Combo blocks
-        // have no timing controls and would spin forever as coroutines.
+        // Combo blocks (always @*) must not become coroutines -- they have no
+        // suspend points and would spin forever.
         if (hasFlags(nodep, T_HAS_PROC)
             && !(m_activep && m_activep->sentreep() && m_activep->sentreep()->hasCombo()))
             addFlags(nodep, T_SUSPENDEE);
