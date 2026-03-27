@@ -494,6 +494,7 @@ fi
 AC_SUBST(HAVE_DEV_ASAN)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unnecessary-virtual-specifier)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
@@ -553,6 +554,7 @@ m4_foreach([cflag],[
         [-Wno-tautological-bitwise-compare],
         [-Wno-tautological-compare],
         [-Wno-uninitialized],
+        [-Wno-unnecessary-virtual-specifier],
         [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
