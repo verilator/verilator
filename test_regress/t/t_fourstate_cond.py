@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--fourstate', '-Wno-FUTURE'])
+
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

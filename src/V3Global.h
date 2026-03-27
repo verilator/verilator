@@ -131,6 +131,7 @@ class V3Global final {
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandSequence = false;  // Has `randsequence`
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
+    bool m_fourstateHandled = false;  // There should be no more fourstate values
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
 
     // Memory address to short string mapping (for debug)
@@ -214,6 +215,8 @@ public:
     bool useRandSequence() const { return m_useRandSequence; }
     void useRandSequence(bool flag) { m_useRandSequence = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
+    void setFourstateHandled() { m_fourstateHandled = true; }
+    bool fourstateHandled() const { return !opt.fourstate() || m_fourstateHandled; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     void saveJsonPtrFieldName(const std::string& fieldName);
     void ptrNamesDumpJson(std::ostream& os);
