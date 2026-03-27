@@ -2009,8 +2009,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                        // Reference to another tristate variable in this module context
                        && ((m_tgraph.isTristate(nodep->varp()) && m_tgraph.feedsTri(nodep))
                            // Or a cross-module/interface reference whose target already has
-                           // a resolved tristate-enable signal from prior processing.
-                           || (VN_IS(nodep, VarXRef) && VN_IS(nodep->varp()->user1p(), Var)))) {
+                           // a resolved tristate-enable signal from prior processing, and this
+                           // read actually feeds a tristate path in the current module.
+                           || (VN_IS(nodep, VarXRef) && VN_IS(nodep->varp()->user1p(), Var)
+                               && m_tgraph.feedsTri(nodep)))) {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep);
                 FileLine* const fl = nodep->fileline();
