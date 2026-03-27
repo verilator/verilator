@@ -1,3 +1,4 @@
 cg.data.high: 1
 cg.data.low: 1
 cg.data.other: 2
+cg2.cp_only_default.all: 4

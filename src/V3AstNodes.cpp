@@ -3533,10 +3533,6 @@ void AstCoverCross::dump(std::ostream& str) const { this->AstNodeFuncCovItem::du
 
 void AstCoverCross::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
 
-void AstCoverCrossBins::dump(std::ostream& str) const { this->AstNode::dump(str); }
-
-void AstCoverCrossBins::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }
-
 void AstCoverOption::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " " << m_type.ascii();
@@ -3550,7 +3546,3 @@ void AstCoverOption::dumpJson(std::ostream& str) const {
 void AstCoverpointRef::dump(std::ostream& str) const { this->AstNode::dump(str); }
 
 void AstCoverpointRef::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }
-
-void AstCoverSelectExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
-
-void AstCoverSelectExpr::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }

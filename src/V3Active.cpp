@@ -665,10 +665,11 @@ class CovergroupCollectVisitor final : public VNVisitor {
     }
 
     void visit(AstCovergroup* nodep) override {
-        if (!m_classp) return;
+        // V3Covergroup guarantees: only supported-event covergroups survive to V3Active,
+        // and they are always inside a covergroup class (so m_classp is set).
         // Unlink eventp from cgp so it survives cgp's deletion,
         // then take ownership in the map for use during the second pass.
-        if (nodep->eventp()) m_state.m_samplingEvents[m_classp] = nodep->eventp()->unlinkFrBack();
+        m_state.m_samplingEvents[m_classp] = nodep->eventp()->unlinkFrBack();
         nodep->unlinkFrBack();
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -701,11 +702,11 @@ class CovergroupInjectVisitor final : public VNVisitor {
     void visit(AstVarScope* nodep) override {
         // Get the underlying var
         AstVar* const varp = nodep->varp();
-        if (!varp) return;
+        if (!varp) return;  // LCOV_EXCL_BR_LINE -- AstVarScope always has non-null varp
 
         // Check if the variable is of covergroup class type
         const AstNodeDType* const dtypep = varp->dtypep();
-        if (!dtypep) return;
+        if (!dtypep) return;  // LCOV_EXCL_BR_LINE -- typed vars always have non-null dtypep
 
         const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
         if (!classRefp) return;
@@ -719,12 +720,10 @@ class CovergroupInjectVisitor final : public VNVisitor {
             return;  // No automatic sampling for this covergroup
         AstSenTree* const eventp = evtIt->second;
 
-        // Get the sample CFunc from the map populated during the first pass
+        // V3Covergroup guarantees every supported-event covergroup has a registered sample CFunc
         const auto it = m_state.m_sampleFuncs.find(classp);
-        if (it == m_state.m_sampleFuncs.end()) {
-            UINFO(4, "Could not find sample() CFunc for covergroup " << classp->name());
-            return;
-        }
+        UASSERT_OBJ(it != m_state.m_sampleFuncs.end(), nodep,
+                    "No sample() CFunc found for covergroup " << classp->name());
         AstCFunc* const sampleCFuncp = it->second;
 
         // Create a VarRef to the covergroup instance for the method call
