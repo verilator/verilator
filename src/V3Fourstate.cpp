@@ -506,17 +506,6 @@ class FourstateVisitor final : public VNVisitor {
     private:
         bool m_noTmp = false;
 
-        void visit(AstNodeExpr* const nodep) override {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
-            // Workaround to avoid Internal errors
-            m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-        }
-
-        void visit(AstNode* const nodep) override {
-            nodep->v3fatalSrc("This node shall be unreachable in this visitor");
-        }
-
         virtual AstNodeExpr* getCache(const AstNodeExpr* keyp) = 0;
         virtual void setCache(AstNodeExpr* keyp, AstNodeExpr* valuep) = 0;
 
@@ -853,6 +842,17 @@ class FourstateVisitor final : public VNVisitor {
             }
         }
 
+        void visit(AstNodeExpr* const nodep) override {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Operator not supported in the four-state mode");
+            // Workaround to avoid Internal errors
+            m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        }
+
+        void visit(AstNode* const nodep) override {
+            nodep->v3fatalSrc("This node shall be unreachable in this visitor");
+        }
+
         AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
             return VN_AS(keyp->user1p(), NodeExpr);
         }
@@ -1006,6 +1006,17 @@ class FourstateVisitor final : public VNVisitor {
                                                     varRefp->width(), 0};
                 m_result = newp;
             }
+        }
+
+        void visit(AstNodeExpr* const nodep) override {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Operator not supported in the four-state mode");
+            // Workaround to avoid Internal errors
+            m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        }
+
+        void visit(AstNode* const nodep) override {
+            nodep->v3fatalSrc("This node shall be unreachable in this visitor");
         }
 
         AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
