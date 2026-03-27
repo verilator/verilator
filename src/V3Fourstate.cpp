@@ -654,6 +654,46 @@ class FourstateVisitor final : public VNVisitor {
             condp->user2p(resultXZTmpVarRefp);
         }
 
+        void getFourStateExpressionLogAndHandler(AstLogAnd* const logAndp) {
+            FileLine* const flp = logAndp->fileline();
+            AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(logAndp);
+            AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(logAndp);
+            addPrecalculation(new AstAssign{flp,
+                                            new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
+                                            getFourStateExpressionXZ(logAndp->lhsp(), false)});
+            addPrecalculation(
+                new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
+                              new AstOr{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::READ},
+                                        getFourStateExpressionValue(logAndp->lhsp(), false)}});
+            AstIf* const ifp
+                = new AstIf{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::READ}};
+            addPrecalculation(ifp);
+            {
+                // Lhs is non zero
+                StatementPlaceHolder placeholderStmt{m_fourstateVisitor, flp};
+                ifp->addThensp(placeholderStmt.stmtp());
+                TmpVarsReleaser{m_fourstateVisitor};
+                addPrecalculation(new AstAssign{
+                    flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
+                    new AstOr{flp, getFourStateExpressionValue(logAndp->rhsp(), false),
+                              getFourStateExpressionXZ(logAndp->rhsp())}});
+                addPrecalculation(new AstAssign{
+                    flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
+                    new AstLogAnd{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::READ},
+                                  new AstOr{flp,
+                                            new AstVarRef{flp, resultXZTmpVarp, VAccess::READ},
+                                            getFourStateExpressionXZ(logAndp->rhsp())}}});
+            }
+            AstVarRef* const resultValueTmpVarRefp
+                = new AstVarRef{flp, resultValueTmpVarp, VAccess::READ};
+            AstVarRef* const resultXZTmpVarRefp
+                = new AstVarRef{flp, resultXZTmpVarp, VAccess::READ};
+            pushDeletep(resultValueTmpVarRefp);
+            pushDeletep(resultXZTmpVarRefp);
+            logAndp->user1p(resultValueTmpVarRefp);
+            logAndp->user2p(resultXZTmpVarRefp);
+        }
+
         AstNodeExpr* get(AstNodeExpr* const exprp, bool putIntoTmp = true) {
             // VN_AS is expected to be here (instead of VN_CAST)
             if (AstNodeExpr* result = getCache(exprp)) return result->cloneTree(false);
@@ -804,6 +844,12 @@ class FourstateVisitor final : public VNVisitor {
             getFourStateExpressionCondHandler(condp);
             noTmp();
             m_result = VN_AS(condp->user1p(), NodeExpr)->cloneTree(false);
+        }
+
+        void visit(AstLogAnd* const logAndp) override {
+            getFourStateExpressionLogAndHandler(logAndp);
+            noTmp();
+            m_result = VN_AS(logAndp->user1p(), NodeExpr)->cloneTree(false);
         }
 
         void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
@@ -990,6 +1036,12 @@ class FourstateVisitor final : public VNVisitor {
             getFourStateExpressionCondHandler(condp);
             noTmp();
             m_result = VN_AS(condp->user2p(), NodeExpr)->cloneTree(false);
+        }
+
+        void visit(AstLogAnd* const logAndp) override {
+            getFourStateExpressionLogAndHandler(logAndp);
+            noTmp();
+            m_result = VN_AS(logAndp->user2p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstNodeVarRef* const varRefp) override {
