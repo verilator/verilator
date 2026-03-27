@@ -656,10 +656,9 @@ private:
         // expr[*N] -> expr && $past(expr,1) && ... && $past(expr,N-1)
         iterateChildren(nodep);
         const AstConst* const constp = VN_CAST(nodep->countp(), Const);
-        if (!constp || constp->toSInt() < 1) {
-            // Error already reported by V3Width; just remove the node
-            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
+            nodep->v3fatalSrc("Consecutive repetition count must be a positive constant"
+                              " (should have been caught by V3Width)");
             return;
         }
         const int n = constp->toSInt();
