@@ -17,26 +17,39 @@ module t;
     }
   endgroup
 
-  initial begin
-    cg cg_inst;
+  // Covergroup with default as the ONLY bin: exercises defaultCondp=BitTrue path
+  covergroup cg2;
+    cp_only_default: coverpoint data {
+      bins all = default;
+    }
+  endgroup
 
-    cg_inst = new();
+  initial begin
+    cg  cg_inst;
+    cg2 cg2_inst;
+
+    cg_inst  = new();
+    cg2_inst = new();
 
     // Hit low bin
     data = 2;
     cg_inst.sample();
+    cg2_inst.sample();
 
     // Hit high bin
     data = 14;
     cg_inst.sample();
+    cg2_inst.sample();
 
     // Hit default bin with value 7 (not in low or high)
     data = 7;
     cg_inst.sample();
+    cg2_inst.sample();
 
     // Hit another default value (should not increase coverage)
     data = 20;
     cg_inst.sample();
+    cg2_inst.sample();
 
     $write("*-* All Finished *-*\n");
     $finish;

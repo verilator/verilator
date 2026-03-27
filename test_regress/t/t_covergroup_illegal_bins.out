@@ -2,3 +2,10 @@ cg.data.forbidden [illegal]: 0
 cg.data.high: 1
 cg.data.low: 1
 cg.data.mid: 1
+cg2.cp_arr.bad_arr [illegal]: 0
+cg2.cp_arr.ok: 1
+cg2.cp_arr.wlib: 0
+cg2.cp_trans.bad_2step [illegal]: 0
+cg2.cp_trans.bad_3step [illegal]: 0
+cg2.cp_trans.lib_default [illegal]: 0
+cg2.cp_trans.ok: 1

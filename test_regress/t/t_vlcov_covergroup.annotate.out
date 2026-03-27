@@ -65,9 +65,39 @@
 %000001     addr_cmd_mode_parity: cross cp_addr, cp_cmd, cp_mode, cp_parity;
           endgroup
         
+          // Cross with option inside body: exercises addOptionsp in visit(AstCoverCross*)
+%000002   covergroup cg5;
+%000001     cp_addr: coverpoint addr {
+%000001       bins addr0 = {0};
+%000001       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000001       bins read  = {0};
+%000001       bins write = {1};
+            }
+%000001     addr_cmd_opt: cross cp_addr, cp_cmd {
+              option.weight = 2;
+            }
+          endgroup
+        
+          // 2-way cross with range bin: exercises lo!=hi path in buildBinCondition
+%000004   covergroup cg_range;
+%000001     cp_addr: coverpoint addr {
+%000002       bins lo_range = {[0:1]};  // range bin (lo != hi) -> makeRangeCondition path
+%000002       bins hi_range = {[2:3]};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000002       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     addr_cmd_range: cross cp_addr, cp_cmd;
+          endgroup
+        
 %000001   cg2 cg2_inst = new;
+%000001   cg_range cg_range_inst = new;
 %000001   cg3 cg3_inst = new;
 %000001   cg4 cg4_inst = new;
+%000001   cg5 cg5_inst = new;
         
 %000001   initial begin
             // Sample 2-way: hit all 4 combinations
@@ -87,6 +117,16 @@
 %000001     addr = 1; cmd = 1; mode = 0; parity = 1; cg4_inst.sample();
 %000001     addr = 0; cmd = 1; mode = 1; parity = 0; cg4_inst.sample();
 %000001     addr = 1; cmd = 0; mode = 1; parity = 1; cg4_inst.sample();
+        
+            // Sample cg5 (cross with option)
+%000001     addr = 0; cmd = 0; cg5_inst.sample();
+%000001     addr = 1; cmd = 1; cg5_inst.sample();
+        
+            // Sample range-bin cross
+%000001     addr = 0; cmd = 0; cg_range_inst.sample();  // lo_range x read
+%000001     addr = 2; cmd = 1; cg_range_inst.sample();  // hi_range x write
+%000001     addr = 1; cmd = 1; cg_range_inst.sample();  // lo_range x write
+%000001     addr = 3; cmd = 0; cg_range_inst.sample();  // hi_range x read
         
 %000001     $write("*-* All Finished *-*\n");
 %000001     $finish;

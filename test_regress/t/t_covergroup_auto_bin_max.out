@@ -10,3 +10,10 @@ cg2.cp_data3.auto_0: 1
 cg2.cp_data3.auto_1: 0
 cg2.cp_data3.auto_2: 1
 cg2.cp_data3.auto_3: 0
+cg3.cp_data3.auto_0: 1
+cg3.cp_data3.auto_1: 1
+cg4.cp.auto_0: 0
+cg4.cp.auto_1: 1
+cg4.cp.auto_2: 1
+cg4.cp.auto_3: 1
+cg4.cp.ign [ignore]: 0
