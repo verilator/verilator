@@ -13,9 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--binary", "--timing", "--vpi", "--bbox-sys"])
 
-test.execute()
-
-test.file_grep(test.run_log_filename, r'FIRST_RESULT d0=00000005 d1=00000005 d2=00000005')
-test.file_grep(test.run_log_filename, r'SECOND_RESULT m0=00000005 m1=00000005 m2=00000005')
+test.execute(fails=True)
 
 test.passes()

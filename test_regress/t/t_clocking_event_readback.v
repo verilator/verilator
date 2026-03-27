@@ -7,6 +7,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `timescale 1ns/1ns
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
 interface apb_if(input bit pclk);
    wire [31:0] paddr;
@@ -149,6 +153,9 @@ module t;
       m.read(32'h0100_0000, d1);
       m.read(32'h0200_0000, d2);
       $display("FIRST_RESULT d0=%08x d1=%08x d2=%08x", d0, d1, d2);
+      `checkd(d0, 32'h0000_0005);
+      `checkd(d1, 32'h0000_0005);
+      `checkd(d2, 32'h0000_0005);
 
       // Second phase: broadcast write through the clocking path and readback.
       // This catches mck.prdata sampling regressions.
@@ -157,6 +164,9 @@ module t;
       m.read(32'h0100_0000, m1);
       m.read(32'h0200_0000, m2);
       $display("SECOND_RESULT m0=%08x m1=%08x m2=%08x", m0, m1, m2);
+      `checkd(m0, 32'h0000_0005);
+      `checkd(m1, 32'h0000_0005);
+      `checkd(m2, 32'h0000_0005);
 
       $write("*-* All Finished *-*\n");
       $finish;
