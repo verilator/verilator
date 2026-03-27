@@ -312,14 +312,14 @@ class BeginVisitor final : public VNVisitor {
                 nodep->replaceWith(portp);
 
                 if (nodep->isInput() || nodep->isInout()) {
-                    AstAssign* initAssignp = new AstAssign{nodep->fileline(),
+                    AstAssign* const initAssignp = new AstAssign{nodep->fileline(),
                         new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                         new AstVarRef{portp->fileline(), portp, VAccess::READ}};
                     portp->addNextHere(initAssignp);
                 }
 
                 if (nodep->isWritable()) {
-                    AstAssign* endAssignp = new AstAssign{nodep->fileline(),
+                    AstAssign* const endAssignp = new AstAssign{nodep->fileline(),
                         new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
                         new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
                     m_ftaskp->addStmtsp(endAssignp);
