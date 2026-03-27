@@ -16,12 +16,12 @@ module t;
   endfunction
 
   initial begin
-    if ((0 ? f(1) : f(0)) !== 0) $stop;
-    if ((1 ? f(1) : f(0)) !== 1) $stop;
-    if (('x ? f(1) : f(0)) !== 'x) $stop;
-    if (('x ? f(1) : f(1)) !== 1) $stop;
-    if (('z ? f(1) : f(0)) !== 'x) $stop;
-    if (('z ? f(0) : f(0)) !== 0) $stop;
+    if ((f(0) ? f(1) : f(0)) !== 0) $stop;
+    if ((f(1) ? f(1) : f(0)) !== 1) $stop;
+    if ((f('x) ? f(1) : f(0)) !== 'x) $stop;
+    if ((f('x) ? f(1) : f(1)) !== 1) $stop;
+    if ((f('z) ? f(1) : f(0)) !== 'x) $stop;
+    if ((f('z) ? f(0) : f(0)) !== 0) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

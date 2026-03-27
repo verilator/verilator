@@ -588,6 +588,8 @@ class FourstateVisitor final : public VNVisitor {
             AstNodeExpr* resultExprValuep = getFourStateExpressionValue(condp->condp());
             AstNodeExpr* resultExprXZp = getFourStateExpressionXZ(condp->condp());
             AstIf* const ifp = new AstIf{flp, resultExprXZp};
+            AstNodeExpr* const thenCopyp = condp->thenp()->cloneTree(false);
+            AstNodeExpr* const elseCopyp = condp->elsep()->cloneTree(false);
             {
                 // Condition is X/Z
                 StatementPlaceHolder thenPlaceholder{m_fourstateVisitor, flp};
@@ -625,10 +627,10 @@ class FourstateVisitor final : public VNVisitor {
                     TmpVarsReleaser tmpVarsReleaser{m_fourstateVisitor};
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionValue(condp->thenp(), false)});
+                                      getFourStateExpressionValue(thenCopyp, false)});
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionXZ(condp->thenp(), false)});
+                                      getFourStateExpressionXZ(thenCopyp, false)});
                 }
                 {
                     // Condition is 0
@@ -637,12 +639,14 @@ class FourstateVisitor final : public VNVisitor {
                     TmpVarsReleaser tmpVarsReleaser{m_fourstateVisitor};
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionValue(condp->elsep(), false)});
+                                      getFourStateExpressionValue(elseCopyp, false)});
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionXZ(condp->elsep(), false)});
+                                      getFourStateExpressionXZ(elseCopyp, false)});
                 }
             }
+            thenCopyp->deleteTree();
+            elseCopyp->deleteTree();
             addPrecalculation(ifp);
             AstVarRef* const resultValueTmpVarRefp
                 = new AstVarRef{flp, resultValueTmpVarp, VAccess::READ};
