@@ -73,7 +73,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void clearBinInfos() {
         // Delete pseudo-bins created for cross coverage (they're never inserted into the AST)
         for (const BinInfo& bi : m_binInfos) {
-            if (!bi.coverpointp && bi.crossp && bi.binp) { pushDeletep(bi.binp); }
+            if (!bi.coverpointp && bi.crossp && bi.binp) pushDeletep(bi.binp);
         }
         m_binInfos.clear();
     }
@@ -83,16 +83,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         UINFO(4, "Processing covergroup: " << m_covergroupp->name() << " with "
                                            << m_coverpoints.size() << " coverpoints and "
-                                           << m_coverCrosses.size() << " crosses" << endl);
+                                           << m_coverCrosses.size() << " crosses");
 
         // Clear bin info for this covergroup (deleting any orphaned cross pseudo-bins)
         clearBinInfos();
 
         // For each coverpoint, generate sampling code
-        for (AstCoverpoint* cpp : m_coverpoints) { generateCoverpointCode(cpp); }
+        for (AstCoverpoint* cpp : m_coverpoints) generateCoverpointCode(cpp);
 
         // For each cross, generate sampling code
-        for (AstCoverCross* crossp : m_coverCrosses) { generateCrossCode(crossp); }
+        for (AstCoverCross* crossp : m_coverCrosses) generateCrossCode(crossp);
 
         // Generate coverage computation code (even for empty covergroups)
         generateCoverageComputationCode();
@@ -105,7 +105,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // For now, get_coverage() returns 0.0 (placeholder)
 
         // Generate coverage database registration if coverage is enabled
-        if (v3Global.opt.coverage()) { generateCoverageRegistration(); }
+        if (v3Global.opt.coverage()) generateCoverageRegistration();
 
         // Clean up orphaned cross pseudo-bins now that we're done with them
         clearBinInfos();
@@ -119,7 +119,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstNode* const nextBinp = binp->nextp();
 
             if (cbinp && cbinp->binsType() == VCoverBinsType::BINS_AUTO) {
-                UINFO(4, "  Expanding automatic bin: " << cbinp->name() << endl);
+                UINFO(4, "  Expanding automatic bin: " << cbinp->name());
 
                 // Get array size - must be a constant
                 AstNodeExpr* const sizep = cbinp->arraySizep();
@@ -151,7 +151,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 const uint64_t binSize = (maxVal + 1) / numBins;
 
                 UINFO(4, "    Width=" << width << " maxVal=" << maxVal << " numBins=" << numBins
-                                      << " binSize=" << binSize << endl);
+                                      << " binSize=" << binSize);
 
                 // Create expanded bins
                 for (int i = 0; i < numBins; i++) {
@@ -184,8 +184,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
 
                 // Remove the AUTO bin from the list
-                binp->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(binp), binp);
+                VL_DO_DANGLING(pushDeletep(binp->unlinkFrBack()), binp);
             } else {
                 prevBinp = binp;
             }
@@ -240,7 +239,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 const uint64_t hi = hiConstp->toUQuad();
                 // Add all values in range (but limit to reasonable size)
                 if (hi - lo < 1000) {  // Sanity check
-                    for (uint64_t v = lo; v <= hi && v <= lo + 1000; v++) { values.insert(v); }
+                    for (uint64_t v = lo; v <= hi && v <= lo + 1000; v++) values.insert(v);
                 }
             }
         }
@@ -282,10 +281,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (hasRegular) return;
 
         UINFO(4, "  Creating implicit automatic bins for coverpoint: " << coverpointp->name()
-                                                                       << endl);
+                                                                      );
 
         if (!excluded.empty()) {
-            UINFO(4, "    Found " << excluded.size() << " excluded values" << endl);
+            UINFO(4, "    Found " << excluded.size() << " excluded values");
         }
 
         const int width = exprp->width();
@@ -305,7 +304,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         UINFO(4, "    Width=" << width << " numTotalValues=" << numTotalValues
                               << " numValidValues=" << numValidValues << " autoBinMax="
-                              << autoBinMax << " creating " << numBins << " bins" << endl);
+                              << autoBinMax << " creating " << numBins << " bins");
 
         // Strategy: Create bins for each value (if numValidValues <= autoBinMax)
         // or create range bins that avoid excluded values
@@ -333,7 +332,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 coverpointp->addBinsp(newBinp);
                 binCount++;
             }
-            UINFO(4, "    Created " << binCount << " single-value automatic bins" << endl);
+            UINFO(4, "    Created " << binCount << " single-value automatic bins");
         } else {
             // Create range bins (more complex - need to handle excluded values in ranges)
             // For simplicity, create bins and let excluded values not match any bin
@@ -355,7 +354,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (!anyValid && (hi - lo < 1000)) {
                     // Skip this bin entirely if all values are excluded
                     UINFO(4, "    Skipping bin [" << lo << ":" << hi << "] - all values excluded"
-                                                  << endl);
+                                                 );
                     continue;
                 }
 
@@ -379,7 +378,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 coverpointp->addBinsp(newBinp);
             }
 
-            UINFO(4, "    Created range-based automatic bins" << endl);
+            UINFO(4, "    Created range-based automatic bins");
         }
     }
 
@@ -387,7 +386,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstVar* createPrevValueVar(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Check if already created
         const auto it = m_prevValueVars.find(coverpointp);
-        if (it != m_prevValueVars.end()) { return it->second; }
+        if (it != m_prevValueVars.end()) return it->second;
 
         // Create variable to store previous sampled value
         const string varName = "__Vprev_" + coverpointp->name();
@@ -396,7 +395,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         prevVarp->isStatic(false);
         m_covergroupp->addMembersp(prevVarp);
 
-        UINFO(4, "    Created previous value variable: " << varName << endl);
+        UINFO(4, "    Created previous value variable: " << varName);
 
         // Initialize to zero in constructor
         AstNodeExpr* const initExprp
@@ -415,7 +414,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstVar* createSequenceStateVar(AstCoverpoint* coverpointp, AstCoverBin* binp) {
         // Check if already created
         const auto it = m_seqStateVars.find(binp);
-        if (it != m_seqStateVars.end()) { return it->second; }
+        if (it != m_seqStateVars.end()) return it->second;
 
         // Create variable to track sequence position
         const string varName = "__Vseqpos_" + coverpointp->name() + "_" + binp->name();
@@ -425,7 +424,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         stateVarp->isStatic(false);
         m_covergroupp->addMembersp(stateVarp);
 
-        UINFO(4, "    Created sequence state variable: " << varName << endl);
+        UINFO(4, "    Created sequence state variable: " << varName);
 
         // Initialize to 0 (not started) in constructor
         AstNodeStmt* const initStmtp = new AstAssign{
@@ -444,7 +443,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return;
         }
 
-        UINFO(4, "  Generating code for coverpoint: " << coverpointp->name() << endl);
+        UINFO(4, "  Generating code for coverpoint: " << coverpointp->name());
 
         // Get the coverpoint expression
         AstNodeExpr* const exprp = coverpointp->exprp();
@@ -461,7 +460,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         int autoBinMax;
         extractCoverpointOptions(coverpointp, atLeastValue, autoBinMax);
         UINFO(6, "    Coverpoint at_least = " << atLeastValue << " auto_bin_max = " << autoBinMax
-                                              << endl);
+                                             );
 
         // Create implicit automatic bins if no regular bins exist
         createImplicitAutoBins(coverpointp, exprp, autoBinMax);
@@ -502,12 +501,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             varp->isStatic(false);
             varp->valuep(new AstConst{cbinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created member variable: "
-                         << varName << " type=" << static_cast<int>(cbinp->binsType())
-                         << (cbinp->binsType() == VCoverBinsType::BINS_IGNORE    ? " (IGNORE)"
-                             : cbinp->binsType() == VCoverBinsType::BINS_ILLEGAL ? " (ILLEGAL)"
-                                                                                 : " (USER)")
-                         << endl);
+            UINFO(4, "    Created member variable: " << varName << " type="
+                                                     << cbinp->binsType().ascii());
 
             // Track this bin for coverage computation with at_least value
             m_binInfos.push_back(BinInfo(cbinp, varp, atLeastValue, coverpointp));
@@ -539,7 +534,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             varp->isStatic(false);
             varp->valuep(new AstConst{defBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created default bin variable: " << varName << endl);
+            UINFO(4, "    Created default bin variable: " << varName);
 
             // Track for coverage computation
             m_binInfos.push_back(BinInfo(defBinp, varp, atLeastValue, coverpointp));
@@ -557,25 +552,25 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                 new AstVarRef{prevVarp->fileline(), prevVarp, VAccess::WRITE},
                                 exprp->cloneTree(false)};
             m_sampleFuncp->addStmtsp(updateStmtp);
-            UINFO(4, "    Added previous value update at end of sample()" << endl);
+            UINFO(4, "    Added previous value update at end of sample()");
         }
     }
 
     void generateBinMatchCode(AstCoverpoint* coverpointp, AstCoverBin* binp, AstNodeExpr* exprp,
                               AstVar* hitVarp) {
-        UINFO(4, "    Generating bin match for: " << binp->name() << endl);
+        UINFO(4, "    Generating bin match for: " << binp->name());
 
         // Build the bin matching condition using the shared function
         AstNodeExpr* fullCondp = buildBinCondition(binp, exprp);
 
         if (!fullCondp) {
-            UINFO(4, "      No valid conditions generated" << endl);
+            UINFO(4, "      No valid conditions generated");
             return;
         }
 
         // Apply iff condition if present - wraps the bin match condition
         if (AstNodeExpr* iffp = coverpointp->iffp()) {
-            UINFO(6, "      Adding iff condition" << endl);
+            UINFO(6, "      Adding iff condition");
             fullCondp = new AstAnd{binp->fileline(), iffp->cloneTree(false), fullCondp};
         }
 
@@ -592,18 +587,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Create: if (condition) { hitVar++; [error if illegal] }
         AstIf* const ifp = new AstIf{binp->fileline(), fullCondp, stmtp, nullptr};
 
-        UINFO(4, "      Adding bin match if statement to sample function" << endl);
+        UINFO(4, "      Adding bin match if statement to sample function");
         if (!m_sampleFuncp)
             binp->v3fatalSrc("m_sampleFuncp is null when trying to add bin match code");
         m_sampleFuncp->addStmtsp(ifp);
-        UINFO(4, "      Successfully added if statement for bin: " << binp->name() << endl);
+        UINFO(4, "      Successfully added if statement for bin: " << binp->name());
     }
 
     // Generate matching code for default bins
     // Default bins match when value doesn't match any other explicit bin
     void generateDefaultBinMatchCode(AstCoverpoint* coverpointp, AstCoverBin* defBinp,
                                      AstNodeExpr* exprp, AstVar* hitVarp) {
-        UINFO(4, "    Generating default bin match for: " << defBinp->name() << endl);
+        UINFO(4, "    Generating default bin match for: " << defBinp->name());
 
         // Build OR of all non-default, non-ignore bins
         AstNodeExpr* anyBinMatchp = nullptr;
@@ -654,14 +649,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         if (!m_sampleFuncp) defBinp->v3fatalSrc("m_sampleFuncp is null for default bin");
         m_sampleFuncp->addStmtsp(ifp);
-        UINFO(4, "      Successfully added default bin if statement" << endl);
+        UINFO(4, "      Successfully added default bin if statement");
     }
 
     // Generate matching code for transition bins
     // Transition bins match sequences like: (val1 => val2 => val3)
     void generateTransitionBinMatchCode(AstCoverpoint* coverpointp, AstCoverBin* binp,
                                         AstNodeExpr* exprp, AstVar* hitVarp) {
-        UINFO(4, "    Generating transition bin match for: " << binp->name() << endl);
+        UINFO(4, "    Generating transition bin match for: " << binp->name());
 
         // Get the (single) transition set
         AstCoverTransSet* const transSetp = binp->transp();
@@ -680,8 +675,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                           AstNodeExpr* exprp, AstVar* hitVarp,
                                           const std::vector<AstCoverTransItem*>& items) {
         UINFO(4,
-              "    Generating multi-value transition state machine for: " << binp->name() << endl);
-        UINFO(4, "      Sequence length: " << items.size() << " items" << endl);
+              "    Generating multi-value transition state machine for: " << binp->name());
+        UINFO(4, "      Sequence length: " << items.size() << " items");
 
         // Create state position variable
         AstVar* const stateVarp = createSequenceStateVar(coverpointp, binp);
@@ -699,7 +694,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCaseItem* caseItemp = generateTransitionStateCase(coverpointp, binp, exprp, hitVarp,
                                                                  stateVarp, items, state);
 
-            if (caseItemp) { casep->addItemsp(caseItemp); }
+            if (caseItemp) casep->addItemsp(caseItemp);
         }
 
         // Add default case (reset to state 0) to prevent CASEINCOMPLETE warnings,
@@ -712,7 +707,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         casep->addItemsp(defaultItemp);
 
         m_sampleFuncp->addStmtsp(casep);
-        UINFO(4, "      Successfully added multi-value transition state machine" << endl);
+        UINFO(4, "      Successfully added multi-value transition state machine");
     }
 
     // Generate code for a single state in the transition state machine
@@ -746,8 +741,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // For illegal_bins, add error message
             if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                const string errMsg = "Illegal transition bin '" + binp->name()
-                                      + "' hit in coverpoint '" + coverpointp->name() + "'";
+                const string errMsg = "Illegal transition bin " + binp->prettyNameQ()
+                                      + " hit in coverpoint " + coverpointp->prettyNameQ();
                 matchActionp = matchActionp->addNext(makeIllegalBinAction(fl, errMsg));
             }
 
@@ -885,7 +880,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else {
                 // Unknown node type - try to handle as expression
                 UINFO(4, "      Transition item has unknown value node type: " << valp->typeName()
-                                                                               << endl);
+                                                                              );
                 // For now, just skip unknown types - this prevents crashes
                 continue;
             }
@@ -900,7 +895,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
 
-        if (!condp) { UINFO(4, "      No valid transition conditions could be built" << endl); }
+        if (!condp) UINFO(4, "      No valid transition conditions could be built");
 
         return condp;
     }
@@ -909,7 +904,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Array bins create one bin per value in the range list
     void generateArrayBins(AstCoverpoint* coverpointp, AstCoverBin* arrayBinp, AstNodeExpr* exprp,
                            int atLeastValue) {
-        UINFO(4, "    Generating array bins for: " << arrayBinp->name() << endl);
+        UINFO(4, "    Generating array bins for: " << arrayBinp->name());
 
         // Extract all values from the range list
         std::vector<AstNodeExpr*> values;
@@ -939,7 +934,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     const int minVal = minConstp->toSInt();
                     const int maxVal = maxConstp->toSInt();
                     UINFO(6, "      Expanding InsideRange [" << minVal << ":" << maxVal << "]"
-                                                             << endl);
+                                                            );
                     for (int val = minVal; val <= maxVal; ++val) {
                         values.push_back(
                             new AstConst{insideRangep->fileline(), AstConst::Signed32{}, val});
@@ -968,7 +963,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             varp->isStatic(false);
             varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created array bin [" << index << "]: " << varName << endl);
+            UINFO(4, "    Created array bin [" << index << "]: " << varName);
 
             // Track for coverage computation
             m_binInfos.push_back(BinInfo(arrayBinp, varp, atLeastValue, coverpointp));
@@ -979,7 +974,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             ++index;
         }
 
-        UINFO(4, "    Generated " << index << " array bins" << endl);
+        UINFO(4, "    Generated " << index << " array bins");
     }
 
     // Generate matching code for a single array bin element
@@ -1013,7 +1008,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Array bins with transitions create one bin per transition sequence
     void generateTransitionArrayBins(AstCoverpoint* coverpointp, AstCoverBin* arrayBinp,
                                      AstNodeExpr* exprp, int atLeastValue) {
-        UINFO(4, "    Generating transition array bins for: " << arrayBinp->name() << endl);
+        UINFO(4, "    Generating transition array bins for: " << arrayBinp->name());
 
         // Extract all transition sets
         std::vector<AstCoverTransSet*> transSets;
@@ -1028,7 +1023,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return;
         }
 
-        UINFO(4, "      Found " << transSets.size() << " transition sets" << endl);
+        UINFO(4, "      Found " << transSets.size() << " transition sets");
 
         // Create a separate bin for each transition sequence
         int index = 0;
@@ -1044,7 +1039,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             varp->isStatic(false);
             varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
-            UINFO(4, "      Created transition array bin [" << index << "]: " << varName << endl);
+            UINFO(4, "      Created transition array bin [" << index << "]: " << varName);
 
             // Track for coverage computation
             m_binInfos.push_back(BinInfo(arrayBinp, varp, atLeastValue, coverpointp));
@@ -1055,14 +1050,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             ++index;
         }
 
-        UINFO(4, "    Generated " << index << " transition array bins" << endl);
+        UINFO(4, "    Generated " << index << " transition array bins");
     }
 
     // Generate code for a single transition sequence (used by both regular and array bins)
     void generateSingleTransitionCode(AstCoverpoint* coverpointp, AstCoverBin* binp,
                                       AstNodeExpr* exprp, AstVar* hitVarp,
                                       AstCoverTransSet* transSetp) {
-        UINFO(4, "      Generating code for transition sequence" << endl);
+        UINFO(4, "      Generating code for transition sequence");
 
         // Get or create previous value variable
         AstVar* const prevVarp = createPrevValueVar(coverpointp, exprp);
@@ -1125,8 +1120,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // For illegal_bins, add an error message
             if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                const string errMsg = "Illegal transition bin '" + binp->name()
-                                      + "' hit in coverpoint '" + coverpointp->name() + "'";
+                const string errMsg = "Illegal transition bin " + binp->prettyNameQ()
+                                      + " hit in coverpoint " + coverpointp->prettyNameQ();
                 stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), errMsg));
             }
 
@@ -1134,7 +1129,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstIf* const ifp = new AstIf{binp->fileline(), fullCondp, stmtp, nullptr};
             m_sampleFuncp->addStmtsp(ifp);
 
-            UINFO(4, "        Successfully added 2-value transition if statement" << endl);
+            UINFO(4, "        Successfully added 2-value transition if statement");
         } else {
             // Multi-value sequence (a => b => c => ...)
             // Use state machine to track position in sequence
@@ -1191,7 +1186,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         varp->valuep(new AstConst{crossp->fileline(), AstConst::WidthedValue{}, 32, 0});
         m_covergroupp->addMembersp(varp);
 
-        UINFO(4, "      Created cross bin variable: " << varName << endl);
+        UINFO(4, "      Created cross bin variable: " << varName);
 
         // Track this for coverage computation
         AstCoverBin* const pseudoBinp = new AstCoverBin{
@@ -1206,7 +1201,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void generateNWayCrossBinMatchCode(AstCoverCross* crossp,
                                        const std::vector<AstCoverpoint*>& coverpointRefs,
                                        const std::vector<AstCoverBin*>& bins, AstVar* hitVarp) {
-        UINFO(4, "      Generating " << bins.size() << "-way cross bin match" << endl);
+        UINFO(4, "      Generating " << bins.size() << "-way cross bin match");
 
         // Build combined condition by ANDing all bin conditions
         AstNodeExpr* fullCondp = nullptr;
@@ -1241,7 +1236,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return;
         }
 
-        UINFO(4, "  Generating code for cross: " << crossp->name() << endl);
+        UINFO(4, "  Generating code for cross: " << crossp->name());
 
         // Resolve coverpoint references and build list
         std::vector<AstCoverpoint*> coverpointRefs;
@@ -1259,7 +1254,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     // Name not found as an explicit coverpoint - it's likely a direct variable
                     // reference (implicit coverpoint). Silently ignore; cross is dropped.
                     UINFO(4, "  Ignoring cross with implicit variable reference: " << refp->name()
-                                                                                   << endl);
+                                                                                  );
                     return;
                 }
 
@@ -1277,7 +1272,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return;
         }
 
-        UINFO(4, "    Generating " << coverpointRefs.size() << "-way cross" << endl);
+        UINFO(4, "    Generating " << coverpointRefs.size() << "-way cross");
 
         // Collect bins from all coverpoints (excluding ignore/illegal bins)
         std::vector<std::vector<AstCoverBin*>> allCpBins;
@@ -1289,7 +1284,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     cpBins.push_back(cbinp);
                 }
             }
-            UINFO(4, "      Found " << cpBins.size() << " bins in " << cpp->name() << endl);
+            UINFO(4, "      Found " << cpBins.size() << " bins in " << cpp->name());
             allCpBins.push_back(cpBins);
         }
 
@@ -1376,7 +1371,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     void generateCoverageComputationCode() {
-        UINFO(4, "  Generating coverage computation code" << endl);
+        UINFO(4, "  Generating coverage computation code");
 
         // Invalidate cache: addMembersp() calls in generateCoverpointCode/generateCrossCode
         // have added new members since the last scan, so clear before re-querying.
@@ -1389,20 +1384,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             = VN_CAST(m_memberMap.findMember(m_covergroupp, "get_inst_coverage"), Func);
 
         if (!getCoveragep || !getInstCoveragep) {
-            UINFO(4, "    Warning: Could not find get_coverage methods" << endl);
+            UINFO(4, "    Warning: Could not find get_coverage methods");
             return;
         }
 
         // Even if there are no bins, we still need to generate the coverage methods
         // Empty covergroups should return 100% coverage
         if (m_binInfos.empty()) {
-            UINFO(4, "    No bins found, will generate method to return 100%" << endl);
+            UINFO(4, "    No bins found, will generate method to return 100%");
         } else {
-            UINFO(6, "    Found " << m_binInfos.size() << " bins for coverage" << endl);
+            UINFO(6, "    Found " << m_binInfos.size() << " bins for coverage");
         }
 
         // Generate code for get_inst_coverage()
-        if (getInstCoveragep) { generateCoverageMethodBody(getInstCoveragep); }
+        if (getInstCoveragep) generateCoverageMethodBody(getInstCoveragep);
 
         // Generate code for get_coverage() (type-level)
         // NOTE: Full type-level coverage requires instance tracking infrastructure
@@ -1417,7 +1412,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     getCoveragep->fileline(),
                     new AstVarRef{getCoveragep->fileline(), returnVarp, VAccess::WRITE},
                     new AstConst{getCoveragep->fileline(), AstConst::RealDouble{}, 0.0}});
-                UINFO(4, "    Added placeholder get_coverage() (returns 0.0)" << endl);
+                UINFO(4, "    Added placeholder get_coverage() (returns 0.0)");
             }
         }
     }
@@ -1428,26 +1423,24 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Count total bins (excluding ignore_bins and illegal_bins)
         int totalBins = 0;
         for (const BinInfo& bi : m_binInfos) {
-            UINFO(6, "      Bin: " << bi.binp->name() << " type=" << (int)bi.binp->binsType()
-                                   << " IGNORE=" << (int)VCoverBinsType::BINS_IGNORE
-                                   << " ILLEGAL=" << (int)VCoverBinsType::BINS_ILLEGAL << endl);
+            UINFO(6, "      Bin: " << bi.binp->name() << " type=" << bi.binp->binsType().ascii());
             if (bi.binp->binsType() != VCoverBinsType::BINS_IGNORE
                 && bi.binp->binsType() != VCoverBinsType::BINS_ILLEGAL) {
                 totalBins++;
             }
         }
 
-        UINFO(4, "    Total regular bins: " << totalBins << " of " << m_binInfos.size() << endl);
+        UINFO(4, "    Total regular bins: " << totalBins << " of " << m_binInfos.size());
 
         if (totalBins == 0) {
             // No coverage to compute - return 100%.
             // Any parser-generated initialization of returnVar is overridden by our assignment.
-            UINFO(4, "    Empty covergroup, returning 100.0" << endl);
+            UINFO(4, "    Empty covergroup, returning 100.0");
             AstVar* const returnVarp = VN_AS(funcp->fvarp(), Var);
             if (returnVarp) {
                 funcp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, returnVarp, VAccess::WRITE},
                                                new AstConst{fl, AstConst::RealDouble{}, 100.0}});
-                UINFO(4, "    Added assignment to return 100.0" << endl);
+                UINFO(4, "    Added assignment to return 100.0");
             }
             return;
         }
@@ -1486,7 +1479,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Find the return variable
         AstVar* const returnVarp = VN_AS(funcp->fvarp(), Var);
         if (!returnVarp) {
-            UINFO(4, "    Warning: No return variable found in " << funcp->name() << endl);
+            UINFO(4, "    Warning: No return variable found in " << funcp->name());
             return;
         }
 
@@ -1514,7 +1507,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         UINFO(6, "    Added coverage computation to " << funcp->name() << " with " << totalBins
                                                       << " bins (excluding ignore/illegal)"
-                                                      << endl);
+                                                     );
     }
 
     void generateCoverageRegistration() {
@@ -1522,7 +1515,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // This registers the bins with the coverage database so they can be reported
 
         UINFO(4, "  Generating coverage database registration for " << m_binInfos.size() << " bins"
-                                                                    << endl);
+                                                                   );
 
         if (m_binInfos.empty()) return;
 
@@ -1572,7 +1565,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Generate: VL_COVER_INSERT(contextp, hier, &binVar, "page", "v_covergroup/...", ...)
 
-            UINFO(6, "    Registering bin: " << hierName << " -> " << varp->name() << endl);
+            UINFO(6, "    Registering bin: " << hierName << " -> " << varp->name());
 
             // Build the coverage insert as a C statement mixing literal text with a proper
             // AstVarRef for the bin variable.  Using AstVarRef (with selfPointer=This) lets
@@ -1613,14 +1606,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Add to constructor
             m_constructorp->addStmtsp(cstmtp);
 
-            UINFO(6, "      Added VL_COVER_INSERT call to constructor" << endl);
+            UINFO(6, "      Added VL_COVER_INSERT call to constructor");
         }
     }
 
     // VISITORS
     void visit(AstClass* nodep) override {
         UINFO(9, "Visiting class: " << nodep->name() << " isCovergroup=" << nodep->isCovergroup()
-                                    << endl);
+                                   );
         if (nodep->isCovergroup()) {
             VL_RESTORER(m_covergroupp);
             m_covergroupp = nodep;
@@ -1663,14 +1656,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                             // linked in the AST. V3Active will find it via membersp,
                             // use the event, then delete the AstCovergroup itself.
                             UINFO(4, "Keeping covergroup event node for V3Active: "
-                                         << nodep->name() << endl);
+                                         << nodep->name());
                             itemp = nextp;
                             continue;
                         }
                     }
                     // Remove the AstCovergroup node - either unsupported event or no event
-                    cgp->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(cgp), cgp);
+                    VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
                 }
                 itemp = nextp;
             }
@@ -1680,12 +1672,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (hasUnsupportedEvent) {
                 iterateChildren(nodep);
                 for (AstCoverpoint* cpp : m_coverpoints) {
-                    cpp->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(cpp), cpp);
+                    VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
                 }
                 for (AstCoverCross* crossp : m_coverCrosses) {
-                    crossp->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(crossp), crossp);
+                    VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
                 }
                 return;
             }
@@ -1693,20 +1683,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Find the sample() method and constructor
             m_sampleFuncp = VN_CAST(m_memberMap.findMember(nodep, "sample"), Func);
             m_constructorp = VN_CAST(m_memberMap.findMember(nodep, "new"), Func);
-            UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no") << endl);
-            UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no") << endl);
+            UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no"));
+            UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no"));
 
             iterateChildren(nodep);
             processCovergroup();
             // Remove lowered coverpoints/crosses from the class - they have been
             // fully translated into C++ code and must not reach downstream passes
             for (AstCoverpoint* cpp : m_coverpoints) {
-                cpp->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(cpp), cpp);
+                VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
             }
             for (AstCoverCross* crossp : m_coverCrosses) {
-                crossp->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(crossp), crossp);
+                VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
             }
         } else {
             iterateChildren(nodep);
@@ -1714,14 +1702,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     void visit(AstCoverpoint* nodep) override {
-        UINFO(9, "Found coverpoint: " << nodep->name() << endl);
+        UINFO(9, "Found coverpoint: " << nodep->name());
         m_coverpoints.push_back(nodep);
         m_coverpointMap.emplace(nodep->name(), nodep);
         iterateChildren(nodep);
     }
 
     void visit(AstCoverCross* nodep) override {
-        UINFO(9, "Found cross: " << nodep->name() << endl);
+        UINFO(9, "Found cross: " << nodep->name());
         m_coverCrosses.push_back(nodep);
         iterateChildren(nodep);
     }
@@ -1738,7 +1726,7 @@ public:
 // Functional coverage class functions
 
 void V3Covergroup::covergroup(AstNetlist* nodep) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { FunctionalCoverageVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coveragefunc", 0, dumpTreeEitherLevel() >= 3);
 }
