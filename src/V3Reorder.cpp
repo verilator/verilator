@@ -452,8 +452,6 @@ class ReorderVisitor final : public VNVisitor {
         // Reads of constants can be ignored - TODO: This should be "constexpr", not run-time const
         if (nodep->varp()->isConst()) return;
 
-        // SPEEDUP: We add duplicate edges, that should be fixed
-
         AstVarScope* const vscp = nodep->varScopep();
 
         // Create vertexes for variable
@@ -463,7 +461,8 @@ class ReorderVisitor final : public VNVisitor {
         // Variable is read
         if (nodep->access().isReadOnly()) {
             for (ReorderLogicVertex* const vtxp : m_stmtStackps) {
-                new ReorderRVEdge{m_graphp, vtxp, vstdp};
+                if (!vtxp->findConnectingEdgep<GraphWay::FORWARD>(vstdp))
+                    new ReorderRVEdge{m_graphp, vtxp, vstdp};
             }
             return;
         }
@@ -471,7 +470,8 @@ class ReorderVisitor final : public VNVisitor {
         // Variable is written, not NBA
         if (!m_inDly) {
             for (ReorderLogicVertex* const vtxp : m_stmtStackps) {
-                new ReorderLVEdge{m_graphp, vstdp, vtxp};
+                if (!vstdp->findConnectingEdgep<GraphWay::FORWARD>(vtxp))
+                    new ReorderLVEdge{m_graphp, vstdp, vtxp};
             }
             return;
         }
@@ -484,7 +484,8 @@ class ReorderVisitor final : public VNVisitor {
         }
         ReorderVarPostVertex* const vpostp = vscp->user2u().to<ReorderVarPostVertex*>();
         for (ReorderLogicVertex* const vtxp : m_stmtStackps) {
-            new ReorderLVEdge{m_graphp, vpostp, vtxp};
+            if (!vpostp->findConnectingEdgep<GraphWay::FORWARD>(vtxp))
+                new ReorderLVEdge{m_graphp, vpostp, vtxp};
         }
     }
 

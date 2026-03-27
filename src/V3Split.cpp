@@ -361,7 +361,6 @@ protected:
                 SplitVarStdVertex* const vstdp
                     = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
 
-                // SPEEDUP: We add duplicate edges, that should be fixed
                 if (m_inDly && nodep->access().isWriteOrRW()) {
                     UINFO(4, "     VARREFDLY: " << nodep);
                     // Delayed variable is different from non-delayed variable
@@ -374,7 +373,8 @@ protected:
                         = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
                     // Add edges
                     for (SplitLogicVertex* vxp : m_stmtStackps) {
-                        new SplitLVEdge{&m_graph, vpostp, vxp};
+                        if (!vpostp->findConnectingEdgep<GraphWay::FORWARD>(vxp))
+                            new SplitLVEdge{&m_graph, vpostp, vxp};
                     }
                 } else {  // Nondelayed assignment
                     if (nodep->access().isWriteOrRW()) {
@@ -382,7 +382,8 @@ protected:
                         // with all consumers of the signal
                         UINFO(4, "     VARREFLV: " << nodep);
                         for (SplitLogicVertex* ivxp : m_stmtStackps) {
-                            new SplitLVEdge{&m_graph, vstdp, ivxp};
+                            if (!vstdp->findConnectingEdgep<GraphWay::FORWARD>(ivxp))
+                                new SplitLVEdge{&m_graph, vstdp, ivxp};
                         }
                     } else {
                         UINFO(4, "     VARREF:   " << nodep);
@@ -687,7 +688,8 @@ protected:
         for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
             const AstNodeIf* const ifNodep = VN_CAST((*it)->nodep(), NodeIf);
             if (ifNodep && (m_curIfConditional != ifNodep)) continue;
-            new SplitRVEdge{&m_graph, *it, vstdp};
+            if (!(*it)->findConnectingEdgep<GraphWay::FORWARD>(vstdp))
+                new SplitRVEdge{&m_graph, *it, vstdp};
         }
     }
 
