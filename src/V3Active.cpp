@@ -634,35 +634,43 @@ struct CovergroupState final {
 class CovergroupCollectVisitor final : public VNVisitor {
     // STATE
     CovergroupState& m_state;
+    AstClass* m_classp = nullptr;  // Current covergroup class context, or nullptr
 
     // VISITORS
+    void visit(AstClass* nodep) override {
+        if (!nodep->isCovergroup()) return;
+        VL_RESTORER(m_classp);
+        m_classp = nodep;
+        iterateChildren(nodep);
+    }
+
     void visit(AstScope* nodep) override {
-        AstClass* const classp = VN_CAST(nodep->modp(), Class);
-        if (classp && classp->isCovergroup()) {
-            for (AstNode* itemp = nodep->blocksp(); itemp; itemp = itemp->nextp()) {
-                if (AstCFunc* const cfuncp = VN_CAST(itemp, CFunc)) {
-                    if (cfuncp->name().find("sample") != string::npos) {
-                        m_state.m_sampleFuncs[classp] = cfuncp;
-                        cfuncp->isCovergroupSample(true);
-                        break;
-                    }
-                }
-            }
-            for (AstNode* memberp = classp->membersp(); memberp;) {
-                AstNode* const nextp = memberp->nextp();
-                if (AstCovergroup* const cgp = VN_CAST(memberp, Covergroup)) {
-                    // Unlink eventp from cgp so it survives cgp's deletion,
-                    // then take ownership in the map for use during the second pass.
-                    if (cgp->eventp())
-                        m_state.m_samplingEvents[classp] = cgp->eventp()->unlinkFrBack();
-                    cgp->unlinkFrBack();
-                    VL_DO_DANGLING(cgp->deleteTree(), cgp);
-                    break;
-                }
-                memberp = nextp;
+        if (AstClass* const classp = VN_CAST(nodep->modp(), Class)) {
+            if (classp->isCovergroup()) {
+                VL_RESTORER(m_classp);
+                m_classp = classp;
+                iterateChildren(nodep);
+                return;
             }
         }
         iterateChildren(nodep);
+    }
+
+    void visit(AstCFunc* nodep) override {
+        if (!m_classp) return;
+        if (nodep->name().find("sample") != string::npos) {
+            m_state.m_sampleFuncs[m_classp] = nodep;
+            nodep->isCovergroupSample(true);
+        }
+    }
+
+    void visit(AstCovergroup* nodep) override {
+        if (!m_classp) return;
+        // Unlink eventp from cgp so it survives cgp's deletion,
+        // then take ownership in the map for use during the second pass.
+        if (nodep->eventp()) m_state.m_samplingEvents[m_classp] = nodep->eventp()->unlinkFrBack();
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -714,7 +722,7 @@ class CovergroupInjectVisitor final : public VNVisitor {
         // Get the sample CFunc from the map populated during the first pass
         const auto it = m_state.m_sampleFuncs.find(classp);
         if (it == m_state.m_sampleFuncs.end()) {
-            UINFO(4, "Could not find sample() CFunc for covergroup " << classp->name() << endl);
+            UINFO(4, "Could not find sample() CFunc for covergroup " << classp->name());
             return;
         }
         AstCFunc* const sampleCFuncp = it->second;
@@ -747,7 +755,7 @@ class CovergroupInjectVisitor final : public VNVisitor {
         activep->addStmtsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
 
-        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name() << endl);
+        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name());
     }
 
     void visit(AstActive*) override {}  // Don't iterate into actives
@@ -768,7 +776,7 @@ public:
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { ActiveVisitor{nodep}; }  // Destruct before checking
-    {
+    if (v3Global.useCovergroup()) {
         // Add automatic covergroup sampling in two focused passes
         CovergroupState state;
         CovergroupCollectVisitor{nodep, state};  // Pass 1: collect CFuncs and events
