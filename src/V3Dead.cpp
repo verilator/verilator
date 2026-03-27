@@ -370,6 +370,7 @@ class DeadVisitor final : public VNVisitor {
     }
 
     void deadCheckTasks() {
+        bool anyTasksDead = false;
         while (!m_tasksp.empty()) {
             AstNodeFTask* taskp = m_tasksp.front();
             m_tasksp.pop();
@@ -383,7 +384,16 @@ class DeadVisitor final : public VNVisitor {
                 taskp->user1(-1);  // we don't want to try deleting twice
                 deleting(taskp);
                 ++m_statFTasksDeadified;
+                anyTasksDead = true;
             }
+        }
+        if (anyTasksDead) {
+            v3Global.rootp()->foreach([this](AstNodeCoverDecl* declp) {
+                if (declp->ftaskp() && declp->ftaskp()->user1() == -1) {
+                    UINFO(4, "  Dead " << declp);
+                    deleting(declp);
+                }
+            });
         }
     }
 

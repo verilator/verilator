@@ -186,6 +186,7 @@ class CoverageVisitor final : public VNVisitor {
 
     AstCoverInc* newCoverInc(FileLine* fl, AstNodeCoverDecl* const declp,
                              const string& trace_var_name) {
+        if (m_ftaskp) declp->ftaskp(m_ftaskp);
         AstCoverInc* const incp = new AstCoverInc{fl, declp};
         if (!trace_var_name.empty()
             && v3Global.opt.traceCoverage()

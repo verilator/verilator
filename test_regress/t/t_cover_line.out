@@ -402,21 +402,14 @@
           // We don't currently count elaboration time use towards coverage.  This
           // seems safer for functions used both at elaboration time and not - but may
           // revisit this.
-%000000   function automatic int param_func(int i);
--000000  point: type=line comment=block hier=top.t.par1
-%000000     if (i == 0) begin
--000000  point: type=branch comment=if hier=top.t.par1
--000000  point: type=branch comment=else hier=top.t.par1
-%000000       i = 99; // Uncovered
--000000  point: type=branch comment=if hier=top.t.par1
+          function automatic int param_func(int i);
+            if (i == 0) begin
+              i = 99; // Uncovered
             end
-%000000     else begin
--000000  point: type=branch comment=else hier=top.t.par1
-%000000       i = i + 1;
--000000  point: type=branch comment=else hier=top.t.par1
+            else begin
+              i = i + 1;
             end
-%000000     return i;
--000000  point: type=line comment=block hier=top.t.par1
+            return i;
           endfunction
         
         endmodule

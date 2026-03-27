@@ -38,6 +38,7 @@ class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     string m_page;  // Coverage point's page tag
     string m_text;  // Coverage point's text
     string m_hier;  // Coverage point's hierarchy
+    AstNodeFTask* m_ftaskp = nullptr;  // Coverage belongs to this ftask
     int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     AstNodeCoverDecl(VNType t, FileLine* fl, const string& page, const string& comment)
@@ -75,6 +76,8 @@ public:
     // indicate to get data from here
     AstNodeCoverDecl* dataDeclNullp() const { return m_dataDeclp; }
     AstNodeCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
+    AstNodeFTask* ftaskp() const { return m_ftaskp; }
+    void ftaskp(AstNodeFTask* nodep) { m_ftaskp = nodep; }
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // Output variable in functions, nullptr in tasks
