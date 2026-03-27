@@ -12,7 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.top_filename = "t/t_covergroup_cross_simple.v"
+test.top_filename = "t/t_covergroup_cross.v"
 
 test.compile(verilator_flags2=['--coverage'])
 
@@ -37,7 +37,7 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
-test.files_identical(test.obj_dir + "/annotated/t_covergroup_cross_simple.v",
+test.files_identical(test.obj_dir + "/annotated/t_covergroup_cross.v",
                      "t/" + test.name + ".annotate.out")
 
 test.passes()

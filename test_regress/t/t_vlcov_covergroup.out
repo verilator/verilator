@@ -1,10 +1,10 @@
 COVERGROUP COVERAGE REPORT
 ==========================
 
-TOTAL: 8/8 bins covered (100.00%)
+TOTAL: 31/51 bins covered (60.78%)
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg  [t/t_covergroup_cross_simple.v:15]
+Covergroup Type: cg2  [t/t_covergroup_cross.v:18]
   Type Coverage: 8/8 bins (100.00%)
 
   Coverpoint: cp_addr
@@ -26,5 +26,92 @@ Covergroup Type: cg  [t/t_covergroup_cross_simple.v:15]
       COVERED  addr0_x_write  1 hits
       COVERED  addr1_x_read   1 hits
       COVERED  addr1_x_write  1 hits
+
+------------------------------------------------------------------------------
+Covergroup Type: cg3  [t/t_covergroup_cross.v:31]
+  Type Coverage: 11/19 bins (57.89%)
+
+  Coverpoint: cp_addr
+    Coverage: 3/3 bins (100.00%)
+    Bins:
+      COVERED  addr0  2 hits
+      COVERED  addr1  1 hits
+      COVERED  addr2  1 hits
+
+  Coverpoint: cp_cmd
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  read   2 hits
+      COVERED  write  2 hits
+
+  Coverpoint: cp_mode
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  normal  2 hits
+      COVERED  debug   2 hits
+
+  Cross: addr_cmd_mode
+    Coverage: 4/12 bins (33.33%)
+    Bins:
+      ZERO     addr0_x_read_x_debug    0 hits
+      COVERED  addr0_x_read_x_normal   1 hits
+      COVERED  addr0_x_write_x_debug   1 hits
+      ZERO     addr0_x_write_x_normal  0 hits
+      ZERO     addr1_x_read_x_debug    0 hits
+      ZERO     addr1_x_read_x_normal   0 hits
+      ZERO     addr1_x_write_x_debug   0 hits
+      COVERED  addr1_x_write_x_normal  1 hits
+      COVERED  addr2_x_read_x_debug    1 hits
+      ZERO     addr2_x_read_x_normal   0 hits
+      ZERO     addr2_x_write_x_debug   0 hits
+      ZERO     addr2_x_write_x_normal  0 hits
+
+------------------------------------------------------------------------------
+Covergroup Type: cg4  [t/t_covergroup_cross.v:49]
+  Type Coverage: 12/24 bins (50.00%)
+
+  Coverpoint: cp_addr
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  addr0  2 hits
+      COVERED  addr1  2 hits
+
+  Coverpoint: cp_cmd
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  read   2 hits
+      COVERED  write  2 hits
+
+  Coverpoint: cp_mode
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  normal  2 hits
+      COVERED  debug   2 hits
+
+  Coverpoint: cp_parity
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  even  2 hits
+      COVERED  odd   2 hits
+
+  Cross: addr_cmd_mode_parity
+    Coverage: 4/16 bins (25.00%)
+    Bins:
+      ZERO     addr0_x_read_x_debug_x_even    0 hits
+      ZERO     addr0_x_read_x_debug_x_odd     0 hits
+      COVERED  addr0_x_read_x_normal_x_even   1 hits
+      ZERO     addr0_x_read_x_normal_x_odd    0 hits
+      COVERED  addr0_x_write_x_debug_x_even   1 hits
+      ZERO     addr0_x_write_x_debug_x_odd    0 hits
+      ZERO     addr0_x_write_x_normal_x_even  0 hits
+      ZERO     addr0_x_write_x_normal_x_odd   0 hits
+      ZERO     addr1_x_read_x_debug_x_even    0 hits
+      COVERED  addr1_x_read_x_debug_x_odd     1 hits
+      ZERO     addr1_x_read_x_normal_x_even   0 hits
+      ZERO     addr1_x_read_x_normal_x_odd    0 hits
+      ZERO     addr1_x_write_x_debug_x_even   0 hits
+      ZERO     addr1_x_write_x_debug_x_odd    0 hits
+      ZERO     addr1_x_write_x_normal_x_even  0 hits
+      COVERED  addr1_x_write_x_normal_x_odd   1 hits
 
 ------------------------------------------------------------------------------
