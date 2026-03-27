@@ -493,7 +493,9 @@ private:
         }
         if (m_disableSeqIfp) {
             AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
-            disableSeqIfp->addThensp(nodep->nextp()->unlinkFrBackWithNext());
+            AstNode* const continuationsp = nodep->nextp()->unlinkFrBackWithNext();
+            // Keep continuation statements in a proper statement-list container.
+            disableSeqIfp->addThensp(new AstBegin{flp, "", continuationsp, true});
             nodep->addNextHere(disableSeqIfp);
         }
         nodep->replaceWith(beginp);
@@ -931,7 +933,7 @@ private:
             // */ }
             AstBegin* const bodyp = pexprp->bodyp();
             AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
+            AstIf* const guardp = new AstIf{flp, condp, new AstBegin{flp, "", origStmtsp, true}};
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
             // Don't iterate pexprp here -- it was already iterated when created
@@ -1043,11 +1045,14 @@ private:
             AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
                                                    nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
             initialCntp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            bodyp->stmtsp()->addHereThisAsNext(initialCntp);
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
                                 readCntRefp->cloneTree(false)};
+            // Prepend to the sequence body to keep statement list structure valid.
+            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
+            bodyp->addStmtsp(initialCntp);
             initialCntp->addNextHere(assignp);
+            assignp->addNextHere(origStmtsp);
 
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},
