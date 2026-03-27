@@ -389,10 +389,7 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
         if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
         if (isPkgA && isPkgB) {
             // Sort packages by source file position (compilation order)
-            const int fileA = modA->fileline()->filenameno();
-            const int fileB = modB->fileline()->filenameno();
-            if (fileA != fileB) return fileA < fileB;
-            return modA->fileline()->firstLineno() < modB->fileline()->firstLineno();
+            return modA->fileline()->operatorCompare(*modB->fileline()) < 0;
         }
         return false;  // Both non-package: preserve original order
     });
