@@ -192,6 +192,7 @@ module t (
   `signal(REPLACE_COND_WITH_THEN_BRANCH_COND, rand_a[0] ? rand_a[0] : rand_a[1]);
   `signal(REPLACE_COND_WITH_THEN_BRANCH_ZERO, rand_a[0] ? 1'd0 : rand_a[1]);
   `signal(REPLACE_COND_WITH_THEN_BRANCH_ONES, rand_a[0] ? 1'd1 : rand_a[1]);
+  `signal(REPLACE_COND_WITH_ELSE_BRANCH_COND, rand_a[0] ? rand_a[1] : rand_a[0]);
   `signal(REPLACE_COND_WITH_ELSE_BRANCH_ZERO, rand_a[0] ? rand_a[1] : 1'd0);
   `signal(REPLACE_COND_WITH_ELSE_BRANCH_ONES, rand_a[0] ? rand_a[1] : 1'd1);
   `signal(INLINE_ARRAYSEL_SPLICE, array[0]);
@@ -246,6 +247,50 @@ module t (
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR_COMMON, rand_a[23:4] ^ rand_a[39:20]);
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR, rand_a[23:4] ^ (~rand_b[24:5] ^ rand_a[39:20]));
 
+  `signal(REPLACE_COND_CONST_ONE_ZERO, rand_a[0] ? 8'b1 : 8'b0);
+  `signal(REPLACE_COND_CONST_ZERO_ONE, rand_a[0] ? 8'b0 : 8'b1);
+  `signal(REPLACE_COND_CAT_LHS_CONST_ONE_ZERO, rand_a[0] ? {8'b1, rand_b[0]} : {8'b0, rand_b[1]});
+  `signal(REPLACE_COND_CAT_LHS_CONST_ZERO_ONE, rand_a[0] ? {8'b0, rand_b[0]} : {8'b1, rand_b[1]});
+  `signal(REPLACE_COND_SAME_CAT_LHS, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
+  `signal(REPLACE_COND_SAME_CAT_RHS, rand_a[0] ? {rand_b[0], 8'd0} : {rand_b[1], 8'd0});
+  `signal(REPLACE_COND_SAM_COND_THEN, rand_a[0] ? (rand_a[0] ? rand_b[1:0] : rand_b[3:2]) : rand_b[5:4]);
+  `signal(REPLACE_COND_SAM_COND_ELSE, rand_a[0] ? rand_b[1:0] : (rand_a[0] ? rand_b[3:2] : rand_b[5:4]));
+  `signal(REMOVE_SHIFTL_ZERO, rand_a << 0);
+  `signal(REPLACE_SHIFTL_OVER, rand_a << 64);
+  `signal(REPLACE_SHIFTL_SEL, rand_a[27:0] << 4);
+  `signal(REMOVE_SHIFTR_ZERO, rand_a >> 0);
+  `signal(REPLACE_SHIFTR_OVER, rand_a >> 64);
+  `signal(REPLACE_SHIFTR_SEL, rand_a[28:1] >> 4);
+  `signal(PUSH_BITWISE_OP_THROUGH_COND_AND, 4'd2 & (rand_a[0] ? 4'd7 : 4'd4));
+  `signal(PUSH_BITWISE_OP_THROUGH_COND_OR, 4'd2 | (rand_a[0] ? 4'd7 : 4'd4));
+  `signal(PUSH_BITWISE_OP_THROUGH_COND_XOR, 4'd2 ^ (rand_a[0] ? 4'd7 : 4'd4));
+  `signal(SIMPLIFY_COND_THEN, rand_a[0] ? {1'b0, ~rand_a[0]} : 2'b0);
+  `signal(SIMPLIFY_COND_ELSE, rand_a[0] ? 2'b0 : {1'b0, ~rand_a[0]});
+  `signal(PUSH_CONCAT_THROUGH_COND_LHS_A, {5'd0, rand_a[0] ? {rand_b[4], 1'b0} : 2'b0});
+  `signal(PUSH_CONCAT_THROUGH_COND_LHS_B, {5'd0, rand_a[0] ? 2'b0 : {rand_b[4], 1'b0}});
+  `signal(PUSH_CONCAT_THROUGH_COND_RHS_A, {rand_a[0] ? {rand_b[5], 1'b0} : 2'b0, 5'd0});
+  `signal(PUSH_CONCAT_THROUGH_COND_RHS_B, {rand_a[0] ? 2'b0 : {rand_b[5], 1'b0}, 5'd0});
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_CONCAT_AND, &({rand_a[0], rand_a[2]} & rand_b[1:0]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_CONCAT_OR,  |({rand_a[0], rand_a[2]} | rand_b[1:0]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_CONCAT_XOR, ^({rand_a[0], rand_a[2]} ^ rand_b[1:0]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_AND_A, &(rand_a[55+:2] & rand_a[53+:2]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_OR_A,  |(rand_a[55+:2] | rand_a[53+:2]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_XOR_A, ^(rand_a[55+:2] ^ rand_a[53+:2]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_AND_B, &(rand_a[57+:2] & rand_a[59+:2]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_OR_B,  |(rand_a[57+:2] | rand_a[59+:2]));
+  `signal(PUSH_REDUCTION_THROUGH_BITWISE_OF_SELS_XOR_B, ^(rand_a[57+:2] ^ rand_a[59+:2]));
+  `signal(PUSH_SHIFTL_THROUGH_COND, (rand_a[0] ? rand_a >> 1 : rand_b >> 1) << 1);
+  `signal(PUSH_SHIFTR_THROUGH_COND, (rand_a[0] ? rand_a << 1 : rand_b << 1) >> 1);
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_AND_A, (&rand_a[10 +:2]) & (&rand_a[12 +: 2]));
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_OR_A,  (|rand_a[10 +:2]) | (|rand_a[12 +: 2]));
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_XOR_A, (^rand_a[10 +:2]) ^ (^rand_a[12 +: 2]));
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_AND_B, (&rand_a[12 +:2]) & (&rand_a[10 +: 2]));
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_OR_B,  (|rand_a[12 +:2]) | (|rand_a[10 +: 2]));
+  `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_XOR_B, (^rand_a[12 +:2]) ^ (^rand_a[10 +: 2]));
+  `signal(REPLACE_SHIFTL_SHIFTL, rand_a << 2 << 3);
+  `signal(REPLACE_SHIFTR_SHIFTR, rand_a >> 2 >> 3);
+  `signal(PUSH_COMMUTATIVE_BINARY_THROUGH_COND, 58'h1 + (rand_a[0] ? rand_b[1 +: 58] : ~rand_b[1 +: 58]));
+
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);
   `signal(MISMATCHED_ShiftR,const_a >> 4'd2);
@@ -272,9 +317,6 @@ module t (
     end
   end
   `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
-
-  `signal(PUSH_CONCAT_THROUGH_COND_LHS, {5'd0, rand_a[0] ? {rand_b[4], 1'b0} : {1'b0, rand_b[6]}});
-  `signal(PUSH_CONCAT_THROUGH_COND_RHS, {rand_a[0] ? {rand_b[5], 1'b0} : {1'b0, rand_b[7]}, 5'd0});
 
   `signal(REPLACE_SHIFTL_CAT, {31'd0, rand_a[42 +: 7]} << 31);
   `signal(REPLACE_SHIFTRL_CAT, {rand_a[13 +: 7], rand_b[8 +: 27]} >> 27 << 27);
