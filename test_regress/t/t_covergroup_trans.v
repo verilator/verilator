@@ -4,7 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test transition bins: simple 2-value, 3-value sequences, and array bins
+// Test transition bins: simple 2-value, 3-value sequences, array bins,
+// and multi-value items in transition steps.
 
 module t;
   logic [2:0] state;
@@ -25,6 +26,10 @@ module t;
     cp_array: coverpoint state {
       bins arr[] = (0 => 1), (1 => 2), (2 => 3);
     }
+    // Multi-value item (comma list) in transition: matches 1 or 2 in second step
+    cp_multi_item: coverpoint state {
+      bins multi = (0 => 1, 2);  // second element is a two-value list
+    }
   endgroup
 
   cg cg_inst = new;
@@ -32,7 +37,7 @@ module t;
   initial begin
     // Drive sequence 0->1->2->3->4 which hits all bins
     state = 0; cg_inst.sample();
-    state = 1; cg_inst.sample();  // 0=>1: trans1, seq_a pos1, arr[0=>1]
+    state = 1; cg_inst.sample();  // 0=>1: trans1, seq_a pos1, arr[0=>1], multi
     state = 2; cg_inst.sample();  // 1=>2: trans2, seq_a done, arr[1=>2]
     state = 3; cg_inst.sample();  // 2=>3: trans3, seq_b pos1, arr[2=>3]
     state = 4; cg_inst.sample();  // 3=>4: seq_b done

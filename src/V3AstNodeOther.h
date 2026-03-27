@@ -1091,22 +1091,6 @@ public:
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
 };
-class AstCoverCrossBins final : public AstNode {
-    // Cross-point bin definition
-    // @astgen op1 := selectp : Optional[AstCoverSelectExpr]
-    const string m_name;  // Bin name
-
-public:
-    AstCoverCrossBins(FileLine* fl, const string& name, AstCoverSelectExpr* selectp)
-        : ASTGEN_SUPER_CoverCrossBins(fl)
-        , m_name{name} {
-        this->selectp(selectp);
-    }
-    ASTGEN_MEMBERS_AstCoverCrossBins;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    string name() const override VL_MT_STABLE { return m_name; }
-};
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
@@ -1122,18 +1106,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VCoverOptionType optionType() const { return m_type; }
-};
-class AstCoverSelectExpr final : public AstNode {
-    // Represents a cross-bins selection expression (eg binsof(cp1) intersect {1,2})
-    // @astgen op1 := exprp : AstNodeExpr
-public:
-    AstCoverSelectExpr(FileLine* fl, AstNodeExpr* exprp)
-        : ASTGEN_SUPER_CoverSelectExpr(fl) {
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstCoverSelectExpr;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
 };
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
@@ -2747,9 +2719,8 @@ public:
 };
 class AstCoverCross final : public AstNodeFuncCovItem {
     // @astgen op1 := itemsp   : List[AstCoverpointRef]
-    // @astgen op2 := binsp    : List[AstCoverCrossBins]  // post-LinkParse only
-    // @astgen op3 := optionsp : List[AstCoverOption]     // post-LinkParse only
-    // @astgen op4 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
+    // @astgen op2 := optionsp : List[AstCoverOption]     // post-LinkParse only
+    // @astgen op3 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
     //                                          // post-LinkParse: empty
 public:
     AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)

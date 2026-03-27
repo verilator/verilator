@@ -344,14 +344,14 @@ class TimingSuspendableVisitor final : public VNVisitor {
     }
     void visit(AstNodeCCall* nodep) override {
         AstCFunc* funcp = nodep->funcp();
-        if (!funcp) {
+        if (!funcp) {  // LCOV_EXCL_BR_LINE -- AstNodeCCall always has non-null funcp
             iterateChildren(nodep);
             return;
         }
 
         // Skip if we're not inside a function/procedure (m_procp would be null)
         // This can happen for calls in Active nodes at module scope
-        if (!m_procp) {
+        if (!m_procp) {  // LCOV_EXCL_BR_LINE -- m_procp is always set when CCall is inside a function
             iterateChildren(nodep);
             return;
         }
