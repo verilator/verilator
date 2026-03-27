@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--Wno-initialdly", "--binary"])
+test.compile(verilator_flags2=["--binary"])
 
 test.execute(expect_filename=test.golden_filename)
 

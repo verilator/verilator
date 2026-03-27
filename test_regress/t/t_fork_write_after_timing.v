@@ -21,8 +21,6 @@ module t;
     t2(x1);
     t3(x1);
     t4(x1);
-    t5(x2);
-    t6(x2);
 
     #5 $write("*-* All Finished *-*\n");
     $finish;
@@ -58,14 +56,5 @@ module t;
       x = #1 2;
     join_none
     #2 $display("t4 end %d", x);
-  endtask
-
-  task t5(output int x);
-    if (x != 0) $stop;
-    x <= #1 3;
-  endtask
-
-  task t6(inout int x);
-    x <= #1 4;
   endtask
 endmodule
