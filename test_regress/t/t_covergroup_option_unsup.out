@@ -1,4 +1,4 @@
-%Warning-COVERIGN: t/t_covergroup_option_unsup.v:15:7: Ignoring unsupported coverage option: foobar
+%Warning-COVERIGN: t/t_covergroup_option_unsup.v:15:7: Ignoring unsupported coverage option: 'foobar'
    15 |       option.foobar = 1;
       |       ^~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
