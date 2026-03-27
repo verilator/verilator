@@ -22,6 +22,7 @@ module t(/*AUTOARG*/
   logic a2, b2;
   logic a3, b3;
   logic a4, b4;
+  logic a5, b5;
 
   // Test 1: [*3] overlapped implication
   assert property (@(posedge clk) a1[*3] |-> b1)
@@ -39,6 +40,10 @@ module t(/*AUTOARG*/
   assert property (@(posedge clk) a4[*2] |=> b4)
     else $error("[%0t] cyc=%0d FAIL test4", $time, cyc);
 
+  // Test 5: [*10000] large count -- verifies counter-based implementation
+  assert property (@(posedge clk) a5[*10000] |-> b5)
+    else $error("[%0t] cyc=%0d FAIL test5", $time, cyc);
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     // Default: all low
@@ -46,6 +51,7 @@ module t(/*AUTOARG*/
     a2 <= 0; b2 <= 0;
     a3 <= 0; b3 <= 0;
     a4 <= 0; b4 <= 0;
+    a5 <= 0; b5 <= 0;
 
     // Test 1: a1 high for 3 cycles (cyc 2-4), b1 high on 3rd (cyc 4)
     if (cyc >= 2 && cyc <= 4) a1 <= 1;
@@ -65,7 +71,11 @@ module t(/*AUTOARG*/
     if (cyc >= 12 && cyc <= 13) a4 <= 1;
     if (cyc == 14) b4 <= 1;
 
-    if (cyc == 20) begin
+    // Test 5: a5 high for 10000 cycles (cyc 30-10029), b5 high on 10000th (cyc 10029)
+    if (cyc >= 30 && cyc <= 10029) a5 <= 1;
+    if (cyc == 10029) b5 <= 1;
+
+    if (cyc == 10050) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -713,7 +713,8 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (m_inSampled && !VString::startsWith(nodep->name(), "__VcycleDly")) {
+        if (m_inSampled && !VString::startsWith(nodep->name(), "__VcycleDly")
+            && !VString::startsWith(nodep->name(), "__VconsRep")) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");

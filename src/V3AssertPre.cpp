@@ -60,6 +60,7 @@ private:
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
@@ -653,7 +654,7 @@ private:
     }
     void visit(AstConsRep* nodep) override {
         // IEEE 1800-2023 16.9.2 -- Lower consecutive repetition [*N]
-        // expr[*N] -> expr && $past(expr,1) && ... && $past(expr,N-1)
+        // Saturating counter tracks consecutive true cycles; avoids O(N) $past tree.
         iterateChildren(nodep);
         const AstConst* const constp = VN_CAST(nodep->countp(), Const);
         if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
@@ -669,17 +670,37 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-        // Build: expr && $past(expr,1) && $past(expr,2) && ... && $past(expr,N-1)
-        AstNodeExpr* resultp = exprp;
-        for (int i = 1; i < n; ++i) {
-            AstPast* const pastp = new AstPast{flp, exprp->cloneTreePure(false),
-                                               new AstConst{flp, static_cast<uint32_t>(i)}};
-            pastp->dtypeSetBit();
-            pastp->sentreep(newSenTree(nodep));
-            resultp = new AstAnd{flp, resultp, pastp};
-            resultp->dtypeSetBit();
-        }
-        nodep->replaceWith(resultp);
+        // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
+        AstVar* const cntVarp
+            = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
+                         nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(cntVarp);
+        AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
+        AstNodeExpr* const saturatingIncrp
+            = new AstCond{flp,
+                          new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                    new AstConst{flp, static_cast<uint32_t>(n)}},
+                          new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                     new AstConst{flp, 1u}},
+                          new AstConst{flp, static_cast<uint32_t>(n)}};
+        AstAssignDly* const incrAssignp
+            = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, saturatingIncrp};
+        AstAssignDly* const resetAssignp
+            = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                               new AstConst{flp, 0u}};
+        AstIf* const ifp = new AstIf{flp, exprClonep, incrAssignp, resetAssignp};
+        AstSenTree* const senTreep = newSenTree(nodep);
+        AstAlways* const alwaysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep, ifp};
+        cntVarp->addNextHere(alwaysp);
+        // Match when N-1 previous cycles were true and current cycle is true
+        AstNodeExpr* const cntCheckp
+            = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                         new AstConst{flp, static_cast<uint32_t>(n - 1)}};
+        cntCheckp->dtypeSetBit();
+        AstNodeExpr* const matchp = new AstAnd{flp, cntCheckp, exprp};
+        matchp->dtypeSetBit();
+        nodep->replaceWith(matchp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstRising* nodep) override {
