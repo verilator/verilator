@@ -549,7 +549,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                 out.push_back(inputChanged);
             }
             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-            if (vscp->varp()->isVirtIface()) {
+            // Check both sensIfacep() (interface members read via VIF) and
+            // isVirtIface() (VIF pointers themselves), matching the NBA lambda
+            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
                     = findTriggeredIface(vscp, vifMemberTriggeredIco);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
@@ -1013,7 +1015,9 @@ void schedule(AstNetlist* netlistp) {
             auto it = actTimingDomains.find(vscp);
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
-            if (vscp->varp()->isVirtIface()) {
+            // Check both sensIfacep() (interface members read via VIF) and
+            // isVirtIface() (VIF pointers themselves), matching the NBA lambda
+            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
                     = findTriggeredIface(vscp, vifMemberTriggeredAct);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
