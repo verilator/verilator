@@ -187,6 +187,7 @@ class FourstateVisitor final : public VNVisitor {
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
     AstNode* m_currentFTaskArgp
         = nullptr;  // Current argument variable of FTaskRef - if not variable it is meaningless
+    AstNode* m_currentPinp = nullptr;  // Current Pin of a Cell
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
 
     // array - whether numeric
@@ -961,8 +962,6 @@ class FourstateVisitor final : public VNVisitor {
         return result;
     }
 
-    // Expressions containers
-
     void visit(AstNodeAssign* const nodep) override {
         VL_RESTORER(m_currentStmtp);
         m_currentStmtp = nodep;
@@ -1063,6 +1062,39 @@ class FourstateVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->elsesp());
     }
 
+    void visit(AstCell* const nodep) override {
+        VL_RESTORER(m_currentPinp);
+        m_currentPinp = nodep->modp()->stmtsp();
+        iterateChildren(nodep);
+    }
+
+    void visit(AstPin* const nodep) override {
+        AstVar* const varp = VN_CAST(m_currentPinp, Var);
+        UASSERT_OBJ(varp, nodep, "Cell has no more arguments?");
+        if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
+            if (varp->dtypep()->isFourstate()) {
+                AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
+                                                getFourStateExpressionXZ(exprp)};
+                nodep->addNextHere(newp);
+                AstNodeExpr* const oldp = exprp->unlinkFrBack();
+                nodep->exprp(getFourStateExpressionValue(oldp));
+                oldp->deleteTree();
+                splitVar(varp);  // Ensure that variable is splitted
+                UASSERT_OBJ(m_currentPinp->nextp() && m_currentPinp->nextp()->nextp(), varp,
+                            "Varp was not split correctly");
+                m_currentPinp = m_currentPinp->nextp();
+                nodep->modVarp(VN_AS(m_currentPinp, Var));
+                newp->modVarp(VN_AS(m_currentPinp->nextp(), Var));
+            } else if (isFourstate(exprp)) {
+                AstNodeExpr* const oldp = exprp->unlinkFrBack();
+                nodep->exprp(getTwoStateCast(oldp));
+                oldp->deleteTree();
+            }
+        }
+        m_currentPinp = m_currentPinp->nextp();
+        iterateChildren(nodep);
+    }
+
     void visit(AstNodeFTaskRef* const nodep) override {
         VL_RESTORER(m_currentFTaskArgp);
         m_currentFTaskArgp = nodep->taskp()->stmtsp();
@@ -1121,7 +1153,6 @@ class FourstateVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Others
     void visit(AstNodeFTask* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
         VL_RESTORER(m_tmpVarps);

@@ -3598,7 +3598,10 @@ class ConstVisitor final : public VNVisitor {
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (ifSameAssign(nodep)) {
+            } else if (!nodep->condp()
+                            ->dtypep()
+                            ->isFourstate()  // TODO: dtypep()->isFourstate() cannot be trusted
+                       && ifSameAssign(nodep)) {
                 UINFO(4,
                       "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})");
                 AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
