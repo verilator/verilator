@@ -16,7 +16,8 @@ module t;
   endfunction
 
   initial begin
-    if (((f(1) && f('x)) ? (f(0) && f('x)) : (f('x) && f(0))) !== 0) $stop;
+    if (((f(1) && f('x)) ? (f(0) && f('x)) : ((f('x) || f(0)) && (f(0) || (f('x) && f(0))))) !== 0)
+      $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

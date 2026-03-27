@@ -694,6 +694,50 @@ class FourstateVisitor final : public VNVisitor {
             logAndp->user2p(resultXZTmpVarRefp);
         }
 
+        void getFourStateExpressionLogOrHandler(AstLogOr* const logOrp) {
+            FileLine* const flp = logOrp->fileline();
+            AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(logOrp);
+            AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(logOrp);
+            addPrecalculation(new AstAssign{flp,
+                                            new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
+                                            getFourStateExpressionXZ(logOrp->lhsp(), false)});
+            addPrecalculation(new AstAssign{flp,
+                                            new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
+                                            getFourStateExpressionValue(logOrp->lhsp(), false)});
+            AstIf* const ifp = new AstIf{
+                flp,
+                new AstOr{flp,
+                          new AstNot{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::READ}},
+                          new AstVarRef{flp, resultXZTmpVarp, VAccess::READ}}};
+            addPrecalculation(ifp);
+            {
+                // Lhs is non one
+                StatementPlaceHolder placeholderStmt{m_fourstateVisitor, flp};
+                ifp->addThensp(placeholderStmt.stmtp());
+                TmpVarsReleaser{m_fourstateVisitor};
+                addPrecalculation(new AstAssign{
+                    flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
+                    new AstOr{flp, getFourStateExpressionValue(logOrp->rhsp()),
+                              new AstOr{flp, getFourStateExpressionXZ(logOrp->rhsp()),
+                                        new AstVarRef{flp, resultXZTmpVarp, VAccess::READ}}}});
+                addPrecalculation(new AstAssign{
+                    flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
+                    new AstLogAnd{
+                        flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::READ},
+                        new AstOr{flp,
+                                  new AstNot{flp, getFourStateExpressionValue(logOrp->rhsp())},
+                                  getFourStateExpressionXZ(logOrp->rhsp())}}});
+            }
+            AstVarRef* const resultValueTmpVarRefp
+                = new AstVarRef{flp, resultValueTmpVarp, VAccess::READ};
+            AstVarRef* const resultXZTmpVarRefp
+                = new AstVarRef{flp, resultXZTmpVarp, VAccess::READ};
+            pushDeletep(resultValueTmpVarRefp);
+            pushDeletep(resultXZTmpVarRefp);
+            logOrp->user1p(resultValueTmpVarRefp);
+            logOrp->user2p(resultXZTmpVarRefp);
+        }
+
         AstNodeExpr* get(AstNodeExpr* const exprp, bool putIntoTmp = true) {
             // VN_AS is expected to be here (instead of VN_CAST)
             if (AstNodeExpr* result = getCache(exprp)) return result->cloneTree(false);
@@ -850,6 +894,12 @@ class FourstateVisitor final : public VNVisitor {
             getFourStateExpressionLogAndHandler(logAndp);
             noTmp();
             m_result = VN_AS(logAndp->user1p(), NodeExpr)->cloneTree(false);
+        }
+
+        void visit(AstLogOr* const logOrp) override {
+            getFourStateExpressionLogOrHandler(logOrp);
+            noTmp();
+            m_result = VN_AS(logOrp->user1p(), NodeExpr)->cloneTree(false);
         }
 
         void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
@@ -1042,6 +1092,12 @@ class FourstateVisitor final : public VNVisitor {
             getFourStateExpressionLogAndHandler(logAndp);
             noTmp();
             m_result = VN_AS(logAndp->user2p(), NodeExpr)->cloneTree(false);
+        }
+
+        void visit(AstLogOr* const logOrp) override {
+            getFourStateExpressionLogOrHandler(logOrp);
+            noTmp();
+            m_result = VN_AS(logOrp->user2p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstNodeVarRef* const varRefp) override {
