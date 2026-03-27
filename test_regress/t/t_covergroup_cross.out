@@ -49,3 +49,19 @@ cg4.cp_mode.debug: 2
 cg4.cp_mode.normal: 2
 cg4.cp_parity.even: 2
 cg4.cp_parity.odd: 2
+cg5.addr_cmd_opt.addr0_x_read [cross]: 1
+cg5.addr_cmd_opt.addr0_x_write [cross]: 0
+cg5.addr_cmd_opt.addr1_x_read [cross]: 0
+cg5.addr_cmd_opt.addr1_x_write [cross]: 1
+cg5.cp_addr.addr0: 1
+cg5.cp_addr.addr1: 1
+cg5.cp_cmd.read: 1
+cg5.cp_cmd.write: 1
+cg_range.addr_cmd_range.hi_range_x_read [cross]: 1
+cg_range.addr_cmd_range.hi_range_x_write [cross]: 1
+cg_range.addr_cmd_range.lo_range_x_read [cross]: 1
+cg_range.addr_cmd_range.lo_range_x_write [cross]: 1
+cg_range.cp_addr.hi_range: 2
+cg_range.cp_addr.lo_range: 2
+cg_range.cp_cmd.read: 2
+cg_range.cp_cmd.write: 2
