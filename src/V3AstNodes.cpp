@@ -1013,6 +1013,11 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
 
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
+bool AstNodeDType::isNonPackedArray() const {
+    return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType)
+           || VN_IS(this, QueueDType) || VN_IS(this, AssocArrayDType);
+}
+
 class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s

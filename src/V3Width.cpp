@@ -3328,8 +3328,7 @@ class WidthVisitor final : public VNVisitor {
             // Similar logic in V3Case
             return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
                                              irangep->rhsp()->unlinkFrBack());
-        } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
-                   || VN_IS(itemDtp, QueueDType)) {
+        } else if (itemDtp->isNonPackedArray()) {
             // Unsupported in parameters
             AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
                                                           VCMethod::ARRAY_INSIDE, exprp};
@@ -5975,12 +5974,8 @@ class WidthVisitor final : public VNVisitor {
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
                 // Only check if number of states match for unpacked array to unpacked array
                 // assignments
-                const bool lhsIsUnpackArray
-                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
-                      || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
-                const bool rhsIsUnpackArray
-                    = VN_IS(rhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, DynArrayDType)
-                      || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
+                const bool lhsIsUnpackArray = lhsDtp->isNonPackedArray();
+                const bool rhsIsUnpackArray = rhsDtp->isNonPackedArray();
                 if (lhsIsUnpackArray && rhsIsUnpackArray) {
                     if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
                         nodep->v3error("Assignment between 2-state and 4-state types requires "
@@ -7918,6 +7913,20 @@ class WidthVisitor final : public VNVisitor {
             // Determine expression widths only relying on what's in the subops
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+            // Bitwise operators are not defined for non-packed arrays
+            {
+                const AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
+                const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
+                if (lhsDtp->isNonPackedArray() || rhsDtp->isNonPackedArray()) {
+                    const AstNodeDType* const badDtp
+                        = lhsDtp->isNonPackedArray() ? lhsDtp : rhsDtp;
+                    nodep->v3error("Operator " << nodep->prettyTypeName()
+                                               << " not defined for "
+                                               << badDtp->prettyDTypeName(false) << " operands");
+                    nodep->dtypeSetBit();
+                    return;
+                }
+            }
             checkCvtUS(nodep->lhsp(), false);
             checkCvtUS(nodep->rhsp(), false);
             const int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
