@@ -21,8 +21,7 @@ test.glob_some(test.obj_dir + "/*__pch.h")
 test.glob_some(test.obj_dir + "/*__1.cpp")
 
 # Verify parallel builds enabled
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk",
-               r'VM_PARALLEL_BUILDS\s*=\s*1')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", r'VM_PARALLEL_BUILDS\s*=\s*1')
 
 test.execute()
 
