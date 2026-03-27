@@ -369,7 +369,35 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 
 AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
-    orderSequentially(funcp, logicClasses.m_static);
+
+    const LogicByScope& orig = logicClasses.m_static;
+    if (orig.size() <= 1) {
+        orderSequentially(funcp, orig);
+        return funcp;
+    }
+
+    // Level-based module sorting can reorder packages so that an importing
+    // package runs before the imported one.  Re-sort package entries by source
+    // file position to restore compilation order (IEEE 1800-2023 26.3).
+    std::vector<size_t> indices(orig.size());
+    for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
+    std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+        const AstNodeModule* const modA = orig[a].first->modp();
+        const AstNodeModule* const modB = orig[b].first->modp();
+        const bool isPkgA = VN_IS(modA, Package);
+        const bool isPkgB = VN_IS(modB, Package);
+        if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
+        if (isPkgA && isPkgB) {
+            // Sort packages by source file position (compilation order)
+            return modA->fileline()->operatorCompare(*modB->fileline()) < 0;
+        }
+        return false;  // Both non-package: preserve original order
+    });
+    LogicByScope sorted;
+    sorted.reserve(orig.size());
+    for (const size_t i : indices) sorted.emplace_back(orig[i].first, orig[i].second);
+
+    orderSequentially(funcp, sorted);
     return funcp;  // Not splitting yet as it is not final
 }
 
