@@ -702,9 +702,11 @@ class TristateVisitor final : public TristateBaseVisitor {
         std::vector<AstVar*> varsToProcess = vars;
         for (const auto& lhsEnt : m_lhsmap) {
             AstVar* const varp = lhsEnt.first;
-            if (!m_tgraph.isTristate(varp) && hasResolvedTriEnable(varp)) varsToProcess.push_back(varp);
+            if (!m_tgraph.isTristate(varp) && hasResolvedTriEnable(varp))
+                varsToProcess.push_back(varp);
         }
-        for (AstVar* varp : varsToProcess) {  // Use vector instead of m_lhsmap iteration for stability
+        for (AstVar* varp :
+             varsToProcess) {  // Use vector instead of m_lhsmap iteration for stability
             const std::map<AstVar*, RefStrengthVec*>::iterator it = m_lhsmap.find(varp);
             if (it == m_lhsmap.end()) continue;
             AstVar* const invarp = it->first;
