@@ -14,21 +14,29 @@
 // All three forms below default to net for input ports.
 
 // Scenario 1: bare input (defaults to net)
-interface bare_if (input clk);
+interface bare_if (
+    input clk
+);
   logic data;
 endinterface
 
 // Scenario 2: input with explicit data type (still net for input)
-interface logic_if (input logic clk);
+interface logic_if (
+    input logic clk
+);
   logic data;
 endinterface
 
 // Scenario 3: input with explicit net kind
-interface wire_if (input wire clk);
+interface wire_if (
+    input wire clk
+);
   logic data;
 endinterface
 
-module consumer (bare_if cif);
+module consumer (
+    bare_if cif
+);
   logic sampled;
   always @(posedge cif.clk) sampled <= cif.data;
 endmodule
@@ -38,19 +46,19 @@ module t;
   always #5 clk = ~clk;
   integer cyc = 0;
 
-  bare_if bif(.clk());
+  bare_if bif (.clk());
   assign bif.clk = clk;
   assign bif.data = 1'b1;
 
-  logic_if lif(.clk());
+  logic_if lif (.clk());
   assign lif.clk = clk;
   assign lif.data = 1'b1;
 
-  wire_if wif(.clk());
+  wire_if wif (.clk());
   assign wif.clk = clk;
   assign wif.data = 1'b1;
 
-  consumer cons(.cif(bif));
+  consumer cons (.cif(bif));
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

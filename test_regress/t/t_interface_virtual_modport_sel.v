@@ -13,16 +13,18 @@
 //   vif.modport_name   (direct)
 //   obj.vif.modport_name  (chained through class member)
 
-interface my_if (input logic clk);
+interface my_if (
+    input logic clk
+);
   logic [7:0] data;
 
   clocking mon_cb @(posedge clk);
     input data;
   endclocking
 
-  modport passive_mp (clocking mon_cb);
-  modport active_mp (output data);
-  modport signal_mp (input data);
+  modport passive_mp(clocking mon_cb);
+  modport active_mp(output data);
+  modport signal_mp(input data);
 endinterface
 
 class Context;

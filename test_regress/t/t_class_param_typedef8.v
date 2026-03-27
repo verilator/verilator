@@ -15,7 +15,7 @@ package axi_test;
       parameter IW = 8,
       parameter UW = 1
   );
-    rand logic [IW-1:0] ax_id   = '0;
+    rand logic [IW-1:0] ax_id = '0;
     rand logic [AW-1:0] ax_addr = '0;
     rand logic [UW-1:0] ax_user = '0;
   endclass
@@ -25,13 +25,19 @@ package axi_test;
       parameter int IW = 8,
       parameter int UW = 1
   );
-    typedef axi_ax_beat #(.AW(AW), .IW(IW), .UW(UW)) ax_beat_t;
+    typedef axi_ax_beat#(
+        .AW(AW),
+        .IW(IW),
+        .UW(UW)
+    ) ax_beat_t;
   endclass
 endpackage
 
 module t;
-  typedef axi_test::axi_driver #(
-    .AW(64), .IW(6), .UW(2)
+  typedef axi_test::axi_driver#(
+      .AW(64),
+      .IW(6),
+      .UW(2)
   ) drv_t;
 
   initial begin
