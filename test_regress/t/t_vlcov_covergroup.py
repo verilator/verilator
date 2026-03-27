@@ -10,17 +10,34 @@
 
 import vltest_bootstrap
 
-test.scenarios('dist')
+test.scenarios('vlt')
+
+test.top_filename = "t/t_covergroup_cross_simple.v"
+
+test.compile(verilator_flags2=['--coverage'])
+
+test.execute()
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--covergroup",
-    test.t_dir + "/t_vlcov_covergroup_data.dat",
+    test.obj_dir + "/coverage.dat",
 ],
          logfile=test.obj_dir + "/covergroup.log",
          tee=False,
          verilator_run=True)
 
 test.files_identical(test.obj_dir + "/covergroup.log", test.golden_filename)
+
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    "--annotate",
+    test.obj_dir + "/annotated",
+    test.obj_dir + "/coverage.dat",
+],
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/annotated/t_covergroup_cross_simple.v",
+                     "t/" + test.name + ".annotate.out")
 
 test.passes()
