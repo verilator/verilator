@@ -121,7 +121,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, true);
     }
 
-    void visit(AstDiv* nodep) {
+    void visit(AstDiv* nodep) override {
         iterateChildren(nodep);
         if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
             setFourstate(nodep, isFourstate(nodep->lhsp()) || constp->num().isEqZero()
