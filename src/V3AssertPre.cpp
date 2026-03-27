@@ -671,32 +671,28 @@ private:
             return;
         }
         // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
-        AstVar* const cntVarp
-            = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
-                         nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
+                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         m_modp->addStmtsp(cntVarp);
         AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
-        AstNodeExpr* const saturatingIncrp
-            = new AstCond{flp,
-                          new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                    new AstConst{flp, static_cast<uint32_t>(n)}},
-                          new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                     new AstConst{flp, 1u}},
-                          new AstConst{flp, static_cast<uint32_t>(n)}};
+        AstNodeExpr* const saturatingIncrp = new AstCond{
+            flp,
+            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                      new AstConst{flp, static_cast<uint32_t>(n)}},
+            new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 1u}},
+            new AstConst{flp, static_cast<uint32_t>(n)}};
         AstAssignDly* const incrAssignp
             = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, saturatingIncrp};
-        AstAssignDly* const resetAssignp
-            = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                               new AstConst{flp, 0u}};
+        AstAssignDly* const resetAssignp = new AstAssignDly{
+            flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0u}};
         AstIf* const ifp = new AstIf{flp, exprClonep, incrAssignp, resetAssignp};
         AstSenTree* const senTreep = newSenTree(nodep);
         AstAlways* const alwaysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep, ifp};
         cntVarp->addNextHere(alwaysp);
         // Match when N-1 previous cycles were true and current cycle is true
-        AstNodeExpr* const cntCheckp
-            = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                         new AstConst{flp, static_cast<uint32_t>(n - 1)}};
+        AstNodeExpr* const cntCheckp = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                  new AstConst{flp, static_cast<uint32_t>(n - 1)}};
         cntCheckp->dtypeSetBit();
         AstNodeExpr* const matchp = new AstAnd{flp, cntCheckp, exprp};
         matchp->dtypeSetBit();
