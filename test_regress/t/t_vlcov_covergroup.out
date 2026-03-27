@@ -1,31 +1,30 @@
 COVERGROUP COVERAGE REPORT
 ==========================
 
-TOTAL: 3/6 bins covered (50.00%)
-       (1 ignored, 1 illegal)
+TOTAL: 8/8 bins covered (100.00%)
 
 ------------------------------------------------------------------------------
-Covergroup Type: mycg  [t/t_vlcov_covergroup_data.dat:10]
-  Type Coverage: 3/6 bins (50.00%)
+Covergroup Type: cg  [t/t_covergroup_cross_simple.v:15]
+  Type Coverage: 8/8 bins (100.00%)
 
-  Coverpoint: cp_b
-    Coverage: 1/1 bins (100.00%)
+  Coverpoint: cp_addr
+    Coverage: 2/2 bins (100.00%)
     Bins:
-      IGNORE   b_skip  1 hits
-      ILLEGAL  b_bad   0 hits
-      COVERED  b0      2 hits
+      COVERED  addr0  2 hits
+      COVERED  addr1  2 hits
 
-  Cross: cp_a_x_cp_b
-    Coverage: 1/3 bins (33.33%)
+  Coverpoint: cp_cmd
+    Coverage: 2/2 bins (100.00%)
     Bins:
-      ZERO     high_x_b0     0 hits
-      COVERED  low_x_b0      2 hits
-      ZERO     low_x_b_skip  0 hits
+      COVERED  read   2 hits
+      COVERED  write  2 hits
 
-  Coverpoint: cp_a
-    Coverage: 1/2 bins (50.00%)
+  Cross: addr_cmd
+    Coverage: 4/4 bins (100.00%)
     Bins:
-      COVERED  low   3 hits
-      ZERO     high  0 hits
+      COVERED  addr0_x_read   1 hits
+      COVERED  addr0_x_write  1 hits
+      COVERED  addr1_x_read   1 hits
+      COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
