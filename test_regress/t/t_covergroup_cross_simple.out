@@ -1,8 +1,0 @@
-cg.addr_cmd.addr0_x_read [cross]: 1
-cg.addr_cmd.addr0_x_write [cross]: 1
-cg.addr_cmd.addr1_x_read [cross]: 1
-cg.addr_cmd.addr1_x_write [cross]: 1
-cg.cp_addr.addr0: 2
-cg.cp_addr.addr1: 2
-cg.cp_cmd.read: 2
-cg.cp_cmd.write: 2
