@@ -1519,7 +1519,8 @@ class WidthVisitor final : public VNVisitor {
             const AstConst* const constp = VN_CAST(nodep->countp(), Const);
             if (!constp) {
                 nodep->v3error(
-                    "Consecutive repetition count must be constant (IEEE 1800-2023 16.9.2)");
+                    "Consecutive repetition count must be constant expression"
+                    " (IEEE 1800-2023 16.9.2)");
             } else if (constp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
             }

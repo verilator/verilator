@@ -3,7 +3,7 @@
    12 |   assert property (@(posedge clk) a [*n] |-> 1);
       |                                       ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_prop_consec_rep_bad.v:12:37: Consecutive repetition count must be constant (IEEE 1800-2023 16.9.2)
+%Error: t/t_assert_prop_consec_rep_bad.v:12:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
                                               : ... note: In instance 't'
    12 |   assert property (@(posedge clk) a [*n] |-> 1);
       |                                     ^~

@@ -477,6 +477,7 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        cntVarp->noSample(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
@@ -677,6 +678,7 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        cntVarp->noSample(true);
         m_modp->addStmtsp(cntVarp);
         AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
         AstNodeExpr* const saturatingIncrp = new AstCond{

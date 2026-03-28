@@ -1968,6 +1968,7 @@ class AstVar final : public AstNode {
     bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
+    bool m_noSample : 1;  // Do not wrap with AstSampled in assertion context
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2025,6 +2026,7 @@ class AstVar final : public AstNode {
         m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
+        m_noSample = false;
     }
 
 public:
@@ -2172,6 +2174,8 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool noSample() const { return m_noSample; }
+    void noSample(bool flag) { m_noSample = flag; }
     bool substConstOnly() const { return m_substConstOnly; }
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
     bool overriddenParam() const { return m_overridenParam; }

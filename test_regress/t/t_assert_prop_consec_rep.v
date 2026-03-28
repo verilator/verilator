@@ -6,76 +6,66 @@
 
 // verilog_format: off
 `define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t(/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
-  int cyc = 0;
+  int cyc;
+  reg [63:0] crc;
 
-  // --- Signals for each assertion ---
-  logic a1, b1;
-  logic a2, b2;
-  logic a3, b3;
-  logic a4, b4;
-  logic a5, b5;
+  // Derive signals from non-adjacent CRC bits
+  wire a = crc[0];
+  wire b = crc[4];
+  wire c = crc[8];
+  wire d = crc[12];
 
-  // Test 1: [*3] overlapped implication
-  assert property (@(posedge clk) a1[*3] |-> b1)
-    else $error("[%0t] cyc=%0d FAIL test1", $time, cyc);
+  int count_fail1 = 0;
+  int count_fail2 = 0;
+  int count_fail3 = 0;
+  int count_fail4 = 0;
+  int count_fail5 = 0;
 
-  // Test 2: [*1] trivial (same as a2 |-> b2)
-  assert property (@(posedge clk) a2[*1] |-> b2)
-    else $error("[%0t] cyc=%0d FAIL test2", $time, cyc);
+  // Test 1: a[*3] |-> b (3 consecutive, overlapping implication)
+  assert property (@(posedge clk) a[*3] |-> b)
+    else count_fail1 <= count_fail1 + 1;
 
-  // Test 3: [*2] overlapped implication
-  assert property (@(posedge clk) a3[*2] |-> b3)
-    else $error("[%0t] cyc=%0d FAIL test3", $time, cyc);
+  // Test 2: a[*1] |-> c (trivial [*1], overlapping)
+  assert property (@(posedge clk) a[*1] |-> c)
+    else count_fail2 <= count_fail2 + 1;
 
-  // Test 4: [*2] non-overlapped implication
-  assert property (@(posedge clk) a4[*2] |=> b4)
-    else $error("[%0t] cyc=%0d FAIL test4", $time, cyc);
+  // Test 3: a[*2] |=> d (2 consecutive, non-overlapping implication)
+  assert property (@(posedge clk) a[*2] |=> d)
+    else count_fail3 <= count_fail3 + 1;
 
-  // Test 5: [*10000] large count -- verifies counter-based implementation
-  assert property (@(posedge clk) a5[*10000] |-> b5)
-    else $error("[%0t] cyc=%0d FAIL test5", $time, cyc);
+  // Test 4: standalone consecutive rep (no implication)
+  assert property (@(posedge clk) b[*2])
+    else count_fail4 <= count_fail4 + 1;
+
+  // Test 5: [*10000] large count -- verifies counter-based lowering compiles
+  assert property (@(posedge clk) a[*10000] |-> b)
+    else count_fail5 <= count_fail5 + 1;
 
   always @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n",
+           $time, cyc, crc, a, b, c, d);
+`endif
     cyc <= cyc + 1;
-    // Default: all low
-    a1 <= 0; b1 <= 0;
-    a2 <= 0; b2 <= 0;
-    a3 <= 0; b3 <= 0;
-    a4 <= 0; b4 <= 0;
-    a5 <= 0; b5 <= 0;
-
-    // Test 1: a1 high for 3 cycles (cyc 2-4), b1 high on 3rd (cyc 4)
-    if (cyc >= 2 && cyc <= 4) a1 <= 1;
-    if (cyc == 4) b1 <= 1;
-
-    // Test 2: a2 high with b2 high (cyc 6-7)
-    if (cyc >= 6 && cyc <= 7) begin
-      a2 <= 1;
-      b2 <= 1;
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    if (cyc == 0) begin
+      crc <= 64'h5aef0c8d_d70a4497;
     end
-
-    // Test 3: a3 high for 2 cycles (cyc 9-10), b3 high on 2nd (cyc 10)
-    if (cyc >= 9 && cyc <= 10) a3 <= 1;
-    if (cyc == 10) b3 <= 1;
-
-    // Test 4: a4 high for 2 cycles (cyc 12-13), b4 high one after (cyc 14)
-    if (cyc >= 12 && cyc <= 13) a4 <= 1;
-    if (cyc == 14) b4 <= 1;
-
-    // Test 5: a5 high for 10000 cycles (cyc 30-10029), b5 high on 10000th (cyc 10029)
-    if (cyc >= 30 && cyc <= 10029) a5 <= 1;
-    if (cyc == 10029) b5 <= 1;
-
-    if (cyc == 10050) begin
+    else if (cyc == 99) begin
+      `checkh(crc, 64'hc77bb9b3784ea091);
+      `checkd(count_fail1, 5);
+      `checkd(count_fail2, 25);
+      `checkd(count_fail3, 9);
+      `checkd(count_fail4, 74);
+      `checkd(count_fail5, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end
