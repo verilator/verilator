@@ -107,6 +107,7 @@ Verilator 5.047 devel
 * Fix false ASSIGNIN on interface input ports driven from outside (#7322). [Yilou Wang]
 * Fix static initialization order for packages with class hierarchies (#7324). [Yilou Wang]
 * Fix `disable iff` imply-delay statement linking (#7337). [Nick Brereton]
+* Fix lost `$stop` on implied assertion `$error` failures.
 
 
 Verilator 5.046 2026-02-28
