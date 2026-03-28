@@ -1078,11 +1078,6 @@ class TimingControlVisitor final : public VNVisitor {
             // conservative pre-clear once before entering the wait loop so stale state from a
             // previous wait does not cause an immediate false-positive trigger.
             const bool hasDestructivePostUpdates = !senResults.m_destructivePostUpdates.empty();
-            if (hasDestructivePostUpdates) {
-                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
-                    nodep->addHereThisAsNext(stmtp);
-                }
-            }
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
             AstNodeExpr* const condp
@@ -1114,8 +1109,26 @@ class TimingControlVisitor final : public VNVisitor {
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
-            // Replace the event control with the loop
-            nodep->replaceWith(loopp);
+            // Replace the event control with a single stmt chain:
+            //   [optional pre-clear stmts] -> loop -> awaitResumption
+            if (hasDestructivePostUpdates) {
+                AstNodeStmt* headp = nullptr;
+                AstNodeStmt* tailp = nullptr;
+                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
+                    if (!headp) {
+                        headp = tailp = stmtp;
+                    } else {
+                        tailp->addNextHere(stmtp);
+                        tailp = stmtp;
+                    }
+                }
+                UASSERT_OBJ(tailp, nodep, "Expected destructive pre-clear statements");
+                tailp->addNextHere(loopp);
+                nodep->replaceWith(headp);
+            } else {
+                // Replace the event control with the loop
+                nodep->replaceWith(loopp);
+            }
         } else {
             auto* const sentreep = m_finder.getSenTree(nodep->sentreep());
             nodep->sentreep()->unlinkFrBack()->deleteTree();
