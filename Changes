@@ -42,6 +42,7 @@ Verilator 5.047 devel
 * Support `##` delay on implication RHS in SVA properties (#7284). [Yilou Wang]
 * Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
 * Support property-local variables and sequence match items (#7286). [Yilou Wang]
+* Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
 * Support `##[M:N]` range cycle delay in SVA sequences (#7312). [Yilou Wang]
 * Support array map() method (#7307) (#7316). [Wei-Lun Chiu]
 * Add VPI callback support to --main (#7145).
@@ -58,9 +59,11 @@ Verilator 5.047 devel
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
 * Optimize reuse of existing associative terms in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
-* Optimize duplicate vertices in DfgPeephole (#7305). [Geza Lore, Testorrent USA, Inc.]
+* Optimize duplicate vertices and multiplexers in DfgPeephole (#7305). [Geza Lore, Testorrent USA, Inc.]
 * Optimize commutative vertex operands in DFG for better combining. [Geza Lore, Testorrent USA, Inc.]
 * Optimize DFG peephole until a fixed point (#7309). [Geza Lore, Testorrent USA, Inc.]
+* Optimize comparisons with identical operands and $countones in DFG. [Geza Lore, Testorrent USA, Inc.]
+* Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
@@ -102,6 +105,8 @@ Verilator 5.047 devel
 * Fix linking shared library with its dependencies (#7320). [Artur Bieniek, Antmicro Ltd.]
 * Fix modport selection of virtual interface handle (#7321). [Yilou Wang]
 * Fix false ASSIGNIN on interface input ports driven from outside (#7322). [Yilou Wang]
+* Fix static initialization order for packages with class hierarchies (#7324). [Yilou Wang]
+* Fix `disable iff` imply-delay statement linking (#7337). [Nick Brereton]
 
 
 Verilator 5.046 2026-02-28
