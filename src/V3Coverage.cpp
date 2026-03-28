@@ -78,7 +78,7 @@ public:
     explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateConst(nodep); }
     ~ExprCoverageEligibleVisitor() override = default;
 
-    bool eligible() { return m_eligible; }
+    bool eligible() const { return m_eligible; }
 };
 
 //######################################################################
@@ -252,7 +252,7 @@ class CoverageVisitor final : public VNVisitor {
         const LinenoSet& lines = m_handleLines[state.m_handle];
         int first = 0;
         int last = 0;
-        for (int linen : lines) {
+        for (const int linen : lines) {
             if (!first) {
                 first = last = linen;
             } else if (linen == last + 1) {
@@ -898,8 +898,8 @@ class CoverageVisitor final : public VNVisitor {
         CoverExprs rhsExprs;
         m_exprs.swap(rhsExprs);
 
-        for (CoverExpr& l : lhsExprs) {
-            for (CoverExpr& r : rhsExprs) {
+        for (const CoverExpr& l : lhsExprs) {
+            for (const CoverExpr& r : rhsExprs) {
                 // array size 2 -> (false, true)
                 std::array<std::set<AstVar*>, 2> varps;
                 std::array<std::set<std::string>, 2> strs;
@@ -913,7 +913,7 @@ class CoverageVisitor final : public VNVisitor {
                 // Equivalent terms which don't match on either of these criteria will
                 // not be flagged as redundant or impossible, however the results will
                 // still be valid, albeit messier
-                for (CoverTerm& term : l) {
+                for (const CoverTerm& term : l) {
                     if (const AstVarRef* const refp = VN_CAST(term.m_exprp, VarRef)) {
                         varps[term.m_objective].insert(refp->varp());
                     } else {
@@ -922,7 +922,7 @@ class CoverageVisitor final : public VNVisitor {
                     expr.push_back(term);
                 }
                 bool impossible = false;
-                for (CoverTerm& term : r) {
+                for (const CoverTerm& term : r) {
                     bool redundant = false;
                     if (const AstNodeVarRef* const refp = VN_CAST(term.m_exprp, NodeVarRef)) {
                         if (varps[term.m_objective].find(refp->varp())
@@ -1087,8 +1087,8 @@ class CoverageVisitor final : public VNVisitor {
 
     void exprUnsupported(AstNode* nodep, const string& why) {
         UINFO(9, "unsupported: " << why << " " << nodep);
-        bool wasSeeking = m_seeking == SEEKING;
-        Objective oldSeeking = m_seeking;
+        const bool wasSeeking = m_seeking == SEEKING;
+        const Objective oldSeeking = m_seeking;
         if (wasSeeking) abortExprCoverage();
         m_seeking = ABORTED;
         iterateChildren(nodep);

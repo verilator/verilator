@@ -152,7 +152,8 @@ void VerilatedFst::pushPrefix(const char* namep, VerilatedTracePrefixType type, 
         // Upper has name, we can suppress inserting $rootio, but still push so popPrefix works
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
-    } else if (name.empty()) {
+    }
+    if (name.empty()) {
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
     }
@@ -352,7 +353,7 @@ void VerilatedFst::declDoubleArray(uint32_t code, const char* name, int dtypenum
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t fidx) {
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t /*fidx*/) {
     if (offload()) return new OffloadBuffer{*this};
     return new Buffer{*this};
 }

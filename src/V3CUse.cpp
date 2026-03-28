@@ -59,7 +59,7 @@ class CUseVisitor final : public VNVisitorConst {
         iterateAndNextConstNull(nodep->argsp());
         iterateAndNextConstNull(nodep->stmtsp());
     }
-    void visit(AstCCall* nodep) override { return; }
+    void visit(AstCCall* /*nodep*/) override {}
     void visit(AstCReturn* nodep) override {
         UASSERT_OBJ(!nodep->user1SetOnce(), nodep, "Visited same return twice");
         iterateConst(nodep->lhsp()->dtypep());

@@ -562,7 +562,6 @@ public:
         dtypep(findCHandleDType());
     }
 
-public:
     ASTGEN_MEMBERS_AstAddrOfCFunc;
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2048,17 +2047,11 @@ public:
     }
     string emitC() override {
         if (seedp()) {
-            if (urandom()) {
-                return "VL_URANDOM_SEEDED_%nq%lq(%li)";
-            } else {
-                return "VL_RANDOM_SEEDED_%nq%lq(%li)";
-            }
+            if (urandom()) return "VL_URANDOM_SEEDED_%nq%lq(%li)";
+            return "VL_RANDOM_SEEDED_%nq%lq(%li)";
         }
-        if (isWide()) {
-            return "VL_RANDOM_%nq(%nw, %P)";
-        } else {
-            return "VL_RANDOM_%nq()";
-        }
+        if (isWide()) return "VL_RANDOM_%nq(%nw, %P)";
+        return "VL_RANDOM_%nq()";
     }
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }

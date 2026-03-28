@@ -1935,9 +1935,8 @@ AstClass* AstClassExtends::classOrNullp() const {
     if (refp && !refp->paramsp()) {
         // Class already resolved
         return refp->classp();
-    } else {
-        return nullptr;
     }
+    return nullptr;
 }
 AstClass* AstClassExtends::classp() const {
     AstClass* const clsp = classOrNullp();
@@ -2019,7 +2018,7 @@ void AstEnumDType::dump(std::ostream& str) const {
     str << " enum";
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "enum", 1);
+    dumpJsonBoolIf(str, "enum", true);
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
@@ -2152,11 +2151,8 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
 }
 AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
-    if (it == m_map.end()) {
-        return nullptr;
-    } else {
-        return it->second->valuep();
-    }
+    if (it == m_map.end()) { return nullptr; }
+    return it->second->valuep();
 }
 AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
     AstNodeExpr* valuep = getIndexValuep(index);
@@ -2515,7 +2511,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, generic);
-    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", 1);
+    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", true);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -3430,18 +3426,12 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 
 string AstCase::pragmaString() const {
-    if (fullPragma() && parallelPragma())
-        return "synthesis full_case parallel_case";
-    else if (fullPragma())
-        return "synthesis full_case";
-    else if (parallelPragma())
-        return "synthesis parallel_case";
-    else if (uniquePragma())
-        return "unique case";
-    else if (unique0Pragma())
-        return "unique0 case";
-    else if (priorityPragma())
-        return "priority case";
+    if (fullPragma() && parallelPragma()) return "synthesis full_case parallel_case";
+    if (fullPragma()) return "synthesis full_case";
+    if (parallelPragma()) return "synthesis parallel_case";
+    if (uniquePragma()) return "unique case";
+    if (unique0Pragma()) return "unique0 case";
+    if (priorityPragma()) return "priority case";
     return "";
 }
 

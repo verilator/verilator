@@ -8323,7 +8323,8 @@ class WidthVisitor final : public VNVisitor {
                 && (std::is_same<N, AstVar>::value || std::is_same<N, AstNodeVarRef>::value),
             "Unsupported types provided.");
         if (!lhsRefp || !rhsRefp) return;
-        string lhsName, rhsName;
+        std::string lhsName;
+        std::string rhsName;
         if (VN_IS(nodep, Pin)) {
             lhsName = std::string{"Pin"};
             rhsName = std::string{"Expression"};

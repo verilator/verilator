@@ -70,9 +70,7 @@ public:
     VFileLibName(const string& filename, const string& libname)
         : m_filename{filename}
         , m_libname{libname} {}
-    VFileLibName(const VFileLibName& rhs)
-        : m_filename{rhs.m_filename}
-        , m_libname{rhs.m_libname} {}
+    VFileLibName(const VFileLibName& rhs) = default;
     string filename() const { return m_filename; }
     string libname() const { return m_libname; }
     bool operator==(const VFileLibName& rhs) const {
@@ -436,7 +434,6 @@ private:
 
     bool m_available = false;  // Set to true at the end of option parsing
 
-private:
     // METHODS
     void addArg(char** argv, size_t count, bool isForRerun);
     void addArg(const std::string& arg, bool isForRerun);
@@ -665,7 +662,7 @@ public:
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
-    string libCreateName(bool shared) {
+    string libCreateName(bool shared) const {
         string libName = "lib" + libCreate();
         if (shared) {
             libName += ".so";

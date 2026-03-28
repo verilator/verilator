@@ -98,7 +98,7 @@ void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
-    V3LockGuard lock{m_mutex};
+    const V3LockGuard lock{m_mutex};
     const auto pair = m_internedMsgEnIdxs.emplace(bitSet, 0);
     msgEnSetIdx_t& idx = pair.first->second;
     if (pair.second) {

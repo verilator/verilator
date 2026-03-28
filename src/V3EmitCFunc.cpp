@@ -174,7 +174,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     putOut();
 }
 
-bool EmitCFunc::displayEmitHeader(AstNode* nodep, bool isScan) {
+bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     bool isStmt = false;
     if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
         isStmt = false;
@@ -258,7 +258,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (vformat.empty() && VN_IS(nodep, Display))  // not fscanf etc, as they need to return value
         return;  // NOP
 
-    const bool isStmt = displayEmitHeader(nodep, isScan);
+    const bool isStmt = displayEmitHeader(nodep);
 
     if (exprFormat) {
         UASSERT_OBJ(exprsp, nodep, "Missing format expression");
@@ -366,7 +366,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     puts(")");
 }
 
-std::string EmitCFunc::dereferenceString(const std::string& pointer) {
+std::string EmitCFunc::dereferenceString(const std::string& pointer) const {
     if (pointer[0] == '(' && pointer[1] == '&') {
         // remove "address of" followed by immediate dereference
         // Note: this relies on only the form '(&OBJECT)' being used by Verilator

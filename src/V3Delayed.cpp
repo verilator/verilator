@@ -255,9 +255,9 @@ class DelayedVisitor final : public VNVisitor {
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
     //  AstVarScope::user3p()   -> std::vector<WriteReference> via m_writeRefs;
-    const VNUser1InUse m_user1InUse{};
-    const VNUser2InUse m_user2InUse{};
-    const VNUser3InUse m_user3InUse{};
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
     AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
     AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;

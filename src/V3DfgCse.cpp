@@ -336,7 +336,7 @@ class V3DfgCse final {
 
 public:
     static void apply(DfgGraph& dfg, V3DfgCseContext& ctx) {
-        V3DfgCse{dfg, ctx};
+        { V3DfgCse{dfg, ctx}; }
         // Prune unused nodes
         V3DfgPasses::removeUnused(dfg);
     }

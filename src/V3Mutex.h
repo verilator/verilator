@@ -70,7 +70,7 @@ public:
             std::abort();  // LCOV_EXCL_LINE
         }
     }
-    bool enable() VL_MT_SAFE { return m_enable; }
+    bool enable() const VL_MT_SAFE { return m_enable; }
 };
 
 /// Mutex, wrapped to allow -fthread_safety checks

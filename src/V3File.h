@@ -51,11 +51,8 @@ public:
     }
     static std::ofstream* new_ofstream_nodepend(const string& filename, bool append = false) {
         createMakeDirFor(filename);
-        if (append) {
-            return new std::ofstream{filename.c_str(), std::ios::app};
-        } else {
-            return new std::ofstream{filename.c_str()};
-        }
+        if (append) return new std::ofstream{filename.c_str(), std::ios::app};
+        return new std::ofstream{filename.c_str()};
     }
     static FILE* new_fopen_w(const string& filename) {
         createMakeDirFor(filename);
@@ -130,7 +127,7 @@ private:
     void putcNoTracking(char chr);
 
 public:
-    V3OutFormatter(Language lang);
+    explicit V3OutFormatter(Language lang);
     virtual ~V3OutFormatter() = default;
     // ACCESSORS
     void blockIndent(int flag) { m_blockIndent = flag; }
@@ -355,7 +352,7 @@ public:
         return *this;
     }
 
-    V3OutJsonFile& operator+=(V3OutJsonFile& cursor) {
+    V3OutJsonFile& operator+=(V3OutJsonFile& /*cursor*/) {
         // Meaningless syntax sugar, at least for now
         return *this;
     }

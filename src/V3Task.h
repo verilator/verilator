@@ -38,7 +38,7 @@ class V3TaskConnectState final {
     using WrapMap = std::map<std::pair<AstNodeFTask*, std::string>, AstNodeFTask*>;
     WrapMap m_wrapMap;  // Map of {old function, arguments} -> new function
 public:
-    V3TaskConnectState() {}
+    V3TaskConnectState() = default;
     ~V3TaskConnectState() = default;
     void pushDeletep(AstNode* nodep) { m_deleter.pushDeletep(nodep); }
     bool didWrap() const { return m_didWrap; }

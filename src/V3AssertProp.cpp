@@ -663,7 +663,8 @@ class RangeDelayExpander final : public VNVisitor {
         AstDelay* const dlyp = VN_CAST(curp->delayp(), Delay);
         UASSERT_OBJ(dlyp, curp, "Expected AstDelay");
         bool isRange = false;
-        int minVal = 0, maxVal = 0;
+        int minVal = 0;
+        int maxVal = 0;
         if (!extractDelayBounds(dlyp, isRange, minVal, maxVal)) return false;
         if (isRange) hasRange = true;
 
@@ -691,7 +692,7 @@ class RangeDelayExpander final : public VNVisitor {
     //   State 3: WAIT_FIXED (count down 1 cycle for ##1)
     //   State 4: CHECK_TAIL (check c, report pass/fail)
     AstNode* buildFsmBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp, AstVar* failVarp,
-                          const std::vector<SeqStep>& steps, AstSenItem* sensesp,
+                          const std::vector<SeqStep>& steps, AstSenItem* /*sensesp*/,
                           AstNodeExpr* antExprp) {
 
         AstNode* fsmChainp = nullptr;

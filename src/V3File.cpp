@@ -304,8 +304,7 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
                          << chkFilename << "; " << curStat.st_size << "=?" << chkSize << " "
                          << curStat.st_ctime << "." << VL_STAT_CTIME_NSEC(curStat) << "=?"
                          << chkCstime << "." << chkCnstime << " " << curStat.st_mtime << "."
-                         << VL_STAT_MTIME_NSEC(curStat) << "=?" << chkMstime << "." << chkMnstime
-                         << endl);
+                         << VL_STAT_MTIME_NSEC(curStat) << "=?" << chkMstime << "." << chkMnstime);
             if (skipHashing) return false;
             // We didn't hash target output files, nor large files,
             // as unlikely to find a match and can be large
@@ -435,7 +434,7 @@ private:
             // UINFO(9, "RD GOT g " << got << " e " << errno << " " << strerror(errno));
             // usleep(50*1000);
             if (got > 0) {
-                outl.push_back(string(buf, got));
+                outl.emplace_back(string(buf, got));
                 sizegot += got;
             } else if (errno == EINTR || errno == EAGAIN
 #ifdef EWOULDBLOCK
@@ -477,7 +476,7 @@ private:
     void writeFilter(const string& out) {
         if (debug() >= 6) {
             UINFO(6, "filter-out: " << out);
-            if (out[out.length() - 1] != '\n') cout << endl;
+            if (out[out.length() - 1] != '\n') cout << '\n';
         }
         if (!m_pid) {
             v3error("--pipe-filter: write to closed file\n");
@@ -939,7 +938,7 @@ string V3OutFormatter::quoteNameControls(const string& namein,
             } else if (std::isprint(c)) {
                 out += c;
             } else {
-                out += "&#"s + cvtToStr((unsigned int)(c & 0xff)) + ";";
+                out += "&#"s + cvtToStr(static_cast<unsigned int>(c & 0xff)) + ";";
             }
         }
     } else {

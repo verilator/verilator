@@ -1032,7 +1032,8 @@ int V3PreProcImp::getRawToken() {
 }
 
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
-    static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
+    const static int s_debugFileline
+        = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     if (debug() >= 5) {
         string buf{yyourtext(), yyourleng()};
         string::size_type pos;
@@ -1102,7 +1103,7 @@ int V3PreProcImp::getStateToken() {
             //  `define Q1 `QA()``_b  // -> a_b
             // This may be a side effect of how `UNDEFINED remains as `UNDEFINED,
             // but it screws up our method here.  So hardcode it.
-            string name(yyourtext() + 1, yyourleng() - 1);
+            const std::string name(yyourtext() + 1, yyourleng() - 1);
             if (defExists(name)) {  // JOIN(DEFREF)
                 // Put back the `` and process the defref
                 UINFO(5, "```: define " << name << " exists, expand first");
@@ -1123,7 +1124,7 @@ int V3PreProcImp::getStateToken() {
         if (tok == VP_SYMBOL_JOIN  // not else if, can fallthru from above if()
             || tok == VP_DEFREF_JOIN || tok == VP_JOIN) {
             // a`` -> string doesn't include the ``, so can just grab next and continue
-            string out(yyourtext(), yyourleng());
+            const std::string out(yyourtext(), yyourleng());
             UINFO(5, "`` LHS:" << out);
             // a``b``c can have multiple joins, so we need a stack
             m_joinStack.push(out);
@@ -1147,7 +1148,7 @@ int V3PreProcImp::getStateToken() {
                     bool enable = defExists(m_lastSym);
                     UINFO(4, "Ifdef " << m_lastSym << (enable ? " ON" : " OFF"));
                     if (state() == ps_DEFNAME_IFNDEF) enable = !enable;
-                    m_ifdefStack.push(VPreIfEntry{enable, false});
+                    m_ifdefStack.emplace(VPreIfEntry{enable, false});
                     if (!enable) parsingOff();
                     statePop();
                     goto next_tok;
@@ -1162,7 +1163,7 @@ int V3PreProcImp::getStateToken() {
                         // Handle `if portion
                         const bool enable = !lastIf.everOn() && defExists(m_lastSym);
                         UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF"));
-                        m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
+                        m_ifdefStack.emplace(VPreIfEntry{enable, lastIf.everOn()});
                         if (!enable) parsingOff();
                     }
                     statePop();
@@ -1222,7 +1223,7 @@ int V3PreProcImp::getStateToken() {
                 m_lastSym.assign(yyourtext(), yyourleng());
                 const bool exists = defExists(m_lastSym);
                 if (exists) {
-                    string value = defValue(m_lastSym);
+                    const std::string value = defValue(m_lastSym);
                     if (VString::removeWhitespace(value) == "0") {
                         flp->v3warn(
                             PREPROCZERO,
@@ -1252,7 +1253,7 @@ int V3PreProcImp::getStateToken() {
                     UINFO(4, "ifdef() result=" << enable);
                     if (state() == ps_EXPR_IFDEF || state() == ps_EXPR_IFNDEF) {
                         if (state() == ps_EXPR_IFNDEF) enable = !enable;
-                        m_ifdefStack.push(VPreIfEntry{enable, false});
+                        m_ifdefStack.emplace(VPreIfEntry{enable, false});
                         if (!enable) parsingOff();
                         statePop();
                         goto next_tok;
@@ -1267,7 +1268,7 @@ int V3PreProcImp::getStateToken() {
                             // Handle `if portion
                             enable = !lastIf.everOn() && enable;
                             UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF"));
-                            m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
+                            m_ifdefStack.emplace(VPreIfEntry{enable, lastIf.everOn()});
                             if (!enable) parsingOff();
                         }
                         statePop();
@@ -1310,11 +1311,8 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             } else if (tok == VP_TEXT) {
                 // IE, something like comment in formals
-                if (!m_off) {
-                    return tok;
-                } else {
-                    goto next_tok;
-                }
+                if (!m_off) return tok;
+                goto next_tok;
             } else {
                 fileline()->v3error("Expecting define formal arguments. Found: "s + tokenName(tok)
                                     + "\n");
@@ -1495,7 +1493,7 @@ int V3PreProcImp::getStateToken() {
                 const string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs);
-                string rhs(yyourtext(), yyourleng());
+                const string rhs(yyourtext(), yyourleng());
                 UINFO(5, "`` RHS:" << rhs);
                 const string out = lhs + rhs;
                 UINFO(5, "`` Out:" << out);
@@ -1571,7 +1569,7 @@ int V3PreProcImp::getStateToken() {
                 m_ifdefStack.pop();
                 const bool enable = !lastIf.everOn();
                 UINFO(4, "Else " << (enable ? " ON" : " OFF"));
-                m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
+                m_ifdefStack.emplace(VPreIfEntry{enable, lastIf.everOn()});
                 if (!lastIf.on()) parsingOn();
                 if (!enable) parsingOff();
             }
@@ -1592,7 +1590,7 @@ int V3PreProcImp::getStateToken() {
         case VP_DEFREF: {
             // m_off not right here, but inside substitution, to make this work:
             // `ifdef NEVER `DEFUN(`endif)
-            string name(yyourtext() + 1, yyourleng() - 1);
+            const string name(yyourtext() + 1, yyourleng() - 1);
             UINFO(4, "DefRef " << name);
             if (m_defPutJoin) {
                 m_defPutJoin = false;
@@ -1656,7 +1654,7 @@ int V3PreProcImp::getStateToken() {
                     // The CURRENT macro needs the paren saved, it's not a
                     // property of the child macro
                     if (!m_defRefs.empty()) m_defRefs.top().parenLevel(m_lexp->m_parenLevel);
-                    m_defRefs.push(VDefineRef{name, params});
+                    m_defRefs.emplace(VDefineRef{name, params});
                     statePush(ps_DEFPAREN);
                     m_lexp->pushStateDefArg(0);
                     goto next_tok;
@@ -1729,7 +1727,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
         m_finFilelinep->lineDirective(bufp, enter /*ref*/);
     } else {
         if (m_finAtBol && !(tok == VP_TEXT && buf == "\n") && m_preprocp->lineDirectives()) {
-            if (int outBehind
+            if (const int outBehind
                 = (m_lexp->m_tokFilelinep->lastLineno() - m_finFilelinep->lastLineno())) {
                 if (debug() >= 5) {
                     const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
@@ -1754,7 +1752,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
             }
         }
         // Track newlines in prep for next token
-        for (char& c : buf) {
+        for (const char& c : buf) {
             if (c == '\n') {
                 m_finAtBol = true;
                 m_finFilelinep->linenoInc();

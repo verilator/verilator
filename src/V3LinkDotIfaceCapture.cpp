@@ -557,7 +557,7 @@ void V3LinkDotIfaceCapture::forEachImpl(T_FilterFn&& filter, T_Fn&& fn) {
     for (const CaptureKey& key : keys) {
         const auto it = s_map.find(key);
         if (it == s_map.end()) continue;
-        CapturedEntry& entry = it->second;
+        const CapturedEntry& entry = it->second;
         if (!filter(entry)) continue;
         fn(entry);
     }
@@ -835,7 +835,7 @@ public:
 
 int V3LinkDotIfaceCapture::fixDeadRefsInTypeTable() {
     if (!v3Global.rootp()->typeTablep()) return 0;
-    TypeTableDeadRefVisitor visitor{v3Global.rootp()->typeTablep()};
+    const TypeTableDeadRefVisitor visitor{v3Global.rootp()->typeTablep()};
     return visitor.fixed();
 }
 
