@@ -1423,7 +1423,7 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
     VL_ZERO_W(obits, owp);
     int lsb = 0;
     for (int i = 0, pos = static_cast<int>(posend) - 1;
-         i < obits && pos >= static_cast<int>(posstart); --pos) {
+         i < obits && pos >= static_cast<int>(posstart); --pos, ++i) {
         // clang-format off
         switch (std::tolower (strp[pos])) {
         case 'x': case 'z': case '?':  // FALLTHRU
@@ -1443,7 +1443,7 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
         case 'd': _vl_vsss_setbit(owp, obits, lsb, baseLog2, 13); lsb += baseLog2; break;
         case 'e': _vl_vsss_setbit(owp, obits, lsb, baseLog2, 14); lsb += baseLog2; break;
         case 'f': _vl_vsss_setbit(owp, obits, lsb, baseLog2, 15); lsb += baseLog2; break;
-        case '_': break;
+        default: break;
         }
         // clang-format on
     }
