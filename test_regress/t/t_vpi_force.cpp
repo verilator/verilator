@@ -1894,36 +1894,37 @@ extern "C" int tryInvalidPutOperations() {
         "octString", {.format = vpiOctStrVal, .value = {.str = const_cast<PLI_BYTE8*>("123A")}},
         vpiForceFlag,
         "vpi_put_value: Non octal character 'A' in '123A' as value "
-        "vpiOctStrVal for t.test.octString__VforceVal"));
+        "vpiOctStrVal for 't.test.octString__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "decStringC", {.format = vpiDecStrVal, .value = {.str = const_cast<PLI_BYTE8*>("A123")}},
         vpiForceFlag,
         "vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for "
-        "t.test.decStringC__VforceVal"));
+        "'t.test.decStringC__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "decStringC", {.format = vpiDecStrVal, .value = {.str = const_cast<PLI_BYTE8*>("123A")}},
         vpiForceFlag,
         "vpi_put_value: Trailing garbage 'A' in '123A' as value vpiDecStrVal for "
-        "t.test.decStringC__VforceVal"));
+        "'t.test.decStringC__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "hexString", {.format = vpiHexStrVal, .value = {.str = const_cast<PLI_BYTE8*>("12AG")}},
         vpiForceFlag,
         "vpi_put_value: Non hex character 'G' in '12AG' as value vpiHexStrVal for "
-        "t.test.hexString__VforceVal"));
+        "'t.test.hexString__VforceVal'"));
 
     // vop was replaced with baseSignalVop in vpi_put_value, so these tests are required to hit
     // the test coverage target and ensure the error messages still work.
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "onebit", {.format = vpiRawFourStateVal, .value = {}}, vpiForceFlag,
-        "vl_check_format: Unsupported format (vpiRawFourStateVal) for t.test.onebit"));
+        "vl_check_format: Unsupported format (vpiRawFourStateVal) for "
+        "'t.test.onebit'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "onebit", {.format = vpiSuppressVal, .value = {}}, vpiForceFlag,
-        "vpi_put_value: Unsupported format (vpiSuppressVal) as "
-        "requested for t.test.onebit__VforceVal"));
+        "vpi_put_value: Unsupported format (vpiSuppressVal) as requested for "
+        "'t.test.onebit__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
         "onebit", {.format = vpiStringVal, .value = {}}, vpiInertialDelay,
