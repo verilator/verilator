@@ -71,7 +71,7 @@ public:
     void addNewed(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
-        V3LockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(!m_allocated.emplace(nodep).second)) {
             nodep->v3fatalSrc("Newing AstNode object that is already allocated");
         }
@@ -80,7 +80,7 @@ public:
     void deleted(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
-        V3LockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(m_allocated.erase(nodep) == 0)) {
             nodep->v3fatalSrc("Deleting AstNode object that was not allocated or already freed");
         }
@@ -377,7 +377,7 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
     } else {
         s_inBroken = true;
 
-        V3LockGuard lock{s_allocTable.m_mutex};
+        const V3LockGuard lock{s_allocTable.m_mutex};
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();

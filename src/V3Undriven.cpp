@@ -175,7 +175,7 @@ public:
     bool isUsedNotDrivenAny() const {
         return isUsedNotDrivenBit(0, m_bitFlags.size() / FLAGS_PER_BIT);
     }
-    bool unusedMatch(AstVar* nodep) {
+    static bool unusedMatch(AstVar* nodep) {
         const string regexp = v3Global.opt.unusedRegexp();
         if (regexp == "") return false;
         const string prettyName = nodep->prettyName();
@@ -212,7 +212,7 @@ public:
             }
         } else {  // Signal
             const string varType{nodep->isFuncLocal() ? "Function variable" : "Signal"};
-            bool funcInout = nodep->isFuncLocal() && nodep->isInout();
+            const bool funcInout = nodep->isFuncLocal() && nodep->isInout();
             bool allU = true;
             bool allD = true;
             bool anyU = m_wholeFlags[FLAG_USED];
@@ -674,7 +674,7 @@ void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
 
     V3UndrivenCapture capture{nodep};
-    UndrivenVisitor{nodep, &capture};
+    { UndrivenVisitor{nodep, &capture}; }
 
     if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }

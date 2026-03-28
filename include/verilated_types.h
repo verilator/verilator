@@ -173,7 +173,7 @@ public:
     void randstate(const std::string& state) VL_MT_UNSAFE;
 };
 
-inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
+inline std::string VL_TO_STRING(const VlProcessRef&) { return std::string("process"); }
 
 //===================================================================
 // SystemVerilog event type
@@ -611,11 +611,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
         // Needs to work for dynamic arrays, so does not use N_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            return atDefault();
-        } else {
-            return m_deque[index];
-        }
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return atDefault();
+        return m_deque[index];
     }
     // Access with an index counted from end (e.g. q[$])
     T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
@@ -1027,11 +1024,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
         const auto it = m_map.find(index);
-        if (it == m_map.end()) {
-            return m_defaultValue;
-        } else {
-            return it->second;
-        }
+        if (it == m_map.end()) return m_defaultValue;
+        return it->second;
     }
     // Setting as a chained operation
     VlAssocArray& set(const T_Key& index, const T_Value& value) {
@@ -1335,7 +1329,6 @@ public:
     // Default copy assignment operators are used.
 
     // METHODS
-public:
     // Raw access
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
@@ -1354,11 +1347,8 @@ public:
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::true_type) const {
-        if (dimension == N_CurrentDimension) {
-            return size();
-        } else {
-            return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
-        }
+        if (dimension == N_CurrentDimension) return size();
+        return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
     }
 
     template <std::size_t N_CurrentDimension = 0>
@@ -1941,7 +1931,7 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 public:
     // CONSTRUCTORS
     VlClass() {}
-    VlClass(const VlClass& copied) {}
+    VlClass(const VlClass& /*copied*/) {}
     ~VlClass() override = default;
     // Polymorphic shallow clone. Overridden in each generated concrete class.
     virtual VlClass* clone() const { return nullptr; }
@@ -2125,13 +2115,12 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
     if (VL_LIKELY(casted)) {
         outr = casted;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
+static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

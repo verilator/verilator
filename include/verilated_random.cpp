@@ -274,7 +274,8 @@ static std::string readUntilBalanced(std::istream& stream) {
 static std::string parseNestedSelect(const std::string& nested_select_expr,
                                      std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
-    std::string name, idx;
+    std::string name;
+    std::string idx;
     nestedStream >> name;
     if (name == "(select") {
         const std::string further_nested_expr = readUntilBalanced(nestedStream);
@@ -566,7 +567,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         std::getline(os, sat);
         std::vector<int> numbers;
         std::string currentNum;
-        for (char c : sat) {
+        for (const char c : sat) {
             if (std::isdigit(c)) {
                 currentNum += c;
                 numbers.push_back(std::stoi(currentNum));
@@ -574,14 +575,14 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
             }
         }
         if (Verilated::threadContextp()->warnUnsatConstr()) {
-            for (int n : numbers) {
+            for (const int n : numbers) {
                 if (n < m_constraints_line.size()) {
                     const std::string& constraint_info = m_constraints_line[n];
                     // Parse "filename:linenum   source" format
-                    size_t colon_pos = constraint_info.find(':');
+                    const size_t colon_pos = constraint_info.find(':');
                     if (colon_pos != std::string::npos) {
-                        std::string filename = constraint_info.substr(0, colon_pos);
-                        size_t space_pos = constraint_info.find("   ", colon_pos);
+                        const std::string filename = constraint_info.substr(0, colon_pos);
+                        const size_t space_pos = constraint_info.find("   ", colon_pos);
                         std::string linenum_str;
                         std::string source;
                         if (space_pos != std::string::npos) {
@@ -595,7 +596,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                         std::string msg = "UNSATCONSTR: Unsatisfied constraint";
                         if (!source.empty()) {
                             // Trim leading whitespace and add quotes
-                            size_t start = source.find_first_not_of(" \t");
+                            const size_t start = source.find_first_not_of(" \t");
                             if (start != std::string::npos) {
                                 msg += ": '" + source.substr(start) + "'";
                             }
@@ -643,7 +644,9 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-        std::string name, idx, value;
+        std::string name;
+        std::string idx;
+        std::string value;
         std::vector<std::string> indices;
         os >> name;
         indices.clear();

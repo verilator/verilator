@@ -487,6 +487,6 @@ public:
 
 void V3LiftExpr::liftExprAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    LiftExprVisitor{nodep};
+    { LiftExprVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("lift_expr", 0, dumpTreeEitherLevel() >= 3);
 }

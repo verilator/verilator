@@ -51,11 +51,9 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 }
 
 string V3ErrorCode::url() const {
-    if (!isNamed()) {
+    if (!isNamed())
         return "https://verilator.org/verilator_doc.html"s + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
-    } else {
-        return "https://verilator.org/warn/"s + ascii() + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
-    }
+    return "https://verilator.org/warn/"s + ascii() + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
 }
 
 //######################################################################
@@ -73,23 +71,14 @@ bool V3ErrorGuarded::isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex) {
 string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
     const V3ErrorCode code = m_message.code();
     const bool supp = m_errorSuppressed;
-    if (supp) {
-        return "-arning-suppressed-" + std::string{code.ascii()} + ": ";
-    } else if (code.severityInfo()) {
-        return "-Info: ";
-    } else if (code == V3ErrorCode::EC_FATAL) {
-        return "%Error: ";
-    } else if (code == V3ErrorCode::EC_FATALMANY) {
-        return "%Error: ";
-    } else if (code == V3ErrorCode::EC_FATALSRC) {
-        return "%Error: Internal Error: ";
-    } else if (code == V3ErrorCode::EC_ERROR) {
-        return "%Error: ";
-    } else if (isError(code, supp)) {
-        return "%Error-" + std::string{code.ascii()} + ": ";
-    } else {
-        return "%Warning-" + std::string{code.ascii()} + ": ";
-    }
+    if (supp) return "-arning-suppressed-" + std::string{code.ascii()} + ": ";
+    if (code.severityInfo()) return "-Info: ";
+    if (code == V3ErrorCode::EC_FATAL) return "%Error: ";
+    if (code == V3ErrorCode::EC_FATALMANY) return "%Error: ";
+    if (code == V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
+    if (code == V3ErrorCode::EC_ERROR) return "%Error: ";
+    if (isError(code, supp)) return "%Error-" + std::string{code.ascii()} + ": ";
+    return "%Warning-" + std::string{code.ascii()} + ": ";
 }
 
 void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
@@ -166,8 +155,7 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
     if (m_errorSuppressed) {
         // On debug, show only non default-off warning to prevent pages of warnings
         if (m_message.code().defaultsOff()) return;
-        if (!debug() || debug() < 3 || (debug() < 9 && m_showedSuppressed.test(m_message.code())))
-            return;
+        if (debug() < 3 || (debug() < 9 && m_showedSuppressed.test(m_message.code()))) return;
         m_showedSuppressed.set(m_message.code(), true);
     }
     string msg
@@ -176,8 +164,8 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
     // If suppressed print only first line to reduce verbosity
     string firstLine = msg;
     {
-        string::size_type pos;
-        if ((pos = firstLine.find('\n')) != string::npos) {
+        const string::size_type pos = firstLine.find('\n');
+        if (pos != string::npos) {
             firstLine.erase(pos, firstLine.length() - pos);
             firstLine += "...";
         }
@@ -190,8 +178,8 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
 
     string msg_additional;
     {
-        string::size_type pos;
-        if ((pos = msg.find(V3Error::warnAdditionalInfo())) != string::npos) {
+        const string::size_type pos = msg.find(V3Error::warnAdditionalInfo());
+        if (pos != string::npos) {
             msg_additional = msg.substr(pos + V3Error::warnAdditionalInfo().size());
             msg.erase(pos);
         }

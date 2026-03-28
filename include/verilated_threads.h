@@ -101,12 +101,11 @@ public:
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
             assert(upstreamDepsDone <= m_upstreamDepCount);
             return (upstreamDepsDone == m_upstreamDepCount);
-        } else {
-            const uint32_t upstreamDepsDone_prev
-                = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
-            assert(upstreamDepsDone_prev > 0);
-            return (upstreamDepsDone_prev == 1);
         }
+        const uint32_t upstreamDepsDone_prev
+            = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
+        assert(upstreamDepsDone_prev > 0);
+        return (upstreamDepsDone_prev == 1);
     }
     bool areUpstreamDepsDone(bool evenCycle) const {
         const uint32_t target = evenCycle ? m_upstreamDepCount : 0;
@@ -158,7 +157,7 @@ class VlWorkerThread final {
 #ifdef VL_USE_PTHREADS
     pthread_t m_pthread{};
 #else
-    std::thread m_cthread{};
+    std::thread m_cthread;
 #endif
 
     // METHDOS
@@ -182,7 +181,7 @@ public:
                 VL_CPU_RELAX();
             }
         }
-        VerilatedLockGuard lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         while (m_ready.empty()) {
             m_waiting = true;
             m_cv.wait(m_mutex);
@@ -239,7 +238,7 @@ public:
     }
     void freeWorkerIndexes(std::vector<size_t>& indexes) {
         const VerilatedLockGuard lock{m_mutex};
-        for (size_t index : indexes) m_unassignedWorkers.push(index);
+        for (const size_t index : indexes) m_unassignedWorkers.push(index);
         indexes.clear();
     }
     unsigned assignTaskIndex() { return m_assignedTasks++; }

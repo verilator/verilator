@@ -247,12 +247,12 @@ private:
                uint32_t nPreWords,
                std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx, bool useAcc);
     VL_UNCOPYABLE(TriggerKit);
-    TriggerKit& operator=(TriggerKit&&) = delete;
 
 public:
     // Move constructible
     TriggerKit(TriggerKit&&) = default;
     ~TriggerKit() = default;
+    TriggerKit& operator=(TriggerKit&&) = delete;
 
     // Utility for extra trigger allocation
     class ExtraTriggers final {

@@ -38,7 +38,7 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
     workList.foreach([&](DfgVertex& vtx) {
         DfgLogic* const logicp = vtx.as<DfgLogic>();
         // Check all variables driven by this logic are removable
-        bool used = logicp->foreachSink([&](DfgVertex& snk) {
+        const bool used = logicp->foreachSink([&](DfgVertex& snk) {
             DfgUnresolved* const uVtxp = snk.as<DfgUnresolved>();
             DfgVertexVar* const vVtxp = uVtxp->firtsSinkp()->as<DfgVertexVar>();
             if (vVtxp->hasSinks()) return true;

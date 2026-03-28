@@ -174,5 +174,5 @@ private:
 
 void V3EmitCMain::emit() {
     UINFO(2, __FUNCTION__ << ":");
-    { EmitCMain visitor; }
+    { const EmitCMain visitor; }
 }

@@ -300,7 +300,7 @@ class TraceDriver final : public DfgVisitor {
                 m_lsb = driver.m_lsb;
             }
             // Driver covers searched range, pick the needed/available bits
-            uint32_t lim = std::min(m_msb, driver.m_msb);
+            const uint32_t lim = std::min(m_msb, driver.m_msb);
             termps.emplace_back(trace(driver.m_vtxp, lim - driver.m_lsb, m_lsb - driver.m_lsb));
             m_lsb = lim + 1;
         }

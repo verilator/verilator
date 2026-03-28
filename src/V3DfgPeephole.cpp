@@ -1858,7 +1858,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
                     // Need to insert via a partial splice to avoid infinite matching,
                     // this splice will be eliminated on later visits to its sinks.
-                    DfgVertex::ScopeCache scopeCache;
+                    const DfgVertex::ScopeCache scopeCache;
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     sp->addDriver(catp, lsb, flp);
                     m_vInfo[sp].m_id = ++m_lastId;

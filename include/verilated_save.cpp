@@ -254,13 +254,13 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
 // Serialization of types
 
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp) {
-    os.write(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    os.write(rhsp->serialized1Ptr(), VerilatedContext::serialized1Size());
     os << rhsp->impp()->timeFormatSuffix();
     os << rhsp->dumpfile();
     return os;
 }
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp) {
-    os.read(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    os.read(rhsp->serialized1Ptr(), VerilatedContext::serialized1Size());
     std::string s;
     os >> s;
     rhsp->impp()->timeFormatSuffix(s);

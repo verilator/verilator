@@ -56,7 +56,7 @@ class CFuncInlineCheckVisitor final : public VNVisitorConst {
             m_whyNotNodep = nodep;
             UINFO(9, "CFunc not inlineable: " << why);
             if (nodep) UINFO(9, ": " << nodep);
-            UINFO(9, endl);
+            UINFO(9, "");
         }
     }
 
@@ -211,7 +211,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
             AstCFunc* const cfuncp = std::get<1>(tuple);
             AstCFunc* const callerp = std::get<2>(tuple);
 
-            UINFO(6, "Inlining CFunc " << cfuncp->name() << " into " << callerp->name() << endl);
+            UINFO(6, "Inlining CFunc " << cfuncp->name() << " into " << callerp->name());
             ++m_statInlined;
 
             // Clone local variables with unique names to avoid collisions

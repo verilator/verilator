@@ -1086,7 +1086,7 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string& na
     // Reduce into a balanced tree of sub-function calls until we end up with a single statement
     while (stmts.size() > 1) {
         size_t nSplits = 0;
-        size_t nStmts = stmts.size();
+        const size_t nStmts = stmts.size();
         for (size_t splitStart = 0, splitEnd = 0; splitStart < nStmts; splitStart = splitEnd) {
             // Gather up at at most 'maxCost' worth of statements in this split,
             // but always at least 2 (if less than 2, the reduction makes no

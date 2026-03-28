@@ -719,7 +719,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
                          : formatAttr.isSigned() ? toSQuad()
                                                  : toUQuad();
         char tmp[MAX_SPRINTF_DOUBLE_SIZE];
-        VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), n);
+        (void)VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), n);
         return tmp;
     }
     case 's': {
@@ -751,7 +751,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
                              : formatAttr.isSigned() ? toSQuad()
                                                      : toUQuad();
             char tmp[MAX_SPRINTF_DOUBLE_SIZE];
-            VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, "%g", n);
+            (void)VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, "%g", n);
             return tmp;
         }
         if (formatAttr.isString()) return '"' + toString() + '"';
@@ -853,7 +853,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
             // which is (+1.0 is for rounding bias):
             double dchars = mantissabits / 3.321928094887362 + 1.0;
             if (issigned) ++dchars;  // space for sign
-            fmtsize = cvtToStr(int(dchars));
+            fmtsize = cvtToStr(static_cast<int>(dchars));
         }
         bool hasXZ = false;
         if (isAllX()) {
@@ -953,7 +953,7 @@ string V3Number::emitC() const VL_MT_STABLE {
             const char* const fmt = (static_cast<int>(dnum) == dnum && -1000 < dnum && dnum < 1000)
                                         ? "%3.1f"  // Force decimal point
                                         : "%.17e";  // %e always yields a float literal
-            VL_SNPRINTF(sbuf, bufsize, fmt, dnum);
+            (void)VL_SNPRINTF(sbuf, bufsize, fmt, dnum);
             return sbuf;
         }
     } else if (isString()) {
@@ -970,7 +970,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         if (words() > 4) result += '\n';
         for (int n = 0; n < words(); ++n) {
             if (n) result += ((n % 4) ? ", " : ",\n");
-            VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWord(n));
+            (void)VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWord(n));
             result += sbuf;
         }
         if (words() > 4) result += '\n';
@@ -979,7 +979,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         const uint64_t qnum = static_cast<uint64_t>(toUQuad());
         const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
         // cppcheck-suppress wrongPrintfScanfArgNum
-        VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
+        (void)VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
         return sbuf;
     } else {
         // Always emit unsigned, if signed, will call correct signed functions
@@ -990,7 +990,7 @@ string V3Number::emitC() const VL_MT_STABLE {
                                 : (width() > 8)  ? ("0x%04" PRIx32 "U")
                                                  : ("0x%02" PRIx32 "U");
         // cppcheck-suppress wrongPrintfScanfArgNum
-        VL_SNPRINTF(sbuf, bufsize, fmt, unum);
+        (void)VL_SNPRINTF(sbuf, bufsize, fmt, unum);
         return sbuf;
     }
     return result;
@@ -1587,7 +1587,8 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    if (v3Global.opt.replicationLimit() && rhsval > (uint32_t)v3Global.opt.replicationLimit()) {
+    if (v3Global.opt.replicationLimit()
+        && rhsval > static_cast<uint32_t>(v3Global.opt.replicationLimit())) {
         v3warn(WIDTHCONCAT, "Replication of more that --replication-limit "
                                 << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
@@ -2661,13 +2662,13 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = VString::downcase(lhs.toString());
+    const std::string out = VString::downcase(lhs.toString());
     return setString(out);
 }
 V3Number& V3Number::opToUpperN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = VString::upcase(lhs.toString());
+    const std::string out = VString::upcase(lhs.toString());
     return setString(out);
 }
 
@@ -2714,24 +2715,24 @@ void V3Number::selfTest() {
 void V3Number::selfTestThis() {
     // The self test has a "this" so UASSERT_SELFTEST/errorEndFatal works correctly
 
-    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(0, 0), true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(1e19, 1e19), true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(9, 0.0001), false);
-    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(1, 1 + std::numeric_limits<double>::epsilon()),
-                     true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(0.009, 0.00899999999999999931998839741709),
+    UASSERT_SELFTEST(const bool, V3Number::epsilonEqual(0, 0), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonEqual(1e19, 1e19), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonEqual(9, 0.0001), false);
+    UASSERT_SELFTEST(const bool,
+                     V3Number::epsilonEqual(1, 1 + std::numeric_limits<double>::epsilon()), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonEqual(0.009, 0.00899999999999999931998839741709),
                      true);
 
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(0), true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(1), true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-1), true);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(1.0001), false);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(0.9999), false);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-1.0001), false);
-    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-0.9999), false);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(0), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(1), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(-1), true);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(1.0001), false);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(0.9999), false);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(-1.0001), false);
+    UASSERT_SELFTEST(const bool, V3Number::epsilonIntegral(-0.9999), false);
 
-    UASSERT_SELFTEST(int, log2b(0), 0);
-    UASSERT_SELFTEST(int, log2b(1), 0);
-    UASSERT_SELFTEST(int, log2b(0x40000000UL), 30);
-    UASSERT_SELFTEST(int, log2bQuad(0x4000000000000000ULL), 62);
+    UASSERT_SELFTEST(const int, log2b(0), 0);
+    UASSERT_SELFTEST(const int, log2b(1), 0);
+    UASSERT_SELFTEST(const int, log2b(0x40000000UL), 30);
+    UASSERT_SELFTEST(const int, log2bQuad(0x4000000000000000ULL), 62);
 }

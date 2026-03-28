@@ -456,7 +456,7 @@ class GateOkVisitor final : public VNVisitorConst {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
-    void visit(AstCReset* nodep) override {
+    void visit(AstCReset* /*nodep*/) override {
         if (!m_isSimple) return;
         // CReset is pure because we can optimize assignments, but if is
         // the only assignment to a variable we still need to initial
@@ -721,7 +721,7 @@ class GateInline final {
                 // If the consumer logic writes one of the variables that the substitution
                 // is reading, then we would get a cycles, so we cannot do that.
                 bool canInline = true;
-                for (V3GraphEdge& dedge : dstVtxp->outEdges()) {
+                for (const V3GraphEdge& dedge : dstVtxp->outEdges()) {
                     const GateVarVertex* const consVVertexp = dedge.top()->as<GateVarVertex>();
                     if (readVscps.count(consVVertexp->varScp())) {
                         canInline = false;
@@ -824,7 +824,7 @@ class GateDedupeHash final : public V3DupFinderUserSame {
 
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
 
-    bool same(AstNode* node1p, AstNode* node2p) {
+    static bool same(AstNode* node1p, AstNode* node2p) {
         // Regarding the complexity of this function 'same':
         // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
         // number of comparisons (number of pairs). AstNode::sameTree itself, is O(sizeOfTree) in

@@ -356,7 +356,7 @@ class AstToDfgConverter final : public VNVisitor {
     // VISITORS
 
     // Unhandled node
-    void visit(AstNode* nodep) override {
+    void visit(AstNode* /*nodep*/) override {
         if (!m_foundUnhandled && m_converting) ++m_ctx.m_conv.nonRepUnknown;
         m_foundUnhandled = true;
     }
@@ -1231,7 +1231,7 @@ class AstToDfgSynthesize final {
     std::vector<Driver> computePropagatedDrivers(const std::vector<Driver>& newDrivers,
                                                  DfgVertexVar* oldp) {
         // Gather drivers of 'oldp' - they are in incresing range order with no overlaps
-        std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
+        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
         UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
 
         // Additional drivers of 'newp' propagated from 'oldp'

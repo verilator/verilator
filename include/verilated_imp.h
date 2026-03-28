@@ -378,7 +378,7 @@ private:
             // MCD Case
             if (fdi & 1) fp.push_back(stdout);
             fdi >>= 1;
-            for (size_t i = 1; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+            for (size_t i = 1; (fdi != 0) && (i < VerilatedFpList::capacity()); ++i, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) fp.push_back(m_fdps[i]);
             }
         }
@@ -553,9 +553,8 @@ private:
         if (it == s().m_exportMap.end()) {
             s().m_exportMap.emplace(namep, s().m_exportNext++);
             return s().m_exportNext++;
-        } else {
-            return it->second;
         }
+        return it->second;
     }
 
 public:
