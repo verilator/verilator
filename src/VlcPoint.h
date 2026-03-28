@@ -57,7 +57,7 @@ public:
     void testsCoveringInc() { m_testsCovering++; }
     bool ok(unsigned annotateMin) const {
         const std::string threshStr = thresh();
-        unsigned threshi = !threshStr.empty() ? std::atoi(threshStr.c_str()) : annotateMin;
+        const unsigned threshi = !threshStr.empty() ? std::atoi(threshStr.c_str()) : annotateMin;
         return m_count >= threshi;
     }
     // KEY ACCESSORS

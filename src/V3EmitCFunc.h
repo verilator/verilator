@@ -150,7 +150,7 @@ protected:
 
 public:
     // METHODS
-    bool displayEmitHeader(AstNode* nodep, bool isScan);
+    bool displayEmitHeader(AstNode* nodep);
     void displayNode(AstNode* nodep, AstSFormatF* fmtp, const string& vformat, AstNode* exprsp,
                      bool isScan);
 
@@ -185,7 +185,7 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
-    std::string dereferenceString(const std::string& pointer);
+    std::string dereferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);

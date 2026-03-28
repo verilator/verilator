@@ -1496,7 +1496,7 @@ public:
     bool sameNode(const AstNode* samep) const override {
         return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
-    uint32_t direction() const { return (uint32_t)m_direction; }
+    uint32_t direction() const { return static_cast<uint32_t>(m_direction); }
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell

@@ -59,7 +59,7 @@ public:
     static int s_typeImpNum;  // Implicit type number, incremented each module
 
     // CONSTRUCTORS
-    V3ParseGrammar() {}
+    V3ParseGrammar() = default;
     static V3ParseGrammar* singletonp() {
         static V3ParseGrammar singleton;
         return &singleton;
@@ -192,11 +192,8 @@ public:
     }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;
-        if (!rangep) {
-            return exprp;
-        } else {
-            return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
-        }
+        if (!rangep) return exprp;
+        return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
     }
     AstSenTree* createSenTreeChanged(FileLine* fl, AstNodeExpr* exprp) {
         return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_CHANGED, exprp}};
@@ -229,10 +226,10 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    void endLabel(FileLine* fl, const AstNode* nodep, const string* endnamep) {
+    static void endLabel(FileLine* fl, const AstNode* nodep, const string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
-    void endLabel(FileLine* fl, const string& name, const string* endnamep) {
+    static void endLabel(FileLine* fl, const string& name, const string* endnamep) {
         if (fl && endnamep && *endnamep != "" && name != *endnamep
             && name != AstNode::prettyName(*endnamep)) {
             fl->v3warn(ENDLABEL, "End label '" << *endnamep << "' does not match begin label '"
@@ -265,36 +262,34 @@ public:
     }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstNodeRange* rangesp, bool isPacked) {
         // If dtypep isn't basic, don't use this, call createArray() instead
-        if (!rangesp) {
-            return dtypep;
+        if (!rangesp) return dtypep;
+
+        // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
+        // then [1:1] becomes the basicdtype range; everything else is arraying
+        // the final [5:5][4:4] will be passed in another call to createArray
+        AstNodeRange* rangearraysp = nullptr;
+        if (dtypep->isRanged()) {
+            rangearraysp = rangesp;  // Already a range; everything is an array
         } else {
-            // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
-            // then [1:1] becomes the basicdtype range; everything else is arraying
-            // the final [5:5][4:4] will be passed in another call to createArray
-            AstNodeRange* rangearraysp = nullptr;
-            if (dtypep->isRanged()) {
-                rangearraysp = rangesp;  // Already a range; everything is an array
-            } else {
-                AstNodeRange* finalp = rangesp;
-                while (finalp->nextp()) finalp = VN_CAST(finalp->nextp(), Range);
-                if (finalp != rangesp) {
-                    finalp->unlinkFrBack();
-                    rangearraysp = rangesp;
-                }
-                if (AstRange* const finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
-                    if (dtypep->implicit()) {
-                        // It's no longer implicit but a wire logic type
-                        AstBasicDType* const newp = new AstBasicDType{
-                            dtypep->fileline(), VBasicDTypeKwd::LOGIC, dtypep->numeric(),
-                            dtypep->width(), dtypep->widthMin()};
-                        VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
-                        dtypep = newp;
-                    }
-                    dtypep->rangep(finalRangep);
-                }
+            AstNodeRange* finalp = rangesp;
+            while (finalp->nextp()) finalp = VN_CAST(finalp->nextp(), Range);
+            if (finalp != rangesp) {
+                finalp->unlinkFrBack();
+                rangearraysp = rangesp;
             }
-            return createArray(dtypep, rangearraysp, isPacked);
+            if (AstRange* const finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
+                if (dtypep->implicit()) {
+                    // It's no longer implicit but a wire logic type
+                    AstBasicDType* const newp = new AstBasicDType{
+                        dtypep->fileline(), VBasicDTypeKwd::LOGIC, dtypep->numeric(),
+                        dtypep->width(), dtypep->widthMin()};
+                    VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
+                    dtypep = newp;
+                }
+                dtypep->rangep(finalRangep);
+            }
         }
+        return createArray(dtypep, rangearraysp, isPacked);
     }
     string unquoteString(FileLine* fileline, const std::string& text) VL_MT_DISABLED;
     void checkDpiVer(FileLine* fileline, const string& str) {

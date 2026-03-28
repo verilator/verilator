@@ -88,7 +88,7 @@ string V3LibMap::matchMapping(const string& filename) {
 void V3LibMap::addPattern(const string& pattern, const string& libname, const string& base) {
     UINFO(4, __FUNCTION__ << ": pattern '" << pattern << "' => library '" << libname << "'");
 
-    bool isIncDir = pattern.back() == '/';
+    const bool isIncDir = pattern.back() == '/';
     const string& nondir = V3Os::filenameNonDir(pattern);
     const string& cleanPattern = V3Os::filenameCleanup(pattern);
 

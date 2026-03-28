@@ -390,9 +390,9 @@ class WidthSelVisitor final : public VNVisitor {
             // queue size, this allows a single queue reference, to support
             // for equations in side effects that select the queue to
             // operate upon.
-            VCMethod method = (qleftBacknessp    ? VCMethod::DYN_SLICE_BACK_BACK
-                               : qrightBacknessp ? VCMethod::DYN_SLICE_FRONT_BACK
-                                                 : VCMethod::DYN_SLICE);
+            const VCMethod method = (qleftBacknessp    ? VCMethod::DYN_SLICE_BACK_BACK
+                                     : qrightBacknessp ? VCMethod::DYN_SLICE_FRONT_BACK
+                                                       : VCMethod::DYN_SLICE);
             AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, method};
             if (qleftBacknessp) {
                 VL_DO_DANGLING(pushDeletep(qleftp), qleftp);

@@ -170,12 +170,9 @@ public:
     const std::vector<VerilatedRange>& packedRanges() const VL_MT_SAFE { return m_packed; }
     const std::vector<VerilatedRange>& unpackedRanges() const VL_MT_SAFE { return m_unpacked; }
     const VerilatedRange* range(int dim) const VL_MT_SAFE {
-        if (dim < udims())
-            return &m_unpacked[dim];
-        else if (dim < dims())
-            return &m_packed[dim - udims()];
-        else
-            return nullptr;
+        if (dim < udims()) return &m_unpacked[dim];
+        if (dim < dims()) return &m_packed[dim - udims()];
+        return nullptr;
     }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {

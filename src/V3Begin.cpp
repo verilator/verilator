@@ -499,7 +499,7 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static AstNode* createForeachLoop(AstNodeForeach* nodep, AstNode* bodysp, AstVar* varp,
+static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, AstVar* varp,
                                   AstNodeExpr* leftp, AstNodeExpr* rightp, VNType nodeType) {
     FileLine* const fl = varp->fileline();
     AstNodeExpr* varRefp = new AstVarRef{fl, varp, VAccess::READ};
@@ -532,7 +532,8 @@ static AstNode* createForeachLoop(AstNodeForeach* nodep, AstNode* bodysp, AstVar
 static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, AstVar* varp,
                                         const VNumRange& declRange) {
     FileLine* const fl = varp->fileline();
-    V3Number left{nodep, 32}, right{nodep, 32};
+    V3Number left{nodep, 32};
+    V3Number right{nodep, 32};
     left.isSigned(true);
     right.isSigned(true);
     left.setLongS(declRange.left());

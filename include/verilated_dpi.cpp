@@ -775,7 +775,7 @@ int svGetCallerInfo(const char** fileNamepp, int* lineNumberp) {
 //======================================================================
 // Time
 
-int svGetTime(const svScope scope, svTimeVal* time) {
+int svGetTime(const svScope /*scope*/, svTimeVal* time) {
     if (VL_UNLIKELY(!time)) return -1;
     const QData qtime = VL_TIME_Q();
     VlWide<2> itime;
@@ -796,7 +796,7 @@ int svGetTimeUnit(const svScope scope, int32_t* time_unit) {
     return 0;
 }
 
-int svGetTimePrecision(const svScope scope, int32_t* time_precision) {
+int svGetTimePrecision(const svScope /*scope*/, int32_t* time_precision) {
     if (VL_UNLIKELY(!time_precision)) return -1;
     *time_precision = Verilated::threadContextp()->timeprecision();
     return 0;

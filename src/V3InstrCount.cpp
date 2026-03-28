@@ -307,7 +307,7 @@ private:
     string indent() const { return string(m_depth, ':') + " "; }
     void visit(AstNode* nodep) override {
         ++m_depth;
-        if (unsigned costPlus1 = nodep->user2()) {
+        if (const unsigned costPlus1 = nodep->user2()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
                    << "  " << nodep << '\n';
             iterateChildrenConst(nodep);
@@ -320,6 +320,6 @@ private:
 
 uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, std::ostream* osp) {
     const InstrCountVisitor visitor{nodep, assertNoDups, osp};
-    if (osp) InstrCountDumpVisitor dumper{nodep, osp};
+    if (osp) const InstrCountDumpVisitor dumper{nodep, osp};
     return visitor.instrCount();
 }

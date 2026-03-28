@@ -444,7 +444,9 @@ cppcheck:
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
   -header-filter='.*' \
-  -checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+  -checks='*,-abseil-*,-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+
+# Good checks: -checks='-*,bugprone-assignment-in-if-condition,google-build-using-namespace,google-readability-casting,modernize-use-default-member-init,modernize-use-emplace,modernize-use-equals-default,modernize-use-equals-delete,modernize-use-nullptr,performance-faster-string-find,readability-isolate-declaration,readability-redundant-control-flow,readability-redundant-member-init,readability-redundant-string-cstr,readability-uppercase-literal-suffix
 
 CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_CPPCHECK=1

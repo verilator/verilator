@@ -32,7 +32,7 @@ class V3DebugBisect final {
     size_t m_count = 0;
 
 public:
-    V3DebugBisect(const char* namep)
+    explicit V3DebugBisect(const char* namep)
         : m_namep{namep} {}
 
     // Returns 'false' up to m_limit invocations, then returns 'true'.

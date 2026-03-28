@@ -75,25 +75,16 @@ public:
         }
     }
     void clearHits(uint64_t point) const {
-        if (point >= m_dataSize) {
-            return;
-        } else {
-            m_datap[point / 64] &= ~covBit(point);
-        }
+        if (point >= m_dataSize) return;
+        m_datap[point / 64] &= ~covBit(point);
     }
     bool exists(uint64_t point) const {
-        if (point >= m_dataSize) {
-            return false;
-        } else {
-            return (m_datap[point / 64] & covBit(point)) ? 1 : 0;
-        }
+        if (point >= m_dataSize) return false;
+        return (m_datap[point / 64] & covBit(point)) ? true : false;
     }
     uint64_t hits(uint64_t point) const {
-        if (point >= m_dataSize) {
-            return 0;
-        } else {
-            return (m_datap[point / 64] & covBit(point)) ? 1 : 0;
-        }
+        if (point >= m_dataSize) return 0;
+        return (m_datap[point / 64] & covBit(point)) ? 1 : 0;
     }
     uint64_t popCount() const {
         uint64_t pop = 0;
@@ -102,7 +93,7 @@ public:
         }
         return pop;
     }
-    uint64_t dataPopCount(const VlcBuckets& remaining) {
+    uint64_t dataPopCount(const VlcBuckets& remaining) const {
         uint64_t pop = 0;
         for (uint64_t i = 0; i < m_dataSize; ++i) {
             if (hits(i) && remaining.hits(i)) ++pop;

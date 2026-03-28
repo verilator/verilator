@@ -716,13 +716,9 @@ public:
     bool likely() const { return m_e == BP_LIKELY; }
     bool unlikely() const { return m_e == BP_UNLIKELY; }
     VBranchPred invert() const {
-        if (m_e == BP_UNLIKELY) {
-            return BP_LIKELY;
-        } else if (m_e == BP_LIKELY) {
-            return BP_UNLIKELY;
-        } else {
-            return m_e;
-        }
+        if (m_e == BP_UNLIKELY) return BP_LIKELY;
+        if (m_e == BP_LIKELY) return BP_UNLIKELY;
+        return m_e;
     }
     const char* ascii() const {
         static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
@@ -1438,7 +1434,7 @@ public:
     bool isAutomatic() const { return m_e == AUTOMATIC_EXPLICIT || m_e == AUTOMATIC_IMPLICIT; }
     bool isStatic() const { return m_e == STATIC_EXPLICIT || m_e == STATIC_IMPLICIT; }
     bool isStaticExplicit() const { return m_e == STATIC_EXPLICIT; }
-    VLifetime makeImplicit() {
+    VLifetime makeImplicit() const {
         switch (m_e) {
         case AUTOMATIC_EXPLICIT: return AUTOMATIC_IMPLICIT;
         case STATIC_EXPLICIT: return STATIC_IMPLICIT;
@@ -1834,7 +1830,7 @@ public:
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
-    bool containsAny(VUseType other) { return m_e & other.m_e; }
+    bool containsAny(VUseType other) const { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
@@ -1844,10 +1840,10 @@ constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
 constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();

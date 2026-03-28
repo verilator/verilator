@@ -97,7 +97,6 @@ class DfgEdge final {
     DfgVertex* const m_dstp;  // The vertex driven by this edge, which owns this edge, so immutable
     V3ListLinks<DfgEdge> m_links;  // V3List links in the list of sinks of m_srcp
 
-    DfgEdge() = delete;
     VL_UNCOPYABLE(DfgEdge);
     VL_UNMOVABLE(DfgEdge);
 
@@ -108,6 +107,7 @@ public:
     explicit DfgEdge(DfgVertex* dstp)
         : m_dstp{dstp} {}
     ~DfgEdge() { unlinkSrcp(); }
+    DfgEdge() = delete;
 
     // The source (driver) of this edge
     DfgVertex* srcp() const { return m_srcp; }
@@ -403,7 +403,6 @@ public:
     VL_UNCOPYABLE(DfgGraph);
 
     // METHODS
-public:
     // Number of vertices in this graph
     size_t size() const { return m_size; }
     // Parent module - or nullptr when run after V3Scope
@@ -604,12 +603,12 @@ protected:
         , m_currentGeneration{that.m_currentGeneration} {
         that.m_dfgp = nullptr;
     }
-    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 
 public:
     ~DfgUserMapBase() {
         if (m_dfgp) m_dfgp->m_vertexUserInUse = false;
     }
+    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 };
 
 // Specialization where T_Value fits in DfgVertex::m_userStorage directly
@@ -623,11 +622,11 @@ class DfgUserMap<T_Value, true> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
     DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
     // METHODS
     // Retrieve mapped value for 'vtx', value initializing it on first access
@@ -672,11 +671,11 @@ class DfgUserMap<T_Value, false> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
     DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
     // METHODS
     // Retrieve mapped value for 'vtx', value initializing it on first access

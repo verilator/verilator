@@ -256,11 +256,8 @@ public:
             m_readyVertices.clear();
         }
         const V3GraphVertex* const resultp = m_nextVertices[m_nextIndex++];
-        if (m_way == GraphWay::FORWARD) {
-            return unblock<GraphWay::FORWARD>(resultp);
-        } else {
-            return unblock<GraphWay::REVERSE>(resultp);
-        }
+        if (m_way == GraphWay::FORWARD) return unblock<GraphWay::FORWARD>(resultp);
+        return unblock<GraphWay::REVERSE>(resultp);
     }
 
 private:

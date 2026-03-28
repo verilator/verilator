@@ -195,7 +195,7 @@ private:
             reinsert(name, symp);
         }
     }
-    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) const {
+    void exportOneSymbol(VSymGraph* /*graphp*/, const string& name, const VSymEnt* srcp) const {
         if (srcp->exported()) {
             if (VSymEnt* const symp = findIdFlat(name)) {  // Should already exist in current table
                 if (!symp->exported()) symp->exported(true);
@@ -238,7 +238,7 @@ public:
             }
         }
     }
-    void exportStarStar(VSymGraph* graphp) {
+    void exportStarStar(VSymGraph* /*graphp*/) {
         // Export *:*: Export all tokens from imported packages
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             VSymEnt* const symp = it->second;

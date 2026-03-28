@@ -243,11 +243,10 @@ private:
             bp->m_next.link(ap->m_kids.unlink());
             ap->m_kids.linkNonNull(bp);
             return ap;
-        } else {  // ap goes under bp
-            ap->m_next.link(bp->m_kids.unlink());
-            bp->m_kids.linkNonNull(ap);
-            return bp;
-        }
+        }  // else ap goes under bp
+        ap->m_next.link(bp->m_kids.unlink());
+        bp->m_kids.linkNonNull(ap);
+        return bp;
     }
 
     // Reduces the list of nodes starting at the given node into a single node that is returned

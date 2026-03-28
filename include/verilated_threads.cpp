@@ -148,12 +148,11 @@ VlThreadPool::~VlThreadPool() {
 std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
     if (contextp && !contextp->useNumaAssign()) { return "NUMA assignment not requested"; }
-    std::string numa_strategy = VlOs::getenvStr("VERILATOR_NUMA_STRATEGY", "default");
-    if (numa_strategy == "none") {
-        return "no NUMA assignment requested";
-    } else if (numa_strategy != "default" && numa_strategy != "") {
+    const std::string numa_strategy = VlOs::getenvStr("VERILATOR_NUMA_STRATEGY", "default");
+    if (numa_strategy == "none") return "no NUMA assignment requested";
+    if (numa_strategy != "default" && numa_strategy != "")
         return "%Warning: unknown VERILATOR_NUMA_STRATEGY value '" + numa_strategy + "'";
-    }
+
     // Get number of processor available to the current process
     const unsigned num_proc = VlOs::getProcessAvailableParallelism();
     if (!num_proc) return "Can't determine number of available threads";
@@ -184,7 +183,7 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
         while (!is.eof()) {
             std::string line;
             std::getline(is, line);
-            std::string::size_type pos = line.find(":");
+            const std::string::size_type pos = line.find(':');
             int number = -1;
             if (pos != std::string::npos) number = atoi(line.c_str() + pos + 1);
             if (line.compare(0, std::strlen("processor"), "processor") == 0) {

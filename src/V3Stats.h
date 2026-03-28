@@ -45,7 +45,7 @@ public:
         return *this;
     }
     VDouble0 operator++(int) {  // postfix
-        VDouble0 old = *this;
+        const VDouble0 old = *this;
         ++m_d;
         return old;
     }
@@ -131,7 +131,7 @@ public:
         // Avoid memory blow-up when called frequently with zero adds,
         // e.g. from V3Const invoked on individual expressions.
         if (count == 0.0) return;
-        V3LockGuard lock{s_mutex};
+        const V3LockGuard lock{s_mutex};
         addStat(V3Statistic{"*", name, count, 0, true, false});
     }
     static void addStatSum(const std::string& name, double count) {

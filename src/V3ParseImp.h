@@ -111,7 +111,7 @@ struct VMemberQualifiers final {
 struct V3ParseBisonYYSType final {
     FileLine* fl = nullptr;
     int token = 0;  // Read token, aka tok
-    VBaseOverride baseOverride{};
+    VBaseOverride baseOverride;
     bool flag = false;  // Passed up some rules
     union {
         V3Number* nump;
@@ -212,9 +212,8 @@ public:
         if (m_lexKwdDepth) {
             --m_lexKwdDepth;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     int lexKwdLastState() const { return m_lexKwdLast; }
     static const char* tokenName(int tok) VL_MT_DISABLED;
@@ -287,7 +286,6 @@ public:
     //==== Symbol tables
     AstPackage* unitPackage(FileLine* /*fl*/) { return parsep()->rootp()->dollarUnitPkgAddp(); }
 
-public:
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, VInFilter* filterp)
         : m_rootp{rootp}
