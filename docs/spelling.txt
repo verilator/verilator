@@ -834,6 +834,7 @@ glibc
 gmake
 gmon
 gotFinish
+goto
 gprof
 gtkwave
 hdr

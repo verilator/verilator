@@ -145,7 +145,7 @@ static void emitSerialized() VL_MT_DISABLED {
 
 static void process() {
     {
-        VlOs::DeltaWallTime elabWallTime{true};
+        const VlOs::DeltaWallTime elabWallTime{true};
 
         // Sort modules by level so later algorithms don't need to care
         V3LinkLevel::modSortByLevel();
@@ -218,7 +218,7 @@ static void process() {
 
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
-        VlOs::DeltaWallTime cvtWallTime{true};
+        const VlOs::DeltaWallTime cvtWallTime{true};
         if (v3Global.opt.debugExitElab()) {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitSerialized();
@@ -836,7 +836,7 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
-    VlOs::DeltaWallTime buildWallTime{true};
+    const VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
@@ -868,8 +868,8 @@ static void execHierVerilation() {
 int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
-    VlOs::DeltaWallTime wallTimeTotal{true};
-    VlOs::DeltaCpuTime cpuTimeTotal{true};
+    const VlOs::DeltaWallTime wallTimeTotal{true};
+    const VlOs::DeltaCpuTime cpuTimeTotal{true};
 
     time_t randseed;
     time(&randseed);

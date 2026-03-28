@@ -114,6 +114,13 @@ module t;
     i = q.xor with (item + 1);
     `checkh(i, 32'hb);
 
+    // map method
+    q = '{1, 2, 3, 4, 5};
+    qv = q.map() with (item * 2);
+    `checkp(qv, "'{'h2, 'h4, 'h6, 'h8, 'ha}");
+    qv = q.map(x) with (x + x.index);
+    `checkp(qv, "'{'h1, 'h3, 'h5, 'h7, 'h9}");
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

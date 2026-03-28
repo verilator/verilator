@@ -597,6 +597,39 @@ class ForkVisitor final : public VNVisitor {
         // We did wrap the body
         return true;
     }
+    static bool isForkJoinNoneSentinelDelay(const AstNode* const nodep) {
+        const AstDelay* const delayp = VN_CAST(nodep, Delay);
+        if (!delayp) return false;
+        const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
+        return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
+    }
+    static bool isDisableQueuePushSelfStmt(const AstNode* const nodep) {
+        // Detect LinkJump-generated registration:
+        // __VprocessQueue_*.push_back(std::process::self())
+        const AstStmtExpr* const stmtExprp = VN_CAST(nodep, StmtExpr);
+        if (!stmtExprp) return false;
+        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+        if (!methodp || methodp->name() != "push_back") return false;
+        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
+        return queueRefp && queueRefp->name().rfind("__VprocessQueue_", 0) == 0;
+    }
+    static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
+        AstNode* const firstStmtp = beginp->stmtsp();
+        if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
+
+        AstNode* insertBeforep = firstStmtp->nextp();
+        while (insertBeforep && isDisableQueuePushSelfStmt(insertBeforep)) {
+            insertBeforep = insertBeforep->nextp();
+        }
+        if (insertBeforep == firstStmtp->nextp()) return;
+
+        AstNode* const delayp = firstStmtp->unlinkFrBack();
+        if (insertBeforep) {
+            insertBeforep->addHereThisAsNext(delayp);
+        } else {
+            beginp->addStmtsp(delayp);
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -634,6 +667,7 @@ class ForkVisitor final : public VNVisitor {
                     new AstConst{fl, AstConst::Unsized64{}, std::numeric_limits<uint64_t>::max()},
                     false};
                 itemp->stmtsp()->addHereThisAsNext(delayp);
+                moveForkSentinelAfterDisableQueuePushes(itemp);
             }
         }
 

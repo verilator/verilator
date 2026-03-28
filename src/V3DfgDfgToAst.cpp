@@ -53,6 +53,14 @@ T_Node* makeNode(const T_Vertex* vtxp, Ops... ops) {
 // Vertices needing special conversion
 
 template <>
+AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
+    const DfgCountOnes* vtxp, AstNodeExpr* op1) {
+    AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
+    nodep->dtypeSetLogicSized(vtxp->width(), VSigning::UNSIGNED);
+    return nodep;
+}
+
+template <>
 AstExtend* makeNode<AstExtend, DfgExtend, AstNodeExpr*>(  //
     const DfgExtend* vtxp, AstNodeExpr* op1) {
     return new AstExtend{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};

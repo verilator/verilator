@@ -67,7 +67,7 @@ public:
                 : VTracePrefixType::SCOPE_MODULE;
         const std::string extraPrefix = newPath.substr(m_stack.back().size());
         size_t begin = 0;
-        size_t last = extraPrefix.rfind(SEPARATOR);
+        const size_t last = extraPrefix.rfind(SEPARATOR);
         // Move down, one path element at a time
         while (true) {
             const size_t end = extraPrefix.find(SEPARATOR, begin);
@@ -287,8 +287,8 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void addIgnore(const string& why) {
         ++m_statIgnSigs;
-        std::string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
-        if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << endl;
+        const std::string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
+        if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << '\n';
     }
 
     void fixupPlaceholder(const std::string& path, AstNodeStmt* placeholderp) {
@@ -334,7 +334,6 @@ class TraceDeclVisitor final : public VNVisitor {
         placeholderp->addNextHere(initp);
         // Delete the placeholder
         VL_DO_DANGLING(placeholderp->unlinkFrBack()->deleteTree(), placeholderp);
-        return;
     }
 
     void fixupPlaceholders() {
@@ -552,7 +551,7 @@ class TraceDeclVisitor final : public VNVisitor {
         if (!m_traVscp) return;
         iterate(nodep->subDTypep()->skipRefToEnump());
     }
-    void visit(AstIfaceRefDType* nodep) override {
+    void visit(AstIfaceRefDType* /*nodep*/) override {
         if (!m_traVscp) return;
         // Insert a placeholder to be fixed up later
         FileLine* const flp = m_traVscp->fileline();

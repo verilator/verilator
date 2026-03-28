@@ -182,7 +182,7 @@ class ExtractCyclicComponents final {
         // cyclic variable, put both its 'srcp' and 'defaultp' into the same
         // component if they are not variables themselves. The assertions below
         // must hold because of the assumption above.
-        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
+        for (const DfgVertexVar& vtx : m_dfg.varVertices()) {
             const uint64_t varComponent = m_component.at(vtx);
             if (!varComponent) continue;
             if (DfgVertex* const srcp = vtx.srcp()) {

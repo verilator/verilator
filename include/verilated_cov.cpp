@@ -147,7 +147,7 @@ private:
             if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
                 constexpr size_t LEN_MAX_HEX = 20;
                 char hex[LEN_MAX_HEX];
-                VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
+                (void)VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
                 rtn += hex;
             } else {
                 rtn += *pos;
@@ -344,9 +344,9 @@ public:
         // Insert the values
         int addKeynum = 0;
         for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
-            const std::string key = keys[i];
+            const std::string& key = keys[i];
             if (!keys[i].empty()) {
-                const std::string val = valps[i];
+                const std::string& val = valps[i];
                 // std::cout << "   " << __FUNCTION__ << "  " << key << " = " << val << "\n";
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);

@@ -510,7 +510,7 @@ public:
     void go() {
         // Create a new always for each color
         const ColorSet& colors = m_ifColorp->colors();
-        for (unsigned int color : colors) {
+        for (const unsigned int color : colors) {
             // We don't need to clone m_origAlwaysp->sensesp() here;
             // V3Activate already moved it to a parent node.
             AstAlways* const alwaysp
@@ -560,7 +560,7 @@ protected:
         using CloneMap = std::unordered_map<uint32_t, AstNodeIf*>;
         CloneMap clones;
 
-        for (unsigned int color : colors) {
+        for (const unsigned int color : colors) {
             // Clone this if into its set of split blocks
             AstSplitPlaceholder* const if_placeholderp = makePlaceholderp();
             AstSplitPlaceholder* const else_placeholderp = makePlaceholderp();

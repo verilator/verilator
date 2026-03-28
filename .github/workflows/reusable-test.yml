@@ -106,4 +106,6 @@ jobs:
 
       - name: Fail job if a test failed
         if: ${{ steps.run-test.outcome == 'failure' && !cancelled() }}
-        run: exit 1
+        run: |-
+          echo "Click on '> Tests' arrow above (or on other steps), to expand it, and see the failure reasons"
+          exit 1

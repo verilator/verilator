@@ -121,12 +121,9 @@ public:
     // METHODS
     VlcSource& findNewSource(const string& name) {
         NameMap::iterator iter = m_sources.find(name);
-        if (iter != m_sources.end()) {
-            return iter->second;
-        } else {
-            iter = m_sources.emplace(name, VlcSource{name}).first;
-            return iter->second;
-        }
+        if (iter != m_sources.end()) return iter->second;
+        iter = m_sources.emplace(name, VlcSource{name}).first;
+        return iter->second;
     }
 };
 

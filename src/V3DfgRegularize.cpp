@@ -67,7 +67,7 @@ class DfgRegularize final {
         return circularVariables;
     }
 
-    bool isUnused(const DfgVertex& vtx) {
+    static bool isUnused(const DfgVertex& vtx) {
         if (vtx.hasSinks()) return false;
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
             // There is only one Dfg when running this pass

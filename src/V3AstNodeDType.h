@@ -251,8 +251,7 @@ protected:
         , m_name{other.m_name}
         , m_uniqueNum{uniqueNumInc()}
         , m_packed{other.m_packed}
-        , m_isFourstate{other.m_isFourstate}
-        , m_constrainedRand{false} {}
+        , m_isFourstate{other.m_isFourstate} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -542,7 +541,6 @@ public:
         dtypep(this);
     }
 
-public:
     ASTGEN_MEMBERS_AstCDType;
     bool sameNode(const AstNode* samep) const override {
         const AstCDType* const asamep = VN_DBG_AS(samep, CDType);
@@ -557,16 +555,12 @@ public:
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
     static string typeToHold(int width) {
-        if (width <= 8)
-            return "CData";
-        else if (width <= 16)
-            return "SData";
-        else if (width <= VL_IDATASIZE)
-            return "IData";
-        else if (width <= VL_QUADSIZE)
-            return "QData";
-        else
-            return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
+        if (width <= 8) return "CData";
+        if (width <= 16) return "SData";
+        if (width <= VL_IDATASIZE) return "IData";
+        if (width <= VL_QUADSIZE) return "QData";
+
+        return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {
@@ -968,8 +962,7 @@ public:
     AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
                    AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name}
-        , m_constrainedRand{false} {
+        , m_name{name} {
         childDTypep(dtp);  // Only for parser
         this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
@@ -977,8 +970,7 @@ public:
     }
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name}
-        , m_constrainedRand{false} {
+        , m_name{name} {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1253,10 +1245,9 @@ public:
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         // Used for recursive definition checking
-        if (AstNodeDType* const dtp = VN_CAST(lhsp(), NodeDType))
-            return dtp;
-        else
-            return nullptr;
+        if (AstNodeDType* const dtp = VN_CAST(lhsp(), NodeDType)) return dtp;
+
+        return nullptr;
     }
     int widthAlignBytes() const override { V3ERROR_NA_RETURN(1); }
     int widthTotalBytes() const override { V3ERROR_NA_RETURN(1); }

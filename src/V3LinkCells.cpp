@@ -271,7 +271,7 @@ class LinkCellsVisitor final : public VNVisitor {
     AstNodeModule* findModuleSym(const string& modName, const string& libname) {
         // Given module and library to start search in, resolve using config library choices
         AstNodeModule* foundp;
-        string fullName = libname + "." + modName;
+        const std::string fullName = libname + "." + modName;
         // First search cell-specific use list
         const auto itCellUseList = m_state.m_uselistCell.find(fullName);
         if (itCellUseList != m_state.m_uselistCell.end()) {

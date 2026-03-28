@@ -691,6 +691,9 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         return;
     }
 
+    case VDfgType::SAnd:
+    case VDfgType::SOr: UASSERT_OBJ(false, this, "SAnd/SOr should be removed before DFG"); return;
+
     case VDfgType::LogAnd:
     case VDfgType::LogEq:
     case VDfgType::LogIf:
@@ -716,6 +719,14 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(v.condp()->isPacked(), "Condition should be Packed type");
         CHECK(v.thenp()->dtype() == v.dtype(), "Then should be same type");
         CHECK(v.elsep()->dtype() == v.dtype(), "Else should be same type");
+        return;
+    }
+
+    case VDfgType::CountOnes: {
+        const DfgCountOnes& v = *as<DfgCountOnes>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.srcp()->isPacked(), "Source should be Packed type");
+        CHECK(v.size() == 32U, "Should yield a 32-bit result");
         return;
     }
 

@@ -62,7 +62,7 @@ class V3DfgCache final {
             : m_dtype{dtype}
             , m_fromp{fromp}
             , m_lsb{lsb} {}
-        KeySel(const DfgSel* vtxp)
+        explicit KeySel(const DfgSel* vtxp)
             : m_dtype{vtxp->dtype()}
             , m_fromp{vtxp->fromp()}
             , m_lsb{vtxp->lsb()} {}
@@ -94,7 +94,7 @@ class V3DfgCache final {
         KeyUnary(const DfgDataType& dtype, DfgVertex* source0p)
             : m_dtype{dtype}
             , m_source0p{source0p} {}
-        KeyUnary(const DfgVertexUnary* vtxp)
+        explicit KeyUnary(const DfgVertexUnary* vtxp)
             : m_dtype{vtxp->dtype()}
             , m_source0p{vtxp->inputp(0)} {}
 
@@ -123,7 +123,7 @@ class V3DfgCache final {
             : m_dtype{dtype}
             , m_source0p{source0p}
             , m_source1p{source1p} {}
-        KeyBinary(const DfgVertexBinary* vtxp)
+        explicit KeyBinary(const DfgVertexBinary* vtxp)
             : m_dtype{vtxp->dtype()}
             , m_source0p{vtxp->inputp(0)}
             , m_source1p{vtxp->inputp(1)} {}
@@ -158,7 +158,7 @@ class V3DfgCache final {
             , m_source0p{source0p}
             , m_source1p{source1p}
             , m_source2p{source2p} {}
-        KeyTernary(const DfgVertexTernary* vtxp)
+        explicit KeyTernary(const DfgVertexTernary* vtxp)
             : m_dtype{vtxp->dtype()}
             , m_source0p{vtxp->inputp(0)}
             , m_source1p{vtxp->inputp(1)}
@@ -210,7 +210,7 @@ class V3DfgCache final {
     public:
         // CacheBase does not cache anything
         virtual DfgVertex* cache(DfgVertex*) { return nullptr; }
-        virtual void invalidate(const DfgVertex*) { return; }
+        virtual void invalidate(const DfgVertex*) {}
     };
 
     template <typename T_Key, typename T_Vertex>
@@ -339,7 +339,7 @@ public:
         for (DfgVertex& vtx : m_dfg.opVertices()) cache(&vtx);
     }
 
-    // Add an existing vertex to the cache. If an equivalent already exists,
+    // Add an existing vertex to the cache. If an equivalent (but different) already exists,
     // it is returned and the cache is not updated.
     DfgVertex* cache(DfgVertex* vtxp) { return m_vtxType2Cachep[vtxp->type()]->cache(vtxp); }
 

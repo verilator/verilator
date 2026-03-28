@@ -1,8 +1,8 @@
-%Error: t/t_dpi_name_bad.v:11:31: DPI function has illegal characters in C identifier name: badly.named
+%Error: t/t_dpi_name_bad.v:11:31: DPI function has illegal characters in C identifier name 'badly.named'
    11 |   import "DPI-C" function int \badly.named (int i);
       |                               ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_dpi_name_bad.v:14:16: DPI function has illegal characters in C identifier name: badly.expt
+%Error: t/t_dpi_name_bad.v:14:16: DPI function has illegal characters in C identifier name 'badly.expt'
    14 |   function int \badly.expt ;
       |                ^~~~~~~~~~~
 %Error: Exiting due to

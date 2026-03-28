@@ -292,7 +292,8 @@ class LinkIncVisitor final : public VNVisitor {
     void prepost_expr_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
         if (m_unsupportedHere) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
+                                         " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
         AstNodeExpr* const readp = nodep->rhsp();

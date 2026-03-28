@@ -333,7 +333,8 @@ void VerilatedVcd::pushPrefix(const char* namep, VerilatedTracePrefixType type) 
         // Upper has name, we can suppress inserting $rootio, but still push so popPrefix works
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
-    } else if (name.empty()) {
+    }
+    if (name.empty()) {
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
     }
@@ -404,7 +405,7 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
         char* vcdCodeWritep = vcdCode;
         uint32_t codeEnc = code;
         do {
-            *vcdCodeWritep++ = static_cast<char>('!' + codeEnc % 94);
+            *vcdCodeWritep++ = static_cast<char>('!' + (codeEnc % 94));
             codeEnc /= 94;
         } while (codeEnc--);
         *vcdCodeWritep = '\0';
@@ -494,7 +495,7 @@ void VerilatedVcd::declDoubleArray(uint32_t code, const char* name, int arraynum
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t fidx) {
+VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t /*fidx*/) {
     VerilatedVcd::Buffer* const bufp = new Buffer{*this};
     if (parallel()) {
         // Note: This is called from VerilatedVcd::dump, which already holds the lock
@@ -503,7 +504,7 @@ VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t fidx) {
             // cppcheck-suppress unreadVariable  // cppcheck bug, used below
             constexpr size_t pageSize = 4096;
             // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
-            size_t startingSize = vlstd::roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
+            const size_t startingSize = vlstd::roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
             m_freeBuffers.emplace_back(new char[startingSize], startingSize);
             ++m_numBuffers;
         }
@@ -688,7 +689,7 @@ VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitDouble(uint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
-    VL_SNPRINTF(wp, m_maxSignalBytes, "r%.16g", newval);
+    (void)VL_SNPRINTF(wp, m_maxSignalBytes, "r%.16g", newval);
     wp += std::strlen(wp);
     finishLine(code, wp);
 }

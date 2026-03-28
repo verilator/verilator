@@ -1935,9 +1935,8 @@ AstClass* AstClassExtends::classOrNullp() const {
     if (refp && !refp->paramsp()) {
         // Class already resolved
         return refp->classp();
-    } else {
-        return nullptr;
     }
+    return nullptr;
 }
 AstClass* AstClassExtends::classp() const {
     AstClass* const clsp = classOrNullp();
@@ -2019,7 +2018,7 @@ void AstEnumDType::dump(std::ostream& str) const {
     str << " enum";
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "enum", 1);
+    dumpJsonBoolIf(str, "enum", true);
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
@@ -2152,11 +2151,8 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
 }
 AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
-    if (it == m_map.end()) {
-        return nullptr;
-    } else {
-        return it->second->valuep();
-    }
+    if (it == m_map.end()) { return nullptr; }
+    return it->second->valuep();
 }
 AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
     AstNodeExpr* valuep = getIndexValuep(index);
@@ -2312,12 +2308,14 @@ void AstPin::dump(std::ostream& str) const {
     } else {
         str << " ->UNLINKED";
     }
+    if (!paramPath().empty()) str << " paramPath=" << paramPath();
     if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, svDotName);
     dumpJsonBoolFuncIf(str, svImplicit);
+    if (!paramPath().empty()) dumpJsonStr(str, "paramPath", paramPath());
     dumpJsonGen(str);
 }
 string AstPin::prettyOperatorName() const {
@@ -2513,7 +2511,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, generic);
-    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", 1);
+    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", true);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -2633,6 +2631,7 @@ void AstNodeModule::dump(std::ostream& str) const {
     str << " D" << depth();
     if (modPublic()) str << " [P]";
     if (inLibrary()) str << " [LIB]";
+    if (ctorVarReset()) str << " [CVRESET]";
     if (dead()) str << " [DEAD]";
     if (recursiveClone()) {
         str << " [RECURSIVE-CLONE]";
@@ -2650,6 +2649,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, level);
     dumpJsonBoolFuncIf(str, modPublic);
     dumpJsonBoolFuncIf(str, inLibrary);
+    dumpJsonBoolFuncIf(str, ctorVarReset);
     dumpJsonBoolFuncIf(str, dead);
     dumpJsonBoolFuncIf(str, recursiveClone);
     dumpJsonBoolFuncIf(str, recursive);
@@ -3398,6 +3398,14 @@ void AstCMethodHard::setPurity() {
     }
 }
 
+void AstCStmt::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (!stmtType().isNone()) str << " [" << stmtType().ascii() << "]";
+}
+void AstCStmt::dumpJson(std::ostream& str) const {
+    dumpJsonGen(str);
+    if (!stmtType().isNone()) dumpJsonStr(str, "stmtType", stmtType().ascii());
+}
 void AstCUse::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << useType() << "]";
@@ -3418,18 +3426,12 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 
 string AstCase::pragmaString() const {
-    if (fullPragma() && parallelPragma())
-        return "synthesis full_case parallel_case";
-    else if (fullPragma())
-        return "synthesis full_case";
-    else if (parallelPragma())
-        return "synthesis parallel_case";
-    else if (uniquePragma())
-        return "unique case";
-    else if (unique0Pragma())
-        return "unique0 case";
-    else if (priorityPragma())
-        return "priority case";
+    if (fullPragma() && parallelPragma()) return "synthesis full_case parallel_case";
+    if (fullPragma()) return "synthesis full_case";
+    if (parallelPragma()) return "synthesis parallel_case";
+    if (uniquePragma()) return "unique case";
+    if (unique0Pragma()) return "unique0 case";
+    if (priorityPragma()) return "priority case";
     return "";
 }
 

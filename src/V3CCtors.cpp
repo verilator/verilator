@@ -65,6 +65,7 @@ class V3CCtorsBuilder final {
         funcp->keepIfEmpty(true);  // TODO relax
         funcp->declPrivate(true);
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
+        if (!m_type.isCoverage()) m_modp->ctorVarReset(true);
         string preventUnusedStmt;
         if (m_type.isClass()) {
             funcp->argTypes(EmitCUtil::symClassVar());
@@ -83,6 +84,7 @@ class V3CCtorsBuilder final {
 
 public:
     void add(AstNode* nodep) {
+        if (m_newFunctions.empty()) m_newFunctions.push_back(makeNewFunc());
         if (v3Global.opt.outputSplitCFuncs() && m_numStmts > v3Global.opt.outputSplitCFuncs()) {
             m_newFunctions.push_back(makeNewFunc());
         }
@@ -94,13 +96,13 @@ public:
         : m_modp{nodep}
         , m_basename{basename}
         , m_type{type} {
-        // Note: The constructor is always called, even if empty, so we must always create at least
-        // one.
-        m_newFunctions.push_back(makeNewFunc());
+        // Expect coverage function to always exist, so must always create at least one.
+        if (m_type.isCoverage()) m_newFunctions.push_back(makeNewFunc());
     }
 
     ~V3CCtorsBuilder() {
-        if (m_newFunctions.size() == 1) {
+        if (m_newFunctions.size() == 0) {
+        } else if (m_newFunctions.size() == 1) {
             // No split was necessary, rename the one function to the basename
             m_newFunctions.front()->name(m_basename);
         } else {
@@ -136,6 +138,7 @@ class CCtorsVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstCFunc* m_cfuncp = nullptr;  // Current function
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
+    std::map<AstCStmt*, const AstNodeModule*> m_ctorCalls;  // Calls to _ctor_var_reset
 
     // METHODS
     static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VSystemCSectionType type) {
@@ -194,6 +197,13 @@ class CCtorsVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->name() == "new") insertSc(nodep, m_modp, VSystemCSectionType::CTOR);
     }
+    void visit(AstCStmt* nodep) override {
+        if (nodep->stmtType() == VCStmtType::CTOR_VAR_RESET_CALL) {
+            UASSERT_OBJ(m_modp, nodep, "ctor_var_reset call not under module");
+            m_ctorCalls.emplace(nodep, m_modp);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {
             AstNode* const crstp = new AstAssign{
@@ -215,7 +225,14 @@ class CCtorsVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
-    ~CCtorsVisitor() override = default;
+    ~CCtorsVisitor() override {
+        // Remove CStmts to ctor_var_resets that are no longer needed
+        for (auto& itr : m_ctorCalls) {
+            AstCStmt* const nodep = itr.first;
+            const AstNodeModule* const modp = itr.second;
+            if (!modp->ctorVarReset()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
+    }
 };
 
 //######################################################################

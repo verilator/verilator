@@ -80,6 +80,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:
@@ -123,6 +124,8 @@ class V3DfgCse final {
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
         case VDfgType::StreamR:
+        case VDfgType::SAnd:
+        case VDfgType::SOr:
         case VDfgType::Sub:
         case VDfgType::Xor: return V3Hash{};
         }
@@ -198,6 +201,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:
@@ -240,6 +244,8 @@ class V3DfgCse final {
         case VDfgType::ShiftR:
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
+        case VDfgType::SAnd:
+        case VDfgType::SOr:
         case VDfgType::StreamR:
         case VDfgType::Sub:
         case VDfgType::Xor: return true;
@@ -330,7 +336,7 @@ class V3DfgCse final {
 
 public:
     static void apply(DfgGraph& dfg, V3DfgCseContext& ctx) {
-        V3DfgCse{dfg, ctx};
+        { V3DfgCse{dfg, ctx}; }
         // Prune unused nodes
         V3DfgPasses::removeUnused(dfg);
     }

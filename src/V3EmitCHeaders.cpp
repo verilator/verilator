@@ -693,7 +693,7 @@ class EmitCHeader final : public EmitCConstInit {
     ~EmitCHeader() override = default;
 
 public:
-    static void main(const AstNodeModule* modp) { EmitCHeader emitCHeader{modp}; }
+    static void main(const AstNodeModule* modp) { const EmitCHeader emitCHeader{modp}; }
 };
 
 //######################################################################
