@@ -15,8 +15,8 @@
 package pkg_a;
   typedef enum int {
     STATE_UNINIT = 0,
-    STATE_INIT   = 1,
-    STATE_DONE   = 2
+    STATE_INIT = 1,
+    STATE_DONE = 2
   } state_e;
 
   state_e g_state = STATE_UNINIT;
