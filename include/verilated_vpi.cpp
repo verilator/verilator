@@ -3187,7 +3187,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         valuep->value.integer = get_word(vop, 32, 0);
         return;
     } else if (valuep->format == vpiRealVal) {
-        // Only cover the scalar case, since reals cannot be packed (IEEE 1800, section 7.4.1), and
+        // Only cover the scalar case, since reals cannot be packed (IEEE 1800-2023 7.4.1), and
         // unpacked arrays are not supported for forcing in Verilator (#4735).
         if (vop->varp()->isForceable() && *forceEnableSignalVop->varCDatap())
             valuep->value.real = *forceValueSignalVop->varRealDatap();

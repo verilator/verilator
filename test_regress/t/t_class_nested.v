@@ -26,7 +26,7 @@ class NodeTree;
   Node root;
 endclass
 
-// Based on IEEE 1800-2017 section 8.23 Nested classes
+// Based on IEEE 1800-2023 8.23 Nested classes
 class Outer;
   int outerProp;
   local int outerLocalProp;

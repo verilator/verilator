@@ -2146,7 +2146,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
-        // IEEE 1800-2017 18.5.13: "disable soft" removes all soft constraints
+        // IEEE 1800-2023 18.5.13: "disable soft" removes all soft constraints
         // referencing the specified variable. Pass the variable name directly
         // instead of going through SMT lowering.
         if (nodep->isDisableSoft()) {
@@ -2171,7 +2171,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // IEEE 1800-2017 18.5.1: A bare expression used as a constraint is
+        // IEEE 1800-2023 18.5.1: A bare expression used as a constraint is
         // implicitly treated as "expr != 0" when wider than 1 bit.
         // Must wrap before iterateChildren, which converts to SMT format.
         {
@@ -2191,7 +2191,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // Emit as soft or hard constraint per IEEE 1800-2017 18.5.13
+        // Emit as soft or hard constraint per IEEE 1800-2023 18.5.13
         const VCMethod method
             = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
         AstCMethodHard* const callp = new AstCMethodHard{

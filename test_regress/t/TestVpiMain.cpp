@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
 
         // Call registered timed callbacks (e.g. clock timer)
         // These are called at the beginning of the time step
-        // before the iterative regions (IEEE 1800-2012 4.4.1)
+        // before the iterative regions (IEEE 1800-2023 4.4.1)
         VerilatedVpi::callTimedCbs();
         settle_value_callbacks();
     }
