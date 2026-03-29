@@ -1145,6 +1145,13 @@ public:
         if (it == m_map.rend()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
     }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (const auto& i : m_map) out.push_back(with_func(i.first, i.second));
+        return out;
+    }
 
     // Reduction operators
     VlQueue<T_Value> min() const {
