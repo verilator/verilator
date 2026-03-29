@@ -2083,7 +2083,7 @@ public:
     VlClassRef<T_OtherClass> dynamicCast() const {
         return VlClassRef<T_OtherClass>{dynamic_cast<T_OtherClass*>(m_objp)};
     }
-    // Polymorphic shallow clone (IEEE 1800-2017 8.7: new <handle> preserves runtime type)
+    // Polymorphic shallow clone (IEEE 1800-2023 8.7: new <handle> preserves runtime type)
     VlClassRef clone(VlDeleter& deleter) const {
         VlClass* clonedp = m_objp->clone();
         if (VL_UNLIKELY(!clonedp)) return {};

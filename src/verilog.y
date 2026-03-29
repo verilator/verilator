@@ -1478,7 +1478,7 @@ port<nodep>:                    // ==IEEE: port
         //                      //   IEEE: '.' port_identifier '(' [ expression ] ')'
         |       portDirNetE /*implicit*/ '.' portSig '(' expr ')'
                         { $$ = $3; DEL($5);
-                          BBUNSUP($<fl>2, "Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)"); }
+                          BBUNSUP($<fl>2, "Unsupported: complex ports (IEEE 1800-2023 23.2.2.1/2)"); }
         //                      // IEEE: part of (non-ansi) port_reference
         |       '{' port_expressionList '}'
                         { $$ = $2; }
@@ -2545,7 +2545,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
 
-        // IEEE 1800-2017 6.18 typedef: dotted or arrayed type identifier
+        // IEEE 1800-2023 6.18 typedef: dotted or arrayed type identifier
         // Handles interface typedef references like if0.rq_t and if0[0].rq_t (arrays allowed after first component)
         |       yTYPEDEF idDottedOrArrayed
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -2557,7 +2557,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                 varp->valuep($2);
                 $$ = varp; }
 
-        // IEEE 1800-2017 6.18 typedef with hierarchical type identifier
+        // IEEE 1800-2023 6.18 typedef with hierarchical type identifier
         // Special-case array on first component requiring a '.' after ']' to disambiguate from packed dims
         // Examples: typedef if0[0].rq_t my_t; typedef if0[0].x_if.rq_t my_t;
         |       yTYPEDEF id '[' expr ']' '.' idDottedSelMore
@@ -2586,7 +2586,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, refp, $4); }
 
-        // IEEE 1800-2017 6.18.2 typedef with packed dimensions on an existing type identifier
+        // IEEE 1800-2023 6.18.2 typedef with packed dimensions on an existing type identifier
         // Disambiguated from interface array access by requiring ':' inside the brackets
         // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE

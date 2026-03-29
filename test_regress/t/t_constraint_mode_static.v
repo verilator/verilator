@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
-// Test static constraint_mode() support per IEEE 1800-2017 Section 18.4, 18.8
+// Test static constraint_mode() support per IEEE 1800-2023 18.4, 18.8
 // Static constraint mode should be shared across all instances.
 
 class StaticConstraintTest;

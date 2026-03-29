@@ -443,7 +443,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Soft constraint relaxation (IEEE 1800-2017 18.5.13, last-wins priority):
+        // Soft constraint relaxation (IEEE 1800-2023 18.5.13, last-wins priority):
         // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
         // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
@@ -726,7 +726,7 @@ void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint
 }
 
 void VlRandomizer::disable_soft(const std::string& varName) {
-    // IEEE 1800-2017 18.5.13: Remove all soft constraints referencing the variable
+    // IEEE 1800-2023 18.5.13: Remove all soft constraints referencing the variable
     m_softConstraints.erase(
         std::remove_if(m_softConstraints.begin(), m_softConstraints.end(),
                        [&](const std::string& c) { return c.find(varName) != std::string::npos; }),
