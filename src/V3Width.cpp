@@ -4155,9 +4155,8 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            AstWith* const withp
-                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
-                                   adtypep->keyDTypep(), adtypep->subDTypep());
+            AstWith* const withp = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                                    adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
