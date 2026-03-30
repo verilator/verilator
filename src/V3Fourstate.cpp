@@ -39,12 +39,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - split asswignw into multiple statements
  */
 
+namespace {
 struct FourStatePair final {
     AstNodeExpr* value;
     AstNodeExpr* xz;
 };
 
-namespace {
 enum LogicType : char {
     UNINITIALIZED = 0,
     TWO_STATE,
@@ -77,6 +77,31 @@ struct ReducerTrait<
                                                                 std::declval<FourStatePair>())),
                                      FourStatePair>::value>>
     final : std::true_type {};
+
+static bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+    FileLine* const flp = exprp->fileline();
+    const int exprpWidth = exprp->width();
+    if (V3Number{flp, 1, 0}
+            .opGte(msb, V3Number{flp, exprpWidth, 0}.opSub(
+                            V3Number{flp, exprpWidth, 0}.opShiftL(
+                                V3Number{flp, exprpWidth, 1},
+                                V3Number{flp, exprpWidth, static_cast<uint32_t>(exprpWidth)}),
+                            V3Number{flp, exprpWidth, 1}))
+            .isEqOne()) {
+        return true;
+    }
+    if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+        if (V3Number{flp, 1, 0}.opGte(msb, constp->num()).isEqOne()) return true;
+    }
+    return false;
+}
+static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+    FileLine* const flp = exprp->fileline();
+    if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+        return constp->num().isAnyXZ() || V3Number{flp, 1, 0}.opLt(msb, constp->num()).isNeqZero();
+    }
+    return false;
+}
 }  // namespace
 
 class FourstateLogicTypePropagator final : public VNVisitor {
@@ -156,12 +181,19 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         }
     }
 
+    void visit(AstSel* const nodep) override {
+        iterateChildren(nodep);
+        setFourstate(nodep, isFourstate(nodep->fromp()));
+    }
+
     void visit(AstNodeExpr* const nodep) override {
         iterateChildren(nodep);
-        if (nodep->dtypep()->isIntegralOrPacked()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
-            setLogicType(nodep, TWO_STATE);  // Set an arbitraty logic type
+        if (AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType)) {
+            if (basicp->keyword().isIntNumeric()) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Operator not supported in the four-state mode");
+                setLogicType(nodep, TWO_STATE);  // Set an arbitrary logic type
+            }
         }
     }
 
@@ -175,13 +207,14 @@ public:
 class FourstateVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
     // Node status
-    // AstVar*::user1p      ->  AstVar*.        Where is value part of splitted variable - xz shall
-    //                                          be nexp() of user1p
+    // AstVar*::user1p      ->  AstVar*.        Where is value part of splitted variable - xz
+    //                                          shall be nexp() of user1p
     // AstNodeExpr::user1p  ->  AstNodeExpr*.   Expression evaluating value component
-    // AstStmtExpr::user1   ->  bool.           Whether visited
     // AstNodeExpr::user2p  ->  AstNodeExpr*.   Expression evaluating xz component
+    // AstNode::user3       ->  bool.           Whether visited
     // AstNodeExpr::user4   ->  LogicType.      Expression logic type (whether it is four
     //                                          or two state)
 
@@ -190,8 +223,8 @@ class FourstateVisitor final : public VNVisitor {
     AstVar* m_currentTmpSpotp = nullptr;  // Node after which put AstVar* for temporary variable
     bool m_tmpFuncLocal = false;
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
-    AstNode* m_currentFTaskArgp
-        = nullptr;  // Current argument variable of FTaskRef - if not variable it is meaningless
+    AstNode* m_currentFTaskArgp = nullptr;  // Current argument variable of FTaskRef - if not
+                                            // variable it is meaningless
     AstNode* m_currentPinp = nullptr;  // Current Pin of a Cell
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
 
@@ -321,6 +354,7 @@ class FourstateVisitor final : public VNVisitor {
             = new AstConst{exprp->fileline(), AstConst::WidthedValue{}, exprp->width(), 0};
         resultp->dtypeSetBitUnsized(exprp->width(), exprp->widthMin(), exprp->dtypep()->numeric());
         if (ones) resultp->num().setAllBits1();
+        setFourstate(resultp, false);
         return resultp;
     }
 
@@ -498,6 +532,61 @@ class FourstateVisitor final : public VNVisitor {
         return getSplittedValue(varp)->fourStateComplement();
     }
 
+    void addPrecalculation(AstNodeStmt* const nodep) {
+        FourstateLogicTypePropagator{nodep};
+        m_currentStmtp->addHereThisAsNext(nodep);
+    }
+
+    AstNodeExpr* getFourStateExpressionSelHandler(AstSel* const selp, AstNodeExpr* const valueExpr,
+                                                  const bool defaultsToZero) {
+        FileLine* const flp = selp->fileline();
+        AstNodeExpr* lsbp = selp->lsbp();
+        V3Number maxmsb{flp, lsbp->width(),
+                        static_cast<uint32_t>(selp->fromp()->dtypep()->width() - 1)};
+        if (isStaticallyNGte(maxmsb, lsbp)) {
+            if (!selp->fromp()->isPure()) {
+                addPrecalculation(new AstStmtExpr{flp, valueExpr});
+            } else {
+                valueExpr->deleteTree();
+            }
+            return createConst(selp, !defaultsToZero);
+        }
+        AstSel* const newp = [selp] {
+            AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
+            AstNodeExpr* const lsbp = selp->lsbp()->unlinkFrBack();
+            AstSel* const newp = selp->cloneTree(false);
+            selp->fromp(fromp);
+            selp->lsbp(lsbp);
+            return newp;
+        }();
+        newp->user3(1);
+        newp->fromp(valueExpr);
+        if (isStaticallyGte(maxmsb, lsbp)) {
+            newp->lsbp(lsbp->cloneTree(false));
+            return newp;
+        }
+        AstConst* const maxmsbConstp = new AstConst{flp, maxmsb};
+        AstNodeExpr* conditionp;
+        if (isFourstate(lsbp)) {
+            conditionp
+                = new AstOr{flp, getFourStateExpressionXZ(lsbp, isFourstate(selp)),
+                            new AstLt{flp, maxmsbConstp, getFourStateExpressionValue(lsbp, true)}};
+            lsbp = getFourStateExpressionValue(lsbp, true);
+        } else {
+            if (!VN_IS(lsbp, NodeVarRef) && !VN_IS(lsbp, Const)) {
+                AstVar* const lsbTmpp = createTmp(lsbp);
+                addPrecalculation(new AstAssign{flp, new AstVarRef{flp, lsbTmpp, VAccess::WRITE},
+                                                lsbp->cloneTree(false)});
+                lsbp = new AstVarRef{flp, lsbTmpp, VAccess::READ};
+            } else {
+                lsbp = lsbp->cloneTree(false);
+            }
+            conditionp = new AstLt{flp, maxmsbConstp, lsbp->cloneTree(false)};
+        }
+        newp->lsbp(lsbp);
+        return new AstCond{flp, conditionp, createConst(selp, !defaultsToZero), newp};
+    }
+
     class FourstateExpressionVisitor VL_NOT_FINAL : public VNVisitor {
     protected:
         FourstateVisitor& m_fourstateVisitor;
@@ -542,7 +631,7 @@ class FourstateVisitor final : public VNVisitor {
             newCallp->addArgsp(new AstArg{flp, "", resultValueRefp});
             newCallp->addArgsp(new AstArg{flp, "", resultXzRefp});
             AstStmtExpr* const newStmtExprp = new AstStmtExpr{flp, newCallp};
-            newStmtExprp->user1(1);
+            newStmtExprp->user3(1);
             addPrecalculation(newStmtExprp);
             AstVarRef* const varRefValuep = new AstVarRef{flp, resultValuep, VAccess::READ};
             AstVarRef* const varRefXzp = new AstVarRef{flp, resultXzp, VAccess::READ};
@@ -904,6 +993,11 @@ class FourstateVisitor final : public VNVisitor {
             m_result = VN_AS(logOrp->user1p(), NodeExpr)->cloneTree(false);
         }
 
+        void visit(AstSel* const selp) override {
+            m_result = m_fourstateVisitor.getFourStateExpressionSelHandler(
+                selp, getFourStateExpressionValue(selp->fromp(), false), false);
+        }
+
         void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
             // (a.xz | b.xz) ? '1 : (a op b)
             FileLine* const flp = biop->fileline();
@@ -965,9 +1059,12 @@ class FourstateVisitor final : public VNVisitor {
         AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
                                                  bool putIntoTmp = true) override {
             if (!isFourstate(exprp)) {
-                AstNodeExpr* result = exprp->cloneTree(false);
-                m_fourstateVisitor.iterateChildren(result);
-                return result;
+                AstStmtExpr* const holderp
+                    = new AstStmtExpr{exprp->fileline(), exprp->cloneTree(false)};
+                m_fourstateVisitor.iterateChildren(holderp);
+                AstNodeExpr* const resultp = holderp->exprp()->unlinkFrBack();
+                holderp->deleteTree();
+                return resultp;
             }
             return get(exprp, putIntoTmp);
         }
@@ -1106,6 +1203,11 @@ class FourstateVisitor final : public VNVisitor {
             m_result = VN_AS(logOrp->user2p(), NodeExpr)->cloneTree(false);
         }
 
+        void visit(AstSel* const selp) override {
+            m_result = m_fourstateVisitor.getFourStateExpressionSelHandler(
+                selp, getFourStateExpressionXZ(selp->fromp(), false), false);
+        }
+
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
             if (varRefp->varp()->dtypep()->isFourstate()) {
@@ -1154,7 +1256,7 @@ class FourstateVisitor final : public VNVisitor {
     FourstateExpressionValueVisitor m_fourstateGeneratorValueVisitor;
     FourstateExpressionXZVisitor m_fourstateGeneratorXZVisitor;
 
-    AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp) {
+    AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp, bool putIntoTmp = false) {
         if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
             // This is here instead in the visitor because CReset shall never be nested into
             // the expression and also it is a very special case
@@ -1164,12 +1266,12 @@ class FourstateVisitor final : public VNVisitor {
             return result;
         }
         AstNodeExpr* const result
-            = m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(exprp, false);
+            = m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(exprp, putIntoTmp);
         FourstateLogicTypePropagator{result};
         return result;
     }
 
-    AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp) {
+    AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp, bool putIntoTmp = false) {
         if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
             // This is here instead in the visitor because CReset shall never be nested into
             // the expression and also it is a very special case
@@ -1179,7 +1281,7 @@ class FourstateVisitor final : public VNVisitor {
             return result;
         }
         AstNodeExpr* const result
-            = m_fourstateGeneratorXZVisitor.getFourStateExpressionXZ(exprp, false);
+            = m_fourstateGeneratorXZVisitor.getFourStateExpressionXZ(exprp, putIntoTmp);
         FourstateLogicTypePropagator{result};
         return result;
     }
@@ -1248,15 +1350,12 @@ class FourstateVisitor final : public VNVisitor {
             AstNodeExpr* const newRhsp = getTwoStateCast(nodep->rhsp());
             pushDeletep(nodep->rhsp()->unlinkFrBack());
             nodep->rhsp(newRhsp);
-        } else {
-            UASSERT_OBJ(!nodep->rhsp()->dtypep()->isFourstate(), nodep,
-                        "Verilator makes rhsp == lhsp");
         }
         iterateChildren(nodep);
     }
 
     void visit(AstStmtExpr* const nodep) override {
-        if (nodep->user1SetOnce()) return;
+        if (nodep->user3SetOnce()) return;
         VL_RESTORER(m_currentStmtp);
         m_currentStmtp = nodep;
         TmpVarsReleaser tmpVarsReleaser{*this};
@@ -1274,7 +1373,7 @@ class FourstateVisitor final : public VNVisitor {
             AstNodeExpr* const newXzp = getFourStateExpressionXZ(exprp);
             iterateChildren(newXzp);
             AstStmtExpr* const newStmtExprp = new AstStmtExpr{nodep->fileline(), newXzp};
-            newStmtExprp->user1(1);
+            newStmtExprp->user3(1);
             nodep->addNextHere(newStmtExprp);
             exprp->deleteTree();
         }
@@ -1390,6 +1489,17 @@ class FourstateVisitor final : public VNVisitor {
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         relinker.relink(getTruthExpr(nodep));
+        nodep->deleteTree();
+    }
+
+    void visit(AstSel* const nodep) override {
+        UASSERT_OBJ(!isFourstate(nodep), nodep,
+                    "This visitor shall never be reached for four-state AstSel");
+        if (nodep->user3SetOnce()) return;
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        relinker.relink(
+            getFourStateExpressionSelHandler(nodep, nodep->fromp()->cloneTree(false), true));
         nodep->deleteTree();
     }
 
