@@ -73,6 +73,10 @@ static bool isFourstate(const AstNodeExpr* const exprp) {
     return logic == FOUR_STATE;
 }
 
+static bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
+    return getLogicType(exprp) == TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE;
+}
+
 template <typename T, typename = void>
 struct ReducerTrait final : std::false_type {};
 template <typename T>
@@ -114,13 +118,13 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     void visit(AstConst* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
-        m_fourstateInSubtree = isFourstate(nodep);
+        m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeVarRef* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
-        m_fourstateInSubtree = isFourstate(nodep);
+        m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
@@ -128,7 +132,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep,
                      nodep->taskp()->fvarp() && nodep->taskp()->fvarp()->dtypep()->isFourstate(),
                      m_fourstateInSubtree);
-        m_fourstateInSubtree = isFourstate(nodep);
+        m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeUniop* const nodep) override {
@@ -139,7 +143,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     void visit(AstCastWrap* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
-        m_fourstateInSubtree = isFourstate(nodep);
+        m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeBiop* const nodep) override {
@@ -168,7 +172,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         } else {
             setFourstate(nodep, m_fourstateInSubtree);
         }
-        m_fourstateInSubtree = isFourstate(nodep);
+        m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeTriop* const nodep) override {
@@ -208,6 +212,11 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     void visit(AstCExprUser* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstRedOr* const nodep) override {
+        iterateChildren(nodep);
+        setFourstate(nodep, isFourstate(nodep->lhsp()), m_fourstateInSubtree);
     }
 
     void visit(AstNodeExpr* const nodep) override {
@@ -1534,10 +1543,78 @@ class FourstateVisitor final : public VNVisitor {
         UASSERT_OBJ(!isFourstate(nodep), nodep,
                     "This visitor shall never be reached for four-state AstSel");
         if (nodep->user3SetOnce()) return;
+        AstNodeExpr* const newp
+            = getFourStateExpressionSelHandler(nodep, nodep->fromp()->cloneTree(false), true);
+        { FourstateLogicTypePropagator{newp}; }
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        relinker.relink(
-            getFourStateExpressionSelHandler(nodep, nodep->fromp()->cloneTree(false), true));
+        relinker.relink(newp);
+        nodep->deleteTree();
+    }
+
+    void visit(AstLogOr* const nodep) override {
+        if (!hasFourstateInSubtree(nodep->rhsp())) {
+            iterateChildren(nodep);
+            return;
+        }
+        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        FileLine* const flp = nodep->fileline();
+        AstVar* resultVarp = createTmp(nodep);
+        addPrecalculation(new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                        new AstRedOr{flp, nodep->lhsp()->unlinkFrBack()}});
+        addPrecalculation(
+            new AstIf{flp, new AstNot{flp, new AstVarRef{flp, resultVarp, VAccess::READ}},
+                      new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                    new AstRedOr{flp, nodep->rhsp()->unlinkFrBack()}}});
+        AstVarRef* const newp = new AstVarRef{flp, resultVarp, VAccess::READ};
+        setFourstate(newp, false);
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        relinker.relink(newp);
+        nodep->deleteTree();
+    }
+
+    void visit(AstLogAnd* const nodep) override {
+        if (!hasFourstateInSubtree(nodep->rhsp())) {
+            iterateChildren(nodep);
+            return;
+        }
+        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        FileLine* const flp = nodep->fileline();
+        AstVar* resultVarp = createTmp(nodep);
+        addPrecalculation(new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                        new AstRedOr{flp, nodep->lhsp()->unlinkFrBack()}});
+        addPrecalculation(
+            new AstIf{flp, new AstVarRef{flp, resultVarp, VAccess::READ},
+                      new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                    new AstRedOr{flp, nodep->rhsp()->unlinkFrBack()}}});
+        AstVarRef* const newp = new AstVarRef{flp, resultVarp, VAccess::READ};
+        setFourstate(newp, false);
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        relinker.relink(newp);
+        nodep->deleteTree();
+    }
+
+    void visit(AstCond* const nodep) override {
+        if (!hasFourstateInSubtree(nodep->thenp()) && !hasFourstateInSubtree(nodep->elsep())) {
+            iterateChildren(nodep);
+            return;
+        }
+        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        FileLine* const flp = nodep->fileline();
+        AstVar* resultVarp = createTmp(nodep);
+        addPrecalculation(
+            new AstIf{flp, nodep->condp()->unlinkFrBack(),
+                      new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                    nodep->thenp()->unlinkFrBack()},
+                      new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
+                                    nodep->elsep()->unlinkFrBack()}});
+        AstVarRef* const newp = new AstVarRef{flp, resultVarp, VAccess::READ};
+        setFourstate(newp, false);
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        relinker.relink(newp);
         nodep->deleteTree();
     }
 
