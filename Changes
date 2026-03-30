@@ -74,6 +74,7 @@ Verilator 5.047 devel
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
 * Fix `local::` false error in randomize() with on parameterized class (#6680) (#7293). [Yilou Wang]
 * Fix false recursive definition error (#6769) (#7118). [Alex Zhou]
+* Fix port assignment to large arrays (#6904).
 * Fix interface localparam dependencies and arbitrary nesting (#6936) (#7128) (#7188) (#7190). [em2machine]
 * Fix errant integer promotion (#7012). [Todd Strader]
 * Fix randc solver hang with wide variables (#7068) (#7248). [Yilou Wang]
