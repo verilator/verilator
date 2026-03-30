@@ -1185,11 +1185,7 @@ class WidthVisitor final : public VNVisitor {
             if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
                 frommsb = adtypep->hi();
                 fromlsb = adtypep->lo();
-                if (fromlsb > frommsb) {
-                    const int t = frommsb;
-                    frommsb = fromlsb;
-                    fromlsb = t;
-                }
+                if (fromlsb > frommsb) std::swap(frommsb, fromlsb);
                 // However, if the lsb<0 we may go negative, so need more bits!
                 if (fromlsb < 0) frommsb += -fromlsb;
                 nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
