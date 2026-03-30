@@ -16,12 +16,12 @@
 //*************************************************************************
 // V3SchedVirtIface's Transformations:
 //
-// Collect all interface instance VarScopes that are read via virtual interfaces
-// (identified by sensIfacep() being set). These are grouped by interface type
-// and member, and used to create value-change-based triggers in the scheduler.
+// Identify interface members written through virtual interface variables (VIF writes).
+// For each such member, collect all VarScopes across all instantiations of that
+// interface type. Each VarScope gets its own value-change trigger in the scheduler.
 //
 // Also disables lifetime optimization for variables in AlwaysPost blocks that
-// write to virtual interface members.
+// write through virtual interfaces.
 //
 //*************************************************************************
 
@@ -40,7 +40,12 @@ class VirtIfaceVisitor final : public VNVisitor {
 private:
     // STATE
     AstNetlist* const m_netlistp;  // Root node
-    VirtIfaceTriggers m_triggers;  // Collected instance VarScopes per member
+    // Set of (iface, member) pairs written through VIF -- defines which members need triggers
+    std::set<std::pair<const AstIface*, const std::string>> m_vifWrittenMembers;
+    // All candidate VarScopes of interface members (keyed by interface type + member name)
+    std::map<std::pair<const AstIface*, const std::string>, std::vector<AstVarScope*>>
+        m_candidateVscps;
+    VirtIfaceTriggers m_triggers;
 
     // METHODS
     // Returns true if statement writes across a virtual interface boundary
@@ -48,25 +53,29 @@ private:
         return nodep->exists([](const AstVarRef* const refp) {
             if (!refp->access().isWriteOrRW()) return false;
             AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
-            const bool writesToVirtIfaceMember
-                = (dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel));
-            const bool writesToIfaceSensVar
-                = refp->varp()->isVirtIface() || refp->varp()->sensIfacep();
-            return writesToVirtIfaceMember || writesToIfaceSensVar;
-        });
-    }
-
-    // Collect all VarScopes whose varp has sensIfacep set -- these are interface
-    // member instances that are read through virtual interfaces and need monitoring.
-    void collectInstanceVarScopes() {
-        m_netlistp->foreach([this](AstVarScope* vscp) {
-            if (AstIface* const ifacep = vscp->varp()->sensIfacep()) {
-                m_triggers.addInstanceVarScope(ifacep, vscp->varp(), vscp);
-            }
+            return dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel);
         });
     }
 
     // VISITORS
+    void visit(AstVarRef* nodep) override {
+        // Detect writes through VIF handles: vif.member = expr
+        // AST shape: AssignX(MemberSel(VarRef(vif), "member"), rhs)
+        if (nodep->access().isWriteOrRW() && nodep->varp()->isVirtIface()) {
+            if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
+                const AstIface* const ifacep
+                    = VN_AS(nodep->varp()->dtypep(), IfaceRefDType)->ifacep();
+                m_vifWrittenMembers.emplace(ifacep, memberSelp->varp()->name());
+            }
+        }
+    }
+    void visit(AstVarScope* nodep) override {
+        // Collect candidate VarScopes. sensIfacep() is set on interface members
+        // accessed via any MemberSel (virtual or non-virtual).
+        if (const AstIface* const ifacep = nodep->varp()->sensIfacep()) {
+            m_candidateVscps[{ifacep, nodep->varp()->name()}].push_back(nodep);
+        }
+    }
     void visit(AstNodeProcedure* nodep) override {
         // Disable lifetime optimization for variables in AlwaysPost blocks
         // that write to virtual interface members, as VIF reads may observe them
@@ -77,12 +86,24 @@ private:
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
+    // Build final trigger list by intersecting VIF writes with candidate VarScopes
+    void buildTriggers() {
+        for (const auto& written : m_vifWrittenMembers) {
+            const auto it = m_candidateVscps.find(written);
+            if (it == m_candidateVscps.end()) continue;
+            for (AstVarScope* const vscp : it->second) {
+                const AstIface* const ifacep = written.first;
+                m_triggers.addTrigger(ifacep, vscp->varp(), vscp);
+            }
+        }
+    }
+
 public:
     // CONSTRUCTORS
     explicit VirtIfaceVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
-        collectInstanceVarScopes();
         iterate(nodep);
+        buildTriggers();
     }
     ~VirtIfaceVisitor() override = default;
 
