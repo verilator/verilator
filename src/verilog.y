@@ -3783,9 +3783,7 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
-                        { $$ = new AstStmtExpr{$<fl>1, new AstPostAdd{$2, $3,
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}}; }
+                        { $$ = new AstAssignCompound{$2, $1, $3}; }
         |       fexprLvalue yP_MINUSEQ   expr
                         { $$ = new AstStmtExpr{$<fl>1, new AstPostSub{$2, $3,
                                                                 // Purity checked in V3LinkInc

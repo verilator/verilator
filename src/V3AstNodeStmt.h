@@ -1406,6 +1406,19 @@ public:
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
 };
+class AstAssignCompound final : public AstNodeAssign {
+public:
+    AstAssignCompound(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompound(fl, lhsp, rhsp, timingControlp) {
+        dtypeFrom(lhsp);
+    }
+    ASTGEN_MEMBERS_AstAssignCompound;
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignCompound{fileline(), lhsp, rhsp, controlp};
+    }
+};
 class AstAssignCont final : public AstNodeAssign {
     // Continuous procedural 'assign'.  See AstAssignW for non-procedural version.
 public:

@@ -220,6 +220,15 @@ class LinkIncVisitor final : public VNVisitor {
             }
         }
     }
+    AstNodeExpr* determine_operation(AstNode* nodep, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        AstNodeExpr* operationp;
+        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
+            operationp = new AstSub{nodep->fileline(), lhsp, rhsp};
+        } else {
+            operationp = new AstAdd{nodep->fileline(), lhsp, rhsp};
+        }
+        return operationp;
+    }
     void prepost_stmt_sel_visit(AstNodeTriop* nodep) {
         // Special case array[something]++, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
@@ -254,14 +263,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const storeTop
             = new AstSelBit{fl, wrFromp, new AstVarRef{fl, varp, VAccess::READ}};
 
-        AstAssign* assignp;
-        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
-            assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstSub{nodep->fileline(), valuep, exprp}};
-        } else {
-            assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstAdd{nodep->fileline(), valuep, exprp}};
-        }
+        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
         newp->addNext(assignp);
 
         // if (debug() >= 9) newp->dumpTreeAndNext("-pp-stmt-sel-new: ");
@@ -276,14 +278,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const storeTop = nodep->thsp()->unlinkFrBack();
         AstNodeExpr* const valuep = nodep->rhsp()->unlinkFrBack();
 
-        AstAssign* assignp;
-        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
-            assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstSub{nodep->fileline(), valuep, exprp}};
-        } else {
-            assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstAdd{nodep->fileline(), valuep, exprp}};
-        }
+        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -314,12 +309,7 @@ class LinkIncVisitor final : public VNVisitor {
         insertOnTop(varp);
 
         // Define what operation will we be doing
-        AstNodeExpr* operp;
-        if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub{fl, readp->cloneTreePure(true), newconstp};
-        } else {
-            operp = new AstAdd{fl, readp->cloneTreePure(true), newconstp};
-        }
+        AstNodeExpr* operp = determine_operation(nodep, readp->cloneTreePure(true), newconstp);
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
@@ -347,6 +337,72 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
     void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
     void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstAssignCompound* nodep) override {
+        AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
+        if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
+            && !selbitp->bitp()->isPure()) {
+            // prepost_stmt_sel_visit(nodep);
+            UINFO(0, "ARRAY");
+                iterateChildren(nodep);
+                AstNodeExpr* const exprp = nodep->rhsp();
+                exprp->unlinkFrBack();
+
+                AstNode* cloned = nodep->lhsp()->cloneTree(true);
+                AstSelBit* const rdSelbitp = VN_CAST(cloned, SelBit);
+                AstNodeExpr* const rdFromp = rdSelbitp->fromp()->unlinkFrBack();
+                AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
+                AstSelBit* const wrSelbitp = VN_CAST(nodep->lhsp(), SelBit);
+                AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
+
+                // Prepare a temporary variable
+                FileLine* const fl = nodep->fileline();
+                const string name = "__VincIndex"s + cvtToStr(++m_modIncrementsNum);
+                AstVar* const varp = new AstVar{
+                    fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
+                    new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, rdBitp->cloneTree(true)}};
+                if (m_ftaskp) varp->funcLocal(true);
+
+                // Declare the variable
+                insertOnTop(varp);
+
+                // Define what operation will we be doing
+                AstAssign* const varAssignp
+                    = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rdBitp};
+                AstNode* const newp = varAssignp;
+
+                AstNodeExpr* const valuep
+                    = new AstSelBit{fl, rdFromp, new AstVarRef{fl, varp, VAccess::READ}};
+                AstNodeExpr* const storeTop
+                    = new AstSelBit{fl, wrFromp, new AstVarRef{fl, varp, VAccess::READ}};
+
+                AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
+                newp->addNext(assignp);
+
+                // if (debug() >= 9) newp->dumpTreeAndNext("-pp-stmt-sel-new: ");
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            
+        } else {
+            // Purity check was deferred at creation in verilog.y, check now
+            nodep->lhsp()->purityCheck();
+            if (!m_insStmtp) {
+                // prepost_stmt_visit(nodep);
+        iterateChildren(nodep);
+        AstNodeExpr* const exprp = nodep->rhsp();
+        exprp->unlinkFrBack();
+
+        // AstNodeExpr* const storeTop = nodep->thsp()->unlinkFrBack();
+        AstNodeExpr* const storeTop = nodep->lhsp()->cloneTree(true);
+        AstNodeExpr* const valuep = nodep->lhsp()->unlinkFrBack();
+
+        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
+        nodep->replaceWith(assignp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            } else {
+                UINFO(0, "UNREACHABLE");
+            }
+        }
+    }
     void visit(AstGenFor* nodep) override { iterateChildren(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

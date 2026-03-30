@@ -5955,10 +5955,6 @@ class WidthVisitor final : public VNVisitor {
             // UINFOTREE(1, nodep, "", "assin:");
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
-            if (!nodep->lhsp()->dtypep()->widthSized()) {
-                UINFO(0, "MIN" << nodep->backp()->backp()->op2p()->dtypep() <<" FOO "<< nodep->backp()->backp()->op2p()->dtypep()->widthMin());
-                UINFO(0, "MIN" << nodep->lhsp()->dtypep() <<" FOO "<< nodep->lhsp()->dtypep()->widthMin());
-            }
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
             nodep->dtypeFrom(nodep->lhsp());
             //
