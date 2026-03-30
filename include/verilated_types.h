@@ -78,11 +78,14 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 //=========================================================================
 // Declare net data types
 
+#ifndef VL_NO_LEGACY
 #define VL_SIG8(name, msb, lsb) CData name  ///< Declare signal, 1-8 bits
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
 #define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+#endif
+
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
