@@ -980,6 +980,25 @@ public:
     bool lhsIsValue() const { return m_lhsIsValue; }
     bool rhsIsValue() const { return m_rhsIsValue; }
 };
+class AstConsRep final : public AstNodeExpr {
+    // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
+    // Lowered by V3AssertPre to: expr && $past(expr,1) && ... && $past(expr,N-1)
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    AstConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_ConsRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstConsRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { V3ERROR_NA_RETURN(0); }
+    bool sameNode(const AstNode* /*samep*/) const override { V3ERROR_NA_RETURN(false); }
+};
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{}
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
