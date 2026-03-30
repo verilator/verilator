@@ -43,8 +43,9 @@ Verilator 5.047 devel
 * Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
 * Support property-local variables and sequence match items (#7286). [Yilou Wang]
 * Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
+* Support consecutive repetition `[\*N]` in SVA properties (#7311). [Yilou Wang]
 * Support `##[M:N]` range cycle delay in SVA sequences (#7312). [Yilou Wang]
-* Support array map() method (#7307) (#7316). [Wei-Lun Chiu]
+* Support array map() method (#7307) (#7316) (#7344). [Wei-Lun Chiu]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -106,8 +107,10 @@ Verilator 5.047 devel
 * Fix modport selection of virtual interface handle (#7321). [Yilou Wang]
 * Fix false ASSIGNIN on interface input ports driven from outside (#7322). [Yilou Wang]
 * Fix static initialization order for packages with class hierarchies (#7324). [Yilou Wang]
+* Fix sensitivity of signals to unrelated interface members (#7336). [Artur Bieniek, Antmicro Ltd.]
 * Fix `disable iff` imply-delay statement linking (#7337). [Nick Brereton]
 * Fix lost `$stop` on implied assertion `$error` failures.
+* Fix wait() hang when interface uses process calls and VIF function (#7342). [Yilou Wang]
 
 
 Verilator 5.046 2026-02-28

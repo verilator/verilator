@@ -3,9 +3,10 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
-/* verilator lint_off ZERODLY */
 
-interface my_if();
+// verilator lint_off ZERODLY
+
+interface my_if ();
   logic clk;
   realtime clk_period;
   bit clk_active = 0;
@@ -52,7 +53,7 @@ class Driver;
 endclass
 
 module t;
-  my_if intf();
+  my_if intf ();
 
   // Verify combinational always with timing controls still works as coroutine
   int combo_timing_count = 0;
