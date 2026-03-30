@@ -1,15 +1,15 @@
-%Error: t/t_assert_prop_consec_rep_bad.v:12:39: Expecting expression to be constant, but variable isn't const: 'n'
+%Error: t/t_assert_prop_consec_rep_bad.v:14:40: Expecting expression to be constant, but variable isn't const: 'n'
                                               : ... note: In instance 't'
-   12 |   assert property (@(posedge clk) a [*n] |-> 1);
-      |                                       ^
+   14 |   assert property (@(posedge clk) a [* n] |-> 1);
+      |                                        ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_prop_consec_rep_bad.v:12:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
+%Error: t/t_assert_prop_consec_rep_bad.v:14:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
                                               : ... note: In instance 't'
-   12 |   assert property (@(posedge clk) a [*n] |-> 1);
+   14 |   assert property (@(posedge clk) a [* n] |-> 1);
       |                                     ^~
-%Error-UNSUPPORTED: t/t_assert_prop_consec_rep_bad.v:15:37: Unsupported: [*0] consecutive repetition
+%Error-UNSUPPORTED: t/t_assert_prop_consec_rep_bad.v:17:37: Unsupported: [*0] consecutive repetition
                                                           : ... note: In instance 't'
-   15 |   assert property (@(posedge clk) a [*0] |-> 1);
+   17 |   assert property (@(posedge clk) a [* 0] |-> 1);
       |                                     ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
