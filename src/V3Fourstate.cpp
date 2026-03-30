@@ -48,6 +48,7 @@ struct FourStatePair final {
 enum LogicType : char {
     UNINITIALIZED = 0,
     TWO_STATE,
+    TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE,
     FOUR_STATE,
 };
 
@@ -55,8 +56,11 @@ static void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
     exprp->user4(static_cast<int>(logic));
 }
 
-static void setFourstate(AstNodeExpr* const exprp, bool fourstate = true) {
-    setLogicType(exprp, fourstate ? FOUR_STATE : TWO_STATE);
+static void setFourstate(AstNodeExpr* const exprp, bool fourstate = true,
+                         bool fourstateInSubTree = false) {
+    setLogicType(exprp, fourstate ? FOUR_STATE
+                                  : (fourstateInSubTree ? TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE
+                                                        : TWO_STATE));
 }
 
 static LogicType getLogicType(const AstNodeExpr* const exprp) {
@@ -105,77 +109,92 @@ static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp
 }  // namespace
 
 class FourstateLogicTypePropagator final : public VNVisitor {
+    bool m_fourstateInSubtree = false;
+
     void visit(AstConst* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, nodep->dtypep()->isFourstate());
+        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+        m_fourstateInSubtree = isFourstate(nodep);
     }
 
     void visit(AstNodeVarRef* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, nodep->varp()->dtypep()->isFourstate());
+        setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
+        m_fourstateInSubtree = isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep,
-                     nodep->taskp()->fvarp() && nodep->taskp()->fvarp()->dtypep()->isFourstate());
+                     nodep->taskp()->fvarp() && nodep->taskp()->fvarp()->dtypep()->isFourstate(),
+                     m_fourstateInSubtree);
+        m_fourstateInSubtree = isFourstate(nodep);
     }
 
     void visit(AstNodeUniop* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->lhsp()));
+        setFourstate(nodep, isFourstate(nodep->lhsp()), m_fourstateInSubtree);
     }
 
     void visit(AstCastWrap* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, nodep->dtypep()->isFourstate());
+        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+        m_fourstateInSubtree = isFourstate(nodep);
     }
 
     void visit(AstNodeBiop* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp()));
+        setFourstate(nodep, isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp()),
+                     m_fourstateInSubtree);
     }
 
     void visit(AstEqCase* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, true);
+        setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstNeqCase* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, true);
+        setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstDiv* nodep) override {
         iterateChildren(nodep);
         if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
-            setFourstate(nodep, isFourstate(nodep->lhsp()) || constp->num().isEqZero()
-                                    || constp->num().isAnyXZ());
+            setFourstate(nodep,
+                         isFourstate(nodep->lhsp()) || constp->num().isEqZero()
+                             || constp->num().isAnyXZ(),
+                         m_fourstateInSubtree);
         } else {
-            setFourstate(nodep);
+            setFourstate(nodep, m_fourstateInSubtree);
         }
+        m_fourstateInSubtree = isFourstate(nodep);
     }
 
     void visit(AstNodeTriop* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp())
-                                || isFourstate(nodep->thsp()));
+        setFourstate(nodep,
+                     isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp())
+                         || isFourstate(nodep->thsp()),
+                     m_fourstateInSubtree);
     }
 
     void visit(AstCond* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->condp()) || isFourstate(nodep->thenp())
-                                || isFourstate(nodep->elsep()));
+        setFourstate(nodep,
+                     isFourstate(nodep->condp()) || isFourstate(nodep->thenp())
+                         || isFourstate(nodep->elsep()),
+                     m_fourstateInSubtree);
     }
 
     void visit(AstCReset* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, false);
+        setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstSFormatArg* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->exprp()));
+        setFourstate(nodep, isFourstate(nodep->exprp()), m_fourstateInSubtree);
         if (isFourstate(nodep)) {
             nodep->v3fatalSrc("Unsuppored: four-state expression in formating string");
         }
@@ -183,7 +202,12 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstSel* const nodep) override {
         iterateChildren(nodep);
-        setFourstate(nodep, isFourstate(nodep->fromp()));
+        setFourstate(nodep, isFourstate(nodep->fromp()), m_fourstateInSubtree);
+    }
+
+    void visit(AstCExprUser* const nodep) override {
+        iterateChildren(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstNodeExpr* const nodep) override {
@@ -197,7 +221,10 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         }
     }
 
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        VL_RESTORER(m_fourstateInSubtree);
+        iterateChildren(nodep);
+    }
 
 public:
     FourstateLogicTypePropagator(AstNode* const nodep) { iterate(nodep); }
@@ -924,27 +951,6 @@ class FourstateVisitor final : public VNVisitor {
                                             getFourStateExpressionValue(neqp->rhsp())}};
         }
 
-        void visit(AstEqCase* const eqCasep) override {
-            // (a.xz == b.xz) & (a.value == b.value)
-            FileLine* const flp = eqCasep->fileline();
-            m_result = new AstLogAnd{flp,
-                                     new AstEq{flp, getFourStateExpressionXZ(eqCasep->lhsp()),
-                                               getFourStateExpressionXZ(eqCasep->rhsp())},
-                                     new AstEq{flp, getFourStateExpressionValue(eqCasep->lhsp()),
-                                               getFourStateExpressionValue(eqCasep->rhsp())}};
-        }
-
-        void visit(AstNeqCase* const neqp) override {
-            // |((a.value ^ b.value) | (a.xz ^ b.xz))
-            FileLine* const flp = neqp->fileline();
-            m_result = new AstRedOr{
-                flp, new AstOr{flp,
-                               new AstXor{flp, getFourStateExpressionValue(neqp->lhsp()),
-                                          getFourStateExpressionValue(neqp->rhsp())},
-                               new AstXor{flp, getFourStateExpressionXZ(neqp->lhsp()),
-                                          getFourStateExpressionXZ(neqp->rhsp())}}};
-        }
-
         void visit(AstExtend* const extendp) override {
             FileLine* const flp = extendp->fileline();
             m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
@@ -1128,18 +1134,6 @@ class FourstateVisitor final : public VNVisitor {
                                   new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
                                             getFourStateExpressionXZ(neqp->rhsp())},
                                   new AstConst{flp, AstConst::BitFalse{}}};
-        }
-
-        void visit(AstEqCase* const eqp) override {
-            // 0
-            FileLine* const flp = eqp->fileline();
-            m_result = new AstConst{flp, AstConst::BitFalse{}};
-        }
-
-        void visit(AstNeqCase* const neqp) override {
-            // 0
-            FileLine* const flp = neqp->fileline();
-            m_result = new AstConst{flp, AstConst::BitFalse{}};
         }
 
         void visit(AstExtend* const extendp) override {
@@ -1479,16 +1473,60 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstEqCase* const nodep) override {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* newp;
+        if (isFourstate(nodep->lhsp()) && isFourstate(nodep->rhsp())) {
+            newp = new AstAnd{flp,
+                              new AstEq{flp, getFourStateExpressionXZ(nodep->lhsp()),
+                                        getFourStateExpressionXZ(nodep->rhsp())},
+                              new AstEq{flp, getFourStateExpressionValue(nodep->lhsp()),
+                                        getFourStateExpressionValue(nodep->rhsp())}};
+        } else if (isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp())) {
+            AstNodeExpr* const fourstateHsp
+                = isFourstate(nodep->lhsp()) ? nodep->lhsp() : nodep->rhsp();
+            AstNodeExpr* const twostateHsp = isFourstate(nodep->lhsp())
+                                                 ? nodep->rhsp()->unlinkFrBack()
+                                                 : nodep->lhsp()->unlinkFrBack();
+            newp = new AstAnd{
+                flp, new AstNot{flp, getFourStateExpressionXZ(fourstateHsp)},
+                new AstEq{flp, getFourStateExpressionValue(fourstateHsp), twostateHsp}};
+        } else {
+            newp = new AstEq{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
+        }
+        { FourstateLogicTypePropagator{newp}; }
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        relinker.relink(getTruthExpr(nodep));
+        relinker.relink(newp);
         nodep->deleteTree();
     }
 
     void visit(AstNeqCase* const nodep) override {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* newp;
+        if (isFourstate(nodep->lhsp()) && isFourstate(nodep->rhsp())) {
+            newp = new AstRedOr{
+                flp, new AstOr{flp,
+                               new AstXor{flp, getFourStateExpressionValue(nodep->lhsp()),
+                                          getFourStateExpressionValue(nodep->rhsp())},
+                               new AstXor{flp, getFourStateExpressionXZ(nodep->lhsp()),
+                                          getFourStateExpressionXZ(nodep->rhsp())}}};
+        } else if (isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp())) {
+            AstNodeExpr* const fourstateHsp
+                = isFourstate(nodep->lhsp()) ? nodep->lhsp() : nodep->rhsp();
+            AstNodeExpr* const twostateHsp = isFourstate(nodep->lhsp())
+                                                 ? nodep->rhsp()->unlinkFrBack()
+                                                 : nodep->lhsp()->unlinkFrBack();
+            newp = new AstRedOr{
+                flp, new AstOr{
+                         flp, getFourStateExpressionXZ(fourstateHsp),
+                         new AstXor{flp, getFourStateExpressionValue(fourstateHsp), twostateHsp}}};
+        } else {
+            newp = new AstNeq{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
+        }
+        { FourstateLogicTypePropagator{newp}; }
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        relinker.relink(getTruthExpr(nodep));
+        relinker.relink(newp);
         nodep->deleteTree();
     }
 
