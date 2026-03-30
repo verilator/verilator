@@ -57,16 +57,17 @@ private:
     }
 
     // VISITORS
-    void visit(AstVarRef* nodep) override {
-        // Detect writes through VIF handles: vif.member = expr
-        // AST shape: AssignX(MemberSel(VarRef(vif), "member"), rhs)
-        if (nodep->access().isWriteOrRW() && nodep->varp()->isVirtIface()) {
-            if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
-                const AstIface* const ifacep
-                    = VN_AS(nodep->varp()->dtypep(), IfaceRefDType)->ifacep();
-                m_vifWrittenMembers.emplace(ifacep, memberSelp->varp()->name());
+    void visit(AstMemberSel* nodep) override {
+        // Detect writes through VIF: the MemberSel's fromp resolves to a virtual interface type.
+        // Handles both direct VIF access (vif.member) and class chain (obj.vif.member).
+        if (nodep->access().isWriteOrRW()) {
+            AstIfaceRefDType* const dtypep
+                = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->isVirtual()) {
+                m_vifWrittenMembers.emplace(dtypep->ifacep(), nodep->varp()->name());
             }
         }
+        iterateChildren(nodep);
     }
     void visit(AstVarScope* nodep) override {
         // Collect candidate VarScopes. sensIfacep() is set on interface members
