@@ -45,7 +45,7 @@ class Driver;
   virtual my_if vif;
 
   task run();
-    vif.set_period(5ns);
+    vif.set_period(5);
     #10;
     vif.start_clk();
   endtask

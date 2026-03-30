@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary', '--timescale 1ns/1ps'])
+test.compile(verilator_flags2=['--binary'])
 
 test.execute()
 
