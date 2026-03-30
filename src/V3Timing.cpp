@@ -1050,7 +1050,6 @@ class TimingControlVisitor final : public VNVisitor {
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
-            nodep->addHereThisAsNext(initp);
             // Await the eval step with the dynamic trigger scheduler. First, create the method
             // call
             auto* const evalMethodp = new AstCMethodHard{
@@ -1070,10 +1069,6 @@ class TimingControlVisitor final : public VNVisitor {
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
             localizeVars(m_procp, senResults.m_vars);
-            // Put all and inits before the trigger eval loop
-            for (AstNodeStmt* const stmtp : senResults.m_inits) {
-                nodep->addHereThisAsNext(stmtp);
-            }
             // If post updates are destructive (e.g. clearFired on events), perform a
             // conservative pre-clear once before entering the wait loop so stale state from a
             // previous wait does not cause an immediate false-positive trigger.
@@ -1109,26 +1104,20 @@ class TimingControlVisitor final : public VNVisitor {
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
-            // Replace the event control with a single stmt chain:
-            //   [optional pre-clear stmts] -> loop -> awaitResumption
-            if (hasDestructivePostUpdates) {
-                AstNodeStmt* headp = nullptr;
-                AstNodeStmt* tailp = nullptr;
-                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
-                    if (!headp) {
-                        headp = tailp = stmtp;
-                    } else {
-                        tailp->addNextHere(stmtp);
-                        tailp = stmtp;
-                    }
-                }
-                UASSERT_OBJ(tailp, nodep, "Expected destructive pre-clear statements");
-                tailp->addNextHere(loopp);
-                nodep->replaceWith(headp);
-            } else {
-                // Replace the event control with the loop
-                nodep->replaceWith(loopp);
+            // Replace the event control with one explicit stmt chain:
+            //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
+            AstNodeStmt* chainp = nullptr;
+            chainp = AstNode::addNextNull(chainp, initp);
+            for (AstNodeStmt* const stmtp : senResults.m_inits) {
+                chainp = AstNode::addNextNull(chainp, stmtp);
             }
+            if (hasDestructivePostUpdates) {
+                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
+                    chainp = AstNode::addNextNull(chainp, stmtp);
+                }
+            }
+            chainp = AstNode::addNextNull(chainp, loopp);
+            nodep->replaceWith(chainp);
         } else {
             auto* const sentreep = m_finder.getSenTree(nodep->sentreep());
             nodep->sentreep()->unlinkFrBack()->deleteTree();
