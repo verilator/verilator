@@ -255,11 +255,8 @@ public:
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
         const string candidate = bestCandidate(goal);
-        if (candidate.empty()) {
-            return "";
-        } else {
-            return "... Suggested alternative: '"s + candidate + "'";
-        }
+        if (candidate.empty()) return "";
+        return "... Suggested alternative: '"s + candidate + "'";
     }
     static void selfTest();
     const std::vector<std::string> candidates() const { return m_candidates; }

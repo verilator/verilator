@@ -246,7 +246,8 @@ class DataflowOptimize final {
     // - bit1: Written via AstVarXRef (hierarchical reference)
     // - bit2: Read by logic in same module/netlist not represented in DFG
     // - bit3: Written by logic in same module/netlist not represented in DFG
-    // - bit31-4: Reference count, how many DfgVertexVar represent this variable
+    // - bit4: Has READWRITE references
+    // - bit31-5: Reference count, how many DfgVertexVar represent this variable
     //
     // AstNode::user2/user3/user4 can be used by various DFG algorithms
     const VNUser1InUse m_user1InUse;
@@ -285,6 +286,12 @@ class DataflowOptimize final {
                     senItemp->foreach([](const AstVarRef* refp) {
                         DfgVertexVar::setHasExtRdRefs(refp->varScopep());
                     });
+                    return;
+                }
+                // Check direct references
+                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varScopep());
+                    return;
                 }
             } else {
                 if (AstVar* const varp = VN_CAST(nodep, Var)) {
@@ -296,13 +303,20 @@ class DataflowOptimize final {
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(varp);
                     return;
                 }
+                // Check direct references
+                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varp());
+                    return;
+                }
             }
+
             // Check hierarchical references
             if (const AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
                 AstVar* const tgtp = xrefp->varp();
                 if (!tgtp) return;
                 if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(tgtp);
                 if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(tgtp);
+                if (xrefp->access().isRW()) DfgVertexVar::setHasRWRefs(tgtp);
                 return;
             }
             // Check cell ports

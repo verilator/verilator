@@ -722,6 +722,14 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         return;
     }
 
+    case VDfgType::CountOnes: {
+        const DfgCountOnes& v = *as<DfgCountOnes>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.srcp()->isPacked(), "Source should be Packed type");
+        CHECK(v.size() == 32U, "Should yield a 32-bit result");
+        return;
+    }
+
     case VDfgType::Pow:
     case VDfgType::PowSS:
     case VDfgType::PowSU:

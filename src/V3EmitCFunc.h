@@ -150,7 +150,7 @@ protected:
 
 public:
     // METHODS
-    bool displayEmitHeader(AstNode* nodep, bool isScan);
+    bool displayEmitHeader(AstNode* nodep);
     void displayNode(AstNode* nodep, AstSFormatF* fmtp, const string& vformat, AstNode* exprsp,
                      bool isScan);
 
@@ -185,7 +185,7 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
-    std::string dereferenceString(const std::string& pointer);
+    std::string dereferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
@@ -985,17 +985,7 @@ public:
         puts(")");
     }
     void visit(AstFGetS* nodep) override {
-        checkMaxWords(nodep);
         emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
-    }
-
-    void checkMaxWords(AstNode* nodep) {
-        if (nodep->widthWords() > VL_VALUE_STRING_MAX_WORDS) {
-            nodep->v3error(
-                "String of "
-                << nodep->width()
-                << " bits exceeds hardcoded limit VL_VALUE_STRING_MAX_WORDS in verilatedos.h");
-        }
     }
     void visit(AstFOpen* nodep) override {
         putns(nodep, "VL_FOPEN_NN(");
@@ -1144,7 +1134,6 @@ public:
             puts(cvtToStr(nodep->lhsp()->widthWords()));
             putbs(", ");
         }
-        checkMaxWords(nodep->lhsp());
         iterateAndNextConstNull(nodep->lhsp());
         puts(");\n");
     }
@@ -1156,7 +1145,6 @@ public:
             puts(cvtToStr(nodep->lhsp()->widthWords()));
             putbs(", ");
         }
-        checkMaxWords(nodep->lhsp());
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");
     }
@@ -1544,7 +1532,7 @@ public:
     }
     void visit(AstNewCopy* nodep) override {
         // Polymorphic shallow clone: preserves runtime type via virtual clone()
-        // VL_NULL_CHECK enforces null check per IEEE 1800-2017 8.7
+        // VL_NULL_CHECK enforces null check per IEEE 1800-2023 8.7
         putns(nodep, "VL_NULL_CHECK(");
         if (VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->isNull()) {
             // V3Const folded rhs to null: emit a typed empty ref so VL_NULL_CHECK fires

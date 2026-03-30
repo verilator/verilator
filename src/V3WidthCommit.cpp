@@ -90,7 +90,7 @@ private:
                 nodep->dumpSmall(std::cout);
                 std::cout << "  ---->  ";
                 newp->dumpSmall(std::cout);
-                std::cout << std::endl;
+                std::cout << '\n';
             }
             return newp;
         }

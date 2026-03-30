@@ -362,7 +362,7 @@ class DeadVisitor final : public VNVisitor {
             checkAll(typedefp);
         }
     }
-    bool shouldDeleteTypedef(const AstTypedef* typedefp) {
+    bool shouldDeleteTypedef(const AstTypedef* typedefp) const {
         if (const auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
             if (structp->user1() && !structp->packed()) return false;
         }

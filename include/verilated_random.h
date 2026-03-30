@@ -75,7 +75,7 @@ public:
     std::string name() const { return m_name; }
     int width() const { return m_width; }
     int dimension() const { return m_dimension; }
-    virtual void* datap(int idx) const { return m_datap; }
+    virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
     bool set(const std::string& idx, const std::string& val) const;
@@ -110,12 +110,9 @@ public:
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) {
-            return it->second->m_datap;
-        } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
-            return nullptr;  // LCOV_EXCL_BR_LINE
-        }
+        if (VL_LIKELY(it != m_arrVarsRefp->end())) return it->second->m_datap;
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+        return nullptr;  // LCOV_EXCL_BR_LINE
     }
     void emitHexs(std::ostream& s, const std::vector<IData>& indices, const size_t bit_width,
                   size_t idx) const {
@@ -229,7 +226,7 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& file, bool log = false);
+    bool parseSolution(std::iostream& os, bool log = false);
     bool checkSat(std::iostream& os);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
@@ -413,7 +410,7 @@ public:
     // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
+    write_var(VlUnpacked<T, N_Depth>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
@@ -439,7 +436,7 @@ public:
     // Register associative array of structs
     template <typename T_Key, typename T_Value>
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
-    write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
+    write_var(VlAssocArray<T_Key, T_Value>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
@@ -449,8 +446,8 @@ public:
     // Record a flat (non-class) element into the array variable table
     template <typename T>
     typename std::enable_if<!std::is_class<T>::value || VlIsVlWide<T>::value, void>::type
-    record_arr_table(T& var, const std::string& name, int dimension, std::vector<IData> indices,
-                     std::vector<size_t> idxWidths) {
+    record_arr_table(T& var, const std::string& name, int /*dimension*/,
+                     std::vector<IData> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, m_index);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
         ++m_index;
@@ -525,8 +522,8 @@ public:
     // Register a single structArray element via write_var
     template <typename T>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    record_struct_arr(T& var, const std::string& name, int dimension, std::vector<IData> indices,
-                      std::vector<size_t> idxWidths) {
+    record_struct_arr(T& var, const std::string& name, int /*dimension*/,
+                      std::vector<IData> indices, std::vector<size_t> idxWidths) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
             oss << std::hex << std::setw(int(idxWidths[i] / 4)) << std::setfill('0')
@@ -606,7 +603,7 @@ public:
     }
 
     // Helper: Generate unique variable key from name and index
-    std::string generateKey(const std::string& name, int idx) {
+    static std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
             const size_t space_pos = name.find(' ');
             return (space_pos != std::string::npos ? name.substr(0, space_pos) : name)

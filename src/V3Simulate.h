@@ -217,7 +217,7 @@ public:
             if (debug() >= 5) {  // LCOV_EXCL_START
                 UINFO_PREFIX("Clear optimizable: " << why);
                 if (nodep) std::cout << ": " << nodep;
-                std::cout << std::endl;
+                std::cout << '\n';
             }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
@@ -294,9 +294,8 @@ private:
             AstConst* const constp = allocConst(nodep);
             m_varAux(nodep).valuep = constp;
             return constp;
-        } else {
-            return fetchConst(nodep);
         }
+        return fetchConst(nodep);
     }
     AstConst* newOutConst(AstNode* nodep) {
         // Set a var-output constant value for this node
@@ -304,9 +303,8 @@ private:
             AstConst* const constp = allocConst(nodep);
             m_varAux(nodep).outValuep = constp;
             return constp;
-        } else {
-            return fetchOutConst(nodep);
         }
+        return fetchOutConst(nodep);
     }
 
 public:
@@ -548,10 +546,9 @@ private:
         if (m_scoped) {
             badNodeType(nodep);
             return;
-        } else {
-            clearOptimizable(nodep, "Language violation: Dotted hierarchical references not "
-                                    "allowed in constant functions");
         }
+        clearOptimizable(nodep, "Language violation: Dotted hierarchical references not "
+                                "allowed in constant functions");
     }
     void visit(AstNodeFTask* nodep) override {
         if (jumpingOver()) return;
@@ -654,7 +651,7 @@ private:
             // but in reality it would yield '0's without V3Table, so force 'x' bits to '0',
             // to ensure the result is the same with and without V3Table.
             if (!m_params && VN_IS(nodep, Sel) && valuep->num().isAnyX()) {
-                V3Number num{valuep, valuep->width(), valuep->num()};
+                const V3Number num{valuep, valuep->width(), valuep->num()};
                 valuep->num().opBitsOne(num);
             }
         }
@@ -843,7 +840,8 @@ private:
             outVarrefpRef = varrefp;
             lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
-        } else if (AstSel* const subselp = VN_CAST(selp->fromp(), Sel)) {
+        }
+        if (AstSel* const subselp = VN_CAST(selp->fromp(), Sel)) {
             V3Number sublsb{nodep};
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb /*ref*/, depth + 1);
             if (optimizable()) {
@@ -1212,7 +1210,7 @@ private:
                 // Evaluate pin value
                 iterateConst(pinp);
                 // Clone in case are recursing
-                portValues.push_back(std::make_pair(portp, newTrackedClone(fetchValue(pinp))));
+                portValues.emplace_back(std::make_pair(portp, newTrackedClone(fetchValue(pinp))));
             }
         }
         // Apply value to the function
@@ -1262,7 +1260,7 @@ private:
         }
     }
 
-    void visit(AstScopeName* nodep) override {
+    void visit(AstScopeName* /*nodep*/) override {
         if (jumpingOver()) return;
         // Ignore
     }
@@ -1361,14 +1359,14 @@ private:
         iterateChildrenConst(nodep);
         if (!optimizable()) return;
         if (m_checkOnly) return;
-        std::string result = toStringRecurse(nodep->lhsp());
+        const std::string result = toStringRecurse(nodep->lhsp());
         if (!optimizable()) return;
         AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
         setValue(nodep, resultConstp);
         m_reclaimValuesp.push_back(resultConstp);
     }
 
-    void visit(AstCoverInc* nodep) override { m_isCoverage = true; }
+    void visit(AstCoverInc* /*nodep*/) override { m_isCoverage = true; }
 
     // ====
     // Known Bad
@@ -1394,7 +1392,6 @@ private:
         badNodeType(nodep);
     }
 
-private:
     // MEMBERS - called by constructor
     void setMode(bool scoped, bool checkOnly, bool params) {
         m_checkOnly = checkOnly;

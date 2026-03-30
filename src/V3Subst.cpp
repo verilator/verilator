@@ -59,7 +59,7 @@ class SubstVarEntry final {
     // Variable this SubstVarEntry tracks
     AstVar* const m_varp;
     // The recrod for whole variable tracking
-    Record m_wholeRecord{};
+    Record m_wholeRecord;
     // A record for each word in the variable
     std::vector<Record> m_wordRecords{static_cast<size_t>(m_varp->widthWords()), Record{}};
 
@@ -169,12 +169,12 @@ class SubstValidVisitor final : public VNVisitorConst {
 
         // If either the whole variable, or any of the words were written to
         // after the original assignment was recorded, the value is invalid.
-        SubstVarEntry& entry = getEntry(nodep);
+        const SubstVarEntry& entry = getEntry(nodep);
         if (m_step < entry.m_wholeRecord.m_step) {
             m_valid = false;
             return;
         }
-        for (SubstVarEntry::Record& wordRecord : entry.m_wordRecords) {
+        for (const SubstVarEntry::Record& wordRecord : entry.m_wordRecords) {
             if (m_step < wordRecord.m_step) {
                 m_valid = false;
                 return;
@@ -192,7 +192,7 @@ class SubstValidVisitor final : public VNVisitorConst {
     void visit(AstNode* nodep) override { nodep->v3fatalSrc("Non AstNodeExpr under AstNodeExpr"); }
 
     // CONSTRUCTORS
-    SubstValidVisitor(SubstVarEntry::Record& record)
+    explicit SubstValidVisitor(SubstVarEntry::Record& record)
         : m_step{record.m_step} {
         iterateConst(record.m_assignp->rhsp());
     }
@@ -260,7 +260,9 @@ class SubstVisitor final : public VNVisitor {
     // for variables that are written in the same basic block (ignoring AstCond) as
     // where they are consumed. The temporaries introduced in V3Premit are such, so
     // only substitute those for now.
-    bool isSubstitutable(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
+    static bool isSubstitutable(AstVar* nodep) {
+        return nodep->isStatementTemp() && !nodep->noSubst();
+    }
 
     void substitute(AstNode* nodep, AstNodeExpr* substp) {
         AstNodeExpr* newp = substp->backp() ? substp->cloneTreePure(true) : substp;

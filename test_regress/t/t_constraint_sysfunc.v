@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: System functions ($onehot, $onehot0, $countbits, $clog2) inside
-// constraint blocks (IEEE 1800-2017 Section 18.5.12)
+// constraint blocks (IEEE 1800-2023 18.5.12)
 
 class test_onehot;
   rand bit [7:0] value;

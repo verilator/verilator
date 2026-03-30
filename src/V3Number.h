@@ -135,7 +135,6 @@ public:
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
 
-public:
     // CONSTRUCTORS
     V3NumberData()
         : m_type{V3NumberDataType::UNINITIALIZED}
@@ -580,7 +579,7 @@ public:
     V3Number(V3Number&& other) = default;
     V3Number& operator=(V3Number&& other) = default;
 
-    ~V3Number() {}
+    ~V3Number() = default;
 
 private:
     void selfTestThis();

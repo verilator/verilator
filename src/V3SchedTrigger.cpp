@@ -901,7 +901,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
                 }
             }
         }
-        for (VNRef<AstNode> it : toRemove) m_senExprToSenItem.erase(it);
+        for (const VNRef<AstNode> it : toRemove) m_senExprToSenItem.erase(it);
     }
 
     // For set of bits indexes (of sensitivity vector) return map from those indexes to set
@@ -1051,7 +1051,8 @@ public:
                 }
 
                 // Fill the function with neccessary statements
-                SenExprBuilder::Results results = m_senExprBuilder.getResultsAndClearUpdates();
+                const SenExprBuilder::Results results
+                    = m_senExprBuilder.getResultsAndClearUpdates();
                 for (AstNodeStmt* const stmtsp : results.m_inits) funcp->addStmtsp(stmtsp);
                 for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
                 funcp->addStmtsp(TriggerKit::createSenTrigVecAssignment(vscp, trigps));
@@ -1059,8 +1060,8 @@ public:
                 for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
             }
 
-            std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>> usedTrigsToUsingTrees
-                = getUsedTriggersToTrees(usedTriggers);
+            const std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>>
+                usedTrigsToUsingTrees = getUsedTriggersToTrees(usedTriggers);
             usedTriggers.clear();
 
             // Helper returning expression getting array index `idx` from `scocep` with access

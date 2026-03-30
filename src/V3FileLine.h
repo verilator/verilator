@@ -470,7 +470,7 @@ public:
         const MsgEnBitSet& lhsMsgEn = msgEn();
         const MsgEnBitSet& rhsMsgEn = rhs.msgEn();
         for (size_t i = 0; i < V3ErrorCode::_ENUM_MAX; ++i) {
-            V3ErrorCode code = static_cast<V3ErrorCode>(i);
+            const V3ErrorCode code = static_cast<V3ErrorCode>(i);
             if (lhsMsgEn.enabled(code) != rhsMsgEn.enabled(code))
                 return rhsMsgEn.enabled(code) ? -1 : 1;
         }

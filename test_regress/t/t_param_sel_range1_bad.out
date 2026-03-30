@@ -1,5 +1,5 @@
-%Warning-SELRANGE: t/t_param_sel_range.v:41:33: Selection index out of range: 7:7 outside 4:0
-                                              : ... note: In instance 't.u2'
+%Warning-SELRANGE: t/t_param_sel_range1.v:41:33: Selection index out of range: 7:7 outside 4:0
+                                               : ... note: In instance 't.u2'
    41 |           else r_rst[i] <= r_rst[i-1];   
       |                                 ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest

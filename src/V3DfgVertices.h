@@ -70,8 +70,8 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
 #endif
         // Increment reference count
         AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() + 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) > 0, variablep, "Reference count overflow");
+        variablep->user1(variablep->user1() + 0x20);
+        UASSERT_OBJ((variablep->user1() >> 5) > 0, variablep, "Reference count overflow");
         // Allocate sources
         newInput();
         newInput();
@@ -87,8 +87,8 @@ public:
     ~DfgVertexVar() {
         // Decrement reference count
         AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() - 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) >= 0, variablep, "Reference count underflow");
+        variablep->user1(variablep->user1() - 0x20);
+        UASSERT_OBJ((variablep->user1() >> 5) >= 0, variablep, "Reference count underflow");
     }
     ASTGEN_MEMBERS_DfgVertexVar;
 
@@ -118,7 +118,7 @@ public:
     void driverFileLine(FileLine* flp) { m_driverFileLine = flp; }
 
     // Variable referenced from other DFG in the same module/netlist
-    bool hasDfgRefs() const { return nodep()->user1() >> 5; }  // I.e.: (nodep()->user1() >> 4) > 1
+    bool hasDfgRefs() const { return nodep()->user1() >> 6; }  // I.e.: (nodep()->user1() >> 5) > 1
 
     // Variable referenced from Ast code in the same module/netlist
     static bool hasModRdRefs(const AstNode* nodep) { return nodep->user1() & 0x04; }
@@ -139,6 +139,10 @@ public:
     bool hasExtRdRefs() const { return hasExtRdRefs(nodep()); }
     bool hasExtWrRefs() const { return hasExtWrRefs(nodep()); }
     bool hasExtRefs() const { return hasExtRdRefs() || hasExtWrRefs(); }
+
+    // Variable referenced via READWRITE references
+    static bool hasRWRefs(const AstNode* nodep) { return nodep->user1() & 0x10; }
+    static void setHasRWRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x10); }
 
     // True iff the value of this variable is read outside this DfgGraph
     bool isObserved() const {

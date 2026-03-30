@@ -392,7 +392,7 @@ protected:
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
         int m_randSeed = 0;  // Random seed: 0=random
-        enum { UNITS_NONE = 99 };  // Default based on precision
+        static constexpr int UNITS_NONE = 99;  // Default based on precision
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
@@ -540,7 +540,7 @@ public:
     /// Enable quiet (also prevents need for OS calls to get CPU time)
     void quiet(bool flag) VL_MT_SAFE;
     /// Return randReset value
-    int randReset() VL_MT_SAFE { return m_s.m_randReset; }
+    int randReset() const VL_MT_SAFE { return m_s.m_randReset; }
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one

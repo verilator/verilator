@@ -203,7 +203,7 @@ class UdpVisitor final : public VNVisitor {
     void visit(AstLogAnd* nodep) override { iterateChildren(nodep); }
     void visit(AstLogNot* nodep) override { iterateChildren(nodep); }
     // For logic processing.
-    bool isEdgeTrig(std::string& valName) {
+    static bool isEdgeTrig(std::string& valName) {
         if (valName == "x" || valName == "X") return false;
         if (valName == "*") return true;
         if (valName == "01" || valName == "p" || valName == "P" || valName == "r"
@@ -228,14 +228,14 @@ class UdpVisitor final : public VNVisitor {
         if (valName[0] != '0' && valName[0] != '1') { valName = "?"; }
         return false;
     }
-    bool isCombOutputSig(const std::string& valName) {
+    static bool isCombOutputSig(const std::string& valName) {
         return (valName == "0" || valName == "1" || valName == "x" || valName == "X");
     }
-    bool isSequentOutputSig(const std::string& valName) {
+    static bool isSequentOutputSig(const std::string& valName) {
         return (valName == "0" || valName == "1" || valName == "x" || valName == "X"
                 || valName == "-");
     }
-    V3Number getOutputNum(AstNode* nodep, const std::string& fieldNames) {
+    static V3Number getOutputNum(AstNode* nodep, const std::string& fieldNames) {
         V3Number outputNum{nodep, 1};
         if (fieldNames == "0") {
             outputNum.setBit(0, 0);

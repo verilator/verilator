@@ -1505,7 +1505,6 @@ DfgIgnored = (
     "CAwait",
     "CCast",
     "CLog2",
-    "CountOnes",
     "IsUnknown",
     "NullCheck",
     "OneHot",

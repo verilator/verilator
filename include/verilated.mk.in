@@ -280,10 +280,10 @@ ifneq ($(VM_DEFAULT_RULES),0)
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
   $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c $<
 
   $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c $<
 
   $(VK_GLOBAL_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<

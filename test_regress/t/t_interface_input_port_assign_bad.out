@@ -1,0 +1,10 @@
+%Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:20:10: Assigning to input/const variable: 'clk'
+                                                            : ... note: In instance 't'
+   20 |   assign clk = 1'b0;   
+      |          ^~~
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:27:14: Assigning to input/const variable: 'clk'
+                                                            : ... note: In instance 't'
+   27 |   assign vif.clk = sig;   
+      |              ^~~
+%Error: Exiting due to

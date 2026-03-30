@@ -24,7 +24,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Precompiled header emitter
 
 class EmitCPch final : public EmitCBaseVisitorConst {
-public:
     // METHODS
 
     void emitPch() {

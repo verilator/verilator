@@ -213,7 +213,8 @@ std::pair<int, bool> V3OptionParser::parse(int idx, int argc, char* argv[]) {
     if (!actp->isValueNeeded()) {
         actp->exec(optp, nullptr);
         return {1, !actp->isNotForRerun()};
-    } else if (idx + 1 < argc) {
+    }
+    if (idx + 1 < argc) {
         actp->exec(optp, argv[idx + 1]);
         return {2, !actp->isNotForRerun()};
     }

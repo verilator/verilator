@@ -90,7 +90,7 @@ class ExpandVisitor final : public VNVisitor {
 
     // METHODS
     // Use state that ExpandOkVisitor calculated
-    bool isImpure(AstNode* nodep) {
+    static bool isImpure(AstNode* nodep) {
         const bool impure = nodep->user2();
         if (impure) UINFO(9, "      impure " << nodep);
         return impure;
@@ -1142,7 +1142,7 @@ public:
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
-        ExpandOkVisitor okVisitor{nodep};
+        const ExpandOkVisitor okVisitor{nodep};
         ExpandVisitor{nodep};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("expand", 0, dumpTreeEitherLevel() >= 3);

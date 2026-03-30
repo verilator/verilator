@@ -1,0 +1,10 @@
+%Error: t/t_assert_goto_rep_bad_count.v:16:42: Goto repetition count is not an elaboration-time constant (IEEE 1800-2023 16.9.2)
+                                             : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) a[->n] |-> b)
+      |                                          ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_goto_rep_bad_count.v:20:42: Goto repetition count must be greater than zero (IEEE 1800-2023 16.9.2)
+                                             : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) a[->0] |-> b)
+      |                                          ^~~
+%Error: Exiting due to

@@ -25,9 +25,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// We use a static char array in VL_VALUE_STRING
-constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
-
 //######################################################################
 // EmitCFunc
 
@@ -177,7 +174,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     putOut();
 }
 
-bool EmitCFunc::displayEmitHeader(AstNode* nodep, bool isScan) {
+bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     bool isStmt = false;
     if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
         isStmt = false;
@@ -186,7 +183,6 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep, bool isScan) {
         puts(",");
     } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
         isStmt = false;
-        checkMaxWords(dispp->fromp());
         putns(nodep, "VL_SSCANF_I");
         emitIQW(dispp->fromp());
         puts("NX(");
@@ -262,7 +258,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (vformat.empty() && VN_IS(nodep, Display))  // not fscanf etc, as they need to return value
         return;  // NOP
 
-    const bool isStmt = displayEmitHeader(nodep, isScan);
+    const bool isStmt = displayEmitHeader(nodep);
 
     if (exprFormat) {
         UASSERT_OBJ(exprsp, nodep, "Missing format expression");
@@ -321,11 +317,6 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         AstNode* const subargp = fargp ? fargp->exprp() : argp;
         const VFormatAttr formatAttr = AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep());
-        if (subargp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Exceeded limit of "
-                                             + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
-                                             + " bits for any $display-like arguments");
-        }
         puts(", '"s + formatAttr.ascii() + '\'');
         if (formatAttr.isSigned() || formatAttr.isUnsigned())
             puts("," + cvtToStr(subargp->widthMin()));
@@ -375,7 +366,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     puts(")");
 }
 
-std::string EmitCFunc::dereferenceString(const std::string& pointer) {
+std::string EmitCFunc::dereferenceString(const std::string& pointer) const {
     if (pointer[0] == '(' && pointer[1] == '&') {
         // remove "address of" followed by immediate dereference
         // Note: this relies on only the form '(&OBJECT)' being used by Verilator

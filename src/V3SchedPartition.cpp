@@ -287,7 +287,7 @@ public:
     static std::unique_ptr<V3Graph> build(const LogicByScope& clockedLogic,
                                           const LogicByScope& combinationalLogic,
                                           const LogicByScope& hybridLogic) {
-        SchedGraphBuilder visitor{clockedLogic, combinationalLogic, hybridLogic};
+        const SchedGraphBuilder visitor{clockedLogic, combinationalLogic, hybridLogic};
         return std::unique_ptr<V3Graph>{visitor.m_graphp};
     }
 };

@@ -220,9 +220,9 @@ module WorkerMod;
 endmodule
 
 module t;
-  Ifc ifc1();
-  Prog prog1();
-  WorkerMod mod1();
+  Ifc ifc1 ();
+  Prog prog1 ();
+  WorkerMod mod1 ();
 
   always #6 disable always_foo;
 

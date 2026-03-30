@@ -14,6 +14,7 @@
 
 import re
 import sys
+import platform
 
 for line in sys.stdin:
     # Fix flex 2.6.1 warning
@@ -47,5 +48,14 @@ for line in sys.stdin:
     line = re.sub(r'(#line \d+ ".*)_pretmp', r'\1', line)
     # Fix 'register' storage class specifier is deprecated and incompatible with C++17
     line = re.sub(r'register ', '', line)
+    # Change int to size_t on LexerInput/LexerOutput when using macOS Tahoe
+    if platform.system() == "Darwin":
+        try:
+            osv = platform.mac_ver()[0]  # Example "26.2"
+            if len(osv) > 2 and osv[2] == "." and int(osv[:2]) >= 26:
+                if "::LexerInput(" in line or "::LexerOutput(" in line:
+                    line = re.sub(r'int ', r'size_t ', line)
+        except IndexError as e:
+            print(f"Unexpected index error {e}")
 
     print(line, end='')

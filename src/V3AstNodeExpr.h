@@ -562,7 +562,6 @@ public:
         dtypep(findCHandleDType());
     }
 
-public:
     ASTGEN_MEMBERS_AstAddrOfCFunc;
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2048,17 +2047,11 @@ public:
     }
     string emitC() override {
         if (seedp()) {
-            if (urandom()) {
-                return "VL_URANDOM_SEEDED_%nq%lq(%li)";
-            } else {
-                return "VL_RANDOM_SEEDED_%nq%lq(%li)";
-            }
+            if (urandom()) return "VL_URANDOM_SEEDED_%nq%lq(%li)";
+            return "VL_RANDOM_SEEDED_%nq%lq(%li)";
         }
-        if (isWide()) {
-            return "VL_RANDOM_%nq(%nw, %P)";
-        } else {
-            return "VL_RANDOM_%nq()";
-        }
+        if (isWide()) return "VL_RANDOM_%nq(%nw, %P)";
+        return "VL_RANDOM_%nq()";
     }
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
@@ -2152,6 +2145,22 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
+};
+class AstSExprGotoRep final : public AstNodeExpr {
+    // Goto repetition: expr [-> count]
+    // IEEE 1800-2023 16.9.2
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    explicit AstSExprGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_SExprGotoRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstSExprGotoRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
 };
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,

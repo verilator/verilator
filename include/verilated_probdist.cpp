@@ -99,10 +99,11 @@ IData VL_DIST_CHI_SQUARE(IData& seedr, IData udf) VL_MT_SAFE {
     double r = _vl_dbase_chi_square(seedr, df);
     int32_t i;
     if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
     } else {
         r = -r;  // LCOV_EXCL_LINE
-        i = static_cast<int32_t>(r + 0.5);  // LCOV_EXCL_LINE
+        i = static_cast<int32_t>(
+            r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding  // LCOV_EXCL_LINE
         i = -i;  // LCOV_EXCL_LINE
     }
     return static_cast<IData>(i);
@@ -122,10 +123,10 @@ IData VL_DIST_ERLANG(IData& seedr, IData uk, IData umean) VL_MT_SAFE {
     double r = -a * log(x) / b;
     int32_t i;
     if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
     } else {
         r = -r;
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
         i = -i;
     }
     return static_cast<IData>(i);
@@ -140,10 +141,11 @@ IData VL_DIST_EXPONENTIAL(IData& seedr, IData umean) VL_MT_SAFE {
     int32_t i;
     double r = _vl_dbase_exponential(seedr, mean);
     if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
     } else {
         r = -r;  // LCOV_EXCL_LINE
-        i = static_cast<int32_t>(r + 0.5);  // LCOV_EXCL_LINE
+        i = static_cast<int32_t>(
+            r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding // LCOV_EXCL_LINE
         i = -i;  // LCOV_EXCL_LINE
     }
     return static_cast<IData>(i);
@@ -155,10 +157,10 @@ IData VL_DIST_NORMAL(IData& seedr, IData umean, IData usd) VL_MT_SAFE {
     double r = _vl_dbase_normal(seedr, mean, sd);
     int32_t i;
     if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
     } else {
         r = -r;
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
         i = -i;
     }
     return static_cast<IData>(i);
@@ -172,7 +174,7 @@ IData VL_DIST_POISSON(IData& seedr, IData umean) VL_MT_SAFE {
     }
     int32_t i = 0;
     double q = -static_cast<double>(mean);
-    double p = exp(q);
+    const double p = exp(q);
     q = _vl_dbase_uniform(seedr, 0, 1);
     while (p < q) {
         ++i;
@@ -193,10 +195,10 @@ IData VL_DIST_T(IData& seedr, IData udf) VL_MT_SAFE {
     double r = _vl_dbase_normal(seedr, 0, 1) / root;
     int32_t i;
     if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
     } else {
         r = -r;
-        i = static_cast<int32_t>(r + 0.5);
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
         i = -i;
     }
     return static_cast<IData>(i);

@@ -98,7 +98,7 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add(new AstComment{fl, comment});
     }
 
-    void configSection(AstNodeModule* modp, AstTextBlock* txtp, FileLine* fl) {
+    void configSection(AstNodeModule* /*modp*/, AstTextBlock* txtp, FileLine* /*fl*/) {
         txtp->add("\n`ifdef VERILATOR\n");
         txtp->add("`verilator_config\n");
 
@@ -313,7 +313,7 @@ class ProtectVisitor final : public VNVisitor {
         m_vfilep->tblockp(txtp);
     }
 
-    void castPtr(FileLine* fl, AstTextBlock* txtp) {
+    void castPtr(FileLine* /*fl*/, AstTextBlock* txtp) {
         txtp->add(m_topName
                   + "_container* const handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                     "static_cast<"

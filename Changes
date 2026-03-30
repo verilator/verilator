@@ -19,8 +19,10 @@ Verilator 5.047 devel
 **Other:**
 
 * Support inout inside SV interface (#3466) (#7134). [Nick Brereton]
+* Support `##0` cycle delays (#4263) (#7298). [Yilou Wang]
 * Support array reduction methods with 'with' clause in constraints (#6455) (#6999). [Rahul Behl]
 * Support constraint imperfect distributions (#6811) (#7168). [Yilou Wang]
+* Support disable task by name (#6853) (#7136). [Nick Brereton]
 * Support procedural concurrent assertion simple cases (#6944).
 * Support force assignments to array elements of real type (#7048). [Ryszard Rozak, Antmicro Ltd.]
 * Support VPI array indexing in signal names (#7097) (#7187) (#7214) (#7289). [Christian Hecken, Heidelberg University]
@@ -33,25 +35,40 @@ Verilator 5.047 devel
 * Support dist and solve...before inside foreach constraints (#7245) (#7253). [Yilou Wang]
 * Support array and struct info metadata in FST traces (#7255). [Geza Lore, Testorrent USA, Inc.]
 * Support dynamic array .size in inline randomize() with constraints (#7258) (#7266). [Yilou Wang]
+* Support defparam with more than one dot (#7262). [Artur Bieniek, Antmicro Ltd.]
 * Support modport export/import task prototypes and out-of-block definitions (#7277). [Yilou Wang]
+* Support very wide $display arguments (#7280). [Jakub Michalski]
 * Support named sequence declarations and instances in assertions  (#7283). [Yilou Wang]
 * Support `##` delay on implication RHS in SVA properties (#7284). [Yilou Wang]
-* Support `##0` cycle delays (#4263) (#7298). [Yilou Wang]
+* Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
+* Support property-local variables and sequence match items (#7286). [Yilou Wang]
+* Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
+* Support `##[M:N]` range cycle delay in SVA sequences (#7312). [Yilou Wang]
+* Support array map() method (#7307) (#7316). [Wei-Lun Chiu]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
+* Add MacOS support for address sanitizer memory limit (#7308). [Marco Bartoli]
 * Deprecate `--structs-packed` (#7222).
 * Improve assignment-compatibility type check (#2843) (#5666) (#7052). [Pawel Kojma, Antmicro Ltd.]
+* Improve error message when variable used as data type (#7318). [Ryszard Rozak, Antmicro Ltd.]
+* Improve E_UNSUPPORTED warning messages (#7329). [Eunseo Song]
 * Change array tracing to dump left index to right index (#7205). [Geza Lore, Testorrent USA, Inc.]
 * Change `--converge-limit` default to 10000 (#7209).
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
 * Optimize reuse of existing associative terms in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
+* Optimize duplicate vertices and multiplexers in DfgPeephole (#7305). [Geza Lore, Testorrent USA, Inc.]
+* Optimize commutative vertex operands in DFG for better combining. [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG peephole until a fixed point (#7309). [Geza Lore, Testorrent USA, Inc.]
+* Optimize comparisons with identical operands and $countones in DFG. [Geza Lore, Testorrent USA, Inc.]
+* Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
+* Fix typedef scope resolution for parameterized class aliases (#5977) (#7319). [Nick Brereton]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
 * Fix `local::` false error in randomize() with on parameterized class (#6680) (#7293). [Yilou Wang]
@@ -59,6 +76,7 @@ Verilator 5.047 devel
 * Fix interface localparam dependencies and arbitrary nesting (#6936) (#7128) (#7188) (#7190). [em2machine]
 * Fix errant integer promotion (#7012). [Todd Strader]
 * Fix randc solver hang with wide variables (#7068) (#7248). [Yilou Wang]
+* Fix coroutine trace setters (#7078 repair) (#7296). [Igor Zaworski, Antmicro Ltd.]
 * Fix scheduling non-determinism (#7120) (#7162) (#7165). [Geza Lore, Testorrent USA, Inc.]
 * Fix parameters inside std::randomize `with` clause  (#7140). [Kamil Danecki, Antmicro Ltd.]
 * Fix forcing unpacked variables (#7149). [Ryszard Rozak, Antmicro Ltd.]
@@ -80,9 +98,16 @@ Verilator 5.047 devel
 * Fix rand variable used as array index in constraint evaluated as constant (#7238) (#7247). [Yilou Wang]
 * Fix --hierarchical dropping arguments in -f/-F files (#7240). [Clara Sparks]
 * Fix `final` asserts and $stop (#7249). [Artur Bieniek, Antmicro Ltd.]
+* Fix MacOS clang PCH compile error with -o flag (#7251) (#7327). [Eunseo Song]
 * Fix vpi_put_value with vpiIntVal on VlWide data (#7256). [Christian Hecken]
 * Fix streaming with descending unpacked arrays and unpacked-to-queue (#7287). [Yilou Wang]
-* Fix coroutine trace setters (#7078 repair) (#7296). [Igor Zaworski, Antmicro Ltd.]
+* Fix MacOs lexer compile error (#7314) (#7315). [Tracy Narine]
+* Fix linking shared library with its dependencies (#7320). [Artur Bieniek, Antmicro Ltd.]
+* Fix modport selection of virtual interface handle (#7321). [Yilou Wang]
+* Fix false ASSIGNIN on interface input ports driven from outside (#7322). [Yilou Wang]
+* Fix static initialization order for packages with class hierarchies (#7324). [Yilou Wang]
+* Fix `disable iff` imply-delay statement linking (#7337). [Nick Brereton]
+* Fix lost `$stop` on implied assertion `$error` failures.
 
 
 Verilator 5.046 2026-02-28
