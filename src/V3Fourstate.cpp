@@ -514,7 +514,6 @@ class FourstateVisitor final : public VNVisitor {
 
         void addPrecalculation(AstNodeStmt* const nodep) {
             FourstateLogicTypePropagator{nodep};
-            m_fourstateVisitor.iterate(nodep);
             m_fourstateVisitor.m_currentStmtp->addHereThisAsNext(nodep);
         }
 
@@ -756,7 +755,6 @@ class FourstateVisitor final : public VNVisitor {
                 AstVar* const varp = m_fourstateVisitor.createTmp(exprp);
                 AstVarRef* const varRefp = new AstVarRef{flp, varp, VAccess::WRITE};
                 AstAssign* const assignp = new AstAssign{flp, varRefp, m_result};
-                FourstateLogicTypePropagator{assignp};
                 addPrecalculation(assignp);
                 m_result = new AstVarRef{flp, varp, VAccess::READ};
                 setFourstate(m_result, false);
@@ -966,7 +964,11 @@ class FourstateVisitor final : public VNVisitor {
 
         AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp,
                                                  bool putIntoTmp = true) override {
-            if (!isFourstate(exprp)) return exprp->cloneTree(false);
+            if (!isFourstate(exprp)) {
+                AstNodeExpr* result = exprp->cloneTree(false);
+                m_fourstateVisitor.iterateChildren(result);
+                return result;
+            }
             return get(exprp, putIntoTmp);
         }
     };
@@ -1187,10 +1189,11 @@ class FourstateVisitor final : public VNVisitor {
                     "This function is ment to be called on four-state expressions");
         // a.value && !a.xz
         FileLine* const flp = exprp->fileline();
-        AstNodeExpr* const result
+        AstLogAnd* const result
             = new AstLogAnd{flp, getFourStateExpressionValue(exprp),
                             new AstLogNot{flp, getFourStateExpressionXZ(exprp)}};
-        FourstateLogicTypePropagator{result};
+        setFourstate(result, false);
+        setFourstate(result->rhsp(), false);
         return result;
     }
 
@@ -1199,9 +1202,10 @@ class FourstateVisitor final : public VNVisitor {
                     "This function is ment to be called on four-state expressions");
         // (a.value & (~a.xz))
         FileLine* const flp = exprp->fileline();
-        AstNodeExpr* const result = new AstAnd{flp, getFourStateExpressionValue(exprp),
-                                               new AstNot{flp, getFourStateExpressionXZ(exprp)}};
-        FourstateLogicTypePropagator{result};
+        AstAnd* const result = new AstAnd{flp, getFourStateExpressionValue(exprp),
+                                          new AstNot{flp, getFourStateExpressionXZ(exprp)}};
+        setFourstate(result, false);
+        setFourstate(result->rhsp(), false);
         return result;
     }
 
