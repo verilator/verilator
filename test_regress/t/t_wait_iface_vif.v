@@ -54,11 +54,19 @@ endclass
 module t;
   my_if intf();
 
+  // Verify combinational always with timing controls still works as coroutine
+  int combo_timing_count = 0;
+  always @* begin
+    combo_timing_count = combo_timing_count + 1;
+    #1;
+  end
+
   initial begin
     automatic Driver d = new;
     d.vif = intf;
     d.run();
     repeat (4) @(posedge intf.clk);
+    if (combo_timing_count == 0) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
