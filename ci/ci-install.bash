@@ -56,20 +56,22 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update ||
     sudo apt-get update
-    sudo apt-get install ccache help2man libfl-dev ||
-    sudo apt-get install ccache help2man libfl-dev
+    sudo apt-get install --yes ccache help2man libfl-dev ||
+    sudo apt-get install --yes ccache help2man libfl-dev
     if [[ ! "$CI_RUNS_ON" =~ "ubuntu-22.04" ]]; then
       # Some conflict of libunwind verison on 22.04, can live without it for now
-      sudo apt-get install libjemalloc-dev ||
-      sudo apt-get install libjemalloc-dev
+      sudo apt-get install --yes libjemalloc-dev ||
+      sudo apt-get install --yes libjemalloc-dev
     fi
     if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-26.04" ]]; then
-      sudo apt-get install libsystemc libsystemc-dev ||
-      sudo apt-get install libsystemc libsystemc-dev
+      if [[ ! "$CI_RUNS_ON" =~ "-riscv" ]]; then
+        sudo apt-get install --yes libsystemc libsystemc-dev ||
+        sudo apt-get install --yes libsystemc libsystemc-dev
+      fi
     fi
     if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-26.04" ]]; then
-      sudo apt-get install bear mold ||
-      sudo apt-get install bear mold
+      sudo apt-get install --yes bear mold ||
+      sudo apt-get install --yes bear mold
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update ||
@@ -94,16 +96,18 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get update ||
     sudo apt-get update
     # libfl-dev needed for internal coverage's test runs
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3 ||
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3
+    sudo apt-get install --yes gdb gtkwave lcov libfl-dev ccache jq z3 ||
+    sudo apt-get install --yes gdb gtkwave lcov libfl-dev ccache jq z3
     # Required for test_regress/t/t_dist_attributes.py
     if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-26.04" ]]; then
-      sudo apt-get install python3-clang mold ||
-      sudo apt-get install python3-clang mold
+      sudo apt-get install --yes python3-clang mold ||
+      sudo apt-get install --yes python3-clang mold
     fi
     if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-26.04" ]]; then
-      sudo apt-get install libsystemc-dev ||
-      sudo apt-get install libsystemc-dev
+      if [[ ! "$CI_RUNS_ON" =~ "-riscv" ]]; then
+        sudo apt-get install --yes libsystemc libsystemc-dev ||
+        sudo apt-get install --yes libsystemc libsystemc-dev
+      fi
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
