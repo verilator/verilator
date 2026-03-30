@@ -224,9 +224,8 @@ class LinkIncVisitor final : public VNVisitor {
         // Special case array[something]++, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
-        AstConst* const constp = VN_AS(nodep->lhsp(), Const);
-        UASSERT_OBJ(nodep, constp, "Expecting CONST");
-        AstConst* const newconstp = constp->cloneTree(true);
+        AstNodeExpr* const exprp = nodep->lhsp();
+        exprp->unlinkFrBack();
 
         AstSelBit* const rdSelbitp = VN_CAST(nodep->rhsp(), SelBit);
         AstNodeExpr* const rdFromp = rdSelbitp->fromp()->unlinkFrBack();
@@ -258,10 +257,10 @@ class LinkIncVisitor final : public VNVisitor {
         AstAssign* assignp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
             assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstSub{nodep->fileline(), valuep, newconstp}};
+                                    new AstSub{nodep->fileline(), valuep, exprp}};
         } else {
             assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstAdd{nodep->fileline(), valuep, newconstp}};
+                                    new AstAdd{nodep->fileline(), valuep, exprp}};
         }
         newp->addNext(assignp);
 
