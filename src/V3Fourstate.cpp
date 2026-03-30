@@ -679,98 +679,73 @@ class FourstateVisitor final : public VNVisitor {
 
         void getFourStateExpressionCondHandler(AstCond* const condp) {
             FileLine* const flp = condp->fileline();
-            if (!isFourstate(condp->condp())) {
-                AstNodeVarRef* condVarRefp;
-                if (AstNodeVarRef* const varRefp = VN_CAST(condp->condp(), NodeVarRef)) {
-                    condVarRefp = varRefp->cloneTree(true);
-                } else {
-                    AstVar* const condTmpVarp = m_fourstateVisitor.createTmp(condp->condp());
-                    AstVarRef* const condTmpVarRefp
-                        = new AstVarRef{flp, condTmpVarp, VAccess::WRITE};
-                    setFourstate(condTmpVarRefp, false);
-                    addPrecalculation(
-                        new AstAssign{flp, condTmpVarRefp, condp->condp()->cloneTree(false)});
-                    condVarRefp = new AstVarRef{flp, condTmpVarp, VAccess::READ};
-                }
-                AstCond* const valuep
-                    = new AstCond{flp, condVarRefp->cloneTree(false),
-                                  getFourStateExpressionValue(condp->thenp(), false),
-                                  getFourStateExpressionValue(condp->elsep(), false)};
-
-                AstCond* const xzp = new AstCond{flp, condVarRefp,
-                                                 getFourStateExpressionXZ(condp->thenp(), false),
-                                                 getFourStateExpressionXZ(condp->elsep(), false)};
-                pushDeletep(valuep);
-                pushDeletep(xzp);
-                condp->user1p(valuep);
-                condp->user2p(xzp);
-                return;
-            }
             AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(condp->thenp());
             AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(condp->thenp());
+            AstIf* ifp = new AstIf{flp, isFourstate(condp->condp())
+                                            ? getFourStateExpressionXZ(condp->condp())
+                                            : condp->condp()->cloneTree(false)};
             // Those must be here so expr is always evaluated fully in the right place
-            AstNodeExpr* resultExprValuep = getFourStateExpressionValue(condp->condp());
-            AstNodeExpr* resultExprXZp = getFourStateExpressionXZ(condp->condp());
-            AstIf* const ifp = new AstIf{flp, resultExprXZp};
-            AstNodeExpr* const thenCopyp = condp->thenp()->cloneTree(false);
-            AstNodeExpr* const elseCopyp = condp->elsep()->cloneTree(false);
-            {
+            AstIf* twoStateIfp = ifp;
+            if (isFourstate(condp->condp())) {
                 // Condition is X/Z
+                AstNodeExpr* conditionValuep = getFourStateExpressionValue(condp->condp());
+                AstNodeExpr* const thenCopyp = condp->thenp()->cloneTree(false);
+                AstNodeExpr* const elseCopyp = condp->elsep()->cloneTree(false);
                 StatementPlaceHolder thenPlaceholder{m_fourstateVisitor, flp};
                 ifp->addThensp(thenPlaceholder.stmtp());
                 TmpVarsReleaser tmpVarsReleaser{m_fourstateVisitor};
                 addPrecalculation(
                     new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                  getFourStateExpressionValue(condp->thenp(), false)});
+                                  getFourStateExpressionValue(thenCopyp, false)});
                 addPrecalculation(
                     new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                  getFourStateExpressionXZ(condp->thenp(), false)});
+                                  getFourStateExpressionXZ(thenCopyp, false)});
                 AstIf* const thenifp = new AstIf{
                     flp, new AstOr{
                              flp,
                              new AstXor{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::READ},
-                                        getFourStateExpressionValue(condp->elsep(), false)},
+                                        getFourStateExpressionValue(elseCopyp, false)},
                              new AstXor{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::READ},
-                                        getFourStateExpressionXZ(condp->elsep(), false)}}};
+                                        getFourStateExpressionXZ(elseCopyp, false)}}};
                 ifp->addThensp(thenifp);
                 thenifp->addThensp(
                     new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                  createConst(condp->thenp(), true)});
+                                  createConst(thenCopyp, true)});
                 thenifp->addThensp(
                     new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                  createConst(condp->thenp(), true)});
+                                  createConst(thenCopyp, true)});
+                thenCopyp->deleteTree();
+                elseCopyp->deleteTree();
+                twoStateIfp = new AstIf{flp, conditionValuep};
+                ifp->addElsesp(twoStateIfp);
             }
             {
                 // Condition is 1/0
-                AstIf* elseifp = new AstIf{flp, resultExprValuep};
-                ifp->addElsesp(elseifp);
                 {
                     // Condition is 1
                     StatementPlaceHolder thenPlaceholder{m_fourstateVisitor, flp};
-                    elseifp->addThensp(thenPlaceholder.stmtp());
+                    twoStateIfp->addThensp(thenPlaceholder.stmtp());
                     TmpVarsReleaser tmpVarsReleaser{m_fourstateVisitor};
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionValue(thenCopyp, false)});
+                                      getFourStateExpressionValue(condp->thenp(), false)});
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionXZ(thenCopyp, false)});
+                                      getFourStateExpressionXZ(condp->thenp(), false)});
                 }
                 {
                     // Condition is 0
                     StatementPlaceHolder elsePlaceholder{m_fourstateVisitor, flp};
-                    elseifp->addElsesp(elsePlaceholder.stmtp());
+                    twoStateIfp->addElsesp(elsePlaceholder.stmtp());
                     TmpVarsReleaser tmpVarsReleaser{m_fourstateVisitor};
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionValue(elseCopyp, false)});
+                                      getFourStateExpressionValue(condp->elsep(), false)});
                     addPrecalculation(
                         new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                      getFourStateExpressionXZ(elseCopyp, false)});
+                                      getFourStateExpressionXZ(condp->elsep(), false)});
                 }
             }
-            thenCopyp->deleteTree();
-            elseCopyp->deleteTree();
             addPrecalculation(ifp);
             AstVarRef* const resultValueTmpVarRefp
                 = new AstVarRef{flp, resultValueTmpVarp, VAccess::READ};
