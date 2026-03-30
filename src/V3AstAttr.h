@@ -1482,11 +1482,7 @@ public:
     ~VNumRange() = default;
     // MEMBERS
     void init(int hi, int lo, bool ascending) {
-        if (lo > hi) {
-            const int t = hi;
-            hi = lo;
-            lo = t;
-        }
+        if (lo > hi) std::swap(hi, lo);
         m_left = ascending ? lo : hi;
         m_right = ascending ? hi : lo;
         m_ranged = true;
