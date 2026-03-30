@@ -250,7 +250,8 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetimeAllowed);
         m_lifetimeAllowed = true;
         VL_RESTORER(m_hasTimingControl);
-        m_hasTimingControl = nodep->exists([](const AstNode* const nodep) {return nodep->isTimingControl();});
+        m_hasTimingControl
+            = nodep->exists([](const AstNode* const nodep) { return nodep->isTimingControl(); });
         if (!nodep->lifetime().isNone()) {
             m_lifetime = nodep->lifetime().makeImplicit();
         } else {

@@ -300,27 +300,26 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
-            if (nodep->user1()) {
-                return;
-            }
+            if (nodep->user1()) { return; }
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             if (nodep->isIO()) {
-                // Create a port that is used for passing value between argument and static variable
+                // Create a port that is used for passing value between argument and static
+                // variable
                 AstVar* const portp = nodep->cloneTreePure(false);
                 portp->user1(true);
                 nodep->replaceWith(portp);
 
                 if (nodep->isInput() || nodep->isInout()) {
-                    AstAssign* const initAssignp = new AstAssign{nodep->fileline(),
-                        new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                    AstAssign* const initAssignp = new AstAssign{
+                        nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                         new AstVarRef{portp->fileline(), portp, VAccess::READ}};
                     portp->addNextHere(initAssignp);
                 }
 
                 if (nodep->isWritable()) {
-                    AstAssign* const endAssignp = new AstAssign{nodep->fileline(),
-                        new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
+                    AstAssign* const endAssignp = new AstAssign{
+                        nodep->fileline(), new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
                         new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
                     m_ftaskp->addStmtsp(endAssignp);
                 }
