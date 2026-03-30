@@ -109,9 +109,13 @@ findTriggeredIface(const AstVarScope* vscp,
     UASSERT_OBJ(ifacep, vscp, "Variable is not sensitive for any interface");
     std::vector<AstSenTree*> result;
     for (const auto& memberIt : vifMemberTriggered) {
+        // Interface member variables already identify the exact member that can
+        // change externally. Sensitizing them to every triggered member of the interface causes
+        // false feedback paths, e.g. a block reading one signal becoming spuriously sensitive to
+        // another signal just because both belong to the same interface.
+        if (memberIt.first.m_memberp != vscp->varp()) continue;
         if (memberIt.first.m_ifacep == ifacep) result.push_back(memberIt.second);
     }
-    UASSERT_OBJ(!result.empty(), vscp, "Did not find virtual interface trigger");
     return result;
 }
 
