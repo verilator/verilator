@@ -39,7 +39,6 @@ namespace {
 class VirtIfaceVisitor final : public VNVisitor {
 private:
     // STATE
-    AstNetlist* const m_netlistp;  // Root node
     // Set of (iface, member) pairs written through VIF -- defines which members need triggers
     std::set<std::pair<const AstIface*, const std::string>> m_vifWrittenMembers;
     // All candidate VarScopes of interface members (keyed by interface type + member name)
@@ -100,8 +99,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit VirtIfaceVisitor(AstNetlist* nodep)
-        : m_netlistp{nodep} {
+    explicit VirtIfaceVisitor(AstNetlist* nodep) {
         iterate(nodep);
         buildTriggers();
     }

@@ -375,8 +375,6 @@ public:
     VscpSensMap makeVscpToSensMap(const TriggerKit& trigKit, uint32_t firstIndex,
                                   AstVarScope* trigVscp) const;
 
-    uint32_t numTriggers() const { return m_triggers.size(); }
-
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;
     VirtIfaceTriggers(VirtIfaceTriggers&&) = default;
