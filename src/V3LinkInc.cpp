@@ -270,9 +270,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
-        AstConst* const constp = VN_AS(nodep->lhsp(), Const);
-        UASSERT_OBJ(nodep, constp, "Expecting CONST");
-        AstConst* const newconstp = constp->cloneTree(true);
+        AstNodeExpr* const exprp = nodep->lhsp();
+        exprp->unlinkFrBack();
 
         AstNodeExpr* const storeTop = nodep->thsp()->unlinkFrBack();
         AstNodeExpr* const valuep = nodep->rhsp()->unlinkFrBack();
@@ -280,10 +279,10 @@ class LinkIncVisitor final : public VNVisitor {
         AstAssign* assignp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
             assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstSub{nodep->fileline(), valuep, newconstp}};
+                                    new AstSub{nodep->fileline(), valuep, exprp}};
         } else {
             assignp = new AstAssign{nodep->fileline(), storeTop,
-                                    new AstAdd{nodep->fileline(), valuep, newconstp}};
+                                    new AstAdd{nodep->fileline(), valuep, exprp}};
         }
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
