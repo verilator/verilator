@@ -60,6 +60,7 @@ private:
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
     V3UniqueNames m_gotoRepNames{"__VgotoRep"};  // Goto repetition counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
@@ -476,6 +477,7 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        cntVarp->noSample(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
@@ -653,6 +655,54 @@ private:
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
+    }
+    void visit(AstConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- Lower consecutive repetition [*N]
+        // Saturating counter tracks consecutive true cycles; avoids O(N) $past tree.
+        iterateChildren(nodep);
+        const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+        if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
+            nodep->v3fatalSrc("Consecutive repetition count must be a positive constant"
+                              " (should have been caught by V3Width)");
+            return;
+        }
+        const int n = constp->toSInt();
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        if (n == 1) {
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
+        AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
+                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        cntVarp->noSample(true);
+        m_modp->addStmtsp(cntVarp);
+        AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
+        AstNodeExpr* const saturatingIncrp = new AstCond{
+            flp,
+            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                      new AstConst{flp, static_cast<uint32_t>(n)}},
+            new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 1u}},
+            new AstConst{flp, static_cast<uint32_t>(n)}};
+        AstAssignDly* const incrAssignp
+            = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, saturatingIncrp};
+        AstAssignDly* const resetAssignp = new AstAssignDly{
+            flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0u}};
+        AstIf* const ifp = new AstIf{flp, exprClonep, incrAssignp, resetAssignp};
+        AstSenTree* const senTreep = newSenTree(nodep);
+        AstAlways* const alwaysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep, ifp};
+        cntVarp->addNextHere(alwaysp);
+        // Match when N-1 previous cycles were true and current cycle is true
+        AstNodeExpr* const cntCheckp = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                  new AstConst{flp, static_cast<uint32_t>(n - 1)}};
+        cntCheckp->dtypeSetBit();
+        AstNodeExpr* const matchp = new AstAnd{flp, cntCheckp, exprp};
+        matchp->dtypeSetBit();
+        nodep->replaceWith(matchp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstRising* nodep) override {
         if (nodep->user1SetOnce()) return;
