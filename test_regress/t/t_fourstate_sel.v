@@ -73,7 +73,6 @@ module t;
     f(xx[b]);
     $write("c: ");
     f(xx[c]);
-    // x = bar() [100];
     $write("*-* All Finished *-*\n");
     $finish;
   end

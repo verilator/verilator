@@ -612,7 +612,7 @@ class FourstateVisitor final : public VNVisitor {
             AstVar* const resultValuep = m_fourstateVisitor.createTmp(functionReturnVarp);
             AstVar* const resultXzp = m_fourstateVisitor.createTmp(functionReturnVarp);
             AstNodeFTaskRef* const newCallp = funcp->cloneTree(false);
-            newCallp->argsp()->unlinkFrBackWithNext()->deleteTree();
+            if (newCallp->argsp()) newCallp->argsp()->unlinkFrBackWithNext()->deleteTree();
             FileLine* const flp = funcp->fileline();
             for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 if (argp->exprp()->dtypep()->isFourstate()) {
