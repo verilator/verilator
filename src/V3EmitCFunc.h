@@ -511,6 +511,8 @@ public:
         bool decind = false;
         bool rhs = true;
         bool reverseUnpack = false;  // Set for descending CvtPackedToArray
+        const AstUnpackArrayDType* const unpackDtp
+            = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
@@ -580,10 +582,7 @@ public:
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
             // Descending unpacked dest: reverse after unpack
-            if (const AstUnpackArrayDType* const unpackDtp
-                = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!unpackDtp->declRange().ascending()) reverseUnpack = true;
-            }
+            if (unpackDtp && !unpackDtp->declRange().ascending()) reverseUnpack = true;
         } else if (const AstCvtArrayToArray* const castp
                    = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
             if (castp->reverse()) {
@@ -608,6 +607,7 @@ public:
                    // and means using '=' and bypasses using emitConstantW.
                    // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
+                   && !VN_IS(nodep->rhsp(), InitArray)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), MemberSel)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
@@ -616,7 +616,7 @@ public:
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
-        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+        } else if (nodep->isWide() && !unpackDtp
                    && !VN_IS(nodep->rhsp(), Const)) {
             putnbs(nodep, "VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ", ");
@@ -630,6 +630,10 @@ public:
             decind = true;
             if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
             putns(nodep, "= ");
+            if (unpackDtp && VN_IS(nodep->rhsp(), InitArray)) {
+                // Emit "VlUnpacked<type, depth>{{...InitArray...}}"
+                puts(unpackDtp->cType("", false, false, false));
+            }
         }
         if (rhs) iterateAndNextConstNull(nodep->rhsp());
         if (paren) puts(")");
