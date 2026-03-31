@@ -1,0 +1,10 @@
+%Error: t/t_fuzz_nor_bad.v:14:21: Syntax error: '~|' is not a 'nor' binary operator, but a unary '~ |'
+                                : ... Suggest '~ (... | ...)'
+   14 |   assign out1 = var1~|var2;   
+      |                     ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_fuzz_nor_bad.v:16:21: Syntax error: '~&' is not a 'nand' binary operator, but a unary '~ &'
+                                : ... Suggest '~ (... & ...)'
+   16 |   assign out2 = var1~&var2;   
+      |                     ^~
+%Error: Exiting due to

@@ -112,6 +112,7 @@ Verilator 5.047 devel
 * Fix `disable iff` imply-delay statement linking (#7337). [Nick Brereton]
 * Fix lost `$stop` on implied assertion `$error` failures.
 * Fix wait() hang when interface uses process calls and VIF function (#7342). [Yilou Wang]
+* Fix error on illegal nand/nor binary operators (#7353).
 
 
 Verilator 5.046 2026-02-28
