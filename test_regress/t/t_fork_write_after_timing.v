@@ -3,6 +3,11 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
   int x1, x2, x3, x4, x5, x6, x7;
 
@@ -16,15 +21,23 @@ module t;
     t2(x2);
     t3(x3);
     t4(x4);
+    `checkd(x1, 0)
+    `checkd(x2, -1)
+    `checkd(x3, 1)
+    `checkd(x4, 2)
 
     #10 t1(x1);
     t2(x2);
     t3(x3);
     t4(x4);
+    `checkd(x1, 1)
+    `checkd(x2, -1)
+    `checkd(x3, 1)
+    `checkd(x4, 2)
 
-    if (x5 != 3) $stop;
-    if (x6 != 0) $stop;
-    if (x7 != 4) $stop;
+    `checkd(x5, 3)
+    `checkd(x6, 0)
+    `checkd(x7, 4)
 
     #5 $write("*-* All Finished *-*\n");
     $finish;
@@ -34,35 +47,48 @@ module t;
   always #1 t7(x7);
 
   task t1(output int x);
-    $display("t1 start %d", x);
     fork
       x = #1 1;
     join_none
-    $display("t1 end %d", x);
+    if ($time < 10) begin
+      `checkd(x, 0)
+    end
+    else begin
+      `checkd(x, 1)
+    end
   endtask
 
-  task t2(inout int xa);
-    $display("t2 start %d", xa);
-    fork
-      xa = #1 2;
-    join_none
-    $display("t2 end %d", xa);
-  endtask
-
- task t3(output int x);
-    $display("t3 start %d", x);
-    fork
-      x = #1 1;
-    join_none
-    #2 $display("t3 end %d", x);
-  endtask
-
-  task t4(inout int x);
-    $display("t4 start %d", x);
+  task t2(inout int x);
     fork
       x = #1 2;
     join_none
-    #2 $display("t4 end %d", x);
+    `checkd(x, -1)
+  endtask
+
+ task t3(output int x);
+    if ($time < 10) begin
+      `checkd(x, 0)
+    end
+    else begin
+      `checkd(x, 1)
+    end
+    fork
+      x = #1 1;
+    join_none
+    #2 `checkd(x, 1);
+  endtask
+
+  task t4(inout int x);
+    if ($time < 10) begin
+      `checkd(x, -1)
+    end
+    else begin
+      `checkd(x, 2)
+    end
+    fork
+      x = #1 2;
+    join_none
+    #2 `checkd(x, 2);
   endtask
 
   task t5(output int x);
@@ -77,6 +103,6 @@ module t;
     int y = 0;
     x <= #1 4;
     #2 y = x;
-    if (y != 4) $stop;
+    `checkd(x, 4)
   endtask
 endmodule
