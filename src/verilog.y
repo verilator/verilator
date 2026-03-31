@@ -27,6 +27,7 @@
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
+#define YYNEWLINE "\n"
 
 // Pick up new lexer
 #define yylex PARSEP->tokenToBison
@@ -5059,8 +5060,14 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr '|' ~r~expr                     { $$ = new AstOr{$2, $1, $3}; }
         |       ~l~expr '^' ~r~expr                     { $$ = new AstXor{$2, $1, $3}; }
         |       ~l~expr yP_XNOR ~r~expr                 { $$ = new AstNot{$2, new AstXor{$2, $1, $3}}; }
-        |       ~l~expr yP_NOR ~r~expr                  { $$ = new AstNot{$2, new AstOr{$2, $1, $3}}; }
-        |       ~l~expr yP_NAND ~r~expr                 { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}}; }
+        |       ~l~expr yP_NOR ~r~expr
+                        { $$ = new AstNot{$2, new AstOr{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~|' is not a 'nor' binary operator, but a unary '~ |'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... | ...)'"); }
+        |       ~l~expr yP_NAND ~r~expr
+                        { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~&' is not a 'nand' binary operator, but a unary '~ &'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... & ...)'"); }
         |       ~l~expr yP_SLEFT ~r~expr                { $$ = new AstShiftL{$2, $1, $3}; }
         |       ~l~expr yP_SRIGHT ~r~expr               { $$ = new AstShiftR{$2, $1, $3}; }
         |       ~l~expr yP_SSRIGHT ~r~expr              { $$ = new AstShiftRS{$2, $1, $3}; }
