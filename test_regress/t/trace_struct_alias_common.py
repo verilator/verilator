@@ -8,7 +8,7 @@
 
 
 def run(test):
-    (fmt,) = test.parse_name(r"t_trace_struct_alias_([a-z]+)")
+    (fmt, ) = test.parse_name(r"t_trace_struct_alias_([a-z]+)")
 
     test.top_filename = "t/t_trace_struct_alias.v"
     test.golden_filename = test.py_filename.rpartition(fmt)[0] + fmt + ".out"

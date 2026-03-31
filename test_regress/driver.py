@@ -2635,8 +2635,7 @@ class VlTest:
                 self.error("Unknown trace file format " + traceFn)
 
     @staticmethod
-    def _vcd_parse_header(filename: str,
-                          root_scope: 'str | None' = None) -> 'tuple[dict, dict]':
+    def _vcd_parse_header(filename: str, root_scope: 'str | None' = None) -> 'tuple[dict, dict]':
         """Parse VCD header into hierarchy data and signal-code mapping.
 
         Returns (hier_data, var_codes) where:
