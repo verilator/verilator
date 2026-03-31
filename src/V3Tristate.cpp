@@ -403,8 +403,9 @@ class TristateVisitor final : public TristateBaseVisitor {
     const VNUser4InUse m_inuser4;
 
     struct AuxAstVar final {
-        AstPull* pullp = nullptr;  // pullup/pulldown direction
+        AstPull* pullp = nullptr;  // pullup/pulldown direction (whole variable)
         AstVar* outVarp = nullptr;  // output __out var
+        std::map<int, int> bitPulls;  // per-bit pull: bit_index -> direction (1=up, 0=down)
     };
 
     AstUser3Allocator<AstVar, AuxAstVar> m_varAux;
@@ -497,9 +498,12 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
             if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
-                if (refp->varp()->isIO()) {
-                    // When reading a tri-state port, we can always use the value
+                if (refp->varp()->isIO() && refp->access().isReadOnly()) {
+                    // When READING a tri-state port, we can always use the value
                     // because such port will have resolution logic in upper module.
+                    // For WRITE access (LHS), use the actual enable (e.g., from
+                    // newEnableDeposit for bit-select targets) to correctly
+                    // track which bits are driven.
                     return newAllZerosOrOnes(nodep, true);
                 }
             }
@@ -650,6 +654,40 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                  << oldpullp->warnContextSecondary());
             }
         }
+    }
+
+    void setBitPullDirection(AstVar* varp, int bitIndex, int direction) {
+        // Set pull direction for a specific bit of a bus.
+        // direction: 1 = pullup, 0 = pulldown
+        auto& bitPulls = m_varAux(varp).bitPulls;
+        auto it = bitPulls.find(bitIndex);
+        if (it != bitPulls.end() && it->second != direction) {
+            // Conflicting pull directions on same bit - should not happen
+            // but warn if it does (via UINFO, not error)
+            UINFO(4, "Conflicting per-bit pull at bit " << bitIndex << " of " << varp);
+        }
+        bitPulls[bitIndex] = direction;
+    }
+
+    AstConst* createPerBitPullConst(AstVar* varp) {
+        // Create a constant with per-bit pull values.
+        // Bits without explicit pull default to pulldown (0).
+        const int width = varp->width();
+        const auto& bitPulls = m_varAux(varp).bitPulls;
+        V3Number num{varp, width, 0};  // Start with all zeros
+        for (const auto& pair : bitPulls) {
+            const int bitIndex = pair.first;
+            const int direction = pair.second;
+            if (bitIndex < width && direction == 1) {
+                num.setBit(bitIndex, 1);
+            }
+        }
+        return new AstConst{varp->fileline(), num};
+    }
+
+    bool hasPerBitPulls(AstVar* varp) {
+        // Note: Not const - m_varAux allocates on access
+        return !m_varAux(varp).bitPulls.empty();
     }
 
     void checkUnhandled(AstNode* nodep) {
@@ -869,7 +907,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 envarp = getCreateEnVarp(invarp, isTopInout);  // dir set in visit(AstPin*)
                 outvarp->user1p(envarp);
                 m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
+                m_varAux(outvarp).bitPulls = m_varAux(invarp).bitPulls;  // Per-bit pull propagation
                 if (m_varAux(invarp).pullp) UINFO(9, "propagate pull to " << outvarp);
+                if (!m_varAux(invarp).bitPulls.empty()) {
+                    UINFO(9, "propagate per-bit pulls to " << outvarp);
+                }
             } else if (invarp->user1p()) {
                 envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
             }
@@ -1004,10 +1046,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
-            const AstPull* const pullp = m_varAux(lhsp).pullp;
-            const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
-
             AstNodeExpr* undrivenp;
+            UINFO(4, "Final resolution: envarp=" << (envarp ? envarp->name() : "null")
+                                                 << " enp=" << (enp ? "set" : "null")
+                                                 << " orp=" << (orp ? "set" : "null") << endl);
             if (envarp) {
                 undrivenp = new AstNot{envarp->fileline(),
                                        new AstVarRef{envarp->fileline(), envarp, VAccess::READ}};
@@ -1019,8 +1061,21 @@ class TristateVisitor final : public TristateBaseVisitor {
                 }
             }
 
-            undrivenp
-                = new AstAnd{invarp->fileline(), undrivenp, newAllZerosOrOnes(invarp, pull1)};
+            // Generate pull constant: use per-bit pulls if available, else whole-var pull
+            AstConst* pullConstp;
+            UINFO(4, "Resolution for " << lhsp->name() << " hasPerBitPulls="
+                                       << hasPerBitPulls(lhsp)
+                                       << " outvarp=" << (outvarp ? "set" : "null") << endl);
+            if (hasPerBitPulls(lhsp)) {
+                pullConstp = createPerBitPullConst(lhsp);
+                UINFO(4, "using per-bit pull const for " << lhsp->name() << endl);
+            } else {
+                const AstPull* const pullp = m_varAux(lhsp).pullp;
+                const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+                pullConstp = newAllZerosOrOnes(invarp, pull1);
+            }
+
+            undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
             orp = new AstOr{invarp->fileline(), orp, undrivenp};
         }
 
@@ -1536,6 +1591,9 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, "   enp<-rhs " << nodep->lhsp()->user1p());
                 m_tgraph.didProcess(nodep);
             } else {
+                // Non-tristate assignment - just mark as processed.
+                // Don't set user1p here as there are no handlers for many LHS node types
+                // (ArraySel, MemberSel, StructSel, etc.) and checkUnhandled() would error.
                 m_tgraph.didProcess(nodep, true);
             }
             m_alhs = true;  // And user1p() will indicate tristate equation, if any
@@ -1794,6 +1852,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     //     const inout  Spec says illegal
     //     const output Unsupported; Illegal?
     void visit(AstPin* nodep) override {
+        UINFO(4, "visit(Pin) " << nodep->name() << " graphing=" << m_graphing
+                               << " user2=" << nodep->user2() << endl);
         if (m_graphing) {
             if (nodep->user2() & U2_GRAPHING) return;  // This pin is already expanded
             nodep->user2Or(U2_GRAPHING);
@@ -1801,7 +1861,63 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstVar* const enModVarp = static_cast<AstVar*>(nodep->modVarp()->user1p());
             if (!enModVarp) {
                 // May have an output only that later connects to a tristate, so simplify now.
-                V3Inst::pinReconnectSimple(nodep, m_cellp, false);
+                const AstAssignW* const assignp
+                    = V3Inst::pinReconnectSimple(nodep, m_cellp, false);
+                // Debug: check pull state
+                UINFO(4, "Pin " << nodep->name() << " modVarp=" << nodep->modVarp()->name()
+                                << " pullp=" << (m_varAux(nodep->modVarp()).pullp ? "set" : "null")
+                                << " assignp=" << (assignp ? "set" : "null") << endl);
+                // Propagate any pullups/pulldowns upwards for non-tristate outputs
+                if (AstPull* const pullp = m_varAux(nodep->modVarp()).pullp) {
+                    // Determine the constant value (1 for pullup, 0 for pulldown)
+                    const bool isPullup = pullp->direction() == 1;
+                    if (assignp) {
+                        // pinReconnectSimple created an assign: temp_wire = pin_expr
+                        // For simple VarRef targets, propagate pull direction.
+                        // For bit-select targets, we need to assign the constant value.
+                        if (AstVarRef* const vrefp = VN_CAST(assignp->lhsp(), VarRef)) {
+                            UINFO(9, "propagate pull to non-tri target " << vrefp);
+                            setPullDirection(vrefp->varp(), pullp);
+                        } else if (AstSel* const selp = VN_CAST(assignp->lhsp(), Sel)) {
+                            // Bit-select target: replace the assign RHS with a constant
+                            // to drive the specific bit with the pull value.
+                            // This handles cases like: conb cell (.HI(out_value[3]));
+                            // where out_value is an output port of a wrapper module.
+                            UINFO(9, "bit-select pull: generating constant assign for " << selp);
+                            FileLine* const fl = nodep->fileline();
+                            // Create constant value based on pull direction and width
+                            const int width = selp->widthMin();
+                            const uint32_t value
+                                = isPullup ? static_cast<uint32_t>(VL_MASK_I(width)) : 0;
+                            AstConst* const constp
+                                = new AstConst{fl, AstConst::WidthedValue{}, width, value};
+                            // Replace RHS of the assign with the constant
+                            VL_DO_DANGLING(assignp->rhsp()->unlinkFrBack()->deleteTree(), assignp);
+                            AstAssignW* const mutableAssignp
+                                = const_cast<AstAssignW*>(assignp);
+                            mutableAssignp->rhsp(constp);
+                        }
+                    } else if (AstVarRef* const exprRefp = VN_CAST(nodep->exprp(), VarRef)) {
+                        // For simple wires, propagate directly
+                        UINFO(9, "propagate pull to simple wire " << exprRefp);
+                        setPullDirection(exprRefp->varp(), pullp);
+                    } else if (AstSel* const exprSelp = VN_CAST(nodep->exprp(), Sel)) {
+                        // Direct bit-select expression without pinReconnectSimple creating assign
+                        // Create an assign to drive the bit-select with the constant value
+                        UINFO(9, "direct bit-select pull: generating assign for " << exprSelp);
+                        FileLine* const fl = nodep->fileline();
+                        const int width = exprSelp->widthMin();
+                        const uint32_t value
+                            = isPullup ? static_cast<uint32_t>(VL_MASK_I(width)) : 0;
+                        AstConst* const constp
+                            = new AstConst{fl, AstConst::WidthedValue{}, width, value};
+                        // Clone the bit-select expression for the LHS
+                        AstSel* const lhsp = static_cast<AstSel*>(exprSelp->cloneTree(false));
+                        AstAssignW* const newAssignp = new AstAssignW{fl, lhsp, constp};
+                        // Insert the new assign after the cell
+                        m_cellp->addNextHere(newAssignp);
+                    }
+                }
                 iteratePinGuts(nodep);
                 return;  // No __en signals on this pin
             }
@@ -1938,10 +2054,58 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
 
             // Propagate any pullups/pulldowns upwards if necessary
+            UINFO(4, "Tristate pin " << nodep->name() << " exprrefp="
+                                     << (exprrefp ? exprrefp->name() : "null")
+                                     << " pullp=" << (m_varAux(nodep->modVarp()).pullp ? "set" : "null")
+                                     << " outAssignp=" << (outAssignp ? "set" : "null") << endl);
             if (exprrefp) {
-                if (AstPull* const pullp = m_varAux(nodep->modVarp()).pullp) {
+                AstPull* const pullp = m_varAux(nodep->modVarp()).pullp;
+                const auto& srcBitPulls = m_varAux(nodep->modVarp()).bitPulls;
+
+                if (pullp) {
                     UINFO(9, "propagate pull on " << exprrefp);
                     setPullDirection(exprrefp->varp(), pullp);
+                    // If pinReconnectSimple created an assignment, propagate pull
+                    // to the assignment target variable.
+                    if (outAssignp) {
+                        UINFO(4, "outAssignp lhsp type: " << outAssignp->lhsp()->typeName()
+                                                         << " = " << outAssignp->lhsp() << endl);
+                        if (AstVarRef* const vrefp = VN_CAST(outAssignp->lhsp(), VarRef)) {
+                            UINFO(9, "propagate pull to assign target " << vrefp);
+                            setPullDirection(vrefp->varp(), pullp);
+                        } else if (AstSel* const selp = VN_CAST(outAssignp->lhsp(), Sel)) {
+                            // For bit-select targets, record per-bit pull direction
+                            // instead of setting pull on the whole variable.
+                            UINFO(4, "SEL branch taken for " << selp << endl);
+                            if (AstVarRef* const fromRefp = VN_CAST(selp->fromp(), VarRef)) {
+                                if (AstConst* const idxp = VN_CAST(selp->lsbp(), Const)) {
+                                    const int bitIndex = idxp->toSInt();
+                                    const int direction = pullp->direction();
+                                    UINFO(4, "setBitPullDirection at bit " << bitIndex
+                                                                        << " of " << fromRefp->varp()->name()
+                                                                        << " direction=" << direction << endl);
+                                    setBitPullDirection(fromRefp->varp(), bitIndex, direction);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Also propagate per-bit pulls if present
+                if (!srcBitPulls.empty()) {
+                    UINFO(9, "propagate per-bit pulls from " << nodep->modVarp());
+                    for (const auto& pair : srcBitPulls) {
+                        setBitPullDirection(exprrefp->varp(), pair.first, pair.second);
+                    }
+                    // If there's an assign to a whole variable, propagate to that too
+                    if (outAssignp) {
+                        if (AstVarRef* const vrefp = VN_CAST(outAssignp->lhsp(), VarRef)) {
+                            UINFO(9, "propagate per-bit pulls to assign target " << vrefp);
+                            for (const auto& pair : srcBitPulls) {
+                                setBitPullDirection(vrefp->varp(), pair.first, pair.second);
+                            }
+                        }
+                    }
                 }
             }
             // Don't need to visit the created assigns, as it was added at
@@ -2160,12 +2324,19 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFOTREE(9, enAssp, "", "iface-enAssp");
             ifaceModp->addStmtsp(new AstAlways{enAssp});
 
-            // Pull resolution
-            const AstPull* const pullp = m_varAux(invarp).pullp;
-            const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+            // Pull resolution - use per-bit pulls if available
+            AstConst* pullConstp;
+            if (hasPerBitPulls(invarp)) {
+                pullConstp = createPerBitPullConst(invarp);
+                UINFO(9, "using per-bit pull const for interface " << invarp);
+            } else {
+                const AstPull* const pullp = m_varAux(invarp).pullp;
+                const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+                pullConstp = newAllZerosOrOnes(invarp, pull1);
+            }
 
             AstNodeExpr* undrivenp = new AstNot{fl, new AstVarRef{fl, envarp, VAccess::READ}};
-            undrivenp = new AstAnd{fl, undrivenp, newAllZerosOrOnes(invarp, pull1)};
+            undrivenp = new AstAnd{fl, undrivenp, pullConstp};
             orp = new AstOr{fl, orp, undrivenp};
 
             // Assign final value to invarp
