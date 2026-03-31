@@ -1218,6 +1218,8 @@ class ParamProcessor final {
     // Uses the user4p link set at line ~1658 when defaultsResolved is true.
     static bool classTypeMatchesDefaultClone(const AstNodeDType* exprp,
                                              const AstNodeDType* origp) {
+        exprp = exprp->skipRefp();
+        origp = origp->skipRefp();
         const auto* const exprCRDp = VN_CAST(exprp, ClassRefDType);
         const auto* const origCRDp = VN_CAST(origp, ClassRefDType);
         UINFO(9, "classTypeMatchesDefaultClone: exprCRD="
