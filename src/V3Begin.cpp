@@ -298,16 +298,15 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVar* nodep) override {
+        if (nodep->user1SetOnce()) { return; }
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
-            if (nodep->user1()) { return; }
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             if (nodep->isIO()) {
                 // Create a port that is used for passing value between argument and static
                 // variable
                 AstVar* const portp = nodep->cloneTreePure(false);
-                portp->user1(true);
                 nodep->replaceWith(portp);
 
                 if (nodep->isInput() || nodep->isInout()) {

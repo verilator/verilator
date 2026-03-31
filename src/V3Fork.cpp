@@ -446,7 +446,7 @@ class DynScopeVisitor final : public VNVisitor {
                 nodep->v3error("Writing to an " << nodep->varp()->verilogKwd()
                                                 << " automatic variable of a "
                                                 << (m_inFunc ? "function" : "task")
-                                                << " after a timing control is not allowed");
+                                                << " after a timing control is not allowed (IEEE 1800-2023 13.2.2)");
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
             framep->captureVarInsert(nodep->varp());
