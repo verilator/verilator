@@ -243,10 +243,40 @@ private:
             = [this, flp, senp]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
         const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
 
+        // Four-state expression handlers
+        AstFourstateExpr* const fourstateExpr = VN_CAST(senp, FourstateExpr);
+        auto currValp = [this, fourstateExpr]() { return getCurr(fourstateExpr->valuep()); };
+        auto currXZp = [this, fourstateExpr]() { return getCurr(fourstateExpr->xzp()); };
+        auto prevValp = [this, fourstateExpr, flp]() {
+            return new AstVarRef{flp, getPrev(fourstateExpr->valuep()), VAccess::READ};
+        };
+        auto prevXZp = [this, fourstateExpr, flp]() {
+            return new AstVarRef{flp, getPrev(fourstateExpr->xzp()), VAccess::READ};
+        };
+
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID:  //
+            if (fourstateExpr) {
+                if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                    AstCMethodHard* const resultValp
+                        = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currValp()};
+                    AstCMethodHard* const resultXZp
+                        = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currXZp()};
+                    resultValp->dtypeSetBit();
+                    resultXZp->dtypeSetBit();
+                    return {wrapExprWithNullCheck(flp, new AstOr{flp, resultValp, resultXZp},
+                                                  baseClassRefp),
+                            true};
+                }
+                return {wrapExprWithNullCheck(
+                            flp,
+                            lsb(new AstOr{flp, new AstXor{flp, prevValp(), currValp()},
+                                          new AstXor{flp, prevXZp(), currXZp()}}),
+                            baseClassRefp),
+                        true};
+            }
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
                 // issue #5125
@@ -258,15 +288,46 @@ private:
             return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseClassRefp),
                     true};
         case VEdgeType::ET_BOTHEDGE:  //
+            if (fourstateExpr) {
+                return {wrapExprWithNullCheck(
+                            flp,
+                            lsb(new AstOr{flp, new AstXor{flp, currXZp(), prevXZp()},
+                                          new AstAnd{flp, new AstNot{flp, prevXZp()},
+                                                     new AstXor{flp, currValp(), prevValp()}}}),
+                            baseClassRefp),
+                        false};
+            }
             return {
                 wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseClassRefp),
                 false};
         case VEdgeType::ET_POSEDGE:  //
+            if (fourstateExpr) {
+                return {wrapExprWithNullCheck(
+                            flp,
+                            lsb(new AstAnd{
+                                flp,
+                                new AstAnd{flp, new AstOr{flp, currValp(), currXZp()},
+                                           new AstOr{flp, prevXZp(), new AstNot{flp, prevValp()}}},
+                                new AstNot{flp, new AstAnd{flp, prevXZp(), currXZp()}}}),
+                            baseClassRefp),
+                        false};
+            }
             return {wrapExprWithNullCheck(flp,
                                           lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}),
                                           baseClassRefp),
                     false};
         case VEdgeType::ET_NEGEDGE:  //
+            if (fourstateExpr) {
+                return {wrapExprWithNullCheck(
+                            flp,
+                            lsb(new AstAnd{
+                                flp,
+                                new AstAnd{flp, new AstOr{flp, prevValp(), prevXZp()},
+                                           new AstOr{flp, currXZp(), new AstNot{flp, currValp()}}},
+                                new AstNot{flp, new AstAnd{flp, prevXZp(), currXZp()}}}),
+                            baseClassRefp),
+                        false};
+            }
             return {wrapExprWithNullCheck(flp,
                                           lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}),
                                           baseClassRefp),
@@ -288,6 +349,9 @@ private:
             return {wrapExprWithNullCheck(flp, callp, baseClassRefp), false};
         }
         case VEdgeType::ET_TRUE:  //
+            if (fourstateExpr) {
+                return {lsb(new AstAnd{flp, currValp(), new AstNot{flp, currXZp()}}), false};
+            }
             return {currp(), false};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");

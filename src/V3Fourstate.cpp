@@ -1386,6 +1386,16 @@ class FourstateVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->elsesp());
     }
 
+    void visit(AstSenItem* const nodep) override {
+        if (isFourstate(nodep->sensp())) {
+            AstNodeExpr* const sensp = nodep->sensp()->unlinkFrBack();
+            nodep->sensp(new AstFourstateExpr{nodep->fileline(),
+                                              getFourStateExpressionValue(sensp),
+                                              getFourStateExpressionXZ(sensp)});
+            sensp->deleteTree();
+        }
+    }
+
     void visit(AstCell* const nodep) override {
         VL_RESTORER(m_currentPinp);
         m_currentPinp = nodep->modp()->stmtsp();
