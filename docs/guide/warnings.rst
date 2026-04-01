@@ -521,6 +521,14 @@ List Of Warnings
    Suppressing this error will suppress the error message check; it will
    simulate as if the ``const`` as not present.
 
+.. option:: CONTASSINIT
+
+   Warns that a continuous assignment is initializing a variable. This is
+   not legal in SystemVerilog, and is a mistake. The continuous
+   assignment will be ignored.
+
+   Ignoring this warning will cause the continuous assignment to be ignored;
+   it will simulate as if the continuous assignment was not present.
 
 .. option:: CONTASSREG
 
