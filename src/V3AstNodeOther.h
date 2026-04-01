@@ -1469,6 +1469,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_evalp : Optional[AstCFunc]  // The '_eval' function
     // @astgen ptr := m_evalNbap : Optional[AstCFunc]  // The '_eval__nba' function
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
+    // @astgen ptr := m_dpiImportTriggerp : Optional[AstVarScope]  // DPI import trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
     // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
     // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
@@ -1514,6 +1515,8 @@ public:
     void evalNbap(AstCFunc* funcp) { m_evalNbap = funcp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
+    AstVarScope* dpiImportTriggerp() const { return m_dpiImportTriggerp; }
+    void dpiImportTriggerp(AstVarScope* varScopep) { m_dpiImportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
     AstVarScope* nbaEventp() const { return m_nbaEventp; }
