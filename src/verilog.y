@@ -6739,7 +6739,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: #=# (in property expression)"); DEL($3); }
         |       yNEXTTIME pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: nexttime (in property expression)"); }
+                        { $$ = new AstImplication{$1, new AstConst{$1, AstConst::BitTrue{}}, $2, false}; }
         |       yS_NEXTTIME pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_nexttime (in property expression)"); }
         |       yNEXTTIME '[' constExpr ']' pexpr %prec yNEXTTIME
