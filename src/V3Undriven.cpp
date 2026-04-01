@@ -48,6 +48,8 @@ class UndrivenVarEntry final {
                                                    // within always_comb, else nullptr
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
+    const AstNode* m_initialp = nullptr;  // varref if driven in an explicit initial block
+    const AstNode* m_contAssignp = nullptr;  // varref if in continuous assignment driven
     const AstNode* m_procWritep = nullptr;  // varref if written in process
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
@@ -139,6 +141,10 @@ public:
 
     const AstNode* initStaticp() const { return m_initStaticp; }
     void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
+    const AstNode* initialp() const { return m_initialp; }
+    void initialp(const AstNode* nodep) { m_initialp = nodep; }
+    const AstNode* contAssignp() const { return m_contAssignp; }
+    void contAssignp(const AstNode* nodep) { m_contAssignp = nodep; }
     const AstNode* procWritep() const { return m_procWritep; }
     void procWritep(const AstNode* nodep) { m_procWritep = nodep; }
     void underGenerate() { m_underGen = true; }
@@ -197,6 +203,17 @@ public:
                     << procWritep()->warnMore()
                     << "... Perhaps should initialize instead using a reset in this process\n"
                     << procWritep()->warnContextSecondary());
+        }
+        const AstNode* const initp = nodep->hasUserInit() ? initStaticp() : initialp();
+        if (initp && contAssignp() && !nodep->isClassMember() && !nodep->isFuncLocal()) {
+            initp->v3warn(
+                E_CONTASSINIT,
+                "Continuous assignment to variable with initial value: " << nodep->prettyNameQ()
+                    << '\n'
+                    << initp->warnMore() << "... Location of variable initialization\n"
+                    << initp->warnContextPrimary() << '\n'
+                    << contAssignp()->warnOther() << "... Location of continuous assignment\n"
+                    << contAssignp()->warnContextSecondary());
         }
         if (nodep->isGenVar()) {  // Genvar
             if (!nodep->isIfaceRef() && !nodep->isUsedParam() && !unusedMatch(nodep)) {
@@ -323,6 +340,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
+    bool m_inInitial = false;  // In explicit initial block
     bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
     bool m_inInitialStatic = false;  // In InitialStatic
     bool m_inProcAssign = false;  // In procedural assignment
@@ -518,6 +536,8 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
             if (nodep->access().isWriteOrRW()) {
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
+                if (m_inInitial && !entryp->initialp()) entryp->initialp(nodep);
+                if (m_inContAssign && !entryp->contAssignp()) entryp->contAssignp(nodep);
                 if (m_alwaysp && m_inProcAssign && !entryp->procWritep())
                     entryp->procWritep(nodep);
             }
@@ -554,9 +574,25 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_inProcAssign = true;
         iterateChildrenConst(nodep);
     }
+    void visit(AstAssignForce* nodep) override {
+        iterateConst(nodep->rhsp());
+        VL_RESTORER(m_inInitial);
+        m_inInitial = false;
+        iterateConst(nodep->lhsp());
+    }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
         m_inContAssign = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstRelease* nodep) override {
+        VL_RESTORER(m_inInitial);
+        m_inInitial = false;
+        iterateConst(nodep->lhsp());
+    }
+    void visit(AstInitial* nodep) override {
+        VL_RESTORER(m_inInitial);
+        m_inInitial = true;
         iterateChildrenConst(nodep);
     }
     void visit(AstInitialAutomatic* nodep) override {

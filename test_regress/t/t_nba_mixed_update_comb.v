@@ -22,7 +22,7 @@ module t (
   // update in **combinational** logic
   reg [1:0] x = 2'b00;
   // '{y1, y0}' should have exactly the same value as 'x', at all times
-  reg y0 = 1'b0;
+  reg y0;
   reg y1 = 1'b0;
   // 'z[0]' should equal '{8{x[0]}', 'z[1]' should equal '{8{x[1]}}'
   // verilator lint_off BLKANDNBLK
@@ -33,7 +33,7 @@ module t (
   struct {
     logic a;
     logic b;
-  } pair = '{a: 1'b0, b: 1'b0};
+  } pair;
   // verilator lint_on BLKANDNBLK
 
   assign x[0] = cyc[0];

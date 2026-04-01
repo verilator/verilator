@@ -216,7 +216,7 @@ Verilator 5.048 2026-04-26
 * Fix std::randomize inside {typedef array} internal error (#7481). [Yilou Wang]
 * Fix module parameters not re-evaluated upon instantiation (#7463) (#7477). [em2machine]
 * Fix infinite recursion with VERILATOR_BIN (#7496) (#7497).
-
+* Add error on mixed declaration initialization with continuous assignment (#7352). [Zhi QU]
 
 Verilator 5.046 2026-02-28
 ==========================

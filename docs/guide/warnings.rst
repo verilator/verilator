@@ -521,6 +521,48 @@ List Of Warnings
    Suppressing this error will suppress the error message check; it will
    simulate as if the ``const`` as not present.
 
+.. option:: CONTASSINIT
+
+   Error that a continuous assignment is setting a variable with an initial
+   value. Use either the initial value or the continuous assignment, but not
+   both.
+
+   For example:
+
+   .. code-block:: sv
+      :emphasize-lines: 2,4
+
+      module t;
+        logic b = 1'b0;
+        logic a;
+        assign b = a; //<--- Error
+      endmodule
+
+   Results in:
+
+   .. code-block::
+
+      %Error-CONTASSINIT: example.sv:4:10: Continuous assignment to variable with initial value: 'b'
+                                                  : ... note: In instance 't'
+                                                  : ... Location of variable initialization
+          2 |   logic b = 1'b0;
+            |         ^
+                            example.sv:4:10: ... Location of continuous assignment
+          4 |   assign b = a;
+            |          ^
+      %Error: Exiting due to 1 error(s)
+
+   The following is legal because the driven variable does not have a declaration
+   initializer:
+
+   .. code-block:: sv
+
+      module t;
+        logic b;
+        logic a = 1'b0;
+        assign b = a;
+      endmodule
+
 
 .. option:: CONTASSREG
 
