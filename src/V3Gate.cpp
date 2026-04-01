@@ -692,11 +692,17 @@ class GateInline final {
                 }
             }
 
+            AstVarScope* const vscp = vVtxp->varScp();
+            AstNodeExpr* const substp = okVisitor.substitutionp();
+
+            // Only inline arrays if a simple variable
+            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!VN_IS(substp, NodeVarRef)) continue;
+            }
+
             // Process it
             ++m_statInlined;
 
-            AstVarScope* const vscp = vVtxp->varScp();
-            AstNodeExpr* const substp = okVisitor.substitutionp();
             if (debug() >= 9) {
                 vscp->dumpTree("substituting: ");
                 substp->dumpTree("        with: ");

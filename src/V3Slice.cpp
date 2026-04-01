@@ -260,6 +260,16 @@ class SliceVisitor final : public VNVisitor {
             return false;
         }
 
+        // Skip if this is a simple a = b assignment of identical arrays
+        if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
+            if (AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
+                if (!hasSc && lhsp->dtypep()->skipRefp()->sameTree(rhsp->dtypep()->skipRefp())) {
+                    m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+                    return false;
+                }
+            }
+        }
+
         UINFO(4, "Slice optimizing " << nodep);
         ++m_statAssigns;
 
