@@ -49,10 +49,11 @@ private:
     // METHODS
     // Returns true if statement writes across a virtual interface boundary
     static bool writesToVirtIface(const AstNode* const nodep) {
-        return nodep->exists([](const AstVarRef* const refp) {
-            if (!refp->access().isWriteOrRW()) return false;
-            AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
-            return dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel);
+        return nodep->exists([](const AstMemberSel* const memberSelp) {
+            if (!memberSelp->access().isWriteOrRW()) return false;
+            AstIfaceRefDType* const dtypep
+                = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            return dtypep && dtypep->isVirtual();
         });
     }
 
