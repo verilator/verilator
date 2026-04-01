@@ -166,6 +166,7 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
+    size_t m_nTemps = 0;  // Number of temporary variables created
 
     // STATIC STATE
     static V3DebugBisect s_debugBisect;  // Debug aid
@@ -1248,14 +1249,11 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // Sel from a partial variable or narrowed vertex
-        {
-            DfgSplicePacked* splicep = fromp->cast<DfgSplicePacked>();
-            if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
+        // Sel from a partial temporary (including narrowed vertex)
+        if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
+            if (varp->tmpForp() && varp->srcp()) {
                 // Must be a splice, otherwise it would have been inlined
-                if (varp->tmpForp() && varp->srcp()) splicep = varp->srcp()->as<DfgSplicePacked>();
-            }
-            if (splicep) {
+                DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
                 DfgVertex* driverp = nullptr;
                 uint32_t driverLsb = 0;
                 splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
@@ -1861,11 +1859,21 @@ class V3DfgPeephole final : public DfgVisitor {
 
                     // Need to insert via a partial splice to avoid infinite matching,
                     // this splice will be eliminated on later visits to its sinks.
-                    const DfgVertex::ScopeCache scopeCache;
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
-                    sp->addDriver(catp, lsb, flp);
                     m_vInfo[sp].m_id = ++m_lastId;
-                    replace(sp);
+                    sp->addDriver(catp, lsb, flp);
+                    AstScope* const scopep = [&]() -> AstScope* {
+                        if (m_dfg.modulep()) return nullptr;
+                        DfgVertex::ScopeCache scopeCache;
+                        return vtxp->scopep(scopeCache, true);
+                    }();
+                    const std::string name = m_dfg.makeUniqueName("PeepholeNarrow", m_nTemps++);
+                    DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
+                    varp->tmpForp(varp->nodep());
+                    m_vInfo[varp].m_id = ++m_lastId;
+                    varp->varp()->isInternal(true);
+                    varp->srcp(sp);
+                    replace(varp);
                     return;
                 }
             }
