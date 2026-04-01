@@ -635,7 +635,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             } else if (v3Global.opt.fourstate()
                        && (varp->fourStateComplement() || varp->isFourStateComplement())) {
                 V3Number xNum{varp->fileline(), varp->width(), 0};
-                xNum.setAllBits1();
+                if (varp->isFourStateComplement() || !varp->varType().isNet()) xNum.setAllBits1();
                 out += " = ";
                 out += xNum.emitC();
                 out += ";\n";

@@ -34,7 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 /* TODOs:
  *  - Rest of operators
- *  - Short-circuiting
  *  - Statements - cases etc.
  *  - split asswignw into multiple statements
  */

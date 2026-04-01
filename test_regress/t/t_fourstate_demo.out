@@ -1,3 +1,8 @@
+res: x
+res: x
+res: 1
+res: 1
+res: 0
       ZERO       | ONE        | X          | Z      
 ZERO  0 ^ 0 == 0 | 0 ^ 1 == 1 | 0 ^ x == x | 0 ^ z == x |
 ONE   1 ^ 0 == 1 | 1 ^ 1 == 0 | 1 ^ x == x | 1 ^ z == x |
@@ -6,10 +11,11 @@ Z     z ^ 0 == x | z ^ 1 == x | z ^ x == x | z ^ z == x |
 x wire: 1
 z wor: 1
 u triand: 1
-t wire: x
+t wire: 1
 x wire: 1
 z wor: 1
 u triand: 1
-t wire: x
+t wire: 1
+vvv: x
 Bye
 *-* All Finished *-*
