@@ -697,7 +697,7 @@ class GateInline final {
 
             // Only inline arrays if a simple variable
             if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!VN_IS(substp, NodeVarRef))  continue;
+                if (!VN_IS(substp, NodeVarRef)) continue;
             }
 
             // Process it
