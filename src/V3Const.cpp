@@ -1630,6 +1630,9 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
+        // Must not create an expression with unpacked array type
+        if (VN_IS(thensp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        if (VN_IS(elsesp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
         // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
         return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
