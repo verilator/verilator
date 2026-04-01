@@ -312,6 +312,11 @@ public:
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
     void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
+
+    // Set trigger bit at 'index' when vscp's value changes from previous evaluation.
+    // Creates a prev variable: trigger[bit] = (vscp != prev); prev = vscp
+    void addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
+                                         AstVarScope* vscp, uint32_t index) const;
 };
 
 // Everything needed for combining timing with static scheduling.
@@ -348,37 +353,27 @@ public:
 };
 
 class VirtIfaceTriggers final {
-    // Represents a specific member in a virtual interface
-    struct IfaceMember final {
+public:
+    // One entry per VarScope of an interface member that may be written through a virtual
+    // interface. Each gets its own extra trigger bit with value-change detection.
+    struct TriggerEntry final {
         const AstIface* m_ifacep;  // Interface type
-        const AstVar* m_memberp;  // Member variable
-
-        // TODO: sorting by pointer is non-deterministic
-        bool operator<(const IfaceMember& other) const {
-            if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
-            return m_memberp < other.m_memberp;
-        }
+        const AstVar* m_memberp;  // Member variable in the interface definition
+        AstVarScope* m_vscp;  // VarScope to monitor
     };
 
-public:
-    using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
+    std::vector<TriggerEntry> m_triggers;
 
-    std::vector<std::pair<IfaceMember, AstVarScope*>> m_memberTriggers;
-
-    void addMemberTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
-        m_memberTriggers.emplace_back(IfaceMember{ifacep, memberp}, vscp);
+    void addTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
+        m_triggers.push_back(TriggerEntry{ifacep, memberp, vscp});
     }
 
-    AstVarScope* findMemberTrigger(const AstIface* ifacep, const AstVar* memberp) const {
-        for (const auto& pair : m_memberTriggers) {
-            const IfaceMember& item = pair.first;
-            if (item.m_ifacep == ifacep && item.m_memberp == memberp) return pair.second;
-        }
-        return nullptr;
-    }
-
-    IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
-                                           AstVarScope* trigVscp) const;
+    // Maps each triggered VarScope to its AstSenTree. findTriggeredIface() uses this
+    // to look up triggers -- by specific VarScope for non-virtual reads, or by iterating
+    // all entries of the same interface type for virtual interface reads.
+    using VscpSensMap = std::map<const AstVarScope*, AstSenTree*>;
+    VscpSensMap makeVscpToSensMap(const TriggerKit& trigKit, uint32_t firstIndex,
+                                  AstVarScope* trigVscp) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;

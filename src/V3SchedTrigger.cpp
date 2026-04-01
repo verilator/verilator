@@ -426,6 +426,91 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     m_compVecp->addStmtsp(setp);
 }
 
+// Value-change detection for a single interface member VarScope written through a VIF.
+// Creates: trigger[bit] = (vscp != prev); prev = vscp;
+void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
+                                                 AstVarScope* instVscp, uint32_t index) const {
+    index += m_nSenseWords * WORD_SIZE;
+    const uint32_t wordIndex = index / WORD_SIZE;
+    const uint32_t bitIndex = index % WORD_SIZE;
+
+    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    FileLine* const flp = netlistp->fileline();
+    AstNodeDType* const dtypep = instVscp->dtypep()->skipRefp();
+
+    // Reject types that do not support value-change comparison
+    if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
+        if (bdtypep->isEvent() || bdtypep->isString()
+            || bdtypep->keyword() == VBasicDTypeKwd::CHANDLE) {
+            instVscp->v3warn(E_UNSUPPORTED, "Unsupported: virtual interface trigger on "
+                                                << dtypep->prettyDTypeNameQ() << " type");
+            return;
+        }
+    } else if (!VN_IS(dtypep, PackArrayDType) && !VN_IS(dtypep, UnpackArrayDType)
+               && !VN_IS(dtypep, NodeUOrStructDType) && !VN_IS(dtypep, ClassRefDType)) {
+        instVscp->v3warn(E_UNSUPPORTED, "Unsupported: virtual interface trigger on "
+                                            << dtypep->prettyDTypeNameQ() << " type");
+        return;
+    }
+
+    const auto rdInst = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::READ}; };
+    const auto wrPrev = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::WRITE}; };
+    const auto rdPrev = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::READ}; };
+
+    // Create prev variable
+    const std::string prevName = "__Vtrigprevvif_" + m_name + "_"
+                                 + instVscp->scopep()->nameDotless() + "__"
+                                 + instVscp->varp()->name();
+    AstVarScope* const prevVscp = scopeTopp->createTemp(prevName, instVscp->dtypep());
+
+    // Initialize prev = inst
+    if (VN_IS(dtypep, UnpackArrayDType)) {
+        AstCMethodHard* const cmhp = new AstCMethodHard{
+            flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
+        cmhp->dtypeSetVoid();
+        initFuncp->addStmtsp(cmhp->makeStmt());
+    } else {
+        initFuncp->addStmtsp(new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)});
+    }
+
+    // Build comparison: inst != prev
+    AstNodeExpr* neqp;
+    if (VN_IS(dtypep, UnpackArrayDType)) {
+        AstCMethodHard* const cmhp
+            = new AstCMethodHard{flp, rdPrev(prevVscp), VCMethod::UNPACKED_NEQ, rdInst(instVscp)};
+        cmhp->dtypeSetBit();
+        neqp = cmhp;
+    } else {
+        neqp = new AstNeq{flp, rdInst(instVscp), rdPrev(prevVscp)};
+    }
+
+    // Build post-update: prev = inst
+    AstNode* updp;
+    if (VN_IS(dtypep, UnpackArrayDType)) {
+        AstCMethodHard* const cmhp = new AstCMethodHard{
+            flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
+        cmhp->dtypeSetVoid();
+        updp = cmhp->makeStmt();
+    } else {
+        updp = new AstAssign{flp, wrPrev(prevVscp), rdInst(instVscp)};
+    }
+
+    // Set trigger bit
+    AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
+    AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
+    AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
+    AstNode* const setp = new AstAssign{flp, trigLhsp, neqp};
+
+    // Chain: set trigger bit -> update prev
+    setp->addNext(updp);
+
+    // Prepend before existing statements
+    if (AstNode* const nodep = m_compVecp->stmtsp()) {
+        setp->addNext(setp, nodep->unlinkFrBackWithNext());
+    }
+    m_compVecp->addStmtsp(setp);
+}
+
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
                        std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
