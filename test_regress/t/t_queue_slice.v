@@ -84,6 +84,11 @@ module t;
     q = {q, q};
     `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"}");
 
+    q = {"a"};
+    q = q[1:$];
+    i = q.size();
+    `checkh(i, 0);
+
     begin
       static string ai[$] = '{"Foo", "Bar"};
       q = ai;  // Copy
