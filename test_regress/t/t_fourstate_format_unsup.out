@@ -1,0 +1,19 @@
+%Warning-LOGICCAST: t/t_fourstate_format.v:10:20: Using four-state values in formatting strings is not supported yet - all four-state values will be implicitly casted to two-state
+                                                : ... note: In instance 't'
+   10 |     $write("%d\n", v);
+      |                    ^
+                    ... For warning description see https://verilator.org/warn/LOGICCAST?v=latest
+                    ... Use "/* verilator lint_off LOGICCAST */" and lint_on around source to disable this message.
+%Warning-LOGICCAST: t/t_fourstate_format.v:12:20: Using four-state values in formatting strings is not supported yet - all four-state values will be implicitly casted to two-state
+                                                : ... note: In instance 't'
+   12 |     $write("%d\n", v);
+      |                    ^
+%Warning-LOGICCAST: t/t_fourstate_format.v:14:20: Using four-state values in formatting strings is not supported yet - all four-state values will be implicitly casted to two-state
+                                                : ... note: In instance 't'
+   14 |     $write("%d\n", v);
+      |                    ^
+%Warning-LOGICCAST: t/t_fourstate_format.v:16:20: Using four-state values in formatting strings is not supported yet - all four-state values will be implicitly casted to two-state
+                                                : ... note: In instance 't'
+   16 |     $write("%d\n", v);
+      |                    ^
+%Error: Exiting due to

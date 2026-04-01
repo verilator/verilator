@@ -1395,6 +1395,22 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstSFormatF* const nodep) override {
+        for (AstNodeExpr* exprp = nodep->exprsp(); exprp;
+             exprp = VN_AS(exprp->nextp(), NodeExpr)) {
+            if (isFourstate(exprp)) {
+                exprp->v3warn(LOGICCAST,
+                              "Using four-state values in formatting strings is not supported yet "
+                              "- all four-state values will be implicitly casted to two-state");
+                AstNodeExpr* const newp = getTwoStateCast(exprp);
+                exprp->replaceWith(newp);
+                exprp->deleteTree();
+                exprp = newp;
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstCell* const nodep) override {
         VL_RESTORER(m_currentPinp);
         m_currentPinp = nodep->modp()->stmtsp();
