@@ -38,8 +38,7 @@ class DfgRegularize final {
     // For all operation vetices, if they drive multiple variables, pick
     // a "canonical" one and uninline the logic through that variable.
     void uninlineVariables() {
-        // Const vertices we can just emit as drivers to multiple sinks
-        // directly. Variable vertices, would have been inlined if equivalent,
+        // Variable vertices, would have been inlined if equivalent,
         // so no need to process them here, they are where they must be.
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             // Don't process LValue operations
@@ -54,6 +53,26 @@ class DfgRegularize final {
             varp->srcp(nullptr);
             vtx.replaceWith(varp);
             varp->srcp(&vtx);
+        }
+
+        // Const vertices driving an Ast reference can only be inlined in scoped
+        // mode as some algorithms assume VarRefs in certain places.
+        if (m_dfg.modulep()) {
+            for (DfgConst& vtx : m_dfg.constVertices()) {
+                const bool drivesAstRef = vtx.foreachSink([](const DfgVertex& dst) {  //
+                    return dst.is<DfgAstRd>();
+                });
+                if (!drivesAstRef) continue;
+
+                // The prefered result variable is the canonical one if exists
+                DfgVertexVar* const varp = vtx.getResultVar();
+                if (!varp) continue;
+
+                // Relink all other sinks reading this vertex to read 'varp'
+                varp->srcp(nullptr);
+                vtx.replaceWith(varp);
+                varp->srcp(&vtx);
+            }
         }
     }
 
@@ -72,72 +91,53 @@ class DfgRegularize final {
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
             // There is only one Dfg when running this pass
             UASSERT_OBJ(!varp->hasDfgRefs(), varp, "Should not have refs in other DfgGraph");
-            if (varp->hasModRefs()) return false;
+            if (varp->hasModWrRefs()) return false;
             if (varp->hasExtRefs()) return false;
         }
         return true;
     }
 
-    // Given a variable and its driver, return true iff the variable can be
-    // replaced with its driver. Record replacement to be applied in the Ast
-    // in user2p of the replaced variable.
-    bool replaceable(DfgVertexVar* varp, DfgVertex* srcp) {
-        // The given variable has no external references, and is read in the module
+    // Predicate to determine if a temporary should be inserted or if a variable
+    // should be preserved. The given vertices are either the same, or aVtxp is
+    // the sole driver of bVtx, or aVtxp is cheaper to recompute and might have
+    // multiple sinks. In either case, bVtx can be used to check sinks, and aVtx
+    // can be used to check the operation.
+    bool needsTemporary(DfgVertex& aVtx, DfgVertex& bVtx) {
+        UASSERT_OBJ(&aVtx == &bVtx || aVtx.isCheaperThanLoad() || aVtx.singleSink() == &bVtx,
+                    &aVtx, "Mismatched vertices");
+        UASSERT_OBJ(!aVtx.is<DfgVertexVar>(), &aVtx, "Should be an operation vertex");
 
-        // Make sure we are not trying to double replace something
-        AstNode* const nodep = varp->nodep();
-        UASSERT_OBJ(!nodep->user2p(), nodep, "Replacement already exists");
+        if (bVtx.hasMultipleSinks()) {
+            // We are not inlining expressions prior to the final scoped run
+            if (m_dfg.modulep()) return true;
 
-        // If it is driven from another variable, it can be replaced by that variable.
-        if (const DfgVarPacked* const drvp = srcp->cast<DfgVarPacked>()) {
-            // Record replacement
-            nodep->user2p(drvp->nodep());
-            // The replacement will be read in the module, mark as such so it doesn't get removed.
-            drvp->setHasModRdRefs();
-            drvp->varp()->propagateAttrFrom(varp->varp());
-            return true;
+            // Add a temporary if it's cheaper to store and load from memory than recompute
+            if (!aVtx.isCheaperThanLoad()) return true;
+
+            // Not adding temporary
+            return false;
         }
 
-        // Expressions can only be inlined after V3Scope, as some passes assume variables.
-        if (m_dfg.modulep()) return false;
+        DfgVertex& sink = *bVtx.singleSink();
 
-        // If it is driven from a constant, it can be replaced by that constant.
-        if (const DfgConst* const constp = srcp->cast<DfgConst>()) {
-            // Need to create the AstConst
-            AstConst* const newp = new AstConst{constp->fileline(), constp->num()};
-            m_deleter.pushDeletep(newp);
-            // Record replacement
-            nodep->user2p(newp);
-            return true;
+        // No need to add a temporary if the single sink is a variable already
+        if (sink.is<DfgVertexVar>()) return false;
+
+        // Do not inline expressions prior to the final scoped run, or if they are in a loop
+        if (const DfgAstRd* const astRdp = sink.cast<DfgAstRd>()) {
+            return m_dfg.modulep() || astRdp->inLoop();
         }
 
-        // Don't replace
+        // Make sure roots of wide concatenation trees are written to variables,
+        // this enables V3FuncOpt to split them which can be a big speed gain
+        // without expanding them.
+        if (aVtx.is<DfgConcat>()) {
+            if (sink.is<DfgConcat>()) return false;  // Not root of tree
+            return VL_WORDS_I(static_cast<int>(aVtx.width())) > v3Global.opt.expandLimit();
+        }
+
+        // No need for a temporary otherwise
         return false;
-    }
-
-    template <bool T_Scoped>
-    static void applyReplacement(AstVarRef* refp) {
-        AstNode* const tgtp = T_Scoped ? static_cast<AstNode*>(refp->varScopep())
-                                       : static_cast<AstNode*>(refp->varp());
-        AstNode* replacementp = tgtp;
-        while (AstNode* const altp = replacementp->user2p()) replacementp = altp;
-        if (replacementp == tgtp) return;
-        UASSERT_OBJ(refp->access().isReadOnly(), refp, "Replacing write AstVarRef");
-        // If it's an inlined expression, repalce the VarRef entirely
-        if (AstNodeExpr* const newp = VN_CAST(replacementp, NodeExpr)) {
-            refp->replaceWith(newp->cloneTreePure(false));
-            VL_DO_DANGLING(refp->deleteTree(), refp);
-            return;
-        }
-        // Otherwise just re-point the VarRef to the new variable
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            AstVarScope* const newp = VN_AS(replacementp, VarScope);
-            refp->varScopep(newp);
-            refp->varp(newp->varp());
-        } else {
-            AstVar* const newp = VN_AS(replacementp, Var);
-            refp->varp(newp);
-        }
     }
 
     void eliminateVars() {
@@ -150,12 +150,9 @@ class DfgRegularize final {
 
         // Add all variables and all vertices with no sinks to the worklist
         m_dfg.forEachVertex([&](DfgVertex& vtx) {
+            if (vtx.is<DfgVertexAst>()) return;
             if (vtx.is<DfgVertexVar>() || !vtx.hasSinks()) workList.push_front(vtx);
         });
-
-        // AstVar::user2p() : AstVar*/AstNodeExpr* -> The replacement variable/expression
-        // AstVarScope::user2p() : AstVarScope*/AstNodeExpr* -> The replacement variable/expression
-        const VNUser2InUse user2InUse;
 
         // Remove vertex, enqueue it's sources
         const auto removeVertex = [&](DfgVertex& vtx) {
@@ -171,9 +168,6 @@ class DfgRegularize final {
             // Remove the unused vertex
             vtx.unlinkDelete(m_dfg);
         };
-
-        // Used to check if we need to apply variable replacements
-        const VDouble0 usedVarsReplacedBefore = m_ctx.m_usedVarsReplaced;
 
         // Process the work list
         workList.foreach([&](DfgVertex& vtx) {
@@ -192,8 +186,6 @@ class DfgRegularize final {
             DfgVertex* const srcp = varp->srcp();
             if (!srcp) return;
 
-            // If it has multiple sinks, it can't be eliminated - would increase logic size
-            if (varp->hasMultipleSinks()) return;
             // Can't eliminate if referenced external to the module - can't replace those refs
             if (varp->hasExtRefs()) return;
             // Can't eliminate if written in the module - the write needs to go somewhere, and
@@ -202,50 +194,24 @@ class DfgRegularize final {
             // There is only one Dfg when running this pass
             UASSERT_OBJ(!varp->hasDfgRefs(), varp, "Should not have refs in other DfgGraph");
 
-            // At this point, the variable is used, driven only in this Dfg,
-            // it has exactly 0 or 1 sinks in this Dfg, and might be read in
-            // the host module, but no other references exist.
-
             // Do not eliminate circular variables - need to preserve UNOPTFLAT traces
             if (circularVariables.count(varp)) return;
 
-            // If it is not read in the module, it can be inlined into the
-            // Dfg unless partially driven (the partial driver network
-            // can't be fed into arbitrary logic. TODO: we should peeophole
-            // these away entirely).
-            if (!varp->hasModRdRefs()) {
-                UASSERT_OBJ(varp->hasSinks(), varp, "Shouldn't have made it here without sinks");
-                // Don't inline if partially driven
-                if (varp->defaultp()) return;
-                if (srcp->is<DfgVertexSplice>()) return;
-                if (srcp->is<DfgUnitArray>()) return;
-                // Inline this variable into its single sink
-                ++m_ctx.m_usedVarsInlined;
-                varp->replaceWith(varp->srcp());
-                removeVertex(*varp);
-                return;
-            }
+            // Do not inline if partially driven (the partial driver network can't be fed into
+            // arbitrary logic. TODO: we should peeophole these away entirely)
+            if (varp->defaultp()) return;
+            if (srcp->is<DfgVertexSplice>()) return;
+            if (srcp->is<DfgUnitArray>()) return;
 
-            // The varable is read in the module. We might still be able to replace it.
-            if (replaceable(varp, srcp)) {
-                // Replace this variable with its driver
-                ++m_ctx.m_usedVarsReplaced;
-                // Inline it if it has a sink
-                if (varp->hasSinks()) varp->replaceWith(srcp);
-                // Delete the repalced variabel
-                removeVertex(*varp);
-            }
+            // Do not eliminate variables that are driven from a vertex that needs a temporary
+            if (!srcp->is<DfgVertexVar>() && needsTemporary(*srcp, *varp)) return;
+
+            // Inline this variable into its single sink
+            ++m_ctx.m_usedVarsInlined;
+            varp->replaceWith(varp->srcp());
+            removeVertex(*varp);
+            return;
         });
-
-        // Job done if no replacements need to be applied
-        if (m_ctx.m_usedVarsReplaced == usedVarsReplacedBefore) return;
-
-        // Apply variable replacements
-        if (AstModule* const modp = m_dfg.modulep()) {
-            modp->foreach([](AstVarRef* refp) { applyReplacement<false>(refp); });
-        } else {
-            v3Global.rootp()->foreach([](AstVarRef* refp) { applyReplacement<true>(refp); });
-        }
     }
 
     void insertTemporaries() {
@@ -257,32 +223,19 @@ class DfgRegularize final {
 
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            // LValue vertices feed into variables eventually and need not temporaries
+            // LValue vertices feed into variables eventually and need no temporaries
             if (vtx.is<DfgVertexSplice>()) continue;
             if (vtx.is<DfgUnitArray>()) continue;
 
-            // If this Vertex was driving a variable, 'unlinline' would have
-            // made that the single sink, so if there are multiple sinks
-            // remaining, they must be non-variables. So nothing to do if:
-            if (!vtx.hasMultipleSinks()) continue;
-
-            // 'uninline' would have made the result var cannonical, so there shouldn't be one
-            UASSERT_OBJ(!vtx.getResultVar(), &vtx, "Failed to uninline variable");
-
-            // Do not add a temporary if it's cheaper to re-compute than to
-            // load it from memory. This also increases available parallelism.
-            if (vtx.isCheaperThanLoad()) {
-                ++m_ctx.m_temporariesOmitted;
-                continue;
-            }
+            if (!needsTemporary(vtx, vtx)) continue;
 
             // Need to create an intermediate variable
+            ++m_ctx.m_temporariesIntroduced;
             const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
             FileLine* const flp = vtx.fileline();
             AstScope* const scopep = scoped ? vtx.scopep(scopeCache) : nullptr;
             DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtype(), scopep);
             ++m_nTmps;
-            ++m_ctx.m_temporariesIntroduced;
             // Replace vertex with the variable, make it drive the variable
             vtx.replaceWith(newp);
             newp->srcp(&vtx);

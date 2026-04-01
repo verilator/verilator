@@ -492,9 +492,12 @@ public:
             return false;
         }
         // For now, only direct array assignment is supported (e.g. a = b, but not a = _ ? b : c)
-        if (rDtypep->isArray() && !VN_IS(rhsp, VarRef)) {
-            ++m_ctx.m_conv.nonRepDType;
-            return false;
+        if (rDtypep->isArray()) {
+            if (!VN_IS(rhsp, VarRef)
+                || !lhsp->dtypep()->skipRefp()->sameTree(rhsp->dtypep()->skipRefp())) {
+                ++m_ctx.m_conv.nonRepDType;
+                return false;
+            }
         }
         // Widths should match at this point
         UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Mismatched width reached DFG");
@@ -1746,10 +1749,15 @@ class AstToDfgSynthesize final {
             if (logicp->selectedForSynthesis()) continue;
             // There should be no sinks left for unselected DfgLogic, delete them here
             UASSERT_OBJ(!logicp->hasSinks(), vtxp, "Unselected 'DfgLogic' with sinks remaining");
-            // Input variables will be read in Ast code, mark as such
+            // Input variables will be read in Ast code, add Ast reference vertices
+            // AstVar/AstVarScope::user4p() -> corresponding DfgVertexVar* in the graph
+            const VNUser4InUse m_user4InUse;
             logicp->foreachSource([](DfgVertex& src) {
-                src.as<DfgVertexVar>()->setHasModRdRefs();
+                src.as<DfgVertexVar>()->nodep()->user4p(&src);
                 return false;
+            });
+            V3DfgPasses::addAstRefs(m_dfg, logicp->nodep(), [](AstNode* varp) {  //
+                return varp->user4u().to<DfgVertexVar*>();
             });
             VL_DO_DANGLING(logicp->unlinkDelete(m_dfg), logicp);
         }
@@ -1856,11 +1864,16 @@ class AstToDfgSynthesize final {
                 // If synthesized, delete the corresponding AstNode. It is now in Dfg.
                 logicp->nodep()->unlinkFrBack()->deleteTree();
             } else {
-                // Not synthesized. Logic stays in Ast. Mark source  variables
-                //as read in module. Outputs already marked by revertTransivelyAndRemove.
-                logicp->foreachSource([](DfgVertex& src) {  //
-                    src.as<DfgVertexVar>()->setHasModRdRefs();
+                // Not synthesized. Logic stays in Ast. Add Ast reference vertices.
+                // Outputs already marked by revertTransivelyAndRemove.
+                // AstVar/AstVarScope::user4p() -> corresponding DfgVertexVar* in the graph
+                const VNUser4InUse m_user4InUse;
+                logicp->foreachSource([](DfgVertex& src) {
+                    src.as<DfgVertexVar>()->nodep()->user4p(&src);
                     return false;
+                });
+                V3DfgPasses::addAstRefs(m_dfg, logicp->nodep(), [](AstNode* varp) {  //
+                    return varp->user4u().to<DfgVertexVar*>();
                 });
             }
 

@@ -268,8 +268,10 @@ class DfgToAstVisitor final : DfgVisitor {
         , m_ctx{ctx} {
         if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
 
-        // Convert the graph back to combinational assignments
-        // The graph must have been regularized, so we only need to render assignments
+        // Convert the graph back to combinational assignments. The graph must have been
+        // regularized, so we only need to render variable assignments and update Ast references.
+
+        // Render variable assignments
         for (DfgVertexVar& vtx : dfg.varVertices()) {
             // If there is no driver (this vertex is an input to the graph), then nothing to do.
             if (!vtx.srcp()) {
@@ -308,6 +310,30 @@ class DfgToAstVisitor final : DfgVisitor {
 
             // convetDriver always clones lhsp
             VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        }
+
+        // Update Ast References
+        for (DfgVertexAst& vtx : dfg.astVertices()) {
+            if (DfgAstRd* const rVtxp = vtx.cast<DfgAstRd>()) {
+                // Render the driver
+                AstNodeExpr* const exprp = convertDfgVertexToAstNodeExpr(rVtxp->srcp());
+                // If it's the same as the reference, do not repalce it so FileLines are preserved
+                if (exprp->sameTree(rVtxp->exprp())) {
+                    VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                    continue;
+                }
+                // Replace the reference with the expression
+                if (VN_IS(exprp, VarRef)) {
+                    ++m_ctx.m_varRefsSubstituted;
+                } else {
+                    UASSERT_OBJ(!dfg.modulep(), &vtx,
+                                "Expressions should only be inlined on final scoped run");
+                    ++m_ctx.m_expressionsInlined;
+                }
+                rVtxp->exprp()->replaceWith(exprp);
+                rVtxp->exprp()->deleteTree();
+                rVtxp->exprp(exprp);
+            }
         }
     }
 
