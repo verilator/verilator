@@ -549,6 +549,9 @@ public:
     // Returns the set of vertices in the downstream cones of the given vertices
     std::unique_ptr<std::unordered_set<const DfgVertex*>>
     sinkCone(const std::vector<const DfgVertex*>&) const VL_MT_DISABLED;
+    // Returns the set of vertices within an 'n' hop neighborhood of the given vertices
+    std::unique_ptr<std::unordered_set<const DfgVertex*>>
+    neighborhood(const std::vector<const DfgVertex*>&, size_t n) const VL_MT_DISABLED;
 };
 
 namespace V3Dfg {
