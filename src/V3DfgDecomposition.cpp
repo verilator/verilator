@@ -22,9 +22,7 @@
 
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
-#include "V3File.h"
 
-#include <deque>
 #include <unordered_map>
 #include <vector>
 
@@ -103,7 +101,7 @@ class SplitIntoComponents final {
         // Allocate the component graphs
         m_components.resize(m_componentCounter - 1);
         for (size_t i = 1; i < m_componentCounter; ++i) {
-            m_components[i - 1].reset(new DfgGraph{m_dfg.modulep(), m_prefix + cvtToStr(i - 1)});
+            m_components[i - 1].reset(new DfgGraph{m_prefix + cvtToStr(i - 1)});
         }
         // Move the vertices to the component graphs
         moveVertices(m_dfg.varVertices());
@@ -222,17 +220,9 @@ class ExtractCyclicComponents final {
         DfgVertexVar*& clonep = m_clones[&vtx][component];
         if (!clonep) {
             if (DfgVarPacked* const pVtxp = vtx.cast<DfgVarPacked>()) {
-                if (AstVarScope* const vscp = pVtxp->varScopep()) {
-                    clonep = new DfgVarPacked{m_dfg, vscp};
-                } else {
-                    clonep = new DfgVarPacked{m_dfg, pVtxp->varp()};
-                }
+                clonep = new DfgVarPacked{m_dfg, pVtxp->vscp()};
             } else if (DfgVarArray* const aVtxp = vtx.cast<DfgVarArray>()) {
-                if (AstVarScope* const vscp = aVtxp->varScopep()) {
-                    clonep = new DfgVarArray{m_dfg, vscp};
-                } else {
-                    clonep = new DfgVarArray{m_dfg, aVtxp->varp()};
-                }
+                clonep = new DfgVarArray{m_dfg, aVtxp->vscp()};
             }
             UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
             m_component[clonep] = component;
@@ -326,7 +316,7 @@ class ExtractCyclicComponents final {
         // Allocate result graphs
         m_components.resize(nComponents);
         for (uint32_t i = 0; i < nComponents; ++i) {
-            m_components[i].reset(new DfgGraph{m_dfg.modulep(), m_prefix + cvtToStr(i)});
+            m_components[i].reset(new DfgGraph{m_prefix + cvtToStr(i)});
         }
 
         // Fix up edges crossing components (we can only do this at variable boundaries, and the

@@ -26,6 +26,7 @@
 #include "V3Const.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
+#include "V3Error.h"
 #include "V3Graph.h"
 #include "V3UniqueNames.h"
 
@@ -255,84 +256,39 @@ class DataflowOptimize final {
 
     // STATE
     V3DfgContext m_ctx;  // The context holding values that need to persist across multiple graphs
-    const bool m_scoped;  // Running after V3Scope
 
     void endOfStage(const std::string& name, const DfgGraph* dfgp = nullptr) {
         // Dump the graph for debugging if given one
-        if (VL_UNLIKELY(dumpDfgLevel() >= 8 && dfgp)) {
-            dfgp->dumpDotFilePrefixed(m_ctx.prefix() + name);
-        }
+        if (VL_UNLIKELY(dumpDfgLevel() >= 8 && dfgp)) dfgp->dumpDotFilePrefixed(name);
         // Dump stage stats only in scoped mode when running on the whole netlist
-        if (VL_UNLIKELY(v3Global.opt.stats() && m_scoped)) {
-            V3Stats::statsStage("dfg-optimize-" + name);
-        }
+        if (VL_UNLIKELY(v3Global.opt.stats())) V3Stats::statsStage("dfg-optimize-" + name);
     }
 
     // Mark variables with external references
     void markExternallyReferencedVariables(AstNetlist* netlistp) {
-        netlistp->foreach([this](AstNode* nodep) {
+        netlistp->foreach([](AstNode* nodep) {
             // Check variable flags
-            if (m_scoped) {
-                if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
-                    const AstVar* const varp = vscp->varp();
-                    // Force and trace have already been processed
-                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
-                    const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic();
-                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
-                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
-                    return;
-                }
-                // Check direct references
-                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varScopep());
-                    UASSERT_OBJ(!refp->classOrPackagep(), refp, "V3Scope should have removed");
-                    return;
-                }
-            } else {
-                if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic()  //
-                                          || varp->isForced() || varp->isTrace();
-                    const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic()  //
-                                          || varp->isForced();
-                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(varp);
-                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(varp);
-                    return;
-                }
-                // Check direct references
-                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-                    AstVar* const varp = refp->varp();
-                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(varp);
-                    // With classOrPackagep set this is a disguised hierarchical reference, mark
-                    if (refp->classOrPackagep()) {
-                        if (refp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(varp);
-                        if (refp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(varp);
-                    }
-                    return;
-                }
-            }
-
-            // Check hierarchical references
-            if (const AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
-                AstVar* const tgtp = xrefp->varp();
-                if (!tgtp) return;
-                if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(tgtp);
-                if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(tgtp);
-                if (xrefp->access().isRW()) DfgVertexVar::setHasRWRefs(tgtp);
+            if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
+                const AstVar* const varp = vscp->varp();
+                // Force and trace have already been processed
+                const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
+                const bool hasExtWr
+                    = (varp->isPrimaryIO() && varp->isNonOutput()) || varp->isSigUserRWPublic();
+                if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
+                if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
                 return;
             }
+            // Check references
+            if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varScopep());
+                UASSERT_OBJ(!refp->classOrPackagep(), refp, "V3Scope should have removed");
+                return;
+            }
+            UASSERT_OBJ(!VN_IS(nodep, VarXRef), nodep, "V3Scope should have removed");
             // Check cell ports
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
-                for (const AstPin *pinp = cellp->pinsp(), *nextp; pinp; pinp = nextp) {
-                    nextp = VN_AS(pinp->nextp(), Pin);
-                    AstVar* const tgtp = pinp->modVarp();
-                    if (!tgtp) return;
-                    const VDirection dir = tgtp->direction();
-                    // hasExtRd/hasExtWr from perspective of Pin
-                    const bool hasExtRd = dir == VDirection::OUTPUT || dir.isInoutOrRef();
-                    const bool hasExtWr = dir == VDirection::INPUT || dir.isInoutOrRef();
-                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(tgtp);
-                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(tgtp);
-                }
+                // Why does this not hold?
+                UASSERT_OBJ(true || !cellp->pinsp(), cellp, "Pins should have been lowered");
                 return;
             }
         });
@@ -415,9 +371,7 @@ class DataflowOptimize final {
         }
     }
 
-    DataflowOptimize(AstNetlist* netlistp, const string& label)
-        : m_ctx{label}
-        , m_scoped{!!netlistp->topScopep()} {
+    DataflowOptimize(AstNetlist* netlistp) {
 
         // Mark interfaces that might be referenced by a virtual interface
         if (v3Global.hasVirtIfaces()) {
@@ -430,51 +384,29 @@ class DataflowOptimize final {
         // Mark variables with external references
         markExternallyReferencedVariables(netlistp);
 
-        if (!m_scoped) {
-            // Pre V3Scope application. Run on each module separately.
-            for (AstNode* nodep = netlistp->modulesp(); nodep; nodep = nodep->nextp()) {
-                // Only optimize proper modules
-                AstModule* const modp = VN_CAST(nodep, Module);
-                if (!modp) continue;
-                // Pre V3Scope application. Run on module.
-                UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'");
-                ++m_ctx.m_modules;
-                // Build the DFG of this module or netlist
-                const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*modp, m_ctx);
-                endOfStage("ast-to-dfg", dfgp.get());
-                // Actually process the graph
-                optimize(*dfgp);
-                // Convert back to Ast
-                V3DfgPasses::dfgToAst(*dfgp, m_ctx);
-                endOfStage("dfg-to-ast", dfgp.get());
-            }
-        } else {
-            // Post V3Scope application. Run on whole netlist.
-            UINFO(4, "Applying DFG optimization to entire netlist");
-            // Build the DFG of the entire netlist
-            const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*netlistp, m_ctx);
-            endOfStage("ast-to-dfg", dfgp.get());
-            // Actually process the graph
-            optimize(*dfgp);
-            // Convert back to Ast
-            V3DfgPasses::dfgToAst(*dfgp, m_ctx);
-            endOfStage("dfg-to-ast", dfgp.get());
-            // Some sentrees might have become constant, remove them
-            removeNeverActives(netlistp);
-        }
+        // Post V3Scope application. Run on whole netlist.
+        UINFO(4, "Applying DFG optimization to entire netlist");
+        // Build the DFG of the entire netlist
+        const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*netlistp, m_ctx);
+        endOfStage("ast-to-dfg", dfgp.get());
+        // Actually process the graph
+        optimize(*dfgp);
+        // Convert back to Ast
+        V3DfgPasses::dfgToAst(*dfgp, m_ctx);
+        endOfStage("dfg-to-ast", dfgp.get());
+        // Some sentrees might have become constant, remove them
+        removeNeverActives(netlistp);
 
         // Reset interned types so the corresponding Ast types can be garbage collected
         DfgDataType::reset();
     }
 
 public:
-    static void apply(AstNetlist* netlistp, const string& label) {
-        DataflowOptimize{netlistp, label};
-    }
+    static void apply(AstNetlist* netlistp) { DataflowOptimize{netlistp}; }
 };
 
-void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
+void V3DfgOptimizer::optimize(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ":");
-    DataflowOptimize::apply(netlistp, label);
+    DataflowOptimize::apply(netlistp);
     V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -38,47 +38,17 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3Ast.h"
 #include "V3Dfg.h"
 #include "V3DfgCache.h"
 #include "V3DfgPasses.h"
 #include "V3DfgPeepholePatterns.h"
-#include "V3Stats.h"
 
 #include <algorithm>
 #include <cctype>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
-
-V3DfgPeepholeContext::V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label)
-    : V3DfgSubContext{ctx, label, "Peephole"} {
-    const auto checkEnabled = [this](VDfgPeepholePattern id) {
-        std::string str{id.ascii()};
-        std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
-            return c == '_' ? '-' : std::tolower(c);
-        });
-        m_enabled[id] = v3Global.opt.fDfgPeepholeEnabled(str);
-    };
-#define OPTIMIZATION_CHECK_ENABLED(id, name) checkEnabled(VDfgPeepholePattern::id);
-    FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_CHECK_ENABLED)
-#undef OPTIMIZATION_CHECK_ENABLED
-}
-
-V3DfgPeepholeContext::~V3DfgPeepholeContext() {
-    for (AstNode* const nodep : m_deleteps) {
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    const auto emitStat = [this](VDfgPeepholePattern id) {
-        std::string str{id.ascii()};
-        std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
-            return c == '_' ? ' ' : std::tolower(c);
-        });
-        addStat(str, m_count[id]);
-    };
-#define OPTIMIZATION_EMIT_STATS(id, name) emitStat(VDfgPeepholePattern::id);
-    FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_EMIT_STATS)
-#undef OPTIMIZATION_EMIT_STATS
-}
 
 // clang-format off
 template <typename T_Reduction>
@@ -250,9 +220,8 @@ class V3DfgPeephole final : public DfgVisitor {
         // to the variable and no references in other graph then delete the Ast var too.
         const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         if (varp && !varp->isVolatile() && !varp->hasDfgRefs()) {
-            AstNode* const nodep = varp->nodep();
+            m_ctx.m_deleteps.push_back(varp->vscp());
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
-            m_ctx.m_deleteps.push_back(nodep);
         } else {
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
         }
@@ -1617,8 +1586,8 @@ class V3DfgPeephole final : public DfgVisitor {
         if (!idxp) return;
         DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
-        if (varp->varp()->isForced()) return;
-        if (varp->varp()->isSigUserRWPublic()) return;
+        if (varp->vscp()->varp()->isForced()) return;
+        if (varp->vscp()->varp()->isSigUserRWPublic()) return;
         DfgVertex* const srcp = varp->srcp();
         if (!srcp) return;
 
@@ -1862,16 +1831,13 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     m_vInfo[sp].m_id = ++m_lastId;
                     sp->addDriver(catp, lsb, flp);
-                    AstScope* const scopep = [&]() -> AstScope* {
-                        if (m_dfg.modulep()) return nullptr;
-                        DfgVertex::ScopeCache scopeCache;
-                        return vtxp->scopep(scopeCache, true);
-                    }();
+                    DfgVertex::ScopeCache scopeCache;
+                    AstScope* const scopep = vtxp->scopep(scopeCache, true);
                     const std::string name = m_dfg.makeUniqueName("PeepholeNarrow", m_nTemps++);
                     DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
-                    varp->tmpForp(varp->nodep());
+                    varp->tmpForp(varp->vscp());
                     m_vInfo[varp].m_id = ++m_lastId;
-                    varp->varp()->isInternal(true);
+                    varp->vscp()->varp()->isInternal(true);
                     varp->srcp(sp);
                     replace(varp);
                     return;
@@ -2591,8 +2557,6 @@ class V3DfgPeephole final : public DfgVisitor {
             if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
                 if (!varp->hasSinks() && !varp->isObserved()) return false;
             }
-            // Keep before final scoped run if feeds an Ast reference
-            if (sink.is<DfgVertexAst>() && m_dfg.modulep()) return true;
             // Keep if found more than one sink
             if (foundOne) return true;
             // Mark first sink found

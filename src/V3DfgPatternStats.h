@@ -28,7 +28,7 @@ class V3DfgPatternStats final {
     static constexpr uint32_t MAX_PATTERN_DEPTH = 4;
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
-    std::map<const AstNode*, std::string> m_internedVars;  // Interned variables
+    std::map<const AstVarScope*, std::string> m_internedVars;  // Interned variables
     std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects
     std::map<uint32_t, std::string> m_internedWordWidths;  // Interned widths
     std::map<uint32_t, std::string> m_internedWideWidths;  // Interned widths
@@ -51,7 +51,7 @@ class V3DfgPatternStats final {
     }
 
     const std::string& internVar(const DfgVertexVar& vtx) {
-        const auto pair = m_internedVars.emplace(vtx.nodep(), "v");
+        const auto pair = m_internedVars.emplace(vtx.vscp(), "v");
         if (pair.second) pair.first->second += toLetters(m_internedVars.size() - 1);
         return pair.first->second;
     }
@@ -167,10 +167,10 @@ public:
         });
     }
 
-    void dump(const std::string& stage, std::ostream& os) {
+    void dump(std::ostream& os) {
         using Line = std::pair<std::string, size_t>;
         for (uint32_t i = MIN_PATTERN_DEPTH; i <= MAX_PATTERN_DEPTH; ++i) {
-            os << "DFG '" << stage << "' patterns with depth " << i << '\n';
+            os << "DFG patterns with depth " << i << '\n';
 
             // Pick up pattern accumulators with given depth
             const auto& patternCounts = m_patterCounts[i];
