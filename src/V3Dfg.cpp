@@ -585,6 +585,34 @@ DfgGraph::sinkCone(const std::vector<const DfgVertex*>& vtxps) const {
     return dfgGraphCollectCone<true>(vtxps);
 }
 
+std::unique_ptr<std::unordered_set<const DfgVertex*>>
+DfgGraph::neighborhood(const std::vector<const DfgVertex*>& vtxps, size_t n) const {
+    // Neighborhood
+    std::vector<const DfgVertex*> vec = vtxps;
+    // Set of already visited vertices
+    std::unordered_set<const DfgVertex*> res{vec.begin(), vec.end()};
+    // Expand neihborhood by 'n' hops
+    size_t begin = 0;
+    size_t end = vec.size();
+    for (size_t hops = 1; hops <= n; ++hops) {
+        for (size_t i = begin; i < end; ++i) {
+            const DfgVertex* const vtxp = vec[i];
+            vtxp->foreachSink([&](const DfgVertex& dst) {
+                if (res.insert(&dst).second) vec.push_back(&dst);
+                return false;
+            });
+            vtxp->foreachSource([&](const DfgVertex& src) {
+                if (res.insert(&src).second) vec.push_back(&src);
+                return false;
+            });
+        }
+        begin = end;
+        end = vec.size();
+    }
+    // Move out the results
+    return std::make_unique<std::unordered_set<const DfgVertex*>>(std::move(res));
+}
+
 //------------------------------------------------------------------------------
 // DfgVertex
 
