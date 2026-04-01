@@ -94,7 +94,7 @@ Verilator 5.047 devel
 * Fix array reduction in constraints crashing with class inheritance (#7226) (#7263). [Yilou Wang]
 * Fix soft cross-object constraint priority inversion (#7228) (#7233). [Yilou Wang]
 * Fix internal error when derived class calls this.randomize() with inherited rand members (#7229) (#7234). [Yilou Wang]
-* Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [Yilou Wang]
+* Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [ ]
 * Fix vpi_put_value release on non-continuous signal (#7231) (#7241). [Christian Hecken]
 * Fix tracing of typedefed 1D packed arrays with --trace-structs (#7237). [Geza Lore, Testorrent USA, Inc.]
 * Fix rand variable used as array index in constraint evaluated as constant (#7238) (#7247). [Yilou Wang]
@@ -113,6 +113,7 @@ Verilator 5.047 devel
 * Fix lost `$stop` on implied assertion `$error` failures.
 * Fix wait() hang when interface uses process calls and VIF function (#7342). [Yilou Wang]
 * Fix error on illegal nand/nor binary operators (#7353).
+* Add error on mixed declaration initialization with continuous assignment (#7352). [Zhi QU]
 
 
 Verilator 5.046 2026-02-28

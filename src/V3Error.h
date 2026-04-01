@@ -95,6 +95,7 @@ public:
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
         CONSTRAINTIGN,  // Constraint ignored
+        CONTASSINIT,    // Continuous assignment versus initialization
         CONTASSREG,     // Continuous assignment on reg
         COVERIGN,       // Coverage ignored
         DECLFILENAME,   // Declaration doesn't match filename
@@ -222,7 +223,7 @@ public:
             "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
             "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
             "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
-            "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
+            "CONTASSINIT", "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
             "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
@@ -263,7 +264,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
+                || m_e == BLKLOOPINIT || m_e == CONTASSINIT || m_e == CONTASSREG
+                || m_e == ENCAPSULATED
                 || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == HIERPARAM
                 || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
                 || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
