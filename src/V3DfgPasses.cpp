@@ -89,14 +89,20 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
     // Finally remove logic from the Dfg if it drives no variables in the graph.
     // These should only be those with side effects.
     for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
-        if (!vtxp->is<DfgLogic>()) continue;
-        if (vtxp->hasSinks()) continue;
-        // Input variables will be read in Ast code, mark as such
-        vtxp->foreachSource([](DfgVertex& src) {
-            src.as<DfgVertexVar>()->setHasModRdRefs();
+        DfgLogic* const logicp = vtxp->cast<DfgLogic>();
+        if (!logicp) continue;
+        if (logicp->hasSinks()) continue;
+        // Input variables will be read in Ast code, add Ast reference vertices
+        // AstVar/AstVarScope::user2p() -> corresponding DfgVertexVar* in the graph
+        const VNUser2InUse m_user2InUse;
+        logicp->foreachSource([](DfgVertex& src) {
+            src.as<DfgVertexVar>()->nodep()->user2p(&src);
             return false;
         });
-        VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+        V3DfgPasses::addAstRefs(dfg, logicp->nodep(), [](AstNode* varp) {  //
+            return varp->user2u().to<DfgVertexVar*>();
+        });
+        VL_DO_DANGLING(logicp->unlinkDelete(dfg), logicp);
         ++ctx.m_logicRemoved;
     }
 }
@@ -319,20 +325,17 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         const DfgDataType& tabDType = DfgDataType::array(bitDType, nBits);
 
         // The index variable
-        AstVar* const idxVarp = [&]() {
-            // If there is an existing result variable, use that, otherwise create a new variable
-            DfgVarPacked* varp = nullptr;
-            if (DfgVertexVar* const vp = srcp->getResultVar()) {
-                varp = vp->as<DfgVarPacked>();
-            } else {
-                const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
-                varp = dfg.makeNewVar(flp, name, idxDType, nullptr)->as<DfgVarPacked>();
-                varp->varp()->isInternal(true);
-                varp->srcp(srcp);
-            }
-            varp->setHasModRdRefs();
-            return varp->varp();
+        DfgVarPacked* idxVtxp = [&]() {
+            // If there is an existing result variable, use that
+            if (DfgVertexVar* const vp = srcp->getResultVar()) return vp->as<DfgVarPacked>();
+            // Otherwise create a new variable
+            const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
+            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, nullptr);
+            vtxp->varp()->isInternal(true);
+            vtxp->srcp(srcp);
+            return vtxp->as<DfgVarPacked>();
         }();
+        AstVar* const idxVarp = idxVtxp->varp();
         // The previous index variable - we don't need a vertex for this
         AstVar* const preVarp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Pre", nTables);
@@ -385,16 +388,22 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 new AstConst{flp, AstConst::BitFalse{}}});
         }
         {  // tab[idx] = 1
+            AstVarRef* const idxRefp = new AstVarRef{flp, idxVarp, VAccess::READ};
             logicp->addStmtsp(new AstAssign{
                 flp,  //
                 new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
-                                new AstVarRef{flp, idxVarp, VAccess::READ}},  //
+                                idxRefp},  //
                 new AstConst{flp, AstConst::BitTrue{}}});
+            DfgAstRd* const astRdp = new DfgAstRd{dfg, idxRefp, false, false};
+            astRdp->srcp(idxVtxp);
         }
         {  // pre = idx
+            AstVarRef* const idxRefp = new AstVarRef{flp, idxVarp, VAccess::READ};
             logicp->addStmtsp(new AstAssign{flp,  //
                                             new AstVarRef{flp, preVarp, VAccess::WRITE},  //
-                                            new AstVarRef{flp, idxVarp, VAccess::READ}});
+                                            idxRefp});
+            DfgAstRd* const astRdp = new DfgAstRd{dfg, idxRefp, false, false};
+            astRdp->srcp(idxVtxp);
         }
 
         // Replace terms with ArraySels

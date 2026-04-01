@@ -80,6 +80,22 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
 
         if (AstNode* const tmpForp = vp->tmpForp()) cp->tmpForp(tmpForp);
     }
+    // Clone ast reference vertices
+    for (const DfgVertexAst& vtx : m_astVertices) {  // LCOV_EXCL_START
+        switch (vtx.type()) {
+        case VDfgType::AstRd: {
+            const DfgAstRd* const vp = vtx.as<DfgAstRd>();
+            DfgAstRd* const cp = new DfgAstRd{*clonep, vp->exprp(), vp->inSenItem(), vp->inLoop()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled ast reference vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }  // LCOV_EXCL_STOP
     // Clone operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
         switch (vtx.type()) {
@@ -136,6 +152,22 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         if (const DfgVertex* const srcp = vtx.srcp()) cp->srcp(vtxp2clonep.at(srcp));
         if (const DfgVertex* const defp = vtx.defaultp()) cp->defaultp(vtxp2clonep.at(defp));
     }
+    // Hook up inputs of cloned ast references
+    for (const DfgVertexAst& vtx : m_astVertices) {  // LCOV_EXCL_START
+        switch (vtx.type()) {
+        case VDfgType::AstRd: {
+            const DfgAstRd* const vp = vtx.as<DfgAstRd>();
+            DfgAstRd* const cp = vtxp2clonep.at(&vtx)->as<DfgAstRd>();
+            if (const DfgVertex* const srcp = vp->srcp()) cp->srcp(vtxp2clonep.at(srcp));
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled DfgVertexAst sub type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }  // LCOV_EXCL_STOP
     // Hook up inputs of cloned operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
         if (vtx.is<DfgVertexVariadic>()) {
@@ -201,6 +233,14 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
 #endif
         }
         m_varVertices.splice(m_varVertices.end(), otherp->m_varVertices);
+        // Process Ast references
+        for (DfgVertexAst* const vtxp : otherp->m_astVertices.unlinkable()) {
+            vtxp->m_userGeneration = 0;
+#ifdef VL_DEBUG
+            vtxp->m_dfgp = this;
+#endif
+        }
+        m_astVertices.splice(m_astVertices.end(), otherp->m_astVertices);
         // Process constants
         for (DfgConst& vtx : otherp->m_constVertices) {
             vtx.m_userGeneration = 0;
@@ -270,7 +310,6 @@ static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (const DfgVertexVar* const varVtxp = vtx.cast<DfgVertexVar>()) {
         const AstNode* const nodep = varVtxp->nodep();
-        const AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
         // Begin attributes
         os << " [";
@@ -292,7 +331,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << " / ";
         static const char* const rwmn[2][2] = {{"_", "W"}, {"R", "M"}};
         os << rwmn[varVtxp->hasExtRdRefs()][varVtxp->hasExtWrRefs()];
-        os << rwmn[varVtxp->hasModRdRefs()][varVtxp->hasModWrRefs()];
+        os << rwmn[false][varVtxp->hasModWrRefs()];
         os << (varVtxp->hasDfgRefs() ? "D" : "_");
         // End 'label'
         os << '"';
@@ -305,21 +344,13 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
             varVtxp->v3fatalSrc("Unhandled DfgVertexVar sub-type");
         }
         // Color
-        if (varp->direction() == VDirection::INPUT) {
-            os << ", style=filled, fillcolor=chartreuse2";  // Green
-        } else if (varp->direction() == VDirection::OUTPUT) {
-            os << ", style=filled, fillcolor=cyan2";  // Cyan
-        } else if (varp->direction() == VDirection::INOUT) {
-            os << ", style=filled, fillcolor=darkorchid2";  // Purple
-        } else if (varVtxp->hasExtRefs()) {
-            os << ", style=filled, fillcolor=firebrick2";  // Red
-        } else if (varVtxp->hasModRefs()) {
-            os << ", style=filled, fillcolor=darkorange1";  // Orange
-        } else if (varVtxp->hasDfgRefs()) {
-            os << ", style=filled, fillcolor=gold2";  // Yellow
-        } else if (varVtxp->tmpForp()) {
-            os << ", style=filled, fillcolor=gray95";
-        }
+        const char* const colorp = varVtxp->hasExtRefs()     ? "firebrick2"  // Red
+                                   : varVtxp->hasModWrRefs() ? "darkorange1"  // Orange
+                                   : varVtxp->hasDfgRefs()   ? "gold2"  // Yellow
+                                   : varVtxp->tmpForp()      ? "gray95"  // Gray
+                                                             : "white";
+        os << ", style=filled";
+        os << ", fillcolor=\"" << colorp << "\"";
         // End attributes
         os << "]\n";
         return;
@@ -379,7 +410,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << toDotId(vtx);
         std::stringstream ss;
         V3EmitV::debugVerilogForTree(logicp->nodep(), ss);
-        std::string str = ss.str();
+        std::string str = "AstNode: " + cvtToHex(logicp->nodep()) + "\n" + ss.str();
         str = VString::quoteBackslash(str);
         str = VString::quoteAny(str, '"', '\\');
         str = VString::replaceSubstr(str, "\n", "\\l");
@@ -390,7 +421,32 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
         os << " [label=\"";
         os << str;
-        os << "\\n" << cvtToHex(&vtx);
+        os << '\n' << vtx.typeName() << '\n' << cvtToHex(&vtx);
+        os << "\"\n";
+        os << ", shape=box, style=\"rounded,filled\", nojustify=true";
+        os << ", fillcolor=\"" << colorp << "\"";
+        os << "]\n";
+        return;
+    }
+
+    if (const DfgVertexAst* const astVtxp = vtx.cast<DfgVertexAst>()) {
+        os << toDotId(vtx);
+        std::stringstream ss;
+        V3EmitV::debugVerilogForTree(astVtxp->exprp(), ss);
+        std::string str = "AstNode: " + cvtToHex(astVtxp->exprp()) + "\n" + ss.str() + "\n";
+        str = VString::quoteBackslash(str);
+        str = VString::quoteAny(str, '"', '\\');
+        str = VString::replaceSubstr(str, "\n", "\\l");
+        const DfgAstRd* const astRdVtxp = astVtxp->cast<DfgAstRd>();
+        const char* const colorp = astRdVtxp ? "#80ff80"  // Green
+                                             : "#ffff80";  // Yellow
+        os << " [label=\"";
+        os << str;
+        os << '\n' << vtx.typeName() << '\n' << cvtToHex(&vtx) << '\n';
+        vtx.dtype().astDtypep()->dumpSmall(os);
+        os << " / ";
+        os << "_S"[astRdVtxp->inSenItem()];
+        os << "_L"[astRdVtxp->inLoop()];
         os << "\"\n";
         os << ", shape=box, style=\"rounded,filled\", nojustify=true";
         os << ", fillcolor=\"" << colorp << "\"";
@@ -548,6 +604,11 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     switch (type()) {
     case VDfgType::Const: {
         CHECK(isPacked(), "Should be Packed type");
+        return;
+    }
+    case VDfgType::AstRd: {
+        const DfgAstRd& v = *as<DfgAstRd>();
+        CHECK(v.isPacked() || v.isArray(), "Should be Packed or Array type");
         return;
     }
     case VDfgType::VarArray:
@@ -781,16 +842,21 @@ DfgVertexVar* DfgVertex::getResultVar() {
             if (!resp->hasDfgRefs()) resp = varp;
             return false;
         }
-        // Prefer those that already have module references
-        if (resp->hasModRdRefs() != varp->hasModRdRefs()) {
-            if (!resp->hasModRdRefs()) resp = varp;
+
+        // Prefer real variables over temporaries
+        const bool resIsTemp
+            = resp->varp() ? resp->varp()->isTemp() : resp->varScopep()->varp()->isTemp();
+        const bool varIsTemp
+            = varp->varp() ? varp->varp()->isTemp() : varp->varScopep()->varp()->isTemp();
+        if (resIsTemp != varIsTemp) {
+            if (resIsTemp) resp = varp;
             return false;
         }
-        // Prefer real variabels over temporaries
         if (!resp->tmpForp() != !varp->tmpForp()) {
             if (resp->tmpForp()) resp = varp;
             return false;
         }
+
         // Prefer the earlier one in source order
         const FileLine& oldFlp = *(resp->fileline());
         const FileLine& newFlp = *(varp->fileline());

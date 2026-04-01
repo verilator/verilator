@@ -65,6 +65,9 @@ V3DfgPeepholeContext::V3DfgPeepholeContext(V3DfgContext& ctx, const std::string&
 }
 
 V3DfgPeepholeContext::~V3DfgPeepholeContext() {
+    for (AstNode* const nodep : m_deleteps) {
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
     const auto emitStat = [this](VDfgPeepholePattern id) {
         std::string str{id.ascii()};
         std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
@@ -248,7 +251,7 @@ class V3DfgPeephole final : public DfgVisitor {
         if (varp && !varp->isVolatile() && !varp->hasDfgRefs()) {
             AstNode* const nodep = varp->nodep();
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            m_ctx.m_deleteps.push_back(nodep);
         } else {
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
         }
@@ -2575,12 +2578,16 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Otherwise remove if there is only one sink that is not a removable variable
         bool foundOne = false;
-        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) {
+        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) -> bool {
             // Ignore non-observable variable sinks. These can be eliminated.
             if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
                 if (!varp->hasSinks() && !varp->isObserved()) return false;
             }
+            // Keep before final scoped run if feeds an Ast reference
+            if (sink.is<DfgVertexAst>() && m_dfg.modulep()) return true;
+            // Keep if found more than one sink
             if (foundOne) return true;
+            // Mark first sink found
             foundOne = true;
             return false;
         });
@@ -2633,6 +2640,9 @@ class V3DfgPeephole final : public DfgVisitor {
                     visit(varp);
                     continue;
                 }
+
+                // Ast references are not considered
+                if (m_vtxp->is<DfgVertexAst>()) continue;
 
                 // Unsued vertices should have been removed immediately
                 UASSERT_OBJ(m_vtxp->hasSinks(), m_vtxp, "Operation vertex should have sinks");

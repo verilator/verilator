@@ -382,6 +382,7 @@ class DfgGraph final {
     // enables significant Verilation performance gains, so we keep these in separate lists for
     // direct access.
     DfgVertex::List<DfgVertexVar> m_varVertices;  // The variable vertices in the graph
+    DfgVertex::List<DfgVertexAst> m_astVertices;  // The ast reference vertices in the graph
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
     size_t m_size = 0;  // Number of vertices in the graph
@@ -417,6 +418,8 @@ public:
     // Access to vertex lists
     DfgVertex::List<DfgVertexVar>& varVertices() { return m_varVertices; }
     const DfgVertex::List<DfgVertexVar>& varVertices() const { return m_varVertices; }
+    DfgVertex::List<DfgVertexAst>& astVertices() { return m_astVertices; }
+    const DfgVertex::List<DfgVertexAst>& astVertices() const { return m_astVertices; }
     DfgVertex::List<DfgConst>& constVertices() { return m_constVertices; }
     const DfgVertex::List<DfgConst>& constVertices() const { return m_constVertices; }
     DfgVertex::List<DfgVertex>& opVertices() { return m_opVertices; }
@@ -429,10 +432,12 @@ public:
 #endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         ++m_size;
-        if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
-            m_constVertices.linkBack(cVtxp);
-        } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
             m_varVertices.linkBack(vVtxp);
+        } else if (DfgVertexAst* const aVtxp = vtx.cast<DfgVertexAst>()) {
+            m_astVertices.linkBack(aVtxp);
+        } else if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+            m_constVertices.linkBack(cVtxp);
         } else {
             m_opVertices.linkBack(&vtx);
         }
@@ -449,10 +454,12 @@ public:
 #endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         --m_size;
-        if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
-            m_constVertices.unlink(cVtxp);
-        } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
             m_varVertices.unlink(vVtxp);
+        } else if (DfgVertexAst* const aVtxp = vtx.cast<DfgVertexAst>()) {
+            m_astVertices.unlink(aVtxp);
+        } else if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+            m_constVertices.unlink(cVtxp);
         } else {
             m_opVertices.unlink(&vtx);
         }
@@ -467,6 +474,7 @@ public:
     // not safe to delete/unlink any vertex in the same graph other than the one passed to 'f'.
     void forEachVertex(std::function<void(DfgVertex&)> f) {
         for (DfgVertexVar* const vtxp : m_varVertices.unlinkable()) f(*vtxp);
+        for (DfgVertexAst* const vtxp : m_astVertices.unlinkable()) f(*vtxp);
         for (DfgConst* const vtxp : m_constVertices.unlinkable()) f(*vtxp);
         for (DfgVertex* const vtxp : m_opVertices.unlinkable()) f(*vtxp);
     }
@@ -474,6 +482,7 @@ public:
     // 'const' variant of 'forEachVertex'. No mutation allowed.
     void forEachVertex(std::function<void(const DfgVertex&)> f) const {
         for (const DfgVertexVar& vtx : m_varVertices) f(vtx);
+        for (const DfgVertexAst& vtx : m_astVertices) f(vtx);
         for (const DfgConst& vtx : m_constVertices) f(vtx);
         for (const DfgVertex& vtx : m_opVertices) f(vtx);
     }
@@ -809,6 +818,8 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
 // DfgVertex {{{
 
 bool DfgVertex::isCheaperThanLoad() const {
+    // Constants
+    if (is<DfgConst>()) return true;
     // Array sels are just address computation
     if (is<DfgArraySel>()) return true;
     // Small constant select from variable
