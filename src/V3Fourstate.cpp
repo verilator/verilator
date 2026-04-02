@@ -40,15 +40,22 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 struct FourStatePair final {
-    AstNodeExpr* value;
-    AstNodeExpr* xz;
+    AstNodeExpr* valuep;
+    AstNodeExpr* xzp;
 };
 
 enum LogicType : char {
-    UNINITIALIZED = 0,
-    TWO_STATE,
-    TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE,
-    FOUR_STATE,
+    UNINITIALIZED = 0,  // Logic type has not been evaluated
+    TWO_STATE,  // Two-state expression
+    TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE,  // Two-state expression with four-state expression in
+                                           // its subtree - this is necessary since some AstNodes
+                                           // (e.g.: AstCastWrap or AstSel) may contain four-state
+                                           // expression as a child but itself be a two-state. When
+                                           // this occurs we need to know that for the sake of
+                                           // short-circuiting (because we use precalculation
+                                           // statements we need to know that we cannot put them
+                                           // before current expression unconditionally)
+    FOUR_STATE,  // Four-state expression
 };
 
 static void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
@@ -72,6 +79,7 @@ static bool isFourstate(const AstNodeExpr* const exprp) {
     return logic == FOUR_STATE;
 }
 
+// Return true when the expression is two-state and has four-state expression in sub-tree
 static bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
     return getLogicType(exprp) == TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE;
 }
@@ -112,7 +120,8 @@ static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp
 }  // namespace
 
 class FourstateLogicTypePropagator final : public VNVisitor {
-    bool m_fourstateInSubtree = false;
+    bool m_fourstateInSubtree
+        = false;  // Whether a four-state expression is present in a sub-tree of an expression
 
     void visit(AstConst* const nodep) override {
         iterateChildren(nodep);
@@ -270,76 +279,76 @@ class FourstateVisitor final : public VNVisitor {
     NetToAssignwps m_assignWToWire;  // Map from variables to their AssingWs
 
     static FourStatePair triReducer(const FourStatePair& a, const FourStatePair& b) {
-        FileLine* const flp = a.value->fileline();
+        FileLine* const flp = a.valuep->fileline();
         FourStatePair result;
         {
             // a.value | b.value
-            result.value = new AstOr{flp, a.value, b.value};
+            result.valuep = new AstOr{flp, a.valuep, b.valuep};
         }
         {
             // (a.value & a.xz) | (b.value & b.xz) | (a.xz & b.xz) | (a.value & ~b.value & ~b.xz) |
             // (b.value & ~a.value & ~a.xz)
-            result.xz = new AstOr{
+            result.xzp = new AstOr{
                 flp,
                 new AstOr{flp,
-                          new AstOr{flp, new AstAnd{flp, a.value->cloneTree(false), a.xz},
-                                    new AstAnd{flp, b.value->cloneTree(false), b.xz}},
-                          new AstAnd{flp, a.xz->cloneTree(false), b.xz->cloneTree(false)}},
+                          new AstOr{flp, new AstAnd{flp, a.valuep->cloneTree(false), a.xzp},
+                                    new AstAnd{flp, b.valuep->cloneTree(false), b.xzp}},
+                          new AstAnd{flp, a.xzp->cloneTree(false), b.xzp->cloneTree(false)}},
                 new AstOr{flp,
                           new AstAnd{flp,
-                                     new AstAnd{flp, a.value->cloneTree(false),
-                                                new AstNot{flp, b.value->cloneTree(false)}},
-                                     new AstNot{flp, b.xz->cloneTree(false)}},
+                                     new AstAnd{flp, a.valuep->cloneTree(false),
+                                                new AstNot{flp, b.valuep->cloneTree(false)}},
+                                     new AstNot{flp, b.xzp->cloneTree(false)}},
                           new AstAnd{flp,
-                                     new AstAnd{flp, b.value->cloneTree(false),
-                                                new AstNot{flp, a.value->cloneTree(false)}},
-                                     new AstNot{flp, a.xz->cloneTree(false)}}}};
+                                     new AstAnd{flp, b.valuep->cloneTree(false),
+                                                new AstNot{flp, a.valuep->cloneTree(false)}},
+                                     new AstNot{flp, a.xzp->cloneTree(false)}}}};
         }
         return result;
     }
     static FourStatePair triandReducer(const FourStatePair& a, const FourStatePair& b) {
-        FileLine* const flp = a.value->fileline();
+        FileLine* const flp = a.valuep->fileline();
         FourStatePair result;
         {
             // (a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)
-            result.value = new AstOr{
+            result.valuep = new AstOr{
                 flp,
-                new AstOr{flp, new AstAnd{flp, a.value, b.xz}, new AstAnd{flp, b.value, a.xz}},
-                new AstAnd{flp, a.value->cloneTree(false), b.value->cloneTree(false)}};
+                new AstOr{flp, new AstAnd{flp, a.valuep, b.xzp}, new AstAnd{flp, b.valuep, a.xzp}},
+                new AstAnd{flp, a.valuep->cloneTree(false), b.valuep->cloneTree(false)}};
         }
         {
             // (a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz)
-            result.xz = new AstOr{
+            result.xzp = new AstOr{
                 flp,
-                new AstOr{flp, new AstAnd{flp, a.xz->cloneTree(false), b.xz->cloneTree(false)},
+                new AstOr{flp, new AstAnd{flp, a.xzp->cloneTree(false), b.xzp->cloneTree(false)},
                           new AstAnd{flp,
-                                     new AstAnd{flp, a.value->cloneTree(false),
-                                                b.value->cloneTree(false)},
-                                     b.xz->cloneTree(false)}},
+                                     new AstAnd{flp, a.valuep->cloneTree(false),
+                                                b.valuep->cloneTree(false)},
+                                     b.xzp->cloneTree(false)}},
                 new AstAnd{flp,
-                           new AstAnd{flp, a.value->cloneTree(false), b.value->cloneTree(false)},
-                           b.xz->cloneTree(false)}};
+                           new AstAnd{flp, a.valuep->cloneTree(false), b.valuep->cloneTree(false)},
+                           b.xzp->cloneTree(false)}};
         }
         return result;
     }
     static FourStatePair triorReducer(const FourStatePair& a, const FourStatePair& b) {
-        FileLine* const flp = a.value->fileline();
+        FileLine* const flp = a.valuep->fileline();
         FourStatePair result;
         {
             // a.value | b.value
-            result.value = new AstOr{flp, a.value, b.value};
+            result.valuep = new AstOr{flp, a.valuep, b.valuep};
         }
         {
             // (a.value | b.xz) & (b.value | a.xz) & (a.xz | ~a.value) & (b.xz | ~b.value)
-            result.xz
+            result.xzp
                 = new AstAnd{flp,
-                             new AstAnd{flp, new AstOr{flp, a.value->cloneTree(false), b.xz},
-                                        new AstOr{flp, b.value->cloneTree(false), a.xz}},
+                             new AstAnd{flp, new AstOr{flp, a.valuep->cloneTree(false), b.xzp},
+                                        new AstOr{flp, b.valuep->cloneTree(false), a.xzp}},
                              new AstAnd{flp,
-                                        new AstOr{flp, a.xz->cloneTree(false),
-                                                  new AstNot{flp, a.value->cloneTree(false)}},
-                                        new AstOr{flp, b.xz->cloneTree(false),
-                                                  new AstNot{flp, b.value->cloneTree(false)}}}};
+                                        new AstOr{flp, a.xzp->cloneTree(false),
+                                                  new AstNot{flp, a.valuep->cloneTree(false)}},
+                                        new AstOr{flp, b.xzp->cloneTree(false),
+                                                  new AstNot{flp, b.valuep->cloneTree(false)}}}};
         }
         return result;
     }
@@ -369,8 +378,8 @@ class FourstateVisitor final : public VNVisitor {
                                   assignp.second->rhsp()->unlinkFrBack()});
             }
             FourStatePair result = buildTree(std::move(exprps), reducer);
-            assignps[0].first->rhsp(result.value);
-            assignps[0].second->rhsp(result.xz);
+            assignps[0].first->rhsp(result.valuep);
+            assignps[0].second->rhsp(result.xzp);
             for (size_t i = 1; i < assignps.size(); ++i) {
                 assignps[i].first->unlinkFrBack()->deleteTree();
                 assignps[i].second->unlinkFrBack()->deleteTree();

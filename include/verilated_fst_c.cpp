@@ -422,7 +422,7 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
                                             int bits) {
     char buf[VL_BYTESIZE];
-    char* wp = &buf[0];
+    char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     for (int i = bits - 1; i >= 0; --i) {
         const CData mask = 1 << i;
@@ -446,7 +446,7 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
                                             int bits) {
     char buf[VL_BYTESIZE];
-    char* wp = &buf[0];
+    char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     for (int i = bits - 1; i >= 0; --i) {
         const SData mask = 1 << i;
@@ -470,7 +470,7 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
                                             int bits) {
     char buf[VL_BYTESIZE];
-    char* wp = &buf[0];
+    char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     for (int i = bits - 1; i >= 0; --i) {
         const IData mask = 1 << i;
@@ -494,7 +494,7 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
                                             int bits) {
     char buf[VL_BYTESIZE];
-    char* wp = &buf[0];
+    char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     for (int i = bits - 1; i >= 0; --i) {
         const QData mask = 1 << i;
@@ -526,7 +526,7 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WData* newvalp,
                                             const WData* newvalXZp, int bits) {
     char buf[VL_BYTESIZE];
-    char* wp = &buf[0];
+    char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     {
         const IData value = newvalp[(bits - 1) / 32];

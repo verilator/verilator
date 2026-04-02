@@ -1613,8 +1613,8 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstFourstateExpr final : public AstNodeExpr {
-    // @astgen op1 := valuep : AstNodeExpr // file (must be a VarRef)
-    // @astgen op2 := xzp : AstNodeExpr // file (must be a VarRef)
+    // @astgen op1 := valuep : AstNodeExpr // value part of a four-state expression
+    // @astgen op2 := xzp : AstNodeExpr // xz part of a four-state expression
 public:
     AstFourstateExpr(FileLine* fl, AstNodeExpr* const valuePartp, AstNodeExpr* const xzPartp)
         : ASTGEN_SUPER_FourstateExpr(fl) {

@@ -1265,8 +1265,8 @@ List Of Warnings
 .. option:: LOGICCAST
 
    Warns about not supported four-state logic feature.
-   Since a two-state logic variation of this feature is fully supported
-   an implicit logic cast to two-state logic is made.
+   When two-state logic variant of a feature is fully supported,
+   an implicit cast to two-state type is made
 
 .. option:: MINTYPMAXDLY
 
