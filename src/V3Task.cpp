@@ -251,6 +251,13 @@ private:
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         if (nodep->recursive()) m_curVxp->noInline(true);
+        // V3Scope resolves virtual-interface MethodCalls via user2p (last-wins),
+        // so inlining would bake in the wrong instance's VarScope refs.
+        if (v3Global.hasVirtIfaces()) {
+            if (const AstScope* const scopep = VN_CAST(nodep->user3p(), Scope)) {
+                if (VN_IS(scopep->modp(), Iface)) m_curVxp->noInline(true);
+            }
+        }
         if (nodep->isConstructor()) {
             m_curVxp->noInline(true);
             m_ctorp = nodep;
@@ -1690,10 +1697,12 @@ class TaskVisitor final : public VNVisitor {
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
-            // Warn if not inlining an impure ftask (unless method or recursvie).
+            // Warn if not inlining an impure ftask (unless method, recursive,
+            // or interface function -- interface member access is not truly external).
             // Will likely not schedule correctly.
             // TODO: Why not if recursive? It will not work ...
-            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
+            if (noInline && !nodep->classMethod() && !nodep->recursive()
+                && !VN_IS(m_modp, Iface)) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
                     nodep->v3warn(
                         IMPURE,
