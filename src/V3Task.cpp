@@ -251,11 +251,8 @@ private:
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         if (nodep->recursive()) m_curVxp->noInline(true);
-        // Interface functions must not be inlined when virtual interfaces
-        // exist: V3Scope maps all clones through a single user2p (last-wins),
-        // so inlined bodies may carry the wrong instance's VarScope refs.
-        // Keeping all clones as CFuncs also preserves write-visibility for
-        // later analysis passes (V3Gate, V3Const, V3Timing).
+        // V3Scope resolves virtual-interface MethodCalls via user2p (last-wins),
+        // so inlining would bake in the wrong instance's VarScope refs.
         if (v3Global.hasVirtIfaces()) {
             if (const AstScope* const scopep = VN_CAST(nodep->user3p(), Scope)) {
                 if (VN_IS(scopep->modp(), Iface)) m_curVxp->noInline(true);
@@ -1701,9 +1698,9 @@ class TaskVisitor final : public VNVisitor {
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
             // Warn if not inlining an impure ftask (unless method, recursive,
-            // or interface function).  Interface functions naturally access
-            // interface members which appear external, but dispatch correctly
-            // through the non-inlined CMethodCall path.
+            // or interface function -- interface member access is not truly external).
+            // Will likely not schedule correctly.
+            // TODO: Why not if recursive? It will not work ...
             if (noInline && !nodep->classMethod() && !nodep->recursive()
                 && !VN_IS(m_modp, Iface)) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
