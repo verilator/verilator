@@ -253,10 +253,11 @@ class FourstateVisitor final : public VNVisitor {
     // AstNodeExpr::user4   ->  LogicType.      Expression logic type (whether it is four
     //                                          or two state)
 
-    V3UniqueNames m_tmpNames;
+    V3UniqueNames m_tmpNames;  // Unique names generator for temporary variables
 
     AstVar* m_currentTmpSpotp = nullptr;  // Node after which put AstVar* for temporary variable
-    bool m_tmpFuncLocal = false;
+    bool m_tmpFuncLocal
+        = false;  // Whether temporary variables shall be created as function locals
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
     AstNode* m_currentFTaskArgp = nullptr;  // Current argument variable of FTaskRef - if not
                                             // variable it is meaningless
@@ -265,15 +266,16 @@ class FourstateVisitor final : public VNVisitor {
 
     // array - whether numeric
     // map - width
-    std::array<std::map<int, std::vector<AstVar*>>, 2> m_tmpVarps;
-    std::vector<AstVar*> m_tmpVarpsInUse;
+    std::array<std::map<int, std::vector<AstVar*>>, 2>
+        m_tmpVarps;  // Existing not in used temporary variables
+    std::vector<AstVar*> m_tmpVarpsInUse;  // Temporary variables that are being currently used
 
     // Original AstVar* and pair of assignments <value, xz>
     using NetToAssignwps
         = std::map<const AstVar*, std::vector<std::pair<AstAssignW*, AstAssignW*>>>;
-    NetToAssignwps m_assignWToTrior;
-    NetToAssignwps m_assignWToTriand;
-    NetToAssignwps m_assignWToWire;
+    NetToAssignwps m_assignWToTrior;  // Map from variables to their AssingWs
+    NetToAssignwps m_assignWToTriand;  // Map from variables to their AssingWs
+    NetToAssignwps m_assignWToWire;  // Map from variables to their AssingWs
 
     static FourStatePair triReducer(const FourStatePair& a, const FourStatePair& b) {
         FileLine* const flp = a.value->fileline();
@@ -1230,8 +1232,10 @@ class FourstateVisitor final : public VNVisitor {
         }
     };
 
-    FourstateExpressionValueVisitor m_fourstateGeneratorValueVisitor;
-    FourstateExpressionXZVisitor m_fourstateGeneratorXZVisitor;
+    FourstateExpressionValueVisitor
+        m_fourstateGeneratorValueVisitor;  // Generator of four-state expressions (value part)
+    FourstateExpressionXZVisitor
+        m_fourstateGeneratorXZVisitor;  // Generator of four-state expressions (xz part)
 
     AstNodeExpr* getFourStateExpressionValue(AstNodeExpr* const exprp, bool putIntoTmp = false) {
         if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
