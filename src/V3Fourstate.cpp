@@ -119,6 +119,8 @@ static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp
 }
 }  // namespace
 
+// Propagates the logic type (two or four-state) on AstNodeExpr
+// Needed as V3Width not always gives a correct logic type
 class FourstateLogicTypePropagator final : public VNVisitor {
     bool m_fourstateInSubtree
         = false;  // Whether a four-state expression is present in a sub-tree of an expression
@@ -254,6 +256,9 @@ public:
     ~FourstateLogicTypePropagator() override = default;
 };
 
+// Splits AstVar of four-state type into two two-states
+// Transforms four-state logic expressions into two-states
+// Handles AssignW conflict resolution
 class FourstateVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
@@ -639,6 +644,7 @@ class FourstateVisitor final : public VNVisitor {
         return new AstCond{flp, conditionp, createConst(selp, !defaultsToZero), newp};
     }
 
+    // Base visitor for Value and XZ visitor, contains some common functionalities
     class FourstateExpressionVisitor VL_NOT_FINAL : public VNVisitor {
     protected:
         FourstateVisitor& m_fourstateVisitor;
@@ -897,6 +903,9 @@ class FourstateVisitor final : public VNVisitor {
         }
     };
 
+    // Visitor used to get an expression with a value of a value part of a four-state expression
+    // This can be thought as a function - but a Visitor was used to be able to use vtable, create
+    // some enclosing namespace and benefit from inheritance
     class FourstateExpressionValueVisitor final : public FourstateExpressionVisitor {
 
         void visit(AstAnd* const andp) override {
@@ -1076,6 +1085,9 @@ class FourstateVisitor final : public VNVisitor {
         }
     };
 
+    // Visitor used to get an expression with a value of an xz part of a four-state expression
+    // This can be thought as a function - but a Visitor was used to be able to use vtable, create
+    // some enclosing namespace and benefit from inheritance
     class FourstateExpressionXZVisitor final : public FourstateExpressionVisitor {
 
         void visit(AstAnd* const andp) override {
