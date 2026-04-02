@@ -182,14 +182,6 @@ class FourstateLogicTypePropagator final : public VNVisitor {
                      m_fourstateInSubtree);
     }
 
-    void visit(AstCond* const nodep) override {
-        iterateChildren(nodep);
-        setFourstate(nodep,
-                     isFourstate(nodep->condp()) || isFourstate(nodep->thenp())
-                         || isFourstate(nodep->elsep()),
-                     m_fourstateInSubtree);
-    }
-
     void visit(AstCReset* const nodep) override {
         iterateChildren(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
