@@ -2866,7 +2866,8 @@ class WidthVisitor final : public VNVisitor {
             const bool netPort
                 = nodep->varp()->isNet() || nodep->varp()->varType() == VVarType::PORT;
             const bool contAssign = VN_IS(nodep->abovep(), AssignW);
-            if (!(hierRef && netPort && contAssign)) {
+            const bool pinConn = VN_IS(nodep->abovep(), Pin);
+            if (!(hierRef && netPort && (contAssign || pinConn))) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
             }
