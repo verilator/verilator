@@ -198,11 +198,10 @@ class AssertVisitor final : public VNVisitor {
             return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
                     + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
                     + ((message != "") ? ": " : "") + message + "\n");
-        } else {
-            return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
-                    + cvtToStr(nodep->fileline()->lineno()) + ": %m"
-                    + ((message != "") ? ": " : "") + message + "\n");
         }
+        return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
+                + cvtToStr(nodep->fileline()->lineno()) + ": %m" + ((message != "") ? ": " : "")
+                + message + "\n");
     }
     static bool resolveAssertType(AstAssertCtl* nodep) {
         if (!nodep->assertTypesp()) {
@@ -413,9 +412,8 @@ class AssertVisitor final : public VNVisitor {
                 nodep->immediate(false);
                 static_cast<AstNode*>(m_procedurep)->addNext(nodep->unlinkFrBack());
                 return;  // Later iterate will pick up
-            } else {
-                sentreep->unlinkFrBack();
             }
+            sentreep->unlinkFrBack();
         }
         //
         const string& message = nodep->name();
@@ -713,7 +711,7 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (m_inSampled && !VString::startsWith(nodep->name(), "__VcycleDly")) {
+        if (m_inSampled && !(nodep->varp() && nodep->varp()->noSample())) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");
@@ -739,9 +737,8 @@ class AssertVisitor final : public VNVisitor {
                 // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
                 nodep->replaceWith(m_passsp->cloneTree(true));
             } else if (!nodep->pass() && m_failsp) {
-                // Asserts with multiple statements are wrapped in implicit begin/end blocks so no
-                // need to clone next.
-                nodep->replaceWith(m_failsp->cloneTree(false));
+                // Stop may be added, thus need to clone next too.
+                nodep->replaceWith(m_failsp->cloneTree(true));
             } else {
                 nodep->unlinkFrBack();
             }

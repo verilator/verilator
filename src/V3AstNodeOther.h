@@ -280,6 +280,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
+    bool m_ctorVarReset : 1;  // Ctor needs to call ctor_var_reset
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
@@ -301,6 +302,7 @@ protected:
         , m_modPublic{false}
         , m_modTrace{false}
         , m_inLibrary{false}
+        , m_ctorVarReset{false}
         , m_dead{false}
         , m_hasGParam{false}
         , m_hasParameterList{false}
@@ -336,6 +338,8 @@ public:
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modTrace() const { return m_modTrace; }
     void modTrace(bool flag) { m_modTrace = flag; }
+    bool ctorVarReset() const { return m_ctorVarReset; }
+    void ctorVarReset(bool flag) { m_ctorVarReset = flag; }
     bool dead() const { return m_dead; }
     void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }
@@ -1020,19 +1024,18 @@ class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := pathp : AstNodeExpr
     string m_name;  // Name of variable getting set
-    string m_path;  // Dotted cellname to set parameter of
 public:
-    AstDefParam(FileLine* fl, const string& path, const string& name, AstNodeExpr* rhsp)
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name}
-        , m_path{path} {
+        , m_name{name} {
         this->rhsp(rhsp);
+        this->pathp(pathp);
     }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
-    string path() const { return m_path; }
 };
 class AstDefaultDisable final : public AstNode {
     // @astgen op1 := condp : AstNodeExpr
@@ -1386,6 +1389,7 @@ class AstPin final : public AstNode {
     // @astgen ptr := m_modPTypep : Optional[AstParamTypeDType]  // Param type connects to on sub
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
+    string m_paramPath;  // Original defparam cell path, if this pin came from a defparam
     bool m_param = false;  // Pin connects to parameter
     bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
     bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
@@ -1412,6 +1416,8 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    const string& paramPath() const { return m_paramPath; }
+    void paramPath(const string& path) { m_paramPath = path; }
     bool svDotName() const { return m_svDotName; }
     void svDotName(bool flag) { m_svDotName = flag; }
     bool svImplicit() const { return m_svImplicit; }
@@ -1490,7 +1496,7 @@ public:
     bool sameNode(const AstNode* samep) const override {
         return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
-    uint32_t direction() const { return (uint32_t)m_direction; }
+    uint32_t direction() const { return static_cast<uint32_t>(m_direction); }
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell
@@ -1962,6 +1968,7 @@ class AstVar final : public AstNode {
     bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
+    bool m_noSample : 1;  // Do not wrap with AstSampled in assertion context
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2019,6 +2026,7 @@ class AstVar final : public AstNode {
         m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
+        m_noSample = false;
     }
 
 public:
@@ -2166,6 +2174,8 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool noSample() const { return m_noSample; }
+    void noSample(bool flag) { m_noSample = flag; }
     bool substConstOnly() const { return m_substConstOnly; }
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
     bool overriddenParam() const { return m_overridenParam; }

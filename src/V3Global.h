@@ -148,7 +148,7 @@ public:
     V3Options opt;  // All options; let user see them directly
 
     // CONSTRUCTORS
-    V3Global() {}
+    V3Global() = default;
     void boot();
     void shutdown();  // Release allocated resources
 

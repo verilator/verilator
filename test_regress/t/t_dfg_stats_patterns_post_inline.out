@@ -1,6 +1,7 @@
 DFG 'post inline' patterns with depth 1
             9 (CONCAT _A:1 _B:a):b
             8 (REDXOR _A:a):1
+            4 (ASTRD vA:a):a
             3 (NOT vA:a)*:a
             2 (AND _A:a _B:a):a
             1 (AND _A:a _B:a)*:a

@@ -127,7 +127,7 @@ private:
 
         for (const Interval& iv : intervals) {
             const int scaledSize = iv.m_size * (MAX_BAR_LENGTH + 1) / topIntervalSize;
-            std::string line = " |" + std::string(scaledSize, '#');
+            const std::string line = " |" + std::string(scaledSize, '#');
 
             os << std::setw(maxScoreWidth) << iv.m_lowerBound << line << "  " << iv.m_size << '\n';
         }
@@ -225,7 +225,7 @@ private:
             // Add new list if the last list's concatenability does not match the inputFile's
             // concatenability
             if (m_workLists.empty() || m_workLists.back().m_isConcatenable != fileIsConcatenable) {
-                m_workLists.push_back(WorkList{nextWorkListId++});
+                m_workLists.emplace_back(WorkList{nextWorkListId++});
                 m_workLists.back().m_isConcatenable = fileIsConcatenable;
             }
             // Add inputFile to the last list
@@ -285,7 +285,7 @@ private:
         if (m_logp) *m_logp << "Buckets assigned to Work Lists:\n";
         int availableBuckets = v3Global.opt.outputGroups();
         for (WorkList* listp : m_concatenableListsByDescSize) {
-            if (availableBuckets > 0) {
+            if (availableBuckets > 0 && idealBucketScore > 0) {
                 listp->m_bucketsNum = std::min(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
@@ -313,7 +313,7 @@ private:
         int concatenatedFileId = 0;
         for (WorkList& list : m_workLists) {
             if (!list.m_isConcatenable) {
-                for (FilenameWithScore& file : list.m_files) {
+                for (const FilenameWithScore& file : list.m_files) {
                     m_outputFiles.push_back({std::move(file.m_filename), {}});
                 }
                 continue;
@@ -770,10 +770,11 @@ public:
                 // So add dynamic_lookup
                 of.puts("ifeq ($(shell uname -s),Darwin)\n");
                 of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -undefined "
-                        "dynamic_lookup -shared $(LDFLAGS) -flat_namespace -o $@ $^ $(LIBS)\n");
+                        "dynamic_lookup -shared $(LDFLAGS) -flat_namespace -o $@ $^ $(LDLIBS) "
+                        "$(LIBS)\n");
                 of.puts("else\n");
                 of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared "
-                        "$(LDFLAGS) -o $@ $^ $(LIBS)\n");
+                        "$(LDFLAGS) -o $@ $^ $(LDLIBS) $(LIBS)\n");
                 of.puts("endif\n");
                 of.puts("\n");
                 of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)

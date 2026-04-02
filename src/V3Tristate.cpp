@@ -710,7 +710,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
                 if (isCrossModule && !isIfaceTri) {
                     // Hierarchical writes to non-interface module tri wires are unsupported
-                    for (RefStrength& rs : *refsp) {
+                    for (const RefStrength& rs : *refsp) {
                         if (VN_IS(rs.m_varrefp, VarXRef)) {
                             rs.m_varrefp->v3warn(
                                 E_UNSUPPORTED,
@@ -730,7 +730,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                         string inlinedDots;
                     };
                     std::map<string, PartitionInfo> partitions;
-                    for (RefStrength& rs : *refsp) {
+                    for (const RefStrength& rs : *refsp) {
                         if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
                             PartitionInfo& pi = partitions[xrefp->dotted()];
                             pi.refs.push_back(rs);
@@ -1094,8 +1094,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstAssignW* getStrongestAssignmentOfValue(const Assigns& assigns, bool value) {
         auto maxIt = std::max_element(
             assigns.begin(), assigns.end(), [&](const AstAssignW* ap, const AstAssignW* bp) {
-                bool valuesOnRhsA = assignmentOfValueOnAllBits(ap, value);
-                bool valuesOnRhsB = assignmentOfValueOnAllBits(bp, value);
+                const bool valuesOnRhsA = assignmentOfValueOnAllBits(ap, value);
+                const bool valuesOnRhsB = assignmentOfValueOnAllBits(bp, value);
                 if (!valuesOnRhsA) return valuesOnRhsB;
                 if (!valuesOnRhsB) return false;
                 return getStrength(ap, value) < getStrength(bp, value);
@@ -1193,7 +1193,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             const auto getIfStrongest
                 = [&](const AstAssignW* const strongestCandidatep, bool value) {
                       if (!strongestCandidatep) return;
-                      uint8_t strength = getStrength(strongestCandidatep, value);
+                      const uint8_t strength = getStrength(strongestCandidatep, value);
                       if (strength >= greatestKnownStrength) {
                           greatestKnownStrength = strength;
                           strongestp = strongestCandidatep;
@@ -1229,7 +1229,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             // needed to check if it is non-tristate.
             const AstAssignW* const strongestp = m_tgraph.isTristate(*maxIt) ? nullptr : *maxIt;
             if (strongestp) {
-                uint8_t greatestKnownStrength
+                const uint8_t greatestKnownStrength
                     = std::min(getStrength(strongestp, 0), getStrength(strongestp, 1));
                 removeNotStrongerAssignments(assigns, strongestp, greatestKnownStrength);
             }
@@ -2117,10 +2117,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         // After all modules have been processed, combine per-module contributions
         // for each interface tristate signal into final resolution logic.
         // Key is the canonical AstVar in the interface module (shared across instances).
-        for (std::pair<AstVar* const, std::vector<std::pair<AstVar*, AstVar*>>>& kv :
+        for (const std::pair<AstVar* const, std::vector<std::pair<AstVar*, AstVar*>>>& kv :
              m_ifaceContribs) {
             AstVar* const invarp = kv.first;
-            std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
+            const std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
             AstNodeModule* const ifaceModp = findParentModule(invarp);
             UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
             FileLine* const fl = invarp->fileline();
@@ -2131,7 +2131,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstNodeExpr* orp = nullptr;
             AstNodeExpr* enp = nullptr;
 
-            for (std::pair<AstVar*, AstVar*>& contrib : contribs) {
+            for (const std::pair<AstVar*, AstVar*>& contrib : contribs) {
                 AstVar* const contribEnp = contrib.first;
                 AstVar* const contribOutp = contrib.second;
 

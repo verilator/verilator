@@ -140,9 +140,9 @@ class VerilatedSaifActivityScope final {
     // Name of the activity scope
     std::string m_scopeName;
     // Array indices of child scopes
-    std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_childScopes{};
+    std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_childScopes;
     // Children signals codes mapped to their names in the current scope
-    std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
+    std::vector<std::pair<uint32_t, std::string>> m_childActivities;
     // Parent scope pointer
     VerilatedSaifActivityScope* m_parentScope = nullptr;
 
@@ -278,7 +278,7 @@ void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string&
 //=============================================================================
 // VerilatedSaif implementation
 
-VerilatedSaif::VerilatedSaif(void* filep) {}
+VerilatedSaif::VerilatedSaif(void* /*filep*/) {}
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
@@ -378,8 +378,7 @@ bool VerilatedSaif::printScopeActivitiesFromAccumulatorIfPresent(
 
     for (const auto& childSignal : accumulator.m_scopeToActivities.at(absoluteScopePath)) {
         VerilatedSaifActivityVar& activityVariable = accumulator.m_activity.at(childSignal.first);
-        anyNetWritten
-            = printActivityStats(activityVariable, childSignal.second.c_str(), anyNetWritten);
+        anyNetWritten = printActivityStats(activityVariable, childSignal.second, anyNetWritten);
     }
 
     return anyNetWritten;
@@ -488,7 +487,8 @@ void VerilatedSaif::pushPrefix(const char* namep, VerilatedTracePrefixType type)
         // Upper has name, we can suppress inserting $rootio, but still push so popPrefix works
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
-    } else if (name.empty()) {
+    }
+    if (name.empty()) {
         m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
         return;
     }
@@ -513,9 +513,9 @@ void VerilatedSaif::pushPrefix(const char* namep, VerilatedTracePrefixType type)
     }
 
     const std::string newPrefix = prevPrefix + name;
-    bool properScope = (type != VerilatedTracePrefixType::ARRAY_UNPACKED
-                        && type != VerilatedTracePrefixType::ARRAY_PACKED
-                        && type != VerilatedTracePrefixType::ROOTIO_WRAPPER);
+    const bool properScope = (type != VerilatedTracePrefixType::ARRAY_UNPACKED
+                              && type != VerilatedTracePrefixType::ARRAY_PACKED
+                              && type != VerilatedTracePrefixType::ROOTIO_WRAPPER);
     m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
 }
 
@@ -531,8 +531,8 @@ void VerilatedSaif::popPrefix() {
 }
 
 void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name,
-                            const char* wirep, const bool array, const int arraynum,
-                            const bool bussed, const int msb, const int lsb) {
+                            const char* /*wirep*/, const bool array, const int arraynum,
+                            const bool /*bussed*/, const int msb, const int lsb) {
     assert(m_activityAccumulators.size() > fidx);
     VerilatedSaifActivityAccumulator& accumulator = *m_activityAccumulators.at(fidx);
 
@@ -601,7 +601,9 @@ void VerilatedSaif::declDoubleArray(const uint32_t code, const uint32_t fidx, co
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) { return new Buffer{*this}; }
+VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t /*fidx*/) {
+    return new Buffer{*this};
+}
 
 void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp; }
 

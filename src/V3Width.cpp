@@ -241,6 +241,7 @@ class WidthVisitor final : public VNVisitor {
     std::map<const AstNode*, const AstClass*>
         m_containingClassp;  // Containing class cache for containingClass() function
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -293,6 +294,9 @@ class WidthVisitor final : public VNVisitor {
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     void visit(AstLogAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogOr* nodep) override { visit_log_and_or(nodep); }
+    // Sequence and/or (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
+    void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
@@ -1181,11 +1185,7 @@ class WidthVisitor final : public VNVisitor {
             if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
                 frommsb = adtypep->hi();
                 fromlsb = adtypep->lo();
-                if (fromlsb > frommsb) {
-                    const int t = frommsb;
-                    frommsb = fromlsb;
-                    fromlsb = t;
-                }
+                if (fromlsb > frommsb) std::swap(frommsb, fromlsb);
                 // However, if the lsb<0 we may go negative, so need more bits!
                 if (fromlsb < 0) frommsb += -fromlsb;
                 nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
@@ -1505,6 +1505,23 @@ class WidthVisitor final : public VNVisitor {
             userIterate(nodep->sentreep(), nullptr);
         }
     }
+    void visit(AstConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N]
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyParamsEdit(nodep->countp());  // countp may change
+            const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+            if (!constp) {
+                nodep->v3error("Consecutive repetition count must be constant expression"
+                               " (IEEE 1800-2023 16.9.2)");
+            } else if (constp->toSInt() < 1) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
+            }
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -1620,6 +1637,14 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
+    void visit(AstSExprGotoRep* nodep) override {
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstSExpr* nodep) override {
         VL_RESTORER(m_underSExpr);
         m_underSExpr = true;
@@ -1662,7 +1687,8 @@ class WidthVisitor final : public VNVisitor {
             if (VN_IS(selp->fromp()->dtypep()->skipRefp(), QueueDType)) return;
         }
         // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+        nodep->v3warn(E_UNSUPPORTED,
+                      "Unsupported: Unbounded ('$') outside of queue or string operations");
     }
     void visit(AstInferredDisable* nodep) override {
         assertAtExpr(nodep);
@@ -2832,7 +2858,18 @@ class WidthVisitor final : public VNVisitor {
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
-            nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: " << nodep->prettyNameQ());
+            // Skip ASSIGNIN for continuous assignments to net-type input ports
+            // via hierarchical reference. Net ports allow multiple continuous
+            // drivers (IEEE 1800-2023 23.3.3.3). Input ports default to net
+            // when port kind is omitted (23.2.2.3, PORT type).
+            const bool hierRef = !m_curModVars.count(nodep->varp());
+            const bool netPort
+                = nodep->varp()->isNet() || nodep->varp()->varType() == VVarType::PORT;
+            const bool contAssign = VN_IS(nodep->abovep(), AssignW);
+            if (!(hierRef && netPort && contAssign)) {
+                nodep->v3warn(ASSIGNIN,
+                              "Assigning to input/const variable: " << nodep->prettyNameQ());
+            }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic)
@@ -3519,6 +3556,23 @@ class WidthVisitor final : public VNVisitor {
                     nodep->didWidth(true);
                     return;
                 }
+                if (AstModport* const modportp = VN_CAST(foundp, Modport)) {
+                    // Modport selection (e.g. vif.passive_mp) is compile-time
+                    // type narrowing: replace MemberSel with fromp re-typed.
+                    AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
+                        nodep->fileline(), nodep->fileline(), adtypep->cellName(),
+                        adtypep->ifaceName(), modportp->name()};
+                    newDtypep->ifacep(adtypep->ifacep());
+                    newDtypep->cellp(adtypep->cellp());
+                    newDtypep->modportp(modportp);
+                    newDtypep->isVirtual(adtypep->isVirtual());
+                    v3Global.rootp()->typeTablep()->addTypesp(newDtypep);
+                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                    fromp->dtypep(newDtypep);
+                    nodep->replaceWith(fromp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
@@ -3994,9 +4048,16 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Wildcard array 'map' method (IEEE 1800-2023 7.12.5)");
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            AstWith* const withp
+                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                   adtypep->findStringDType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      VCMethod::ARRAY_MAP};
+            newp->withp(withp);
+            newp->dtypep(queueDTypeIndexedBy(withp ? withp->dtypep() : adtypep->subDTypep()));
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -4107,9 +4168,15 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Associative array 'map' method (IEEE 1800-2023 7.12.5)");
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            AstWith* const withp = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                                    adtypep->keyDTypep(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      VCMethod::ARRAY_MAP};
+            newp->withp(withp);
+            newp->dtypep(queueDTypeIndexedBy(withp ? withp->dtypep() : adtypep->subDTypep()));
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -4241,9 +4308,18 @@ class WidthVisitor final : public VNVisitor {
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)");
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            // map() - IEEE 1800-2023 7.12.5
+            // Returns a queue with same element count, each element is the with expression result
+            AstWith* const withp
+                = methodWithClause(nodep, true, false, adtypep->subDTypep(),
+                                   nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      VCMethod::ARRAY_MAP};
+            newp->withp(withp);
+            newp->dtypep(queueDTypeIndexedBy(withp ? withp->dtypep() : adtypep->subDTypep()));
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         }
         return newp;
     }
@@ -4423,6 +4499,11 @@ class WidthVisitor final : public VNVisitor {
         if (AstNodeFTask* const ftaskp
             = VN_CAST(m_memberMap.findMember(ifacep, nodep->name()), NodeFTask)) {
             UINFO(5, __FUNCTION__ << "AstNodeFTask" << nodep);
+            if (adtypep->isVirtual()) {
+                for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                    if (AstVar* const mvarp = VN_CAST(itemp, Var)) { mvarp->sensIfacep(ifacep); }
+                }
+            }
             userIterate(ftaskp, nullptr);
             if (ftaskp->isStatic()) {
                 AstArg* const argsp = nodep->argsp();
@@ -7345,6 +7426,9 @@ class WidthVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_modep);
             m_modep = nodep;
+            // Collect local variables for ASSIGNIN hierarchical reference check
+            m_curModVars.clear();
+            nodep->foreach([this](const AstVar* varp) { m_curModVars.insert(varp); });
             userIterateChildren(nodep, nullptr);
         }
     }
@@ -8270,7 +8354,8 @@ class WidthVisitor final : public VNVisitor {
                 && (std::is_same<N, AstVar>::value || std::is_same<N, AstNodeVarRef>::value),
             "Unsupported types provided.");
         if (!lhsRefp || !rhsRefp) return;
-        string lhsName, rhsName;
+        std::string lhsName;
+        std::string rhsName;
         if (VN_IS(nodep, Pin)) {
             lhsName = std::string{"Pin"};
             rhsName = std::string{"Expression"};

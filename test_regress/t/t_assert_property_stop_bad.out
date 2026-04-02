@@ -1,0 +1,3 @@
+[50] %Error: t_assert_property_stop_bad.v:24: Assertion failed in t.__VforkTask_0: 'assert' failed.
+%Error: t/t_assert_property_stop_bad.v:24: Verilog $stop
+Aborting...

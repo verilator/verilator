@@ -27,6 +27,7 @@
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
+#define YYNEWLINE "\n"
 
 // Pick up new lexer
 #define yylex PARSEP->tokenToBison
@@ -1437,16 +1438,16 @@ port<nodep>:                    // ==IEEE: port
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                        { $$ = $4; VARDECL(VAR); VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE
                         { $$ = $3;
@@ -1478,7 +1479,7 @@ port<nodep>:                    // ==IEEE: port
         //                      //   IEEE: '.' port_identifier '(' [ expression ] ')'
         |       portDirNetE /*implicit*/ '.' portSig '(' expr ')'
                         { $$ = $3; DEL($5);
-                          BBUNSUP($<fl>2, "Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)"); }
+                          BBUNSUP($<fl>2, "Unsupported: complex ports (IEEE 1800-2023 23.2.2.1/2)"); }
         //                      // IEEE: part of (non-ansi) port_reference
         |       '{' port_expressionList '}'
                         { $$ = $2; }
@@ -1955,10 +1956,10 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
         /*mid*/         { VARDTYPE($3); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $5; }
         |       port_directionReset port_declNetE yVAR data_type
-        /*mid*/         { VARDTYPE($4); }
+        /*mid*/         { VARDECL(VAR); VARDTYPE($4); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $6; }
         |       port_directionReset port_declNetE yVAR implicit_typeE
-        /*mid*/         { VARDTYPE($4); }
+        /*mid*/         { VARDECL(VAR); VARDTYPE($4); }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $6; }
         |       port_directionReset port_declNetE signingE rangeList
         /*mid*/         { AstNodeDType* const dtp = GRAMMARP->addRange(
@@ -2545,7 +2546,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
 
-        // IEEE 1800-2017 6.18 typedef: dotted or arrayed type identifier
+        // IEEE 1800-2023 6.18 typedef: dotted or arrayed type identifier
         // Handles interface typedef references like if0.rq_t and if0[0].rq_t (arrays allowed after first component)
         |       yTYPEDEF idDottedOrArrayed
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -2557,7 +2558,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                 varp->valuep($2);
                 $$ = varp; }
 
-        // IEEE 1800-2017 6.18 typedef with hierarchical type identifier
+        // IEEE 1800-2023 6.18 typedef with hierarchical type identifier
         // Special-case array on first component requiring a '.' after ']' to disambiguate from packed dims
         // Examples: typedef if0[0].rq_t my_t; typedef if0[0].x_if.rq_t my_t;
         |       yTYPEDEF id '[' expr ']' '.' idDottedSelMore
@@ -2586,7 +2587,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, refp, $4); }
 
-        // IEEE 1800-2017 6.18.2 typedef with packed dimensions on an existing type identifier
+        // IEEE 1800-2023 6.18.2 typedef with packed dimensions on an existing type identifier
         // Disambiguated from interface array access by requiring ':' inside the brackets
         // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
@@ -3215,19 +3216,26 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                defparamIdRange '.' defparamIdRange '=' expr
-                        { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
+                defparamIdRangeList '.' defparamIdRange '=' expr
+                        { $$ = new AstDefParam{$4, $1, *$3, $5}; }
         |       defparamIdRange '=' expr
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
                           DEL($3); }
-        |       defparamIdRange '.' defparamIdRange '.' defparamIdRangeList '=' expr
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot");
-                          DEL($7); }
         ;
 
-defparamIdRangeList<strp>:  // IEEE: part of defparam_assignment
-                defparamIdRange                         { $$ = $1; }
-        |       defparamIdRangeList '.' defparamIdRange  { $$ = $3; }
+defparamIdRangeList<nodeExprp>:  // IEEE: part of defparam_assignment
+                defparamIdRangeExpr                     { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRangeExpr
+                        { $$ = new AstDot{$2, false, $1, $3}; }
+        ;
+
+defparamIdRangeExpr<nodeExprp>:  // IEEE: part of defparam_assignment
+                idAny
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       idAny part_select_rangeList
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr};
+                          BBUNSUP($2, "Unsupported: defparam with arrayed instance");
+                          DEL($2); }
         ;
 
 defparamIdRange<strp>:  // IEEE: part of defparam_assignment
@@ -5052,8 +5060,14 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr '|' ~r~expr                     { $$ = new AstOr{$2, $1, $3}; }
         |       ~l~expr '^' ~r~expr                     { $$ = new AstXor{$2, $1, $3}; }
         |       ~l~expr yP_XNOR ~r~expr                 { $$ = new AstNot{$2, new AstXor{$2, $1, $3}}; }
-        |       ~l~expr yP_NOR ~r~expr                  { $$ = new AstNot{$2, new AstOr{$2, $1, $3}}; }
-        |       ~l~expr yP_NAND ~r~expr                 { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}}; }
+        |       ~l~expr yP_NOR ~r~expr
+                        { $$ = new AstNot{$2, new AstOr{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~|' is not a 'nor' binary operator, but a unary '~ |'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... | ...)'"); }
+        |       ~l~expr yP_NAND ~r~expr
+                        { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~&' is not a 'nand' binary operator, but a unary '~ &'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... & ...)'"); }
         |       ~l~expr yP_SLEFT ~r~expr                { $$ = new AstShiftL{$2, $1, $3}; }
         |       ~l~expr yP_SRIGHT ~r~expr               { $$ = new AstShiftR{$2, $1, $3}; }
         |       ~l~expr yP_SSRIGHT ~r~expr              { $$ = new AstShiftRS{$2, $1, $3}; }
@@ -6798,6 +6812,16 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!
         //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
+        //                      // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
+        //                      // Creates AstConsRep; lowered by V3AssertPre
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
+                        { $$ = new AstConsRep{$<fl>2, $1, $3}; }
+        //                      // IEEE: goto_repetition (single count form)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
+                        { $$ = new AstSExprGotoRep{$<fl>2, $1, $3}; }
+        //                      // IEEE: goto_repetition (range form -- unsupported)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
+                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev
                         { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: boolean abbrev (in sequence expression)"); DEL($2); }
         //
@@ -6815,13 +6839,14 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       '(' ~p~sexpr ',' sequence_match_itemList ')'
                         { $$ = new AstExprStmt{$3, $4, $2}; }
         //
-        //                      // AND/OR are between pexprs OR sexprs
+        //                      // AND/OR are between pexprs OR sexprs (IEEE 1800-2023 16.9.2, 16.11.2)
+        //                      // For expression-level (boolean) operands, AstLogAnd/AstLogOr is correct.
+        //                      // For temporal sequence operands (containing ##), the downstream
+        //                      // V3Width "Implication with sequence expression" check will catch them.
         |       ~p~sexpr yAND ~p~sexpr
-                        { $$ = new AstLogAnd{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: and (in sequence expression)"); }
+                        { $$ = new AstSAnd{$2, $1, $3}; }
         |       ~p~sexpr yOR ~p~sexpr
-                        { $$ = new AstLogOr{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: or (in sequence expression)"); }
+                        { $$ = new AstSOr{$2, $1, $3}; }
         //                      // Intersect always has an sexpr rhs
         |       ~p~sexpr yINTERSECT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); DEL($3); }
@@ -6856,10 +6881,9 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // UNSUP: This causes a big grammar ambiguity
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
-        |       yP_POUNDPOUND anyrange
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          DEL($2);
-                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
+        |       yP_POUNDPOUND '[' constExpr ':' constExpr ']'
+                        { $$ = new AstDelay{$1, $3, true};
+                          $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
                         { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
@@ -6883,9 +6907,8 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
 
 boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         //                      // IEEE: consecutive_repetition
-                yP_BRASTAR constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
-        |       yP_BRASTAR constExpr ':' constExpr ']'
+        //                      // [*N] exact count handled directly in sexpr rule
+                yP_BRASTAR constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); DEL($4); }
         |       yP_BRASTAR ']'
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
@@ -6899,10 +6922,8 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         |       yP_BRAEQ constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); DEL($4); }
         //                      // IEEE: goto_repetition
-        |       yP_BRAMINUSGT constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [-> boolean abbrev expression"); }
-        |       yP_BRAMINUSGT constExpr ':' constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [-> boolean abbrev expression"); DEL($4); }
+        //                      // Goto repetition [->N] handled in sexpr rule (AstSExprGotoRep)
+        //                      // Range form [->M:N] also handled there (unsupported)
         ;
 
 //************************************************

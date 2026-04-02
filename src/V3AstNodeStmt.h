@@ -311,6 +311,7 @@ public:
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
+    const VCStmtType m_stmtType;  // Special statement (instead of comparing name())
 
     static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
         // Compute the label
@@ -337,8 +338,10 @@ class AstCStmt final : public AstNodeStmt {
     }
 
 public:
-    explicit AstCStmt(FileLine* fl, const std::string& text = "")
-        : ASTGEN_SUPER_CStmt(fl) {
+    explicit AstCStmt(FileLine* fl, const std::string& text = "",
+                      const VCStmtType& stmtType = VCStmtType::NONE)
+        : ASTGEN_SUPER_CStmt(fl)
+        , m_stmtType{stmtType} {
         if (!text.empty()) add(text);
     }
     ASTGEN_MEMBERS_AstCStmt;
@@ -347,6 +350,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
     bool sameNode(const AstNode*) const override { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VCStmtType stmtType() const { return m_stmtType; }
     // Add some text, or a node to this statement
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
@@ -535,8 +541,9 @@ public:
 };
 class AstDelay final : public AstNodeStmt {
     // Delay statement
-    // @astgen op1 := lhsp : AstNodeExpr // Delay value
+    // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max delay value (range delay only)
     VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
 
@@ -554,6 +561,7 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
     bool isCycleDelay() const { return m_isCycle; }
+    bool isRangeDelay() const { return rhsp() != nullptr; }
 };
 class AstDisable final : public AstNodeStmt {
     // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot

@@ -104,17 +104,17 @@ void V3ThreadPool::selfTest() {
     auto secondJob = [&](int sleep) -> void {
         commonMutex.lock();
         commonMutex.unlock();
-        V3LockGuard lock{commonMutex};
+        const V3LockGuard lock{commonMutex};
         std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
         commonValue = 1000;
     };
     auto thirdJob = [&](int sleep) -> void {
         {
-            V3LockGuard lock{commonMutex};
+            const V3LockGuard lock{commonMutex};
             std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
         }
         firstJob(sleep);
-        V3LockGuard lock{commonMutex};
+        const V3LockGuard lock{commonMutex};
         commonValue = 100;
     };
     {

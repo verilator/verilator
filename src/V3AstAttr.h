@@ -716,13 +716,9 @@ public:
     bool likely() const { return m_e == BP_LIKELY; }
     bool unlikely() const { return m_e == BP_UNLIKELY; }
     VBranchPred invert() const {
-        if (m_e == BP_UNLIKELY) {
-            return BP_LIKELY;
-        } else if (m_e == BP_LIKELY) {
-            return BP_UNLIKELY;
-        } else {
-            return m_e;
-        }
+        if (m_e == BP_UNLIKELY) return BP_LIKELY;
+        if (m_e == BP_LIKELY) return BP_UNLIKELY;
+        return m_e;
     }
     const char* ascii() const {
         static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
@@ -758,6 +754,7 @@ public:
         ARRAY_FIRST,
         ARRAY_INSIDE,
         ARRAY_LAST,
+        ARRAY_MAP,
         ARRAY_MAX,
         ARRAY_MIN,
         ARRAY_NEXT,
@@ -815,6 +812,7 @@ public:
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
+        FORK_ON_KILL,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
@@ -902,6 +900,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {ARRAY_FIRST, "first", false}, \
            {ARRAY_INSIDE, "inside", true}, \
            {ARRAY_LAST, "last", false}, \
+           {ARRAY_MAP, "map", true}, \
            {ARRAY_MAX, "max", true}, \
            {ARRAY_MIN, "min", true}, \
            {ARRAY_NEXT, "next", false}, \
@@ -959,6 +958,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
+           {FORK_ON_KILL, "onKill", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
@@ -994,6 +994,48 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \
            {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
+class VCStmtType final {
+public:
+    enum en : uint8_t {
+        NONE,  // Unknown or not applicable
+        CTOR_VAR_RESET_CALL,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Statement's enum mnemonic, for checking
+        const char* m_name;  // Statements name, for debugging
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCStmtType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCStmtType(en _e)
+        : m_e{_e} {}
+    explicit VCStmtType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        return names[m_e];
+    }
+    bool isNone() const { return m_e == NONE; }
+};
+constexpr bool operator==(const VCStmtType& lhs, const VCStmtType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCStmtType& lhs, VCStmtType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCStmtType::en lhs, const VCStmtType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCStmtType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 
@@ -1392,7 +1434,7 @@ public:
     bool isAutomatic() const { return m_e == AUTOMATIC_EXPLICIT || m_e == AUTOMATIC_IMPLICIT; }
     bool isStatic() const { return m_e == STATIC_EXPLICIT || m_e == STATIC_IMPLICIT; }
     bool isStaticExplicit() const { return m_e == STATIC_EXPLICIT; }
-    VLifetime makeImplicit() {
+    VLifetime makeImplicit() const {
         switch (m_e) {
         case AUTOMATIC_EXPLICIT: return AUTOMATIC_IMPLICIT;
         case STATIC_EXPLICIT: return STATIC_IMPLICIT;
@@ -1440,11 +1482,7 @@ public:
     ~VNumRange() = default;
     // MEMBERS
     void init(int hi, int lo, bool ascending) {
-        if (lo > hi) {
-            const int t = hi;
-            hi = lo;
-            lo = t;
-        }
+        if (lo > hi) std::swap(hi, lo);
         m_left = ascending ? lo : hi;
         m_right = ascending ? hi : lo;
         m_ranged = true;
@@ -1788,7 +1826,7 @@ public:
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
-    bool containsAny(VUseType other) { return m_e & other.m_e; }
+    bool containsAny(VUseType other) const { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
@@ -1798,10 +1836,10 @@ constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
 constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();

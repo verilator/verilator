@@ -78,11 +78,14 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 //=========================================================================
 // Declare net data types
 
+#ifndef VL_NO_LEGACY
 #define VL_SIG8(name, msb, lsb) CData name  ///< Declare signal, 1-8 bits
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
 #define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+#endif
+
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
@@ -109,12 +112,17 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 
 // Metadata of processes
 using VlProcessRef = std::shared_ptr<VlProcess>;
+class VlForkSync;
+class VlForkSyncState;
 
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
+    VlForkSyncState* m_forkSyncOnKillp
+        = nullptr;  // Optional fork..join counter to decrement on kill
+    bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
 
 public:
     // TYPES
@@ -145,14 +153,18 @@ public:
     void detach(VlProcess* childp) { m_children.erase(childp); }
 
     int state() const { return m_state; }
-    void state(int s) { m_state = s; }
+    void state(int s);
     void disable() {
         state(KILLED);
         disableFork();
     }
     void disableFork() {
-        for (VlProcess* childp : m_children) childp->disable();
+        // childp->disable() may resume coroutines and mutate m_children
+        const std::set<VlProcess*> children = m_children;
+        for (VlProcess* childp : children) childp->disable();
     }
+    void forkSyncOnKill(VlForkSyncState* forkSyncp);
+    void forkSyncOnKillClear(VlForkSyncState* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
         for (const VlProcess* const childp : m_children)
@@ -164,7 +176,7 @@ public:
     void randstate(const std::string& state) VL_MT_UNSAFE;
 };
 
-inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
+inline std::string VL_TO_STRING(const VlProcessRef&) { return std::string("process"); }
 
 //===================================================================
 // SystemVerilog event type
@@ -602,11 +614,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
         // Needs to work for dynamic arrays, so does not use N_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            return atDefault();
-        } else {
-            return m_deque[index];
-        }
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return atDefault();
+        return m_deque[index];
     }
     // Access with an index counted from end (e.g. q[$])
     T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
@@ -794,6 +803,17 @@ public:
             --index;
         }
         return VlQueue<IData>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            out.push_back(with_func(index, i));
+            ++index;
+        }
+        return out;
     }
 
     // Reduction operators
@@ -1007,11 +1027,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
         const auto it = m_map.find(index);
-        if (it == m_map.end()) {
-            return m_defaultValue;
-        } else {
-            return it->second;
-        }
+        if (it == m_map.end()) return m_defaultValue;
+        return it->second;
     }
     // Setting as a chained operation
     VlAssocArray& set(const T_Key& index, const T_Value& value) {
@@ -1130,6 +1147,13 @@ public:
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
         if (it == m_map.rend()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (const auto& i : m_map) out.push_back(with_func(i.first, i.second));
+        return out;
     }
 
     // Reduction operators
@@ -1315,7 +1339,6 @@ public:
     // Default copy assignment operators are used.
 
     // METHODS
-public:
     // Raw access
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
@@ -1334,11 +1357,8 @@ public:
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::true_type) const {
-        if (dimension == N_CurrentDimension) {
-            return size();
-        } else {
-            return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
-        }
+        if (dimension == N_CurrentDimension) return size();
+        return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
     }
 
     template <std::size_t N_CurrentDimension = 0>
@@ -1522,6 +1542,13 @@ public:
             if (with_func(i, m_storage[i])) return VlQueue<IData>::consV(i);
         }
         return VlQueue<T_Key>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (IData i = 0; i < N_Depth; ++i) out.push_back(with_func(i, m_storage[i]));
+        return out;
     }
 
     // Reduction operators
@@ -1914,7 +1941,7 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 public:
     // CONSTRUCTORS
     VlClass() {}
-    VlClass(const VlClass& copied) {}
+    VlClass(const VlClass& /*copied*/) {}
     ~VlClass() override = default;
     // Polymorphic shallow clone. Overridden in each generated concrete class.
     virtual VlClass* clone() const { return nullptr; }
@@ -2059,7 +2086,7 @@ public:
     VlClassRef<T_OtherClass> dynamicCast() const {
         return VlClassRef<T_OtherClass>{dynamic_cast<T_OtherClass*>(m_objp)};
     }
-    // Polymorphic shallow clone (IEEE 1800-2017 8.7: new <handle> preserves runtime type)
+    // Polymorphic shallow clone (IEEE 1800-2023 8.7: new <handle> preserves runtime type)
     VlClassRef clone(VlDeleter& deleter) const {
         VlClass* clonedp = m_objp->clone();
         if (VL_UNLIKELY(!clonedp)) return {};
@@ -2098,13 +2125,12 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
     if (VL_LIKELY(casted)) {
         outr = casted;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
+static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

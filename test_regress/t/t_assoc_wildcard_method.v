@@ -150,6 +150,11 @@ module t;
     b = points_q.sum with (vec_len_squared(item) inside {5, 17, 20});
     `checkh(b, 1'b1);
 
+    // Map method (IEEE 1800-2023 7.12.5)
+    q = '{"a": 100, "b": 200, "c": 300};
+    qv = q.map(el) with (el / 100);
+    `checkp(qv, "'{'h1, 'h2, 'h3}");
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

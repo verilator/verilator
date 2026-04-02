@@ -28,9 +28,88 @@
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 
-#include <iterator>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+template <bool T_Scoped>
+class AstToDfgAddAstRefs final : public VNVisitorConst {
+    // TYPES
+    using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
+
+    // STATE
+    DfgGraph& m_dfg;  // The graph being processed
+    // Function to get the DfgVertexVar for a Variable
+    const std::function<DfgVertexVar*(Variable*)> m_getVarVertex;
+    bool m_inSenItem = false;  // Inside an AstSenItem
+    bool m_inLoop = false;  // Inside an AstLoop
+
+    // METHODS
+    static Variable* getTarget(const AstVarRef* refp) {
+        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
+        if VL_CONSTEXPR_CXX17 (T_Scoped) {
+            return reinterpret_cast<Variable*>(refp->varScopep());
+        } else {
+            return reinterpret_cast<Variable*>(refp->varp());
+        }
+    }
+
+    // VISITORS
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    void visit(AstSenItem* nodep) override {
+        VL_RESTORER(m_inSenItem);
+        m_inSenItem = true;
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstLoop* nodep) override {
+        VL_RESTORER(m_inLoop);
+        m_inLoop = true;
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstVarRef* nodep) override {
+        // Disguised hierarchical reference handled as external reference, ignore
+        if (nodep->classOrPackagep()) return;
+        // If target is not supported, ignore
+        Variable* const tgtp = getTarget(nodep);
+        if (!V3Dfg::isSupported(tgtp)) return;
+        // V3Dfg::isSupported should reject vars with READWRITE references
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Variable with READWRITE ref not rejected");
+        // Get target variable vergtex, ignore if not given one
+        DfgVertexVar* const varp = m_getVarVertex(tgtp);
+        if (!varp) return;
+        // Create Ast reference vertices
+        if (nodep->access().isReadOnly()) {
+            DfgAstRd* const astp = new DfgAstRd{m_dfg, nodep, m_inSenItem, m_inLoop};
+            astp->srcp(varp);
+            return;
+        }
+        // Mark as written from non-DFG logic
+        DfgVertexVar::setHasModWrRefs(tgtp);
+    }
+
+    AstToDfgAddAstRefs(DfgGraph& dfg, AstNode* nodep,
+                       std::function<DfgVertexVar*(Variable*)> getVarVertex)
+        : m_dfg{dfg}
+        , m_getVarVertex{getVarVertex} {
+        iterateConst(nodep);
+    }
+
+public:
+    static void apply(DfgGraph& dfg, AstNode* nodep,
+                      std::function<DfgVertexVar*(Variable*)> getVarVertex) {
+        AstToDfgAddAstRefs{dfg, nodep, getVarVertex};
+    }
+};
+
+void V3DfgPasses::addAstRefs(DfgGraph& dfg, AstNode* nodep,
+                             std::function<DfgVertexVar*(AstNode*)> getVarVertex) {
+    if (dfg.modulep()) {
+        AstToDfgAddAstRefs</* T_Scoped: */ false>::apply(dfg, nodep, getVarVertex);
+    } else {
+        AstToDfgAddAstRefs</* T_Scoped: */ true>::apply(dfg, nodep, getVarVertex);
+    }
+}
 
 template <bool T_Scoped>
 class AstToDfgVisitor final : public VNVisitor {
@@ -72,13 +151,9 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // Mark variables referenced under node
-    static void markReferenced(const AstNode* nodep) {
-        nodep->foreach([](const AstVarRef* refp) {
-            Variable* const tgtp = getTarget(refp);
-            // Mark as read from non-DFG logic
-            if (refp->access().isReadOrRW()) DfgVertexVar::setHasModRdRefs(tgtp);
-            // Mark as written from non-DFG logic
-            if (refp->access().isWriteOrRW()) DfgVertexVar::setHasModWrRefs(tgtp);
+    void markReferenced(AstNode* nodep) {
+        V3DfgPasses::addAstRefs(m_dfg, nodep, [this](AstNode* varp) {  //
+            return getVarVertex(static_cast<Variable*>(varp));
         });
     }
 
@@ -286,7 +361,12 @@ public:
         AstToDfgVisitor{dfg, root, ctx};
         // Remove unread and undriven variables (created when something failed to convert)
         for (DfgVertexVar* const varp : dfg.varVertices().unlinkable()) {
-            if (!varp->srcp() && !varp->hasSinks()) VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
+            if (varp->srcp()) continue;
+            const bool keep = varp->foreachSink([&](DfgVertex& d) { return !d.is<DfgAstRd>(); });
+            if (!keep) {
+                while (varp->hasSinks()) varp->firtsSinkp()->unlinkDelete(dfg);
+                VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
+            }
         }
     }
 };

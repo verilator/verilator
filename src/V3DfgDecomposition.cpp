@@ -107,6 +107,7 @@ class SplitIntoComponents final {
         }
         // Move the vertices to the component graphs
         moveVertices(m_dfg.varVertices());
+        moveVertices(m_dfg.astVertices());
         moveVertices(m_dfg.constVertices());
         moveVertices(m_dfg.opVertices());
         //
@@ -182,7 +183,7 @@ class ExtractCyclicComponents final {
         // cyclic variable, put both its 'srcp' and 'defaultp' into the same
         // component if they are not variables themselves. The assertions below
         // must hold because of the assumption above.
-        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
+        for (const DfgVertexVar& vtx : m_dfg.varVertices()) {
             const uint64_t varComponent = m_component.at(vtx);
             if (!varComponent) continue;
             if (DfgVertex* const srcp = vtx.srcp()) {
@@ -202,12 +203,12 @@ class ExtractCyclicComponents final {
                 }
             }
         }
-
         // To ensure all component boundaries are at variables, expand
         // components to include all reachable non-variable vertices. Constants
-        // are reachable from their sinks, so only need to process op vertices.
-        // We do this by staring a DFS from each vertex that is part of an
-        // component and add all reachable non-variable vertices to the same.
+        // are reachable from their sinks, and Ast refs cannot be in an SCC,
+        // so only need to process op vertices. We do this by starting a DFS
+        // from each vertex that is part of a component and add all reachable
+        // non-variable vertices to the same.
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             if (const uint64_t targetComponent = m_component.at(vtx)) {
                 expandSiblings(vtx, targetComponent);
@@ -349,6 +350,7 @@ class ExtractCyclicComponents final {
         // Move other vertices to their component graphs
         // After this, vertex states are invalid as we moved the vertices
         moveVertices(m_dfg.varVertices());
+        moveVertices(m_dfg.astVertices());
         moveVertices(m_dfg.constVertices());
         moveVertices(m_dfg.opVertices());
 

@@ -158,7 +158,7 @@ public:
     }
     void dump() {
         for (const auto& itr : m_modVarNameMap) {
-            cout << "-namemap: " << itr.first << " -> " << itr.second << endl;
+            cout << "-namemap: " << itr.first << " -> " << itr.second << '\n';
         }
     }
 
@@ -220,7 +220,7 @@ private:
             if (prevp) nodep->addNextHere(prevp);
             if (prevp && debug() == 9) {
                 prevp->dumpTree("-  newintf: ");
-                cout << endl;
+                cout << '\n';
             }
         }
         iterateChildren(nodep);
@@ -283,14 +283,14 @@ private:
                     newp->addNextHere(varNewp);
                     if (debug() == 9) {
                         varNewp->dumpTree("-  newintf: ");
-                        cout << endl;
+                        cout << '\n';
                     }
                 }
                 // Fixup pins
                 iterateAndNextNull(newp->pinsp());
                 if (debug() == 9) {
                     newp->dumpTree("-  newcell: ");
-                    cout << endl;
+                    cout << '\n';
                 }
             }
 

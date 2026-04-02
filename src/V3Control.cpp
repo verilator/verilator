@@ -49,8 +49,8 @@ public:
     // Update this resolved file's item map by inserting other's (wildcarded filename's) items
     void update(const V3ControlWildcardResolver& other) VL_MT_SAFE_EXCLUDES(m_mutex)
         VL_EXCLUDES(other.m_mutex) {
-        V3LockGuard lock{m_mutex};
-        V3LockGuard otherLock{other.m_mutex};
+        const V3LockGuard lock{m_mutex};
+        const V3LockGuard otherLock{other.m_mutex};
         // Clear the resolved cache, as 'other' might add new patterns that need to be applied as
         // well.
         m_mapResolved.clear();
@@ -59,14 +59,14 @@ public:
 
     // Access and create a pattern entry
     T& at(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        V3LockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         // We might be adding a new entry under this, so clear the cache.
         m_mapResolved.clear();
         return m_mapPatterns[name];
     }
     // Access an entity and resolve patterns that match it
     T* resolve(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        V3LockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         // Lookup if it was resolved before, typically not
         const auto pair = m_mapResolved.emplace(name, nullptr);
         std::unique_ptr<T>& entryr = pair.first->second;
@@ -369,10 +369,11 @@ private:
             maxval = std::max(maxval, cign.m_lineMax);
         }
 
-        int center = minval + (maxval - minval) / 2;
+        const int center = minval + (maxval - minval) / 2;
         auto entp = std::unique_ptr<Entry>(new Entry{center});
 
-        IgnIndices leftPoints, rightPoints;
+        IgnIndices leftPoints;
+        IgnIndices rightPoints;
         for (const auto& it : points) {
             const V3ControlIgnoresLine& cign = controlIgnLines[it];
             if (cign.everyLine()) continue;
@@ -438,7 +439,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VIntervalTree() {}
+    VIntervalTree() = default;
     ~VIntervalTree() = default;
     // METHODS
     void clear() { m_rootp = nullptr; }
@@ -477,41 +478,41 @@ public:
         IgnIndices results;
         int nextChange = 0;
         tree.find(0, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 0);
-        UASSERT_SELFTEST(int, nextChange, 10);
+        UASSERT_SELFTEST(const size_t, results.size(), 0);
+        UASSERT_SELFTEST(const int, nextChange, 10);
         tree.find(10, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 2);
-        UASSERT_SELFTEST(int, results[0], 0);
-        UASSERT_SELFTEST(int, results[1], 3);
-        UASSERT_SELFTEST(int, nextChange, 11);
+        UASSERT_SELFTEST(const size_t, results.size(), 2);
+        UASSERT_SELFTEST(const int, results[0], 0);
+        UASSERT_SELFTEST(const int, results[1], 3);
+        UASSERT_SELFTEST(const int, nextChange, 11);
         tree.find(11, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 1);
-        UASSERT_SELFTEST(int, results[0], 3);
-        UASSERT_SELFTEST(int, nextChange, 15);  // Center, or would be 20
+        UASSERT_SELFTEST(const size_t, results.size(), 1);
+        UASSERT_SELFTEST(const int, results[0], 3);
+        UASSERT_SELFTEST(const int, nextChange, 15);  // Center, or would be 20
         tree.find(20, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 3);
-        UASSERT_SELFTEST(int, results[0], 1);
-        UASSERT_SELFTEST(int, results[1], 3);
-        UASSERT_SELFTEST(int, results[2], 4);
-        UASSERT_SELFTEST(int, nextChange, 21);
+        UASSERT_SELFTEST(const size_t, results.size(), 3);
+        UASSERT_SELFTEST(const int, results[0], 1);
+        UASSERT_SELFTEST(const int, results[1], 3);
+        UASSERT_SELFTEST(const int, results[2], 4);
+        UASSERT_SELFTEST(const int, nextChange, 21);
         tree.find(21, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 2);
-        UASSERT_SELFTEST(int, results[0], 3);
-        UASSERT_SELFTEST(int, results[1], 4);
-        UASSERT_SELFTEST(int, nextChange, 25);  // Center, or would be 30
+        UASSERT_SELFTEST(const size_t, results.size(), 2);
+        UASSERT_SELFTEST(const int, results[0], 3);
+        UASSERT_SELFTEST(const int, results[1], 4);
+        UASSERT_SELFTEST(const int, nextChange, 25);  // Center, or would be 30
         tree.find(30, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 2);
-        UASSERT_SELFTEST(int, results[0], 3);
-        UASSERT_SELFTEST(int, results[1], 4);
-        UASSERT_SELFTEST(int, nextChange, 31);
+        UASSERT_SELFTEST(const size_t, results.size(), 2);
+        UASSERT_SELFTEST(const int, results[0], 3);
+        UASSERT_SELFTEST(const int, results[1], 4);
+        UASSERT_SELFTEST(const int, nextChange, 31);
         tree.find(40, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 2);
-        UASSERT_SELFTEST(int, results[0], 2);
-        UASSERT_SELFTEST(int, results[1], 4);
-        UASSERT_SELFTEST(int, nextChange, 41);
+        UASSERT_SELFTEST(const size_t, results.size(), 2);
+        UASSERT_SELFTEST(const int, results[0], 2);
+        UASSERT_SELFTEST(const int, results[1], 4);
+        UASSERT_SELFTEST(const int, nextChange, 41);
         tree.find(41, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 0);
-        UASSERT_SELFTEST(int, nextChange, std::numeric_limits<int>::max());
+        UASSERT_SELFTEST(const size_t, results.size(), 0);
+        UASSERT_SELFTEST(const int, nextChange, std::numeric_limits<int>::max());
         //
         points = {{0, 0}};
         for (const auto& it : points) {
@@ -522,8 +523,8 @@ public:
         tree.build(data);
         //
         tree.find(50, results, nextChange);
-        UASSERT_SELFTEST(size_t, results.size(), 1);
-        UASSERT_SELFTEST(int, results[0], 5);
+        UASSERT_SELFTEST(const size_t, results.size(), 1);
+        UASSERT_SELFTEST(const int, results[0], 5);
     }
 };
 
@@ -541,12 +542,7 @@ public:
         , m_contents{contents}
         , m_match{match} {}
     ~WaiverSetting() = default;
-    WaiverSetting& operator=(const WaiverSetting& rhs) {
-        m_code = rhs.m_code;
-        m_contents = rhs.m_contents;
-        m_match = rhs.m_match;
-        return *this;
-    }
+    WaiverSetting& operator=(const WaiverSetting& rhs) = default;
 };
 
 // File entity
@@ -573,7 +569,7 @@ class V3ControlFile final {
     }
 
 public:
-    V3ControlFile() {}
+    V3ControlFile() = default;
     void update(const V3ControlFile& file) {
         // Copy in all attributes and waivers
         for (const auto& itr : file.m_lineAttrs) m_lineAttrs[itr.first] |= itr.second;
@@ -1083,7 +1079,7 @@ bool V3Control::getScopeTraceOn(const string& scope) {
     return V3ControlResolver::s().scopeTraces().getScopeTraceOn(scope);
 }
 
-void V3Control::contentsPushText(const string& text) { return WildcardContents::pushText(text); }
+void V3Control::contentsPushText(const string& text) { WildcardContents::pushText(text); }
 
 bool V3Control::containsMTaskProfileData() {
     return V3ControlResolver::s().containsMTaskProfileData();

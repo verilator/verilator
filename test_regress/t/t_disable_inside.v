@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkt(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0t exp=%0t (%t !== %t)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 module t;
   initial begin
     static int x = 0;
@@ -14,7 +19,7 @@ module t;
         $stop;
       end
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         x = 1;
         #2;
         $stop;
@@ -36,10 +41,10 @@ module t;
         $stop;
       end
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         y = 1;
         #2;
-        if ($time != 2) $stop;
+        `checkt($time, 2);
         y = 2;
       end
     join_none
@@ -55,32 +60,28 @@ module t;
     end
   end
 
-  // TODO: This doesn't work due to the second fork branch not being added to
-  //       the killQueue when the 'disable' is executed with no delay after
-  //       the fork starts. See the case below which is the same, but the
-  //       fork branches are in the opposite order so it happens to work.
-  //initial begin
-  //  fork : fork_blk2
-  //    begin
-  //      if ($time != 0) $stop;
-  //      disable fork_blk2;
-  //      $stop;
-  //    end
-  //    begin
-  //      if ($time != 0) $stop;
-  //      #1 $stop;
-  //    end
-  //  join_none
-  //end
+  initial begin
+    fork : fork_blk2
+      begin
+        `checkt($time, 0);
+        disable fork_blk2;
+        $stop;
+      end
+      begin
+        `checkt($time, 0);
+        #1 $stop;
+      end
+    join_none
+  end
 
   initial begin
     fork : fork_blk3
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         #1 $stop;
       end
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         disable fork_blk3;
         $stop;
       end
@@ -90,7 +91,7 @@ module t;
   initial begin
     fork : fork_blk4
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         if ($c("false")) begin
           disable fork_blk4;
           $stop;
@@ -98,9 +99,9 @@ module t;
         #1;
       end
       begin
-        if ($time != 0) $stop;
+        `checkt($time, 0);
         #1;
-        if ($time != 1) $stop;
+        `checkt($time, 1);
       end
     join_none
   end

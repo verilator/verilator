@@ -819,7 +819,8 @@ class TaskVisitor final : public VNVisitor {
         if (name.end() != std::find_if(name.begin(), name.end(), [](char c) {
                 return !std::isalnum(c) && c != '_';
             })) {
-            nodep->v3error("DPI function has illegal characters in C identifier name: " << name);
+            nodep->v3error("DPI function has illegal characters in C identifier name '" << name
+                                                                                        << '\'');
         }
     }
 
@@ -1345,7 +1346,8 @@ class TaskVisitor final : public VNVisitor {
                 }
                 if (!isInterfaceClass) {
                     const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                    cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+                    cfuncp->addStmtsp(
+                        new AstCStmt{nodep->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL});
                 }
             }
         }

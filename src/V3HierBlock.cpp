@@ -203,7 +203,7 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
 VStringList V3HierBlock::hierBlockArgs() const {
     VStringList opts;
     const StrGParams gparamsStr = stringifyParams(m_params, false);
-    opts.push_back("--hierarchical-block ");
+    opts.emplace_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
     for (const StrGParam& pair : gparamsStr) {

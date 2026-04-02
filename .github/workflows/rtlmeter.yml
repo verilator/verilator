@@ -11,6 +11,8 @@ on:
     - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: ['ci-rtlmeter/**']
 
 permissions:
   contents: read
@@ -35,7 +37,8 @@ jobs:
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
         && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')) ||
-      (github.event_name == 'workflow_dispatch')
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push')
     runs-on: ubuntu-24.04
     steps:
       - name: Startup

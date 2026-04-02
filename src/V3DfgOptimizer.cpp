@@ -23,6 +23,7 @@
 #include "V3DfgOptimizer.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Const.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 #include "V3Graph.h"
@@ -246,7 +247,8 @@ class DataflowOptimize final {
     // - bit1: Written via AstVarXRef (hierarchical reference)
     // - bit2: Read by logic in same module/netlist not represented in DFG
     // - bit3: Written by logic in same module/netlist not represented in DFG
-    // - bit31-4: Reference count, how many DfgVertexVar represent this variable
+    // - bit4: Has READWRITE references
+    // - bit31-5: Reference count, how many DfgVertexVar represent this variable
     //
     // AstNode::user2/user3/user4 can be used by various DFG algorithms
     const VNUser1InUse m_user1InUse;
@@ -280,11 +282,11 @@ class DataflowOptimize final {
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
                     return;
                 }
-                // TODO: remove once Actives can tolerate NEVER SenItems
-                if (AstSenItem* senItemp = VN_CAST(nodep, SenItem)) {
-                    senItemp->foreach([](const AstVarRef* refp) {
-                        DfgVertexVar::setHasExtRdRefs(refp->varScopep());
-                    });
+                // Check direct references
+                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varScopep());
+                    UASSERT_OBJ(!refp->classOrPackagep(), refp, "V3Scope should have removed");
+                    return;
                 }
             } else {
                 if (AstVar* const varp = VN_CAST(nodep, Var)) {
@@ -296,13 +298,26 @@ class DataflowOptimize final {
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(varp);
                     return;
                 }
+                // Check direct references
+                if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                    AstVar* const varp = refp->varp();
+                    if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(varp);
+                    // With classOrPackagep set this is a disguised hierarchical reference, mark
+                    if (refp->classOrPackagep()) {
+                        if (refp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(varp);
+                        if (refp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(varp);
+                    }
+                    return;
+                }
             }
+
             // Check hierarchical references
             if (const AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
                 AstVar* const tgtp = xrefp->varp();
                 if (!tgtp) return;
                 if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(tgtp);
                 if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(tgtp);
+                if (xrefp->access().isRW()) DfgVertexVar::setHasRWRefs(tgtp);
                 return;
             }
             // Check cell ports
@@ -382,6 +397,24 @@ class DataflowOptimize final {
         endOfStage("regularize", &dfg);
     }
 
+    void removeNeverActives(AstNetlist* netlistp) {
+        std::vector<AstActive*> neverActiveps;
+        netlistp->foreach([&](AstActive* activep) {
+            AstSenTree* const senTreep = activep->sentreep();
+            if (!senTreep) return;
+            const AstNode* const nodep = V3Const::constifyEdit(senTreep);
+            UASSERT_OBJ(nodep == senTreep, nodep, "Should not have been repalced");
+            if (senTreep->sensesp()->isNever()) {
+                UASSERT_OBJ(!senTreep->sensesp()->nextp(), nodep,
+                            "Never senitem should be alone, else the never should be eliminated.");
+                neverActiveps.emplace_back(activep);
+            }
+        });
+        for (AstActive* const activep : neverActiveps) {
+            VL_DO_DANGLING(activep->unlinkFrBack()->deleteTree(), activep);
+        }
+    }
+
     DataflowOptimize(AstNetlist* netlistp, const string& label)
         : m_ctx{label}
         , m_scoped{!!netlistp->topScopep()} {
@@ -426,6 +459,8 @@ class DataflowOptimize final {
             // Convert back to Ast
             V3DfgPasses::dfgToAst(*dfgp, m_ctx);
             endOfStage("dfg-to-ast", dfgp.get());
+            // Some sentrees might have become constant, remove them
+            removeNeverActives(netlistp);
         }
 
         // Reset interned types so the corresponding Ast types can be garbage collected

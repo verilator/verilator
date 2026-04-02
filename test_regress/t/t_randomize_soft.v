@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Test soft constraint solving per IEEE 1800-2017 section 18.5.13
+// Test soft constraint solving per IEEE 1800-2023 18.5.13
 
 // verilog_format: off
 `define stop $stop

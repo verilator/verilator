@@ -562,7 +562,6 @@ public:
         dtypep(findCHandleDType());
     }
 
-public:
     ASTGEN_MEMBERS_AstAddrOfCFunc;
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -980,6 +979,25 @@ public:
     }
     bool lhsIsValue() const { return m_lhsIsValue; }
     bool rhsIsValue() const { return m_rhsIsValue; }
+};
+class AstConsRep final : public AstNodeExpr {
+    // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
+    // Lowered by V3AssertPre to: expr && $past(expr,1) && ... && $past(expr,N-1)
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    AstConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_ConsRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstConsRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { V3ERROR_NA_RETURN(0); }
+    bool sameNode(const AstNode* /*samep*/) const override { V3ERROR_NA_RETURN(false); }
 };
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{}
@@ -2048,17 +2066,11 @@ public:
     }
     string emitC() override {
         if (seedp()) {
-            if (urandom()) {
-                return "VL_URANDOM_SEEDED_%nq%lq(%li)";
-            } else {
-                return "VL_RANDOM_SEEDED_%nq%lq(%li)";
-            }
+            if (urandom()) return "VL_URANDOM_SEEDED_%nq%lq(%li)";
+            return "VL_RANDOM_SEEDED_%nq%lq(%li)";
         }
-        if (isWide()) {
-            return "VL_RANDOM_%nq(%nw, %P)";
-        } else {
-            return "VL_RANDOM_%nq()";
-        }
+        if (isWide()) return "VL_RANDOM_%nq(%nw, %P)";
+        return "VL_RANDOM_%nq()";
     }
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
@@ -2152,6 +2164,22 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
+};
+class AstSExprGotoRep final : public AstNodeExpr {
+    // Goto repetition: expr [-> count]
+    // IEEE 1800-2023 16.9.2
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    explicit AstSExprGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_SExprGotoRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstSExprGotoRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
 };
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,
@@ -3616,6 +3644,50 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 2; }
     bool stringFlavor() const override { return true; }
+};
+class AstSAnd final : public AstNodeBiop {
+    // Sequence 'and' (IEEE 1800-2023 16.9.5): both operand sequences must match.
+    // Operates on match sets, not values. For boolean operands, lowered to AstLogAnd.
+public:
+    AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstSAnd;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLogAnd(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %fand %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+};
+class AstSOr final : public AstNodeBiop {
+    // Sequence 'or' (IEEE 1800-2023 16.9.7): at least one operand sequence must match.
+    // Operates on match sets, not values. For boolean operands, lowered to AstLogOr.
+public:
+    AstSOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SOr(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstSOr;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLogOr(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %for %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width

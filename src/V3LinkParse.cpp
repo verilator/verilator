@@ -340,7 +340,7 @@ class LinkParseVisitor final : public VNVisitor {
         cleanFileline(nodep);
         UINFO(9, "VAR " << nodep);
         if (nodep->valuep()) nodep->hasUserInit(true);
-        // IEEE 1800-2026 6.21: for loop variables are automatic. verilog.y is
+        // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
         if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
             && !nodep->isIO()

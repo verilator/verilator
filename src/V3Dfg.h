@@ -68,37 +68,6 @@ class DfgVisitor;
 template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
 class DfgUserMap;
 
-namespace V3Dfg {
-//-----------------------------------------------------------------------
-// Functions for compatibility tests
-
-// Returns true if variable can be represented in the graph
-inline bool isSupported(const AstVar* varp) {
-    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
-    if (varp->delayp()) return false;  // Cannot handle delayed variables
-    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
-    if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
-    return DfgDataType::fromAst(varp->dtypep());
-}
-
-// Returns true if variable can be represented in the graph
-inline bool isSupported(const AstVarScope* vscp) {
-    const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module)) {
-        // Regular module supported
-    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
-        // Interfaces supported if there are no virtual interfaces for
-        // them, otherwise they cannot be resovled statically.
-        if (ifacep->hasVirtualRef()) return false;
-    } else {
-        return false;  // Anything else (package, class, etc) not supported
-    }
-    // Check the AstVar
-    return isSupported(vscp->varp());
-}
-
-}  //namespace V3Dfg
-
 //------------------------------------------------------------------------------
 // Dataflow graph vertex type enum
 
@@ -128,7 +97,6 @@ class DfgEdge final {
     DfgVertex* const m_dstp;  // The vertex driven by this edge, which owns this edge, so immutable
     V3ListLinks<DfgEdge> m_links;  // V3List links in the list of sinks of m_srcp
 
-    DfgEdge() = delete;
     VL_UNCOPYABLE(DfgEdge);
     VL_UNMOVABLE(DfgEdge);
 
@@ -139,6 +107,7 @@ public:
     explicit DfgEdge(DfgVertex* dstp)
         : m_dstp{dstp} {}
     ~DfgEdge() { unlinkSrcp(); }
+    DfgEdge() = delete;
 
     // The source (driver) of this edge
     DfgVertex* srcp() const { return m_srcp; }
@@ -413,6 +382,7 @@ class DfgGraph final {
     // enables significant Verilation performance gains, so we keep these in separate lists for
     // direct access.
     DfgVertex::List<DfgVertexVar> m_varVertices;  // The variable vertices in the graph
+    DfgVertex::List<DfgVertexAst> m_astVertices;  // The ast reference vertices in the graph
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
     size_t m_size = 0;  // Number of vertices in the graph
@@ -434,7 +404,6 @@ public:
     VL_UNCOPYABLE(DfgGraph);
 
     // METHODS
-public:
     // Number of vertices in this graph
     size_t size() const { return m_size; }
     // Parent module - or nullptr when run after V3Scope
@@ -449,6 +418,8 @@ public:
     // Access to vertex lists
     DfgVertex::List<DfgVertexVar>& varVertices() { return m_varVertices; }
     const DfgVertex::List<DfgVertexVar>& varVertices() const { return m_varVertices; }
+    DfgVertex::List<DfgVertexAst>& astVertices() { return m_astVertices; }
+    const DfgVertex::List<DfgVertexAst>& astVertices() const { return m_astVertices; }
     DfgVertex::List<DfgConst>& constVertices() { return m_constVertices; }
     const DfgVertex::List<DfgConst>& constVertices() const { return m_constVertices; }
     DfgVertex::List<DfgVertex>& opVertices() { return m_opVertices; }
@@ -461,10 +432,12 @@ public:
 #endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         ++m_size;
-        if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
-            m_constVertices.linkBack(cVtxp);
-        } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
             m_varVertices.linkBack(vVtxp);
+        } else if (DfgVertexAst* const aVtxp = vtx.cast<DfgVertexAst>()) {
+            m_astVertices.linkBack(aVtxp);
+        } else if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+            m_constVertices.linkBack(cVtxp);
         } else {
             m_opVertices.linkBack(&vtx);
         }
@@ -481,10 +454,12 @@ public:
 #endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         --m_size;
-        if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
-            m_constVertices.unlink(cVtxp);
-        } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
             m_varVertices.unlink(vVtxp);
+        } else if (DfgVertexAst* const aVtxp = vtx.cast<DfgVertexAst>()) {
+            m_astVertices.unlink(aVtxp);
+        } else if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+            m_constVertices.unlink(cVtxp);
         } else {
             m_opVertices.unlink(&vtx);
         }
@@ -499,6 +474,7 @@ public:
     // not safe to delete/unlink any vertex in the same graph other than the one passed to 'f'.
     void forEachVertex(std::function<void(DfgVertex&)> f) {
         for (DfgVertexVar* const vtxp : m_varVertices.unlinkable()) f(*vtxp);
+        for (DfgVertexAst* const vtxp : m_astVertices.unlinkable()) f(*vtxp);
         for (DfgConst* const vtxp : m_constVertices.unlinkable()) f(*vtxp);
         for (DfgVertex* const vtxp : m_opVertices.unlinkable()) f(*vtxp);
     }
@@ -506,6 +482,7 @@ public:
     // 'const' variant of 'forEachVertex'. No mutation allowed.
     void forEachVertex(std::function<void(const DfgVertex&)> f) const {
         for (const DfgVertexVar& vtx : m_varVertices) f(vtx);
+        for (const DfgVertexAst& vtx : m_astVertices) f(vtx);
         for (const DfgConst& vtx : m_constVertices) f(vtx);
         for (const DfgVertex& vtx : m_opVertices) f(vtx);
     }
@@ -572,7 +549,43 @@ public:
     // Returns the set of vertices in the downstream cones of the given vertices
     std::unique_ptr<std::unordered_set<const DfgVertex*>>
     sinkCone(const std::vector<const DfgVertex*>&) const VL_MT_DISABLED;
+    // Returns the set of vertices within an 'n' hop neighborhood of the given vertices
+    std::unique_ptr<std::unordered_set<const DfgVertex*>>
+    neighborhood(const std::vector<const DfgVertex*>&, size_t n) const VL_MT_DISABLED;
 };
+
+namespace V3Dfg {
+//-----------------------------------------------------------------------
+// Functions for compatibility tests
+
+// Returns true if variable can be represented in the graph
+inline bool isSupported(const AstVar* varp) {
+    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    if (varp->delayp()) return false;  // Cannot handle delayed variables
+    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
+    if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
+    if (DfgVertexVar::hasRWRefs(varp)) return false;  // Referenced via READWRITE references
+    return DfgDataType::fromAst(varp->dtypep());
+}
+
+// Returns true if variable can be represented in the graph
+inline bool isSupported(const AstVarScope* vscp) {
+    const AstNodeModule* const modp = vscp->scopep()->modp();
+    if (VN_IS(modp, Module)) {
+        // Regular module supported
+    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
+        // Interfaces supported if there are no virtual interfaces for
+        // them, otherwise they cannot be resovled statically.
+        if (ifacep->hasVirtualRef()) return false;
+    } else {
+        return false;  // Anything else (package, class, etc) not supported
+    }
+    if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
+    // Check the AstVar
+    return isSupported(vscp->varp());
+}
+
+}  //namespace V3Dfg
 
 //------------------------------------------------------------------------------
 // Map from DfgVertices to T_Value implemeneted via DfgVertex::m_userStorage
@@ -602,12 +615,12 @@ protected:
         , m_currentGeneration{that.m_currentGeneration} {
         that.m_dfgp = nullptr;
     }
-    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 
 public:
     ~DfgUserMapBase() {
         if (m_dfgp) m_dfgp->m_vertexUserInUse = false;
     }
+    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 };
 
 // Specialization where T_Value fits in DfgVertex::m_userStorage directly
@@ -621,11 +634,11 @@ class DfgUserMap<T_Value, true> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
     DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
     // METHODS
     // Retrieve mapped value for 'vtx', value initializing it on first access
@@ -670,11 +683,11 @@ class DfgUserMap<T_Value, false> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
     DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
     // METHODS
     // Retrieve mapped value for 'vtx', value initializing it on first access
@@ -808,6 +821,8 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
 // DfgVertex {{{
 
 bool DfgVertex::isCheaperThanLoad() const {
+    // Constants
+    if (is<DfgConst>()) return true;
     // Array sels are just address computation
     if (is<DfgArraySel>()) return true;
     // Small constant select from variable
@@ -825,6 +840,16 @@ bool DfgVertex::isCheaperThanLoad() const {
         if (!lCatp) return false;
         if (!lCatp->isZero()) return false;
         return catp->rhsp()->isCheaperThanLoad();
+    }
+    // Reduction of a cheap vertex
+    if (const DfgRedOr* const redOrp = cast<DfgRedOr>()) {
+        return redOrp->srcp()->isCheaperThanLoad();
+    }
+    if (const DfgRedAnd* const redAndp = cast<DfgRedAnd>()) {
+        return redAndp->srcp()->isCheaperThanLoad();
+    }
+    if (const DfgRedXor* const redXorp = cast<DfgRedXor>()) {
+        return redXorp->srcp()->isCheaperThanLoad();
     }
     // Otherwise probably not
     return false;

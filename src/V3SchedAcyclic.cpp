@@ -293,7 +293,7 @@ void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates
 }
 
 // Find all variables in a loop (SCC) that are candidates for splitting to break loops.
-std::string reportLoopVars(FileLine* warnFl, Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
+std::string reportLoopVars(FileLine* /*warnFl*/, Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
     std::ostringstream ss;
     // Vector of variables in UNOPTFLAT loop that are candidates for splitting.
     std::vector<Candidate> candidates;

@@ -25,8 +25,6 @@
 
 #include <deque>
 
-using namespace std;
-
 class V3PreExprToken final {
 public:
     // TYPES
@@ -161,7 +159,7 @@ class V3PreExpr final {
             }
         }
         const bool got = parser.result();
-        UASSERT_SELFTEST(bool, got, expect);
+        UASSERT_SELFTEST(const bool, got, expect);
     }
 
     // METHODS
@@ -185,7 +183,7 @@ class V3PreExpr final {
     }
     void reduce() {
         UASSERT(!m_ops.empty(), "lost op stack beginning END");
-        V3PreExprToken tok = m_ops.back();
+        const V3PreExprToken tok = m_ops.back();
         // UINFO(9, "Reduce " << tok.ascii());
         m_ops.pop_back();
         switch (tok.token()) {
@@ -239,7 +237,7 @@ class V3PreExpr final {
     }
     void parse() {
         while (!m_inputs.empty()) {
-            V3PreExprToken tok = m_inputs.front();
+            const V3PreExprToken tok = m_inputs.front();
             m_inputs.pop_front();
             UINFO(9, "input read " << tok.ascii());
             if (tok.isValue()) {
@@ -248,7 +246,7 @@ class V3PreExpr final {
             }
 
             UASSERT(!m_ops.empty(), "lost op stack beginning END");
-            V3PreExprToken topTok = m_ops.back();
+            const V3PreExprToken topTok = m_ops.back();
             auto action = parseTable[topTok.token()][tok.token()];
             UINFO(9, "pop action " << actionAscii(action) << " from parseTable[" << topTok.ascii()
                                    << "][" << tok.ascii() << "]");
@@ -268,7 +266,7 @@ class V3PreExpr final {
 
 public:
     // METHODS
-    V3PreExpr() {}
+    V3PreExpr() = default;
     ~V3PreExpr() = default;
     void reset(FileLine* flp) {
         m_inputs.clear();

@@ -108,7 +108,6 @@ protected:
               bool cutable = false) VL_MT_DISABLED;
     void cut() { m_weight = 0; }  // 0 weight is same as disconnected
     // CONSTRUCTORS
-protected:
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
                 const V3GraphEdge& old) VL_MT_DISABLED {
         init(graphp, fromp, top, old.m_weight, old.m_cutable);

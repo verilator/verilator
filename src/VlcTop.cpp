@@ -123,7 +123,7 @@ void VlcTop::writeInfo(const string& filename) {
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
             os << "DA:" << sc.lineno() << "," << sc.maxCount() << "\n";
-            int num_branches = sc.points().size();
+            const int num_branches = sc.points().size();
             if (num_branches == 1) continue;
             branchesFound += num_branches;
             int point_num = 0;
@@ -188,7 +188,7 @@ void VlcTop::rank() {
         uint64_t bestRemain = 0;
         for (const auto& testp : bytime) {
             if (!testp->rank()) {
-                uint64_t remain = testp->buckets().dataPopCount(remaining);
+                const uint64_t remain = testp->buckets().dataPopCount(remaining);
                 if (remain > bestRemain) {
                     bestTestp = testp;
                     bestRemain = remain;
@@ -256,9 +256,9 @@ void VlcTop::annotateCalcNeeded() {
         VlcSource& source = si.second;
         // UINFO(1, "Source " << source.name());
         if (opt.annotateAll()) source.needed(true);
-        VlcSource::LinenoMap& lines = source.lines();
+        const VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
-            VlcSourceCount& sc = li.second;
+            const VlcSourceCount& sc = li.second;
             // UINFO(0, "Source " << source.name() << ":" << sc.lineno() << ":" << sc.column());
             ++totCases;
             if (opt.countOk(sc.minCount())) {
@@ -302,7 +302,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
         int lineno = 0;
         while (!is.eof()) {
             lineno++;
-            string line = V3Os::getline(is);
+            const std::string line = V3Os::getline(is);
 
             VlcSource::LinenoMap& lines = source.lines();
             const auto lit = lines.find(lineno);
@@ -324,7 +324,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 os << std::setfill('0') << std::setw(6) << sc.maxCount() << " " << line << '\n';
 
                 if (opt.annotatePoints()) {
-                    for (auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
+                    for (const auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
                 }
             }
         }
