@@ -1244,19 +1244,19 @@ class ParamProcessor final {
                                              const AstNodeDType* origp) {
         exprp = exprp->skipRefp();
         origp = origp->skipRefp();
-        const auto* const exprCRDp = VN_CAST(exprp, ClassRefDType);
-        const auto* const origCRDp = VN_CAST(origp, ClassRefDType);
-        UINFO(9, "classTypeMatchesDefaultClone: exprCRD="
-                     << (exprCRDp ? "Y" : "N") << " origCRD=" << (origCRDp ? "Y" : "N") << endl);
-        if (!exprCRDp || !origCRDp) return false;
-        const AstNodeModule* const defaultClonep = VN_CAST(origCRDp->classp()->user4p(), Class);
-        const bool result = defaultClonep && defaultClonep == exprCRDp->classp();
-        UINFO(9, "  origClass=" << origCRDp->classp()->prettyNameQ()
-                                << " origClassp=" << cvtToHex(origCRDp->classp())
+        const auto* const exprClassRefp = VN_CAST(exprp, ClassRefDType);
+        const auto* const origClassRefp = VN_CAST(origp, ClassRefDType);
+        UINFO(9, "classTypeMatchesDefaultClone: exprClassRef=" << exprClassRefp << "  origClassRef="
+                                                               << origClassRefp);
+        if (!exprClassRefp || !origClassRefp) return false;
+        const AstNodeModule* const defaultClonep = VN_CAST(origClassRefp->classp()->user4p(), Class);
+        const bool result = defaultClonep && defaultClonep == exprClassRefp->classp();
+        UINFO(9, "  origClass=" << origClassRefp->classp()->prettyNameQ()
+                                << " origClassp=" << cvtToHex(origClassRefp->classp())
                                 << " user4p=" << (defaultClonep ? cvtToHex(defaultClonep) : "null")
-                                << " exprClass=" << exprCRDp->classp()->prettyNameQ()
-                                << " exprClassp=" << cvtToHex(exprCRDp->classp())
-                                << " result=" << result << endl);
+                                << " exprClass=" << exprClassRefp->classp()->prettyNameQ()
+                                << " exprClassp=" << cvtToHex(exprClassRefp->classp())
+                                << " result=" << result);
         return result;
     }
 
