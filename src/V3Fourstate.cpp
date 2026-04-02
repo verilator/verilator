@@ -123,20 +123,34 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     bool m_fourstateInSubtree
         = false;  // Whether a four-state expression is present in a sub-tree of an expression
 
+    void iterateChildrenSeparately(AstNode* const nodep) {
+        auto foreach = [this](AstNode* nodep) {
+            bool fourstateInSubtree = false;
+            for (; nodep; nodep = nodep->nextp()) {
+                m_fourstateInSubtree = false;
+                iterateNull(nodep);
+                fourstateInSubtree |= m_fourstateInSubtree;
+            }
+            return fourstateInSubtree;
+        };
+        m_fourstateInSubtree = foreach(nodep->op1p()) | foreach(nodep->op2p())
+                               | foreach(nodep->op3p()) | foreach(nodep->op4p());
+    }
+
     void visit(AstConst* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeVarRef* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep,
                      nodep->taskp()->fvarp() && nodep->taskp()->fvarp()->dtypep()->isFourstate(),
                      m_fourstateInSubtree);
@@ -144,34 +158,34 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstNodeUniop* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->lhsp()), m_fourstateInSubtree);
     }
 
     void visit(AstCastWrap* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeBiop* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp()),
                      m_fourstateInSubtree);
     }
 
     void visit(AstEqCase* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstNeqCase* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstDiv* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
             setFourstate(nodep,
                          isFourstate(nodep->lhsp()) || constp->num().isEqZero()
@@ -184,7 +198,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstNodeTriop* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep,
                      isFourstate(nodep->lhsp()) || isFourstate(nodep->rhsp())
                          || isFourstate(nodep->thsp()),
@@ -192,12 +206,12 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstCReset* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstSFormatArg* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->exprp()), m_fourstateInSubtree);
         if (isFourstate(nodep)) {
             nodep->v3fatalSrc("Unsuppored: four-state expression in formating string");
@@ -205,22 +219,22 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstSel* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->fromp()), m_fourstateInSubtree);
     }
 
     void visit(AstCExprUser* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
     void visit(AstRedOr* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->lhsp()), m_fourstateInSubtree);
     }
 
     void visit(AstNodeExpr* const nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
         if (AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType)) {
             if (basicp->keyword().isIntNumeric()) {
                 nodep->v3warn(E_UNSUPPORTED,
@@ -232,7 +246,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_fourstateInSubtree);
-        iterateChildren(nodep);
+        iterateChildrenSeparately(nodep);
     }
 
 public:
