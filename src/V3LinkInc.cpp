@@ -222,10 +222,28 @@ class LinkIncVisitor final : public VNVisitor {
     }
     AstNodeExpr* determine_operation(AstNode* nodep, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
         AstNodeExpr* operationp;
-        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
+        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub) || VN_IS(nodep, AssignCompoundSub)) {
             operationp = new AstSub{nodep->fileline(), lhsp, rhsp};
-        } else {
+        } else if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PostAdd) || VN_IS(nodep, AssignCompoundAdd)) {
             operationp = new AstAdd{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundMul)) {
+            operationp = new AstMul{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundDiv)) {
+            operationp = new AstDiv{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundModDiv)) {
+            operationp = new AstModDiv{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundAnd)) {
+            operationp = new AstAnd{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundOr)) {
+            operationp = new AstOr{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundXor)) {
+            operationp = new AstXor{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundShiftL)) {
+            operationp = new AstShiftL{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundShiftR)) {
+            operationp = new AstShiftR{nodep->fileline(), lhsp, rhsp};
+        } else if (VN_IS(nodep, AssignCompoundShiftRS)) {
+            operationp = new AstShiftRS{nodep->fileline(), lhsp, rhsp};
         }
         return operationp;
     }
@@ -244,7 +262,7 @@ class LinkIncVisitor final : public VNVisitor {
 
         prepost_stmt_sel_visit(nodep, rdFromp, rdBitp, wrFromp, exprp);
     }
-    void prepost_stmt_sel_visit(AstAssignCompound* nodep) {
+    void prepost_stmt_sel_visit(AstNodeAssignCompound* nodep) {
         // Special case array[something] += expr, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
@@ -294,9 +312,11 @@ class LinkIncVisitor final : public VNVisitor {
         iterateChildren(nodep);
         prepost_stmt_visit(nodep, nodep->lhsp(), nodep->thsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack());
     }
-    void prepost_stmt_visit(AstAssignCompound* nodep) {
+    void prepost_stmt_visit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
+        // UINFO(0, nodep->lhsp() << VN_CAST(nodep->lhsp(), NodeVarRef)->access());
         AstNodeExpr* storeTop = nodep->lhsp()->cloneTree(true);
+        // UINFO(0, storeTop << VN_CAST(storeTop, NodeVarRef)->access());
         AstNodeExpr* valuep = nodep->lhsp()->unlinkFrBack();
         // Fix access for varrefs
         if (AstNodeVarRef* varrefp = VN_CAST(valuep, NodeVarRef)) {
@@ -366,7 +386,8 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
     void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
     void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
-    void visit(AstAssignCompound* nodep) override {
+    void visit(AstNodeAssignCompound* nodep) override {
+        // UINFO(0, "FOO");
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
