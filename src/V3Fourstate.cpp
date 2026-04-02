@@ -281,13 +281,13 @@ class FourstateVisitor final : public VNVisitor {
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
     AstNode* m_currentFTaskArgp = nullptr;  // Current argument variable of FTaskRef - if not
                                             // variable it is meaningless
-    AstNode* m_currentPinp = nullptr;  // Current Pin of a Cell
+    AstNode* m_currentArgVarp = nullptr;  // Current FTaskRef Argument Variable
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
 
     // array - whether numeric
     // map - width
     std::array<std::map<int, std::vector<AstVar*>>, 2>
-        m_tmpVarps;  // Existing not in used temporary variables
+        m_tmpUnusedVarps;  // Existing not in use temporary variables
     std::vector<AstVar*> m_tmpVarpsInUse;  // Temporary variables that are being currently used
 
     // Original AstVar* and pair of assignments <value, xz>
@@ -406,7 +406,7 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
-    static AstConst* createConst(const AstNodeExpr* const exprp, const bool ones = false) {
+    static AstConst* createZeroOrOnesp(const AstNodeExpr* const exprp, const bool ones = false) {
         AstConst* const resultp
             = new AstConst{exprp->fileline(), AstConst::WidthedValue{}, exprp->width(), 0};
         resultp->dtypeSetBitUnsized(exprp->width(), exprp->widthMin(), exprp->dtypep()->numeric());
@@ -435,7 +435,7 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
-    AstVar* createPlaceHolderVar(FileLine* const flp) {
+    AstVar* createPlaceholderVarp(FileLine* const flp) {
         AstVar* const newp
             = new AstVar{flp, VVarType::BLOCKTEMP, "__VplaceHolder", VFlagBitPacked{}, 1};
         m_varpsToRemove.push_back(newp);
@@ -474,7 +474,8 @@ class FourstateVisitor final : public VNVisitor {
                     "There is less used tmp variables than before");
             for (size_t i = m_tmpVarpsInUseLen; i < m_visitor.m_tmpVarpsInUse.size(); ++i) {
                 AstVar* const varp = m_visitor.m_tmpVarpsInUse[i];
-                m_visitor.m_tmpVarps[varp->dtypep()->numeric().isSigned() ? 1 : 0][varp->width()]
+                m_visitor
+                    .m_tmpUnusedVarps[varp->dtypep()->numeric().isSigned() ? 1 : 0][varp->width()]
                     .push_back(varp);
             }
             m_visitor.m_tmpVarpsInUse.resize(m_tmpVarpsInUseLen);
@@ -489,7 +490,7 @@ class FourstateVisitor final : public VNVisitor {
                 << nodep);
         UASSERT_OBJ(m_currentTmpSpotp, nodep, "No where to place tmp variable");
         AstNodeDType* const dtypep = nodep->dtypep();
-        auto& pool = m_tmpVarps[dtypep->numeric().isSigned() ? 1 : 0];
+        auto& pool = m_tmpUnusedVarps[dtypep->numeric().isSigned() ? 1 : 0];
         if (!pool[dtypep->width()].empty()) {
             AstVar* varp = pool[dtypep->width()].back();
             pool[dtypep->width()].pop_back();
@@ -513,11 +514,11 @@ class FourstateVisitor final : public VNVisitor {
             AstVar* portEndp;
             if (ftaskp->fvarp() == varp) {
                 if (!ftaskp->stmtsp()) {
-                    ftaskp->addStmtsp(portEndp = createPlaceHolderVar(ftaskp->fileline()));
+                    ftaskp->addStmtsp(portEndp = createPlaceholderVarp(ftaskp->fileline()));
                 } else if (AstVar* const portp = VN_CAST(ftaskp->stmtsp(), Var)) {
                     if (portp->varType() != VVarType::PORT) {
                         portp->addHereThisAsNext(portEndp
-                                                 = createPlaceHolderVar(ftaskp->fileline()));
+                                                 = createPlaceholderVarp(ftaskp->fileline()));
                     } else {
                         portEndp = portp;
                         AstVar* iter;
@@ -528,7 +529,7 @@ class FourstateVisitor final : public VNVisitor {
                     }
                 } else {
                     ftaskp->stmtsp()->addHereThisAsNext(
-                        portEndp = createPlaceHolderVar(ftaskp->fileline()));
+                        portEndp = createPlaceholderVarp(ftaskp->fileline()));
                 }
                 AstVar* const returnValuep
                     = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + "__Vvalue",
@@ -606,7 +607,7 @@ class FourstateVisitor final : public VNVisitor {
             } else {
                 valueExpr->deleteTree();
             }
-            return createConst(selp, !defaultsToZero);
+            return createZeroOrOnesp(selp, !defaultsToZero);
         }
         AstSel* const newp = [selp] {
             AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
@@ -641,7 +642,7 @@ class FourstateVisitor final : public VNVisitor {
             conditionp = new AstLt{flp, maxmsbConstp, lsbp->cloneTree(false)};
         }
         newp->lsbp(lsbp);
-        return new AstCond{flp, conditionp, createConst(selp, !defaultsToZero), newp};
+        return new AstCond{flp, conditionp, createZeroOrOnesp(selp, !defaultsToZero), newp};
     }
 
     // Base visitor for Value and XZ visitor, contains some common functionalities
@@ -732,10 +733,10 @@ class FourstateVisitor final : public VNVisitor {
                 ifp->addThensp(thenifp);
                 thenifp->addThensp(
                     new AstAssign{flp, new AstVarRef{flp, resultValueTmpVarp, VAccess::WRITE},
-                                  createConst(thenCopyp, true)});
+                                  createZeroOrOnesp(thenCopyp, true)});
                 thenifp->addThensp(
                     new AstAssign{flp, new AstVarRef{flp, resultXZTmpVarp, VAccess::WRITE},
-                                  createConst(thenCopyp, true)});
+                                  createZeroOrOnesp(thenCopyp, true)});
                 thenCopyp->deleteTree();
                 elseCopyp->deleteTree();
                 twoStateIfp = new AstIf{flp, conditionValuep};
@@ -1026,7 +1027,7 @@ class FourstateVisitor final : public VNVisitor {
                 flp,
                 new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
                                             getFourStateExpressionXZ(biop->rhsp())}},
-                createConst(biop, true), newp};
+                createZeroOrOnesp(biop, true), newp};
         }
 
         void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticValue(addp); }
@@ -1178,7 +1179,7 @@ class FourstateVisitor final : public VNVisitor {
                 flp,
                 new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
                                             getFourStateExpressionXZ(biop->rhsp())}},
-                createConst(biop, true), createConst(biop)};
+                createZeroOrOnesp(biop, true), createZeroOrOnesp(biop)};
         }
 
         void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticXZ(addp); }
@@ -1254,7 +1255,7 @@ class FourstateVisitor final : public VNVisitor {
 
         AstNodeExpr* getFourStateExpressionXZ(AstNodeExpr* const exprp,
                                               bool putIntoTmp = true) override {
-            if (!isFourstate(exprp)) return createConst(exprp);
+            if (!isFourstate(exprp)) return createZeroOrOnesp(exprp);
             return get(exprp, putIntoTmp);
         }
     };
@@ -1443,13 +1444,13 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstCell* const nodep) override {
-        VL_RESTORER(m_currentPinp);
-        m_currentPinp = nodep->modp()->stmtsp();
+        VL_RESTORER(m_currentArgVarp);
+        m_currentArgVarp = nodep->modp()->stmtsp();
         iterateChildren(nodep);
     }
 
     void visit(AstPin* const nodep) override {
-        AstVar* const varp = VN_CAST(m_currentPinp, Var);
+        AstVar* const varp = VN_CAST(m_currentArgVarp, Var);
         UASSERT_OBJ(varp, nodep, "Cell has no more arguments?");
         if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
             if (varp->dtypep()->isFourstate()) {
@@ -1460,18 +1461,18 @@ class FourstateVisitor final : public VNVisitor {
                 nodep->exprp(getFourStateExpressionValue(oldp));
                 oldp->deleteTree();
                 splitVar(varp);  // Ensure that variable is splitted
-                UASSERT_OBJ(m_currentPinp->nextp() && m_currentPinp->nextp()->nextp(), varp,
+                UASSERT_OBJ(m_currentArgVarp->nextp() && m_currentArgVarp->nextp()->nextp(), varp,
                             "Varp was not split correctly");
-                m_currentPinp = m_currentPinp->nextp();
-                nodep->modVarp(VN_AS(m_currentPinp, Var));
-                newp->modVarp(VN_AS(m_currentPinp->nextp(), Var));
+                m_currentArgVarp = m_currentArgVarp->nextp();
+                nodep->modVarp(VN_AS(m_currentArgVarp, Var));
+                newp->modVarp(VN_AS(m_currentArgVarp->nextp(), Var));
             } else if (isFourstate(exprp)) {
                 AstNodeExpr* const oldp = exprp->unlinkFrBack();
                 nodep->exprp(getTwoStateCast(oldp));
                 oldp->deleteTree();
             }
         }
-        m_currentPinp = m_currentPinp->nextp();
+        m_currentArgVarp = m_currentArgVarp->nextp();
         iterateChildren(nodep);
     }
 
@@ -1588,7 +1589,8 @@ class FourstateVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        UASSERT_OBJ(!isFourstate(nodep), nodep,
+                    "This shall be reached only by two-state expressions");
         FileLine* const flp = nodep->fileline();
         AstVar* resultVarp = createTmp(nodep);
         addPrecalculation(new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
@@ -1610,7 +1612,8 @@ class FourstateVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        UASSERT_OBJ(!isFourstate(nodep), nodep,
+                    "This shall be reached only by two-state expressions");
         FileLine* const flp = nodep->fileline();
         AstVar* resultVarp = createTmp(nodep);
         addPrecalculation(new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE},
@@ -1632,7 +1635,8 @@ class FourstateVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        UASSERT_OBJ(!isFourstate(nodep), nodep, "This shall reach only by two-state expressions");
+        UASSERT_OBJ(!isFourstate(nodep), nodep,
+                    "This shall be reached only by two-state expressions");
         FileLine* const flp = nodep->fileline();
         AstVar* resultVarp = createTmp(nodep);
         addPrecalculation(
@@ -1651,10 +1655,10 @@ class FourstateVisitor final : public VNVisitor {
 
     void visit(AstNodeFTask* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
-        VL_RESTORER(m_tmpVarps);
+        VL_RESTORER(m_tmpUnusedVarps);
         VL_RESTORER(m_tmpFuncLocal);
         m_tmpFuncLocal = true;
-        m_currentTmpSpotp = createPlaceHolderVar(nodep->fileline());
+        m_currentTmpSpotp = createPlaceholderVarp(nodep->fileline());
         if (AstNode* stmtp = nodep->stmtsp()) {
             while (VN_IS(stmtp->nextp(), Var)) stmtp = stmtp->nextp();
             stmtp->addNextHere(m_currentTmpSpotp);
@@ -1671,8 +1675,8 @@ class FourstateVisitor final : public VNVisitor {
 
     void visit(AstNodeModule* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
-        VL_RESTORER(m_tmpVarps);
-        m_currentTmpSpotp = createPlaceHolderVar(nodep->fileline());
+        VL_RESTORER(m_tmpUnusedVarps);
+        m_currentTmpSpotp = createPlaceholderVarp(nodep->fileline());
         if (AstNode* stmtp = nodep->stmtsp()) {
             stmtp->addHereThisAsNext(m_currentTmpSpotp);
         } else {
