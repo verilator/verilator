@@ -17,7 +17,7 @@ if re.search(r'clang', test.cxx_version):
     test.skip("uvm_regex.cc from upstream has clang warnings")
 
 test.compile(verilator_flags2=[
-    "--binary", test.build_jobs, "--vpi", "+define+T_V2017_1_0", "+incdir+t/uvm/v2017_1_0",
+    "--binary", "-Wno-IMPLICITSTATIC", test.build_jobs, "--vpi", "+define+T_V2017_1_0", "+incdir+t/uvm/v2017_1_0",
     test.pli_filename
 ])
 

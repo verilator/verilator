@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary --trace-fst'])
+test.compile(verilator_flags2=['--binary --trace-fst', '-Wno-IMPLICITSTATIC'])
 
 test.execute()
 
