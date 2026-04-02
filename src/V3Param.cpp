@@ -1235,6 +1235,32 @@ class ParamProcessor final {
         }
     }
 
+    // Check if exprp is a ClassRefDType whose class is the default-parameter clone
+    // of origp's template class.  This catches the case where an explicit type parameter
+    // like Holder#(W#(int)) resolves to the same specialization as the implicit default
+    // Holder#(), because W#(int) deparameterizes to W_ (the all-default clone of W).
+    // Uses the user4p link set at line ~1658 when defaultsResolved is true.
+    static bool classTypeMatchesDefaultClone(const AstNodeDType* exprp,
+                                             const AstNodeDType* origp) {
+        exprp = exprp->skipRefp();
+        origp = origp->skipRefp();
+        const auto* const exprClassRefp = VN_CAST(exprp, ClassRefDType);
+        const auto* const origClassRefp = VN_CAST(origp, ClassRefDType);
+        UINFO(9, "classTypeMatchesDefaultClone: exprClassRef="
+                     << exprClassRefp << "  origClassRef=" << origClassRefp);
+        if (!exprClassRefp || !origClassRefp) return false;
+        const AstNodeModule* const defaultClonep
+            = VN_CAST(origClassRefp->classp()->user4p(), Class);
+        const bool result = defaultClonep && defaultClonep == exprClassRefp->classp();
+        UINFO(9, "  origClass=" << origClassRefp->classp()->prettyNameQ()
+                                << " origClassp=" << cvtToHex(origClassRefp->classp())
+                                << " user4p=" << (defaultClonep ? cvtToHex(defaultClonep) : "null")
+                                << " exprClass=" << exprClassRefp->classp()->prettyNameQ()
+                                << " exprClassp=" << cvtToHex(exprClassRefp->classp())
+                                << " result=" << result);
+        return result;
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -1358,7 +1384,7 @@ class ParamProcessor final {
                                   << " violates parameter's forwarding type '"
                                   << modvarp->fwdType().ascii() << "'");
                 }
-                if (exprp->similarDType(origp)) {
+                if (exprp->similarDType(origp) || classTypeMatchesDefaultClone(exprp, origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
@@ -1620,11 +1646,14 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        // Classes/modules with type parameters need specialization even when types match defaults.
-        // This is required for UVM parameterized classes. However, interfaces should NOT
+        // Template classes with type parameters need specialization even when types match
+        // defaults. This is required for UVM parameterized classes. However, interfaces should NOT
         // be specialized when type params match defaults (needed for nested interface ports).
+        // Already-specialized clones (hasGParam=false) must not be re-cloned, otherwise
+        // nested class type parameters cause unbounded re-deparameterization (Holder_ ->
+        // Holder__).
         bool defaultsResolved = false;
-        if (!any_overrides && !VN_IS(srcModp, Iface)) {
+        if (!any_overrides && !VN_IS(srcModp, Iface) && srcModp->hasGParam()) {
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (pinp->modPTypep()) {
                     any_overrides = true;
