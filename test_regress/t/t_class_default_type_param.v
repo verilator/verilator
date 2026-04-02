@@ -38,4 +38,3 @@ module t;
     $finish;
   end
 endmodule
-
