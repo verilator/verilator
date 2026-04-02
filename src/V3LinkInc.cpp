@@ -298,6 +298,10 @@ class LinkIncVisitor final : public VNVisitor {
         iterateChildren(nodep);
         AstNodeExpr* storeTop = nodep->lhsp()->cloneTree(true);
         AstNodeExpr* valuep = nodep->lhsp()->unlinkFrBack();
+        // Fix access for varrefs
+        if (AstNodeVarRef* varrefp = VN_CAST(valuep, NodeVarRef)) {
+            varrefp->access(VAccess::READ);
+        }
         prepost_stmt_visit(nodep, nodep->rhsp(), storeTop, valuep);
     }
     void prepost_stmt_visit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
