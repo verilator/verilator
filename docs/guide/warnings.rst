@@ -1262,6 +1262,11 @@ List Of Warnings
    :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
    backwards compatibility, new projects should use :option:`ASCRANGE`.
 
+.. option:: LOGICCAST
+
+   Warns about not supported four-state logic feature.
+   Since a two-state logic variation of this feature is fully supported
+   an implicit logic cast to two-state logic is made.
 
 .. option:: MINTYPMAXDLY
 
