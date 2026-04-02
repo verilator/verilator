@@ -75,7 +75,8 @@ static LogicType getLogicType(const AstNodeExpr* const exprp) {
 
 static bool isFourstate(const AstNodeExpr* const exprp) {
     const LogicType logic = getLogicType(exprp);
-    UASSERT_OBJ(logic != UNINITIALIZED, exprp, "Expression logic type is unevaluated");
+    UASSERT_OBJ(logic != UNINITIALIZED, exprp,
+                "Logic type of expression: " << exprp->typeName() << " is unevaluated");
     return logic == FOUR_STATE;
 }
 
@@ -217,9 +218,6 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     void visit(AstSFormatArg* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep, isFourstate(nodep->exprp()), m_fourstateInSubtree);
-        if (isFourstate(nodep)) {
-            nodep->v3fatalSrc("Unsuppored: four-state expression in formating string");
-        }
     }
 
     void visit(AstSel* const nodep) override {
@@ -237,12 +235,59 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, isFourstate(nodep->lhsp()), m_fourstateInSubtree);
     }
 
+    void visit(AstTime* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        // Time is actually a fourstate but we never put `x` or `z` there
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstScopeName* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstClassOrPackageRef* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstCMethodHard* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstCExpr* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstRand* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstRandRNG* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstMemberSel* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
+    }
+
+    void visit(AstSFormatF* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
     void visit(AstNodeExpr* const nodep) override {
         iterateChildrenSeparately(nodep);
         if (AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType)) {
             if (basicp->keyword().isIntNumeric()) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Operator not supported in the four-state mode");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Operator "
+                                                 << nodep->typeName()
+                                                 << " not supported in the four-state mode");
                 setLogicType(nodep, TWO_STATE);  // Set an arbitrary logic type
             }
         }
@@ -1053,8 +1098,9 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         void visit(AstNodeExpr* const nodep) override {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Operator "
+                                             << nodep->typeName()
+                                             << " not supported in the four-state mode");
             // Workaround to avoid Internal errors
             m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         }
@@ -1234,8 +1280,9 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         void visit(AstNodeExpr* const nodep) override {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Operator not supported in the four-state mode");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Operator "
+                                             << nodep->typeName()
+                                             << " not supported in the four-state mode");
             // Workaround to avoid Internal errors
             m_result = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         }
@@ -1436,10 +1483,16 @@ class FourstateVisitor final : public VNVisitor {
                 exprp->v3warn(LOGICCAST,
                               "Using four-state values in formatting strings is not supported yet "
                               "- all four-state values will be implicitly casted to two-state");
-                AstNodeExpr* const newp = getTwoStateCast(exprp);
-                exprp->replaceWith(newp);
-                exprp->deleteTree();
-                exprp = newp;
+                if (AstSFormatArg* const sformatArgp = VN_CAST(exprp, SFormatArg)) {
+                    AstNodeExpr* const currentExprp = sformatArgp->exprp();
+                    currentExprp->replaceWith(getTwoStateCast(currentExprp));
+                    currentExprp->deleteTree();
+                } else {
+                    AstNodeExpr* const newp = getTwoStateCast(exprp);
+                    exprp->replaceWith(newp);
+                    exprp->deleteTree();
+                    exprp = newp;
+                }
             }
         }
         iterateChildren(nodep);
