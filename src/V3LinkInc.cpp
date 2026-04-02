@@ -244,6 +244,8 @@ class LinkIncVisitor final : public VNVisitor {
             operationp = new AstShiftR{nodep->fileline(), lhsp, rhsp};
         } else if (VN_IS(nodep, AssignCompoundShiftRS)) {
             operationp = new AstShiftRS{nodep->fileline(), lhsp, rhsp};
+        } else {
+            operationp = nullptr;
         }
         return operationp;
     }
