@@ -349,7 +349,8 @@ class LinkIncVisitor final : public VNVisitor {
 
                 AstNode* cloned = nodep->lhsp()->cloneTree(true);
                 AstSelBit* const rdSelbitp = VN_CAST(cloned, SelBit);
-                AstNodeExpr* const rdFromp = rdSelbitp->fromp()->unlinkFrBack();
+                AstNodeVarRef* const rdFromp = VN_CAST(rdSelbitp->fromp()->unlinkFrBack(), NodeVarRef);
+                rdFromp->access(VAccess::READ);
                 AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
                 AstSelBit* const wrSelbitp = VN_CAST(nodep->lhsp(), SelBit);
                 AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
