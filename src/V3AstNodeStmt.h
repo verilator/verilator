@@ -1274,7 +1274,7 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
-    const VBasicDTypeKwd m_dtypeKwd;
+    const VBasicDTypeKwd m_dtypeKwd;  // dtype keyword of traced signal
 
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
@@ -1308,7 +1308,7 @@ public:
     uint32_t codeInc() const {
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
-               * (1 + VN_IS(valuep(), FourstateExpr))  // Fourstate variables take twise
+               * (1 + VN_IS(valuep(), FourstateExpr))  // Fourstate variables take twice
                                                        // as much space as they are wide
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
     }

@@ -1913,7 +1913,8 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
-    VBasicDTypeKwd m_fourstateOriginalDTypeKwd;
+    VBasicDTypeKwd
+        m_fourstateOriginalDTypeKwd;  // Original dtype of a four-state var - before splitting
     int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
