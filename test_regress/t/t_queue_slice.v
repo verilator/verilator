@@ -68,6 +68,9 @@ module t;
     `checkp(q, "'{\"d\", \"e\", \"f\"}");
     q = q[$:$];
     `checkp(q, "'{\"f\"}");
+    q = q[1:$];
+    `checkp("'{}");
+
 
     // Similar using implied notation
     q = '{"f"};
@@ -83,11 +86,6 @@ module t;
     q = {"a", "b"};
     q = {q, q};
     `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"}");
-
-    q = {"a"};
-    q = q[1:$];
-    i = q.size();
-    `checkh(i, 0);
 
     begin
       static string ai[$] = '{"Foo", "Bar"};
