@@ -14,6 +14,13 @@ module t;
   int a;
   int b;
   int i;
+  int arr[5];
+
+  // function with side effects
+  function int foo();
+    $display("foo");
+    return 1;
+  endfunction;
 
   // verilator lint_off ASSIGNEQEXPR
   initial begin
@@ -89,6 +96,18 @@ module t;
     `checkd(a, 18);
     `checkd(i, 18);
     `checkd(b, 7);
+
+    arr[0] = 3;
+    arr[0] += 4;
+    `checkd(arr[0], 7);
+
+    arr[foo()] = 1;
+    arr[foo()] += 2;
+    `checkd(arr[1], 3);
+
+    arr[foo() + 1] = 6;
+    arr[foo() + 1] -= 5;
+    `checkd(arr[2], 1);
 
     $write("*-* All Finished *-*\n");
     $finish;
