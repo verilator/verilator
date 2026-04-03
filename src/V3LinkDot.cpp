@@ -5067,6 +5067,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotPos = DP_MEMBER;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""
+            // Only flag FTaskRefs under generate-if/case blocks that may be
+            // pruned.  GenFor and plain begin-blocks won't be pruned by V3Param.
+            // VarXRef uses the broader m_genBlk flag (set for all GenBlocks)
+            // because genfor unrolling also removes variables.
+            if (m_ds.m_genBlk && m_ds.m_dotSymp) {
+                const AstNode* const blkp = m_ds.m_dotSymp->nodep();
+                if (VN_IS(blkp, GenBlock)
+                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCase))) {
+                    nodep->containsGenBlock(true);
+                }
+            }
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
