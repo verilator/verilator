@@ -1309,11 +1309,9 @@ class ParamProcessor final {
             } else {
                 UINFO(9, "cellPinCleanup: before constify " << pinp << " " << modvarp);
                 V3Const::constifyParamsEdit(pinp->exprp());
-                // Default parameter value may contain type casts (e.g.,
-                // byte'(8)) that prevent it from being a CONST node.
-                // Constify so it becomes a CONST for comparison below.
-                // Only target Cast/CastSize nodes to avoid side effects
-                // on structured values (Pattern, InitArray, etc.).
+                // Cast/CastSize default values are not yet folded by V3Width.
+                // Constify here so the comparison below sees a Const node.
+                // Other node kinds are handled in the branches above.
                 if (modvarp->valuep()
                     && (VN_IS(modvarp->valuep(), Cast) || VN_IS(modvarp->valuep(), CastSize))) {
                     V3Const::constifyParamsEdit(modvarp->valuep());

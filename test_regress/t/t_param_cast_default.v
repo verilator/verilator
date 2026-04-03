@@ -9,6 +9,15 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// Original #6281 reproducer: parameter passed via localparam variable
+// vs. literal constant should resolve to the same specialization.
+// Fixed by ParameterizedHierBlocks::areSame fallback (landed earlier).
+class ClsIntDefault #(parameter int P = 32);
+  function int get_p;
+    return P;
+  endfunction
+endclass
+
 // Parameter with byte cast default value
 class ClsByteCast #(parameter byte P = byte'(8));
   function byte get_p;
@@ -38,6 +47,11 @@ module sub #(parameter byte P = byte'(8));
 endmodule
 
 module t;
+  // Original #6281 case: localparam variable vs. literal constant
+  localparam int WIDTH = 32;
+  ClsIntDefault #(32)   orig_a;
+  ClsIntDefault #(WIDTH) orig_b;
+
   // Byte cast default: #() and #(8) should be same type
   ClsByteCast #() byte_a;
   ClsByteCast #(8) byte_b;
@@ -61,6 +75,10 @@ module t;
   sub #(8) sub_explicit ();
 
   initial begin
+    orig_a = new;
+    orig_b = orig_a;
+    `checkd(orig_b.get_p(), 32);
+
     byte_a = new;
     byte_b = byte_a;
     `checkd(byte_a.get_p(), 8);
