@@ -131,7 +131,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
             bool fourstateInSubtree = false;
             for (; nodep; nodep = nodep->nextp()) {
                 m_fourstateInSubtree = false;
-                iterateNull(nodep);
+                iterate(nodep);
                 fourstateInSubtree |= m_fourstateInSubtree;
             }
             return fourstateInSubtree;
