@@ -233,6 +233,7 @@ private:
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
+    bool m_containsGenBlock = false;  // Contains gen block reference
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -259,6 +260,8 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     bool pli() const { return m_pli; }
     void pli(bool flag) { m_pli = flag; }
+    bool containsGenBlock() const { return m_containsGenBlock; }
+    void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     bool isPure() override;
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }

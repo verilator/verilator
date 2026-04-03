@@ -2529,6 +2529,14 @@ class ParamVisitor final : public VNVisitor {
         }
         return false;
     }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to task/func
+            nodep->taskp(nullptr);
+            return;
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstVarXRef* nodep) override {
         if (nodep->containsGenBlock()) {
             // Needs relink, as may remove pointed-to var
