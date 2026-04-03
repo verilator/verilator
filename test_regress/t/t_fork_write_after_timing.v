@@ -40,7 +40,16 @@ module t;
     `checkd(x6, 0)
     `checkd(x7, 4)
 
-    #5 $write("*-* All Finished *-*\n");
+    #5;
+    `checkd(x1, 1)
+    `checkd(x2, -1)
+    `checkd(x3, 1)
+    `checkd(x4, 2)
+    `checkd(x5, 3)
+    `checkd(x6, 0)
+    `checkd(x7, 4)
+        
+    $write("*-* All Finished *-*\n");
     $finish;
   end
   always #1 t5(x5);
