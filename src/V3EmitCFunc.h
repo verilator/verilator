@@ -1517,7 +1517,13 @@ public:
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
-        puts(nodep->varp()->nameProtect());
+        if (nodep->varp()->isIfaceRef()) {
+            // varp is the __Viftop companion (e.g. "tx__Viftop"); use the
+            // MemberSel name which matches the cell's C++ member (e.g. "tx").
+            puts(nodep->nameProtect());
+        } else {
+            puts(nodep->varp()->nameProtect());
+        }
     }
     void visit(AstStructSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());

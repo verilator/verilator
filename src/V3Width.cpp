@@ -3574,6 +3574,32 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
+                if (AstCell* const cellp = VN_CAST(foundp, Cell)) {
+                    // Sub-interface cell selection (e.g. vif.tx): resolve to the
+                    // companion __Viftop var created by V3LinkCells for its dtype.
+                    if (VN_IS(cellp->modp(), Iface)) {
+                        const string viftopName = cellp->name() + "__Viftop";
+                        AstNodeModule* const parentIfacep = adtypep->ifaceViaCellp();
+                        AstVar* viftopVarp = nullptr;
+                        for (AstNode* itemp = parentIfacep->stmtsp(); itemp;
+                             itemp = itemp->nextp()) {
+                            if (AstVar* const vp = VN_CAST(itemp, Var)) {
+                                if (vp->name() == viftopName) {
+                                    viftopVarp = vp;
+                                    break;
+                                }
+                            }
+                        }
+                        UASSERT_OBJ(viftopVarp, nodep,
+                                    "No __Viftop variable for sub-interface cell");
+                        if (!viftopVarp->didWidth()) userIterate(viftopVarp, nullptr);
+                        nodep->dtypep(viftopVarp->dtypep());
+                        nodep->varp(viftopVarp);
+                        viftopVarp->sensIfacep(VN_AS(cellp->modp(), Iface));
+                        nodep->didWidth(true);
+                        return;
+                    }
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
@@ -3695,12 +3721,14 @@ class WidthVisitor final : public VNVisitor {
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
-        AstNodeModule* const ifacep = adtypep->ifacep();
+        // ifaceViaCellp() handles dtypes with cellp-only (no ifacep), as produced
+        // by sub-interface selection, enabling chained access (e.g. vif.tx.Tx).
+        AstNodeModule* const ifacep = adtypep->ifaceViaCellp();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == nodep->name()) return itemp;
-            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport)) {
+            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport) || VN_IS(itemp, Cell)) {
                 speller.pushCandidate(itemp->prettyName());
             }
         }
