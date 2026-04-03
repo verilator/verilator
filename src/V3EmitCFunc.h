@@ -1518,8 +1518,8 @@ public:
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
         if (nodep->varp()->isIfaceRef()) {
-            // Sub-interface access: MemberSel name matches the cell's C++ member,
-            // while the __Viftop var has a different name
+            // varp is the __Viftop companion (e.g. "tx__Viftop"); use the
+            // MemberSel name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
             puts(nodep->varp()->nameProtect());

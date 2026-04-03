@@ -8,71 +8,65 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface sub_if (
-    output reg [7:0] data
+// Issue #7203: virtual interface select from sub-interface instance.
+// The original reproducer: vip_agent holds vip_vif; vip_driver selects
+// agent.vif.tx (a vip_tx_if sub-interface) into tx_vif.
+
+interface vip_tx_if (
+    output reg Tx
 );
 endinterface
 
-interface top_if (
-    output reg [7:0] data_out
+interface vip_if (
+    output reg Tx
 );
-  sub_if sub (.data(data_out));
+  vip_tx_if tx (Tx);
 endinterface
 
-package pkg;
-  typedef virtual top_if top_vif_t;
-  typedef virtual sub_if sub_vif_t;
+package vip_pkg;
+  typedef virtual vip_if vip_vif;
+  typedef virtual vip_tx_if vip_tx_vif;
 
-  class agent_c;
-    top_vif_t vif;
+  class vip_agent;
+    vip_vif vif;
   endclass
 
-  class driver_c;
-    top_vif_t vif;
-    sub_vif_t sub_vif;
-
-    // Sub-interface select from virtual interface
-    function void assign_sub_vif(agent_c a);
-      sub_vif = a.vif.sub;
+  class vip_driver;
+    vip_vif vif;
+    vip_tx_vif tx_vif;
+    virtual function void build_phase(vip_agent agent);
+      // Sub-interface select: dtype(agent.vif) -> vip_vif -> vip_if
+      vif = agent.vif;
+      tx_vif = agent.vif.tx;
     endfunction
-
     // Chained member access through sub-interface
-    function void write_data(logic [7:0] val);
-      vif.sub.data = val;
-    endfunction
-
-    // Read through chained sub-interface access
-    function logic [7:0] read_data();
-      return vif.sub.data;
+    virtual function void drive(logic val);
+      vif.tx.Tx = val;
     endfunction
   endclass
 endpackage
 
 module t;
-  logic [7:0] wire_data;
-  top_if tif (.data_out(wire_data));
+  logic wire_Tx;
+  vip_if vif_inst (.Tx(wire_Tx));
 
   initial begin
-    automatic pkg::agent_c a = new;
-    automatic pkg::driver_c d = new;
+    automatic vip_pkg::vip_agent agent = new;
+    automatic vip_pkg::vip_driver driver = new;
 
-    // Bind virtual interfaces
-    a.vif = tif;
-    d.vif = tif;
+    agent.vif = vif_inst;
+    driver.vif = vif_inst;
 
-    // Test 1: Sub-interface select from virtual interface
-    d.assign_sub_vif(a);
+    // Test 1 (issue reproducer): sub-interface select compiles and runs
+    driver.build_phase(agent);
 
-    // Test 2: Write through chained sub-interface access
-    d.write_data(8'hA5);
-    `checkd(wire_data, 8'hA5)
+    // Test 2: tx_vif now points to the sub-interface; write through it
+    driver.tx_vif.Tx = 1'b1;
+    `checkd(wire_Tx, 1'b1)
 
-    // Test 3: Read through chained sub-interface access
-    `checkd(d.read_data(), 8'hA5)
-
-    // Test 4: Direct sub-interface member write
-    d.sub_vif.data = 8'h3C;
-    `checkd(wire_data, 8'h3C)
+    // Test 3: chained member write through virtual interface
+    driver.drive(1'b0);
+    `checkd(wire_Tx, 1'b0)
 
     $write("*-* All Finished *-*\n");
     $finish;

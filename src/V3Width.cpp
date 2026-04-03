@@ -3574,9 +3574,8 @@ class WidthVisitor final : public VNVisitor {
                     return;
                 }
                 if (AstCell* const cellp = VN_CAST(foundp, Cell)) {
-                    // Sub-interface instance selection (e.g. vif.sub_if):
-                    // find the __Viftop variable created by V3LinkCells for
-                    // this cell and resolve the MemberSel to that variable.
+                    // Sub-interface cell selection (e.g. vif.tx): resolve to the
+                    // companion __Viftop var created by V3LinkCells for its dtype.
                     if (VN_IS(cellp->modp(), Iface)) {
                         const string viftopName = cellp->name() + "__Viftop";
                         AstNodeModule* const parentIfacep = adtypep->ifaceViaCellp();
@@ -3721,6 +3720,8 @@ class WidthVisitor final : public VNVisitor {
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
+        // ifaceViaCellp() handles dtypes with cellp-only (no ifacep), as produced
+        // by sub-interface selection, enabling chained access (e.g. vif.tx.Tx).
         AstNodeModule* const ifacep = adtypep->ifaceViaCellp();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
         VSpellCheck speller;
