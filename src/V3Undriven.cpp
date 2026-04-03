@@ -48,6 +48,7 @@ class UndrivenVarEntry final {
                                                    // within always_comb, else nullptr
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
+    const AstNode* m_contAssignp = nullptr;  // varref if in continuous assignment driven
     const AstNode* m_procWritep = nullptr;  // varref if written in process
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
@@ -139,6 +140,8 @@ public:
 
     const AstNode* initStaticp() const { return m_initStaticp; }
     void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
+    const AstNode* contAssignp() const { return m_contAssignp; }
+    void contAssignp(const AstNode* nodep) { m_contAssignp = nodep; }
     const AstNode* procWritep() const { return m_procWritep; }
     void procWritep(const AstNode* nodep) { m_procWritep = nodep; }
     void underGenerate() { m_underGen = true; }
@@ -197,6 +200,17 @@ public:
                     << procWritep()->warnMore()
                     << "... Perhaps should initialize instead using a reset in this process\n"
                     << procWritep()->warnContextSecondary());
+        }
+        if (initStaticp() && contAssignp() && nodep->hasUserInit() && !nodep->isClassMember()
+            && !nodep->isFuncLocal()) {
+            initStaticp()->v3warn(
+                CONTASSINIT,
+                "Continuous assignment to declaration with initial value: "
+                    << nodep->prettyNameQ() << '\n'
+                    << initStaticp()->warnMore() << "... Location of variable initialization\n"
+                    << initStaticp()->warnContextPrimary() << '\n'
+                    << contAssignp()->warnOther() << "... Location of continuous assignment\n"
+                    << contAssignp()->warnContextSecondary());
         }
         if (nodep->isGenVar()) {  // Genvar
             if (!nodep->isIfaceRef() && !nodep->isUsedParam() && !unusedMatch(nodep)) {
@@ -518,6 +532,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
             if (nodep->access().isWriteOrRW()) {
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
+                if (m_inContAssign && !entryp->contAssignp()) entryp->contAssignp(nodep);
                 if (m_alwaysp && m_inProcAssign && !entryp->procWritep())
                     entryp->procWritep(nodep);
             }
