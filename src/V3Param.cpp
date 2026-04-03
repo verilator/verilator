@@ -2530,17 +2530,10 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if (nodep->containsGenBlock() && nodep->taskp()) {
-            // Only clear if the target task/func is under a generate-if/case
-            // that may be pruned.  Functions in plain named begin-blocks
-            // (also represented as GenBlock) must not be cleared.
-            for (AstNode* backp = nodep->taskp()->backp(); backp; backp = backp->backp()) {
-                if (VN_IS(backp, GenIf) || VN_IS(backp, GenCase)) {
-                    nodep->taskp(nullptr);
-                    return;
-                }
-                if (VN_IS(backp, NodeModule)) break;
-            }
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to task/func
+            nodep->taskp(nullptr);
+            return;
         }
         iterateChildren(nodep);
     }
