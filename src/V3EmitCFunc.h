@@ -1517,7 +1517,13 @@ public:
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
-        puts(nodep->varp()->nameProtect());
+        if (nodep->varp()->isIfaceRef()) {
+            // Sub-interface access: MemberSel name matches the cell's C++ member,
+            // while the __Viftop var has a different name
+            puts(nodep->nameProtect());
+        } else {
+            puts(nodep->varp()->nameProtect());
+        }
     }
     void visit(AstStructSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
