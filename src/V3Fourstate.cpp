@@ -720,15 +720,22 @@ class FourstateVisitor final : public VNVisitor {
             AstNodeFTaskRef* const newCallp = funcp->cloneTree(false);
             if (newCallp->argsp()) newCallp->argsp()->unlinkFrBackWithNext()->deleteTree();
             FileLine* const flp = funcp->fileline();
+            AstNode* varStmtp = funcp->taskp()->stmtsp();
             for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
-                if (argp->exprp()->dtypep()->isFourstate()) {
+                const AstVar* const varp = VN_AS(varStmtp, Var);
+                if (varp->dtypep()->isFourstate() || varp->fourStateComplement()) {
                     newCallp->addArgsp(
                         new AstArg{flp, "", getFourStateExpressionValue(argp->exprp(), false)});
                     newCallp->addArgsp(
                         new AstArg{flp, "", getFourStateExpressionXZ(argp->exprp(), false)});
+                    if (varp->fourStateComplement()) varStmtp = varStmtp->nextp();
+                } else if (isFourstate(argp->exprp())) {
+                    newCallp->addArgsp(
+                        new AstArg{flp, "", m_fourstateVisitor.getTwoStateCast(argp->exprp())});
                 } else {
                     newCallp->addArgsp(argp->cloneTree(false));
                 }
+                varStmtp = varStmtp->nextp();
             }
             AstVarRef* const resultValueRefp = new AstVarRef{flp, resultValuep, VAccess::WRITE};
             AstVarRef* const resultXzRefp = new AstVarRef{flp, resultXzp, VAccess::WRITE};
@@ -1487,6 +1494,7 @@ class FourstateVisitor final : public VNVisitor {
                     AstNodeExpr* const currentExprp = sformatArgp->exprp();
                     currentExprp->replaceWith(getTwoStateCast(currentExprp));
                     currentExprp->deleteTree();
+                    setFourstate(exprp, isFourstate(sformatArgp->exprp()));
                 } else {
                     AstNodeExpr* const newp = getTwoStateCast(exprp);
                     exprp->replaceWith(newp);
