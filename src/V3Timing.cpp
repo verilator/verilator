@@ -750,7 +750,7 @@ class TimingControlVisitor final : public VNVisitor {
         const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
         if (!methodp || methodp->name() != "push_back") return false;
         const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->name().rfind("__VprocessQueue_", 0) == 0;
+        return queueRefp && queueRefp->varp()->processQueue();
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
