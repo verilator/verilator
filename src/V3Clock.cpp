@@ -100,7 +100,7 @@ class ClockVisitor final : public VNVisitor {
     void visit(AstVarScope* nodep) override {
         AstVar* const varp = nodep->varp();
         if (!varp->valuep()) return;
-        if (!VString::startsWith(varp->name(), "__Vsampled")) return;
+        if (!varp->sampled()) return;
 
         // Create the containing function on first encounter
         if (!m_sampleCFuncp) {
