@@ -456,7 +456,7 @@ class ActiveVisitor final : public VNVisitor {
 
         AstActive* const wantactivep
             = !m_clockedProcess ? m_namer.getSpecialActive<AstSenItem::Combo>(nodep->fileline())
-              : oldsentreep ? m_namer.getActive(nodep->fileline(), oldsentreep)
+              : oldsentreep     ? m_namer.getActive(nodep->fileline(), oldsentreep)
                             // Clocked, no sensitivity lists, it's a suspendable, put it in initial
                             : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
 

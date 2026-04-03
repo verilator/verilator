@@ -42,11 +42,11 @@ class ColorStronglyConnectedComponents final {
     // METHODS
     // Use the bottom 32-bit word as the component number
     uint32_t& component(const DfgVertex& vtx) {  //
-        return reinterpret_cast<uint32_t (&)[2]>(m_map[vtx])[0];
+        return reinterpret_cast<uint32_t(&)[2]>(m_map[vtx])[0];
     }
     // Use the top 32-bit word as the visitation index
     uint32_t& index(const DfgVertex& vtx) {  //
-        return reinterpret_cast<uint32_t (&)[2]>(m_map[vtx])[1];
+        return reinterpret_cast<uint32_t(&)[2]>(m_map[vtx])[1];
     }
 
     void visitColorSCCs(const DfgVertex& vtx) {
