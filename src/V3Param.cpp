@@ -1315,8 +1315,7 @@ class ParamProcessor final {
                 // Only target Cast/CastSize nodes to avoid side effects
                 // on structured values (Pattern, InitArray, etc.).
                 if (modvarp->valuep()
-                    && (VN_IS(modvarp->valuep(), Cast)
-                        || VN_IS(modvarp->valuep(), CastSize))) {
+                    && (VN_IS(modvarp->valuep(), Cast) || VN_IS(modvarp->valuep(), CastSize))) {
                     V3Const::constifyParamsEdit(modvarp->valuep());
                 }
                 UINFO(9, "cellPinCleanup: after constify " << pinp);
