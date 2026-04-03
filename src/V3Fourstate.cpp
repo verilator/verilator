@@ -281,16 +281,67 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
+    void visit(AstStructSel* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, isFourstate(nodep->fromp()), m_fourstateInSubtree);
+    }
+
+    void visit(AstExprStmt* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, isFourstate(nodep->resultp()), m_fourstateInSubtree);
+    }
+
+    void visit(AstConsPackMember* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, isFourstate(nodep->rhsp()), m_fourstateInSubtree);
+    }
+
+    void visit(AstFOpen* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstLambdaArgRef* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+    }
+
+    void visit(AstTestPlusArgs* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstValuePlusArgs* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstCvtArrayToPacked* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, nodep->fromp()->dtypep()->skipRefp()->isFourstate(),
+                     m_fourstateInSubtree);
+    }
+
+    void visit(AstSScanF* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
+    void visit(AstFScanF* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
     void visit(AstNodeExpr* const nodep) override {
         iterateChildrenSeparately(nodep);
-        if (AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType)) {
+        if (AstBasicDType* const basicp = VN_CAST(nodep->dtypep()->skipRefOrNullp(), BasicDType)) {
             if (basicp->keyword().isIntNumeric()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Operator "
                                                  << nodep->typeName()
                                                  << " not supported in the four-state mode");
-                setLogicType(nodep, TWO_STATE);  // Set an arbitrary logic type
             }
         }
+        setFourstate(nodep, false, m_fourstateInSubtree);  // Set an arbitrary logic type
     }
 
     void visit(AstNode* nodep) override {
