@@ -48,7 +48,7 @@ module t;
     `checkd(x5, 3)
     `checkd(x6, 0)
     `checkd(x7, 4)
-        
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
