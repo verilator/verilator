@@ -1483,10 +1483,6 @@ public:
     }
     ASTGEN_MEMBERS_AstAssignCompoundAdd;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
-            std::ostringstream ss; \
-            ss << "- " << V3Error::lineStr(__FILE__, __LINE__) << "CLONE  TYPEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"; \
-            if (ss.str()[ss.str().size() - 1] != '\n') ss << '\n'; \
-            std::cout << ss.str(); \
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignCompoundAdd{fileline(), lhsp, rhsp, rd_lhsp()->cloneTreePure(true), controlp};
     }

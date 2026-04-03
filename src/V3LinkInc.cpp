@@ -314,9 +314,7 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_stmt_visit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
-        // UINFO(0, nodep->lhsp() << VN_CAST(nodep->lhsp(), NodeVarRef)->access());
         AstNodeExpr* storeTop = nodep->lhsp()->unlinkFrBack();
-        // UINFO(0, storeTop << VN_CAST(storeTop, NodeVarRef)->access());
         AstNodeExpr* valuep = nodep->rd_lhsp()->unlinkFrBack();
 
         prepost_stmt_visit(nodep, nodep->rhsp(), storeTop, valuep);
@@ -385,7 +383,6 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
     void visit(AstNodeAssignCompound* nodep) override {
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
-        // UINFO(0, "FOO " << !m_insStmtp << " " << selbitp << " " << VN_IS(selbitp->fromp(), NodeVarRef) << " " << !selbitp->bitp()->isPure());
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
             prepost_stmt_sel_visit(nodep);
