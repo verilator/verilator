@@ -26,4 +26,7 @@ module t;
   // ##0 in range
   a4: assert property (@(posedge clk) a |-> ##[0:3] b);
 
+  // Non-constant minimum in unbounded range
+  a5: assert property (@(posedge clk) a |-> ##[cyc:$] b);
+
 endmodule
