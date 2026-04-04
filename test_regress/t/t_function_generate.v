@@ -11,13 +11,14 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t(/*AUTOARG*/);
+module t (  /*AUTOARG*/);
   generate
     if (1) begin : defs
       function automatic logic foo;
         foo = 1'b1;
       endfunction
-    end else begin : defs
+    end
+    else begin : defs
       function automatic logic foo;
         foo = 1'b0;
       endfunction

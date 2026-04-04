@@ -6,7 +6,7 @@
 
 interface my_if;
   logic clk = 0;
-  bit   clk_active = 0;
+  bit clk_active = 0;
 
   initial begin
     wait (clk_active);
@@ -27,8 +27,8 @@ class Driver;
 endclass
 
 module t;
-  my_if intf();
-  my_if intf_unused();  // Second instance triggered the bug
+  my_if intf ();
+  my_if intf_unused ();  // Second instance triggered the bug
 
   initial begin
     automatic Driver d = new;
