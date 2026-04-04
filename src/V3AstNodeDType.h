@@ -125,6 +125,8 @@ public:
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual AstNodeDType* subDType2p() const VL_MT_STABLE { return nullptr; }
     virtual bool isAggregateType() const { return false; }
+    // True for unpacked, dynamic, queue, and associative arrays (not packed arrays)
+    bool isNonPackedArray() const;
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }

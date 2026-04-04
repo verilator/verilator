@@ -2399,8 +2399,7 @@ class ConstVisitor final : public VNVisitor {
             const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
             // CvtArrayToArray (StreamL reverses, so reverse=true)
-            if ((VN_IS(srcDTypep, UnpackArrayDType) || VN_IS(srcDTypep, QueueDType)
-                 || VN_IS(srcDTypep, DynArrayDType))
+            if (srcDTypep->isNonPackedArray()
                 && (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType))) {
                 int blockSize = 1;
                 if (const AstConst* const constp
@@ -2463,8 +2462,7 @@ class ConstVisitor final : public VNVisitor {
                     origSrcp = cvtp->fromp();
                 }
                 const AstNodeDType* const origSrcDTypep = origSrcp->dtypep()->skipRefp();
-                if (VN_IS(origSrcDTypep, UnpackArrayDType) || VN_IS(origSrcDTypep, QueueDType)
-                    || VN_IS(origSrcDTypep, DynArrayDType)) {
+                if (origSrcDTypep->isNonPackedArray()) {
                     int srcElementBits = 0;
                     if (const AstNodeDType* const elemDtp = origSrcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
