@@ -8,16 +8,20 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 package p;
-  class W #(type T = int);
+  class W #(
+      type T = int
+  );
     T v;
   endclass
 
-  class Holder #(type U = W#());
+  class Holder #(
+      type U = W#()
+  );
     U u;
   endclass
 
-  typedef Holder#()         H_imp_t;       // implicit default
-  typedef Holder#(W#(int))  H_exp_t;       // explicit equivalent default
+  typedef Holder#() H_imp_t;  // implicit default
+  typedef Holder#(W#(int)) H_exp_t;  // explicit equivalent default
 endpackage
 
 module t;
@@ -29,8 +33,8 @@ module t;
     // verilator lint_off CASTCONST
     // verilator lint_off WIDTHTRUNC
     if (!$cast(exp, imp)) begin
-    // verilator lint_on WIDTHTRUNC
-    // verilator lint_on CASTCONST
+      // verilator lint_on WIDTHTRUNC
+      // verilator lint_on CASTCONST
       $display("WRONG_TYPE");
       $fatal;
     end
