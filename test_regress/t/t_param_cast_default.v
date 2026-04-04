@@ -12,35 +12,45 @@
 // Original #6281 reproducer: parameter passed via localparam variable
 // vs. literal constant should resolve to the same specialization.
 // Fixed by ParameterizedHierBlocks::areSame fallback (landed earlier).
-class ClsIntDefault #(parameter int P = 32);
+class ClsIntDefault #(
+    parameter int P = 32
+);
   function int get_p;
     return P;
   endfunction
 endclass
 
 // Parameter with byte cast default value
-class ClsByteCast #(parameter byte P = byte'(8));
+class ClsByteCast #(
+    parameter byte P = byte'(8)
+);
   function byte get_p;
     return P;
   endfunction
 endclass
 
 // Parameter with int cast default value
-class ClsIntCast #(parameter int P = int'(42));
+class ClsIntCast #(
+    parameter int P = int'(42)
+);
   function int get_p;
     return P;
   endfunction
 endclass
 
 // Parameter with signed cast default value
-class ClsSignedCast #(parameter int P = int'(-5));
+class ClsSignedCast #(
+    parameter int P = int'(-5)
+);
   function int get_p;
     return P;
   endfunction
 endclass
 
 // Module with cast default (cell array test)
-module sub #(parameter byte P = byte'(8));
+module sub #(
+    parameter byte P = byte'(8)
+);
   initial begin
     `checkd(P, 8);
   end
@@ -49,7 +59,7 @@ endmodule
 module t;
   // Original #6281 case: localparam variable vs. literal constant
   localparam int WIDTH = 32;
-  ClsIntDefault #(32)   orig_a;
+  ClsIntDefault #(32) orig_a;
   ClsIntDefault #(WIDTH) orig_b;
 
   // Byte cast default: #() and #(8) should be same type
