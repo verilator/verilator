@@ -74,6 +74,7 @@ Verilator 5.047 devel
 * Fix typedef scope resolution for parameterized class aliases (#5977) (#7319). [Nick Brereton]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
+* Fix parameter default comparison when value contains type cast (#6281) (#7369) (#6281). [Yilou Wang]
 * Fix `local::` false error in randomize() with on parameterized class (#6680) (#7293). [Yilou Wang]
 * Fix false recursive definition error (#6769) (#7118). [Alex Zhou]
 * Fix port assignment to large arrays (#6904).
