@@ -3001,6 +3001,14 @@ std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
 }
+void VerilatedContext::solverLogFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_solverLogFilename = flag;
+}
+std::string VerilatedContext::solverLogFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_solverLogFilename;
+}
 void VerilatedContext::solverProgram(const std::string& flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_ns.m_solverProgram = flag;
@@ -3016,6 +3024,12 @@ void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
 void VerilatedContext::randReset(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_randReset = val;
+}
+
+std::string VerilatedContext::timeWithUnitString() const VL_MT_SAFE {
+    const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
+                                  * vl_time_multiplier(timeprecision() - timeunit());
+    return vl_timescaled_double(simtimeInUnits);
 }
 void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
@@ -3233,6 +3247,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+solver+file+", str)) {
+            solverLogFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {
             warnUnsatConstr(u64 == 0);  // wno means disable, so invert
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
@@ -3326,7 +3342,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     const std::string endwhy = gotError() ? "$stop" : gotFinish() ? "$finish" : "end";
     const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
                                   * vl_time_multiplier(timeprecision() - timeunit());
-    const std::string simtime = vl_timescaled_double(simtimeInUnits);
+    const std::string simtime = timeWithUnitString();
     const double walltime = statWallTimeSinceStart();
     const double cputime = statCpuTimeSinceStart();
     const std::string simtimePerf

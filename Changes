@@ -49,6 +49,7 @@ Verilator 5.047 devel
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
+* Add `+verilator+solver+file` (#7242).
 * Add MacOS support for address sanitizer memory limit (#7308). [Marco Bartoli]
 * Deprecate `--structs-packed` (#7222).
 * Improve assignment-compatibility type check (#2843) (#5666) (#7052). [Pawel Kojma, Antmicro Ltd.]
