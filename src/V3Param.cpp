@@ -1266,8 +1266,8 @@ class ParamProcessor final {
         // both to max(width).  A typed parameter default (e.g. byte) is
         // narrower than a 32-bit pin expression, so sameTree/areSame fail.
         if (exprp->num().width() == origp->num().width()) return false;
-        if (exprp->num().isDouble() || exprp->num().isString()) return false;
-        if (origp->num().isDouble() || origp->num().isString()) return false;
+        if (exprp->num().isOpaque()) return false;
+        if (origp->num().isOpaque()) return false;
         const int maxWidth = std::max(exprp->num().width(), origp->num().width());
         V3Number exprNum{exprp, maxWidth};
         if (exprp->num().isSigned()) {
