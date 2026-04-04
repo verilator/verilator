@@ -9,7 +9,7 @@ interface str_if;
 endinterface
 
 module t;
-  str_if sif();
+  str_if sif ();
   virtual str_if vif = sif;
 
   initial begin
