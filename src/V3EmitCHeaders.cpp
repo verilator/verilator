@@ -280,9 +280,7 @@ class EmitCHeader final : public EmitCConstInit {
     enum class AttributeType { Width, Dimension };
     // Get member attribute based on type
     int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
-        const bool isArrayType
-            = VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType)
-              || VN_IS(itemp->dtypep(), QueueDType) || VN_IS(itemp->dtypep(), AssocArrayDType);
+        const bool isArrayType = itemp->dtypep()->isNonPackedArray();
         switch (type) {
         case AttributeType::Width: {
             if (isArrayType) {
