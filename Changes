@@ -123,6 +123,7 @@ Verilator 5.047 devel
 * Fix missing temporary for DfgSplicePacked (#7361). [Geza Lore, Testorrent USA, Inc.]
 * Fix virtual interface function calls binding to wrong instance (#7363). [Yilou Wang]
 * Fix false ASSIGNIN on interface input port connections (#7365). [Yilou Wang]
+* Fix string `inside` queue (#7373).
 
 
 Verilator 5.046 2026-02-28
