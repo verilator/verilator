@@ -92,9 +92,8 @@ class AssertPropConsRepVisitor final : public VNVisitor {
         if (AstSExpr* const sexprp = VN_CAST(nodep->backp(), SExpr)) {
             // Trailing range/unbounded: needs forward-looking NFA -- not yet supported.
             if (nodep == sexprp->exprp() && (nodep->unbounded() || nodep->maxCountp())) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: trailing consecutive repetition range"
-                              " in sequence expression (e.g. a ##1 b[+])");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: trailing consecutive repetition range"
+                                             " in sequence expression (e.g. a ##1 b[+])");
                 AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
                 nodep->replaceWith(exprp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -223,15 +222,14 @@ class AssertPropConsRepVisitor final : public VNVisitor {
                                     new AstConst{flp, static_cast<uint32_t>(r.maxN)}},
                           failStmts()});
         }
-        AstIf* const tryNextp
-            = new AstIf{flp, sampled(nextExprp), passStmts(),
-                        new AstIf{flp, sampled(repExprp->cloneTreePure(false)), continueBlockp,
-                                  failStmts()}};
+        AstIf* const tryNextp = new AstIf{
+            flp, sampled(nextExprp), passStmts(),
+            new AstIf{flp, sampled(repExprp->cloneTreePure(false)), continueBlockp, failStmts()}};
 
         if (r.minN > 0) {
             // When cnt < minN: still accumulating -- must see expr to continue
-            AstIf* const accumulatep = new AstIf{flp, sampled(repExprp->cloneTreePure(false)),
-                                                 incrCnt(), failStmts()};
+            AstIf* const accumulatep
+                = new AstIf{flp, sampled(repExprp->cloneTreePure(false)), incrCnt(), failStmts()};
             loopp->addStmtsp(
                 new AstIf{flp,
                           new AstGte{flp, cntRef(VAccess::READ),
@@ -246,8 +244,7 @@ class AssertPropConsRepVisitor final : public VNVisitor {
 
         // Entry: expr matched at cycle 0 -- initialize counter and start loop
         AstBegin* const entryBlockp = new AstBegin{flp, "", nullptr, true};
-        entryBlockp->addStmtsp(
-            new AstAssign{flp, cntRef(VAccess::WRITE), new AstConst{flp, 1u}});
+        entryBlockp->addStmtsp(new AstAssign{flp, cntRef(VAccess::WRITE), new AstConst{flp, 1u}});
         entryBlockp->addStmtsp(loopp);
 
         // Else branch: no match at cycle 0
@@ -256,9 +253,8 @@ class AssertPropConsRepVisitor final : public VNVisitor {
                 // Zero-repetition path: skip directly to ##1 and check next
                 AstBegin* const skipBlockp = new AstBegin{flp, "", nullptr, true};
                 skipBlockp->addStmtsp(delayp->cloneTree(false));
-                skipBlockp->addStmtsp(
-                    new AstIf{flp, sampled(nextExprp->cloneTreePure(false)), passStmts(),
-                              failStmts()});
+                skipBlockp->addStmtsp(new AstIf{flp, sampled(nextExprp->cloneTreePure(false)),
+                                                passStmts(), failStmts()});
                 return skipBlockp;
             }
             return new AstPExprClause{flp, false};
@@ -269,9 +265,8 @@ class AssertPropConsRepVisitor final : public VNVisitor {
         // Wrap everything in a PExpr with cnt and done as locals
         AstBegin* const bodyp = new AstBegin{flp, "", cntVarp, true};
         bodyp->addStmtsp(doneVarp);
-        bodyp->addStmtsp(
-            new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
-                          new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
         bodyp->addStmtsp(topIfp);
 
         sexprp->replaceWith(new AstPExpr{flp, bodyp, sexprp->dtypep()});
