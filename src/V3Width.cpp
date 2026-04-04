@@ -3286,7 +3286,7 @@ class WidthVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             // InsideRange will get replaced with Lte&Gte and finalized later
-            if (!VN_IS(itemp, InsideRange))
+            if (!VN_IS(itemp, InsideRange) && !itemp->dtypep()->isNonPackedArray())
                 iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, expDTypep,
                              EXTEND_EXP);
         }
