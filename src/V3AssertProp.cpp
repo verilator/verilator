@@ -709,7 +709,7 @@ class RangeDelayExpander final : public VNVisitor {
     // Pre-assigned state numbers for one SeqStep.
     // Range steps consume their successor (check target); successor entry is unused.
     struct StepBounds {
-        int waitState;   // WAIT_MIN state, or -1 if not needed
+        int waitState;  // WAIT_MIN state, or -1 if not needed
         int checkState;  // CHECK or TAIL state; -1 for fixed-delay steps
     };
 
@@ -803,8 +803,7 @@ class RangeDelayExpander final : public VNVisitor {
 
                 // WAIT_MIN state: count down rangeMin-1 cycles before entering CHECK
                 if (bounds[i].waitState >= 0) {
-                    const int initCnt
-                        = step.isUnbounded ? 0 : (step.rangeMax - step.rangeMin);
+                    const int initCnt = step.isUnbounded ? 0 : (step.rangeMax - step.rangeMin);
                     AstNode* const waitBodyp = new AstIf{
                         flp,
                         new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
@@ -1028,8 +1027,7 @@ class RangeDelayExpander final : public VNVisitor {
         failVarp->noSample(true);
 
         // Build FSM body
-        AstNode* const fsmBodyp
-            = buildFsmBody(flp, stateVarp, cntVarp, failVarp, steps, antExprp);
+        AstNode* const fsmBodyp = buildFsmBody(flp, stateVarp, cntVarp, failVarp, steps, antExprp);
 
         // Create Always block for the FSM (same scheduling as assertion always blocks)
         AstAlways* const alwaysp = new AstAlways{
