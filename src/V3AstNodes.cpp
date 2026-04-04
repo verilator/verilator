@@ -448,6 +448,14 @@ void AstConsDynArray::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
+void AstConsRep::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (unbounded()) str << " [unbounded]";
+}
+void AstConsRep::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, unbounded);
+    dumpJsonGen(str);
+}
 void AstConsQueue::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";

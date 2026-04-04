@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_prop_consec_rep_delay_unsup.v:11:41: Unsupported: consecutive repetition with non-##1 cycle delay
+                                                                  : ... note: In instance 't'
+   11 |   assert property (@(posedge clk) a[*2] ##3 b);
+      |                                         ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

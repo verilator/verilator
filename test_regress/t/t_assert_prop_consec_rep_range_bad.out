@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_prop_consec_rep_range_bad.v:11:37: Unsupported: standalone consecutive repetition range
+                                                                : ... note: In instance 't'
+   11 |   assert property (@(posedge clk) a [*2:3] |-> 1);
+      |                                     ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

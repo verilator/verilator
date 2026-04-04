@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_prop_consec_rep_trail_unsup.v:11:42: Unsupported: trailing consecutive repetition range in sequence expression (e.g. a ##1 b[+])
+                                                                  : ... note: In instance 't'
+   11 |   assert property (@(posedge clk) b ##1 a[+]);
+      |                                          ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
