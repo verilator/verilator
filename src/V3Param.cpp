@@ -1261,6 +1261,31 @@ class ParamProcessor final {
         return result;
     }
 
+    static bool paramConstsEqualAtMaxWidth(AstConst* exprp, AstConst* origp) {
+        // Return true if two integer constants are equal after sign-extending
+        // both to max(width).  A typed parameter default (e.g. byte) is
+        // narrower than a 32-bit pin expression, so sameTree/areSame fail.
+        if (exprp->num().width() == origp->num().width()) return false;
+        if (exprp->num().isOpaque()) return false;
+        if (origp->num().isOpaque()) return false;
+        const int maxWidth = std::max(exprp->num().width(), origp->num().width());
+        V3Number exprNum{exprp, maxWidth};
+        if (exprp->num().isSigned()) {
+            exprNum.opExtendS(exprp->num(), exprp->num().width());
+        } else {
+            exprNum.opAssign(exprp->num());
+        }
+        V3Number origNum{origp, maxWidth};
+        if (origp->num().isSigned()) {
+            origNum.opExtendS(origp->num(), origp->num().width());
+        } else {
+            origNum.opAssign(origp->num());
+        }
+        V3Number isEq{exprp, 1};
+        isEq.opEq(exprNum, origNum);
+        return isEq.isNeqZero();
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -1284,6 +1309,13 @@ class ParamProcessor final {
             } else {
                 UINFO(9, "cellPinCleanup: before constify " << pinp << " " << modvarp);
                 V3Const::constifyParamsEdit(pinp->exprp());
+                // Cast/CastSize default values are not yet folded by V3Width.
+                // Constify here so the comparison below sees a Const node.
+                // Other node kinds are handled in the branches above.
+                if (modvarp->valuep()
+                    && (VN_IS(modvarp->valuep(), Cast) || VN_IS(modvarp->valuep(), CastSize))) {
+                    V3Const::constifyParamsEdit(modvarp->valuep());
+                }
                 UINFO(9, "cellPinCleanup: after constify " << pinp);
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
                 // At this moment, some constants may have been already converted.
@@ -1309,7 +1341,8 @@ class ParamProcessor final {
                 } else if (origp
                            && (exprp->sameTree(origp)
                                || (exprp->num().width() == origp->num().width()
-                                   && ParameterizedHierBlocks::areSame(exprp, origp)))) {
+                                   && ParameterizedHierBlocks::areSame(exprp, origp))
+                               || paramConstsEqualAtMaxWidth(exprp, origp))) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.

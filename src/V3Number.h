@@ -665,6 +665,7 @@ public:
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
     bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
     bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
+    bool isOpaque() const VL_MT_SAFE { return isDouble() || isString(); }
     bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;
