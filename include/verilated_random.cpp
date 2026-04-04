@@ -233,7 +233,7 @@ private:
         }
         *m_logfp << "# Verilator solver log\n";
     }
-    void log(const std::string& prefix, const std::string& text) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void log(const std::string& prefix, const std::string& text) {
         if (VL_LIKELY(!m_logfp.get()) || text.empty()) return;
         if (m_logLastTime != Verilated::threadContextp()->time()) {
             m_logLastTime = Verilated::threadContextp()->time();
