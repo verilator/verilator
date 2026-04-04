@@ -1311,8 +1311,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     methodp->addPinsp(varRefp);
                 }
                 AstNodeDType* tmpDtypep = varp->dtypep();
-                while (tmpDtypep->isNonPackedArray())
-                    tmpDtypep = tmpDtypep->subDTypep();
+                while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
                 const size_t width = tmpDtypep->width();
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
@@ -4390,8 +4389,7 @@ class RandomizeVisitor final : public VNVisitor {
                     }
 
                     AstNodeDType* tmpDtypep = arrVarp->dtypep();
-                    while (tmpDtypep->isNonPackedArray())
-                        tmpDtypep = tmpDtypep->subDTypep();
+                    while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
                     const size_t width = tmpDtypep->width();
 
                     methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
