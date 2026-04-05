@@ -11,7 +11,7 @@ module t (input clk);
   // Bad: non-constant repetition count
   assert property (@(posedge clk) a [*n] |-> 1);
 
-  // Bad: [*0] consecutive repetition unsupported
+  // Bad: [*0] unsupported exact zero repetition
   assert property (@(posedge clk) a [*0] |-> 1);
 
   // Bad: max count < min count
@@ -20,7 +20,7 @@ module t (input clk);
   // Bad: non-constant max count
   assert property (@(posedge clk) a [*1:n] |-> 1);
 
-  // Bad: zero max count ([*0:0])
+  // Bad: [*N:0] zero max count
   assert property (@(posedge clk) a [*0:0] |-> 1);
 
 endmodule

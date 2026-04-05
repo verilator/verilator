@@ -112,15 +112,10 @@ class AssertPropConsRepVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
 
-        if (r.minN == 0 && r.unbounded) {
-            // [*]: always matches (zero or more -- no temporal constraint alone)
-            VL_DO_DANGLING(exprp->deleteTree(), exprp);
-            nodep->replaceWith(new AstConst{flp, AstConst::BitTrue{}});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
         if (r.minN <= 1 && (r.unbounded || !nodep->maxCountp())) {
-            // [+] or [*1]: just the expression itself
+            // [+], [*], or [*1]: reduce to the expression itself.
+            // [*] (zero-or-more) uses the shortest non-vacuous match (length 1 when expr=true),
+            // matching simulator behavior; zero-length matches do not trigger |-> implications.
             nodep->replaceWith(exprp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

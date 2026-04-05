@@ -5,9 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (input clk);
-  logic a;
+  logic a, b;
 
-  // Bad: standalone range repetition (no ## delay to anchor the sequence)
+  // Unsupported: non-##1 inter-repetition delay
+  assert property (@(posedge clk) a [*2] ##3 b);
+
+  // Unsupported: standalone range repetition (no ## anchor)
   assert property (@(posedge clk) a [*2:3] |-> 1);
+
+  // Unsupported: trailing consecutive repetition in sequence
+  assert property (@(posedge clk) b ##1 a[+]);
 
 endmodule

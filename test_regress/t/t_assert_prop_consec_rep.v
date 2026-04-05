@@ -28,26 +28,46 @@ module t (
   int count_fail3 = 0;
   int count_fail4 = 0;
   int count_fail5 = 0;
+  int count_fail6 = 0;
+  int count_fail7 = 0;
+  int count_fail8 = 0;
+  int count_fail9 = 0;
 
-  // Test 1: a[*3] |-> b (3 consecutive, overlapping implication)
+  // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a[*1] |-> c (trivial [*1], overlapping)
+  // Test 2: a[*1] |-> c
   assert property (@(posedge clk) a [* 1] |-> c)
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a[*2] |=> d (2 consecutive, non-overlapping implication)
+  // Test 3: a[*2] |=> d
   assert property (@(posedge clk) a [* 2] |=> d)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: standalone consecutive rep (no implication)
+  // Test 4: b[*2] standalone
   assert property (@(posedge clk) b [* 2])
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: [*10000] large count -- verifies counter-based lowering compiles
+  // Test 5: a[*10000] large count
   assert property (@(posedge clk) a [* 10000] |-> b)
   else count_fail5 <= count_fail5 + 1;
+
+  // Test 6: a[*1:3] ##1 b -- bounded range in SExpr
+  assert property (@(posedge clk) a [* 1:3] ##1 b)
+  else count_fail6 <= count_fail6 + 1;
+
+  // Test 7: a[+] ##1 b -- one-or-more in SExpr
+  assert property (@(posedge clk) a [+] ##1 b)
+  else count_fail7 <= count_fail7 + 1;
+
+  // Test 8: a[+] |-> b -- standalone [+] (same as a |-> b)
+  assert property (@(posedge clk) a [+] |-> b)
+  else count_fail8 <= count_fail8 + 1;
+
+  // Test 9: a[*] |-> b -- standalone [*] (shortest non-vacuous match = a)
+  assert property (@(posedge clk) a [*] |-> b)
+  else count_fail9 <= count_fail9 + 1;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -65,6 +85,10 @@ module t (
       `checkd(count_fail3, 9);
       `checkd(count_fail4, 74);
       `checkd(count_fail5, 0);
+      `checkd(count_fail6, 65);
+      `checkd(count_fail7, 65);
+      `checkd(count_fail8, 20);
+      `checkd(count_fail9, 20);
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -20,18 +20,6 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:82:7: Unsupported: ## [+] cycle delay range expression
    82 |     a ## [+] b;
       |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:89:7: Unsupported: [*] boolean abbrev expression
-   89 |     a [*];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:89:7: Unsupported: boolean abbrev (in sequence expression)
-   89 |     a [*];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:92:7: Unsupported: [+] boolean abbrev expression
-   92 |     a [+];
-      |       ^~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:92:7: Unsupported: boolean abbrev (in sequence expression)
-   92 |     a [+];
-      |       ^~~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:95:7: Unsupported: [= boolean abbrev expression
    95 |     a [= 1];
       |       ^~
