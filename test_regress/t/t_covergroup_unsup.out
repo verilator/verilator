@@ -237,8 +237,8 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:198:7: Unsupported: explicit coverage cross bins
   198 |       illegal_bins lib_cross = binsof(a);
       |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_covergroup_unsup.v:220:5: Unsupported: covergroup inheritance (extends)
-  220 |     covergroup extends cg_empty;
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:223:5: Unsupported: covergroup inheritance (extends)
+  223 |     covergroup extends cg_empty;
       |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

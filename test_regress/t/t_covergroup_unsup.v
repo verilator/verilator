@@ -207,8 +207,11 @@ module t (
     int m_y;
     int m_z;
     covergroup cov1 @m_z;
-      coverpoint m_x;
-      coverpoint m_y;
+      cp_x: coverpoint m_x;
+      cp_y: coverpoint m_y;
+`ifdef T_COVERGROUP_UNSUP_IGN
+      xy_cross: cross cp_x, cp_y;  // exercises cross cleanup in hasUnsupportedEvent path
+`endif
     endgroup
 `ifndef T_COVERGROUP_UNSUP_IGN
     function new(); cov1 = new; endfunction

@@ -1080,7 +1080,8 @@ public:
         , m_name{name}
         , m_type{type}
         , m_isArray{isArrayBin} {
-        if (transp) addTransp(transp);
+        UASSERT(transp, "AstCoverBin transition constructor requires non-null transp");
+        addTransp(transp);
     }
     ASTGEN_MEMBERS_AstCoverBin;
     void dump(std::ostream& str) const override;
@@ -1122,7 +1123,6 @@ public:
     ASTGEN_MEMBERS_AstCoverTransItem;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    VTransRepType repType() const { return m_repType; }
 };
 class AstCoverTransSet final : public AstNode {
     // Represents a transition set: value1 => value2 => value3
@@ -1163,7 +1163,6 @@ public:
 };
 class AstCoverpointRef final : public AstNode {
     // Reference to a coverpoint used in a cross
-    // @astgen ptr := m_coverpointp : Optional[AstCoverpoint]
     const string m_name;  // coverpoint name
 
 public:
@@ -1174,8 +1173,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    AstCoverpoint* coverpointp() const { return m_coverpointp; }
-    void coverpointp(AstCoverpoint* nodep) { m_coverpointp = nodep; }
 };
 class AstDefParam final : public AstNode {
     // A defparam assignment
@@ -2700,7 +2697,8 @@ class AstCoverCross final : public AstNodeFuncCovItem {
 public:
     AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)
         : ASTGEN_SUPER_CoverCross(fl, name) {
-        if (itemsp) addItemsp(itemsp);
+        UASSERT(itemsp, "AstCoverCross requires at least one coverpoint reference");
+        addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstCoverCross;
     void dump(std::ostream& str) const override;
