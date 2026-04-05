@@ -1136,13 +1136,15 @@ class LinkParseVisitor final : public VNVisitor {
             AstFunc* newFuncp = nullptr;
             for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
                 if (AstFunc* const funcp = VN_CAST(memberp, Func)) {
-                    UASSERT_OBJ(funcp->name() == "new", funcp,
-                                "Unexpected non-new function in covergroup class during arg setup");
+                    UASSERT_OBJ(
+                        funcp->name() == "new", funcp,
+                        "Unexpected non-new function in covergroup class during arg setup");
                     newFuncp = funcp;
                     break;
                 }
             }
-            UASSERT_OBJ(newFuncp, nodep, "Covergroup class must have a 'new' constructor function");
+            UASSERT_OBJ(newFuncp, nodep,
+                        "Covergroup class must have a 'new' constructor function");
             // Save the existing body statements and unlink them
             AstNode* const existingBodyp = newFuncp->stmtsp();
             if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
@@ -1153,10 +1155,8 @@ class LinkParseVisitor final : public VNVisitor {
                 paramp->funcLocal(true);
                 paramp->direction(VDirection::INPUT);
                 newFuncp->addStmtsp(paramp);
-                AstNodeExpr* const lhsp
-                    = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                AstNodeExpr* const rhsp
-                    = new AstParseRef{paramp->fileline(), paramp->name()};
+                AstNodeExpr* const lhsp = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
                 newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
             }
             if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
@@ -1196,8 +1196,7 @@ class LinkParseVisitor final : public VNVisitor {
                     funcp->addStmtsp(paramp);
                     AstNodeExpr* const lhsp
                         = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                    AstNodeExpr* const rhsp
-                        = new AstParseRef{paramp->fileline(), paramp->name()};
+                    AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
                     funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
                 }
             }
