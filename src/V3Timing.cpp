@@ -343,18 +343,9 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        AstCFunc* funcp = nodep->funcp();
-        if (!funcp) {  // LCOV_EXCL_BR_LINE -- AstNodeCCall always has non-null funcp
-            iterateChildren(nodep);
-            return;
-        }
-
-        // Skip if we're not inside a function/procedure (m_procp would be null)
-        // This can happen for calls in Active nodes at module scope
-        if (!m_procp) {  // LCOV_EXCL_BR_LINE -- m_procp is always set when CCall is inside a function
-            iterateChildren(nodep);
-            return;
-        }
+        AstCFunc* const funcp = nodep->funcp();
+        UASSERT_OBJ(funcp, nodep, "AstNodeCCall must have non-null funcp post-link");
+        UASSERT_OBJ(m_procp, nodep, "AstNodeCCall must be inside a procedure/CFunc/Begin");
 
         UINFO(9, "V3Timing: Processing CCall to " << funcp->name() << " in dependency graph\n");
         new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(funcp), getSuspendDepVtx(m_procp), P_CALL};
