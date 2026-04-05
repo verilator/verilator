@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-// A plain (non-covergroup) class — exercises the non-covergroup class scope/varscope paths
+// A plain (non-covergroup) class - exercises the non-covergroup class scope/varscope paths
 class PlainClass;
     int x;
 endclass
