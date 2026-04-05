@@ -76,6 +76,7 @@
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
 #include "V3LinkResolve.h"
+#include "V3LinkWith.h"
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
@@ -182,6 +183,11 @@ static void process() {
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
+
+        // Link cleanup of 'with' as final link phase before V3Width
+        // (called only once, not when width a single params)
+        V3LinkWith::linkWith(v3Global.rootp());
+
         V3Error::abortIfErrors();
 
         // Fix any remaining cross-interface refs created during V3Width::widthParamsEdit

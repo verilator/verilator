@@ -1,4 +1,5 @@
 %Error: t/t_constraint_dist_randc_bad.v:10:22: Randc variables not allowed in 'constraint dist' (IEEE 1800-2023 18.5.3)
+                                             : ... note: In instance 't'
    10 |   constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
       |                      ^~
         t/t_constraint_dist_randc_bad.v:10:25: ... Location of restricting expression
