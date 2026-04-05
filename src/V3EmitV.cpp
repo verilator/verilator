@@ -342,7 +342,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 if (setp != nodep->transp()) puts(", ");
                 iterateConst(setp);
             }
-        } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has transp/rangesp/default
+        } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has
+                                        // transp/rangesp/default
             puts(" = {");
             for (AstNode* rangep = nodep->rangesp(); rangep; rangep = rangep->nextp()) {
                 if (rangep != nodep->rangesp()) puts(", ");
@@ -1014,7 +1015,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstClassRefDType* nodep) override {
-        putfs(nodep, nodep->classp() ? EmitCUtil::prefixNameProtect(nodep->classp())  // LCOV_EXCL_BR_LINE - false: classp always set after linking
+        putfs(nodep, nodep->classp() ? EmitCUtil::prefixNameProtect(
+                                           nodep->classp())  // LCOV_EXCL_BR_LINE - false: classp
+                                                             // always set after linking
                                      : nodep->prettyDTypeName(false));
     }
     void visit(AstRequireDType* nodep) override { iterateConst(nodep->lhsp()); }
