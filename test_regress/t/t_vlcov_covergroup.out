@@ -1,7 +1,8 @@
 COVERGROUP COVERAGE REPORT
 ==========================
 
-TOTAL: 45/67 bins covered (67.16%)
+TOTAL: 59/83 bins covered (71.08%)
+       (1 ignored, 0 illegal)
 
 ------------------------------------------------------------------------------
 Covergroup Type: cg2  [t/t_covergroup_cross.v:18]
@@ -139,6 +140,31 @@ Covergroup Type: cg5  [t/t_covergroup_cross.v:70]
       COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
+Covergroup Type: cg_ignore  [t/t_covergroup_cross.v:100]
+  Type Coverage: 8/8 bins (100.00%)
+
+  Coverpoint: cp_addr
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  a0   2 hits
+      COVERED  a1   2 hits
+      IGNORE   ign  1 hits
+
+  Coverpoint: cp_cmd
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  read   3 hits
+      COVERED  write  2 hits
+
+  Cross: cross_ab
+    Coverage: 4/4 bins (100.00%)
+    Bins:
+      COVERED  a0_x_read   1 hits
+      COVERED  a0_x_write  1 hits
+      COVERED  a1_x_read   1 hits
+      COVERED  a1_x_write  1 hits
+
+------------------------------------------------------------------------------
 Covergroup Type: cg_range  [t/t_covergroup_cross.v:85]
   Type Coverage: 8/8 bins (100.00%)
 
@@ -161,5 +187,29 @@ Covergroup Type: cg_range  [t/t_covergroup_cross.v:85]
       COVERED  hi_range_x_write  1 hits
       COVERED  lo_range_x_read   1 hits
       COVERED  lo_range_x_write  1 hits
+
+------------------------------------------------------------------------------
+Covergroup Type: cg_unnamed_cross  [t/t_covergroup_cross.v:112]
+  Type Coverage: 6/8 bins (75.00%)
+
+  Coverpoint: cp_a
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  a0  1 hits
+      COVERED  a1  1 hits
+
+  Coverpoint: cp_c
+    Coverage: 2/2 bins (100.00%)
+    Bins:
+      COVERED  read   1 hits
+      COVERED  write  1 hits
+
+  Cross: __cross7
+    Coverage: 2/4 bins (50.00%)
+    Bins:
+      COVERED  a0_x_read   1 hits
+      ZERO     a0_x_write  0 hits
+      ZERO     a1_x_read   0 hits
+      COVERED  a1_x_write  1 hits
 
 ------------------------------------------------------------------------------

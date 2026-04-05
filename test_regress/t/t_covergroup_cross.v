@@ -92,11 +92,35 @@ module t;
     addr_cmd_range: cross cp_addr, cp_cmd;
   endgroup
 
+  // Cross where one coverpoint has ignore_bins: exercises BINS_USER FALSE branch
+  // in collectBins during cross code generation (L1139)
+  covergroup cg_ignore;
+    cp_addr: coverpoint addr {
+      ignore_bins ign = {3};  // BINS_IGNORE: not BINS_USER, exercises L1139 FALSE path
+      bins a0 = {0};
+      bins a1 = {1};
+    }
+    cp_cmd: coverpoint cmd {
+      bins read  = {0};
+      bins write = {1};
+    }
+    cross_ab: cross cp_addr, cp_cmd;
+  endgroup
+
+  // Covergroup with unnamed cross: exercises crossName.empty() fallback to "cross" (L1395)
+  covergroup cg_unnamed_cross;
+    cp_a: coverpoint addr { bins a0 = {0}; bins a1 = {1}; }
+    cp_c: coverpoint cmd  { bins read = {0}; bins write = {1}; }
+    cross cp_a, cp_c;  // no label -> crossName is empty
+  endgroup
+
   cg2 cg2_inst = new;
+  cg_ignore cg_ignore_inst = new;
   cg_range cg_range_inst = new;
   cg3 cg3_inst = new;
   cg4 cg4_inst = new;
   cg5 cg5_inst = new;
+  cg_unnamed_cross cg_unnamed_cross_inst = new;
 
   initial begin
     // Sample 2-way: hit all 4 combinations
@@ -121,11 +145,22 @@ module t;
     addr = 0; cmd = 0; cg5_inst.sample();
     addr = 1; cmd = 1; cg5_inst.sample();
 
+    // Sample cg_ignore: addr=3 is in ignore_bins so no cross bins for it
+    addr = 0; cmd = 0; cg_ignore_inst.sample();  // a0 x read
+    addr = 1; cmd = 1; cg_ignore_inst.sample();  // a1 x write
+    addr = 0; cmd = 1; cg_ignore_inst.sample();  // a0 x write
+    addr = 1; cmd = 0; cg_ignore_inst.sample();  // a1 x read
+    addr = 3; cmd = 0; cg_ignore_inst.sample();  // ignored (addr=3 in ignore_bins)
+
     // Sample range-bin cross
     addr = 0; cmd = 0; cg_range_inst.sample();  // lo_range x read
     addr = 2; cmd = 1; cg_range_inst.sample();  // hi_range x write
     addr = 1; cmd = 1; cg_range_inst.sample();  // lo_range x write
     addr = 3; cmd = 0; cg_range_inst.sample();  // hi_range x read
+
+    // Sample cg_unnamed_cross: exercises unnamed cross (crossName fallback to "cross")
+    addr = 0; cmd = 0; cg_unnamed_cross_inst.sample();  // a0 x read
+    addr = 1; cmd = 1; cg_unnamed_cross_inst.sample();  // a1 x write
 
     $write("*-* All Finished *-*\n");
     $finish;
