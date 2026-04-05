@@ -709,7 +709,7 @@ class RangeDelayExpander final : public VNVisitor {
     // Pre-assigned state numbers for one SeqStep.
     // Range steps consume their successor (check target); successor entry is unused.
     struct StepBounds final {
-        int waitState;   // WAIT_MIN state, or -1 if not needed
+        int waitState;  // WAIT_MIN state, or -1 if not needed
         int checkState;  // CHECK or TAIL state; -1 for fixed-delay steps
     };
 
