@@ -474,6 +474,9 @@ private:
         AstEventControl* const controlp = new AstEventControl{
             nodep->fileline(), new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
+        AstNodeExpr* throughoutp
+            = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
+
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -481,24 +484,74 @@ private:
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
+        // Throughout: create flag tracking whether condition held every tick
+        AstVar* throughoutOkp = nullptr;
+        if (throughoutp) {
+            throughoutOkp
+                = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
+                             nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
+            throughoutOkp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            beginp->addStmtsp(throughoutOkp);
+            beginp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                              new AstConst{flp, AstConst::BitTrue{}}});
+            // Check condition at tick 0 (sequence start, before entering loop)
+            AstSampled* const initSampledp
+                = new AstSampled{flp, throughoutp->cloneTreePure(false)};
+            initSampledp->dtypeSetBit();
+            beginp->addStmtsp(
+                new AstIf{flp, new AstLogNot{flp, initSampledp},
+                          new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                        new AstConst{flp, AstConst::BitFalse{}}}});
+        }
+
         {
             AstLoop* const loopp = new AstLoop{flp};
-            loopp->addStmtsp(new AstLoopTest{
-                flp, loopp,
-                new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}}});
+            // When throughout is present, exit loop early if condition fails
+            AstNodeExpr* loopCondp
+                = new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}};
+            if (throughoutOkp) {
+                loopCondp = new AstLogAnd{flp, loopCondp,
+                                          new AstVarRef{flp, throughoutOkp, VAccess::READ}};
+            }
+            loopp->addStmtsp(new AstLoopTest{flp, loopp, loopCondp});
             loopp->addStmtsp(controlp);
             loopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
                               new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
                                          new AstConst{flp, 1}}});
+            // Check throughout condition at each tick during delay (IEEE 1800-2023 16.9.9)
+            if (throughoutp) {
+                AstSampled* const sampledp = new AstSampled{flp, throughoutp};
+                sampledp->dtypeSetBit();
+                loopp->addStmtsp(
+                    new AstIf{flp, new AstLogNot{flp, sampledp},
+                              new AstAssign{flp,
+                                            new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitFalse{}}}});
+            }
             beginp->addStmtsp(loopp);
         }
-        if (m_disableSeqIfp) {
+        // Compose wrappers on remaining sequence: throughout gate (inner), disable iff (outer)
+        AstNode* remainp = nodep->nextp() ? nodep->nextp()->unlinkFrBackWithNext() : nullptr;
+        if (throughoutOkp) {
+            // If condition failed during delay, fail assertion
+            remainp = new AstIf{flp, new AstVarRef{flp, throughoutOkp, VAccess::READ}, remainp,
+                                new AstPExprClause{flp, /*pass=*/false}};
+        }
+        if (m_disableSeqIfp && remainp) {
             AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
-            AstNode* const continuationsp = nodep->nextp()->unlinkFrBackWithNext();
             // Keep continuation statements in a proper statement-list container.
-            disableSeqIfp->addThensp(new AstBegin{flp, "", continuationsp, true});
-            nodep->addNextHere(disableSeqIfp);
+            disableSeqIfp->addThensp(new AstBegin{flp, "", remainp, true});
+            remainp = disableSeqIfp;
+        }
+        if (remainp) {
+            if (throughoutOkp) {
+                // throughoutOkp is declared in beginp scope -- check must be inside it
+                beginp->addStmtsp(remainp);
+            } else {
+                nodep->addNextHere(remainp);
+            }
         }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);

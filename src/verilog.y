@@ -6849,7 +6849,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
                         { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSExprThroughout{$2, $1, $3}; }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
         //                      // IEEE: sexpr yWITHIN sexpr
         |       ~p~sexpr yWITHIN sexpr

@@ -42,10 +42,6 @@ module t (
     a or b;
   endsequence
 
-  sequence s_throughout;
-    a throughout b;
-  endsequence
-
   sequence s_intersect;
     a intersect b;
   endsequence

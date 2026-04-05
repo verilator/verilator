@@ -2181,6 +2181,21 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
 };
+class AstSExprThroughout final : public AstNodeExpr {
+    // expr throughout seq (IEEE 1800-2023 16.9.9)
+    // @astgen op1 := condp : AstNodeExpr  // Boolean LHS
+    // @astgen op2 := seqp  : AstNodeExpr  // Sequence RHS
+public:
+    AstSExprThroughout(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* seqp)
+        : ASTGEN_SUPER_SExprThroughout(fl) {
+        this->condp(condp);
+        this->seqp(seqp);
+    }
+    ASTGEN_MEMBERS_AstSExprThroughout;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+};
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,
     // used to pass to (potentially) runtime decoding of format arguments

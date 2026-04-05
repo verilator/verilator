@@ -1067,6 +1067,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateConst(nodep->exprp());
     }
+    void visit(AstSExprThroughout* nodep) override {
+        iterateConst(nodep->condp());
+        puts(" throughout ");
+        iterateConst(nodep->seqp());
+    }
 
     // Terminals
     void visit(AstVarRef* nodep) override {
