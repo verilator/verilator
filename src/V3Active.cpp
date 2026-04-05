@@ -702,11 +702,11 @@ class CovergroupInjectVisitor final : public VNVisitor {
     void visit(AstVarScope* nodep) override {
         // Get the underlying var
         AstVar* const varp = nodep->varp();
-        if (!varp) return;  // LCOV_EXCL_BR_LINE -- AstVarScope always has non-null varp
+        UASSERT_OBJ(varp, nodep, "AstVarScope must have non-null varp");
 
         // Check if the variable is of covergroup class type
         const AstNodeDType* const dtypep = varp->dtypep();
-        if (!dtypep) return;  // LCOV_EXCL_BR_LINE -- typed vars always have non-null dtypep
+        UASSERT_OBJ(dtypep, nodep, "AstVar must have non-null dtypep after V3Width");
 
         const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
         if (!classRefp) return;
@@ -754,7 +754,7 @@ class CovergroupInjectVisitor final : public VNVisitor {
         activep->addStmtsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
 
-        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name());
+        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name());  // LCOV_EXCL_BR_LINE
     }
 
     void visit(AstActive*) override {}  // Don't iterate into actives
