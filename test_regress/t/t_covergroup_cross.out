@@ -57,6 +57,15 @@ cg5.cp_addr.addr0: 1
 cg5.cp_addr.addr1: 1
 cg5.cp_cmd.read: 1
 cg5.cp_cmd.write: 1
+cg_ignore.cp_addr.a0: 2
+cg_ignore.cp_addr.a1: 2
+cg_ignore.cp_addr.ign [ignore]: 1
+cg_ignore.cp_cmd.read: 3
+cg_ignore.cp_cmd.write: 2
+cg_ignore.cross_ab.a0_x_read [cross]: 1
+cg_ignore.cross_ab.a0_x_write [cross]: 1
+cg_ignore.cross_ab.a1_x_read [cross]: 1
+cg_ignore.cross_ab.a1_x_write [cross]: 1
 cg_range.addr_cmd_range.hi_range_x_read [cross]: 1
 cg_range.addr_cmd_range.hi_range_x_write [cross]: 1
 cg_range.addr_cmd_range.lo_range_x_read [cross]: 1
@@ -65,3 +74,11 @@ cg_range.cp_addr.hi_range: 2
 cg_range.cp_addr.lo_range: 2
 cg_range.cp_cmd.read: 2
 cg_range.cp_cmd.write: 2
+cg_unnamed_cross.__cross7.a0_x_read [cross]: 1
+cg_unnamed_cross.__cross7.a0_x_write [cross]: 0
+cg_unnamed_cross.__cross7.a1_x_read [cross]: 0
+cg_unnamed_cross.__cross7.a1_x_write [cross]: 1
+cg_unnamed_cross.cp_a.a0: 1
+cg_unnamed_cross.cp_a.a1: 1
+cg_unnamed_cross.cp_c.read: 1
+cg_unnamed_cross.cp_c.write: 1

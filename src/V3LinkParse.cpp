@@ -1142,36 +1142,36 @@ class LinkParseVisitor final : public VNVisitor {
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {
-            // Find the 'new' function to add parameters to
+            // Find the 'new' function to add parameters to.
+            // At this point the only AstFunc in the class is the "new" constructor
+            // created just above; other members are AstVar or AstCovergroup sentinel.
             AstFunc* newFuncp = nullptr;
             for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
                 if (AstFunc* const funcp = VN_CAST(memberp, Func)) {
-                    if (funcp->name() == "new") {
-                        newFuncp = funcp;
-                        break;
-                    }
+                    UASSERT_OBJ(funcp->name() == "new", funcp,
+                                "Unexpected non-new function in covergroup class during arg setup");
+                    newFuncp = funcp;
+                    break;
                 }
             }
-            if (newFuncp) {
-                // Save the existing body statements and unlink them
-                AstNode* const existingBodyp = newFuncp->stmtsp();
-                if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-                // Add function parameters and assignments
-                for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
-                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
-                        AstVar* const paramp = origVarp->cloneTree(false);
-                        paramp->funcLocal(true);
-                        paramp->direction(VDirection::INPUT);
-                        newFuncp->addStmtsp(paramp);
-                        AstNodeExpr* const lhsp
-                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                        AstNodeExpr* const rhsp
-                            = new AstParseRef{paramp->fileline(), paramp->name()};
-                        newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
-                    }
-                }
-                if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
+            UASSERT_OBJ(newFuncp, nodep, "Covergroup class must have a 'new' constructor function");
+            // Save the existing body statements and unlink them
+            AstNode* const existingBodyp = newFuncp->stmtsp();
+            if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
+            // Add function parameters and assignments
+            for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+                AstVar* const origVarp = VN_AS(argp, Var);
+                AstVar* const paramp = origVarp->cloneTree(false);
+                paramp->funcLocal(true);
+                paramp->direction(VDirection::INPUT);
+                newFuncp->addStmtsp(paramp);
+                AstNodeExpr* const lhsp
+                    = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                AstNodeExpr* const rhsp
+                    = new AstParseRef{paramp->fileline(), paramp->name()};
+                newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
             }
+            if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
         }
 
         // IEEE: option / type_option members allow external access (cg_inst.option.X)
@@ -1201,17 +1201,16 @@ class LinkParseVisitor final : public VNVisitor {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
             if (sampleArgsp) {
                 for (AstNode* argp = sampleArgsp; argp; argp = argp->nextp()) {
-                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
-                        AstVar* const paramp = origVarp->cloneTree(false);
-                        paramp->funcLocal(true);
-                        paramp->direction(VDirection::INPUT);
-                        funcp->addStmtsp(paramp);
-                        AstNodeExpr* const lhsp
-                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                        AstNodeExpr* const rhsp
-                            = new AstParseRef{paramp->fileline(), paramp->name()};
-                        funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
-                    }
+                    AstVar* const origVarp = VN_AS(argp, Var);
+                    AstVar* const paramp = origVarp->cloneTree(false);
+                    paramp->funcLocal(true);
+                    paramp->direction(VDirection::INPUT);
+                    funcp->addStmtsp(paramp);
+                    AstNodeExpr* const lhsp
+                        = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                    AstNodeExpr* const rhsp
+                        = new AstParseRef{paramp->fileline(), paramp->name()};
+                    funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
                 }
             }
             funcp->classMethod(true);
@@ -1295,24 +1294,22 @@ class LinkParseVisitor final : public VNVisitor {
 
         // Convert constructor args to member variables
         for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
-            if (AstVar* const origVarp = VN_CAST(argp, Var)) {
-                AstVar* const memberp = origVarp->cloneTree(false);
-                memberp->varType(VVarType::MEMBER);
-                memberp->funcLocal(false);
-                memberp->direction(VDirection::NONE);
-                cgClassp->addMembersp(memberp);
-            }
+            AstVar* const origVarp = VN_AS(argp, Var);
+            AstVar* const memberp = origVarp->cloneTree(false);
+            memberp->varType(VVarType::MEMBER);
+            memberp->funcLocal(false);
+            memberp->direction(VDirection::NONE);
+            cgClassp->addMembersp(memberp);
         }
 
         // Convert sample args to member variables
         for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
-            if (AstVar* const origVarp = VN_CAST(argp, Var)) {
-                AstVar* const memberp = origVarp->cloneTree(false);
-                memberp->varType(VVarType::MEMBER);
-                memberp->funcLocal(false);
-                memberp->direction(VDirection::NONE);
-                cgClassp->addMembersp(memberp);
-            }
+            AstVar* const origVarp = VN_AS(argp, Var);
+            AstVar* const memberp = origVarp->cloneTree(false);
+            memberp->varType(VVarType::MEMBER);
+            memberp->funcLocal(false);
+            memberp->direction(VDirection::NONE);
+            cgClassp->addMembersp(memberp);
         }
 
         // Create the constructor; detach membersp (coverage body) and use as its body

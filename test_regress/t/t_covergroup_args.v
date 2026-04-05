@@ -4,16 +4,23 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// A plain (non-covergroup) class — exercises the non-covergroup class scope/varscope paths
+class PlainClass;
+    int x;
+endclass
+
 // verilator lint_off COVERIGN
 module t;
 
+  int i, j;
+
   covergroup cg(int var1, int var2 = 42);
+    cp1: coverpoint i;  // Non-empty body with args: exercises constructor-body path
   endgroup
 
   cg cov1 = new(69, 77);
   cg cov2 = new(69);
-
-  int i, j;
+  PlainClass plain_inst = new;  // Non-covergroup class instance: exercises early-return paths
 
   function void x();
     cov1.set_inst_name("the_inst_name");

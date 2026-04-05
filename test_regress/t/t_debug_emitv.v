@@ -367,9 +367,14 @@ module t (/*AUTOARG*/
     cp_sig: coverpoint cg_sig {
       bins low    = {[0:3]};
       bins high   = {[4:6]};
+      bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
       bins dflt   = default;
       ignore_bins ign = {7};
       illegal_bins ill = {5};
+    }
+    // Coverpoint with per-coverpoint option but no explicit bins
+    cp_options: coverpoint cg_sig2 {
+      option.at_least = 2;
     }
   endgroup
 
@@ -381,8 +386,9 @@ module t (/*AUTOARG*/
   // Covergroup with transition bins
   covergroup cg_trans;
     cp_t: coverpoint cg_sig {
-      bins t01 = (3'b000 => 3'b001);
-      bins t12 = (3'b001 => 3'b010);
+      bins t01  = (3'b000 => 3'b001);
+      bins t12  = (3'b001 => 3'b010);
+      bins talt = (3'b010 => 3'b011), (3'b100 => 3'b101);  // multiple transition sets
     }
   endgroup
 
