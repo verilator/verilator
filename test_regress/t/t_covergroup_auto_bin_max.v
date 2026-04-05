@@ -32,8 +32,8 @@ module t;
   endgroup
 
   // Test 4: range-bin skip path (lines 287, 356-359).
-  // auto_bin_max=4 on 4-bit signal → 4 range bins: [0:3],[4:7],[8:11],[12:15].
-  // ignore_bins {[0:3]} excludes all values in the first range → that bin is skipped.
+  // auto_bin_max=4 on 4-bit signal -> 4 range bins: [0:3],[4:7],[8:11],[12:15].
+  // ignore_bins {[0:3]} excludes all values in the first range -> that bin is skipped.
   covergroup cg4;
     option.auto_bin_max = 4;
     cp: coverpoint data4 {
