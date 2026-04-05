@@ -109,7 +109,6 @@ class AssertPropConsRepVisitor final : public VNVisitor {
         const RepRange r = getCounts(nodep);
         if (!nodep->maxCountp() && !r.unbounded && r.minN >= 2) return;  // V3AssertPre handles
 
-        FileLine* const flp = nodep->fileline();
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
 
         if (r.minN <= 1 && (r.unbounded || !nodep->maxCountp())) {
