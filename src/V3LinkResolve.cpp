@@ -47,19 +47,16 @@ class LinkResolveVisitor final : public VNVisitor {
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
     AstClass* m_classp = nullptr;  // Class we're inside
-    string m_randcIllegalWhy;  // Why randc illegal
-    AstNode* m_randcIllegalp = nullptr;  // Node causing randc illegal
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
-    AstNodeExpr* m_currentRandomizeSelectp = nullptr;  // fromp() of current `randomize()` call
-    bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
+    // TODO: Some also can move to V3LinkWidth, to happen once post-LinkDot
     void visit(AstNodeModule* nodep) override {
         // Module: Create sim table for entire module and iterate
         UINFO(8, "MODULE " << nodep);
@@ -79,39 +76,6 @@ class LinkResolveVisitor final : public VNVisitor {
             }
         }
         iterateChildren(nodep);
-    }
-    void visit(AstConstraint* nodep) override {
-        // V3LinkDot moved the isExternDef into the class, the extern proto was
-        // checked to exist, and now isn't needed
-        nodep->isExternDef(false);
-        if (nodep->isExternProto()) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstConstraintBefore* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
-        VL_RESTORER(m_randcIllegalp);
-        m_randcIllegalWhy = "'solve before' (IEEE 1800-2023 18.5.9)";
-        m_randcIllegalp = nodep;
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstDist* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
-        VL_RESTORER(m_randcIllegalp);
-        m_randcIllegalWhy = "'constraint dist' (IEEE 1800-2023 18.5.3)";
-        m_randcIllegalp = nodep;
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstConstraintExpr* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
-        VL_RESTORER(m_randcIllegalp);
-        if (nodep->isSoft()) {
-            m_randcIllegalWhy = "'constraint soft' (IEEE 1800-2023 18.5.13.1)";
-            m_randcIllegalp = nodep;
-        }
-        iterateChildrenConst(nodep);
     }
 
     void visit(AstInitialAutomatic* nodep) override {
@@ -151,14 +115,6 @@ class LinkResolveVisitor final : public VNVisitor {
                                << nodep->prettyNameQ()
                                << " used outside generate for loop (IEEE 1800-2023 27.4)");
             }
-            if (nodep->varp()->isRandC() && m_randcIllegalp) {
-                nodep->v3error("Randc variables not allowed in "
-                               << m_randcIllegalWhy << '\n'
-                               << nodep->warnContextPrimary() << '\n'
-                               << m_randcIllegalp->warnOther()
-                               << "... Location of restricting expression\n"
-                               << m_randcIllegalp->warnContextSecondary());
-            }
         }
         iterateChildren(nodep);
     }
@@ -196,22 +152,6 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_currentRandomizeSelectp);
-        if (nodep->taskp()) {
-            if (AstSequence* const seqp = VN_CAST(nodep->taskp(), Sequence))
-                seqp->isReferenced(true);
-        }
-
-        if (nodep->name() == "randomize") {
-            if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
-                if (m_inRandomizeWith) {
-                    nodep->v3warn(
-                        E_UNSUPPORTED,
-                        "Unsupported: randomize() nested in inline randomize() constraints");
-                }
-                m_currentRandomizeSelectp = methodcallp->fromp();
-            }
-        }
         iterateChildren(nodep);
         if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
@@ -257,18 +197,6 @@ class LinkResolveVisitor final : public VNVisitor {
             visit(newp);
             letp->user2(false);
             return;
-        }
-    }
-
-    void visit(AstCaseItem* nodep) override {
-        // Move default caseItems to the bottom of the list
-        // That saves us from having to search each case list twice, for non-defaults and defaults
-        iterateChildren(nodep);
-        if (!nodep->user2() && nodep->isDefault() && nodep->nextp()) {
-            nodep->user2(true);
-            AstNode* const nextp = nodep->nextp();
-            nodep->unlinkFrBack();
-            nextp->addNext(nodep);
         }
     }
 
@@ -528,30 +456,6 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstMemberSel* nodep) override {
-        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelectp)) {
-            // Replace member selects to the element
-            // on which the randomize() is called with LambdaArgRef
-            // This allows V3Randomize to work properly when
-            // constrained variables are referred using that object
-            AstNodeExpr* const prevFromp = nodep->fromp();
-            prevFromp->replaceWith(
-                new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
-            pushDeletep(prevFromp);
-        }
-        iterateChildren(nodep);
-    }
-
-    void visit(AstWith* nodep) override {
-        VL_RESTORER(m_inRandomizeWith);
-        if (const AstMethodCall* const methodCallp = VN_CAST(nodep->backp(), MethodCall)) {
-            m_inRandomizeWith = methodCallp->name() == "randomize";
-        } else {
-            m_inRandomizeWith = false;
-        }
-        iterateChildren(nodep);
-    }
-
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -594,7 +498,7 @@ public:
 };
 
 //######################################################################
-// Link class functions
+// V3LinkResolve class functions
 
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": ");

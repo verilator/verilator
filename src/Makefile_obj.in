@@ -300,6 +300,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3LinkLevel.o \
   V3LinkParse.o \
   V3LinkResolve.o \
+  V3LinkWith.o \
   V3Localize.o \
   V3MergeCond.o \
   V3Name.o \
