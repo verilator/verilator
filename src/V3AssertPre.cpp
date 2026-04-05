@@ -487,14 +487,12 @@ private:
         // Throughout: create flag tracking whether condition held every tick
         AstVar* throughoutOkp = nullptr;
         if (throughoutp) {
-            throughoutOkp
-                = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
-                             nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
+            throughoutOkp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
+                                       nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
             throughoutOkp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             beginp->addStmtsp(throughoutOkp);
-            beginp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
-                              new AstConst{flp, AstConst::BitTrue{}}});
+            beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitTrue{}}});
             // Check condition at tick 0 (sequence start, before entering loop)
             AstSampled* const initSampledp
                 = new AstSampled{flp, throughoutp->cloneTreePure(false)};
@@ -526,8 +524,7 @@ private:
                 sampledp->dtypeSetBit();
                 loopp->addStmtsp(
                     new AstIf{flp, new AstLogNot{flp, sampledp},
-                              new AstAssign{flp,
-                                            new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                              new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitFalse{}}}});
             }
             beginp->addStmtsp(loopp);
