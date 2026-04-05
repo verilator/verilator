@@ -601,8 +601,8 @@ class RangeDelayExpander final : public VNVisitor {
     struct SeqStep final {
         AstNodeExpr* exprp;  // Expression to check (nullptr if unary leading delay)
         int delay;  // Fixed delay after this expression (0 for tail)
-        bool isRange;  // Whether this step's delay is a range
-        bool isUnbounded;  // Whether the range is unbounded (rhs is AstUnbounded)
+        bool isRange;  // Step's delay is a range
+        bool isUnbounded;  // Range is unbounded (rhs is AstUnbounded)
         int rangeMin;
         int rangeMax;  // -1 for unbounded
     };
