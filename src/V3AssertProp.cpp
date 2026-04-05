@@ -422,12 +422,12 @@ class AssertPropLowerVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
-    void visit(AstSExprThroughout* nodep) override {
+    void visit(AstSThroughout* nodep) override {
         // IEEE 1800-2023 16.9.9: expr throughout seq
         // Transform by AND-ing cond with every leaf expression in the sequence,
         // and attaching cond to every delay for per-tick checking in V3AssertPre.
-        AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
-        AstNodeExpr* const seqp = nodep->seqp()->unlinkFrBack();
+        AstNodeExpr* const condp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const seqp = nodep->rhsp()->unlinkFrBack();
         if (AstSExpr* const sexprp = VN_CAST(seqp, SExpr)) {
             // Walk all SExpr nodes: AND cond with leaf expressions, attach to delays
             sexprp->foreach([&](AstSExpr* sp) {
@@ -1021,10 +1021,10 @@ class RangeDelayExpander final : public VNVisitor {
         }
     }
 
-    void visit(AstSExprThroughout* nodep) override {
+    void visit(AstSThroughout* nodep) override {
         // Reject throughout with range-delay sequences before FSM expansion
         // would silently lose per-tick enforcement (IEEE 1800-2023 16.9.9)
-        if (AstSExpr* const sexprp = VN_CAST(nodep->seqp(), SExpr)) {
+        if (AstSExpr* const sexprp = VN_CAST(nodep->rhsp(), SExpr)) {
             if (containsRangeDelay(sexprp)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with range delay sequence");
                 nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -1033,7 +1033,7 @@ class RangeDelayExpander final : public VNVisitor {
             }
         }
         // Reject throughout with nested throughout or goto repetition
-        if (VN_IS(nodep->seqp(), SExprThroughout) || VN_IS(nodep->seqp(), SExprGotoRep)) {
+        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with complex sequence operator");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1041,9 +1041,9 @@ class RangeDelayExpander final : public VNVisitor {
         }
         // Reject throughout with temporal SAnd/SOr (containing SExpr = multi-cycle).
         // Pure boolean SAnd/SOr are OK -- AssertPropLowerVisitor lowers them to LogAnd/LogOr.
-        if (VN_IS(nodep->seqp(), SAnd) || VN_IS(nodep->seqp(), SOr)) {
+        if (VN_IS(nodep->rhsp(), SAnd) || VN_IS(nodep->rhsp(), SOr)) {
             bool hasSExpr = false;
-            nodep->seqp()->foreach([&](const AstSExpr*) { hasSExpr = true; });
+            nodep->rhsp()->foreach([&](const AstSExpr*) { hasSExpr = true; });
             if (hasSExpr) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: throughout with complex sequence operator");

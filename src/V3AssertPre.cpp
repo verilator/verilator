@@ -893,7 +893,7 @@ private:
         return new AstPExpr{flp, beginp, exprp->findBitDType()};
     }
 
-    void visit(AstSExprGotoRep* nodep) override {
+    void visit(AstSGotoRep* nodep) override {
         // Standalone goto rep (not inside implication antecedent)
         iterateChildren(nodep);
         FileLine* const flp = nodep->fileline();
@@ -920,8 +920,8 @@ private:
         if (nodep->sentreep()) return;  // Already processed
 
         // Handle goto repetition as antecedent before iterateChildren,
-        // so the standalone AstSExprGotoRep visitor doesn't process it
-        if (AstSExprGotoRep* const gotop = VN_CAST(nodep->lhsp(), SExprGotoRep)) {
+        // so the standalone AstSGotoRep visitor doesn't process it
+        if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
             iterateChildren(gotop);
             iterateAndNextNull(nodep->rhsp());
             FileLine* const flp = nodep->fileline();
