@@ -1785,8 +1785,8 @@ class WidthVisitor final : public VNVisitor {
             // Extract constant value
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
                 m_cgClassp->cgAutoBinMax(constp->toSInt());
-                UINFO(6, "  Covergroup " << m_cgClassp->name() << " option.auto_bin_max = "
-                                         << constp->toSInt() << endl);
+                UINFO(6, "  Covergroup " << m_cgClassp->name()
+                                         << " option.auto_bin_max = " << constp->toSInt() << endl);
             }
         }
         // Add more options here as needed (weight, goal, at_least, per_instance, comment)

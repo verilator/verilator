@@ -754,7 +754,8 @@ class CovergroupInjectVisitor final : public VNVisitor {
         activep->addStmtsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
 
-        UINFO(4, "  Added automatic sample() call for covergroup " << varp->name());  // LCOV_EXCL_BR_LINE
+        UINFO(4, "  Added automatic sample() call for covergroup "
+                     << varp->name());  // LCOV_EXCL_BR_LINE
     }
 
     void visit(AstActive*) override {}  // Don't iterate into actives
