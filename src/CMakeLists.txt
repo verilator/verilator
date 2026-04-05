@@ -132,6 +132,7 @@ set(HEADERS
     V3LinkLevel.h
     V3LinkParse.h
     V3LinkResolve.h
+    V3LinkWith.h
     V3List.h
     V3Localize.h
     V3MemberMap.h
@@ -306,6 +307,7 @@ set(COMMON_SOURCES
     V3LinkLevel.cpp
     V3LinkParse.cpp
     V3LinkResolve.cpp
+    V3LinkWith.cpp
     V3Localize.cpp
     V3MergeCond.cpp
     V3Name.cpp
