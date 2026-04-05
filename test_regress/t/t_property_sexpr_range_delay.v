@@ -86,4 +86,34 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       ##[1:3] 1'b1);
 
+  // ##[+] (= ##[1:$]): wait >= 1 cycle then check
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[+] 1'b1);
+
+  // ##[*] (= ##[0:$]): check immediately or after >= 1 cycle
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[*] 1'b1);
+
+  // ##[2:$]: explicit min > 1 (exercises WAIT_MIN for unbounded)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      b |-> ##[2:$] 1'b1);
+
+  // ##[1:$]: explicit form equivalent to ##[+]
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[1:$] 1'b1);
+
+  // Unary ##[+] and ##[*] without antecedent
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      ##[+] 1'b1);
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      ##[*] 1'b1);
+
+  // Multi-step with unbounded range: ##[+] then fixed ##1
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[+] 1'b1 ##1 1'b1);
+
+  // ##[*] with non-trivial consequent: exercises CHECK "stay" path
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[*] b);
+
 endmodule
