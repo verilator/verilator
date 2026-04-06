@@ -742,6 +742,17 @@ class ConstraintExprVisitor final : public VNVisitor {
                                            // (shared across all constraints)
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
 
+    // Walk extends chain to find __Vrandmode variable (user2p on AstClass)
+    static AstVar* findRandModeVar(AstNodeModule* classp) {
+        while (classp) {
+            if (classp->user2p()) return VN_AS(classp->user2p(), Var);
+            AstClass* const cp = VN_CAST(classp, Class);
+            if (!cp || !cp->extendsp()) return nullptr;
+            classp = cp->extendsp()->classp();
+        }
+        return nullptr;
+    }
+
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
         const AstNode* fromp = memberSelp->fromp();
@@ -1085,7 +1096,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* randModeAccess;
             if (membersel) {
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-                AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
+                AstVar* const effectiveRandModeVarp = findRandModeVar(varClassp);
                 if (effectiveRandModeVarp) {
                     // Member's class has randmode, use it
                     AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
@@ -1353,7 +1364,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 initTaskp->addStmtsp(methodp->makeStmt());
                 if (isGlobalConstrained && membersel && randMode.usesMode) {
                     AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-                    AstVar* const subRandModeVarp = VN_AS(varClassp->user2p(), Var);
+                    AstVar* const subRandModeVarp = findRandModeVar(varClassp);
                     if (subRandModeVarp) {
                         AstNodeExpr* const parentAccess = membersel->fromp()->cloneTree(false);
                         AstMemberSel* const randModeSel
