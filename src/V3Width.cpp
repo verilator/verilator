@@ -1637,11 +1637,24 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
-    void visit(AstSExprGotoRep* nodep) override {
+    void visit(AstSGotoRep* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstSThroughout* nodep) override {
+        m_hasSExpr = true;
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            // lhsp is a boolean expression, not a sequence -- clear m_underSExpr temporarily
+            VL_RESTORER(m_underSExpr);
+            m_underSExpr = false;
+            iterateCheckBool(nodep, "lhsp", nodep->lhsp(), BOTH);
+            m_underSExpr = true;
+            iterate(nodep->rhsp());
             nodep->dtypeSetBit();
         }
     }
