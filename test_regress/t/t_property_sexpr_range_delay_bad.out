@@ -20,4 +20,8 @@
                                                   : ... note: In instance 't'
    30 |   a5: assert property (@(posedge clk) a |-> ##[cyc:$] b);
       |                                             ^~
+%Error: t/t_property_sexpr_range_delay_bad.v:34:45: Range delay bounds must be non-negative (IEEE 1800-2023 16.7)
+                                                  : ... note: In instance 't'
+   34 |   a6: assert property (@(posedge clk) a |-> ##[NEG:$] b);
+      |                                             ^~
 %Error: Exiting due to
