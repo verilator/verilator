@@ -130,6 +130,10 @@ typedef enum byte {
   // Verify that vpi_put_value still works with vpiInertialDelay
   logic [ 31:0] delayed    `PUBLIC_FORCEABLE; // IData
 
+  // Verify that VPI still sees forced value if signal is forced through
+  // SystemVerilog, but not marked as forceable
+  logic [  7:0] forcedNonForceable /*verilator public_flat_rw*/; // CData
+
   // Clocked signals
 
   // Force with vpiIntVal
@@ -208,6 +212,8 @@ typedef enum byte {
 
   // Continuously assigned signals:
 
+  wire [  7:0] forcedNonForceableContinuously /*verilator public_flat_rw*/; // CData
+
   // Force with vpiIntVal
   wire         onebitContinuously     `PUBLIC_FORCEABLE; // CData
   wire [ 31:0] intvalContinuously     `PUBLIC_FORCEABLE; // IData
@@ -282,6 +288,7 @@ typedef enum byte {
 
   always @(posedge clk) begin
     nonPublic <= 1;
+    forcedNonForceable <= 8'hAA;
 
     onebit <= 1;
     intval <= 32'hAAAAAAAA;
@@ -356,6 +363,7 @@ typedef enum byte {
     ascPacked4dW <= '{'{'{'{32'hAAAAAAAA, 32'hAAAAAAAA, 32'hAAAAAAAA, 32'hAAAAAAAA}}}};
 `endif
   end
+  assign forcedNonForceableContinuously = 8'hAA;
 
   assign onebitContinuously = 1;
   assign intvalContinuously = 32'hAAAAAAAA;
@@ -431,6 +439,7 @@ typedef enum byte {
 `endif
 
   task automatic svForceValues();
+    force forcedNonForceable = 8'h55;
     force onebit = 0;
     force intval = 32'h55555555;
     force vectorC = 8'h55;
@@ -491,6 +500,7 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5] = 32'h55555555;
 `endif
 
+    force forcedNonForceableContinuously = 8'h55;
     force onebitContinuously = 0;
     force intvalContinuously = 32'h55555555;
     force vectorCContinuously = 8'h55;
@@ -550,6 +560,8 @@ typedef enum byte {
   endtask
 
   task automatic svPartiallyForceValues();
+    force forcedNonForceable[3:0] = 4'h5;
+
     force intval[15:0] = 16'h5555;
 
     force vectorC[3:0] = 4'h5;
@@ -584,6 +596,8 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5][24:39] = 16'h5555;
 `endif
 `endif
+
+    force forcedNonForceableContinuously[3:0] = 4'h5;
 
     force intvalContinuously[15:0] = 16'h5555;
 
@@ -622,6 +636,7 @@ typedef enum byte {
   endtask
 
   task automatic svForceSingleBit();
+    force forcedNonForceable[0] = 1;
     force intval[0] = 1;
     force vectorC[0] = 1;
     force vectorQ[0] = 1;
@@ -650,6 +665,7 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5][39] = 1;
 `endif
 
+    force forcedNonForceableContinuously[0] = 1;
     force intvalContinuously[0] = 1;
     force vectorCContinuously[0] = 1;
     force vectorQContinuously[0] = 1;
@@ -861,6 +877,7 @@ typedef enum byte {
   endtask
 
   task automatic svReleaseValues();
+    release forcedNonForceable;
     release onebit;
     release intval;
     release vectorC;
@@ -899,6 +916,7 @@ typedef enum byte {
     release ascPacked4dW[-3][2][-1][5];
 `endif
 
+    release forcedNonForceableContinuously;
     release onebitContinuously;
     release intvalContinuously;
     release vectorCContinuously;
@@ -968,6 +986,8 @@ typedef enum byte {
   endtask
 
   task automatic svPartiallyReleaseValues();
+    release forcedNonForceable[3:0];
+
     release intval[15:0];
 
     release vectorC[3:0];
@@ -1000,6 +1020,8 @@ typedef enum byte {
     release ascPacked4dQ[-3][2][-1][5][16:23];
     release ascPacked4dW[-3][2][-1][5][24:39];
 `endif
+
+    release forcedNonForceableContinuously[3:0];
 
     release intvalContinuously[15:0];
 
@@ -1095,6 +1117,7 @@ typedef enum byte {
   endtask
 
   task automatic svReleaseSingleBit();
+    release forcedNonForceable[0];
     release intval[0];
     release vectorC[0];
     release vectorQ[0];
@@ -1123,6 +1146,7 @@ typedef enum byte {
     release ascPacked4dW[-3][2][-1][5][39];
 `endif
 
+    release forcedNonForceableContinuously[0];
     release intvalContinuously[0];
     release vectorCContinuously[0];
     release vectorQContinuously[0];
@@ -1224,6 +1248,7 @@ typedef enum byte {
   task automatic svCheckValuesForced();
     svCheckNonContinuousValuesForced();
 
+    `checkh(forcedNonForceableContinuously, 8'h55);
     `checkh(onebitContinuously, 0);
     `checkh(intvalContinuously, 32'h55555555);
     `checkh(vectorCContinuously, 8'h55);
@@ -1290,6 +1315,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousValuesForced();
+    `checkh(forcedNonForceable, 8'h55);
     `checkh(onebit, 0);
     `checkh(intval, 32'h55555555);
     `checkh(vectorC, 8'h55);
@@ -1355,6 +1381,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckContinuousValuesReleased();
+    `checkh(forcedNonForceableContinuously, 8'hAA);
     `checkh(onebitContinuously, 1);
     `checkh(intvalContinuously, 32'hAAAAAAAA);
     `checkh(vectorCContinuously, 8'hAA);
@@ -1421,6 +1448,7 @@ typedef enum byte {
   task automatic svCheckValuesPartiallyForced();
     svCheckNonContinuousValuesPartiallyForced();
 
+    `checkh(forcedNonForceableContinuously, 8'h A5);
     `checkh(intvalContinuously, 32'hAAAA_5555);
     `checkh(vectorCContinuously, 8'h A5);
     `checkh(vectorQContinuously, 62'h2AAAAAAAD5555555);
@@ -1457,6 +1485,7 @@ typedef enum byte {
   task automatic svCheckSingleBitForced();
     svCheckNonContinuousSingleBitForced();
 
+    `checkh(forcedNonForceableContinuously, 8'hAB);
     `checkh(intvalContinuously, 32'hAAAAAAAB);
     `checkh(vectorCContinuously, 8'hAB);
     `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAB);
@@ -1535,6 +1564,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousValuesPartiallyForced();
+    `checkh(forcedNonForceable, 8'h A5);
     `checkh(intval, 32'hAAAA_5555);
     `checkh(vectorC, 8'h A5);
     `checkh(vectorQ, 62'h2AAAAAAAD5555555);
@@ -1593,6 +1623,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousSingleBitForced();
+    `checkh(forcedNonForceable, 8'hAB);
     `checkh(intval, 32'hAAAAAAAB);
     `checkh(vectorC, 8'hAB);
     `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAB);
@@ -1648,6 +1679,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckValuesReleased();
+    `checkh(forcedNonForceable, 8'hAA);
     `checkh(onebit, 1);
     `checkh(intval, 32'hAAAAAAAA);
     `checkh(vectorC, 8'hAA);
@@ -1714,6 +1746,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckValuesPartiallyReleased();
+    `checkh(forcedNonForceable, 'h5a);
     `checkh(intval, 'h5555aaaa);
     `checkh(vectorC, 'h5a);
     `checkh(vectorQ, 'h155555552aaaaaaa);
@@ -1750,6 +1783,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckContinuousValuesPartiallyReleased();
+    `checkh(forcedNonForceableContinuously, 'h5a);
     `checkh(intvalContinuously, 'h5555aaaa);
     `checkh(vectorCContinuously, 'h5a);
     `checkh(vectorQContinuously, 'h155555552aaaaaaa);
@@ -1830,6 +1864,7 @@ typedef enum byte {
   endtask
 
  task automatic svCheckContinuousValuesSingleBitReleased();
+    `checkh(forcedNonForceableContinuously, 8'h54);
     `checkh(intvalContinuously, 32'h55555554);
     `checkh(vectorCContinuously, 8'h54);
     `checkh(vectorQContinuously, 62'h15555555_55555554);
@@ -1886,6 +1921,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckSingleBitReleased();
+    `checkh(forcedNonForceable, 8'h54);
     `checkh(intval, 32'h55555554);
     `checkh(vectorC, 8'h54);
     `checkh(vectorQ, 62'h15555555_55555554);
@@ -2443,6 +2479,7 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("time: %0t\tclk:%b", $time, clk);
 
     $display("nonPublic: %x", nonPublic);
+    $display("forcedNonForceable: %x", forcedNonForceable);
 
     $display("str1: %s", str1);
     $display("delayed: %x", delayed);
@@ -2484,6 +2521,7 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("ascPacked4dQ: %x", ascPacked4dQ);
     $display("ascPacked4dW: %x", ascPacked4dW);
 
+    $display("forcedNonForceableContinuously: %x", forcedNonForceableContinuously);
     $display("onebitContinuously: %x", onebitContinuously);
     $display("intvalContinuously: %x", intvalContinuously);
     $display("vectorCContinuously: %x", vectorCContinuously);
