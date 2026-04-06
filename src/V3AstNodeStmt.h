@@ -562,6 +562,7 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
     bool isCycleDelay() const { return m_isCycle; }
     bool isRangeDelay() const { return rhsp() != nullptr; }
+    bool isUnbounded() const { return rhsp() && VN_IS(rhsp(), Unbounded); }
 };
 class AstDisable final : public AstNodeStmt {
     // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot

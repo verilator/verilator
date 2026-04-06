@@ -20,6 +20,8 @@ module t (
   wire a = crc[0];
   wire b = crc[1];
   wire c = crc[2];
+  wire d = crc[3];
+  wire e = crc[4];
 
   wire [63:0] result = {61'h0, c, b, a};
 
@@ -46,44 +48,70 @@ module t (
     end
   end
 
-  // Basic ##[1:3] range delay (CRC-driven, always-true consequent)
+  // Basic ##[1:3] range delay
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[1:3] 1'b1);
+      a |-> ##[1:3] (a | b | c | d | e));
 
   // ##[2:4] range delay
   assert property (@(posedge clk) disable iff (cyc < 2)
-      b |-> ##[2:4] 1'b1);
+      b |-> ##[2:4] (a | b | c | d | e));
 
   // Degenerate ##[2:2] (equivalent to ##2)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[2:2] 1'b1);
+      a |-> ##[2:2] (a | b | c | d | e));
 
-  // Multi-step: ##[1:2] then ##1 (both consequents always true)
+  // Multi-step: ##[1:2] then ##1
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[1:2] 1'b1 ##1 1'b1);
+      a |-> ##[1:2] (a | b | c | d | e) ##1 (a | b | c | d | e));
 
   // Large range ##[1:10000] (scalability, O(1) code size)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[1:10000] 1'b1);
+      a |-> ##[1:10000] (a | b | c | d | e));
 
   // Range with binary SExpr: nextStep has delay > 0 after range match
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> b ##[1:2] 1'b1 ##3 1'b1);
+      a |-> b ##[1:2] (a | b | c | d | e) ##3 (a | b | c | d | e));
 
   // Binary SExpr without implication (covers firstStep.exprp path without antecedent)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a ##[1:3] 1'b1);
+      a ##[1:3] (a | b | c | d | e));
 
   // Implication with binary SExpr RHS (covers antExprp AND firstStep.exprp)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> b ##[1:2] 1'b1);
+      a |-> b ##[1:2] (a | b | c | d | e));
 
   // Fixed delay before range (covers firstStep.delay path in IDLE)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##2 1'b1 ##[1:3] 1'b1);
+      a |-> ##2 (a | b | c | d | e) ##[1:3] (a | b | c | d | e));
 
   // Unary range with no antecedent and no preExpr (covers unconditional start)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      ##[1:3] 1'b1);
+      ##[1:3] (a | b | c | d | e));
+
+  // ##[+] (= ##[1:$]): wait >= 1 cycle for b (CRC-driven, exercises CHECK stay)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[+] b);
+
+  // ##[*] (= ##[0:$]): check b immediately or after >= 1 cycle
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[*] b);
+
+  // ##[2:$]: explicit min > 1, wait then check c (exercises WAIT_MIN)
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      b |-> ##[2:$] c);
+
+  // ##[1:$]: explicit form equivalent to ##[+]
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[1:$] c);
+
+  // Unary ##[+] and ##[*] without antecedent
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      ##[+] b);
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      ##[*] b);
+
+  // Multi-step with unbounded range: ##[+] then fixed ##1
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[+] b ##1 (a | b | c | d | e));
 
 endmodule
