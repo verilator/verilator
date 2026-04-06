@@ -3494,14 +3494,11 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later.
-        // When m_vup is null, this range appears outside a normal expression context (e.g.
-        // in a covergroup bin declaration). Pre-fold constant arithmetic in that case
-        // (e.g., AstNegate(Const) -> Const) so children have their types set before widthing.
-        // We cannot do this unconditionally: in a normal 'inside' expression (m_vup set),
-        // range bounds may be enum refs not yet widthed, and constifyEdit would crash.
+        // When visited in statement context (m_vup==nullptr), fold constants first so that
+        // negative literals like -1 are collapsed before V3Width visits them as expressions.
         if (!m_vup) {
-            V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
-            V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
+            if (nodep->lhsp()) V3Const::constifyEdit(nodep->lhsp());
+            if (nodep->rhsp()) V3Const::constifyEdit(nodep->rhsp());
         }
         userIterateAndNext(nodep->lhsp(), m_vup);
         userIterateAndNext(nodep->rhsp(), m_vup);
