@@ -66,6 +66,19 @@ enum ClassRandom : uint8_t {
 static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
 static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__VBasicRand";
 
+// Walk extends chain to find __Vrandmode variable (stored in AstClass::user2p).
+// user2p is only set on the root class where __Vrandmode was created, so
+// derived classes need this chain walk. Accepts AstNodeModule* for flexibility.
+static AstVar* getRandModeVarFromClass(AstNodeModule* classp) {
+    while (classp) {
+        if (classp->user2p()) return VN_AS(classp->user2p(), Var);
+        AstClass* const cp = VN_CAST(classp, Class);
+        if (!cp || !cp->extendsp()) return nullptr;
+        classp = cp->extendsp()->classp();
+    }
+    return nullptr;
+}
+
 // ######################################################################
 // Establishes the target of a rand_mode() call
 
@@ -742,17 +755,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                                            // (shared across all constraints)
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
 
-    // Walk extends chain to find __Vrandmode variable (user2p on AstClass)
-    static AstVar* findRandModeVar(AstNodeModule* classp) {
-        while (classp) {
-            if (classp->user2p()) return VN_AS(classp->user2p(), Var);
-            AstClass* const cp = VN_CAST(classp, Class);
-            if (!cp || !cp->extendsp()) return nullptr;
-            classp = cp->extendsp()->classp();
-        }
-        return nullptr;
-    }
-
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
         const AstNode* fromp = memberSelp->fromp();
@@ -1096,7 +1098,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* randModeAccess;
             if (membersel) {
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-                AstVar* const effectiveRandModeVarp = findRandModeVar(varClassp);
+                AstVar* const effectiveRandModeVarp = getRandModeVarFromClass(varClassp);
                 if (effectiveRandModeVarp) {
                     // Member's class has randmode, use it
                     AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
@@ -1364,7 +1366,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 initTaskp->addStmtsp(methodp->makeStmt());
                 if (isGlobalConstrained && membersel && randMode.usesMode) {
                     AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-                    AstVar* const subRandModeVarp = findRandModeVar(varClassp);
+                    AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
                     if (subRandModeVarp) {
                         AstNodeExpr* const parentAccess = membersel->fromp()->cloneTree(false);
                         AstMemberSel* const randModeSel
@@ -3021,13 +3023,6 @@ class RandomizeVisitor final : public VNVisitor {
         classp->user2p(randModeVarp);
         return randModeVarp;
     }
-    static AstVar* getRandModeVar(AstClass* const classp) {
-        if (classp->user2p()) return VN_AS(classp->user2p(), Var);
-        if (AstClassExtends* const extendsp = classp->extendsp()) {
-            return getRandModeVar(extendsp->classp());
-        }
-        return nullptr;
-    }
     AstVar* getCreateConstraintModeVar(AstClass* const classp) {
         if (classp->user4p()) return VN_AS(classp->user4p(), Var);
         if (AstClassExtends* const extendsp = classp->extendsp()) {
@@ -3269,7 +3264,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     static AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asInt = varp->user1()};
-        return VN_AS(wrapIfMode(rmode, getRandModeVar(classp), stmtp), NodeStmt);
+        return VN_AS(wrapIfMode(rmode, getRandModeVarFromClass(classp), stmtp), NodeStmt);
     }
     AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
         const RandomizeMode rmode = {.asInt = constrp->user1()};
@@ -3938,7 +3933,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (commonPrefixp == exprp) break;
                 AstVar* const randVarp = getVarFromRef(exprp);
                 AstClass* const classp = VN_AS(randVarp->user2p(), Class);
-                AstVar* const randModeVarp = getRandModeVar(classp);
+                AstVar* const randModeVarp = getRandModeVarFromClass(classp);
                 if (savedRandModeVarps.find(randModeVarp) == savedRandModeVarps.end()) {
                     AstVar* const randModeTmpVarp
                         = makeTmpRandModeVar(exprp, randModeVarp, storeStmtsp, restoreStmtsp);
@@ -4185,7 +4180,7 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
-        AstVar* const randModeVarp = getRandModeVar(nodep);
+        AstVar* const randModeVarp = getRandModeVarFromClass(nodep);
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
         // Call nested pre_randomize on rand class-type members (IEEE 18.4.1)
@@ -4570,7 +4565,7 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(randModeTarget.classp, nodep,
                         "Should have checked in RandomizeMarkVisitor");
             AstVar* const receiverp = randModeTarget.receiverp;
-            AstVar* const randModeVarp = getRandModeVar(randModeTarget.classp);
+            AstVar* const randModeVarp = getRandModeVarFromClass(randModeTarget.classp);
             AstNodeExpr* const lhsp = makeModeAssignLhs(nodep->fileline(), randModeTarget.classp,
                                                         randModeTarget.fromp, randModeVarp);
             replaceWithModeAssign(nodep,
@@ -4818,7 +4813,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Set rand mode if present (not needed if classGenp exists and was copied)
-        AstVar* const randModeVarp = getRandModeVar(classp);
+        AstVar* const randModeVarp = getRandModeVarFromClass(classp);
         if (!classGenp && randModeVarp) addSetRandMode(randomizeFuncp, localGenp, randModeVarp);
 
         // Generate constraint setup code and a hardcoded call to the solver
