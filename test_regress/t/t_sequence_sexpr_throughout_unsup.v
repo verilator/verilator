@@ -17,4 +17,8 @@ module t (
   assert property (@(posedge clk)
       a |-> (a throughout ((b ##1 c) and (c ##1 b))));
 
+  // Unsupported: nested throughout
+  assert property (@(posedge clk)
+      a |-> (a throughout (b throughout (b ##1 c))));
+
 endmodule

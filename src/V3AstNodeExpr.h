@@ -3697,6 +3697,7 @@ public:
         dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSThroughout;
+    // LCOV_EXCL_START // Lowered in V3AssertProp before these are called
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogAnd(lhs, rhs);
     }
@@ -3708,6 +3709,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    // LCOV_EXCL_STOP
 };
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width
