@@ -544,6 +544,7 @@ class AstDelay final : public AstNodeStmt {
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
     // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max delay value (range delay only)
+    // @astgen op4 := throughoutp : Optional[AstNodeExpr] // Throughout condition (IEEE 16.9.9)
     VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
 

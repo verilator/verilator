@@ -127,6 +127,7 @@ class V3DfgCse final {
         case VDfgType::StreamR:
         case VDfgType::SAnd:
         case VDfgType::SOr:
+        case VDfgType::SThroughout:
         case VDfgType::Sub:
         case VDfgType::Xor: return V3Hash{};
         }
@@ -251,6 +252,7 @@ class V3DfgCse final {
         case VDfgType::StreamL:
         case VDfgType::SAnd:
         case VDfgType::SOr:
+        case VDfgType::SThroughout:
         case VDfgType::StreamR:
         case VDfgType::Sub:
         case VDfgType::Xor: return true;

@@ -422,6 +422,45 @@ class AssertPropLowerVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
+    void visit(AstSThroughout* nodep) override {
+        // IEEE 1800-2023 16.9.9: expr throughout seq
+        // Transform by AND-ing cond with every leaf expression in the sequence,
+        // and attaching cond to every delay for per-tick checking in V3AssertPre.
+        AstNodeExpr* const condp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const seqp = nodep->rhsp()->unlinkFrBack();
+        if (AstSExpr* const sexprp = VN_CAST(seqp, SExpr)) {
+            // Walk all SExpr nodes: AND cond with leaf expressions, attach to delays
+            sexprp->foreach([&](AstSExpr* sp) {
+                if (sp->exprp() && !VN_IS(sp->exprp(), SExpr)) {
+                    AstNodeExpr* const origp = sp->exprp()->unlinkFrBack();
+                    AstLogAnd* const andp
+                        = new AstLogAnd{origp->fileline(), condp->cloneTreePure(false), origp};
+                    andp->dtypeSetBit();
+                    sp->exprp(andp);
+                }
+                if (sp->preExprp() && !VN_IS(sp->preExprp(), SExpr)) {
+                    AstNodeExpr* const origp = sp->preExprp()->unlinkFrBack();
+                    AstLogAnd* const andp
+                        = new AstLogAnd{origp->fileline(), condp->cloneTreePure(false), origp};
+                    andp->dtypeSetBit();
+                    sp->preExprp(andp);
+                }
+                if (AstDelay* const dlyp = VN_CAST(sp->delayp(), Delay)) {
+                    dlyp->throughoutp(condp->cloneTreePure(false));
+                }
+            });
+            nodep->replaceWith(sexprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(condp->deleteTree(), condp);
+            visit(sexprp);
+        } else {
+            // Single expression (no delay): degenerate to cond && seq
+            AstLogAnd* const andp = new AstLogAnd{nodep->fileline(), condp, seqp};
+            andp->dtypeSetBit();
+            nodep->replaceWith(andp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
@@ -1058,6 +1097,40 @@ class RangeDelayExpander final : public VNVisitor {
             nodep->replaceWith(checkp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
+    }
+
+    void visit(AstSThroughout* nodep) override {
+        // Reject throughout with range-delay sequences before FSM expansion
+        // would silently lose per-tick enforcement (IEEE 1800-2023 16.9.9)
+        if (AstSExpr* const sexprp = VN_CAST(nodep->rhsp(), SExpr)) {
+            if (containsRangeDelay(sexprp)) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with range delay sequence");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
+        }
+        // Reject throughout with nested throughout or goto repetition
+        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with complex sequence operator");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        // Reject throughout with temporal SAnd/SOr (containing SExpr = multi-cycle).
+        // Pure boolean SAnd/SOr are OK -- AssertPropLowerVisitor lowers them to LogAnd/LogOr.
+        if (VN_IS(nodep->rhsp(), SAnd) || VN_IS(nodep->rhsp(), SOr)) {
+            bool hasSExpr = false;
+            nodep->rhsp()->foreach([&](const AstSExpr*) { hasSExpr = true; });
+            if (hasSExpr) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: throughout with complex sequence operator");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
+        }
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
