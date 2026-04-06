@@ -6885,11 +6885,11 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                         { $$ = new AstDelay{$1, $3, true};
                           $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 0}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         |       yP_POUNDPOUND yP_BRAPLUSKET
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 1}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         ;
 
 sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
