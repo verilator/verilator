@@ -320,6 +320,7 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
         V3LinkLValue::linkLValueSet(storeTop);
+        V3LinkLValue::linkLValueUnset(valuep);
         AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
