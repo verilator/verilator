@@ -272,6 +272,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
         AstSelBit* const wrSelbitp = VN_CAST(lhsp, SelBit);
         AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
+        V3LinkLValue::linkLValueSet(wrFromp);
 
         // Prepare a temporary variable
         FileLine* const fl = nodep->fileline();
@@ -317,7 +318,7 @@ class LinkIncVisitor final : public VNVisitor {
         prepostStmtVisit(nodep, exprp, storeTop, valuep);
     }
     void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
-        V3LinkLValue::linkLValueUnset(valuep);
+        V3LinkLValue::linkLValueSet(storeTop);
         AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -331,6 +332,7 @@ class LinkIncVisitor final : public VNVisitor {
         }
         AstNodeExpr* const readp = nodep->lhsp()->cloneTreePure(true);
         AstNodeExpr* const writep = nodep->lhsp()->unlinkFrBack();
+        V3LinkLValue::linkLValueSet(writep);
 
         AstConst* const newconstp = new AstConst{nodep->fileline(), 1};
 
