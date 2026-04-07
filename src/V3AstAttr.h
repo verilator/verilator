@@ -809,6 +809,11 @@ public:
         EVENT_FIRE,
         EVENT_IS_FIRED,
         EVENT_IS_TRIGGERED,
+        FORCE_ADD,
+        FORCE_READ,
+        FORCE_READ_INDEX,
+        FORCE_RELEASE,
+        FORCE_TOUCH,
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
@@ -955,6 +960,11 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {EVENT_FIRE, "fire", false}, \
            {EVENT_IS_FIRED, "isFired", true}, \
            {EVENT_IS_TRIGGERED, "isTriggered", true}, \
+           {FORCE_ADD, "addForce", false}, \
+           {FORCE_READ, "read", true}, \
+           {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_RELEASE, "release", false}, \
+           {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \

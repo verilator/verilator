@@ -25,7 +25,7 @@ module t (
 endmodule
 
 module sub (
-    input a  /* verilator forceable */ /* verilator public_flat */,
+    input a  /* verilator forceable */  /* verilator public_flat */,
     input b,
     output c
 );
