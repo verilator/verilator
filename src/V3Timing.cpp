@@ -1393,8 +1393,13 @@ class TimingControlVisitor final : public VNVisitor {
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
-                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}"};
-                AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
+                AstCMethodHard* const foreverMethodp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE},
+                    VCMethod::SCHED_WAIT_FOREVER};
+                foreverMethodp->dtypeSetVoid();
+                addProcessInfo(foreverMethodp);
+                addDebugInfo(foreverMethodp);
+                AstCAwait* const awaitp = new AstCAwait{flp, foreverMethodp};
                 nodep->replaceWith(awaitp);
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
                 VL_DO_DANGLING(condp->deleteTree(), condp);
