@@ -1376,10 +1376,10 @@ class FourstateVisitor final : public VNVisitor {
         if (AstCReset* const cresetp = VN_CAST(exprp, CReset)) {
             // This is here instead in the visitor because CReset shall never be nested into
             // the expression and also it is a very special case
-            AstCReset* const result = cresetp->cloneTree(false);
-            result->dtypeSetBitSized(cresetp->width(), cresetp->dtypep()->numeric());
-            FourstateLogicTypePropagator{result};
-            return result;
+            AstCReset* const resultp = cresetp->cloneTree(false);
+            resultp->dtypeSetBitSized(cresetp->width(), cresetp->dtypep()->numeric());
+            FourstateLogicTypePropagator{resultp};
+            return resultp;
         }
         AstNodeExpr* const result
             = m_fourstateGeneratorValueVisitor.getFourStateExpressionValue(exprp, putIntoTmp);
@@ -1434,9 +1434,9 @@ class FourstateVisitor final : public VNVisitor {
         if (isFourstate(nodep->lhsp())) {
             AstNodeVarRef* const lhsVarRefp = VN_CAST(nodep->lhsp(), NodeVarRef);
             if (VL_UNLIKELY(!lhsVarRefp)) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Fourstate LHS different than variable reference in assignment is "
-                              "unsupported in four-state mode");
+                nodep->v3warn(
+                    E_UNSUPPORTED,
+                    "Fourstate LHS other than a simple variable reference is not supported");
                 return;
             }
             AstNodeAssign* const assignXZp = nodep->cloneTree(false);
@@ -1745,12 +1745,12 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstCond* const nodep) override {
+        UASSERT_OBJ(!isFourstate(nodep), nodep,
+                    "This shall be reached only by two-state expressions");
         if (!hasFourstateInSubtree(nodep->thenp()) && !hasFourstateInSubtree(nodep->elsep())) {
             iterateChildren(nodep);
             return;
         }
-        UASSERT_OBJ(!isFourstate(nodep), nodep,
-                    "This shall be reached only by two-state expressions");
         FileLine* const flp = nodep->fileline();
         AstVar* resultVarp = createTmp(nodep);
         addPrecalculation(
