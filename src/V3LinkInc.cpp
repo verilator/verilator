@@ -252,7 +252,7 @@ class LinkIncVisitor final : public VNVisitor {
         // Special case array[something]++, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
-        AstNodeExpr* const exprp = new AstConst{nodep->fileline(), 1};
+        AstNodeExpr* const exprp = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->lhsp()->width(), 1};
 
         prepostStmtSelVisit(nodep, nodep->lhsp(), exprp);
     }
@@ -306,8 +306,9 @@ class LinkIncVisitor final : public VNVisitor {
         iterateChildren(nodep);
         AstNodeExpr* const storeTop = nodep->lhsp()->cloneTreePure(true);
         AstNodeExpr* const valuep = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const exprp = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, storeTop->width(), 1};
 
-        prepostStmtVisit(nodep, new AstConst{nodep->fileline(), 1}, storeTop, valuep);
+        prepostStmtVisit(nodep, exprp, storeTop, valuep);
     }
     void prepostStmtVisit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
@@ -334,7 +335,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(writep);
 
-        AstConst* const newconstp = new AstConst{nodep->fileline(), 1};
+        AstConst* const newconstp = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, readp->width(), 1};
 
         // Prepare a temporary variable
         FileLine* const fl = nodep->fileline();
