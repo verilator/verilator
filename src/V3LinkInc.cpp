@@ -46,6 +46,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkInc.h"
+#include "V3LinkLValue.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -271,8 +272,9 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const exprp = nodep->rhsp();
         exprp->unlinkFrBack();
 
-        AstSelBit* const rdSelbitp = VN_CAST(nodep->rd_lhsp(), SelBit);
-        AstNodeVarRef* const rdFromp = VN_CAST(rdSelbitp->fromp()->unlinkFrBack(), NodeVarRef);
+        AstSelBit* const rdSelbitp = VN_CAST(nodep->lhsp(), SelBit);
+        AstNodeVarRef* const rdFromp = VN_CAST(rdSelbitp->fromp()->cloneTreePure(true), NodeVarRef);
+        rdFromp->access(VAccess::READ);
         AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
         AstSelBit* const wrSelbitp = VN_CAST(nodep->lhsp(), SelBit);
         AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
@@ -314,8 +316,11 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepostStmtVisit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
-        AstNodeExpr* storeTop = nodep->lhsp()->unlinkFrBack();
-        AstNodeExpr* valuep = nodep->rd_lhsp()->unlinkFrBack();
+        // Purity check was deferred at creation in verilog.y, check now
+        nodep->lhsp()->purityCheck();
+        AstNodeExpr* const storeTop = nodep->lhsp()->cloneTreePure(true);
+        AstNodeExpr* const valuep = nodep->lhsp()->unlinkFrBack();
+        V3LinkLValue::linkLValueUnset(valuep);
 
         prepostStmtVisit(nodep, nodep->rhsp(), storeTop, valuep);
     }
@@ -387,8 +392,6 @@ class LinkIncVisitor final : public VNVisitor {
             && !selbitp->bitp()->isPure()) {
             prepostStmtSelVisit(nodep);
         } else {
-            // Purity check was deferred at creation in verilog.y, check now
-            nodep->lhsp()->purityCheck();
             prepostStmtVisit(nodep);
         }
     }
