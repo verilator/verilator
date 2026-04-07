@@ -2,24 +2,9 @@
    34 |     a within(b);
       |       ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:46:7: Unsupported: throughout (in sequence expression)
-   46 |     a throughout b;
-      |       ^~~~~~~~~~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:50:7: Unsupported: intersect (in sequence expression)
    50 |     a intersect b;
       |       ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:63:5: Unsupported: ## [*] cycle delay range expression
-   63 |     ## [*] b;
-      |     ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:66:5: Unsupported: ## [+] cycle delay range expression
-   66 |     ## [+] b;
-      |     ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:79:7: Unsupported: ## [*] cycle delay range expression
-   79 |     a ## [*] b;
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:82:7: Unsupported: ## [+] cycle delay range expression
-   82 |     a ## [+] b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:95:7: Unsupported: [= boolean abbrev expression
    95 |     a [= 1];
       |       ^~

@@ -23,6 +23,7 @@
 
 #include "verilated_random.h"
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -61,6 +62,9 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
 
+    std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
+    uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
+
 public:
     typedef std::streambuf::traits_type traits_type;
 
@@ -69,8 +73,8 @@ protected:
         const char c2 = static_cast<char>(c);
         if (pbase() == pptr()) return 0;
         const size_t size = pptr() - pbase();
+        log("  ", std::string(pbase(), size));
         const ssize_t n = ::write(m_writeFd, pbase(), size);
-        // VL_PRINTF_MT("solver-write '%s'\n", std::string(pbase(), size).c_str());
         if (VL_UNLIKELY(n == -1)) perror("write");
         if (n <= 0) {
             wait_report();
@@ -91,6 +95,7 @@ protected:
             wait_report();
             return traits_type::eof();
         }
+        log("< ", std::string(m_readBuf, n));
         setg(m_readBuf, m_readBuf, m_readBuf + n);
         return traits_type::to_int_type(m_readBuf[0]);
     }
@@ -104,6 +109,7 @@ public:
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
+        logOpen();
         open(cmd);
     }
 
@@ -175,6 +181,7 @@ public:
             return false;
         }
 
+        log("", "# Open: "s + cmd[0]);
         const pid_t pid = fork();
         if (VL_UNLIKELY(pid < 0)) {
             perror("VlRProcess::open: fork");
@@ -211,6 +218,35 @@ public:
 #else
         return false;
 #endif
+    }
+
+private:
+    void logOpen() {
+        const std::string filename = Verilated::threadContextp()->solverLogFilename();
+        if (filename.empty()) return;
+        m_logfp = std::make_unique<std::ofstream>(filename);
+        if (m_logfp.get() && m_logfp.get()->fail()) m_logfp = nullptr;
+        if (!m_logfp) {
+            const std::string msg = "%Error: Can't write '"s + filename + "'";
+            VL_FATAL_MT("", 0, "", msg.c_str());
+            return;
+        }
+        *m_logfp << "# Verilator solver log\n";
+    }
+    void log(const std::string& prefix, const std::string& text) {
+        if (VL_LIKELY(!m_logfp.get()) || text.empty()) return;
+        if (m_logLastTime != Verilated::threadContextp()->time()) {
+            m_logLastTime = Verilated::threadContextp()->time();
+            *m_logfp << "# [" << Verilated::threadContextp()->timeWithUnitString() << "]\n";
+        }
+        std::size_t startPos = 0;
+        while (1) {
+            const std::size_t endPos = text.find('\n', startPos);
+            if (endPos == std::string::npos) break;
+            *m_logfp << prefix << text.substr(startPos, endPos - startPos) << '\n';
+            startPos = endPos + 1;
+        }
+        if (startPos < text.length()) *m_logfp << prefix << text.substr(startPos) << '\n';
     }
 };
 

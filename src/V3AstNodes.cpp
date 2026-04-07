@@ -1021,6 +1021,11 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
 
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
+bool AstNodeDType::isNonPackedArray() const {
+    return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType) || VN_IS(this, QueueDType)
+           || VN_IS(this, AssocArrayDType);
+}
+
 class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
@@ -2964,6 +2969,8 @@ void AstVar::dump(std::ostream& str) const {
     if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (noCReset()) str << " [!CRST]";
     if (noReset()) str << " [!RST]";
+    if (processQueue()) str << " [PROCQ]";
+    if (sampled()) str << " [SAMPLED]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
@@ -2994,6 +3001,8 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isUsedLoopIdx);
     dumpJsonBoolFuncIf(str, noCReset);
     dumpJsonBoolFuncIf(str, noReset);
+    dumpJsonBoolFuncIf(str, processQueue);
+    dumpJsonBoolFuncIf(str, sampled);
     dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);

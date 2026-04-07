@@ -1951,6 +1951,7 @@ class AstVar final : public AstNode {
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
@@ -1969,6 +1970,7 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_noSample : 1;  // Do not wrap with AstSampled in assertion context
+    bool m_processQueue : 1;  // Process queue variable
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2009,6 +2011,7 @@ class AstVar final : public AstNode {
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
+        m_sampled = false;
         m_substConstOnly = false;
         m_overridenParam = false;
         m_trace = false;
@@ -2027,6 +2030,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_noSample = false;
+        m_processQueue = false;
     }
 
 public:
@@ -2176,6 +2180,10 @@ public:
     void noSubst(bool flag) { m_noSubst = flag; }
     bool noSample() const { return m_noSample; }
     void noSample(bool flag) { m_noSample = flag; }
+    bool processQueue() const { return m_processQueue; }
+    void processQueue(bool flag) { m_processQueue = flag; }
+    bool sampled() const { return m_sampled; }
+    void sampled(bool flag) { m_sampled = flag; }
     bool substConstOnly() const { return m_substConstOnly; }
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
     bool overriddenParam() const { return m_overridenParam; }

@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_sequence_sexpr_throughout_unsup.v:14:16: Unsupported: throughout with range delay sequence
+                                                               : ... note: In instance 't'
+   14 |       a |-> (a throughout (b ##[1:2] c)));
+      |                ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sequence_sexpr_throughout_unsup.v:18:16: Unsupported: throughout with complex sequence operator
+                                                               : ... note: In instance 't'
+   18 |       a |-> (a throughout ((b ##1 c) and (c ##1 b))));
+      |                ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_throughout_unsup.v:22:16: Unsupported: throughout with complex sequence operator
+                                                               : ... note: In instance 't'
+   22 |       a |-> (a throughout (b throughout (b ##1 c))));
+      |                ^~~~~~~~~~
+%Error: Exiting due to

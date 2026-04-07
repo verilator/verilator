@@ -415,6 +415,7 @@ protected:
         std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
+        std::string m_solverLogFilename;  // SMT solver log filename
         std::string m_solverProgram;  // SMT solver program
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
@@ -586,6 +587,8 @@ public:
     void time(uint64_t value) VL_MT_SAFE { m_s.m_time = value; }
     /// Advance current simulation time. See time() for side effect details
     void timeInc(uint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
+    /// Return time as unit string
+    std::string timeWithUnitString() const VL_MT_SAFE;
     /// Return time units as power-of-ten
     int timeunit() const VL_MT_SAFE { return -m_s.m_timeunit; }
     /// Set time units as power-of-ten
@@ -666,6 +669,9 @@ public:
     std::string profVltFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
 
+    // Internal: Solver log filename
+    std::string solverLogFilename() const VL_MT_SAFE;
+    void solverLogFilename(const std::string& flag) VL_MT_SAFE;
     // Internal: SMT solver program
     std::string solverProgram() const VL_MT_SAFE;
     void solverProgram(const std::string& flag) VL_MT_SAFE;

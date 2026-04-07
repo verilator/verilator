@@ -1136,8 +1136,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstClassRefDType* elemClassRefDtp = nullptr;
             {
                 AstNodeDType* varDtp = varp->dtypep()->skipRefp();
-                if (VN_IS(varDtp, DynArrayDType) || VN_IS(varDtp, QueueDType)
-                    || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
+                if (varDtp->isNonPackedArray()) {
                     AstNodeDType* const elemDtp = varDtp->subDTypep()->skipRefp();
                     elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
                     if (elemClassRefDtp) {
@@ -1209,9 +1208,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                         AstVar* const memberVarp = VN_CAST(mnodep, Var);
                         if (!memberVarp || !memberVarp->rand().isRandomizable()) continue;
                         AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
-                        if (VN_IS(memberDtp, ClassRefDType) || VN_IS(memberDtp, DynArrayDType)
-                            || VN_IS(memberDtp, QueueDType) || VN_IS(memberDtp, UnpackArrayDType)
-                            || VN_IS(memberDtp, AssocArrayDType))
+                        if (VN_IS(memberDtp, ClassRefDType) || memberDtp->isNonPackedArray())
                             continue;
                         const int memberWidth = memberDtp->width();
 
@@ -1281,9 +1278,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                   VAccess::READWRITE},
                     VCMethod::RANDOMIZER_WRITE_VAR};
                 uint32_t dimension = 0;
-                if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
-                    || VN_IS(varp->dtypep(), QueueDType)
-                    || VN_IS(varp->dtypep(), AssocArrayDType)) {
+                if (varp->dtypep()->isNonPackedArray()) {
                     const std::pair<uint32_t, uint32_t> dims
                         = varp->dtypep()->dimensions(/*includeBasic=*/true);
                     const uint32_t unpackedDimensions = dims.second;
@@ -1316,9 +1311,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     methodp->addPinsp(varRefp);
                 }
                 AstNodeDType* tmpDtypep = varp->dtypep();
-                while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
-                       || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
-                    tmpDtypep = tmpDtypep->subDTypep();
+                while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
                 const size_t width = tmpDtypep->width();
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
@@ -3370,8 +3363,7 @@ class RandomizeVisitor final : public VNVisitor {
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
         AstNodeExpr* tempElementp = nullptr;
-        while (VN_IS(tempDTypep, DynArrayDType) || VN_IS(tempDTypep, UnpackArrayDType)
-               || VN_IS(tempDTypep, AssocArrayDType) || VN_IS(tempDTypep, QueueDType)) {
+        while (tempDTypep->isNonPackedArray()) {
             AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
             randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
             AstNodeExpr* const tempExprp = tempElementp ? tempElementp : exprp;
@@ -4397,9 +4389,7 @@ class RandomizeVisitor final : public VNVisitor {
                     }
 
                     AstNodeDType* tmpDtypep = arrVarp->dtypep();
-                    while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
-                           || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
-                        tmpDtypep = tmpDtypep->subDTypep();
+                    while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
                     const size_t width = tmpDtypep->width();
 
                     methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});

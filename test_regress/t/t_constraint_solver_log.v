@@ -1,21 +1,27 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2019 Driss Hafdi
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
+
+class Packet;
+  rand int one;
+  constraint a {one > 0 && one < 2;}
+endclass
 
 module t;
 
-  // bug1624
-  test #(.PARAM(32'd1)) test_i ();
+  Packet p;
+
+  int v;
 
   initial begin
+    p = new;
+    v = p.randomize();
+    if (v != 1) $stop;
+    if (p.one != 1) $stop;
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
-endmodule
-
-module test #(
-    parameter logic PARAM = 1'b0
-) ();
 endmodule

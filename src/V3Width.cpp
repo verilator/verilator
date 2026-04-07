@@ -1652,11 +1652,24 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
-    void visit(AstSExprGotoRep* nodep) override {
+    void visit(AstSGotoRep* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstSThroughout* nodep) override {
+        m_hasSExpr = true;
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            // lhsp is a boolean expression, not a sequence -- clear m_underSExpr temporarily
+            VL_RESTORER(m_underSExpr);
+            m_underSExpr = false;
+            iterateCheckBool(nodep, "lhsp", nodep->lhsp(), BOTH);
+            m_underSExpr = true;
+            iterate(nodep->rhsp());
             nodep->dtypeSetBit();
         }
     }
@@ -3301,7 +3314,7 @@ class WidthVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             // InsideRange will get replaced with Lte&Gte and finalized later
-            if (!VN_IS(itemp, InsideRange))
+            if (!VN_IS(itemp, InsideRange) && !itemp->dtypep()->isNonPackedArray())
                 iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, expDTypep,
                              EXTEND_EXP);
         }
@@ -3589,6 +3602,32 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
+                if (AstCell* const cellp = VN_CAST(foundp, Cell)) {
+                    // Sub-interface cell selection (e.g. vif.tx): resolve to the
+                    // companion __Viftop var created by V3LinkCells for its dtype.
+                    if (VN_IS(cellp->modp(), Iface)) {
+                        const string viftopName = cellp->name() + "__Viftop";
+                        AstNodeModule* const parentIfacep = adtypep->ifaceViaCellp();
+                        AstVar* viftopVarp = nullptr;
+                        for (AstNode* itemp = parentIfacep->stmtsp(); itemp;
+                             itemp = itemp->nextp()) {
+                            if (AstVar* const vp = VN_CAST(itemp, Var)) {
+                                if (vp->name() == viftopName) {
+                                    viftopVarp = vp;
+                                    break;
+                                }
+                            }
+                        }
+                        UASSERT_OBJ(viftopVarp, nodep,
+                                    "No __Viftop variable for sub-interface cell");
+                        if (!viftopVarp->didWidth()) userIterate(viftopVarp, nullptr);
+                        nodep->dtypep(viftopVarp->dtypep());
+                        nodep->varp(viftopVarp);
+                        viftopVarp->sensIfacep(VN_AS(cellp->modp(), Iface));
+                        nodep->didWidth(true);
+                        return;
+                    }
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
@@ -3710,12 +3749,14 @@ class WidthVisitor final : public VNVisitor {
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
-        AstNodeModule* const ifacep = adtypep->ifacep();
+        // ifaceViaCellp() handles dtypes with cellp-only (no ifacep), as produced
+        // by sub-interface selection, enabling chained access (e.g. vif.tx.Tx).
+        AstNodeModule* const ifacep = adtypep->ifaceViaCellp();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == nodep->name()) return itemp;
-            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport)) {
+            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport) || VN_IS(itemp, Cell)) {
                 speller.pushCandidate(itemp->prettyName());
             }
         }
@@ -6030,12 +6071,8 @@ class WidthVisitor final : public VNVisitor {
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
                 // Only check if number of states match for unpacked array to unpacked array
                 // assignments
-                const bool lhsIsUnpackArray
-                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
-                      || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
-                const bool rhsIsUnpackArray
-                    = VN_IS(rhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, DynArrayDType)
-                      || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
+                const bool lhsIsUnpackArray = lhsDtp->isNonPackedArray();
+                const bool rhsIsUnpackArray = rhsDtp->isNonPackedArray();
                 if (lhsIsUnpackArray && rhsIsUnpackArray) {
                     if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
                         nodep->v3error("Assignment between 2-state and 4-state types requires "

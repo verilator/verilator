@@ -6829,7 +6829,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                               new AstConst{$<fl>2, 0u}, nullptr, true}; }
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
-                        { $$ = new AstSExprGotoRep{$<fl>2, $1, $3}; }
+                        { $$ = new AstSGotoRep{$<fl>2, $1, $3}; }
         //                      // IEEE: goto_repetition (range form -- unsupported)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
                         { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
@@ -6867,7 +6867,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
                         { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSThroughout{$2, $1, $3}; }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
         //                      // IEEE: sexpr yWITHIN sexpr
         |       ~p~sexpr yWITHIN sexpr
@@ -6896,11 +6896,11 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                         { $$ = new AstDelay{$1, $3, true};
                           $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 0}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         |       yP_POUNDPOUND yP_BRAPLUSKET
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 1}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         ;
 
 sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
@@ -6925,7 +6925,7 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         |       yP_BRAEQ constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); DEL($4); }
         //                      // IEEE: goto_repetition
-        //                      // Goto repetition [->N] handled in sexpr rule (AstSExprGotoRep)
+        //                      // Goto repetition [->N] handled in sexpr rule (AstSGotoRep)
         //                      // Range form [->M:N] also handled there (unsupported)
         ;
 

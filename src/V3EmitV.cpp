@@ -1067,7 +1067,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateConst(nodep->exprp());
     }
-
     // Terminals
     void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {

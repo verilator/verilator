@@ -49,6 +49,7 @@ Verilator 5.047 devel
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
+* Add `+verilator+solver+file` (#7242).
 * Add MacOS support for address sanitizer memory limit (#7308). [Marco Bartoli]
 * Deprecate `--structs-packed` (#7222).
 * Improve assignment-compatibility type check (#2843) (#5666) (#7052). [Pawel Kojma, Antmicro Ltd.]
@@ -65,13 +66,16 @@ Verilator 5.047 devel
 * Optimize DFG peephole until a fixed point (#7309). [Geza Lore, Testorrent USA, Inc.]
 * Optimize comparisons with identical operands and $countones in DFG. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
+* Optimize read references in DFG (#7354). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
+* Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
 * Fix typedef scope resolution for parameterized class aliases (#5977) (#7319). [Nick Brereton]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
+* Fix parameter default comparison when value contains type cast (#6281) (#7369) (#6281). [Yilou Wang]
 * Fix `local::` false error in randomize() with on parameterized class (#6680) (#7293). [Yilou Wang]
 * Fix false recursive definition error (#6769) (#7118). [Alex Zhou]
 * Fix port assignment to large arrays (#6904).
@@ -85,9 +89,11 @@ Verilator 5.047 devel
 * Fix wide conditional short circuiting (#7155).
 * Fix eliminating assignments to DPI-read variables (#7158). [Geza Lore, Testorrent USA, Inc.]
 * Fix std::randomize() in static function with static class members (#7167) (#7169). [Yilou Wang]
+* Fix resolving default/non-default type parameters (#7171) (#7346). [em2machine]
 * Fix recursive constant function in $unit scope (#7173) (#7174).
 * Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
+* Fix virtual interface select from sub-interface instance (#7203) (#7370) (#7203). [Yilou Wang]
 * Fix VPI force of bit-selected signals (#7211) (#7301). [Christian Hecken]
 * Fix wrong $bits() for parameterized interface struct typedefs (#7218) (#7219). [em2machine]
 * Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
@@ -96,6 +102,7 @@ Verilator 5.047 devel
 * Fix internal error when derived class calls this.randomize() with inherited rand members (#7229) (#7234). [Yilou Wang]
 * Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [Yilou Wang]
 * Fix vpi_put_value release on non-continuous signal (#7231) (#7241). [Christian Hecken]
+* Fix functions in generate block resulting in 'Broken link in node' (#7236) (#7367). [em2machine]
 * Fix tracing of typedefed 1D packed arrays with --trace-structs (#7237). [Geza Lore, Testorrent USA, Inc.]
 * Fix rand variable used as array index in constraint evaluated as constant (#7238) (#7247). [Yilou Wang]
 * Fix --hierarchical dropping arguments in -f/-F files (#7240). [Clara Sparks]
@@ -113,6 +120,11 @@ Verilator 5.047 devel
 * Fix lost `$stop` on implied assertion `$error` failures.
 * Fix wait() hang when interface uses process calls and VIF function (#7342). [Yilou Wang]
 * Fix error on illegal nand/nor binary operators (#7353).
+* Fix simple array assignment unrolling in slice optimization (#7359). [Geza Lore, Testorrent USA, Inc.]
+* Fix missing temporary for DfgSplicePacked (#7361). [Geza Lore, Testorrent USA, Inc.]
+* Fix virtual interface function calls binding to wrong instance (#7363). [Yilou Wang]
+* Fix false ASSIGNIN on interface input port connections (#7365). [Yilou Wang]
+* Fix string `inside` queue (#7373).
 
 
 Verilator 5.046 2026-02-28

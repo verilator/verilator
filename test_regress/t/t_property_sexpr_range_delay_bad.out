@@ -11,9 +11,17 @@
                                                   : ... note: In instance 't'
    24 |   a3: assert property (@(posedge clk) a |-> ##[5:2] b);
       |                                             ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:27:45: Unsupported: ##0 in range delays
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:27:45: Unsupported: ##0 in bounded range delays
                                                               : ... note: In instance 't'
    27 |   a4: assert property (@(posedge clk) a |-> ##[0:3] b);
       |                                             ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_property_sexpr_range_delay_bad.v:30:45: Range delay minimum must be an elaboration-time constant (IEEE 1800-2023 16.7)
+                                                  : ... note: In instance 't'
+   30 |   a5: assert property (@(posedge clk) a |-> ##[cyc:$] b);
+      |                                             ^~
+%Error: t/t_property_sexpr_range_delay_bad.v:34:45: Range delay bounds must be non-negative (IEEE 1800-2023 16.7)
+                                                  : ... note: In instance 't'
+   34 |   a6: assert property (@(posedge clk) a |-> ##[NEG:$] b);
+      |                                             ^~
 %Error: Exiting due to
