@@ -525,6 +525,8 @@ class FourstateVisitor final : public VNVisitor {
             break;
         case VVarType::VAR:
         case VVarType::TRIWIRE:
+        case VVarType::PORT:  // The issue with ports is that we lose information about the wire
+                              // type (tri/triand/trior)
         case VVarType::WIRE: m_assignWToWire[varp].emplace_back(assignwValuep, assignwXzp); break;
         default:
             assignwValuep->v3fatalSrc(
