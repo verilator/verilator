@@ -373,10 +373,10 @@ class LinkIncVisitor final : public VNVisitor {
         nodep->replaceWith(new AstVarRef{readp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstPreAdd* nodep) override { /*prepost_visit(nodep); */}
+    void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
     void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
-    void visit(AstPreSub* nodep) override { /*prepost_visit(nodep); */}
-    void visit(AstPostSub* nodep) override { /*prepost_visit(nodep);*/ }
+    void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
     void visit(AstNodeAssignCompound* nodep) override {
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
