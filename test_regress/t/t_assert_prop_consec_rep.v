@@ -32,6 +32,8 @@ module t (
   int count_fail7 = 0;
   int count_fail8 = 0;
   int count_fail9 = 0;
+  int count_fail10 = 0;
+  int count_fail11 = 0;
 
   // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
@@ -69,6 +71,14 @@ module t (
   assert property (@(posedge clk) a [*] |-> b)
   else count_fail9 <= count_fail9 + 1;
 
+  // Test 10: a[*1] ##1 b -- trivial [*1] in SExpr (restored to plain SExpr)
+  assert property (@(posedge clk) a [* 1] ##1 b)
+  else count_fail10 <= count_fail10 + 1;
+
+  // Test 11: a[*] ##1 b -- zero-or-more in SExpr (minN==0 path)
+  assert property (@(posedge clk) a [*] ##1 b)
+  else count_fail11 <= count_fail11 + 1;
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
@@ -89,6 +99,8 @@ module t (
       `checkd(count_fail7, 65);
       `checkd(count_fail8, 20);
       `checkd(count_fail9, 20);
+      `checkd(count_fail10, 73);
+      `checkd(count_fail11, 40);
       $write("*-* All Finished *-*\n");
       $finish;
     end
