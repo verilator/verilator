@@ -1254,10 +1254,8 @@ class ParamProcessor final {
         // const_cast safe: cloneTree doesn't modify the source
         AstClassRefDType* const origClonep = static_cast<AstClassRefDType*>(
             const_cast<AstClassRefDType*>(origClassRefp)->cloneTree(false));
-        AstNodeModule* const resolvedModp
-            = classRefDeparam(origClonep, origClassRefp->classp());
-        const bool match
-            = resolvedModp && VN_CAST(resolvedModp, Class) == exprClassRefp->classp();
+        AstNodeModule* const resolvedModp = classRefDeparam(origClonep, origClassRefp->classp());
+        const bool match = resolvedModp && VN_CAST(resolvedModp, Class) == exprClassRefp->classp();
         VL_DO_DANGLING(origClonep->deleteTree(), origClonep);
         return match;
     }
