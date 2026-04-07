@@ -3809,22 +3809,14 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
         //                      // Need fexprScope instead of variable_lvalue to prevent conflict
                 ~l~exprScope yP_PLUSPLUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, $1}; }
         |       ~l~exprScope yP_MINUSMINUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostSub{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostSub{$2, $1}; }
         //                      // Need expr instead of variable_lvalue to prevent conflict
         |       yP_PLUSPLUS     expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreAdd{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreAdd{$1, $2}; }
         |       yP_MINUSMINUS   expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, $2}; }
         ;
 
 finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
