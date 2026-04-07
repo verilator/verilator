@@ -731,6 +731,11 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
+        if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
+            iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
+            iterateCheckDelay(nodep, "delay", fallDelayp, BOTH);
+            return;
+        }
         if (VN_IS(m_procedurep, Final)) {
             nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2023 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
