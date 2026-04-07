@@ -335,6 +335,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(writep);
+        V3LinkLValue::linkLValueUnset(readp);
 
         AstConst* const newconstp = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, readp->width(), 1};
 
