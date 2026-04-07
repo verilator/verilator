@@ -330,8 +330,8 @@ class LinkIncVisitor final : public VNVisitor {
                                          " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
-        AstNodeExpr* const readp = nodep->lhsp()->cloneTreePure(true);
-        AstNodeExpr* const writep = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const readp = nodep->lhsp();
+        AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(writep);
 
         AstConst* const newconstp = new AstConst{nodep->fileline(), 1};
