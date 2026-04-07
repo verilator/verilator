@@ -15,7 +15,7 @@
 //*************************************************************************
 // V3LinkInc's Transformations:
 //
-//      prepost_expr_visit
+//      prepostExprVisit
 //        PREADD/PRESUB
 //          Create a temporary __VIncrementX variable, assign the value of
 //          the current variable value to it, substitute the current
@@ -28,14 +28,14 @@
 //          of the current variable (after the operation) to it. Substitute
 //          The original variable with the temporary one in the statement.
 //
-//      prepost_stmt_visit
+//      prepostStmtVisit
 //        PREADD/PRESUB/POSTADD/POSTSUB
 //          Increment/decrement the current variable by the given value.
 //          The order (pre/post) doesn't matter outside statements thus
 //          the pre/post operations are treated equally and there is no
 //          need for a temporary variable.
 //
-//      prepost_stmt_sel_visit
+//      prepostStmtSelVisit
 //        For e.g. 'array[something_with_side_eff]++', common in UVM etc
 //        PREADD/PRESUB/POSTADD/POSTSUB
 //          Create temporary with array index.
@@ -209,18 +209,18 @@ class LinkIncVisitor final : public VNVisitor {
         AstSelBit* const selbitp = VN_CAST(nodep->thsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
-            prepost_stmt_sel_visit(nodep);
+            prepostStmtSelVisit(nodep);
         } else {
             // Purity check was deferred at creation in verilog.y, check now
             nodep->thsp()->purityCheck();
             if (!m_insStmtp) {
-                prepost_stmt_visit(nodep);
+                prepostStmtVisit(nodep);
             } else {
-                prepost_expr_visit(nodep);
+                prepostExprVisit(nodep);
             }
         }
     }
-    AstNodeExpr* determine_operation(AstNode* nodep, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+    AstNodeExpr* getOperationp(AstNode* const nodep, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp) {
         AstNodeExpr* operationp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub) || VN_IS(nodep, AssignCompoundSub)) {
             operationp = new AstSub{nodep->fileline(), lhsp, rhsp};
@@ -245,11 +245,11 @@ class LinkIncVisitor final : public VNVisitor {
         } else if (VN_IS(nodep, AssignCompoundShiftRS)) {
             operationp = new AstShiftRS{nodep->fileline(), lhsp, rhsp};
         } else {
-            operationp = nullptr;
+            nodep->v3fatalSrc("Unhandled compound assignment operation");
         }
         return operationp;
     }
-    void prepost_stmt_sel_visit(AstNodeTriop* nodep) {
+    void prepostStmtSelVisit(AstNodeTriop* nodep) {
         // Special case array[something]++, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
@@ -262,9 +262,9 @@ class LinkIncVisitor final : public VNVisitor {
         AstSelBit* const wrSelbitp = VN_CAST(nodep->thsp(), SelBit);
         AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
 
-        prepost_stmt_sel_visit(nodep, rdFromp, rdBitp, wrFromp, exprp);
+        prepostStmtSelVisit(nodep, rdFromp, rdBitp, wrFromp, exprp);
     }
-    void prepost_stmt_sel_visit(AstNodeAssignCompound* nodep) {
+    void prepostStmtSelVisit(AstNodeAssignCompound* nodep) {
         // Special case array[something] += expr, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
@@ -277,9 +277,9 @@ class LinkIncVisitor final : public VNVisitor {
         AstSelBit* const wrSelbitp = VN_CAST(nodep->lhsp(), SelBit);
         AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
 
-        prepost_stmt_sel_visit(nodep, rdFromp, rdBitp, wrFromp, exprp);
+        prepostStmtSelVisit(nodep, rdFromp, rdBitp, wrFromp, exprp);
     }
-    void prepost_stmt_sel_visit(AstNode* nodep, AstNodeExpr* rdFromp, AstNodeExpr* rdBitp, AstNodeExpr* wrFromp, AstNodeExpr* exprp) {
+    void prepostStmtSelVisit(AstNode* nodep, AstNodeExpr* rdFromp, AstNodeExpr* rdBitp, AstNodeExpr* wrFromp, AstNodeExpr* exprp) {
         // Prepare a temporary variable
         FileLine* const fl = nodep->fileline();
         const string name = "__VincIndex"s + cvtToStr(++m_modIncrementsNum);
@@ -301,32 +301,32 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const storeTop
             = new AstSelBit{fl, wrFromp, new AstVarRef{fl, varp, VAccess::READ}};
 
-        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
+        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         newp->addNext(assignp);
 
         // if (debug() >= 9) newp->dumpTreeAndNext("-pp-stmt-sel-new: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void prepost_stmt_visit(AstNodeTriop* nodep) {
+    void prepostStmtVisit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
-        prepost_stmt_visit(nodep, nodep->lhsp(), nodep->thsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack());
+        prepostStmtVisit(nodep, nodep->lhsp(), nodep->thsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack());
     }
-    void prepost_stmt_visit(AstNodeAssignCompound* nodep) {
+    void prepostStmtVisit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
         AstNodeExpr* storeTop = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* valuep = nodep->rd_lhsp()->unlinkFrBack();
 
-        prepost_stmt_visit(nodep, nodep->rhsp(), storeTop, valuep);
+        prepostStmtVisit(nodep, nodep->rhsp(), storeTop, valuep);
     }
-    void prepost_stmt_visit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
+    void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
         exprp->unlinkFrBack();
 
-        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, determine_operation(nodep, valuep, exprp)};
+        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void prepost_expr_visit(AstNodeTriop* nodep) {
+    void prepostExprVisit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
         if (m_unsupportedHere) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
@@ -353,7 +353,7 @@ class LinkIncVisitor final : public VNVisitor {
         insertOnTop(varp);
 
         // Define what operation will we be doing
-        AstNodeExpr* operp = determine_operation(nodep, readp->cloneTreePure(true), newconstp);
+        AstNodeExpr* operp = getOperationp(nodep, readp->cloneTreePure(true), newconstp);
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
@@ -385,11 +385,11 @@ class LinkIncVisitor final : public VNVisitor {
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
-            prepost_stmt_sel_visit(nodep);
+            prepostStmtSelVisit(nodep);
         } else {
             // Purity check was deferred at creation in verilog.y, check now
             nodep->lhsp()->purityCheck();
-            prepost_stmt_visit(nodep);
+            prepostStmtVisit(nodep);
         }
     }
     void visit(AstGenFor* nodep) override { iterateChildren(nodep); }

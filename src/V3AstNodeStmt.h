@@ -72,9 +72,10 @@ class AstNodeAssignCompound VL_NOT_FINAL : public AstNodeAssign {
     // @astgen op4 := rd_lhsp : AstNodeExpr
 public:
     AstNodeAssignCompound(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
+              AstNode* timingControlp = nullptr)
         : AstNodeAssign(t, fl, lhsp, rhsp, timingControlp) {
-        this->rd_lhsp(rd_lhsp);
+        // Purity checked in V3LinkInc
+        this->rd_lhsp(lhsp->cloneTree(true));
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstNodeAssignCompound;
@@ -1477,144 +1478,144 @@ public:
 class AstAssignCompoundAdd final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundAdd(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundAdd(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundAdd;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundAdd{fileline(), lhsp, rhsp, rd_lhsp()->cloneTreePure(true), controlp};
+        return new AstAssignCompoundAdd{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundAnd final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundAnd(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+               AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundAnd(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundAnd;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundAnd{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundAnd{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundDiv final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundDiv(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundDiv(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundDiv;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundDiv{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundDiv{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundModDiv final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundModDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundModDiv(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundModDiv(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundModDiv;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundModDiv{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundModDiv{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundMul final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundMul(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundMul(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundMul(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundMul;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundMul{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundMul{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundOr final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundOr(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundOr(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundOr;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundOr{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundOr{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundShiftL final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundShiftL(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundShiftL(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundShiftL;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundShiftL{fileline(), lhsp, rd_lhsp()->cloneTree(true), rhsp, controlp};
+        return new AstAssignCompoundShiftL{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundShiftR final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundShiftR(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundShiftR(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundShiftR;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundShiftR{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundShiftR{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundShiftRS final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftRS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundShiftRS(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundShiftRS(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundShiftRS;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundShiftRS{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundShiftRS{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundSub final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundSub(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundSub(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundSub;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundSub{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundSub{fileline(), lhsp, rhsp, controlp};
     }
 };
 class AstAssignCompoundXor final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundXor(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNodeExpr* rd_lhsp, AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignCompoundXor(fl, lhsp, rhsp, rd_lhsp, timingControlp) {
+              AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompoundXor(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssignCompoundXor;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignCompoundXor{fileline(), lhsp, rhsp, rd_lhsp()->cloneTree(true), controlp};
+        return new AstAssignCompoundXor{fileline(), lhsp, rhsp, controlp};
     }
 };
 
