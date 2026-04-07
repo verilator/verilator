@@ -1026,8 +1026,8 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { V3ERROR_NA_RETURN(0); }
-    bool sameNode(const AstNode* samep) const override {
-        return m_unbounded == VN_DBG_AS(samep, ConsRep)->m_unbounded;
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_LINE
+        return m_unbounded == VN_DBG_AS(samep, ConsRep)->m_unbounded;  // LCOV_EXCL_LINE
     }
     bool unbounded() const { return m_unbounded; }
 };

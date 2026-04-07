@@ -6818,7 +6818,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                         { $$ = new AstConsRep{$<fl>2, $1, $3}; }
         //                      // [*N:M] range
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = new AstConsRep{$<fl>2, $1, $3, $5, false}; }
+                        { $$ = new AstConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
         //                      // [+] = [*1:$]
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
                         { $$ = new AstConsRep{$<fl>2, $1,
