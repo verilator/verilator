@@ -69,13 +69,10 @@ public:
 };
 class AstNodeAssignCompound VL_NOT_FINAL : public AstNodeAssign {
     // Compound assignments (+=, -=, *=, ...)
-    // @astgen op4 := rd_lhsp : AstNodeExpr
 public:
     AstNodeAssignCompound(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
               AstNode* timingControlp = nullptr)
         : AstNodeAssign(t, fl, lhsp, rhsp, timingControlp) {
-        // Purity checked in V3LinkInc
-        this->rd_lhsp(lhsp->cloneTree(true));
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstNodeAssignCompound;

@@ -316,8 +316,6 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepostStmtVisit(AstNodeAssignCompound* nodep) {
         iterateChildren(nodep);
-        // Purity check was deferred at creation in verilog.y, check now
-        nodep->lhsp()->purityCheck();
         AstNodeExpr* const storeTop = nodep->lhsp()->cloneTreePure(true);
         AstNodeExpr* const valuep = nodep->lhsp()->unlinkFrBack();
         V3LinkLValue::linkLValueUnset(valuep);
