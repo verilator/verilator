@@ -2,18 +2,6 @@
    34 |     a within(b);
       |       ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:89:7: Unsupported: [*] boolean abbrev expression
-   89 |     a [*];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:89:7: Unsupported: boolean abbrev (in sequence expression)
-   89 |     a [*];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:92:7: Unsupported: [+] boolean abbrev expression
-   92 |     a [+];
-      |       ^~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:92:7: Unsupported: boolean abbrev (in sequence expression)
-   92 |     a [+];
-      |       ^~~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:95:7: Unsupported: [= boolean abbrev expression
    95 |     a [= 1];
       |       ^~
