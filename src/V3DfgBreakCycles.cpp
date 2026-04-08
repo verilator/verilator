@@ -31,8 +31,109 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace V3DfgBreakCycles {
 
-// Throughout these algorithm, we use the DfgUserMap as a map to the SCC number
-using Vtx2Scc = DfgUserMap<uint64_t>;
+// Mutable map from vertices to the SCC index they belong to. Initialized
+// from a proper analysis, then updated as we break cycles. After updates
+// the information is consertvative, meaning a vertex that is marked as
+// cyclic might not actually be if an SCC split into multple SCCs after a
+// fixup. However it should always be true that if a vertex is thought to
+// be non-cyclic based on this datastructure, then it indeed is not cyclic.
+class SccInfo final {
+    DfgGraph& m_dfg;  // The annotated graph
+    // The map from vertices to their SCC index (0 if trivial SCC - non cyclic)
+    std::unordered_map<const DfgVertex*, uint64_t> m_vtx2Scc;
+    size_t m_nCyclicVertices = 0;  // Number of vertices in non-trivial SCCs
+
+public:
+    SccInfo(DfgGraph& dfg)
+        : m_dfg{dfg} {
+        // Initialize m_vtx2Scc for the graph from a proper analysis
+        DfgUserMap<uint64_t> vtx2Scc = dfg.makeUserMap<uint64_t>();
+        V3DfgPasses::colorStronglyConnectedComponents(dfg, vtx2Scc);
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) {
+            const uint64_t sccIdx = vtx2Scc[vtx];
+            m_vtx2Scc[&vtx] = sccIdx;
+            if (sccIdx) ++m_nCyclicVertices;
+        });
+    }
+
+    // Is the graph cyclic still?
+    bool isCyclic() const { return m_nCyclicVertices; }
+
+    // Returns the index of the SCC the given vertex is a part of
+    // This is 0 iff the vertex is in a trivial SCC (no cycles through vertex)
+    uint64_t get(const DfgVertex& vtx) const { return m_vtx2Scc.at(&vtx); }
+
+    // Add a new vertex to graph that is part of the given SCC
+    void add(const DfgVertex& vtx, uint64_t sccIdx) {
+        const bool newEntry = m_vtx2Scc.emplace(&vtx, sccIdx).second;
+        UASSERT_OBJ(newEntry, &vtx, "Vertex already inserted");
+        if (sccIdx) ++m_nCyclicVertices;
+    }
+
+    bool stillCyclicFwd(const DfgVertex& vtx) const {
+        // If it only reads non-cyclic vertices, it has also become acyclic
+        return vtx.foreachSource([&](const DfgVertex& src) {  //
+            return m_vtx2Scc.at(&src);
+        });
+    }
+
+    bool stillCyclicBwd(const DfgVertex& vtx) const {
+        // If itonly drives non-cyclic vertices, it has also become acyclic
+        return vtx.foreachSink([&](const DfgVertex& dst) {  //
+            return m_vtx2Scc.at(&dst);
+        });
+    }
+
+    // The given vertex is known to have become acyclic after some edits,
+    // propagate through graph to mark connected vertices as well.
+    void updateAcyclic(const DfgVertex& vtx) {
+        // Mark as acyclic
+        uint64_t& sccIdxr = m_vtx2Scc.at(&vtx);
+        UASSERT_OBJ(sccIdxr, &vtx, "Vertex should be cyclic");
+        sccIdxr = 0;
+        --m_nCyclicVertices;
+        // Propagate the update through the graph forward
+        vtx.foreachSink([&](const DfgVertex& dst) {
+            // Sink was known to be acyclic, stop
+            if (!m_vtx2Scc.at(&dst)) return false;
+            if (!stillCyclicFwd(dst)) updateAcyclic(dst);
+            return false;
+        });
+        // Propagate the update through the graph backward
+        vtx.foreachSource([&](const DfgVertex& src) {
+            // Source was known to be acyclic, stop
+            if (!m_vtx2Scc.at(&src)) return false;
+            if (!stillCyclicBwd(src)) updateAcyclic(src);
+            return false;
+        });
+    }
+
+    /*
+       Check stored information is consistent with actual SCCs. Note we
+       can't detect during updates if an SCC has split into multiple SCCs.
+       Consider:
+          A -- E -- G
+         / \       / \
+        B   C     H   I
+         \ /       \ /
+          D -- F -- J
+       If we fixed up E, the original SCC would split into two, (A,B,C,D)
+       and (G,H,I,J), but also F would no longer be cyclic. For this reason,
+       we can only assert that anything that we think is not cyclic based
+       on the SccInfo must indeed be not cyclic, but might still think a
+       vertex is cyclic based on the SccInfo but it actually isn't.
+    */
+    void validate() const {
+        // Re-compute the actual SCCs
+        DfgUserMap<uint64_t> actual = m_dfg.makeUserMap<uint64_t>();
+        V3DfgPasses::colorStronglyConnectedComponents(m_dfg, actual);
+        // Assert that if we think a vertex is not cyclic, it indeed is not
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) {
+            // 'think not cyclic' implies 'actually not cyclic'
+            UASSERT_OBJ(m_vtx2Scc.at(&vtx) || !actual.at(vtx), &vtx, "Inconsisten SccInfo");
+        });
+    }
+};
 
 class TraceDriver final : public DfgVisitor {
     // TYPES
@@ -67,7 +168,7 @@ class TraceDriver final : public DfgVisitor {
 
     // STATE
     DfgGraph& m_dfg;  // The graph being processed
-    Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
+    SccInfo& m_sccInfo;  // The SccInfo instance
     // The strongly connected component we are currently trying to escape
     uint64_t m_component = 0;
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
@@ -86,11 +187,11 @@ class TraceDriver final : public DfgVisitor {
 
     // Create and return a new Vertex. Always use this to create new vertices.
     // Fileline is taken from 'refp', but 'refp' is otherwise not used.
-    // Also sets m_vtx2Scc[vtx] to 0, indicating the new vertex is not part of
-    // a strongly connected component. This should always be true, as all the
-    // vertices we create here are driven from outside the component we are
-    // trying to escape, and will sink into that component. Given those are
-    // separate SCCs, these new vertices must be acyclic.
+    // Also adds the vertex to m_sccInfo with scc index 0, indicating the new
+    // vertex is not part of a strongly connected component. This should always
+    // be true, as all the vertices we create here are driven from outside the
+    // component we are trying to escape, and will sink into that component.
+    // Given those are separate SCCs, these new vertices must be acyclic.
     template <typename Vertex>
     Vertex* make(const DfgVertex* refp, uint32_t width) {
         static_assert(std::is_base_of<DfgVertex, Vertex>::value  //
@@ -99,7 +200,7 @@ class TraceDriver final : public DfgVisitor {
 
         if VL_CONSTEXPR_CXX17 (std::is_same<DfgConst, Vertex>::value) {
             DfgConst* const vtxp = new DfgConst{m_dfg, refp->fileline(), width, 0};
-            m_vtx2Scc[vtxp] = 0;
+            m_sccInfo.add(*vtxp, 0);
             return reinterpret_cast<Vertex*>(vtxp);
         } else {
             // TODO: this is a gross hack around lack of C++17 'if constexpr' Vtx is always Vertex
@@ -108,7 +209,7 @@ class TraceDriver final : public DfgVisitor {
             using Vtx = typename std::conditional<std::is_same<DfgConst, Vertex>::value, DfgSel,
                                                   Vertex>::type;
             Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), DfgDataType::packed(width)};
-            m_vtx2Scc[vtxp] = 0;
+            m_sccInfo.add(*vtxp, 0);
             return reinterpret_cast<Vertex*>(vtxp);
         }
     }
@@ -124,7 +225,7 @@ class TraceDriver final : public DfgVisitor {
         DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
         varp->varp()->isInternal(true);
         varp->tmpForp(varp->nodep());
-        m_vtx2Scc[varp] = 0;
+        m_sccInfo.add(*varp, 0);
         return varp;
     }
 
@@ -147,7 +248,7 @@ class TraceDriver final : public DfgVisitor {
             // If already traced this vtxp/msb/lsb, just use the result.
             // This is important to avoid combinatorial explosion when the
             // same sub-expression is needed multiple times.
-        } else if (m_vtx2Scc.at(vtxp) != m_component) {
+        } else if (m_sccInfo.get(*vtxp) != m_component) {
             // If the currently traced vertex is in a different component,
             // then we found what we were looking for.
             respr = vtxp;
@@ -557,9 +658,9 @@ class TraceDriver final : public DfgVisitor {
 
 public:
     // CONSTRUCTOR
-    TraceDriver(DfgGraph& dfg, Vtx2Scc& vtx2Scc)
+    TraceDriver(DfgGraph& dfg, SccInfo& sccInfo)
         : m_dfg{dfg}
-        , m_vtx2Scc{vtx2Scc} {
+        , m_sccInfo{sccInfo} {
 #ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
@@ -576,14 +677,14 @@ public:
     // trace can always succeed.
     DfgVertex* apply(DfgVertex& vtx, uint32_t lsb, uint32_t width) {
         VL_RESTORER(m_component);
-        m_component = m_vtx2Scc.at(&vtx);
+        m_component = m_sccInfo.get(vtx);
         return trace(&vtx, lsb + width - 1, lsb);
     }
 };
 
 class IndependentBits final : public DfgVisitor {
     // STATE
-    const Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
+    const SccInfo& m_sccInfo;  // The SccInfo instance
     // Vertex to current bit mask map. The mask is set for the bits that are independent of the SCC
     std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
     std::deque<DfgVertex*> m_workList;  // Work list for the traversal
@@ -885,7 +986,7 @@ class IndependentBits final : public DfgVisitor {
     void enqueueSinks(DfgVertex& vtx) {
         vtx.foreachSink([&](DfgVertex& sink) {
             // Ignore if sink is not part of an SCC, already has all bits marked independent
-            if (!m_vtx2Scc.at(sink)) return false;
+            if (!m_sccInfo.get(sink)) return false;
             // If a vertex is not handled directly, recursively enqueue its sinks instead
             if (!handledDirectly(sink)) {
                 enqueueSinks(sink);
@@ -902,8 +1003,8 @@ class IndependentBits final : public DfgVisitor {
         });
     };
 
-    IndependentBits(DfgGraph& dfg, const Vtx2Scc& vtx2Scc)
-        : m_vtx2Scc{vtx2Scc} {
+    IndependentBits(DfgGraph& dfg, const SccInfo& sccInfo)
+        : m_sccInfo{sccInfo} {
 
 #ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
@@ -921,12 +1022,12 @@ class IndependentBits final : public DfgVisitor {
         // Enqueue sinks of all SCC vertices that have at least one independent bit
         dfg.forEachVertex([&](DfgVertex& vtx) {
             if (!handledDirectly(vtx)) return;
-            if (m_vtx2Scc.at(&vtx)) return;
+            if (m_sccInfo.get(vtx)) return;
             mask(vtx).setAllBits1();
         });
         dfg.forEachVertex([&](DfgVertex& vtx) {
             if (!handledDirectly(vtx)) return;
-            if (!m_vtx2Scc.at(&vtx)) return;
+            if (!m_sccInfo.get(vtx)) return;
             iterate(&vtx);
             UINFO(9, "Initial independent bits of " << &vtx << " " << vtx.typeName() << " are: "
                                                     << mask(vtx).displayed(vtx.fileline(), "%b"));
@@ -940,7 +1041,7 @@ class IndependentBits final : public DfgVisitor {
             m_workList.pop_front();
             m_onWorkList[currp] = false;
             // Should not enqueue vertices that are not in an SCC
-            UASSERT_OBJ(m_vtx2Scc.at(currp), currp, "Vertex should be in an SCC");
+            UASSERT_OBJ(m_sccInfo.get(*currp), currp, "Vertex should be in an SCC");
             // Should only enqueue packed vertices
             UASSERT_OBJ(handledDirectly(*currp), currp, "Vertex should be handled directly");
 
@@ -979,18 +1080,18 @@ public:
     // set if the corresponding bit in that vertex is known to be independent
     // of the values of vertices in the same SCC as the vertex resides in.
     static std::unordered_map<const DfgVertex*, V3Number> apply(DfgGraph& dfg,
-                                                                const Vtx2Scc& vtx2Scc) {
-        return std::move(IndependentBits{dfg, vtx2Scc}.m_vtxp2Mask);
+                                                                const SccInfo& sccInfo) {
+        return std::move(IndependentBits{dfg, sccInfo}.m_vtxp2Mask);
     }
 };
 
 class FixUp final {
     DfgGraph& m_dfg;  // The graph being processed
-    Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
-    TraceDriver m_traceDriver{m_dfg, m_vtx2Scc};
+    SccInfo& m_sccInfo;  // The SccInfo instance
+    TraceDriver m_traceDriver{m_dfg, m_sccInfo};
     // The independent bits map
     const std::unordered_map<const DfgVertex*, V3Number> m_independentBits
-        = IndependentBits::apply(m_dfg, m_vtx2Scc);
+        = IndependentBits::apply(m_dfg, m_sccInfo);
     size_t m_nImprovements = 0;  // Number of improvements mde
 
     // Returns a bitmask set if that bit of 'vtx' is used (has a sink)
@@ -1040,7 +1141,7 @@ class FixUp final {
                 // If dependent, fall back on using the part of the variable
                 DfgSel* const selp = new DfgSel{m_dfg, vtx.fileline(), DfgDataType::packed(width)};
                 // Same component as 'vtxp', as reads 'vtxp' and will replace 'vtxp'
-                m_vtx2Scc[selp] = m_vtx2Scc.at(vtx);
+                m_sccInfo.add(*selp, m_sccInfo.get(vtx));
                 // Do not connect selp->fromp yet, need to do afer replacing 'vtxp'
                 selp->lsb(lsb);
                 termps.emplace_back(selp);
@@ -1089,7 +1190,7 @@ class FixUp final {
             } else {
                 // The range is not used, just use constant 0 as a placeholder
                 DfgConst* const constp = new DfgConst{m_dfg, flp, msb - lsb + 1, 0};
-                m_vtx2Scc[constp] = 0;
+                m_sccInfo.add(*constp, 0);
                 termps.emplace_back(constp);
             }
             // Next iteration
@@ -1099,7 +1200,7 @@ class FixUp final {
 
         // Concatenate all the terms to create the replacement
         DfgVertex* replacementp = termps.front();
-        const uint64_t vComp = m_vtx2Scc.at(vtx);
+        const uint64_t vComp = m_sccInfo.get(vtx);
         for (size_t i = 1; i < termps.size(); ++i) {
             DfgVertex* const termp = termps[i];
             const uint32_t catWidth = replacementp->width() + termp->width();
@@ -1111,9 +1212,9 @@ class FixUp final {
             // component, it's part of that component, otherwise its not
             // cyclic (all terms are from outside the original component,
             // and feed into the original component).
-            const uint64_t tComp = m_vtx2Scc.at(termp);
-            const uint64_t rComp = m_vtx2Scc.at(replacementp);
-            m_vtx2Scc[catp] = tComp == vComp || rComp == vComp ? vComp : 0;
+            const uint64_t tComp = m_sccInfo.get(*termp);
+            const uint64_t rComp = m_sccInfo.get(*replacementp);
+            m_sccInfo.add(*catp, tComp == vComp || rComp == vComp ? vComp : 0);
             replacementp = catp;
         }
 
@@ -1123,6 +1224,22 @@ class FixUp final {
         for (DfgVertex* const termp : termps) {
             if (DfgSel* const selp = termp->cast<DfgSel>()) {
                 if (!selp->fromp()) selp->fromp(&vtx);
+            }
+        }
+
+        // If the vertex still has sinks, then the replacement is still cyclic, and vice versa
+        UASSERT_OBJ(!vtx.hasSinks() == !m_sccInfo.get(*replacementp), &vtx,
+                    "Replacement vertex SCC inconsistent");
+
+        // If we broke the cycle through this vertex we can update the SccInfo
+        if (!vtx.hasSinks()) {
+            m_sccInfo.updateAcyclic(vtx);
+            if (!m_sccInfo.get(*replacementp)) {
+                replacementp->foreachSink([&](DfgVertex& dst) {
+                    if (!m_sccInfo.get(dst)) return false;
+                    if (!m_sccInfo.stillCyclicFwd(dst)) m_sccInfo.updateAcyclic(dst);
+                    return false;
+                });
             }
         }
     }
@@ -1135,10 +1252,10 @@ class FixUp final {
             fixUpPacked(var);
         } else if (var.is<DfgVarArray>()) {
             // For array variables, fix up element-wise
-            const uint64_t component = m_vtx2Scc.at(var);
+            const uint64_t component = m_sccInfo.get(var);
             var.foreachSink([&](DfgVertex& sink) {
                 // Ignore if sink is not part of same cycle
-                if (m_vtx2Scc.at(sink) != component) return false;
+                if (m_sccInfo.get(sink) != component) return false;
                 // Only handle ArraySels with constant index
                 DfgArraySel* const aselp = sink.cast<DfgArraySel>();
                 if (!aselp) return false;
@@ -1152,23 +1269,27 @@ class FixUp final {
         UINFO(9, "FixUp made " << m_nImprovements << " improvements");
     }
 
-    FixUp(DfgGraph& dfg, Vtx2Scc& vtx2Scc)
+    FixUp(DfgGraph& dfg, SccInfo& sccInfo)
         : m_dfg{dfg}
-        , m_vtx2Scc{vtx2Scc} {}
+        , m_sccInfo{sccInfo} {}
 
 public:
     // Compute which bits of vertices are independent of the SCC they reside
     // in, and replace rferences to used independent bits with an equivalent
     // vertex that is not part of the same SCC.
-    static size_t apply(DfgGraph& dfg, Vtx2Scc& vtx2Scc) {
-        FixUp fixUp{dfg, vtx2Scc};
+    static size_t apply(DfgGraph& dfg, SccInfo& sccInfo) {
+        if (!sccInfo.isCyclic()) return 0;
+
+        FixUp fixUp{dfg, sccInfo};
 
         // TODO: Compute minimal feedback vertex set and cut only those.
         //       Sadly that is a computationally hard problem.
 
-        // Fix up cyclic variables
+        // Fix up cyclic variables, stop as soon as the graph becomes acyclic
         for (DfgVertexVar& vtx : dfg.varVertices()) {
-            if (vtx2Scc.at(vtx)) fixUp.main(vtx);
+            if (!sccInfo.get(vtx)) continue;
+            fixUp.main(vtx);
+            if (!sccInfo.isCyclic()) break;
         }
         // Return the number of improvements made
         return fixUp.m_nImprovements;
@@ -1210,35 +1331,35 @@ breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
 
     // Iterate while an improvement can be made and the graph is still cyclic
     do {
-        // Color SCCs (populates DfgVertex::user<uint64_t>())
-        Vtx2Scc vtx2Scc = res.makeUserMap<uint64_t>();
-        const uint32_t numNonTrivialSCCs
-            = V3DfgPasses::colorStronglyConnectedComponents(res, vtx2Scc);
-
-        // Congrats if it has become acyclic
-        if (!numNonTrivialSCCs) {
-            UINFO(7, "Graph became acyclic after " << nImprovements << " improvements");
-            dump(7, res, "result-acyclic");
-            ++ctx.m_breakCyclesContext.m_nFixed;
-            return {std::move(resultp), true};
-        }
+        // Compute SCCs
+        SccInfo sccInfo{res};
 
         // Fix up independent ranges in vertices
         UINFO(9, "New iteration after " << nImprovements << " improvements");
         prevNImprovements = nImprovements;
-        const size_t nFixed = FixUp::apply(res, vtx2Scc);
+        const size_t nFixed = FixUp::apply(res, sccInfo);
         if (nFixed) {
             nImprovements += nFixed;
             ctx.m_breakCyclesContext.m_nImprovements += nFixed;
             dump(9, res, "FixUp");
         }
+
+        // Validate SccInfo if in debug mode
+        if (v3Global.opt.debugCheck()) sccInfo.validate();
+
+        // Congrats if it has become acyclic
+        if (!sccInfo.isCyclic()) {
+            UINFO(7, "Graph became acyclic after " << nImprovements << " improvements");
+            dump(7, res, "result-acyclic");
+            ++ctx.m_breakCyclesContext.m_nFixed;
+            return {std::move(resultp), true};
+        }
     } while (nImprovements != prevNImprovements);
 
     if (dumpDfgLevel() >= 9) {
-        Vtx2Scc vtx2Scc = res.makeUserMap<uint64_t>();
-        V3DfgPasses::colorStronglyConnectedComponents(res, vtx2Scc);
+        const SccInfo sccInfo{res};
         res.dumpDotFilePrefixed(ctx.prefix() + "breakCycles-remaining", [&](const DfgVertex& vtx) {
-            return vtx2Scc[vtx];  //
+            return sccInfo.get(vtx);  //
         });
     }
 
