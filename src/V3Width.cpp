@@ -1512,18 +1512,33 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstConsRep* nodep) override {
-        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N]
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [+], [*]
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            V3Const::constifyParamsEdit(nodep->countp());  // countp may change
-            const AstConst* const constp = VN_CAST(nodep->countp(), Const);
-            if (!constp) {
+            V3Const::constifyParamsEdit(nodep->countp());
+            const AstConst* const minConstp = VN_CAST(nodep->countp(), Const);
+            if (!minConstp) {
                 nodep->v3error("Consecutive repetition count must be constant expression"
                                " (IEEE 1800-2023 16.9.2)");
-            } else if (constp->toSInt() < 1) {
+            } else if (!nodep->unbounded() && !nodep->maxCountp() && minConstp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
+            }
+            if (nodep->maxCountp()) {
+                userIterateAndNext(nodep->maxCountp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->maxCountp());
+                const AstConst* const maxConstp = VN_CAST(nodep->maxCountp(), Const);
+                if (!maxConstp) {
+                    nodep->v3error("Consecutive repetition max count must be constant"
+                                   " expression (IEEE 1800-2023 16.9.2)");
+                } else if (minConstp && maxConstp->toSInt() < minConstp->toSInt()) {
+                    nodep->v3error("Consecutive repetition max count must be >= min count"
+                                   " (IEEE 1800-2023 16.9.2)");
+                } else if (maxConstp->toSInt() < 1) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*N:0] consecutive repetition"
+                                                 " with zero max count");
+                }
             }
             nodep->dtypeSetBit();
         }

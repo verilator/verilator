@@ -707,9 +707,10 @@ private:
         nodep->sentreep(newSenTree(nodep));
     }
     void visit(AstConsRep* nodep) override {
-        // IEEE 1800-2023 16.9.2 -- Lower consecutive repetition [*N]
-        // Saturating counter tracks consecutive true cycles; avoids O(N) $past tree.
+        // IEEE 1800-2023 16.9.2 -- Lower standalone exact [*N] (N >= 2) via saturating counter.
+        // Range/unbounded forms and SExpr-contained forms are lowered by V3AssertProp.
         iterateChildren(nodep);
+        if (nodep->unbounded() || nodep->maxCountp()) return;  // Handled by V3AssertProp
         const AstConst* const constp = VN_CAST(nodep->countp(), Const);
         if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
             nodep->v3fatalSrc("Consecutive repetition count must be a positive constant"
