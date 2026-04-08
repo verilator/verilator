@@ -1333,8 +1333,16 @@ class ParamProcessor final {
                 AstConst* normedNamep = nullptr;
                 if (exprp && !exprp->num().isDouble() && !exprp->num().isString()
                     && !exprp->num().isFourState()) {
-                    const AstNodeDType* const declTypep = modvarp->subDTypep();
-                    const int portWidth = declTypep ? declTypep->skipRefp()->width() : 0;
+                    const AstBasicDType* const declBasicp
+                        = modvarp->subDTypep() ? modvarp->subDTypep()->skipRefp()->basicp()
+                                               : nullptr;
+                    // Only use the keyword-determined width (e.g. bit=1, byte=8).
+                    // Skip when the type has an explicit range (not yet folded by V3Width)
+                    // or is implicit (width inferred from value, not keyword).
+                    const int portWidth
+                        = (declBasicp && !declBasicp->rangep() && !declBasicp->implicit())
+                              ? declBasicp->width()
+                              : 0;
                     if (portWidth > 0 && exprp->num().width() != portWidth) {
                         V3Number normed{exprp, portWidth};
                         normed.opAssign(exprp->num());
