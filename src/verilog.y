@@ -6812,10 +6812,21 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!
         //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
-        //                      // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
-        //                      // Creates AstConsRep; lowered by V3AssertPre
+        //                      // Consecutive repetition (IEEE 1800-2023 16.9.2)
+        //                      // [*N] exact count
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
                         { $$ = new AstConsRep{$<fl>2, $1, $3}; }
+        //                      // [*N:M] range
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
+                        { $$ = new AstConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
+        //                      // [+] = [*1:$]
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
+                        { $$ = new AstConsRep{$<fl>2, $1,
+                              new AstConst{$<fl>2, 1u}, nullptr, true}; }
+        //                      // [*] = [*0:$]
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR ']'
+                        { $$ = new AstConsRep{$<fl>2, $1,
+                              new AstConst{$<fl>2, 0u}, nullptr, true}; }
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
                         { $$ = new AstSGotoRep{$<fl>2, $1, $3}; }
@@ -6907,17 +6918,9 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
 
 boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         //                      // IEEE: consecutive_repetition
-        //                      // [*N] exact count handled directly in sexpr rule
-                yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); DEL($4); }
-        |       yP_BRASTAR ']'
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
-        |       yP_BRAPLUSKET
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: [+] boolean abbrev expression"); }
+        //                      // [*N], [*N:M], [+], [*] all handled in sexpr rule
         //                      // IEEE: nonconsecutive_repetition/non_consecutive_repetition
-        |       yP_BRAEQ constExpr ']'
+                yP_BRAEQ constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); }
         |       yP_BRAEQ constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); DEL($4); }
