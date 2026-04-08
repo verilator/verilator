@@ -24,7 +24,7 @@ module t (
   int fails_b = 0;
 
   // First launch at cyc==2 should be canceled by reset pulse in the middle.
-  assert property (@(posedge clk) disable iff (rst) (cyc == 2) |-> ##2 done)
+  assert property (@(posedge clk) disable iff (rst) (t.cyc == 2) |-> ##2 done)
   else fails_a++;
 
   // Second launch at cyc==8 has no reset pulse in flight and should fail once.
