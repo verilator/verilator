@@ -126,6 +126,7 @@ class V3DfgCse final {
         case VDfgType::StreamL:
         case VDfgType::StreamR:
         case VDfgType::SAnd:
+        case VDfgType::SIntersect:
         case VDfgType::SOr:
         case VDfgType::SThroughout:
         case VDfgType::Sub:
@@ -251,6 +252,7 @@ class V3DfgCse final {
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
         case VDfgType::SAnd:
+        case VDfgType::SIntersect:
         case VDfgType::SOr:
         case VDfgType::SThroughout:
         case VDfgType::StreamR:

@@ -294,8 +294,9 @@ class WidthVisitor final : public VNVisitor {
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     void visit(AstLogAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogOr* nodep) override { visit_log_and_or(nodep); }
-    // Sequence and/or (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
+    // Sequence and/or/intersect (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
@@ -731,6 +732,11 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
+        if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
+            iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
+            iterateCheckDelay(nodep, "delay", fallDelayp, BOTH);
+            return;
+        }
         if (VN_IS(m_procedurep, Final)) {
             nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2023 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);

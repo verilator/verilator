@@ -1,0 +1,13 @@
+%Warning-WIDTHTRUNC: t/t_sequence_intersect_len_warn.v:16:17: Intersect sequence length mismatch (left 1 cycles, right 3 cycles) -- intersection is always empty
+                                                            : ... note: In instance 't'
+   16 |       (a ##1 b) intersect (c ##3 d));
+      |                 ^~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_sequence_intersect_len_warn.v:20:17: Intersect sequence length mismatch (left 3 cycles, right 1 cycles) -- intersection is always empty
+                                                             : ... note: In instance 't'
+   20 |       (a ##3 b) intersect (c ##1 d));
+      |                 ^~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: Exiting due to

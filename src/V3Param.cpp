@@ -1235,30 +1235,29 @@ class ParamProcessor final {
         }
     }
 
-    // Check if exprp is a ClassRefDType whose class is the default-parameter clone
-    // of origp's template class.  This catches the case where an explicit type parameter
-    // like Holder#(W#(int)) resolves to the same specialization as the implicit default
-    // Holder#(), because W#(int) deparameterizes to W_ (the all-default clone of W).
-    // Uses the user4p link set at line ~1658 when defaultsResolved is true.
-    static bool classTypeMatchesDefaultClone(const AstNodeDType* exprp,
-                                             const AstNodeDType* origp) {
+    // Check if exprp's class matches origp's class after deparameterization.
+    // Handles both the simple case (user4p link from defaultsResolved) and the
+    // nested case where the default's inner class has non-default sub-parameters
+    // (e.g., uvm_sequence#(uvm_reg_item) where uvm_reg_item != default uvm_sequence_item).
+    bool classTypeMatchesDefaultClone(const AstNodeDType* exprp, const AstNodeDType* origp) {
         exprp = exprp->skipRefp();
         origp = origp->skipRefp();
         const auto* const exprClassRefp = VN_CAST(exprp, ClassRefDType);
         const auto* const origClassRefp = VN_CAST(origp, ClassRefDType);
-        UINFO(9, "classTypeMatchesDefaultClone: exprClassRef="
-                     << exprClassRefp << "  origClassRef=" << origClassRefp);
         if (!exprClassRefp || !origClassRefp) return false;
+        // Fast path: check user4p link (set when template was deparameterized with defaults)
         const AstNodeModule* const defaultClonep
             = VN_CAST(origClassRefp->classp()->user4p(), Class);
-        const bool result = defaultClonep && defaultClonep == exprClassRefp->classp();
-        UINFO(9, "  origClass=" << origClassRefp->classp()->prettyNameQ()
-                                << " origClassp=" << cvtToHex(origClassRefp->classp())
-                                << " user4p=" << (defaultClonep ? cvtToHex(defaultClonep) : "null")
-                                << " exprClass=" << exprClassRefp->classp()->prettyNameQ()
-                                << " exprClassp=" << cvtToHex(exprClassRefp->classp())
-                                << " result=" << result);
-        return result;
+        if (defaultClonep && defaultClonep == exprClassRefp->classp()) return true;
+        // Slow path: deparameterize the default type and compare the result.
+        if (!origClassRefp->classp()->hasGParam()) return false;
+        // const_cast safe: cloneTree doesn't modify the source
+        AstClassRefDType* const origClonep = static_cast<AstClassRefDType*>(
+            const_cast<AstClassRefDType*>(origClassRefp)->cloneTree(false));
+        AstNodeModule* const resolvedModp = classRefDeparam(origClonep, origClassRefp->classp());
+        const bool match = resolvedModp && VN_CAST(resolvedModp, Class) == exprClassRefp->classp();
+        VL_DO_DANGLING(origClonep->deleteTree(), origClonep);
+        return match;
     }
 
     static bool paramConstsEqualAtMaxWidth(AstConst* exprp, AstConst* origp) {
