@@ -3670,6 +3670,30 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
+class AstSIntersect final : public AstNodeBiop {
+    // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.
+    // AND with a length restriction. For boolean operands, lowered to AstLogAnd.
+public:
+    AstSIntersect(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SIntersect(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstSIntersect;
+    // LCOV_EXCL_START  // Lowered before these are ever called
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLogAnd(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %fintersect %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    // LCOV_EXCL_STOP
+};
 class AstSOr final : public AstNodeBiop {
     // Sequence 'or' (IEEE 1800-2023 16.9.7): at least one operand sequence must match.
     // Operates on match sets, not values. For boolean operands, lowered to AstLogOr.
