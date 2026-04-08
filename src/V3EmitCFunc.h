@@ -623,16 +623,21 @@ public:
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
         } else if (nodep->isWide() && !unpackDtp && !VN_IS(nodep->rhsp(), Const)) {
-            bool done = false;
-            if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
-                if (lhsp->varp()->isFourStateShuffle()) {
-                    putnbs(nodep, "VL_ASSIGN_WF<2, 1, ");
-                    putnbs(nodep, lhsp->fourstateXZPart() ? "1" : "0");
-                    putnbs(nodep, ", 0>(");
-                    done = true;
-                }
-            }
-            if (!done) putnbs(nodep, "VL_ASSIGN_W(");
+            auto genSuffix
+                = [](const AstNodeExpr* const lhsp, const AstNodeExpr* const rhsp) -> std::string {
+                const AstVarRef* const lhsRefp = VN_CAST(lhsp, VarRef);
+                const AstVarRef* const rhsRefp = VN_CAST(rhsp, VarRef);
+                if (!lhsRefp && !rhsRefp) return "";
+                auto getLetter = [](const AstVarRef* const varRefp) -> char {
+                    if (varRefp) {
+                        return varRefp->fourstateXZPart() ? 'X' : 'V';
+                    } else {
+                        return 'T';
+                    }
+                };
+                return std::string{"_"} + getLetter(lhsRefp) + getLetter(rhsRefp);
+            };
+            putnbs(nodep, "VL_ASSIGN_W" + genSuffix(nodep->lhsp(), nodep->rhsp()) + "(");
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");

@@ -422,16 +422,28 @@ static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP const lwp
     return VL_MEMCPY_W(owp, lwp, VL_WORDS_I(obits));
 }
 
-template <size_t outJump, size_t inJump, size_t outOff = 0, size_t inOff = 0>
-void VL_ASSIGN_WF(int obits, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
-    owp += outOff;
-    lwp += inOff;
-    for (int i = 0; i < VL_WORDS_I(obits); ++i) {
-        *owp = *lwp;
-        owp += outJump;
-        lwp += inJump;
+#define VL_ASSIGN_W_GEN(suffix, outputOffset, outputJump, inputOffset, inputJump) \
+    static inline void VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) VL_MT_SAFE { \
+        owp += outputOffset; \
+        lwp += inputOffset; \
+        for (int i = 0; i < VL_WORDS_I(obits); ++i) { \
+            *owp = *lwp; \
+            owp += outputJump; \
+            lwp += inputJump; \
+        } \
     }
-}
+// T - two state value
+// V - value part
+// X - xz part
+VL_ASSIGN_W_GEN(VV, 0, 2, 0, 2)
+VL_ASSIGN_W_GEN(VX, 0, 2, 1, 2)
+VL_ASSIGN_W_GEN(VT, 0, 2, 0, 1)
+VL_ASSIGN_W_GEN(XV, 1, 2, 0, 2)
+VL_ASSIGN_W_GEN(XX, 1, 2, 1, 2)
+VL_ASSIGN_W_GEN(XT, 1, 2, 0, 1)
+VL_ASSIGN_W_GEN(TV, 0, 1, 0, 2)
+VL_ASSIGN_W_GEN(TX, 0, 1, 1, 2)
+#undef VL_ASSIGN_W_GEN
 
 // EMIT_RULE: VL_ASSIGNBIT:  rclean=clean;
 static inline void VL_ASSIGNBIT_II(int bit, CData& lhsr, IData rhs) VL_PURE {
