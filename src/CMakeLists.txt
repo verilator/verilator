@@ -70,6 +70,7 @@ set(HEADERS
     V3Control.h
     V3Coverage.h
     V3CoverageJoin.h
+    V3Covergroup.h
     V3Dead.h
     V3DebugBisect.h
     V3Delayed.h
@@ -237,6 +238,7 @@ set(COMMON_SOURCES
     V3Const__gen.cpp
     V3Coverage.cpp
     V3CoverageJoin.cpp
+    V3Covergroup.cpp
     V3Dead.cpp
     V3Delayed.cpp
     V3Depth.cpp

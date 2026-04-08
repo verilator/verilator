@@ -1,0 +1,30 @@
+%Error: t/t_covergroup_autobins_bad.v:17:12: Automatic bins array size must be a constant
+                                           : ... note: In instance 't'
+   17 |       bins auto[size_var];
+      |            ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_autobins_bad.v:24:12: Automatic bins array size must be >= 1, got 0
+                                           : ... note: In instance 't'
+   24 |       bins auto[0];
+      |            ^~~~
+%Error: t/t_covergroup_autobins_bad.v:34:26: Non-constant expression in bin value list; values must be constants
+                                           : ... note: In instance 't'
+   34 |       ignore_bins ign = {size_var};       
+      |                          ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:31:12: Non-constant expression in array bins range; range bounds must be constants
+                                           : ... note: In instance 't'
+   31 |       bins b[] = {[size_var:size_var]};   
+      |            ^
+%Error: t/t_covergroup_autobins_bad.v:32:12: Non-constant expression in array bins range; range bounds must be constants
+                                           : ... note: In instance 't'
+   32 |       bins b_mixed[] = {[0:size_var]};    
+      |            ^~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:33:18: Non-constant expression in bin range; values must be constants
+                                           : ... note: In instance 't'
+   33 |       bins b2 = {size_var};               
+      |                  ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:34:26: Non-constant expression in bin range; values must be constants
+                                           : ... note: In instance 't'
+   34 |       ignore_bins ign = {size_var};       
+      |                          ^~~~~~~~
+%Error: Exiting due to

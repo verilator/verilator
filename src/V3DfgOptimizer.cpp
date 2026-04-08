@@ -282,6 +282,13 @@ class DataflowOptimize final {
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
                     return;
                 }
+                // TODO: remove once Actives can tolerate NEVER SenItems
+                if (AstSenItem* senItemp = VN_CAST(nodep, SenItem)) {
+                    senItemp->foreach([](const AstVarRef* refp) {
+                        DfgVertexVar::setHasExtRdRefs(refp->varScopep());
+                    });
+                    return;
+                }
                 // Check direct references
                 if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
                     if (refp->access().isRW()) DfgVertexVar::setHasRWRefs(refp->varScopep());

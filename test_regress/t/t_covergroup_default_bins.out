@@ -1,0 +1,20 @@
+cg.data.high: 1
+cg.data.low: 1
+cg.data.other: 2
+cg2.cp_only_default.all: 4
+cg3.data.bad [ignore]: 1
+cg3.data.err [illegal]: 0
+cg3.data.normal: 2
+cg3.data.other: 2
+cg4.cp_idx.auto_0: 1
+cg4.cp_idx.auto_1: 1
+cg4.cp_idx.auto_2: 1
+cg4.cp_idx.skip [ignore]: 0
+cg5.cp_data64.auto[0]: 2
+cg5.cp_data64.auto[1]: 0
+cg5.cp_data64.auto[2]: 0
+cg5.cp_data64.auto[3]: 0
+cg6.cp_data65.hi: 1
+cg6.cp_data65.lo: 1
+cg7.data.hi: 1
+cg7.data.lo: 1

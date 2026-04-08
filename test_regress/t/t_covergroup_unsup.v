@@ -51,6 +51,7 @@ module t (
     option.comment = "option_comment";  // cg, cp, cross
     option.at_least = 20;  // cg, cp, cross
     option.auto_bin_max = 10;  // cg, cp
+    type_option.auto_bin_max = 10;  // cg, cp: typeOption() == true
     option.cross_num_print_missing = 2;  // cg, cross
     option.detect_overlap = 1;  // cg, cp
     option.per_instance = 1;  // cg
@@ -144,6 +145,27 @@ module t (
     { bins bts2 = ( 3 [=5:6] ) ; }
   endgroup
 
+  // Additional bins syntax for grammar coverage (all generate COVERIGN warnings)
+  covergroup cg_bins_ext;
+    // Non-auto bins array without value: bins name[N] (no = {value})  -- L7049-7051
+    { bins nonAuto[4]; }
+    // ignore_bins/illegal_bins with 'with' filter on range list  -- L7067-7073
+    { ignore_bins ib_with = {1,2} with ( b ); }
+    { illegal_bins lib_with = {1,2} with ( b ); }
+    // ignore_bins/illegal_bins with 'with' filter on coverpoint ref  -- L7077,L7079
+    { ignore_bins ib_cp = a with ( b ); }
+    { illegal_bins lib_cp = a with ( b ); }
+    // wildcard ignore/illegal bins with 'with' filter  -- L7092,L7094
+    { wildcard ignore_bins wib_with = {1,2} with ( b ); }
+    { wildcard illegal_bins wlib_with = {1,2} with ( b ); }
+    // wildcard ignore/illegal bins with transition list  -- L7113,L7114
+    { wildcard ignore_bins wib_trans = ( 1 => 2 ); }
+    { wildcard illegal_bins wlib_trans = ( 1 => 2 ); }
+    // ignore/illegal bins = default sequence  -- L7128,L7130
+    { ignore_bins ib_def_seq = default sequence; }
+    { illegal_bins lib_def_seq = default sequence; }
+  endgroup
+
   covergroup cg_coverpoint_ref;
     coverpoint a {
      bins div_by_2 = a with (item % 2 == 0);
@@ -171,6 +193,9 @@ module t (
       bins bin_or_with = binsof(a) || binsof(a) with (a);
       bins bin_and_with = binsof(a) && binsof(a) with (a);
       bins bin_multiple_fields = binsof(p.inner_packet.field);
+      // explicit cross ignore/illegal bins (unsupported)  -- L7253, L7255
+      ignore_bins ib_cross = binsof(a);
+      illegal_bins lib_cross = binsof(a);
     }
   endgroup
 
@@ -182,18 +207,23 @@ module t (
     int m_y;
     int m_z;
     covergroup cov1 @m_z;
-      coverpoint m_x;
-      coverpoint m_y;
+      cp_x: coverpoint m_x;
+      cp_y: coverpoint m_y;
+`ifdef T_COVERGROUP_UNSUP_IGN
+      xy_cross: cross cp_x, cp_y;  // exercises cross cleanup in hasUnsupportedEvent path
+`endif
     endgroup
 `ifndef T_COVERGROUP_UNSUP_IGN
     function new(); cov1 = new; endfunction
 `endif
   endclass
 
+`ifndef T_COVERGROUP_UNSUP_IGN
   class CgEmb;
     covergroup extends cg_empty;
     endgroup
   endclass
+`endif
 
   initial begin
     automatic cg_empty cov1 = new;

@@ -1,0 +1,171 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        // Test cross coverage: 2-way, 3-way, and 4-way crosses
+        
+        module t;
+%000001   logic [1:0] addr;
+%000001   logic cmd;
+%000001   logic mode;
+%000001   logic parity;
+        
+          // 2-way cross
+%000004   covergroup cg2;
+%000001     cp_addr: coverpoint addr {
+%000002       bins addr0 = {0};
+%000002       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000002       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     addr_cmd: cross cp_addr, cp_cmd;
+          endgroup
+        
+          // 3-way cross
+%000004   covergroup cg3;
+%000001     cp_addr: coverpoint addr {
+%000002       bins addr0 = {0};
+%000001       bins addr1 = {1};
+%000001       bins addr2 = {2};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000002       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     cp_mode: coverpoint mode {
+%000002       bins normal = {0};
+%000002       bins debug  = {1};
+            }
+%000001     addr_cmd_mode: cross cp_addr, cp_cmd, cp_mode;
+          endgroup
+        
+          // 4-way cross
+%000004   covergroup cg4;
+%000001     cp_addr: coverpoint addr {
+%000002       bins addr0 = {0};
+%000002       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000002       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     cp_mode: coverpoint mode {
+%000002       bins normal = {0};
+%000002       bins debug  = {1};
+            }
+%000001     cp_parity: coverpoint parity {
+%000002       bins even = {0};
+%000002       bins odd  = {1};
+            }
+%000001     addr_cmd_mode_parity: cross cp_addr, cp_cmd, cp_mode, cp_parity;
+          endgroup
+        
+          // Cross with option inside body: exercises addOptionsp in visit(AstCoverCross*)
+%000002   covergroup cg5;
+%000001     cp_addr: coverpoint addr {
+%000001       bins addr0 = {0};
+%000001       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000001       bins read  = {0};
+%000001       bins write = {1};
+            }
+%000001     addr_cmd_opt: cross cp_addr, cp_cmd {
+              option.weight = 2;
+            }
+          endgroup
+        
+          // 2-way cross with range bin: exercises lo!=hi path in buildBinCondition
+%000004   covergroup cg_range;
+%000001     cp_addr: coverpoint addr {
+%000002       bins lo_range = {[0:1]};  // range bin (lo != hi) -> makeRangeCondition path
+%000002       bins hi_range = {[2:3]};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000002       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     addr_cmd_range: cross cp_addr, cp_cmd;
+          endgroup
+        
+          // Cross where one coverpoint has ignore_bins: exercises BINS_USER FALSE branch
+          // in collectBins during cross code generation (L1139)
+%000005   covergroup cg_ignore;
+%000001     cp_addr: coverpoint addr {
+%000001       ignore_bins ign = {3};  // BINS_IGNORE: not BINS_USER, exercises L1139 FALSE path
+%000002       bins a0 = {0};
+%000002       bins a1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000003       bins read  = {0};
+%000002       bins write = {1};
+            }
+%000001     cross_ab: cross cp_addr, cp_cmd;
+          endgroup
+        
+          // Covergroup with unnamed cross: exercises crossName.empty() fallback to "cross" (L1395)
+%000002   covergroup cg_unnamed_cross;
+%000001     cp_a: coverpoint addr { bins a0 = {0}; bins a1 = {1}; }
+%000001     cp_c: coverpoint cmd  { bins read = {0}; bins write = {1}; }
+%000001     cross cp_a, cp_c;  // no label -> crossName is empty
+          endgroup
+        
+%000001   cg2 cg2_inst = new;
+%000001   cg_ignore cg_ignore_inst = new;
+%000001   cg_range cg_range_inst = new;
+%000001   cg3 cg3_inst = new;
+%000001   cg4 cg4_inst = new;
+%000001   cg5 cg5_inst = new;
+%000001   cg_unnamed_cross cg_unnamed_cross_inst = new;
+        
+%000001   initial begin
+            // Sample 2-way: hit all 4 combinations
+%000001     addr = 0; cmd = 0; mode = 0; parity = 0; cg2_inst.sample();  // addr0 x read
+%000001     addr = 1; cmd = 1; mode = 0; parity = 0; cg2_inst.sample();  // addr1 x write
+%000001     addr = 0; cmd = 1; mode = 0; parity = 0; cg2_inst.sample();  // addr0 x write
+%000001     addr = 1; cmd = 0; mode = 0; parity = 0; cg2_inst.sample();  // addr1 x read
+        
+            // Sample 3-way: hit 4 of 12 combinations
+%000001     addr = 0; cmd = 0; mode = 0; cg3_inst.sample();  // addr0 x read x normal
+%000001     addr = 1; cmd = 1; mode = 0; cg3_inst.sample();  // addr1 x write x normal
+%000001     addr = 2; cmd = 0; mode = 1; cg3_inst.sample();  // addr2 x read x debug
+%000001     addr = 0; cmd = 1; mode = 1; cg3_inst.sample();  // addr0 x write x debug
+        
+            // Sample 4-way: hit 4 of 16 combinations
+%000001     addr = 0; cmd = 0; mode = 0; parity = 0; cg4_inst.sample();
+%000001     addr = 1; cmd = 1; mode = 0; parity = 1; cg4_inst.sample();
+%000001     addr = 0; cmd = 1; mode = 1; parity = 0; cg4_inst.sample();
+%000001     addr = 1; cmd = 0; mode = 1; parity = 1; cg4_inst.sample();
+        
+            // Sample cg5 (cross with option)
+%000001     addr = 0; cmd = 0; cg5_inst.sample();
+%000001     addr = 1; cmd = 1; cg5_inst.sample();
+        
+            // Sample cg_ignore: addr=3 is in ignore_bins so no cross bins for it
+%000001     addr = 0; cmd = 0; cg_ignore_inst.sample();  // a0 x read
+%000001     addr = 1; cmd = 1; cg_ignore_inst.sample();  // a1 x write
+%000001     addr = 0; cmd = 1; cg_ignore_inst.sample();  // a0 x write
+%000001     addr = 1; cmd = 0; cg_ignore_inst.sample();  // a1 x read
+%000001     addr = 3; cmd = 0; cg_ignore_inst.sample();  // ignored (addr=3 in ignore_bins)
+        
+            // Sample range-bin cross
+%000001     addr = 0; cmd = 0; cg_range_inst.sample();  // lo_range x read
+%000001     addr = 2; cmd = 1; cg_range_inst.sample();  // hi_range x write
+%000001     addr = 1; cmd = 1; cg_range_inst.sample();  // lo_range x write
+%000001     addr = 3; cmd = 0; cg_range_inst.sample();  // hi_range x read
+        
+            // Sample cg_unnamed_cross: exercises unnamed cross (crossName fallback to "cross")
+%000001     addr = 0; cmd = 0; cg_unnamed_cross_inst.sample();  // a0 x read
+%000001     addr = 1; cmd = 1; cg_unnamed_cross_inst.sample();  // a1 x write
+        
+%000001     $write("*-* All Finished *-*\n");
+%000001     $finish;
+          end
+        
+        endmodule
+        

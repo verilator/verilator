@@ -184,7 +184,8 @@ Verilator supports adding code to the Verilated model to support
 SystemVerilog code coverage. With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
-- :ref:`User Coverage`
+- :ref:`Property Coverage`
+- :ref:`Covergroup Coverage`
 - :ref:`Line Coverage`
 - :ref:`Toggle Coverage`
 
@@ -192,21 +193,59 @@ When a model with coverage is executed, it will create a coverage file for
 collection and later analysis, see :ref:`Coverage Collection`.
 
 
-.. _user coverage:
+.. _property coverage:
 
-Functional Coverage
--------------------
+Property Coverage
+-----------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
-translate functional coverage points the user has inserted manually in
-SystemVerilog code through into the Verilated model.
+translate property coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model.
 
-For example, the following SystemVerilog statement will add a coverage
-point under the coverage name "DefaultClock":
+For simple coverage points, use the ``cover property`` construct:
 
 .. code-block:: sv
 
    DefaultClock: cover property (@(posedge clk) cyc==3);
+
+This adds a coverage point that tracks whether the condition has been observed.
+
+.. _covergroup coverage:
+
+Covergroup Coverage
+-------------------
+
+With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
+translate covergroup coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model. Verilator supports
+coverpoints with value and transition bins, and cross points.
+
+.. code-block:: sv
+
+   module top;
+      logic [7:0] addr;
+      logic       cmd;
+
+      // Define a covergroup
+      covergroup cg;
+         cp_addr: coverpoint addr {
+            bins low  = {[0:127]};
+            bins high = {[128:255]};
+         }
+         cp_cmd: coverpoint cmd {
+            bins read  = {0};
+            bins write = {1};
+         }
+      endgroup
+
+      // Instantiate the covergroup
+      cg cg_inst = new;
+
+      always @(posedge clk) begin
+         // Sample coverage explicitly
+         cg_inst.sample();
+      end
+   endmodule
 
 
 .. _line coverage:
