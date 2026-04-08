@@ -1326,6 +1326,22 @@ class ParamProcessor final {
                 }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
+                // Normalize pin width to the port's declared type for naming only.
+                // A 32-bit literal and a 1-bit substituted value must produce the
+                // same specialization name.  Use subDTypep() since dtypep() is not
+                // yet set (V3Width has not run).
+                AstConst* normedNamep = nullptr;
+                if (exprp && !exprp->num().isDouble() && !exprp->num().isString()
+                    && !exprp->num().isFourState()) {
+                    const AstNodeDType* const declTypep = modvarp->subDTypep();
+                    const int portWidth = declTypep ? declTypep->skipRefp()->width() : 0;
+                    if (portWidth > 0 && exprp->num().width() != portWidth) {
+                        V3Number normed{exprp, portWidth};
+                        normed.opAssign(exprp->num());
+                        normedNamep = new AstConst{exprp->fileline(), normed};
+                    }
+                }
+                AstConst* const namingExprp = normedNamep ? normedNamep : exprp;
                 if (!exprp) {
                     // With DepGraph architecture, all expressions should be constants
                     // by the time V3Param runs. If not, it's an error.
@@ -1346,16 +1362,17 @@ class ParamProcessor final {
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
                     UINFO(9, "cellPinCleanup: same as default " << pinp);
-                } else if (exprp->num().isDouble() || exprp->num().isString()
-                           || exprp->num().isFourState() || exprp->num().width() != 32) {
+                } else if (namingExprp->num().isDouble() || namingExprp->num().isString()
+                           || namingExprp->num().isFourState() || namingExprp->num().width() != 32) {
                     longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp));
+                        += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(namingExprp));
                     any_overridesr = true;
                 } else {
                     longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + exprp->num().ascii(false));
+                        += ("_" + paramSmallName(srcModp, modvarp) + namingExprp->num().ascii(false));
                     any_overridesr = true;
                 }
+                if (normedNamep) VL_DO_DANGLING(normedNamep->deleteTree(), normedNamep);
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
