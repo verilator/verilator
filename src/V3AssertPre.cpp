@@ -745,7 +745,7 @@ private:
         AstSenTree* const senTreep = newSenTree(nodep);
         AstAlways* const alwaysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep, ifp};
         cntVarp->addNextHere(alwaysp);
-        // Match when N-1 previous cycles were true and current cycle is true
+        // Match: cnt >= N-1 (previous cycles via NBA) && expr (current cycle)
         AstNodeExpr* const cntCheckp = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
                                                   new AstConst{flp, static_cast<uint32_t>(n - 1)}};
         cntCheckp->dtypeSetBit();
@@ -852,6 +852,7 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, name + "__counter",
                                            exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        cntVarp->noSample(true);
 
         AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
         beginp->addStmtsp(
