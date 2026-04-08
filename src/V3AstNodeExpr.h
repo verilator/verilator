@@ -473,6 +473,8 @@ private:
     VSelfPointerText m_selfPointer
         = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
                                                         // pointer (e.g.: 'this')
+    bool m_fourstateXZPart : 1;  // If references four-state shuffled var true for XZ part and
+                                 // false for value part
 protected:
     AstNodeVarRef(VNType t, FileLine* fl, AstVar* varp, const VAccess& access)
         : AstNodeExpr{t, fl}
@@ -502,6 +504,8 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
+    void fourstateXZPart(bool xz) { m_fourstateXZPart = xz; }
+    bool fourstateXZPart() const { return m_fourstateXZPart; }
 };
 
 // === Concrete node types =====================================================

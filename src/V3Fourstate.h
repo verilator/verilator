@@ -27,6 +27,7 @@ class AstNetlist;
 class V3Fourstate final {
 public:
     static void fourstateAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void fourstateShuffleAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

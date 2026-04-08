@@ -542,6 +542,11 @@ static void process() {
             V3Expand::expandAll(v3Global.rootp());
         }
 
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && v3Global.opt.fourstate()
+            && v3Global.opt.fshuffle()) {
+            V3Fourstate::fourstateShuffleAll(v3Global.rootp());
+        }
+
         // Propagate constants across WORDSEL arrayed temporaries
         if (!v3Global.opt.serializeOnly() && v3Global.opt.fSubst()) {
             // Constant folding of expanded stuff

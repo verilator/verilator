@@ -23,6 +23,7 @@
 
 #include "V3Fourstate.h"
 
+#include "V3Const.h"
 #include "V3UniqueNames.h"
 
 #include <map>
@@ -2358,9 +2359,108 @@ public:
     ~FourstateVisitor() override = default;
 };
 
-void V3Fourstate::fourstateAll(AstNetlist* netlistp) {
+class FourstateShuffleVisitor final : public VNVisitor {
+    const VNUser1InUse m_user1InUse;
+
+    std::vector<AstVar*> m_varpsToRemove;
+
+    static bool needsShuffle(const AstVar* const varp) {
+        return varp->isWide() && (varp->fourStateComplement() || varp->isFourStateComplement());
+    }
+
+    AstVar* shuffledVersion(AstVar* varp) {
+        UASSERT_OBJ(
+            varp->fourStateComplement() || varp->isFourStateComplement(), varp,
+            "This function is ment to be called on variables which create a four-state value");
+        UASSERT_OBJ(varp->isWide(), varp,
+                    "This function is only ment to be called on wide wariables");
+        if (AstVar* newp = varp->fourStateComplement()) varp = newp;
+        UASSERT_OBJ(
+            VString::endsWith(varp->name(), "__Vxz"), varp,
+            "Four-state complement shall have '__Vxz' suffix it is named: " << varp->name());
+        if (AstVar* resultp = VN_AS(varp->user1p(), Var)) return resultp;
+        AstVar* const resultp = varp->cloneTree(false);
+        resultp->unsetFourStateComplement();
+        resultp->name(resultp->name().erase(resultp->name().size() + 1 - sizeof("__Vxz")));
+        resultp->dtypeSetBitSized(resultp->widthWords() * 2 * VL_IDATASIZE,
+                                  varp->dtypep()->numeric());
+        resultp->setFourStateShuffle();
+        varp->addNextHere(resultp);
+        varp->user1p(resultp);
+        return resultp;
+    }
+
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        AstNodeExpr* exprp = nodep->argsp();
+        for (AstVar* varp = nodep->funcp()->argsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            UASSERT_OBJ(exprp, varp, "Too little arguments");
+            UASSERT_OBJ(!varp->isFourStateComplement(), varp,
+                        "This loop shall never reach four-state complement");
+            if (AstVar* const complement = varp->fourStateComplement()) {
+                shuffledVersion(complement);
+                if (VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef)) {
+                    exprp->nextp()->unlinkFrBack()->deleteTree();
+                } else {
+                    exprp->v3warn(
+                        E_UNSUPPORTED,
+                        "-fshuffle with not variable references arguments is not supported");
+                }
+                varp = VN_AS(varp->nextp()->nextp(), Var);
+            }
+            exprp = VN_AS(exprp->nextp(), NodeExpr);
+        }
+        UASSERT_OBJ(!exprp, exprp, "Too many arguments");
+    }
+
+    void visit(AstVar* const nodep) override {
+        iterateChildren(nodep);
+        if (needsShuffle(nodep)) {
+            shuffledVersion(nodep);
+            m_varpsToRemove.push_back(nodep);
+        }
+    }
+
+    void visit(AstNodeVarRef* const nodep) override {
+        iterateChildren(nodep);
+        if (!needsShuffle(nodep->varp())) return;
+        AstVar* const varp = shuffledVersion(nodep->varp());
+        FileLine* const flp = nodep->fileline();
+        if (AstVarScope* const oldVscp = nodep->varScopep()) {
+            AstVarScope* const vscp = new AstVarScope{flp, oldVscp->scopep(), varp};
+            vscp->trace(oldVscp->isTrace());
+            vscp->optimizeLifePost(oldVscp->optimizeLifePost());
+            nodep->varScopep(vscp);
+        }
+        nodep->fourstateXZPart(nodep->varp()->isFourStateComplement());
+        nodep->varp(varp);
+        if (AstWordSel* const wselp = VN_CAST(nodep->firstAbovep(), WordSel)) {
+            AstNodeExpr* idxp
+                = new AstMul{flp, wselp->bitp()->unlinkFrBack(), new AstConst{flp, 2}};
+            if (nodep->fourstateXZPart()) idxp = new AstAdd{flp, idxp, new AstConst{flp, 1}};
+            idxp = V3Const::constifyEdit(idxp);
+            wselp->bitp(idxp);
+        }
+    }
+
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit FourstateShuffleVisitor(AstNetlist* const netlistp) { iterate(netlistp); }
+    ~FourstateShuffleVisitor() override {
+        for (AstVar* varp : m_varpsToRemove) varp->unlinkFrBack()->deleteTree();
+    }
+};
+
+void V3Fourstate::fourstateAll(AstNetlist* const netlistp) {
     UINFO(2, __FUNCTION__ << ":");
     { FourstateVisitor{netlistp}; }
     v3Global.setFourstateHandled();
     V3Global::dumpCheckGlobalTree("fourstate", 0, dumpTreeEitherLevel() >= 6);
+}
+
+void V3Fourstate::fourstateShuffleAll(AstNetlist* const netlistp) {
+    UINFO(2, __FUNCTION__ << ":");
+    { FourstateShuffleVisitor{netlistp}; }
+    V3Global::dumpCheckGlobalTree("fourstateShuffle", 0, dumpTreeEitherLevel() >= 6);
 }

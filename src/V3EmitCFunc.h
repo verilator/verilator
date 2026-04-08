@@ -623,7 +623,16 @@ public:
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
         } else if (nodep->isWide() && !unpackDtp && !VN_IS(nodep->rhsp(), Const)) {
-            putnbs(nodep, "VL_ASSIGN_W(");
+            bool done = false;
+            if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
+                if (lhsp->varp()->isFourStateShuffle()) {
+                    putnbs(nodep, "VL_ASSIGN_WF<2, 1, ");
+                    putnbs(nodep, lhsp->fourstateXZPart() ? "1" : "0");
+                    putnbs(nodep, ", 0>(");
+                    done = true;
+                }
+            }
+            if (!done) putnbs(nodep, "VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
