@@ -42,10 +42,15 @@ Verilator 5.047 devel
 * Support `##` delay on implication RHS in SVA properties (#7284). [Yilou Wang]
 * Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
 * Support property-local variables and sequence match items (#7286). [Yilou Wang]
+* Support array map() method (#7307) (#7316) (#7344). [Wei-Lun Chiu]
 * Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
 * Support consecutive repetition `[\*N]` in SVA properties (#7311). [Yilou Wang]
-* Support `##[M:N]` range cycle delay in SVA sequences (#7312). [Yilou Wang]
-* Support array map() method (#7307) (#7316) (#7344). [Wei-Lun Chiu]
+* Support `##[*]`, `##[+]`, `##[M:N]`, `##[M:$]` cycle delays in assertions (#7312) (#7377). [Yilou Wang]
+* Support rise/fall delays (#7368). [Artur Bieniek, Antmicro Ltd.]
+* Support sequence intersect operator (#7374). [Yilou Wang]
+* Support sequence 'throughout' operator (#7378). [Yilou Wang]
+* Support sequence consecutive repetition `[*N:M]`, `[+]`, and `[*]` (#7379). [Yilou Wang]
+* Support sequence `first_match` operator (#7392). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -67,6 +72,7 @@ Verilator 5.047 devel
 * Optimize comparisons with identical operands and $countones in DFG. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
 * Optimize read references in DFG (#7354). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG only once, after scoping (#7362). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
@@ -89,7 +95,7 @@ Verilator 5.047 devel
 * Fix wide conditional short circuiting (#7155).
 * Fix eliminating assignments to DPI-read variables (#7158). [Geza Lore, Testorrent USA, Inc.]
 * Fix std::randomize() in static function with static class members (#7167) (#7169). [Yilou Wang]
-* Fix resolving default/non-default type parameters (#7171) (#7346). [em2machine]
+* Fix resolving default/non-default type parameters (#7171) (#7346) (#7380) (#7385). [em2machine]
 * Fix recursive constant function in $unit scope (#7173) (#7174).
 * Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
@@ -126,6 +132,8 @@ Verilator 5.047 devel
 * Fix virtual interface function calls binding to wrong instance (#7363). [Yilou Wang]
 * Fix false ASSIGNIN on interface input port connections (#7365). [Yilou Wang]
 * Fix string `inside` queue (#7373).
+* Fix VPI access to Verilog `force`-ed signals (#7381). [Christian Hecken, Heidelberg University]
+* Fix sampling of hierarchical references (#7386). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.046 2026-02-28
