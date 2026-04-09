@@ -401,24 +401,9 @@ public:
     V3DfgRemoveUnobservableContext m_removeUnobservableContext;
     V3DfgSynthesisContext m_synthContext;
 
-    // Node pattern collector
-    V3DfgPatternStats m_patternStats;
-
     // CONSTRUCTOR
     V3DfgContext() = default;
-
-    ~V3DfgContext() {
-        // Print the collected patterns
-        if (v3Global.opt.stats()) {
-            // File to dump to
-            const std::string filename = v3Global.opt.hierTopDataDir() + "/"
-                                         + v3Global.opt.prefix() + "__stats_dfg_patterns.txt";
-            // Open, write, close
-            const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-            if (ofp->fail()) v3fatal("Can't write file: " << filename);
-            m_patternStats.dump(*ofp);
-        }
-    }
+    ~V3DfgContext() = default;
 };
 
 #endif  //VERILATOR_V3DFGCONTEXT_H_
