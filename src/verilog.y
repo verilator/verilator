@@ -6863,9 +6863,9 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                         { $$ = new AstSIntersect{$2, $1, $3}; }
         //
         |       yFIRST_MATCH '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); }
+                        { $$ = $3; }  // IEEE 16.9.8: no-op in deterministic DFA model
         |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); DEL($5); }
+                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match with sequence_match_items"); DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
                         { $$ = new AstSThroughout{$2, $1, $3}; }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
