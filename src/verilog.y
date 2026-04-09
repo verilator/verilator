@@ -6815,17 +6815,17 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // Consecutive repetition (IEEE 1800-2023 16.9.2)
         //                      // [*N] exact count
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
-                        { $$ = new AstConsRep{$<fl>2, $1, $3}; }
+                        { $$ = new AstSConsRep{$<fl>2, $1, $3}; }
         //                      // [*N:M] range
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = new AstConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
+                        { $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
         //                      // [+] = [*1:$]
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
-                        { $$ = new AstConsRep{$<fl>2, $1,
+                        { $$ = new AstSConsRep{$<fl>2, $1,
                               new AstConst{$<fl>2, 1u}, nullptr, true}; }
         //                      // [*] = [*0:$]
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR ']'
-                        { $$ = new AstConsRep{$<fl>2, $1,
+                        { $$ = new AstSConsRep{$<fl>2, $1,
                               new AstConst{$<fl>2, 0u}, nullptr, true}; }
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
@@ -6833,8 +6833,16 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: goto_repetition (range form -- unsupported)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
                         { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
-        |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev
-                        { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: boolean abbrev (in sequence expression)"); DEL($2); }
+        //                      // IEEE: nonconsecutive_repetition (single count form)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ']'
+                        { $$ = new AstSNonConsRep{$<fl>2, $1, $3}; }
+        //                      // IEEE: nonconsecutive_repetition (range form -- unsupported)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ':' constExpr ']'
+                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [= range nonconsecutive repetition"); DEL($3); DEL($5); }
+        //                      // All boolean_abbrev forms are now handled above:
+        //                      // [*N], [*N:M], [+], [*] via AstSConsRep
+        //                      // [->N], [->M:N] via AstSGotoRep
+        //                      // [=N], [=M:N] via AstSNonConsRep
         //
         //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
         //                      // version without sequence_abbrev looks just like normal function call
@@ -6916,18 +6924,10 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
                 for_step_assignment                     { $$ = $1; }
         ;
 
-boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
-        //                      // IEEE: consecutive_repetition
-        //                      // [*N], [*N:M], [+], [*] all handled in sexpr rule
-        //                      // IEEE: nonconsecutive_repetition/non_consecutive_repetition
-                yP_BRAEQ constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); }
-        |       yP_BRAEQ constExpr ':' constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); DEL($4); }
-        //                      // IEEE: goto_repetition
-        //                      // Goto repetition [->N] handled in sexpr rule (AstSGotoRep)
-        //                      // Range form [->M:N] also handled there (unsupported)
-        ;
+//      boolean_abbrev -- all forms now handled directly in sexpr rule:
+//                      // IEEE: consecutive_repetition -- [*N], [*N:M], [+], [*] via AstSConsRep
+//                      // IEEE: goto_repetition -- [->N] via AstSGotoRep, [->M:N] unsupported
+//                      // IEEE: nonconsecutive_repetition -- [=N] via AstSNonConsRep, [=M:N] unsupported
 
 //************************************************
 // Covergroup
