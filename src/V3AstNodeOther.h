@@ -264,7 +264,6 @@ public:
         , m_name{name} {}
     ASTGEN_MEMBERS_AstNodeFuncCovItem;
     string name() const override VL_MT_STABLE { return m_name; }
-    void name(const string& flag) override { m_name = flag; }
     bool maybePointedTo() const override { return true; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
