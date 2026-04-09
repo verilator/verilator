@@ -466,33 +466,3 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         }
     }
 }
-
-void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
-    // There is absolutely nothing useful we can do with a graph of size 2 or less
-    if (dfg.size() <= 2) return;
-
-    const auto run = [&](const std::string& name, bool dump, std::function<void()> pass) {
-        // Apply the pass
-        pass();
-        // Debug dump
-        if (dump) dfg.dumpDotFilePrefixed("opt-" + VString::removeWhitespace(name));
-        // Internal type check
-        if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
-    };
-
-    // Currend debug dump level
-    const uint32_t dumpLvl = dumpDfgLevel();
-
-    // Run passes
-    run("input       ", dumpLvl >= 3, [&]() { /* debug dump only */ });
-    run("inlineVars  ", dumpLvl >= 4, [&]() { inlineVars(dfg); });
-    run("cse0        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext0); });
-    run("binToOneHot ", dumpLvl >= 4, [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
-    run("peephole    ", dumpLvl >= 4, [&]() { peephole(dfg, ctx.m_peepholeContext); });
-    run("pushDownSels", dumpLvl >= 4, [&]() { pushDownSels(dfg, ctx.m_pushDownSelsContext); });
-    run("cse1        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext1); });
-    run("output      ", dumpLvl >= 3, [&]() { /* debug dump only */ });
-
-    // Accumulate patterns for reporting
-    if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
-}

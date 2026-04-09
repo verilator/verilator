@@ -257,11 +257,28 @@ class DataflowOptimize final {
     // STATE
     V3DfgContext m_ctx;  // The context holding values that need to persist across multiple graphs
 
-    void endOfStage(const std::string& name, const DfgGraph* dfgp = nullptr) {
-        // Dump the graph for debugging if given one
-        if (VL_UNLIKELY(dumpDfgLevel() >= 8 && dfgp)) dfgp->dumpDotFilePrefixed(name);
-        // Dump stage stats only in scoped mode when running on the whole netlist
+    void endOfStage(const std::string& name) {
         if (VL_UNLIKELY(v3Global.opt.stats())) V3Stats::statsStage("dfg-optimize-" + name);
+    }
+
+    void endOfStage(const std::string& name, const DfgGraph& dfg,
+                    const std::vector<std::unique_ptr<DfgGraph>>& componentps) {
+        // Dump the graphs for debugging
+        if (VL_UNLIKELY(dumpDfgLevel() >= 5)) {
+            if (dfg.size() > 0) dfg.dumpDotFilePrefixed(name);
+            for (const std::unique_ptr<DfgGraph>& componentp : componentps) {
+                if (componentp->size() > 0) componentp->dumpDotFilePrefixed(name);
+            }
+        }
+        // Type check the graphs
+        if (VL_UNLIKELY(v3Global.opt.debugCheck())) {
+            V3DfgPasses::typeCheck(dfg);
+            for (const std::unique_ptr<DfgGraph>& componentp : componentps) {
+                V3DfgPasses::typeCheck(*componentp);
+            }
+        }
+        // Dump stage stats
+        endOfStage(name);
     }
 
     // Mark variables with external references
@@ -297,17 +314,17 @@ class DataflowOptimize final {
     void optimize(DfgGraph& dfg) {
         // Remove unobservable variabels and logic that drives only such variables
         V3DfgPasses::removeUnobservable(dfg, m_ctx);
-        endOfStage("remove-unobservable", &dfg);
+        endOfStage("removeUnobservable", dfg, {});
 
         // Synthesize DfgLogic vertices
         V3DfgPasses::synthesize(dfg, m_ctx);
-        endOfStage("synthesize", &dfg);
+        endOfStage("synthesize", dfg, {});
 
         // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
         // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
         // small cycles.
         std::vector<std::unique_ptr<DfgGraph>> cyclicComps = dfg.extractCyclicComponents("cyclic");
-        endOfStage("extract-cyclic");
+        endOfStage("extractCyclic", dfg, cyclicComps);
 
         // Attempt to convert cyclic components into acyclic ones
         std::vector<std::unique_ptr<DfgGraph>> madeAcyclicComponents;
@@ -330,27 +347,46 @@ class DataflowOptimize final {
         }
         // Merge those that were made acyclic back to the graph, this enables optimizing more
         dfg.mergeGraphs(std::move(madeAcyclicComponents));
-        endOfStage("break-cycles");
+        endOfStage("breakCycles", dfg, cyclicComps);
 
         // Split the acyclic DFG into [weakly] connected components
         std::vector<std::unique_ptr<DfgGraph>> acyclicComps = dfg.splitIntoComponents("acyclic");
         UASSERT(dfg.size() == 0, "DfgGraph should have become empty");
-        endOfStage("split-acyclic");
+        endOfStage("splitAcyclic", dfg, acyclicComps);
 
         // Optimize each acyclic component
-        for (const std::unique_ptr<DfgGraph>& component : acyclicComps) {
-            V3DfgPasses::optimize(*component, m_ctx);
+        for (auto& cp : acyclicComps) V3DfgPasses::inlineVars(*cp);
+        endOfStage("inlineVars", dfg, acyclicComps);
+        for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext0);
+        endOfStage("cse0", dfg, acyclicComps);
+        for (auto& cp : acyclicComps) V3DfgPasses::binToOneHot(*cp, m_ctx.m_binToOneHotContext);
+        endOfStage("binToOneHot", dfg, acyclicComps);
+        for (auto& cp : acyclicComps) V3DfgPasses::peephole(*cp, m_ctx.m_peepholeContext);
+        endOfStage("peephole", dfg, acyclicComps);
+        for (auto& cp : acyclicComps) V3DfgPasses::pushDownSels(*cp, m_ctx.m_pushDownSelsContext);
+        endOfStage("pushDownSels", dfg, acyclicComps);
+        for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext1);
+        endOfStage("cse1", dfg, acyclicComps);
+
+        // Accumulate patterns for reporting
+        if (v3Global.opt.stats()) {
+            {
+                V3DfgPatternStats patternStats;
+                for (auto& cp : acyclicComps) patternStats.accumulate(*cp);
+            }
+            endOfStage("patterns");
         }
+
         // Merge everything back under the main DFG
         dfg.mergeGraphs(std::move(acyclicComps));
         dfg.mergeGraphs(std::move(cyclicComps));
-        endOfStage("optimize", &dfg);
+        endOfStage("optimized", dfg, {});
 
         // Regularize the graph after merging it all back together so all
         // references are known and we only need to iterate the Ast once
         // to replace redundant variables.
         V3DfgPasses::regularize(dfg, m_ctx.m_regularizeContext);
-        endOfStage("regularize", &dfg);
+        endOfStage("regularize", dfg, {});
     }
 
     void removeNeverActives(AstNetlist* netlistp) {
@@ -372,7 +408,6 @@ class DataflowOptimize final {
     }
 
     DataflowOptimize(AstNetlist* netlistp) {
-
         // Mark interfaces that might be referenced by a virtual interface
         if (v3Global.hasVirtIfaces()) {
             netlistp->typeTablep()->foreach([](const AstIfaceRefDType* nodep) {
@@ -380,25 +415,26 @@ class DataflowOptimize final {
                 nodep->ifaceViaCellp()->setHasVirtualRef();
             });
         }
-
         // Mark variables with external references
         markExternallyReferencedVariables(netlistp);
-
+        // Dump stage stats
+        endOfStage("init");
         // Post V3Scope application. Run on whole netlist.
         UINFO(4, "Applying DFG optimization to entire netlist");
         // Build the DFG of the entire netlist
         const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*netlistp, m_ctx);
-        endOfStage("ast-to-dfg", dfgp.get());
+        endOfStage("astToDfg", *dfgp, {});
         // Actually process the graph
         optimize(*dfgp);
         // Convert back to Ast
         V3DfgPasses::dfgToAst(*dfgp, m_ctx);
-        endOfStage("dfg-to-ast", dfgp.get());
+        endOfStage("dfgToAst", *dfgp, {});
         // Some sentrees might have become constant, remove them
         removeNeverActives(netlistp);
-
         // Reset interned types so the corresponding Ast types can be garbage collected
         DfgDataType::reset();
+        // Dump stage stats
+        endOfStage("fini");
     }
 
 public:

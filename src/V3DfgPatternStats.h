@@ -18,6 +18,7 @@
 #define VERILATOR_V3DFGPATTERNSTATS_H_
 
 #include "V3Dfg.h"
+#include "V3File.h"
 
 #include <algorithm>
 #include <map>
@@ -149,24 +150,6 @@ class V3DfgPatternStats final {
         return deep;
     }
 
-public:
-    V3DfgPatternStats() = default;
-
-    void accumulate(const DfgGraph& dfg) {
-        dfg.forEachVertex([&](const DfgVertex& vtx) {
-            for (uint32_t i = MIN_PATTERN_DEPTH; i <= MAX_PATTERN_DEPTH; ++i) {
-                std::ostringstream ss;
-                if (render(ss, vtx, i)) m_patterCounts[i][ss.str()] += 1;
-                m_internedConsts.clear();
-                m_internedVars.clear();
-                m_internedSelLsbs.clear();
-                m_internedWordWidths.clear();
-                m_internedWideWidths.clear();
-                m_internedVertices.clear();
-            }
-        });
-    }
-
     void dump(std::ostream& os) {
         using Line = std::pair<std::string, size_t>;
         for (uint32_t i = MIN_PATTERN_DEPTH; i <= MAX_PATTERN_DEPTH; ++i) {
@@ -193,6 +176,33 @@ public:
             // Trailing new-line to separate sections
             os << '\n';
         }
+    }
+
+public:
+    V3DfgPatternStats() = default;
+    ~V3DfgPatternStats() {
+        // File to dump to
+        const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                     + "__stats_dfg_patterns.txt";
+        // Open, write, close
+        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
+        if (ofp->fail()) v3fatal("Can't write file: " << filename);
+        dump(*ofp);
+    }
+
+    void accumulate(const DfgGraph& dfg) {
+        dfg.forEachVertex([&](const DfgVertex& vtx) {
+            for (uint32_t i = MIN_PATTERN_DEPTH; i <= MAX_PATTERN_DEPTH; ++i) {
+                std::ostringstream ss;
+                if (render(ss, vtx, i)) m_patterCounts[i][ss.str()] += 1;
+                m_internedConsts.clear();
+                m_internedVars.clear();
+                m_internedSelLsbs.clear();
+                m_internedWordWidths.clear();
+                m_internedWideWidths.clear();
+                m_internedVertices.clear();
+            }
+        });
     }
 };
 
