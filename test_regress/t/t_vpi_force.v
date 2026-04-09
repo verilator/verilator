@@ -140,6 +140,9 @@ typedef enum byte {
   logic         onebit     `PUBLIC_FORCEABLE; // CData
   logic [ 31:0] intval     `PUBLIC_FORCEABLE; // IData
 
+  // Force with vpiScalarVal
+  logic         scalarbit  `PUBLIC_FORCEABLE; // CData
+
   // Force with vpiVectorVal
   logic [  7:0] vectorC    `PUBLIC_FORCEABLE; // CData
   logic [ 61:0] vectorQ    `PUBLIC_FORCEABLE; // QData
@@ -218,6 +221,9 @@ typedef enum byte {
   wire         onebitContinuously     `PUBLIC_FORCEABLE; // CData
   wire [ 31:0] intvalContinuously     `PUBLIC_FORCEABLE; // IData
 
+  // Force with vpiScalarVal
+  wire         scalarbitContinuously  `PUBLIC_FORCEABLE; // CData
+
   // Force with vpiVectorVal
   wire [  7:0] vectorCContinuously    `PUBLIC_FORCEABLE; // CData
   wire [ 61:0] vectorQContinuously    `PUBLIC_FORCEABLE; // QData
@@ -292,6 +298,8 @@ typedef enum byte {
 
     onebit <= 1;
     intval <= 32'hAAAAAAAA;
+
+    scalarbit <= 1;
 
     vectorC <= 8'hAA;
     vectorQ <= 62'h2AAAAAAA_AAAAAAAA;
@@ -368,6 +376,8 @@ typedef enum byte {
   assign onebitContinuously = 1;
   assign intvalContinuously = 32'hAAAAAAAA;
 
+  assign scalarbitContinuously = 1;
+
   assign vectorCContinuously = 8'hAA;
   assign vectorQContinuously = 62'h2AAAAAAA_AAAAAAAA;
   assign vectorWContinuously = 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA;
@@ -442,6 +452,7 @@ typedef enum byte {
     force forcedNonForceable = 8'h55;
     force onebit = 0;
     force intval = 32'h55555555;
+    force scalarbit = 0;
     force vectorC = 8'h55;
     force vectorQ = 62'h15555555_55555555;
     force vectorW = 128'h55555555_55555555_55555555_55555555;
@@ -503,6 +514,7 @@ typedef enum byte {
     force forcedNonForceableContinuously = 8'h55;
     force onebitContinuously = 0;
     force intvalContinuously = 32'h55555555;
+    force scalarbitContinuously = 0;
     force vectorCContinuously = 8'h55;
     force vectorQContinuously = 62'h15555555_55555555;
     force vectorWContinuously = 128'h55555555_55555555_55555555_55555555;
@@ -880,6 +892,7 @@ typedef enum byte {
     release forcedNonForceable;
     release onebit;
     release intval;
+    release scalarbit;
     release vectorC;
     release vectorQ;
     release vectorW;
@@ -919,6 +932,7 @@ typedef enum byte {
     release forcedNonForceableContinuously;
     release onebitContinuously;
     release intvalContinuously;
+    release scalarbitContinuously;
     release vectorCContinuously;
     release vectorQContinuously;
     release vectorWContinuously;
@@ -1251,6 +1265,7 @@ typedef enum byte {
     `checkh(forcedNonForceableContinuously, 8'h55);
     `checkh(onebitContinuously, 0);
     `checkh(intvalContinuously, 32'h55555555);
+    `checkh(scalarbitContinuously, 0);
     `checkh(vectorCContinuously, 8'h55);
     `checkh(vectorQContinuously, 62'h15555555_55555555);
     `checkh(vectorWContinuously, 128'h55555555_55555555_55555555_55555555);
@@ -1318,6 +1333,7 @@ typedef enum byte {
     `checkh(forcedNonForceable, 8'h55);
     `checkh(onebit, 0);
     `checkh(intval, 32'h55555555);
+    `checkh(scalarbit, 0);
     `checkh(vectorC, 8'h55);
     `checkh(vectorQ, 62'h15555555_55555555);
     `checkh(vectorW, 128'h55555555_55555555_55555555_55555555);
@@ -1384,6 +1400,7 @@ typedef enum byte {
     `checkh(forcedNonForceableContinuously, 8'hAA);
     `checkh(onebitContinuously, 1);
     `checkh(intvalContinuously, 32'hAAAAAAAA);
+    `checkh(scalarbitContinuously, 1);
     `checkh(vectorCContinuously, 8'hAA);
     `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
@@ -1682,6 +1699,7 @@ typedef enum byte {
     `checkh(forcedNonForceable, 8'hAA);
     `checkh(onebit, 1);
     `checkh(intval, 32'hAAAAAAAA);
+    `checkh(scalarbit, 1);
     `checkh(vectorC, 8'hAA);
     `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
@@ -2633,6 +2651,7 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
 
     $display("onebit: %x", onebit);
     $display("intval: %x", intval);
+    $display("scalarbit: %x", scalarbit);
     $display("vectorC: %x", vectorC);
     $display("vectorQ: %x", vectorQ);
     $display("vectorW: %x", vectorW);
@@ -2671,6 +2690,7 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("forcedNonForceableContinuously: %x", forcedNonForceableContinuously);
     $display("onebitContinuously: %x", onebitContinuously);
     $display("intvalContinuously: %x", intvalContinuously);
+    $display("scalarbitContinuously: %x", scalarbitContinuously);
     $display("vectorCContinuously: %x", vectorCContinuously);
     $display("vectorQContinuously: %x", vectorQContinuously);
     $display("vectorWContinuously: %x", vectorWContinuously);
