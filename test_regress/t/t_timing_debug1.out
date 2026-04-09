@@ -4159,6 +4159,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
