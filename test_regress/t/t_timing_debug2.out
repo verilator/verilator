@@ -1666,6 +1666,7 @@
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aClkClass::__VnoInFunc_flip
 -V{t#,#}+    Vt_timing_debug2___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers_vec__act
+-V{t#,#}         No suspended processes waiting for dynamic trigger evaluation
 -V{t#,#}+    Vt_timing_debug2___024root___timing_ready
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
@@ -1680,6 +1681,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_clear__act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers_vec__act
+-V{t#,#}         No suspended processes waiting for dynamic trigger evaluation
 -V{t#,#}+    Vt_timing_debug2___024root___timing_ready
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
