@@ -14,13 +14,10 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:110:26: Unsupported: sequence argument data type
   110 |   sequence p_arg_seqence(sequence inseq);
       |                          ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:115:5: Unsupported: first_match (in sequence expression)
-  115 |     first_match (a);
-      |     ^~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:118:5: Unsupported: first_match (in sequence expression)
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:118:5: Unsupported: first_match with sequence_match_items
   118 |     first_match (a, res0 = 1);
       |     ^~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:121:5: Unsupported: first_match (in sequence expression)
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:121:5: Unsupported: first_match with sequence_match_items
   121 |     first_match (a, res0 = 1, res1 = 2);
       |     ^~~~~~~~~~~
 %Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:124:9: Ignoring unsupported: cover sequence
