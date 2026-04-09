@@ -30,27 +30,13 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-template <bool T_Scoped>
 class AstToDfgAddAstRefs final : public VNVisitorConst {
-    // TYPES
-    using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
-
     // STATE
     DfgGraph& m_dfg;  // The graph being processed
-    // Function to get the DfgVertexVar for a Variable
-    const std::function<DfgVertexVar*(Variable*)> m_getVarVertex;
+    // Function to get the DfgVertexVar for a AstVarScope
+    const std::function<DfgVertexVar*(AstVarScope*)> m_getVarVertex;
     bool m_inSenItem = false;  // Inside an AstSenItem
     bool m_inLoop = false;  // Inside an AstLoop
-
-    // METHODS
-    static Variable* getTarget(const AstVarRef* refp) {
-        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            return reinterpret_cast<Variable*>(refp->varScopep());
-        } else {
-            return reinterpret_cast<Variable*>(refp->varp());
-        }
-    }
 
     // VISITORS
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -71,12 +57,12 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
         // Disguised hierarchical reference handled as external reference, ignore
         if (nodep->classOrPackagep()) return;
         // If target is not supported, ignore
-        Variable* const tgtp = getTarget(nodep);
-        if (!V3Dfg::isSupported(tgtp)) return;
+        AstVarScope* const vscp = nodep->varScopep();
+        if (!V3Dfg::isSupported(vscp)) return;
         // V3Dfg::isSupported should reject vars with READWRITE references
-        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Variable with READWRITE ref not rejected");
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "AstVarScope with READWRITE ref not rejected");
         // Get target variable vergtex, ignore if not given one
-        DfgVertexVar* const varp = m_getVarVertex(tgtp);
+        DfgVertexVar* const varp = m_getVarVertex(vscp);
         if (!varp) return;
         // Create Ast reference vertices
         if (nodep->access().isReadOnly()) {
@@ -85,11 +71,11 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
             return;
         }
         // Mark as written from non-DFG logic
-        DfgVertexVar::setHasModWrRefs(tgtp);
+        DfgVertexVar::setHasModWrRefs(vscp);
     }
 
     AstToDfgAddAstRefs(DfgGraph& dfg, AstNode* nodep,
-                       std::function<DfgVertexVar*(Variable*)> getVarVertex)
+                       std::function<DfgVertexVar*(AstVarScope*)> getVarVertex)
         : m_dfg{dfg}
         , m_getVarVertex{getVarVertex} {
         iterateConst(nodep);
@@ -97,30 +83,21 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
 
 public:
     static void apply(DfgGraph& dfg, AstNode* nodep,
-                      std::function<DfgVertexVar*(Variable*)> getVarVertex) {
+                      std::function<DfgVertexVar*(AstVarScope*)> getVarVertex) {
         AstToDfgAddAstRefs{dfg, nodep, getVarVertex};
     }
 };
 
 void V3DfgPasses::addAstRefs(DfgGraph& dfg, AstNode* nodep,
-                             std::function<DfgVertexVar*(AstNode*)> getVarVertex) {
-    if (dfg.modulep()) {
-        AstToDfgAddAstRefs</* T_Scoped: */ false>::apply(dfg, nodep, getVarVertex);
-    } else {
-        AstToDfgAddAstRefs</* T_Scoped: */ true>::apply(dfg, nodep, getVarVertex);
-    }
+                             std::function<DfgVertexVar*(AstVarScope*)> getVarVertex) {
+    AstToDfgAddAstRefs::apply(dfg, nodep, getVarVertex);
 }
 
-template <bool T_Scoped>
 class AstToDfgVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar/AstVarScope::user2() -> DfgVertexVar* : the corresponding variable vertex
-    // AstVar/AstVarScope::user3() -> bool : Already gathered - used fine grained below
+    // AstVarScope::user2() -> DfgVertexVar* : the corresponding variable vertex
+    // AstVarScope::user3() -> bool : Already gathered - used fine grained below
     const VNUser2InUse m_user2InUse;
-
-    // TYPES
-    using RootType = std::conditional_t<T_Scoped, AstNetlist, AstModule>;
-    using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
 
     // STATE
     DfgGraph& m_dfg;  // The graph being built
@@ -128,36 +105,15 @@ class AstToDfgVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // The current scope, iff T_Scoped
 
     // METHODS
-    static Variable* getTarget(const AstVarRef* refp) {
-        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            return reinterpret_cast<Variable*>(refp->varScopep());
-        } else {
-            return reinterpret_cast<Variable*>(refp->varp());
-        }
-    }
-
-    std::unique_ptr<std::vector<Variable*>> getLiveVariables(const CfgGraph& cfg) {
-        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            std::unique_ptr<std::vector<AstVarScope*>> result = V3Cfg::liveVarScopes(cfg);
-            const auto resultp = reinterpret_cast<std::vector<Variable*>*>(result.release());
-            return std::unique_ptr<std::vector<Variable*>>{resultp};
-        } else {
-            std::unique_ptr<std::vector<AstVar*>> result = V3Cfg::liveVars(cfg);
-            const auto resultp = reinterpret_cast<std::vector<Variable*>*>(result.release());
-            return std::unique_ptr<std::vector<Variable*>>{resultp};
-        }
-    }
 
     // Mark variables referenced under node
     void markReferenced(AstNode* nodep) {
-        V3DfgPasses::addAstRefs(m_dfg, nodep, [this](AstNode* varp) {  //
-            return getVarVertex(static_cast<Variable*>(varp));
+        V3DfgPasses::addAstRefs(m_dfg, nodep, [this](AstVarScope* vscp) {  //
+            return getVarVertex(vscp);
         });
     }
 
-    DfgVertexVar* getVarVertex(Variable* varp) {
+    DfgVertexVar* getVarVertex(AstVarScope* varp) {
         if (!varp->user2p()) {
             // TODO: fix this up when removing the different flavours of DfgVar
             const AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
@@ -175,14 +131,11 @@ class AstToDfgVisitor final : public VNVisitor {
     std::unique_ptr<std::vector<DfgVertexVar*>> gatherWritten(const AstNode* nodep) {
         const VNUser3InUse user3InUse;
         std::unique_ptr<std::vector<DfgVertexVar*>> resp{new std::vector<DfgVertexVar*>{}};
-        // We can ignore AstVarXRef here. The only thing we can do with DfgLogic is
-        // synthesize it into regular vertices, which will fail on a VarXRef at that point.
-        const bool abort = nodep->exists([&](const AstNodeVarRef* vrefp) -> bool {
-            if (VN_IS(vrefp, VarXRef)) return true;
-            if (vrefp->access().isReadOnly()) return false;
-            Variable* const varp = getTarget(VN_AS(vrefp, VarRef));
-            if (!V3Dfg::isSupported(varp)) return true;
-            if (!varp->user3SetOnce()) resp->emplace_back(getVarVertex(varp));
+        const bool abort = nodep->exists([&](const AstVarRef* refp) -> bool {
+            if (refp->access().isReadOnly()) return false;
+            AstVarScope* const vscp = refp->varScopep();
+            if (!V3Dfg::isSupported(vscp)) return true;
+            if (!vscp->user3SetOnce()) resp->emplace_back(getVarVertex(vscp));
             return false;
         });
         if (abort) {
@@ -197,14 +150,11 @@ class AstToDfgVisitor final : public VNVisitor {
     std::unique_ptr<std::vector<DfgVertexVar*>> gatherRead(const AstNode* nodep) {
         const VNUser3InUse user3InUse;
         std::unique_ptr<std::vector<DfgVertexVar*>> resp{new std::vector<DfgVertexVar*>{}};
-        // We can ignore AstVarXRef here. The only thing we can do with DfgLogic is
-        // synthesize it into regular vertices, which will fail on a VarXRef at that point.
-        const bool abort = nodep->exists([&](const AstNodeVarRef* vrefp) -> bool {
-            if (VN_IS(vrefp, VarXRef)) return true;
-            if (vrefp->access().isWriteOnly()) return false;
-            Variable* const varp = getTarget(VN_AS(vrefp, VarRef));
-            if (!V3Dfg::isSupported(varp)) return true;
-            if (!varp->user3SetOnce()) resp->emplace_back(getVarVertex(varp));
+        const bool abort = nodep->exists([&](const AstVarRef* refp) -> bool {
+            if (refp->access().isWriteOnly()) return false;
+            AstVarScope* const vscp = refp->varScopep();
+            if (!V3Dfg::isSupported(vscp)) return true;
+            if (!vscp->user3SetOnce()) resp->emplace_back(getVarVertex(vscp));
             return false;
         });
         if (abort) {
@@ -218,7 +168,7 @@ class AstToDfgVisitor final : public VNVisitor {
     // Return nullptr if any are not supported.
     std::unique_ptr<std::vector<DfgVertexVar*>> gatherLive(const CfgGraph& cfg) {
         // Run analysis
-        std::unique_ptr<std::vector<Variable*>> varps = getLiveVariables(cfg);
+        std::unique_ptr<std::vector<AstVarScope*>> varps = V3Cfg::liveVarScopes(cfg);
         if (!varps) {
             ++m_ctx.m_nonRepLive;
             return nullptr;
@@ -228,7 +178,7 @@ class AstToDfgVisitor final : public VNVisitor {
         const VNUser3InUse user3InUse;
         std::unique_ptr<std::vector<DfgVertexVar*>> resp{new std::vector<DfgVertexVar*>{}};
         resp->reserve(varps->size());
-        for (Variable* const varp : *varps) {
+        for (AstVarScope* const varp : *varps) {
             if (!V3Dfg::isSupported(varp)) {
                 ++m_ctx.m_nonRepVar;
                 return nullptr;
@@ -347,7 +297,7 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // CONSTRUCTOR
-    AstToDfgVisitor(DfgGraph& dfg, RootType& root, V3DfgAstToDfgContext& ctx)
+    AstToDfgVisitor(DfgGraph& dfg, AstNetlist& root, V3DfgAstToDfgContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
         iterate(&root);
@@ -356,7 +306,7 @@ class AstToDfgVisitor final : public VNVisitor {
     VL_UNMOVABLE(AstToDfgVisitor);
 
 public:
-    static void apply(DfgGraph& dfg, RootType& root, V3DfgAstToDfgContext& ctx) {
+    static void apply(DfgGraph& dfg, AstNetlist& root, V3DfgAstToDfgContext& ctx) {
         // Convert all logic under 'root'
         AstToDfgVisitor{dfg, root, ctx};
         // Remove unread and undriven variables (created when something failed to convert)
@@ -371,14 +321,8 @@ public:
     }
 };
 
-std::unique_ptr<DfgGraph> V3DfgPasses::astToDfg(AstModule& module, V3DfgContext& ctx) {
-    DfgGraph* const dfgp = new DfgGraph{&module, module.name()};
-    AstToDfgVisitor</* T_Scoped: */ false>::apply(*dfgp, module, ctx.m_ast2DfgContext);
-    return std::unique_ptr<DfgGraph>{dfgp};
-}
-
 std::unique_ptr<DfgGraph> V3DfgPasses::astToDfg(AstNetlist& netlist, V3DfgContext& ctx) {
-    DfgGraph* const dfgp = new DfgGraph{nullptr, "netlist"};
-    AstToDfgVisitor</* T_Scoped: */ true>::apply(*dfgp, netlist, ctx.m_ast2DfgContext);
+    DfgGraph* const dfgp = new DfgGraph{"netlist"};
+    AstToDfgVisitor::apply(*dfgp, netlist, ctx.m_ast2DfgContext);
     return std::unique_ptr<DfgGraph>{dfgp};
 }

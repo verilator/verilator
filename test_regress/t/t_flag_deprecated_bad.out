@@ -4,4 +4,7 @@
 %Warning-DEPRECATED: Option order-clock-delay is deprecated and has no effect.
 %Warning-DEPRECATED: Option '--clk' is deprecated and has no effect.
 %Warning-DEPRECATED: Option '--no-clk' is deprecated and has no effect.
+%Warning-DEPRECATED: Option '-fno-dfg-pre-inline' is deprecated and has no effect
+%Warning-DEPRECATED: Option '-fno-dfg-post-inline' is deprecated and has no effect
+%Warning-DEPRECATED: Option '-fno-dfg-scoped' is deprecated, use '-fno-dfg' instead.
 %Error: Exiting due to

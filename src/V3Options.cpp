@@ -1455,11 +1455,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
-    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
-        m_fDfgPreInline = flag;
-        m_fDfgPostInline = flag;
-        m_fDfgScoped = flag;
-    });
+    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
@@ -1468,11 +1464,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fno-dfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.emplace(optp);
     });
-    DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
-    DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdfg-pre-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-pre-inline' is deprecated and has no effect");
+    });
+    DECL_OPTION("-fdfg-post-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-post-inline' is deprecated and has no effect");
+    });
     DECL_OPTION("-fdfg-push-down-sels", FOnOff, &m_fDfgPushDownSels);
-    DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
     DECL_OPTION("-fdfg-synthesize-all", FOnOff, &m_fDfgSynthesizeAll);
+    DECL_OPTION("-fdfg-scoped", CbFOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-scoped' is deprecated, use '-fno-dfg' instead.");
+        m_fDfg = flag;
+    });
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -2351,9 +2354,7 @@ void V3Options::optimize(int level) {
     m_fConst = flag;
     m_fConstBitOpTree = flag;
     m_fDedupe = flag;
-    m_fDfgPreInline = flag;
-    m_fDfgPostInline = flag;
-    m_fDfgScoped = flag;
+    m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fExpand = flag;
