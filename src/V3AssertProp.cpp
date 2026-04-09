@@ -195,11 +195,6 @@ class AssertPropConsRepVisitor final : public VNVisitor {
             bp->addStmtsp(setDone());
             return bp;
         };
-        auto sampled = [&](AstNodeExpr* ep) {
-            AstSampled* const sp = new AstSampled{flp, ep};
-            sp->dtypeFrom(ep);
-            return sp;
-        };
 
         // Loop body: ##1 delay, then branch on count vs min
         AstLoop* const loopp = new AstLoop{flp};
@@ -217,13 +212,13 @@ class AssertPropConsRepVisitor final : public VNVisitor {
                           failStmts()});
         }
         AstIf* const tryNextp = new AstIf{
-            flp, sampled(nextExprp), passStmts(),
-            new AstIf{flp, sampled(repExprp->cloneTreePure(false)), continueBlockp, failStmts()}};
+            flp, nextExprp, passStmts(),
+            new AstIf{flp, repExprp->cloneTreePure(false), continueBlockp, failStmts()}};
 
         if (r.minN > 0) {
             // When cnt < minN: still accumulating -- must see expr to continue
             AstIf* const accumulatep
-                = new AstIf{flp, sampled(repExprp->cloneTreePure(false)), incrCnt(), failStmts()};
+                = new AstIf{flp, repExprp->cloneTreePure(false), incrCnt(), failStmts()};
             loopp->addStmtsp(
                 new AstIf{flp,
                           new AstGte{flp, cntRef(VAccess::READ),
@@ -247,14 +242,14 @@ class AssertPropConsRepVisitor final : public VNVisitor {
                 // Zero-repetition path: skip directly to ##1 and check next
                 AstBegin* const skipBlockp = new AstBegin{flp, "", nullptr, true};
                 skipBlockp->addStmtsp(delayp->cloneTree(false));
-                skipBlockp->addStmtsp(new AstIf{flp, sampled(nextExprp->cloneTreePure(false)),
-                                                passStmts(), failStmts()});
+                skipBlockp->addStmtsp(
+                    new AstIf{flp, nextExprp->cloneTreePure(false), passStmts(), failStmts()});
                 return skipBlockp;
             }
             return new AstPExprClause{flp, false};
         }();
 
-        AstIf* const topIfp = new AstIf{flp, sampled(repExprp), entryBlockp, elsep};
+        AstIf* const topIfp = new AstIf{flp, repExprp, entryBlockp, elsep};
 
         // Wrap everything in a PExpr with cnt and done as locals
         AstBegin* const bodyp = new AstBegin{flp, "", cntVarp, true};
@@ -466,11 +461,9 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 auto& exprs = it->second;
 
                 // Combine all expressions at this cycle with LogAnd
-                AstNodeExpr* condp = new AstSampled{flp, exprs[0]};
-                condp->dtypeSetBit();
+                AstNodeExpr* condp = exprs[0];
                 for (size_t i = 1; i < exprs.size(); ++i) {
-                    AstNodeExpr* const rp = new AstSampled{flp, exprs[i]};
-                    rp->dtypeSetBit();
+                    AstNodeExpr* const rp = exprs[i];
                     condp = new AstLogAnd{flp, condp, rp};
                     condp->dtypeSetBit();
                 }
@@ -572,23 +565,22 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 const int brMaxCycle = (entry.branchId == 0) ? br0MaxCycle : br1MaxCycle;
                 const bool isLast = (cycle == brMaxCycle);
 
-                AstNodeExpr* const sampledp = new AstSampled{flp, entry.exprp->cloneTree(false)};
-                sampledp->dtypeSetBit();
+                AstNodeExpr* const exprp = entry.exprp->cloneTree(false);
                 AstNodeExpr* const alivep
                     = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
                 alivep->dtypeSetBit();
 
                 if (isLast) {
                     // Last check: alive && passes -> pass
-                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, sampledp};
+                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, exprp};
                     passCond->dtypeSetBit();
                     cycleBlock->addStmtsp(new AstIf{flp, passCond, makePass()});
                     // alive && fails -> dead
                     AstNodeExpr* const alive2p
                         = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
                     alive2p->dtypeSetBit();
-                    AstNodeExpr* const failCond = new AstLogAnd{
-                        flp, alive2p, new AstLogNot{flp, sampledp->cloneTree(false)}};
+                    AstNodeExpr* const failCond
+                        = new AstLogAnd{flp, alive2p, new AstLogNot{flp, exprp->cloneTree(false)}};
                     failCond->dtypeSetBit();
                     cycleBlock->addStmtsp(
                         new AstIf{flp, failCond,
@@ -597,7 +589,7 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 } else {
                     // Non-last: alive && fails -> dead
                     AstNodeExpr* const failCond
-                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, sampledp}};
+                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, exprp}};
                     failCond->dtypeSetBit();
                     cycleBlock->addStmtsp(
                         new AstIf{flp, failCond,
@@ -888,10 +880,8 @@ class AssertPropTransformer final {
         AstBegin* const passsp = new AstBegin{nodep->fileline(), "", nullptr, true};
         AstNode* const failsp = vtxp->outEdges().backp()->top()->as<DfaStmtVertex>()->nodep();
 
-        AstSampled* const sampledp
-            = new AstSampled{nodep->fileline(), VN_AS(vtxp->nodep(), NodeExpr)};
-        sampledp->dtypeFrom(vtxp->nodep());
-        AstIf* const ifp = new AstIf{nodep->fileline(), sampledp, passsp, failsp};
+        AstNodeExpr* const exprp = VN_AS(vtxp->nodep(), NodeExpr);
+        AstIf* const ifp = new AstIf{nodep->fileline(), exprp, passsp, failsp};
         m_current->addStmtsp(ifp);
         m_current = passsp;
         return processEdge(vtxp->outEdges().frontp());
@@ -1101,10 +1091,7 @@ class RangeDelayExpander final : public VNVisitor {
     AstNode* makeRangeCheckBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp,
                                 AstVar* failVarp, AstNodeExpr* exprp, AstNode* matchActionp,
                                 bool isUnbounded) {
-        if (isUnbounded) {
-            return new AstIf{flp, new AstSampled{flp, exprp->cloneTree(false)}, matchActionp,
-                             nullptr};
-        }
+        if (isUnbounded) return new AstIf{flp, exprp->cloneTree(false), matchActionp, nullptr};
         AstBegin* const timeoutp = new AstBegin{flp, "", nullptr, true};
         timeoutp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, failVarp, VAccess::WRITE},
                                           new AstConst{flp, AstConst::BitTrue{}}});
@@ -1116,8 +1103,7 @@ class RangeDelayExpander final : public VNVisitor {
         AstIf* const failOrRetryp = new AstIf{
             flp, new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
             timeoutp, decrementp};
-        return new AstIf{flp, new AstSampled{flp, exprp->cloneTree(false)}, matchActionp,
-                         failOrRetryp};
+        return new AstIf{flp, exprp->cloneTree(false), matchActionp, failOrRetryp};
     }
 
     AstNode* buildFsmBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp, AstVar* failVarp,
@@ -1186,8 +1172,7 @@ class RangeDelayExpander final : public VNVisitor {
                                                new AstConst{flp, AstConst::BitTrue{}}});
                 failp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, stateVarp, VAccess::WRITE},
                                                new AstConst{flp, 0}});
-                AstIf* const bodyp = new AstIf{
-                    flp, new AstSampled{flp, step.exprp->cloneTree(false)}, passp, failp};
+                AstIf* const bodyp = new AstIf{flp, step.exprp->cloneTree(false), passp, failp};
                 fsmChainp = chainState(flp, fsmChainp, stateVarp, bounds[i].checkState, bodyp);
             }
         }
@@ -1199,12 +1184,12 @@ class RangeDelayExpander final : public VNVisitor {
         // Trigger = antecedent AND/OR first step expression
         AstNodeExpr* triggerp = nullptr;
         if (antExprp && firstStep.exprp) {
-            triggerp = new AstAnd{flp, new AstSampled{flp, antExprp->cloneTree(false)},
-                                  new AstSampled{flp, firstStep.exprp->cloneTree(false)}};
+            triggerp
+                = new AstAnd{flp, antExprp->cloneTree(false), firstStep.exprp->cloneTree(false)};
         } else if (antExprp) {
-            triggerp = new AstSampled{flp, antExprp->cloneTree(false)};
+            triggerp = antExprp->cloneTree(false);
         } else if (firstStep.exprp) {
-            triggerp = new AstSampled{flp, firstStep.exprp->cloneTree(false)};
+            triggerp = firstStep.exprp->cloneTree(false);
         }
 
         if (firstStep.isUnbounded && firstStep.rangeMin == 0 && steps.size() > 1) {
@@ -1215,8 +1200,7 @@ class RangeDelayExpander final : public VNVisitor {
             const int checkState = bounds[0].checkState;
             const int afterMatch = checkState + 1;
             const bool isTail = (steps.size() == 2 && nextStep.delay == 0);
-            AstNodeExpr* const immCheckp = new AstSampled{flp, nextStep.exprp->cloneTree(false)};
-            immCheckp->dtypeSetBit();
+            AstNodeExpr* const immCheckp = nextStep.exprp->cloneTree(false);
             AstNode* const immMatchp
                 = makeOnMatchAction(flp, stateVarp, cntVarp, isTail, afterMatch, nextStep.delay);
             AstNode* const toCheckp = makeStateTransition(flp, stateVarp, cntVarp, checkState, 0);
@@ -1350,15 +1334,12 @@ class RangeDelayExpander final : public VNVisitor {
         AstVar* const stateVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__state",
                                              nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         stateVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        stateVarp->noSample(true);
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__cnt",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        cntVarp->noSample(true);
         AstVar* const failVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__fail",
                                             nodep->findBasicDType(VBasicDTypeKwd::BIT)};
         failVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        failVarp->noSample(true);
 
         // Build FSM body
         AstNode* const fsmBodyp = buildFsmBody(flp, stateVarp, cntVarp, failVarp, steps, antExprp);
