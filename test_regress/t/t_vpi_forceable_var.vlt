@@ -1,0 +1,55 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Christian Hecken
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+forceable -module "t" -var "onebit"
+forceable -module "t" -var "twoone"
+// forceable -module "t" -var "LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND" // TODO: Causes Verilation error
+forceable -module "t" -var "rev"
+forceable -module "t" -var "count"
+forceable -module "t" -var "half_count"
+forceable -module "t" -var "delayed"
+forceable -module "t" -var "\\escaped_with_brackets[3]" // TODO: Does not set signal as forceable
+forceable -module "t" -var "text_byte"
+forceable -module "t" -var "text_half"
+forceable -module "t" -var "text_word"
+forceable -module "t" -var "text_long"
+forceable -module "t" -var "text"
+forceable -module "t" -var "big"
+forceable -module "t" -var "too_big"
+forceable -module "t" -var "bit1"
+forceable -module "t" -var "integer1"
+forceable -module "t" -var "byte1"
+forceable -module "t" -var "short1"
+forceable -module "t" -var "int1"
+forceable -module "t" -var "long1"
+forceable -module "t" -var "real1"
+forceable -module "t" -var "gen_sig"
+
+// forceable -module "sub" -var "subsig1" // TODO: Forceable signals break vpi_scan
+// forceable -module "sub" -var "subsig2" // TODO: Forceable signals break vpi_scan
+
+forceable -module "subsub" -var "subsig1"
+forceable -module "subsub" -var "subsig2"
+
+forceable -module "arr" -var "sig"
+forceable -module "arr" -var "rfr"
+forceable -module "arr" -var "\\escaped_sig[1]" // TODO: Does not set signal as forceable
+forceable -module "arr" -var "check"
+forceable -module "arr" -var "verbose"
+
+// The following signals have unpacked dimensions and are thus unsupported for forcing:
+// fourthreetwoone
+// quads
+// delayed_mem
+// mem_2d
+// mem_3d
+// multi_packed
+// negative_multi_packed
+// unpacked_only
+// some_mem
+
+// str1 is not set as forceable because strings cannot be forced.

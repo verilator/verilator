@@ -248,17 +248,10 @@ public:
 };
 
 //===========================================================================
-// Force control signals of a VerilatedVar
-
-struct VerilatedForceControlSignals final {
-    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
-    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
-};
-
-//===========================================================================
 // Verilator variable
 // Thread safety: Assume is constructed only with model, then any number of readers
 
+struct VerilatedForceControlSignals;
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
@@ -295,6 +288,15 @@ public:
     const VerilatedForceControlSignals* forceControlSignals() const {
         return m_forceControlSignals.get();
     }
+};
+
+//===========================================================================
+// Force control signals of a VerilatedVar
+
+struct VerilatedForceControlSignals final {
+    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
+    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
+    const VerilatedVar forceReadSignal;  // __VforceRd signal
 };
 
 #endif  // Guard
