@@ -1,7 +1,6 @@
-DFG 'post inline' patterns with depth 1
+DFG patterns with depth 1
             9 (CONCAT _A:1 _B:a):b
             8 (REDXOR _A:a):1
-            4 (ASTRD vA:a):a
             3 (NOT vA:a)*:a
             2 (AND _A:a _B:a):a
             1 (AND _A:a _B:a)*:a
@@ -17,7 +16,7 @@ DFG 'post inline' patterns with depth 1
             1 (SEL@0 _A:a):b
             1 (SEL@A _A:a):1
 
-DFG 'post inline' patterns with depth 2
+DFG patterns with depth 2
             6 (CONCAT (REDXOR _A:a):1 (CONCAT _B:1 _C:b):c):d
             2 (AND (NOT vA:a)*:a (NOT vB:a)*:a):a
             2 (REDXOR (AND _A:a _B:a):a):1
@@ -43,7 +42,7 @@ DFG 'post inline' patterns with depth 2
             1 (SEL@0 (REPLICATE _A:a cA:a)*:b):c
             1 (SEL@A (AND _A:a _B:a)*:a):1
 
-DFG 'post inline' patterns with depth 3
+DFG patterns with depth 3
             2 (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1
             1 (CONCAT (REDXOR (AND _A:a _B:a)*:a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e
             1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e
@@ -72,7 +71,7 @@ DFG 'post inline' patterns with depth 3
             1 (SEL@0 (REPLICATE (NOT _A:a):a cA:a)*:b):c
             1 (SEL@A (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
 
-DFG 'post inline' patterns with depth 4
+DFG patterns with depth 4
             1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e):f
             1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (SEL@0 _C:a):1 (CONCAT _D:1 _E:b):c):d):e):f
             1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1 (CONCAT (SEL@0 (AND _A:a _B:a)*:a):1 (CONCAT (REDXOR _C:b):1 (CONCAT _D:1 _E:c):d):e):b):f

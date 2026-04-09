@@ -32,8 +32,6 @@
 #include "V3DfgPasses.h"
 #include "V3UniqueNames.h"
 
-#include <unordered_map>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
@@ -92,34 +90,19 @@ AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeExpr*, AstNodeExpr*>(  //
 
 }  // namespace
 
-template <bool T_Scoped>
 class DfgToAstVisitor final : DfgVisitor {
     // NODE STATE
 
     // AstScope::user2p  // The combinational AstActive under this scope
     const VNUser2InUse m_user2InUse;
 
-    // TYPES
-    using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
-    using Container = std::conditional_t<T_Scoped, AstActive, AstNodeModule>;
-
     // STATE
-    AstModule* const m_modp;  // The parent/result module - This is nullptr when T_Scoped
     V3DfgDfgToAstContext& m_ctx;  // The context for stats
     AstNodeExpr* m_resultp = nullptr;  // The result node of the current traversal
     AstAlways* m_alwaysp = nullptr;  // Process to add assignments to, if have a default driver
-    Container* m_containerp = nullptr;  // The AstNodeModule or AstActive to insert assigns into
+    AstActive* m_activep = nullptr;  // The AstNodeModule or AstActive to insert assigns into
 
     // METHODS
-
-    static Variable* getNode(const DfgVertexVar* vtxp) {
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            return reinterpret_cast<Variable*>(vtxp->varScopep());
-        } else {
-            return reinterpret_cast<Variable*>(vtxp->varp());
-        }
-    }
-
     static AstActive* getCombActive(AstScope* scopep) {
         if (!scopep->user2p()) {
             // Try to find the existing combinational AstActive
@@ -173,7 +156,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
         // Otherwise create an AssignW
         AstAssignW* const ap = new AstAssignW{flp, lhsp, rhsp};
-        m_containerp->addStmtsp(new AstAlways{ap});
+        m_activep->addStmtsp(new AstAlways{ap});
     }
 
     void convertDriver(FileLine* flp, AstNodeExpr* lhsp, DfgVertex* driverp) {
@@ -234,11 +217,11 @@ class DfgToAstVisitor final : DfgVisitor {
     }  // LCOV_EXCL_STOP
 
     void visit(DfgVarPacked* vtxp) override {
-        m_resultp = new AstVarRef{vtxp->fileline(), getNode(vtxp), VAccess::READ};
+        m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
     }
 
     void visit(DfgVarArray* vtxp) override {
-        m_resultp = new AstVarRef{vtxp->fileline(), getNode(vtxp), VAccess::READ};
+        m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
     }
 
     void visit(DfgConst* vtxp) override {  //
@@ -264,8 +247,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // Constructor
     DfgToAstVisitor(DfgGraph& dfg, V3DfgDfgToAstContext& ctx)
-        : m_modp{dfg.modulep()}
-        , m_ctx{ctx} {
+        : m_ctx{ctx} {
         if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
 
         // Convert the graph back to combinational assignments. The graph must have been
@@ -283,24 +265,18 @@ class DfgToAstVisitor final : DfgVisitor {
 
             // Render variable assignments
             FileLine* const flp = vtx.driverFileLine() ? vtx.driverFileLine() : vtx.fileline();
-            AstVarRef* const lhsp = new AstVarRef{flp, getNode(&vtx), VAccess::WRITE};
+            AstVarRef* const lhsp = new AstVarRef{flp, vtx.vscp(), VAccess::WRITE};
 
-            VL_RESTORER(m_containerp);
-            if VL_CONSTEXPR_CXX17 (T_Scoped) {
-                // Add it to the scope holding the target variable
-                AstActive* const activep = getCombActive(vtx.varScopep()->scopep());
-                m_containerp = reinterpret_cast<Container*>(activep);
-            } else {
-                // Add it to the parent module of the DfgGraph
-                m_containerp = reinterpret_cast<Container*>(m_modp);
-            }
+            // Add it to the scope holding the target variable
+            VL_RESTORER(m_activep);
+            m_activep = getCombActive(vtx.vscp()->scopep());
 
             // If there is a default value, render all drivers under an AstAlways
             VL_RESTORER(m_alwaysp);
             if (DfgVertex* const defaultp = vtx.defaultp()) {
                 ++m_ctx.m_outputVariablesWithDefault;
                 m_alwaysp = new AstAlways{vtx.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr};
-                m_containerp->addStmtsp(m_alwaysp);
+                m_activep->addStmtsp(m_alwaysp);
                 // The default assignment needs to go first
                 createAssignment(vtx.fileline(), lhsp->cloneTreePure(false), defaultp);
             }
@@ -326,8 +302,6 @@ class DfgToAstVisitor final : DfgVisitor {
                 if (VN_IS(exprp, VarRef)) {
                     ++m_ctx.m_varRefsSubstituted;
                 } else {
-                    UASSERT_OBJ(!dfg.modulep(), &vtx,
-                                "Expressions should only be inlined on final scoped run");
                     ++m_ctx.m_expressionsInlined;
                 }
                 rVtxp->exprp()->replaceWith(exprp);
@@ -342,9 +316,5 @@ public:
 };
 
 void V3DfgPasses::dfgToAst(DfgGraph& dfg, V3DfgContext& ctx) {
-    if (dfg.modulep()) {
-        DfgToAstVisitor</* T_Scoped: */ false>::apply(dfg, ctx.m_dfg2AstContext);
-    } else {
-        DfgToAstVisitor</* T_Scoped: */ true>::apply(dfg, ctx.m_dfg2AstContext);
-    }
+    DfgToAstVisitor::apply(dfg, ctx.m_dfg2AstContext);
 }

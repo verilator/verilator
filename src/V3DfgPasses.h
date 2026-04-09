@@ -30,19 +30,16 @@ namespace V3DfgPasses {
 // Top level entry points
 //===========================================================================
 
-// Construct a DfGGraph representing the combinational logic in the given AstModule. The logic
-// that is represented by the graph is removed from the given AstModule. Returns the
-// constructed DfgGraph.
-std::unique_ptr<DfgGraph> astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
-
-// Same as above, but for the entire netlist, after V3Scope
+// Construct a DfGGraph representing the combinational logic in the netlist.
+// The logic that is represented by the graph is removed from the netlist.
+// Returns the constructed DfgGraph.
 std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
 
 // Add DfgVertexAst to the given DfgGraph for all references in the given AstNode.
-// The function 'getVarVertex' is used to get the DfgVertexVar for an AstVar/AstVarScope.
+// The function 'getVarVertex' is used to get the DfgVertexVar for an AstVarScope.
 // If it returns nullptr, the reference will be ignored.
 void addAstRefs(DfgGraph& dfg, AstNode* nodep,
-                std::function<DfgVertexVar*(AstNode*)> getVarVertex) VL_MT_DISABLED;
+                std::function<DfgVertexVar*(AstVarScope*)> getVarVertex) VL_MT_DISABLED;
 
 // Remove unobservable variabels and logic that drives only such variables
 void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
