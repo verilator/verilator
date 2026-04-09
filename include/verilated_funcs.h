@@ -2915,6 +2915,30 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
     return o
 
 // clang-format off
+static inline WDataOutP VL_FILL_W_0T(int obits, WDataOutP o) VL_MT_SAFE {
+    VL_C_END_(obits, 0);
+}
+static inline WDataOutP VL_FILL_W_1T(int obits, WDataOutP o) VL_MT_SAFE {
+    VL_MEMSET_ONES_W(o, VL_WORDS_I(obits));
+    return o;
+}
+static inline WDataOutP VL_FILL_W_0V(int obits, WDataOutP o) VL_MT_SAFE {
+    for (int i = VL_WORDS_I(obits) - 2; i > 0; i -= 2) o[i] = 0;
+    return o;
+}
+static inline WDataOutP VL_FILL_W_1V(int obits, WDataOutP o) VL_MT_SAFE {
+    for (int i = VL_WORDS_I(obits) - 2; i > 0; i -= 2) o[i] = ~0;
+    return o;
+}
+static inline WDataOutP VL_FILL_W_0X(int obits, WDataOutP o) VL_MT_SAFE {
+    for (int i = VL_WORDS_I(obits) - 1; i > 0; i -= 2) o[i] = 0;
+    VL_C_END_(obits, 0);
+}
+static inline WDataOutP VL_FILL_W_1X(int obits, WDataOutP o) VL_MT_SAFE {
+    for (int i = VL_WORDS_I(obits) - 1; i > 0; i -= 2) o[i] = ~0;
+    return o;
+}
+
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o, EData d0) VL_MT_SAFE {
     o[0] = d0;
     VL_C_END_(obits, 1);

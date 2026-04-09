@@ -632,6 +632,7 @@ public:
     V3Number& setAllBits0();
     V3Number& setAllBits1();
     V3Number& setValue1();
+    V3Number& setXZFromXZComplement(const V3Number&);
     // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
     V3Number& setMask(int nbits, int lsb = 0);
 
@@ -687,6 +688,8 @@ public:
     }
     bool isAllZ() const VL_MT_SAFE;
     bool isAllX() const VL_MT_SAFE;
+    bool isAll0() const VL_MT_SAFE;
+    bool isAll1() const VL_MT_SAFE;
     bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
@@ -713,6 +716,8 @@ public:
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
+    uint32_t edataWordFourstateValue(int eword) const;
+    uint32_t edataWordFourstateXZ(int eword) const;
     uint8_t dataByte(int byte) const;
     uint32_t countBits(const V3Number& ctrl) const;
     uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;

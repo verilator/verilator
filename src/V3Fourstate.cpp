@@ -1814,6 +1814,8 @@ class FourstateVisitor final : public VNVisitor {
                 return;
             }
             AstNodeAssign* const assignXZp = nodep->cloneTree(false);
+            nodep->fourstateComplementAssignment(assignXZp);
+            assignXZp->fourstateComplementAssignment(nodep);
             {
                 assignXZp->lhsp()->unlinkFrBack()->deleteTree();
                 assignXZp->rhsp()->unlinkFrBack()->deleteTree();
@@ -2440,6 +2442,20 @@ class FourstateShuffleVisitor final : public VNVisitor {
             if (nodep->fourstateXZPart()) idxp = new AstAdd{flp, idxp, new AstConst{flp, 1}};
             idxp = V3Const::constifyEdit(idxp);
             wselp->bitp(idxp);
+        }
+    }
+
+    void visit(AstNodeAssign* const nodep) override {
+        iterateChildren(nodep);
+        if (AstNodeAssign* const assignXZp = nodep->fourstateComplementAssignment()) {
+            if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
+                AstConst* const constXZp = VN_AS(assignXZp->rhsp(), Const);
+                UASSERT_OBJ(constp->width() == constXZp->width(), nodep,
+                            "Width of four-state complement is different than value part");
+                constp->num().setXZFromXZComplement(constXZp->num());
+                nodep->fourstateComplementAssignment(nullptr);
+                assignXZp->unlinkFrBack()->deleteTree();
+            }
         }
     }
 
