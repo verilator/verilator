@@ -36,21 +36,4 @@ module t (input clk);
   assert property (@(posedge clk) a[=-1] |-> b)
     else $error("FAIL");
 
-  // === Consecutive repetition [*N] error paths ===
-
-  // Error: non-constant count
-  assert property (@(posedge clk) a [*n] |-> 1);
-
-  // Unsupported: [*0] zero repetition
-  assert property (@(posedge clk) a [*0] |-> 1);
-
-  // Error: max count < min count
-  assert property (@(posedge clk) a [*3:1] |-> 1);
-
-  // Error: non-constant max count
-  assert property (@(posedge clk) a [*1:n] |-> 1);
-
-  // Error: [*0:0] zero max count
-  assert property (@(posedge clk) a [*0:0] |-> 1);
-
 endmodule

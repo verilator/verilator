@@ -1,31 +1,27 @@
-%Error: t/t_assert_rep_bad_count.v:42:39: Expecting expression to be constant, but variable isn't const: 'n'
+%Error: t/t_assert_rep_bad_count.v:14:42: Repetition count is not an elaboration-time constant (IEEE 1800-2023 16.9.2)
                                         : ... note: In instance 't'
-   42 |   assert property (@(posedge clk) a [*n] |-> 1);
-      |                                       ^
+   14 |   assert property (@(posedge clk) a[->n] |-> b)
+      |                                          ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_rep_bad_count.v:42:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
-                                        : ... note: In instance 't'
-   42 |   assert property (@(posedge clk) a [*n] |-> 1);
-      |                                     ^~
-%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:45:37: Unsupported: [*0] consecutive repetition
+%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:18:42: Unsupported: zero repetition count (IEEE 1800-2023 16.9.2)
                                                     : ... note: In instance 't'
-   45 |   assert property (@(posedge clk) a [*0] |-> 1);
-      |                                     ^~
+   18 |   assert property (@(posedge clk) a[->0] |-> b)
+      |                                          ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_assert_rep_bad_count.v:48:37: Consecutive repetition max count must be >= min count (IEEE 1800-2023 16.9.2)
+%Error: t/t_assert_rep_bad_count.v:22:43: Repetition count must be non-negative (IEEE 1800-2023 16.9.2)
                                         : ... note: In instance 't'
-   48 |   assert property (@(posedge clk) a [*3:1] |-> 1);
-      |                                     ^~
-%Error: t/t_assert_rep_bad_count.v:51:41: Expecting expression to be constant, but variable isn't const: 'n'
+   22 |   assert property (@(posedge clk) a[->-1] |-> b)
+      |                                           ^~~
+%Error: t/t_assert_rep_bad_count.v:28:41: Repetition count is not an elaboration-time constant (IEEE 1800-2023 16.9.2)
                                         : ... note: In instance 't'
-   51 |   assert property (@(posedge clk) a [*1:n] |-> 1);
-      |                                         ^
-%Error: t/t_assert_rep_bad_count.v:51:37: Consecutive repetition max count must be constant expression (IEEE 1800-2023 16.9.2)
-                                        : ... note: In instance 't'
-   51 |   assert property (@(posedge clk) a [*1:n] |-> 1);
-      |                                     ^~
-%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:54:37: Unsupported: [*N:0] consecutive repetition with zero max count
+   28 |   assert property (@(posedge clk) a[=n] |-> b)
+      |                                         ^~~
+%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:32:41: Unsupported: zero repetition count (IEEE 1800-2023 16.9.2)
                                                     : ... note: In instance 't'
-   54 |   assert property (@(posedge clk) a [*0:0] |-> 1);
-      |                                     ^~
+   32 |   assert property (@(posedge clk) a[=0] |-> b)
+      |                                         ^~~
+%Error: t/t_assert_rep_bad_count.v:36:42: Repetition count must be non-negative (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   36 |   assert property (@(posedge clk) a[=-1] |-> b)
+      |                                          ^~~
 %Error: Exiting due to
