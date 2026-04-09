@@ -1369,13 +1369,14 @@ class ParamProcessor final {
                     // obvious as it won't show up under a unique module page name.
                     UINFO(9, "cellPinCleanup: same as default " << pinp);
                 } else if (namingExprp->num().isDouble() || namingExprp->num().isString()
-                           || namingExprp->num().isFourState() || namingExprp->num().width() != 32) {
-                    longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(namingExprp));
+                           || namingExprp->num().isFourState()
+                           || namingExprp->num().width() != 32) {
+                    longnamer += ("_" + paramSmallName(srcModp, modvarp)
+                                  + paramValueNumber(namingExprp));
                     any_overridesr = true;
                 } else {
-                    longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + namingExprp->num().ascii(false));
+                    longnamer += ("_" + paramSmallName(srcModp, modvarp)
+                                  + namingExprp->num().ascii(false));
                     any_overridesr = true;
                 }
                 if (normedNamep) VL_DO_DANGLING(normedNamep->deleteTree(), normedNamep);
