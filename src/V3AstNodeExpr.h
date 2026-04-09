@@ -5389,7 +5389,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override {
         V3ERROR_NA;  // Need to modify lhs
     }
-    string emitVerilog() override { return "%k(%r++)"; }
+    string emitVerilog() override { return "%k(%l++)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
@@ -5406,7 +5406,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override {
         V3ERROR_NA;  // Need to modify lhs
     }
-    string emitVerilog() override { return "%k(%r--)"; }
+    string emitVerilog() override { return "%k(%l--)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
@@ -5423,7 +5423,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override {
         V3ERROR_NA;  // Need to modify lhs
     }
-    string emitVerilog() override { return "%k(++%r)"; }
+    string emitVerilog() override { return "%k(++%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
@@ -5440,7 +5440,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override {
         V3ERROR_NA;  // Need to modify lhs
     }
-    string emitVerilog() override { return "%k(--%r)"; }
+    string emitVerilog() override { return "%k(--%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
