@@ -1858,8 +1858,9 @@ List Of Warnings
    Warns that the third (turn-off) delay is currently unsupported and is
    ignored. Rising and falling delays are supported.
 
-   In versions before 5.048, warned that rising, falling, and turn-off delays were
-unsupported. The first (rising) delay was used for all cases.
+   In versions before 5.048, warned that rising, falling, and turn-off
+   delays were unsupported. The first (rising) delay was used for all
+   cases.
 
 
 .. option:: SELRANGE
