@@ -1326,28 +1326,26 @@ class ParamProcessor final {
                 }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
-                // Normalize pin width to the port's declared type for naming only.
-                // A 32-bit literal and a 1-bit substituted value must produce the
-                // same specialization name.  Use subDTypep() since dtypep() is not
-                // yet set (V3Width has not run).
+                // Width the pin value to match the port type so that the same
+                // logical value always produces the same specialization name.
                 AstConst* normedNamep = nullptr;
-                if (exprp && !exprp->num().isDouble() && !exprp->num().isString()
-                    && !exprp->num().isFourState()) {
-                    const AstBasicDType* const declBasicp
-                        = modvarp->subDTypep() ? modvarp->subDTypep()->skipRefp()->basicp()
-                                               : nullptr;
-                    // Only use the keyword-determined width (e.g. bit=1, byte=8).
-                    // Skip when the type has an explicit range (not yet folded by V3Width)
-                    // or is implicit (width inferred from value, not keyword).
-                    const int portWidth
-                        = (declBasicp && !declBasicp->rangep() && !declBasicp->implicit())
-                              ? declBasicp->width()
-                              : 0;
-                    if (portWidth > 0 && exprp->num().width() != portWidth) {
-                        V3Number normed{exprp, portWidth};
-                        normed.opAssign(exprp->num());
-                        normedNamep = new AstConst{exprp->fileline(), normed};
+                if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
+                    AstVar* cloneVarp = modvarp->cloneTree(false);
+                    if (AstNode* const oldValuep = cloneVarp->valuep()) {
+                        oldValuep->unlinkFrBack();
+                        VL_DO_DANGLING(oldValuep->deleteTree(), oldValuep);
                     }
+                    cloneVarp->valuep(exprp->cloneTree(false));
+                    V3Const::constifyParamsEdit(cloneVarp);
+                    if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
+                        // Force the constant's dtype to match the port's widthed
+                        // type so that differently-created constants with the same
+                        // logical value hash identically in paramValueNumber.
+                        if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
+                        widthedp->unlinkFrBack();
+                        normedNamep = widthedp;
+                    }
+                    VL_DO_DANGLING(cloneVarp->deleteTree(), cloneVarp);
                 }
                 AstConst* const namingExprp = normedNamep ? normedNamep : exprp;
                 if (!exprp) {
