@@ -162,17 +162,19 @@ void V3Common::commonAll() {
     // Create common contents for each module
     for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            // Create ToString methods
-            makeToString(classp);
-            makeToStringMiddle(classp);
+            if (classp->emitToString()) {
+                // Create ToString methods
+                makeToString(classp);
+                makeToStringMiddle(classp);
+            }
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
-            makeVlToString(ifacep);
+            if (ifacep->emitToString()) { makeVlToString(ifacep); }
         }
     }
     for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
          nodep = nodep->nextp()) {
         if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
-            if (!dtypep->packed()) makeVlToString(dtypep);
+            if (!dtypep->packed() && dtypep->emitToString()) makeVlToString(dtypep);
         }
     }
     V3Global::dumpCheckGlobalTree("common", 0, dumpTreeEitherLevel() >= 3);
