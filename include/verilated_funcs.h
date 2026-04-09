@@ -418,12 +418,14 @@ static inline WDataOutP VL_ALLONES_W(int obits, WDataOutP owp) VL_MT_SAFE {
 // EMIT_RULE: VL_ASSIGN:  oclean=rclean; obits==lbits;
 // For now, we always have a clean rhs.
 // Note: If a ASSIGN isn't clean, use VL_ASSIGNCLEAN instead to do the same thing.
-static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
+static inline WDataOutP VL_ASSIGN_W_TT(int obits, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
     return VL_MEMCPY_W(owp, lwp, VL_WORDS_I(obits));
 }
 
 #define VL_ASSIGN_W_GEN(suffix, outputOffset, outputJump, inputOffset, inputJump) \
-    static inline void VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) VL_MT_SAFE { \
+    static inline WDataOutP VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) \
+        VL_MT_SAFE { \
+        const WDataOutP result = owp; \
         owp += outputOffset; \
         lwp += inputOffset; \
         for (int i = 0; i < VL_WORDS_I(obits); ++i) { \
@@ -431,6 +433,7 @@ static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP const lwp
             owp += outputJump; \
             lwp += inputJump; \
         } \
+        return result; \
     }
 // T - two state value
 // V - value part
@@ -887,35 +890,88 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
 //===================================================================
 // SIMPLE LOGICAL OPERATORS
 
+#define VL_BIOP_GEN(name, op, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, \
+                    rhsJump) \
+    static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                                   WDataInP rwp) VL_MT_SAFE { \
+        const WDataOutP result = owp; \
+        owp += outputOffset; \
+        lwp += lhsOffset; \
+        rwp += rhsOffset; \
+        for (int i = 0; (i < words); ++i) { \
+            *owp = (*lwp op * rwp); \
+            owp += outputJump; \
+            lwp += lhsJump; \
+            rwp += rhsJump; \
+        } \
+        return result; \
+    }
+#define VL_BIOP_GEN_HELPER(name, op) \
+    VL_BIOP_GEN(name, op, TTT, 0, 1, 0, 1, 0, 1) \
+    VL_BIOP_GEN(name, op, TTV, 0, 1, 0, 1, 0, 2) \
+    VL_BIOP_GEN(name, op, TTX, 0, 1, 0, 1, 1, 2) \
+    VL_BIOP_GEN(name, op, TVT, 0, 1, 0, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, TVV, 0, 1, 0, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, TVX, 0, 1, 0, 2, 1, 2) \
+    VL_BIOP_GEN(name, op, TXT, 0, 1, 1, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, TXV, 0, 1, 1, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, TXX, 0, 1, 1, 2, 1, 2) \
+    VL_BIOP_GEN(name, op, VTT, 0, 2, 0, 1, 0, 1) \
+    VL_BIOP_GEN(name, op, VTV, 0, 2, 0, 1, 0, 2) \
+    VL_BIOP_GEN(name, op, VTX, 0, 2, 0, 1, 1, 2) \
+    VL_BIOP_GEN(name, op, VVT, 0, 2, 0, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, VVV, 0, 2, 0, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, VVX, 0, 2, 0, 2, 1, 2) \
+    VL_BIOP_GEN(name, op, VXT, 0, 2, 1, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, VXV, 0, 2, 1, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, VXX, 0, 2, 1, 2, 1, 2) \
+    VL_BIOP_GEN(name, op, XTT, 1, 2, 0, 1, 0, 1) \
+    VL_BIOP_GEN(name, op, XTV, 1, 2, 0, 1, 0, 2) \
+    VL_BIOP_GEN(name, op, XTX, 1, 2, 0, 1, 1, 2) \
+    VL_BIOP_GEN(name, op, XVT, 1, 2, 0, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, XVV, 1, 2, 0, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, XVX, 1, 2, 0, 2, 1, 2) \
+    VL_BIOP_GEN(name, op, XXT, 1, 2, 1, 2, 0, 1) \
+    VL_BIOP_GEN(name, op, XXV, 1, 2, 1, 2, 0, 2) \
+    VL_BIOP_GEN(name, op, XXX, 1, 2, 1, 2, 1, 2)
 // EMIT_RULE: VL_AND:  oclean=lclean||rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_AND_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] & rwp[i]);
-    return owp;
-}
+VL_BIOP_GEN_HELPER(AND, &)
 // EMIT_RULE: VL_OR:   oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_OR_W(int words, WDataOutP owp, WDataInP const lwp,
-                                WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] | rwp[i]);
-    return owp;
-}
+VL_BIOP_GEN_HELPER(OR, |)
+// EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
+VL_BIOP_GEN_HELPER(XOR, ^)
+#undef VL_BIOP_GEN_HELPER
+#undef VL_BIOP_GEN
 // EMIT_RULE: VL_CHANGEXOR:  oclean=1; obits=32; lbits==rbits;
 static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     IData od = 0;
     for (int i = 0; (i < words); ++i) od |= (lwp[i] ^ rwp[i]);
     return od;
 }
-// EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_XOR_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ rwp[i]);
-    return owp;
-}
 // EMIT_RULE: VL_NOT:  oclean=dirty; obits=lbits;
-static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
-    for (int i = 0; i < words; ++i) owp[i] = ~(lwp[i]);
-    return owp;
-}
+#define VL_NOT_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump) \
+    static inline WDataOutP VL_NOT_W_##suffix(int words, WDataOutP owp, WDataInP lwp) \
+        VL_MT_SAFE { \
+        const WDataOutP result = owp; \
+        owp += outputOffset; \
+        lwp += lhsOffset; \
+        for (int i = 0; i < words; ++i) { \
+            *owp = ~(*lwp); \
+            owp += outputJump; \
+            lwp += lhsJump; \
+        } \
+        return result; \
+    }
+VL_NOT_GEN(TT, 0, 1, 0, 1)
+VL_NOT_GEN(TV, 0, 1, 0, 2)
+VL_NOT_GEN(TX, 0, 1, 1, 2)
+VL_NOT_GEN(VT, 0, 2, 0, 1)
+VL_NOT_GEN(VV, 0, 2, 0, 2)
+VL_NOT_GEN(VX, 0, 2, 1, 2)
+VL_NOT_GEN(XT, 1, 2, 0, 1)
+VL_NOT_GEN(XV, 1, 2, 0, 2)
+VL_NOT_GEN(XX, 1, 2, 1, 2)
+#undef VL_NOT_GEN
 
 //=========================================================================
 // Logical comparisons

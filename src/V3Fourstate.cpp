@@ -2382,8 +2382,8 @@ class FourstateShuffleVisitor final : public VNVisitor {
         AstVar* const resultp = varp->cloneTree(false);
         resultp->unsetFourStateComplement();
         resultp->name(resultp->name().erase(resultp->name().size() + 1 - sizeof("__Vxz")));
-        resultp->dtypeSetBitSized(resultp->widthWords() * 2 * VL_IDATASIZE,
-                                  varp->dtypep()->numeric());
+        resultp->dtypeSetBitUnsized(resultp->widthWords() * 2 * VL_IDATASIZE,
+                                    resultp->dtypep()->widthMin() * 2, varp->dtypep()->numeric());
         resultp->setFourStateShuffle();
         varp->addNextHere(resultp);
         varp->user1p(resultp);

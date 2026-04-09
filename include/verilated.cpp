@@ -709,14 +709,14 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
-    VL_ASSIGN_W(obits, powstore, lwp);
+    VL_ASSIGN_W_TT(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
-            VL_ASSIGN_W(obits, lastpowstore, powstore);
+            VL_ASSIGN_W_TT(obits, lastpowstore, powstore);
             VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
-            VL_ASSIGN_W(obits, lastoutstore, owp);
+            VL_ASSIGN_W_TT(obits, lastoutstore, owp);
             VL_MUL_W(owords, owp, lastoutstore, powstore);
         }
     }
@@ -839,12 +839,12 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
             if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
                 VL_ZERO_W(maxdecwidth, tmp2.data());
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
-                VL_ASSIGN_W(maxdecwidth, tmp.data(), bcd.data());
+                VL_ASSIGN_W_TT(maxdecwidth, tmp.data(), bcd.data());
                 VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd.data(), tmp.data(), tmp2.data());
             }
         }
         // Shift; bcd = bcd << 1
-        VL_ASSIGN_W(maxdecwidth, tmp.data(), bcd.data());
+        VL_ASSIGN_W_TT(maxdecwidth, tmp.data(), bcd.data());
         VL_SHIFTL_WWI(maxdecwidth, maxdecwidth, 32, bcd.data(), tmp.data(), 1);
         // bcd[0] = lwp[from_bit]
         if (VL_BITISSET_W(lwp, from_bit)) bcd[0] |= 1;
@@ -892,7 +892,7 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
         const WDataInP max64Bit
             = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<uint64_t>::max());  // breaks shifted
         if (VL_GT_W(w, integer, max64Bit)) {
-            WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
+            WDataOutP v = VL_ASSIGN_W_TT(b, tmp3, integer);  // breaks fracDigitsPow10
             VlWide<w> zero;
             VlWide<w> ten;
             VL_ZERO_W(b, zero);
@@ -906,7 +906,7 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
                 *ptr = "0123456789"[VL_SET_QW(mod)];
                 VlWide<w> divided;
                 VL_DIV_WWW(b, divided, v, ten);
-                VL_ASSIGN_W(b, v, divided);
+                VL_ASSIGN_W_TT(b, v, divided);
             }
             if (!fracDigits) {
                 digits = _vl_snprintf_string(tmp, "%s%s", ptr, suffix.c_str());

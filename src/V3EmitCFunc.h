@@ -160,6 +160,14 @@ public:
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g, "R"=queue, "U"npacked
         puts(nodep->dtypep()->skipRefp()->charIQWN());
     }
+    void emitTVX(AstNode* nodep) {
+        const AstVarRef* const varRefp = VN_CAST(nodep, VarRef);
+        if (varRefp && varRefp->varp()->isFourStateShuffle()) {
+            puts(varRefp->fourstateXZPart() ? "X" : "V");
+        } else {
+            puts("T");
+        }
+    }
     void emitRU(const AstNode* nodep) {
         const AstNodeDType* dtp = nodep->dtypep()->skipRefp();
         // See "Type letters" in verilated.h
@@ -623,22 +631,10 @@ public:
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
         } else if (nodep->isWide() && !unpackDtp && !VN_IS(nodep->rhsp(), Const)) {
-            auto genSuffix
-                = [](const AstNodeExpr* const lhsp, const AstNodeExpr* const rhsp) -> std::string {
-                const AstVarRef* const lhsRefp = VN_CAST(lhsp, VarRef);
-                const AstVarRef* const rhsRefp = VN_CAST(rhsp, VarRef);
-                if (!lhsRefp && !rhsRefp) return "";
-                auto getLetter = [](const AstVarRef* const varRefp) -> char {
-                    if (varRefp) {
-                        return varRefp->fourstateXZPart() ? 'X' : 'V';
-                    } else {
-                        return 'T';
-                    }
-                };
-                return std::string{"_"} + getLetter(lhsRefp) + getLetter(rhsRefp);
-            };
-            putnbs(nodep, "VL_ASSIGN_W" + genSuffix(nodep->lhsp(), nodep->rhsp()) + "(");
-            puts(cvtToStr(nodep->widthMin()) + ", ");
+            putnbs(nodep, "VL_ASSIGN_W_");
+            emitTVX(nodep->lhsp());
+            emitTVX(nodep->rhsp());
+            puts("(" + cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
         } else {

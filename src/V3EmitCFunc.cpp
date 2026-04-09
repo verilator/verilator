@@ -44,6 +44,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     // and write out appropriate text.
     //  %n*     node
     //   %nq      emitIQW on the [node]
+    //   %nf      data format T/V/X
     //   %nw      width in bits
     //   %nW      width in words
     //   %ni      iterate
@@ -52,6 +53,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     //  %t*     thsp - if appropriate, then second char as above
     //  %k      Potential line break
     //  %P      Wide temporary name
+    //  %p*     Wide temporary - if appropriate, then second char as above
     //  ,       Commas suppressed if the previous field is suppressed
     string out;
     putnbs(nodep, "");
@@ -123,6 +125,16 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     needComma = true;
                 }
                 break;
+            case 'p':
+                if (nodep->isWide()) {
+                    UASSERT_OBJ(m_wideTempRefp, nodep,
+                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                    detail = true;
+                    detailp = m_wideTempRefp;
+                } else {
+                    ++pos;
+                }
+                break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
             if (detail) {
@@ -133,15 +145,22 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     putOut();
                     emitIQW(detailp);
                     break;
+                case 'f':
+                    putOut();
+                    emitTVX(detailp);
+                    break;
                 case 'w':
                     commaOut();
                     out += cvtToStr(detailp->widthMin());
                     needComma = true;
                     break;
                 case 'W':
-                    if (lhsp->isWide()) {
+                    if (detailp->isWide()) {
                         commaOut();
-                        out += cvtToStr(lhsp->widthWords());
+                        const AstVarRef* const varRefp = VN_CAST(detailp, VarRef);
+                        out += cvtToStr(
+                            detailp->widthWords()
+                            / (varRefp && varRefp->varp()->isFourStateShuffle() ? 2 : 1));
                         needComma = true;
                     }
                     break;
