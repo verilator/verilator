@@ -82,7 +82,6 @@ set(HEADERS
     V3DfgDataType.h
     V3DfgOptimizer.h
     V3DfgPasses.h
-    V3DfgPatternStats.h
     V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
@@ -250,6 +249,7 @@ set(COMMON_SOURCES
     V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
+    V3DfgDumpPatterns.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp

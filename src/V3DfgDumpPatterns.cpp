@@ -18,6 +18,7 @@
 #define VERILATOR_V3DFGPATTERNSTATS_H_
 
 #include "V3Dfg.h"
+#include "V3DfgPasses.h"
 #include "V3File.h"
 
 #include <algorithm>
@@ -29,7 +30,6 @@ class V3DfgPatternStats final {
     static constexpr uint32_t MAX_PATTERN_DEPTH = 4;
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
-    std::map<const AstVarScope*, std::string> m_internedVars;  // Interned variables
     std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects
     std::map<uint32_t, std::string> m_internedWordWidths;  // Interned widths
     std::map<uint32_t, std::string> m_internedWideWidths;  // Interned widths
@@ -48,12 +48,6 @@ class V3DfgPatternStats final {
     const std::string& internConst(const DfgConst& vtx) {
         const auto pair = m_internedConsts.emplace(vtx.num().ascii(false), "c");
         if (pair.second) pair.first->second += toLetters(m_internedConsts.size() - 1);
-        return pair.first->second;
-    }
-
-    const std::string& internVar(const DfgVertexVar& vtx) {
-        const auto pair = m_internedVars.emplace(vtx.vscp(), "v");
-        if (pair.second) pair.first->second += toLetters(m_internedVars.size() - 1);
         return pair.first->second;
     }
 
@@ -76,7 +70,7 @@ class V3DfgPatternStats final {
     }
 
     const std::string& internVertex(const DfgVertex& vtx) {
-        const auto pair = m_internedVertices.emplace(&vtx, "_");
+        const auto pair = m_internedVertices.emplace(&vtx, "");
         if (pair.second) pair.first->second += toLetters(m_internedVertices.size() - 1);
         return pair.first->second;
     }
@@ -95,12 +89,9 @@ class V3DfgPatternStats final {
             } else {
                 ss << internConst(*constp);
             }
-        } else if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
-            // Base case 2: variable
-            ss << internVar(*varp);
         } else if (depth == 0) {
-            // Base case 3: deep vertex
-            ss << internVertex(vtx);
+            // Base case 2: deep vertex
+            ss << "_";
         } else {
             // Recursively print an S-expression for the vertex
 
@@ -117,7 +108,6 @@ class V3DfgPatternStats final {
                     ss << internSelLsb(selp->lsb());
                 }
             }
-
             // Operands
             vtx.foreachSource([&](const DfgVertex& src) {
                 ss << ' ';
@@ -126,13 +116,14 @@ class V3DfgPatternStats final {
             });
             // S-expression end
             ss << ')';
-
-            // Mark it if it has multiple sinks
-            if (vtx.hasMultipleSinks()) ss << '*';
         }
 
+        // Annotate identity
+        ss << ":" << internVertex(vtx);
+        // Mark it if it has multiple sinks
+        if (vtx.hasMultipleSinks()) ss << '*';
         // Annotate type
-        ss << ':';
+        ss << '/';
         if (!vtx.dtype().isPacked()) {
             vtx.dtype().astDtypep()->dumpSmall(ss);
         } else {
@@ -196,7 +187,6 @@ public:
                 std::ostringstream ss;
                 if (render(ss, vtx, i)) m_patterCounts[i][ss.str()] += 1;
                 m_internedConsts.clear();
-                m_internedVars.clear();
                 m_internedSelLsbs.clear();
                 m_internedWordWidths.clear();
                 m_internedWideWidths.clear();
@@ -205,5 +195,10 @@ public:
         });
     }
 };
+
+void V3DfgPasses::dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>& graphs) {
+    V3DfgPatternStats patternStats;
+    for (auto& cp : graphs) patternStats.accumulate(*cp);
+}
 
 #endif

@@ -363,19 +363,16 @@ class DataflowOptimize final {
         endOfStage("binToOneHot", dfg, acyclicComps);
         for (auto& cp : acyclicComps) V3DfgPasses::peephole(*cp, m_ctx.m_peepholeContext);
         endOfStage("peephole", dfg, acyclicComps);
+        // Accumulate patterns for reporting
+        if (v3Global.opt.stats()) {
+            V3DfgPasses::dumpPatterns(acyclicComps);
+            endOfStage("patterns");
+        }
         for (auto& cp : acyclicComps) V3DfgPasses::pushDownSels(*cp, m_ctx.m_pushDownSelsContext);
         endOfStage("pushDownSels", dfg, acyclicComps);
         for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext1);
         endOfStage("cse1", dfg, acyclicComps);
 
-        // Accumulate patterns for reporting
-        if (v3Global.opt.stats()) {
-            {
-                V3DfgPatternStats patternStats;
-                for (auto& cp : acyclicComps) patternStats.accumulate(*cp);
-            }
-            endOfStage("patterns");
-        }
 
         // Merge everything back under the main DFG
         dfg.mergeGraphs(std::move(acyclicComps));

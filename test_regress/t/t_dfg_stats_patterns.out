@@ -1,98 +1,121 @@
 DFG patterns with depth 1
-            9 (CONCAT _A:1 _B:a):b
-            8 (REDXOR _A:a):1
-            3 (NOT vA:a)*:a
-            2 (AND _A:a _B:a):a
-            1 (AND _A:a _B:a)*:a
-            1 (CONCAT _A:1 _B:1):a
-            1 (NOT _A:a):a
-            1 (REDXOR _A:a)*:1
-            1 (REPLICATE _A:1 cA:a)*:b
-            1 (REPLICATE _A:a cA:a)*:b
-            1 (REPLICATE _A:a cA:a):b
-            1 (REPLICATE _A:a cA:b)*:b
-            1 (REPLICATE _A:a cA:b)*:c
-            1 (SEL@0 _A:a):1
-            1 (SEL@0 _A:a):b
-            1 (SEL@A _A:a):1
+            8 (CONCAT _:A/1 _:B/a):C/b
+            5 (REDXOR _:A*/a):B/1
+            5 (VARPACKED _:A*/a):B/a
+            3 (NOT _:A/a):B*/a
+            3 (REDXOR _:A/a):B/1
+            2 (AND _:A*/a _:B*/a):C/a
+            1 (AND _:A*/a _:B*/a):C*/a
+            1 (CONCAT _:A*/1 _:B/a):C/b
+            1 (CONCAT _:A/1 _:B*/1):C/a
+            1 (NOT _:A*/a):B/a
+            1 (REDXOR _:A/a):B*/1
+            1 (REPLICATE _:A*/a cA:B/a):C/b
+            1 (REPLICATE _:A*/a cA:B/b):C*/b
+            1 (REPLICATE _:A*/a cA:B/b):C*/c
+            1 (REPLICATE _:A/1 cA:B/a):C*/b
+            1 (REPLICATE _:A/a cA:B/a):C*/b
+            1 (SEL@0 _:A*/a):B/1
+            1 (SEL@0 _:A*/a):B/b
+            1 (SEL@A _:A*/a):B/1
+            1 (VARPACKED _:A/a):B/a
 
 DFG patterns with depth 2
-            6 (CONCAT (REDXOR _A:a):1 (CONCAT _B:1 _C:b):c):d
-            2 (AND (NOT vA:a)*:a (NOT vB:a)*:a):a
-            2 (REDXOR (AND _A:a _B:a):a):1
-            1 (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a
-            1 (CONCAT (REDXOR _A:a)*:1 (CONCAT _B:1 _C:b):c):d
-            1 (CONCAT (REDXOR _A:a):1 (CONCAT _B:1 _C:1):b):c
-            1 (CONCAT (REDXOR _A:a):1 (REDXOR _B:b)*:1):c
-            1 (CONCAT (SEL@0 _A:a):1 (CONCAT _B:1 _C:b):c):d
-            1 (NOT (REPLICATE _A:a cA:b)*:b):b
-            1 (REDXOR (AND _A:a _B:a)*:a):1
-            1 (REDXOR (REPLICATE _A:1 cA:a)*:b):1
-            1 (REDXOR (REPLICATE _A:a cA:a)*:b):1
-            1 (REDXOR (REPLICATE _A:a cA:a):b)*:1
-            1 (REDXOR (REPLICATE _A:a cA:b)*:b):1
-            1 (REDXOR (REPLICATE _A:a cA:b)*:c):1
-            1 (REDXOR (SEL@0 _A:a):b):1
-            1 (REPLICATE (NOT _A:a):a cA:a)*:b
-            1 (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c
-            1 (REPLICATE (REPLICATE _A:a cA:b)*:b cA:b):c
-            1 (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b
-            1 (REPLICATE (SEL@A _A:a):1 cA:b)*:c
-            1 (SEL@0 (AND _A:a _B:a)*:a):1
-            1 (SEL@0 (REPLICATE _A:a cA:a)*:b):c
-            1 (SEL@A (AND _A:a _B:a)*:a):1
+            3 (CONCAT (REDXOR _:A*/a):B/1 (CONCAT _:C/1 _:D/b):E/c):F/d
+            2 (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a
+            2 (CONCAT (REDXOR _:A/a):B/1 (CONCAT _:C/1 _:D/b):E/c):F/d
+            2 (REDXOR (AND _:A*/a _:B*/a):C/a):D/1
+            1 (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a
+            1 (CONCAT (REDXOR _:A*/a):B/1 (CONCAT _:C*/1 _:D/b):E/c):F/d
+            1 (CONCAT (REDXOR _:A*/a):B/1 (CONCAT _:C/1 _:D*/1):E/b):F/c
+            1 (CONCAT (REDXOR _:A/a):B*/1 (CONCAT _:C/1 _:D/b):E/c):F/d
+            1 (CONCAT (REDXOR _:A/a):B/1 (REDXOR _:C/b):D*/1):E/c
+            1 (CONCAT (SEL@0 _:A*/a):B/1 (CONCAT _:C/1 _:D/b):E/c):F/d
+            1 (NOT (REPLICATE _:A*/a cA:B/b):C*/b):D/b
+            1 (REDXOR (AND _:A*/a _:B*/a):C*/a):D/1
+            1 (REDXOR (REPLICATE _:A*/a cA:B/a):C/b):D*/1
+            1 (REDXOR (REPLICATE _:A*/a cA:B/b):C*/b):D/1
+            1 (REDXOR (REPLICATE _:A*/a cA:B/b):C*/c):D/1
+            1 (REDXOR (REPLICATE _:A/1 cA:B/a):C*/b):D/1
+            1 (REDXOR (REPLICATE _:A/a cA:B/a):C*/b):D/1
+            1 (REDXOR (SEL@0 _:A*/a):B/b):C/1
+            1 (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b
+            1 (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/b cA:D/b):E/c
+            1 (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b
+            1 (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c
+            1 (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c
+            1 (SEL@0 (AND _:A*/a _:B*/a):C*/a):D/1
+            1 (SEL@0 (REPLICATE _:A/a cA:B/a):C*/b):D/c
+            1 (SEL@A (AND _:A*/a _:B*/a):C*/a):D/1
+            1 (VARPACKED (AND _:A*/a _:B*/a):C*/a):D/a
+            1 (VARPACKED (CONCAT _:A/1 _:B/a):C/b):D/b
+            1 (VARPACKED (REPLICATE _:A*/a cA:B/b):C*/b):D/b
+            1 (VARPACKED (REPLICATE _:A*/a cA:B/b):C*/c):D/c
+            1 (VARPACKED (REPLICATE _:A/1 cA:B/a):C*/b):D/b
+            1 (VARPACKED (REPLICATE _:A/a cA:B/a):C*/b):D/b
 
 DFG patterns with depth 3
-            2 (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1
-            1 (CONCAT (REDXOR (AND _A:a _B:a)*:a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e
-            1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e
-            1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (SEL@0 _C:a):1 (CONCAT _D:1 _E:b):c):d):e
-            1 (CONCAT (REDXOR (REPLICATE _A:1 cA:a)*:b):1 (CONCAT (REDXOR _B:c):1 (CONCAT _C:1 _D:d):e):f):g
-            1 (CONCAT (REDXOR (REPLICATE _A:a cA:a)*:b):1 (CONCAT (REDXOR _B:c):1 (REDXOR _C:b)*:1):d):e
-            1 (CONCAT (REDXOR (REPLICATE _A:a cA:a):b)*:1 (CONCAT (REDXOR _B:b):1 (CONCAT _C:1 _D:1):c):d):e
-            1 (CONCAT (REDXOR (REPLICATE _A:a cA:b)*:b):1 (CONCAT (REDXOR _B:c)*:1 (CONCAT _C:1 _D:d):e):f):g
-            1 (CONCAT (REDXOR (REPLICATE _A:a cA:b)*:c):1 (CONCAT (REDXOR _B:b):1 (CONCAT _C:1 _D:d):e):f):g
-            1 (CONCAT (REDXOR (SEL@0 _A:a):b):1 (REDXOR (REPLICATE _B:c cA:c):a)*:1):d
-            1 (CONCAT (SEL@0 (AND _A:a _B:a)*:a):1 (CONCAT (REDXOR _C:b):1 (CONCAT _D:1 _E:c):d):e):b
-            1 (NOT (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):b
-            1 (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
-            1 (REDXOR (REPLICATE (NOT _A:a):a cA:a)*:b):1
-            1 (REDXOR (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c):1
-            1 (REDXOR (REPLICATE (REPLICATE _A:a cA:b)*:b cA:b):c)*:1
-            1 (REDXOR (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):1
-            1 (REDXOR (REPLICATE (SEL@A _A:a):1 cA:b)*:c):1
-            1 (REDXOR (SEL@0 (REPLICATE _A:a cA:a)*:b):c):1
-            1 (REPLICATE (NOT (REPLICATE _A:a cA:b)*:b):b cA:b)*:c
-            1 (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a
-            1 (REPLICATE (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b cA:b):d
-            1 (REPLICATE (REPLICATE (SEL@A _A:a):1 cA:b)*:c cB:b)*:d
-            1 (REPLICATE (SEL@A (AND _A:a _B:a)*:a):1 cA:b)*:c
-            1 (SEL@0 (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
-            1 (SEL@0 (REPLICATE (NOT _A:a):a cA:a)*:b):c
-            1 (SEL@A (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
+            2 (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1
+            1 (CONCAT (REDXOR (AND _:A*/a _:B*/a):C*/a):D/1 (CONCAT (REDXOR _:E/a):F/1 (CONCAT _:G/1 _:H/b):I/c):J/d):K/e
+            1 (CONCAT (REDXOR (AND _:A*/a _:B*/a):C/a):D/1 (CONCAT (REDXOR _:E/a):F/1 (CONCAT _:G/1 _:H/b):I/c):J/d):K/e
+            1 (CONCAT (REDXOR (AND _:A*/a _:B*/a):C/a):D/1 (CONCAT (SEL@0 _:E*/a):F/1 (CONCAT _:G/1 _:H/b):I/c):J/d):K/e
+            1 (CONCAT (REDXOR (REPLICATE _:A*/a cA:B/a):C/b):D*/1 (CONCAT (REDXOR _:E*/b):F/1 (CONCAT _:G/1 _:D*/1):H/c):I/d):J/e
+            1 (CONCAT (REDXOR (REPLICATE _:A*/a cA:B/b):C*/b):D/1 (CONCAT (REDXOR _:E/c):F*/1 (CONCAT _:G/1 _:H/d):I/e):J/f):K/g
+            1 (CONCAT (REDXOR (REPLICATE _:A*/a cA:B/b):C*/c):D/1 (CONCAT (REDXOR _:E*/b):F/1 (CONCAT _:G*/1 _:H/d):I/e):J/f):K/g
+            1 (CONCAT (REDXOR (REPLICATE _:A/1 cA:B/a):C*/b):D/1 (CONCAT (REDXOR _:E*/c):F/1 (CONCAT _:G/1 _:H/d):I/e):J/f):K/g
+            1 (CONCAT (REDXOR (REPLICATE _:A/a cA:B/a):C*/b):D/1 (CONCAT (REDXOR _:E/c):F/1 (REDXOR _:G/b):H*/1):I/d):J/e
+            1 (CONCAT (REDXOR (SEL@0 _:A*/a):B/b):C/1 (REDXOR (REPLICATE _:D*/c cA:E/c):F/a):G*/1):H/d
+            1 (CONCAT (SEL@0 (AND _:A*/a _:B*/a):C*/a):D/1 (CONCAT (REDXOR _:E*/b):F/1 (CONCAT _:G/1 _:H/c):I/d):J/e):K/b
+            1 (NOT (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/b
+            1 (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1
+            1 (REDXOR (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/1
+            1 (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/b cA:D/b):E/c):F*/1
+            1 (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/1
+            1 (REDXOR (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c):F/1
+            1 (REDXOR (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c):E/1
+            1 (REDXOR (SEL@0 (REPLICATE _:A/a cA:B/a):C*/b):D/c):E/1
+            1 (REPLICATE (NOT (REPLICATE _:A*/a cA:B/b):C*/b):D/b cA:E/b):F*/c
+            1 (REPLICATE (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b cA:F/b):G/d
+            1 (REPLICATE (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c cB:F/a):G*/a
+            1 (REPLICATE (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c cB:E/b):F*/d
+            1 (REPLICATE (SEL@A (AND _:A*/a _:B*/a):C*/a):D/1 cA:E/b):F*/c
+            1 (SEL@0 (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1
+            1 (SEL@0 (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/c
+            1 (SEL@A (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1
+            1 (VARPACKED (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/a
+            1 (VARPACKED (CONCAT (REDXOR _:A*/a):B/1 (CONCAT _:C/1 _:D/b):E/c):F/d):G/d
+            1 (VARPACKED (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/b
+            1 (VARPACKED (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/b
+            1 (VARPACKED (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c):F/c
+            1 (VARPACKED (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c):E/c
 
 DFG patterns with depth 4
-            1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (REDXOR _C:a):1 (CONCAT _D:1 _E:b):c):d):e):f
-            1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1 (CONCAT (REDXOR (AND _A:a _B:a):a):1 (CONCAT (SEL@0 _C:a):1 (CONCAT _D:1 _E:b):c):d):e):f
-            1 (CONCAT (REDXOR (AND (NOT vA:a)*:a (NOT vB:a)*:a):a):1 (CONCAT (SEL@0 (AND _A:a _B:a)*:a):1 (CONCAT (REDXOR _C:b):1 (CONCAT _D:1 _E:c):d):e):b):f
-            1 (CONCAT (REDXOR (REPLICATE (NOT _A:a):a cA:a)*:b):1 (CONCAT (REDXOR (SEL@0 _B:b):c):1 (REDXOR (REPLICATE _A:a cA:a):b)*:1):d):e
-            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c):1 (CONCAT (REDXOR (REPLICATE _B:c cB:a)*:a):1 (CONCAT (REDXOR _C:d)*:1 (CONCAT _D:1 _E:e):f):g):h):i
-            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _A:a cA:b)*:b cA:b):c)*:1 (CONCAT (REDXOR (REPLICATE _B:b cA:b)*:c):1 (CONCAT (REDXOR _C:d):1 (REDXOR _D:c)*:1):e):f):g
-            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):1 (CONCAT (REDXOR (REPLICATE _B:b cA:b):d)*:1 (CONCAT (REDXOR _C:d):1 (CONCAT _D:1 _E:1):e):f):g):h
-            1 (CONCAT (REDXOR (REPLICATE (SEL@A _A:a):1 cA:b)*:c):1 (CONCAT (REDXOR (REPLICATE _B:c cB:b)*:d):1 (CONCAT (REDXOR _C:b):1 (CONCAT _D:1 _E:e):a):f):g):h
-            1 (CONCAT (REDXOR (SEL@0 (REPLICATE _A:a cA:a)*:b):c):1 (REDXOR (REPLICATE (REPLICATE _B:d cA:a)*:a cA:a):b)*:1):e
-            1 (CONCAT (SEL@0 (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1 (CONCAT (REDXOR (REPLICATE _A:1 cA:b)*:c):1 (CONCAT (REDXOR _B:d):1 (CONCAT _C:1 _D:a):e):f):g):c
-            1 (NOT (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a):a
-            1 (REDXOR (REPLICATE (NOT (REPLICATE _A:a cA:b)*:b):b cA:b)*:c):1
-            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a):1
-            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b cA:b):d)*:1
-            1 (REDXOR (REPLICATE (REPLICATE (SEL@A _A:a):1 cA:b)*:c cB:b)*:d):1
-            1 (REDXOR (REPLICATE (SEL@A (AND _A:a _B:a)*:a):1 cA:b)*:c):1
-            1 (REDXOR (SEL@0 (REPLICATE (NOT _A:a):a cA:a)*:b):c):1
-            1 (REPLICATE (NOT (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):b cA:b)*:d
-            1 (REPLICATE (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a cB:a):d
-            1 (REPLICATE (REPLICATE (REPLICATE (SEL@A _A:a):1 cA:b)*:c cB:b)*:d cB:b)*:b
-            1 (REPLICATE (REPLICATE (SEL@A (AND _A:a _B:a)*:a):1 cA:b)*:c cB:b)*:d
-            1 (REPLICATE (SEL@A (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1 cA:b)*:c
-            1 (SEL@0 (REPLICATE (NOT (REPLICATE _A:a cA:b)*:b):b cA:b)*:c):d
+            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1 (CONCAT (REDXOR (AND _:D*/a _:G*/a):H/a):I/1 (CONCAT (REDXOR _:J/a):K/1 (CONCAT _:L/1 _:M/b):N/c):O/d):P/e):Q/f
+            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (REDXOR (AND _:G*/a _:D*/a):H/a):I/1 (CONCAT (SEL@0 _:J*/a):K/1 (CONCAT _:L/1 _:M/b):N/c):O/d):P/e):Q/f
+            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (SEL@0 (AND _:B*/a _:G*/a):H*/a):I/1 (CONCAT (REDXOR _:J*/b):K/1 (CONCAT _:L/1 _:M/c):N/d):O/e):P/b):Q/f
+            1 (CONCAT (REDXOR (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/1 (CONCAT (REDXOR (SEL@0 _:D*/b):F/c):G/1 (REDXOR (REPLICATE _:A*/a cA:H/a):I/b):J*/1):K/d):L/e
+            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/b cA:D/b):E/c):F*/1 (CONCAT (REDXOR (REPLICATE _:G/b cA:H/b):I*/c):J/1 (CONCAT (REDXOR _:K/d):L/1 (REDXOR _:E/c):F*/1):M/e):N/f):O/g
+            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/1 (CONCAT (REDXOR (REPLICATE _:E*/b cA:G/b):H/d):I*/1 (CONCAT (REDXOR _:J*/d):K/1 (CONCAT _:L/1 _:I*/1):M/e):N/f):O/g):P/h
+            1 (CONCAT (REDXOR (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c):F/1 (CONCAT (REDXOR (REPLICATE _:E*/c cB:G/a):H*/a):I/1 (CONCAT (REDXOR _:J/d):K*/1 (CONCAT _:L/1 _:M/e):N/f):O/g):P/h):Q/i
+            1 (CONCAT (REDXOR (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c):E/1 (CONCAT (REDXOR (REPLICATE _:D*/c cB:F/b):G*/d):H/1 (CONCAT (REDXOR _:I*/b):J/1 (CONCAT _:K*/1 _:L/e):M/a):N/f):O/g):P/h
+            1 (CONCAT (REDXOR (SEL@0 (REPLICATE _:A/a cA:B/a):C*/b):D/c):E/1 (REDXOR (REPLICATE (REPLICATE _:F*/d cA:G/a):H*/a cA:I/a):J/b):K*/1):L/e
+            1 (CONCAT (SEL@0 (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1 (CONCAT (REDXOR (REPLICATE _:G/1 cA:H/b):I*/c):J/1 (CONCAT (REDXOR _:K*/d):L/1 (CONCAT _:M/1 _:N/a):O/e):P/f):Q/g):R/c
+            1 (NOT (REPLICATE (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c cB:F/a):G*/a):H/a
+            1 (REDXOR (REPLICATE (NOT (REPLICATE _:A*/a cA:B/b):C*/b):D/b cA:E/b):F*/c):G/1
+            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b cA:F/b):G/d):H*/1
+            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c cB:F/a):G*/a):H/1
+            1 (REDXOR (REPLICATE (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c cB:E/b):F*/d):G/1
+            1 (REDXOR (REPLICATE (SEL@A (AND _:A*/a _:B*/a):C*/a):D/1 cA:E/b):F*/c):G/1
+            1 (REDXOR (SEL@0 (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/c):F/1
+            1 (REPLICATE (NOT (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/b cA:G/b):H*/d
+            1 (REPLICATE (REPLICATE (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c cB:F/a):G*/a cB:H/a):I/d
+            1 (REPLICATE (REPLICATE (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c cB:E/b):F*/d cB:G/b):H*/b
+            1 (REPLICATE (REPLICATE (SEL@A (AND _:A*/a _:B*/a):C*/a):D/1 cA:E/b):F*/c cB:G/b):H*/d
+            1 (REPLICATE (SEL@A (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1 cA:G/b):H*/c
+            1 (SEL@0 (REPLICATE (NOT (REPLICATE _:A*/a cA:B/b):C*/b):D/b cA:E/b):F*/c):G/d
+            1 (VARPACKED (CONCAT (REDXOR (AND _:A*/a _:B*/a):C*/a):D/1 (CONCAT (REDXOR _:E/a):F/1 (CONCAT _:G/1 _:H/b):I/c):J/d):K/e):L/e
+            1 (VARPACKED (REPLICATE (NOT (REPLICATE _:A*/a cA:B/b):C*/b):D/b cA:E/b):F*/c):G/c
+            1 (VARPACKED (REPLICATE (REPLICATE (REPLICATE _:A/1 cA:B/a):C*/b cB:D/a):E*/c cB:F/a):G*/a):H/a
+            1 (VARPACKED (REPLICATE (REPLICATE (SEL@A _:A*/a):B/1 cA:C/b):D*/c cB:E/b):F*/d):G/d
+            1 (VARPACKED (REPLICATE (SEL@A (AND _:A*/a _:B*/a):C*/a):D/1 cA:E/b):F*/c):G/c
 
