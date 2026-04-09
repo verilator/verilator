@@ -2153,7 +2153,7 @@ public:
     }
     // Range [*N:M] or unbounded [+]/[*]
     AstSConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp,
-               bool unbounded)
+                bool unbounded)
         : ASTGEN_SUPER_SConsRep(fl)
         , m_unbounded{unbounded} {
         this->exprp(exprp);

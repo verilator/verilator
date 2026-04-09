@@ -902,13 +902,11 @@ private:
             }
             // Window loop: check rhs at each !expr cycle (done variable for termination)
             AstVar* const doneVarp
-                = new AstVar{flp, VVarType::BLOCKTEMP, name + "__done",
-                             exprp->findBitDType()};
+                = new AstVar{flp, VVarType::BLOCKTEMP, name + "__done", exprp->findBitDType()};
             doneVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             beginp->addStmtsp(doneVarp);
-            beginp->addStmtsp(new AstAssign{
-                flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
-                new AstConst{flp, AstConst::BitFalse{}}});
+            beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitFalse{}}});
             auto setDone = [&]() {
                 return new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
                                      new AstConst{flp, AstConst::BitTrue{}}};
@@ -929,13 +927,13 @@ private:
             passBlockp->addStmtsp(setDone());
             windowp->addStmtsp(new AstIf{flp, rhsp, passBlockp});
             // @(clk) -- advance to next cycle in window
-            windowp->addStmtsp(new AstEventControl{
-                flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            windowp->addStmtsp(
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
             beginp->addStmtsp(windowp);
         } else if (isNonConsec) {
             // Standalone nonconsec: ##1 into window, then pass
-            beginp->addStmtsp(new AstEventControl{
-                flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            beginp->addStmtsp(
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
             beginp->addStmtsp(new AstPExprClause{flp, true});
         } else if (rhsp) {
             // Goto rep: check consequent once at match endpoint
