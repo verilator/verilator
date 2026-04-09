@@ -190,11 +190,10 @@ public:
     bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
-        return !m_context.gotFinish()
-               && (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
+        return (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
     }
     // Are there coroutines to resume in the inactive region after a #0 delay?
-    bool awaitingZeroDelay() const { return !m_context.gotFinish() && !m_zeroDelayed.empty(); }
+    bool awaitingZeroDelay() const { return !m_zeroDelayed.empty(); }
 #ifdef VL_DEBUG
     void dump() const;
 #endif
