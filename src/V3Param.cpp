@@ -1285,8 +1285,8 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
-    void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp,
-                        AstNodeModule* srcModp, string& longnamer, bool& any_overridesr) {
+    void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
+                        string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
@@ -1342,15 +1342,11 @@ class ParamProcessor final {
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
                         AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
                         dtypeClonep->foreach([&](AstVarRef* varrefp) {
-                            for (AstPin* pp = paramsp; pp;
-                                 pp = VN_AS(pp->nextp(), Pin)) {
+                            for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
                                 if (pp->modVarp() == varrefp->varp()) {
-                                    if (AstConst* const constp
-                                        = VN_CAST(pp->exprp(), Const)) {
-                                        varrefp->replaceWith(
-                                            constp->cloneTree(false));
-                                        VL_DO_DANGLING(varrefp->deleteTree(),
-                                                       varrefp);
+                                    if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
+                                        varrefp->replaceWith(constp->cloneTree(false));
+                                        VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
                                     }
                                     break;
                                 }
@@ -1362,12 +1358,10 @@ class ParamProcessor final {
                         cloneVarp->dtypep(nullptr);
                     }
                     V3Const::constifyParamsEdit(cloneVarp);
-                    if (AstConst* const widthedp
-                        = VN_CAST(cloneVarp->valuep(), Const)) {
+                    if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
                         // Set the constant's dtype to the port's widthed type
                         // so identical values hash the same in paramValueNumber.
-                        if (cloneVarp->dtypep())
-                            widthedp->dtypep(cloneVarp->dtypep());
+                        if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
                         widthedp->unlinkFrBack();
                         normedNamep = widthedp;
                     }
