@@ -480,7 +480,6 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        cntVarp->noSample(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
@@ -494,11 +493,8 @@ private:
             beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitTrue{}}});
             // Check condition at tick 0 (sequence start, before entering loop)
-            AstSampled* const initSampledp
-                = new AstSampled{flp, throughoutp->cloneTreePure(false)};
-            initSampledp->dtypeSetBit();
             beginp->addStmtsp(
-                new AstIf{flp, new AstLogNot{flp, initSampledp},
+                new AstIf{flp, new AstLogNot{flp, throughoutp->cloneTreePure(false)},
                           new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                         new AstConst{flp, AstConst::BitFalse{}}}});
         }
@@ -520,10 +516,8 @@ private:
                                          new AstConst{flp, 1}}});
             // Check throughout condition at each tick during delay (IEEE 1800-2023 16.9.9)
             if (throughoutp) {
-                AstSampled* const sampledp = new AstSampled{flp, throughoutp};
-                sampledp->dtypeSetBit();
                 loopp->addStmtsp(
-                    new AstIf{flp, new AstLogNot{flp, sampledp},
+                    new AstIf{flp, new AstLogNot{flp, throughoutp},
                               new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitFalse{}}}});
             }
@@ -729,7 +723,6 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        cntVarp->noSample(true);
         m_modp->addStmtsp(cntVarp);
         AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
         AstNodeExpr* const saturatingIncrp = new AstCond{
@@ -853,7 +846,6 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, name + "__counter",
                                            exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        cntVarp->noSample(true);
 
         AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
         beginp->addStmtsp(
@@ -865,10 +857,9 @@ private:
                                          new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
                                                    countp->cloneTreePure(false)}});
         // if ($sampled(expr)) cnt++
-        AstSampled* const sampledp = new AstSampled{flp, exprp};
-        sampledp->dtypeFrom(exprp);
+        // sampled is applied to whole property expr
         loopp->addStmtsp(
-            new AstIf{flp, sampledp,
+            new AstIf{flp, exprp,
                       new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
                                     new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
                                                new AstConst{flp, 1}}}});
@@ -884,9 +875,7 @@ private:
                 beginp->addStmtsp(new AstEventControl{
                     flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
             }
-            AstSampled* const sampledRhsp = new AstSampled{flp, rhsp};
-            sampledRhsp->dtypeFrom(rhsp);
-            beginp->addStmtsp(new AstIf{flp, sampledRhsp, new AstPExprClause{flp, true},
+            beginp->addStmtsp(new AstIf{flp, rhsp, new AstPExprClause{flp, true},
                                         new AstPExprClause{flp, false}});
         } else {
             beginp->addStmtsp(new AstPExprClause{flp, true});
@@ -1018,8 +1007,7 @@ private:
                 // Overlapped implication (|->): check antecedent on same cycle.
                 // disable iff is applied at the assertion level, not at the
                 // antecedent gate, matching the existing non-PExpr overlapped path.
-                condp = new AstSampled{flp, lhsp};
-                condp->dtypeFrom(lhsp);
+                condp = lhsp;
             } else {
                 // Non-overlapped implication (|=>): check antecedent from previous cycle
                 if (m_disablep) {
