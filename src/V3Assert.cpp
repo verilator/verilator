@@ -396,7 +396,15 @@ class AssertVisitor final : public VNVisitor {
         { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
 
         iterateAndNextNull(nodep->sentreep());
-        iterateAndNextNull(nodep->op3p());
+        if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstAssertIntrinsic* const assertp = VN_CAST(nodep, AssertIntrinsic)) {
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstCover* const coverp = VN_CAST(nodep, Cover)) {
+            iterateAndNextNull(coverp->coverincsp());
+        } else if (!VN_IS(nodep, Restrict)) {
+            nodep->v3fatalSrc("Unhandled assert type");
+        }
         iterateAndNextNull(nodep->passsp());
         AstSenTree* const sentreep = nodep->sentreep();
         if (nodep->immediate()) {
