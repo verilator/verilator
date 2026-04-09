@@ -1781,6 +1781,10 @@ class FourstateVisitor final : public VNVisitor {
         } else {
             nodep->addStmtsp(m_currentTmpSpotp);
         }
+        TmpVarsReleaser releaser{*this};
+        // Make sure FTasks use only local variables - prevents using tmp
+        // which may be used by a caller
+        for (auto& it : m_tmpUnusedVarps) it.clear();
         iterateChildren(nodep);
     }
 
