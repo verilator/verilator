@@ -54,26 +54,6 @@ class DfgRegularize final {
             vtx.replaceWith(varp);
             varp->srcp(&vtx);
         }
-
-        // Const vertices driving an Ast reference can only be inlined in scoped
-        // mode as some algorithms assume VarRefs in certain places.
-        if (m_dfg.modulep()) {
-            for (DfgConst& vtx : m_dfg.constVertices()) {
-                const bool drivesAstRef = vtx.foreachSink([](const DfgVertex& dst) {  //
-                    return dst.is<DfgAstRd>();
-                });
-                if (!drivesAstRef) continue;
-
-                // The prefered result variable is the canonical one if exists
-                DfgVertexVar* const varp = vtx.getResultVar();
-                if (!varp) continue;
-
-                // Relink all other sinks reading this vertex to read 'varp'
-                varp->srcp(nullptr);
-                vtx.replaceWith(varp);
-                varp->srcp(&vtx);
-            }
-        }
     }
 
     std::unordered_set<const DfgVertexVar*> gatherCyclicVariables() {
@@ -108,9 +88,6 @@ class DfgRegularize final {
         UASSERT_OBJ(!aVtx.is<DfgVertexVar>(), &aVtx, "Should be an operation vertex");
 
         if (bVtx.hasMultipleSinks()) {
-            // We are not inlining expressions prior to the final scoped run
-            if (m_dfg.modulep()) return true;
-
             // Add a temporary if it's cheaper to store and load from memory than recompute
             if (!aVtx.isCheaperThanLoad()) return true;
 
@@ -123,10 +100,8 @@ class DfgRegularize final {
         // No need to add a temporary if the single sink is a variable already
         if (sink.is<DfgVertexVar>()) return false;
 
-        // Do not inline expressions prior to the final scoped run, or if they are in a loop
-        if (const DfgAstRd* const astRdp = sink.cast<DfgAstRd>()) {
-            return m_dfg.modulep() || astRdp->inLoop();
-        }
+        // Do not inline expressions into a loop body
+        if (const DfgAstRd* const astRdp = sink.cast<DfgAstRd>()) { return astRdp->inLoop(); }
 
         // Make sure roots of wide concatenation trees are written to variables,
         // this enables V3FuncOpt to split them which can be a big speed gain
@@ -163,7 +138,7 @@ class DfgRegularize final {
             });
             // Delete corresponsing Ast variable at the end
             if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
-                m_ctx.m_deleteps.push_back(varp->nodep());
+                m_ctx.m_deleteps.push_back(varp->vscp());
             }
             // Remove the unused vertex
             vtx.unlinkDelete(m_dfg);
@@ -218,7 +193,6 @@ class DfgRegularize final {
         // Insert a temporary variable for all vertices that have multiple non-variable sinks
 
         // Scope cache for below
-        const bool scoped = !m_dfg.modulep();
         DfgVertex::ScopeCache scopeCache;
 
         // Ensure intermediate values used multiple times are written to variables
@@ -233,7 +207,7 @@ class DfgRegularize final {
             ++m_ctx.m_temporariesIntroduced;
             const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
             FileLine* const flp = vtx.fileline();
-            AstScope* const scopep = scoped ? vtx.scopep(scopeCache) : nullptr;
+            AstScope* const scopep = vtx.scopep(scopeCache);
             DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtype(), scopep);
             ++m_nTmps;
             // Replace vertex with the variable, make it drive the variable
@@ -248,13 +222,13 @@ class DfgRegularize final {
         , m_ctx{ctx} {
 
         uninlineVariables();
-        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed(ctx.prefix() + "regularize-uninlined");
+        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed("regularize-uninlined");
 
         eliminateVars();
-        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed(ctx.prefix() + "regularize-eliminate");
+        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed("regularize-eliminate");
 
         insertTemporaries();
-        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed(ctx.prefix() + "regularize-inserttmp");
+        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed("regularize-inserttmp");
     }
 
 public:

@@ -18,6 +18,7 @@
 
 #include "V3Dfg.h"
 
+#include "V3Ast.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 
@@ -26,18 +27,16 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //------------------------------------------------------------------------------
 // DfgGraph
 
-DfgGraph::DfgGraph(AstModule* modulep, const string& name)
-    : m_modulep{modulep}
-    , m_name{name} {}
+DfgGraph::DfgGraph(const string& name)
+    : m_name{name} {}
 
 DfgGraph::~DfgGraph() {
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
 }
 
 std::unique_ptr<DfgGraph> DfgGraph::clone() const {
-    const bool scoped = !modulep();
-
-    DfgGraph* const clonep = new DfgGraph{modulep(), name()};
+    // Create the new graph
+    DfgGraph* const clonep = new DfgGraph{name()};
 
     // Map from original vertex to clone
     std::unordered_map<const DfgVertex*, DfgVertex*> vtxp2clonep(size() * 2);
@@ -54,20 +53,12 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
 
         switch (vtx.type()) {
         case VDfgType::VarArray: {
-            if (scoped) {
-                cp = new DfgVarArray{*clonep, vp->varScopep()};
-            } else {
-                cp = new DfgVarArray{*clonep, vp->varp()};
-            }
+            cp = new DfgVarArray{*clonep, vp->vscp()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::VarPacked: {
-            if (scoped) {
-                cp = new DfgVarPacked{*clonep, vp->varScopep()};
-            } else {
-                cp = new DfgVarPacked{*clonep, vp->varp()};
-            }
+            cp = new DfgVarPacked{*clonep, vp->vscp()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
@@ -78,7 +69,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         }
         }
 
-        if (AstNode* const tmpForp = vp->tmpForp()) cp->tmpForp(tmpForp);
+        if (AstVarScope* const tmpForp = vp->tmpForp()) cp->tmpForp(tmpForp);
     }
     // Clone ast reference vertices
     for (const DfgVertexAst& vtx : m_astVertices) {  // LCOV_EXCL_START
@@ -203,18 +194,18 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
     if (otherps.empty()) return;
 
     // NODE STATE
-    // AstVar/AstVarScope::user2p() -> corresponding DfgVertexVar* in 'this' graph
+    // AstVarScope::user2p() -> corresponding DfgVertexVar* in 'this' graph
     const VNUser2InUse user2InUse;
 
     // Set up Ast Variable -> DfgVertexVar map for 'this' graph
-    for (DfgVertexVar& vtx : m_varVertices) vtx.nodep()->user2p(&vtx);
+    for (DfgVertexVar& vtx : m_varVertices) vtx.vscp()->user2p(&vtx);
 
     // Merge in each of the other graphs
     for (const std::unique_ptr<DfgGraph>& otherp : otherps) {
         // Process variables
         for (DfgVertexVar* const vtxp : otherp->m_varVertices.unlinkable()) {
             // Variabels that are present in 'this', make them use the DfgVertexVar in 'this'.
-            if (DfgVertexVar* const altp = vtxp->nodep()->user2u().to<DfgVertexVar*>()) {
+            if (DfgVertexVar* const altp = vtxp->vscp()->user2u().to<DfgVertexVar*>()) {
                 DfgVertex* const srcp = vtxp->srcp();
                 DfgVertex* const defaultp = vtxp->defaultp();
                 UASSERT_OBJ(!(srcp || defaultp) || (!altp->srcp() && !altp->defaultp()), vtxp,
@@ -226,7 +217,7 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
                 continue;
             }
             // Otherwise they will be moved
-            vtxp->nodep()->user2p(vtxp);
+            vtxp->vscp()->user2p(vtxp);
             vtxp->m_userGeneration = 0;
 #ifdef VL_DEBUG
             vtxp->m_dfgp = this;
@@ -279,29 +270,17 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
 
 DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    UASSERT_OBJ(!!scopep != !!modulep(), flp,
-                "makeNewVar scopep should only be provided for a scoped DfgGraph");
-
     // Create AstVar
     AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtype.astDtypep()};
-
-    if (scopep) {
-        // Add AstVar to the scope's module
-        scopep->modp()->addStmtsp(varp);
-        // Create AstVarScope
-        AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
-        // Add to scope
-        scopep->addVarsp(vscp);
-        // Create and return the corresponding variable vertex
-        if (dtype.isArray()) return new DfgVarArray{*this, vscp};
-        return new DfgVarPacked{*this, vscp};
-    } else {
-        // Add AstVar to containing module
-        modulep()->addStmtsp(varp);
-        // Create and return the corresponding variable vertex
-        if (dtype.isArray()) return new DfgVarArray{*this, varp};
-        return new DfgVarPacked{*this, varp};
-    }
+    // Add AstVar to the scope's module
+    scopep->modp()->addStmtsp(varp);
+    // Create AstVarScope
+    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+    // Add to scope
+    scopep->addVarsp(vscp);
+    // Create and return the corresponding variable vertex
+    if (dtype.isArray()) return new DfgVarArray{*this, vscp};
+    return new DfgVarPacked{*this, vscp};
 }
 
 static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
@@ -309,19 +288,19 @@ static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (const DfgVertexVar* const varVtxp = vtx.cast<DfgVertexVar>()) {
-        const AstNode* const nodep = varVtxp->nodep();
+        const AstVarScope* const vscp = varVtxp->vscp();
         os << toDotId(vtx);
         // Begin attributes
         os << " [";
         // Begin 'label'
         os << "label=\"";
         // Name
-        os << nodep->prettyName();
+        os << vscp->prettyName();
         // Address
         os << '\n' << cvtToHex(varVtxp);
         // Original variable, if any
-        if (const AstNode* const tmpForp = varVtxp->tmpForp()) {
-            if (tmpForp != nodep) os << "\ntemporary for: " << tmpForp->prettyName();
+        if (const AstVarScope* const tmpForp = varVtxp->tmpForp()) {
+            if (tmpForp != vscp) os << "\ntemporary for: " << tmpForp->prettyName();
         }
         // Type and fanout
         os << '\n';
@@ -879,10 +858,8 @@ DfgVertexVar* DfgVertex::getResultVar() {
         }
 
         // Prefer real variables over temporaries
-        const bool resIsTemp
-            = resp->varp() ? resp->varp()->isTemp() : resp->varScopep()->varp()->isTemp();
-        const bool varIsTemp
-            = varp->varp() ? varp->varp()->isTemp() : varp->varScopep()->varp()->isTemp();
+        const bool resIsTemp = resp->vscp()->varp()->isTemp();
+        const bool varIsTemp = varp->vscp()->varp()->isTemp();
         if (resIsTemp != varIsTemp) {
             if (resIsTemp) resp = varp;
             return false;
@@ -900,7 +877,7 @@ DfgVertexVar* DfgVertex::getResultVar() {
             return false;
         }
         // Prefer the one with the lexically smaller name
-        if (const int cmp = resp->nodep()->name().compare(varp->nodep()->name())) {
+        if (const int cmp = resp->vscp()->name().compare(varp->vscp()->name())) {
             if (cmp > 0) resp = varp;
             return false;
         }
@@ -913,13 +890,13 @@ DfgVertexVar* DfgVertex::getResultVar() {
 AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED {
     // If this is a variable, we are done
     if (const DfgVertexVar* const varp = this->cast<DfgVertexVar>()) {
-        return varp->varScopep()->scopep();
+        return varp->vscp()->scopep();
     }
 
     // Try the result var first if instructed (usully only in the recursive case)
     if (tryResultVar) {
         if (const DfgVertexVar* const varp = this->getResultVar()) {
-            return varp->varScopep()->scopep();
+            return varp->vscp()->scopep();
         }
     }
 

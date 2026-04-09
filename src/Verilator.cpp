@@ -307,15 +307,8 @@ static void process() {
             v3Global.constRemoveXs(true);
         }
 
-        if (v3Global.opt.fDfgPreInline() || v3Global.opt.fDfgPostInline()) {
-            // If doing DFG optimization, extract some additional candidates
-            V3DfgOptimizer::extract(v3Global.rootp());
-        }
-
-        if (v3Global.opt.fDfgPreInline()) {
-            // Pre inline DFG optimization
-            V3DfgOptimizer::optimize(v3Global.rootp(), "pre inline");
-        }
+        // If doing DFG optimization, extract some additional candidates
+        if (v3Global.opt.fDfg()) V3DfgOptimizer::extract(v3Global.rootp());
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Module inlining
@@ -329,15 +322,10 @@ static void process() {
 
         if (v3Global.opt.trace()) V3Interface::interfaceAll(v3Global.rootp());
 
-        if (v3Global.opt.fDfgPostInline()) {
-            // Post inline DFG optimization
-            V3DfgOptimizer::optimize(v3Global.rootp(), "post inline");
-        }
-
         // --PRE-FLAT OPTIMIZATIONS------------------
 
         // Initial const/dead to reduce work for ordering code
-        V3Const::constifyAll(v3Global.rootp());
+        if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
         v3Global.checkTree();
 
         V3Dead::deadifyDTypes(v3Global.rootp());
@@ -355,7 +343,7 @@ static void process() {
             V3Inst::instAll(v3Global.rootp());
 
             // Inst may have made lots of concats; fix them
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
             // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
             // No more AstAlias after linkDotScope
@@ -370,7 +358,7 @@ static void process() {
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Cleanup
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
         }
@@ -398,7 +386,7 @@ static void process() {
             V3Slice::sliceAll(v3Global.rootp());
 
             // Push constants across variables and remove redundant assignments
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
@@ -409,7 +397,7 @@ static void process() {
             }
 
             // Cleanup
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
 
@@ -429,10 +417,8 @@ static void process() {
             // forcing.
             V3Force::forceAll(v3Global.rootp());
 
-            if (v3Global.opt.fDfgScoped()) {
-                // Scoped DFG optimization
-                V3DfgOptimizer::optimize(v3Global.rootp(), "scoped");
-            }
+            // DFG optimization
+            if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 
             // Gate-based logic elimination; eliminate signals and push constant across cell
             // boundaries Instant propagation makes lots-o-constant reduction possibilities.

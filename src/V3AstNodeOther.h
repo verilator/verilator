@@ -1964,7 +1964,6 @@ class AstVar final : public AstNode {
     bool m_ignorePostRead : 1;  // Ignore reads in 'Post' blocks during ordering
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
-    bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
     bool m_dfgTriLowered : 1;  // Signal/temporary introduced by tristate lowering
     bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
@@ -2024,7 +2023,6 @@ class AstVar final : public AstNode {
         m_ignorePostRead = false;
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
-        m_dfgMultidriven = false;
         m_dfgTriLowered = false;
         m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
@@ -2206,8 +2204,6 @@ public:
     void setIgnorePostWrite() { m_ignorePostWrite = true; }
     bool ignoreSchedWrite() const { return m_ignoreSchedWrite; }
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
-    bool dfgMultidriven() const { return m_dfgMultidriven; }
-    void setDfgMultidriven() { m_dfgMultidriven = true; }
     bool dfgTriLowered() const { return m_dfgTriLowered; }
     void setDfgTriLowered() { m_dfgTriLowered = true; }
     bool dfgAllowMultidriveTri() const { return m_dfgAllowMultidriveTri; }

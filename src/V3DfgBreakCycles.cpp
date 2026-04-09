@@ -115,15 +115,14 @@ class TraceDriver final : public DfgVisitor {
 
     // Create temporary capable of holding the result of 'vtxp'
     DfgVertexVar* createTmp(const char* prefix, DfgVertex* vtxp) {
-        AstNode* nodep = m_dfg.modulep();
-        if (!nodep) nodep = v3Global.rootp();
+        AstNode* nodep = v3Global.rootp();
         const std::string name = m_dfg.makeUniqueName(prefix, nodep->user2Inc());
         FileLine* const flp = vtxp->fileline();
         DfgVertex::ScopeCache scopeCache;
-        AstScope* const scopep = m_dfg.modulep() ? nullptr : vtxp->scopep(scopeCache);
+        AstScope* const scopep = vtxp->scopep(scopeCache);
         DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
-        varp->varp()->isInternal(true);
-        varp->tmpForp(varp->nodep());
+        varp->vscp()->varp()->isInternal(true);
+        varp->tmpForp(varp->vscp());
         m_vtx2Scc[varp] = 0;
         return varp;
     }
@@ -1015,7 +1014,7 @@ class FixUp final {
             return debugStr(*aselp->fromp()) + "[" + std::to_string(i) + "]";
         }
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
-            return varp->nodep()->name();
+            return varp->vscp()->name();
         }
         vtx.v3fatalSrc("Unhandled node type");
     }  // LCOV_EXCL_STOP
@@ -1128,7 +1127,7 @@ class FixUp final {
     }
 
     void main(DfgVertexVar& var) {
-        UINFO(9, "FixUp of " << var.nodep()->name());
+        UINFO(9, "FixUp of " << var.vscp()->name());
 
         if (var.is<DfgVarPacked>()) {
             // For Packed variables, fix up as whole
@@ -1179,7 +1178,7 @@ std::pair<std::unique_ptr<DfgGraph>, bool>  //
 breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
     // Shorthand for dumping graph at given dump level
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
-        if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed(ctx.prefix() + "breakCycles-" + name);
+        if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
     };
 
     // Can't do much with trivial things ('a = a' or 'a[1] = a[0]'), so bail
@@ -1237,7 +1236,7 @@ breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
     if (dumpDfgLevel() >= 9) {
         Vtx2Scc vtx2Scc = res.makeUserMap<uint64_t>();
         V3DfgPasses::colorStronglyConnectedComponents(res, vtx2Scc);
-        res.dumpDotFilePrefixed(ctx.prefix() + "breakCycles-remaining", [&](const DfgVertex& vtx) {
+        res.dumpDotFilePrefixed("breakCycles-remaining", [&](const DfgVertex& vtx) {
             return vtx2Scc[vtx];  //
         });
     }

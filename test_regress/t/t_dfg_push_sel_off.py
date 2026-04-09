@@ -13,17 +13,13 @@ test.scenarios('simulator_st')
 
 test.top_filename = "t/t_dfg_push_sel.v"
 
-test.compile(verilator_flags2=[
-    "--binary", "--stats", "-fno-dfg-pre-inline", "-fno-dfg-post-inline", "-fno-dfg-peephole",
-    "-fno-dfg-push-down-sels"
-])
+test.compile(
+    verilator_flags2=["--binary", "--stats", "-fno-dfg-peephole", "-fno-dfg-push-down-sels"])
 
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, sels pushed down\s+(\d+)',
-                   0)
-    test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, would be cyclic\s+(\d+)',
-                   0)
+    test.file_grep(test.stats, r'Optimizations, DFG, PushDownSels, sels pushed down\s+(\d+)', 0)
+    test.file_grep(test.stats, r'Optimizations, DFG, PushDownSels, would be cyclic\s+(\d+)', 0)
 
 test.passes()

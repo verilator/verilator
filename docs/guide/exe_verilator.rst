@@ -649,9 +649,12 @@ Summary:
 
 .. option:: -fno-dfg
 
-   Rarely needed. Disable all use of the DFG-based combinational logic
-   optimizer. Alias for :vlopt:`-fno-dfg-pre-inline`,
-   :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
+   Rarely needed. Disable the DFG-based combinational logic optimizer.
+
+   In versions before 5.048:
+
+   Alias for :vlopt:`-fno-dfg-pre-inline`, :vlopt:`-fno-dfg-post-inline` and
+   :vlopt:`-fno-dfg-scoped`.
 
 .. option:: -fno-dfg-break-cycles
 
@@ -667,11 +670,15 @@ Summary:
 
 .. option:: -fno-dfg-post-inline
 
-   Rarely needed. Do not apply the DFG optimizer after inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-dfg-pre-inline
 
-   Rarely needed. Do not apply the DFG optimizer before inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer before inlining.
 
 .. option:: -fno-dfg-push-down-sels
 
@@ -679,7 +686,10 @@ Summary:
 
 .. option:: -fno-dfg-scoped
 
-   Rarely needed. Do not apply the DFG optimizer across module scopes.
+   Deprecated; use :vlopt:`-fno-dfg` instead.
+
+   In versions before 5.048: Do not apply the DFG optimizer across module
+   scopes.
 
 .. option:: -fno-expand
 

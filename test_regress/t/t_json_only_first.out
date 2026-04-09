@@ -46,10 +46,10 @@
      "stmtsp": [
       {"type":"ASSIGNW","name":"","addr":"(IB)","loc":"d,56:12,56:13","dtypep":"(G)",
        "rhsp": [
-        {"type":"VARREF","name":"d","addr":"(JB)","loc":"d,52:17,52:18","dtypep":"(G)","access":"RD","varp":"(Z)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
+        {"type":"VARREF","name":"d","addr":"(JB)","loc":"d,56:14,56:15","dtypep":"(G)","access":"RD","varp":"(Z)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],
        "lhsp": [
-        {"type":"VARREF","name":"q","addr":"(KB)","loc":"d,56:12,56:13","dtypep":"(G)","access":"WR","varp":"(CB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
+        {"type":"VARREF","name":"q","addr":"(KB)","loc":"d,56:10,56:11","dtypep":"(G)","access":"WR","varp":"(CB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],"timingControlp": [],"strengthSpecp": []}
     ]}
   ]},
@@ -88,19 +88,18 @@
   ]}
 ],"filesp": [],
  "miscsp": [
-  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(YB)",
+  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
    "typesp": [
     {"type":"BASICDTYPE","name":"logic","addr":"(MB)","loc":"d,37:15,37:20","dtypep":"(MB)","keyword":"logic","range":"31:0","generic":true,"signed":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(I)","loc":"d,39:11,39:14","dtypep":"(I)","keyword":"logic","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(G)","loc":"d,16:15,16:16","dtypep":"(G)","keyword":"logic","range":"3:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"bit","addr":"(OB)","loc":"d,21:14,21:15","dtypep":"(OB)","keyword":"bit","range":"31:0","generic":true,"signed":true,"rangep": []},
-    {"type":"VOIDDTYPE","name":"","addr":"(YB)","loc":"a,0:0,0:0","dtypep":"(YB)"}
+    {"type":"BASICDTYPE","name":"bit","addr":"(OB)","loc":"d,21:14,21:15","dtypep":"(OB)","keyword":"bit","range":"31:0","generic":true,"signed":true,"rangep": []}
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(ZB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(YB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(AC)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(ZB)","varsp": [],"blocksp": [],"inlinesp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(ZB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(YB)","varsp": [],"blocksp": [],"inlinesp": []}
     ]}
   ]}
 ]}
