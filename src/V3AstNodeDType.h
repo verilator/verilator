@@ -239,6 +239,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
+    bool m_emitToString = false;
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
@@ -295,6 +296,8 @@ public:
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
     bool isConstrainedRand() const { return m_constrainedRand; }
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
+    bool emitToString() const { return m_emitToString; }
+    void emitToString(bool flag);
 };
 
 // === Concrete node types =====================================================

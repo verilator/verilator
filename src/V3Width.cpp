@@ -6294,6 +6294,22 @@ class WidthVisitor final : public VNVisitor {
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
+                if (AstVarRef* const varRefp = VN_CAST(argp, VarRef)) {
+                    if (AstClassRefDType* const classRefp
+                        = VN_CAST(varRefp->dtypep(), ClassRefDType)) {
+                        if (classRefp->classp()) { classRefp->classp()->emitToString(true); }
+                    } else {
+                        AstNodeDType* nodeDtypep = varRefp->dtypep();
+                        while (nodeDtypep && nodeDtypep->subDTypep()
+                               && nodeDtypep->subDTypep()->skipRefp()) {
+                            nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
+                            if (AstNodeUOrStructDType* const uOrStructDTypep
+                                = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
+                                uOrStructDTypep->emitToString(true);
+                            }
+                        }
+                    }
+                }
                 AstNodeExpr* const newp = new AstToStringN{argp->fileline(), argp};
                 formatAttr = VFormatAttr::COMPLEX;
                 argp = newp;
