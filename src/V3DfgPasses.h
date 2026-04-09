@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
+#include "V3Dfg.h"
 #include "V3DfgContext.h"
 
 class AstModule;
@@ -62,6 +64,8 @@ void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 // Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
 void dfgToAst(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Dump the patterns in the given graphs
+void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&) VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations
