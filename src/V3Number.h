@@ -528,8 +528,8 @@ public:
         m_data.num()[0].m_value = value;
         opCleanThis();
     }
-    V3Number(FileLine* flp, int width, uint32_t value) {
-        init(nullptr, width, true);
+    V3Number(FileLine* flp, int width, uint32_t value, bool sized = true) {
+        init(nullptr, width, sized);
         m_fileline = flp;
         m_data.num()[0].m_value = value;
         opCleanThis();
