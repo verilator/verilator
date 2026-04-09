@@ -51,10 +51,6 @@ module t (
     a #=# b;
   endproperty
 
-  property p_nexttime;
-    nexttime a;
-  endproperty
-
   property p_nexttime2;
     nexttime [2] a;
   endproperty
