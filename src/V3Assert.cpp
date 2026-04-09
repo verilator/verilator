@@ -127,6 +127,7 @@ class AssertVisitor final : public VNVisitor {
     // Cleared on netlist
     //  AstNode::user1()         -> bool.  True if processed
     //  AstAlways::user2p()      -> std::vector<AstVar*>. Delayed variables via 'm_delayed'
+    //  AstNodeVarRef::user2()   -> bool.  True if shouldn't be sampled
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     AstUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
@@ -149,7 +150,6 @@ class AssertVisitor final : public VNVisitor {
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
     AstNode* m_failsp = nullptr;  // Current fail statement
-    bool m_underAssert = false;  // Visited from assert
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -394,8 +394,18 @@ class AssertVisitor final : public VNVisitor {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
         { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
-        iterateChildren(nodep);
 
+        iterateAndNextNull(nodep->sentreep());
+        if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstAssertIntrinsic* const assertp = VN_CAST(nodep, AssertIntrinsic)) {
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstCover* const coverp = VN_CAST(nodep, Cover)) {
+            iterateAndNextNull(coverp->coverincsp());
+        } else if (!VN_IS(nodep, Restrict)) {
+            nodep->v3fatalSrc("Unhandled assert type");
+        }
+        iterateAndNextNull(nodep->passsp());
         AstSenTree* const sentreep = nodep->sentreep();
         if (nodep->immediate()) {
             UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensitivity");
@@ -453,10 +463,8 @@ class AssertVisitor final : public VNVisitor {
 
         VL_RESTORER(m_passsp);
         VL_RESTORER(m_failsp);
-        VL_RESTORER(m_underAssert);
         m_passsp = passsp;
         m_failsp = failsp;
-        m_underAssert = true;
         iterate(nodep->propp());
 
         AstNode* propExprp;
@@ -710,7 +718,7 @@ class AssertVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (m_inSampled && !nodep->varp()->noSample()) {
+        if (m_inSampled && !nodep->user2() && !nodep->varp()->isTemp()) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");
@@ -731,26 +739,31 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstPExprClause* nodep) override {
-        if (m_underAssert) {
-            if (nodep->pass() && m_passsp) {
-                // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
-                nodep->replaceWith(m_passsp->cloneTree(true));
-            } else if (!nodep->pass() && m_failsp) {
-                // Stop may be added, thus need to clone next too.
-                nodep->replaceWith(m_failsp->cloneTree(true));
-            } else {
-                nodep->unlinkFrBack();
-            }
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        AstNode* stmtsp = nullptr;
+        if (nodep->pass() && m_passsp) {
+            // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
+            stmtsp = m_passsp->cloneTree(true);
+        } else if (!nodep->pass() && m_failsp) {
+            stmtsp = m_failsp->cloneTree(true);
         }
+        if (stmtsp) {
+            stmtsp->foreachAndNext([](AstNodeVarRef* const refp) {
+                // References inside action blocks shouldn't be implicitly sampled
+                // m_passsp/m_failsp have been already visited once and refs explicitly sampled
+                // are handled already
+                refp->user2(1);
+            });
+            nodep->replaceWith(stmtsp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstPExpr* nodep) override {
-        if (m_underAssert) {
-            VL_RESTORER(m_inSampled);
-            m_inSampled = false;
-            iterateChildren(nodep);
-        } else if (m_inRestrict) {
+        if (m_inRestrict) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        } else {
+            iterateChildren(nodep);
         }
     }
 
