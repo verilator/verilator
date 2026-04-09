@@ -16,7 +16,16 @@
 // V3Common's Transformations:
 //
 //  Each class:
-//      Create string access functions
+//      Emit to_string() if given class is printed from (used as format arg), or any of its
+//      parents/children is printed from, or if any of its children has another parent that is
+//      printed from. If class emits to_string(), emit to_string() for its struct/union/interface
+//      fields.
+//  Each struct/union:
+//      Emit to_string() if given struct/union is used as format arg or is a field of a
+//      class/struct/union that emits to_string(). If struct/union emits to_string(), emit
+//      to_string() for its struct/union fields.
+//  Each interface:
+//      Emit to_string() if given interface is a field of a class that emits to_string()
 //
 //*************************************************************************
 
@@ -150,30 +159,192 @@ static void makeToStringMiddle(AstClass* nodep) {
     nodep->addStmtsp(funcp);
 }
 
+class ToStringVisitor final : public VNVisitorConst {
+    // NODE STATE
+    //  AstNode::user1()  -> bool. to_string() was emitted
+    //  AstClass::user2()  -> PrintedFromParent. Used to propagate emission of to_string() from
+    //  parent to child
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    size_t m_emitTowardsRoot
+        = 0;  // class that require its ancestors to emit to_string() sets this
+    size_t m_emitForMembers = 0;  // class/struct that requires its members (and their members
+                                  // recursively) to emit to_string() sets this
+    enum class PrintedFromParent : uint8_t {
+        UNRESOLVED,
+        PRINTED_FROM_PARENT,
+        NO_PRINTED_FROM_PARENT
+    };
+
+    VDouble0 m_statClassToString;
+    VDouble0 m_statInterfaceToString;
+    VDouble0 m_statStructUnionToString;
+
+    void markClassIterate(AstClass* classp) {
+        if (classp->user1SetOnce()) return;
+        VL_RESTORER(m_emitForMembers);
+        ++m_emitForMembers;
+        for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                AstNodeDType* nodeDtypep = varp->dtypep();
+                if (AstIfaceRefDType* const ifaceRedDTypep = VN_CAST(nodeDtypep, IfaceRefDType)) {
+                    if (ifaceRedDTypep->ifacep()) iterateConst(ifaceRedDTypep->ifacep());
+                } else {
+                    while (nodeDtypep && nodeDtypep->subDTypep()
+                           && nodeDtypep->subDTypep()->skipRefp()) {
+                        nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
+                        if (AstIfaceRefDType* const ifaceRedDTypep
+                            = VN_CAST(nodeDtypep, IfaceRefDType)) {
+                            if (ifaceRedDTypep->ifacep()) {
+                                iterateConst(ifaceRedDTypep->ifacep());
+                            }
+                        } else if (AstNodeUOrStructDType* const uOrStructDTypep
+                                   = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
+                            iterateConst(uOrStructDTypep);
+                        }
+                    }
+                }
+            }
+        }
+
+        makeToString(classp);
+        makeToStringMiddle(classp);
+        ++m_statClassToString;
+    }
+    void visit(AstNodeUOrStructDType* structp) override {
+        if (structp->user1())
+            return;  // if to_string() was already emitted skip the rest of the function
+        if (structp->emitToString()) ++m_emitForMembers;
+        if (m_emitForMembers
+            > 0) {  // either this struct directly requires emission of to_string() or the
+                    // class/struct that has this struct as a field requires it to emit to_string()
+            for (AstMemberDType* memberp = structp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                AstNodeDType* nodeDtypep = memberp->dtypep();
+                if (AstNodeUOrStructDType* const uOrStructDTypep
+                    = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
+                    iterateConst(uOrStructDTypep);
+                } else {
+                    while (nodeDtypep && nodeDtypep->subDTypep()) {
+                        nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
+                        if (AstNodeUOrStructDType* const uOrStructDTypep
+                            = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
+                            iterateConst(uOrStructDTypep);
+                        }
+                    }
+                }
+            }
+            if (structp->emitToString()) --m_emitForMembers;
+
+            if (!structp->packed()) {
+                makeVlToString(structp);
+                ++m_statStructUnionToString;
+            }
+
+            structp->user1(true);  // mark that to_string() was emitted to not emit it twice (if
+                                   // e.g two printed classes have this struct as a field)
+        }
+    }
+    void visit(AstIface* ifacep) override {
+        if (ifacep->user1())
+            return;  // if to_string() was already emitted skip the rest of the function
+        if (m_emitForMembers
+            > 0) {  // class that has this iface as a field requires it to emit to_string()
+            makeVlToString(ifacep);
+            ++m_statInterfaceToString;
+            ifacep->user1(true);  // mark that to_string() was emitted to not emit it twice (if e.g
+                                  // two printed classes have this interface as a field)
+        }
+    }
+    // go towards class hierarchy root, if there is any printed from class on the way, mark its
+    // ancestors, and mark everything on the return path from the printed from class
+    void visit(AstClass* classp) override {
+        if (classp->user1()) return;
+        if (classp->isPrintedFrom()) {
+            markClassIterate(classp);
+            VL_RESTORER(m_emitTowardsRoot);
+            ++m_emitTowardsRoot;
+            for (const AstClassExtends* extendp = classp->extendsp(); extendp;
+                 extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+                if (extendp->classp() && !extendp->classp()->user1()) {
+                    iterateConst(extendp->classp());
+                }
+            }
+            classp->user2(static_cast<int>(PrintedFromParent::PRINTED_FROM_PARENT));
+        } else {
+            PrintedFromParent printed_parent = static_cast<PrintedFromParent>(classp->user2());
+            if (printed_parent != PrintedFromParent::UNRESOLVED && m_emitTowardsRoot == 0) {
+                return;
+            }
+
+            if (m_emitTowardsRoot > 0) markClassIterate(classp);
+
+            bool is_root = true;
+            for (const AstClassExtends* extendp = classp->extendsp(); extendp;
+                 extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+                if (extendp->classp()) {
+                    if (static_cast<PrintedFromParent>(extendp->classp()->user2())
+                            == PrintedFromParent::UNRESOLVED
+                        || (m_emitTowardsRoot > 0 && !extendp->classp()->user1())) {
+                        iterateConst(extendp->classp());
+                    }
+                    if (printed_parent != PrintedFromParent::PRINTED_FROM_PARENT) {
+                        printed_parent
+                            = static_cast<PrintedFromParent>(extendp->classp()->user2());
+                    }
+                    is_root = false;
+                }
+            }
+
+            if (is_root) printed_parent = PrintedFromParent::NO_PRINTED_FROM_PARENT;
+
+            classp->user2(static_cast<int>(printed_parent));
+            if (printed_parent == PrintedFromParent::PRINTED_FROM_PARENT) {
+                markClassIterate(classp);
+
+                // If one parent is printed from, other parent also has to emit to_string() to
+                // handle cases like:
+                // Base  IFaceClass (printed from)
+                //   V    V
+                //   Derived (this class)
+                VL_RESTORER(m_emitTowardsRoot);
+                ++m_emitTowardsRoot;
+                for (const AstClassExtends* extendp = classp->extendsp(); extendp;
+                     extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+                    if (extendp->classp() && !extendp->classp()->user1()) {
+                        iterateConst(extendp->classp());
+                    }
+                }
+            }
+        }
+    }
+    void visit(AstConstPool*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    explicit ToStringVisitor(AstNode* nodep) {
+        if (v3Global.hasPrintedObjects()) {
+            AstNode::user1ClearTree();
+            AstNode::user2ClearTree();
+
+            iterateConst(nodep);
+        }
+
+        V3Stats::addStat("Optimizations, Class ToString emitted", m_statClassToString);
+        V3Stats::addStat("Optimizations, Interface ToString emitted", m_statInterfaceToString);
+        V3Stats::addStat("Optimizations, Struct/union ToString emitted",
+                         m_statStructUnionToString);
+    }
+    ~ToStringVisitor() override = default;
+};
+
 //######################################################################
 // V3Common class functions
 
 void V3Common::commonAll() {
     UINFO(2, __FUNCTION__ << ":");
-    // NODE STATE
-    // Entire netlist:
-    //  AstClass::user1()     -> bool.  True if class needs to_string dumper
-    const VNUser1InUse m_inuser1;
-    // Create common contents for each module
-    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
-        if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            // Create ToString methods
-            makeToString(classp);
-            makeToStringMiddle(classp);
-        } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
-            makeVlToString(ifacep);
-        }
-    }
-    for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
-         nodep = nodep->nextp()) {
-        if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
-            if (!dtypep->packed()) makeVlToString(dtypep);
-        }
-    }
+
+    ToStringVisitor{v3Global.rootp()};
+
     V3Global::dumpCheckGlobalTree("common", 0, dumpTreeEitherLevel() >= 3);
 }

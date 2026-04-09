@@ -2003,6 +2003,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
     if (useVirtualPublic()) str << " [VIRPUB]";
+    if (isPrintedFrom()) str << " [PRINTED]";
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
@@ -2010,6 +2011,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExtended);
     dumpJsonBoolFuncIf(str, isInterfaceClass);
     dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isPrintedFrom);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
@@ -2608,10 +2610,12 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (emitToString()) str << " [EMITSTR]";
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, emitToString);
     dumpJsonGen(str);
 }
 void AstUnionDType::dump(std::ostream& str) const {
