@@ -1969,7 +1969,6 @@ class AstVar final : public AstNode {
     bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
-    bool m_noSample : 1;  // Do not wrap with AstSampled in assertion context
     bool m_processQueue : 1;  // Process queue variable
     void init() {
         m_ansi = false;
@@ -2029,7 +2028,6 @@ class AstVar final : public AstNode {
         m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
-        m_noSample = false;
         m_processQueue = false;
     }
 
@@ -2178,8 +2176,6 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
-    bool noSample() const { return m_noSample; }
-    void noSample(bool flag) { m_noSample = flag; }
     bool processQueue() const { return m_processQueue; }
     void processQueue(bool flag) { m_processQueue = flag; }
     bool sampled() const { return m_sampled; }
