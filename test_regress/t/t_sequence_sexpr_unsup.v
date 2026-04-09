@@ -91,11 +91,12 @@ module t (
   sequence s_booleanabbrev_plus;
     a [+];
   endsequence
-  sequence s_booleanabbrev_eq;
-    a [= 1];
-  endsequence
+  // a [= 1] is now supported (AstSNonConsRep)
   sequence s_booleanabbrev_eq_range;
     a [= 1:2];
+  endsequence
+  sequence s_booleanabbrev_eq_unbounded;
+    a [= 1:$];
   endsequence
   sequence s_booleanabbrev_minusgt;
     a [-> 1];

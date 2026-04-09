@@ -59,7 +59,7 @@ class AssertPropConsRepVisitor final : public VNVisitor {
         bool unbounded;
     };
 
-    RepRange getCounts(const AstConsRep* repp) {
+    RepRange getCounts(const AstSConsRep* repp) {
         const AstConst* const minp = VN_CAST(repp->countp(), Const);
         UASSERT_OBJ(minp, repp, "ConsRep min count must be constant after V3Width");
         RepRange r;
@@ -79,14 +79,14 @@ class AssertPropConsRepVisitor final : public VNVisitor {
     void visit(AstSExpr* nodep) override {
         // Intercept before iterating children: lowerInSExpr deletes nodep, so
         // calling iterateChildren after would be a use-after-free.
-        if (AstConsRep* const repp = VN_CAST(nodep->preExprp(), ConsRep)) {
+        if (AstSConsRep* const repp = VN_CAST(nodep->preExprp(), SConsRep)) {
             lowerInSExpr(nodep, repp);
             return;
         }
         iterateChildren(nodep);
     }
 
-    void visit(AstConsRep* nodep) override {
+    void visit(AstSConsRep* nodep) override {
         // Leading SExpr case is handled by visit(AstSExpr).
         // Here: trailing position ("b ##1 a[+]") and standalone.
         if (AstSExpr* const sexprp = VN_CAST(nodep->backp(), SExpr)) {
@@ -105,7 +105,7 @@ class AssertPropConsRepVisitor final : public VNVisitor {
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
-    void lowerStandalone(AstConsRep* nodep) {
+    void lowerStandalone(AstSConsRep* nodep) {
         const RepRange r = getCounts(nodep);
         if (!nodep->maxCountp() && !r.unbounded && r.minN >= 2) return;  // V3AssertPre handles
 
@@ -135,7 +135,7 @@ class AssertPropConsRepVisitor final : public VNVisitor {
     // Lower "expr[*N:M] ##1 next" to a PExpr loop:
     //   if ($sampled(expr)) { cnt=1; do { ##1; branch on cnt vs N/M; } while (!done); }
     //   else if (N==0): ##1; if ($sampled(next)) pass; else fail;
-    void lowerInSExpr(AstSExpr* sexprp, AstConsRep* repp) {
+    void lowerInSExpr(AstSExpr* sexprp, AstSConsRep* repp) {
         const RepRange r = getCounts(repp);
         FileLine* const flp = sexprp->fileline();
 
@@ -1396,7 +1396,8 @@ class RangeDelayExpander final : public VNVisitor {
             }
         }
         // Reject throughout with nested throughout or goto repetition
-        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)) {
+        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)
+            || VN_IS(nodep->rhsp(), SNonConsRep)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with complex sequence operator");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

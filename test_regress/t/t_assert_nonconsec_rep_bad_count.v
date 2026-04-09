@@ -13,15 +13,15 @@ module t;
   int n;
 
   // Error: non-constant count
-  assert property (@(posedge clk) a[->n] |-> b)
+  assert property (@(posedge clk) a[=n] |-> b)
     else $error("FAIL");
 
   // Error: zero count (unsupported)
-  assert property (@(posedge clk) a[->0] |-> b)
+  assert property (@(posedge clk) a[=0] |-> b)
     else $error("FAIL");
 
   // Error: negative count
-  assert property (@(posedge clk) a[->-1] |-> b)
+  assert property (@(posedge clk) a[=-1] |-> b)
     else $error("FAIL");
 
   always @(posedge clk) begin

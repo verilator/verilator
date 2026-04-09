@@ -983,54 +983,6 @@ public:
     bool lhsIsValue() const { return m_lhsIsValue; }
     bool rhsIsValue() const { return m_rhsIsValue; }
 };
-class AstConsRep final : public AstNodeExpr {
-    // Consecutive repetition [*N], [*N:M], [+], [*] (IEEE 1800-2023 16.9.2)
-    // op1 := exprp -- the repeated expression
-    // op2 := countp -- min repetition count (N); always a positive constant after V3Width
-    // op3 := maxCountp -- max repetition count (M); nullptr when exact or unbounded
-    //
-    // Encoding:
-    //   [*N]:   countp=N, maxCountp=nullptr, unbounded=false
-    //   [*N:M]: countp=N, maxCountp=M,       unbounded=false
-    //   [+]:    countp=1, maxCountp=nullptr,  unbounded=true  (= [*1:$])
-    //   [*]:    countp=0, maxCountp=nullptr,  unbounded=true  (= [*0:$])
-    //
-    // Lowering:
-    //   Exact [*N] standalone: V3AssertPre saturating counter
-    //   All other forms and all SExpr-contained forms: V3AssertProp PExpr loop
-    // @astgen op1 := exprp : AstNodeExpr
-    // @astgen op2 := countp : AstNodeExpr
-    // @astgen op3 := maxCountp : Optional[AstNodeExpr]
-    const bool m_unbounded = false;  // True for [+] and [*] (upper bound is $)
-public:
-    // Exact [*N]
-    AstConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
-        : ASTGEN_SUPER_ConsRep(fl) {
-        this->exprp(exprp);
-        this->countp(countp);
-    }
-    // Range [*N:M] or unbounded [+]/[*]
-    AstConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp,
-               bool unbounded)
-        : ASTGEN_SUPER_ConsRep(fl)
-        , m_unbounded{unbounded} {
-        this->exprp(exprp);
-        this->countp(countp);
-        this->maxCountp(maxCountp);
-    }
-    ASTGEN_MEMBERS_AstConsRep;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { V3ERROR_NA_RETURN(0); }
-    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_LINE
-        return m_unbounded == VN_DBG_AS(samep, ConsRep)->m_unbounded;  // LCOV_EXCL_LINE
-    }
-    bool unbounded() const { return m_unbounded; }
-};
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{}
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
@@ -2173,6 +2125,54 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
 };
+class AstSConsRep final : public AstNodeExpr {
+    // Consecutive repetition [*N], [*N:M], [+], [*] (IEEE 1800-2023 16.9.2)
+    // op1 := exprp -- the repeated expression
+    // op2 := countp -- min repetition count (N); always a positive constant after V3Width
+    // op3 := maxCountp -- max repetition count (M); nullptr when exact or unbounded
+    //
+    // Encoding:
+    //   [*N]:   countp=N, maxCountp=nullptr, unbounded=false
+    //   [*N:M]: countp=N, maxCountp=M,       unbounded=false
+    //   [+]:    countp=1, maxCountp=nullptr,  unbounded=true  (= [*1:$])
+    //   [*]:    countp=0, maxCountp=nullptr,  unbounded=true  (= [*0:$])
+    //
+    // Lowering:
+    //   Exact [*N] standalone: V3AssertPre saturating counter
+    //   All other forms and all SExpr-contained forms: V3AssertProp PExpr loop
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+    // @astgen op3 := maxCountp : Optional[AstNodeExpr]
+    const bool m_unbounded = false;  // True for [+] and [*] (upper bound is $)
+public:
+    // Exact [*N]
+    AstSConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_SConsRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    // Range [*N:M] or unbounded [+]/[*]
+    AstSConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp,
+               bool unbounded)
+        : ASTGEN_SUPER_SConsRep(fl)
+        , m_unbounded{unbounded} {
+        this->exprp(exprp);
+        this->countp(countp);
+        this->maxCountp(maxCountp);
+    }
+    ASTGEN_MEMBERS_AstSConsRep;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { V3ERROR_NA_RETURN(0); }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_LINE
+        return m_unbounded == VN_DBG_AS(samep, SConsRep)->m_unbounded;  // LCOV_EXCL_LINE
+    }
+    bool unbounded() const { return m_unbounded; }
+};
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
     // @astgen op1 := preExprp: Optional[AstNodeExpr]
@@ -2311,6 +2311,22 @@ public:
         this->countp(countp);
     }
     ASTGEN_MEMBERS_AstSGotoRep;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+};
+class AstSNonConsRep final : public AstNodeExpr {
+    // Nonconsecutive repetition: expr [= count]
+    // IEEE 1800-2023 16.9.2
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := countp : AstNodeExpr
+public:
+    explicit AstSNonConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+        : ASTGEN_SUPER_SNonConsRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+    }
+    ASTGEN_MEMBERS_AstSNonConsRep;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
