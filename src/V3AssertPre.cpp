@@ -914,8 +914,7 @@ private:
             AstLoop* const windowp = new AstLoop{flp};
             // LoopTest: continue while !done
             windowp->addStmtsp(new AstLoopTest{
-                flp, windowp,
-                new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
+                flp, windowp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
             // if (expr) { fail; done = 1; } -- window closed, expr true again
             AstBegin* const failBlockp = new AstBegin{flp, "", nullptr, true};
             failBlockp->addStmtsp(new AstPExprClause{flp, false});
