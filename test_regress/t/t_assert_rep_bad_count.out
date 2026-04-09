@@ -1,0 +1,31 @@
+%Error: t/t_assert_rep_bad_count.v:42:39: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   42 |   assert property (@(posedge clk) a [*n] |-> 1);
+      |                                       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_rep_bad_count.v:42:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   42 |   assert property (@(posedge clk) a [*n] |-> 1);
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:45:37: Unsupported: [*0] consecutive repetition
+                                                    : ... note: In instance 't'
+   45 |   assert property (@(posedge clk) a [*0] |-> 1);
+      |                                     ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_assert_rep_bad_count.v:48:37: Consecutive repetition max count must be >= min count (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   48 |   assert property (@(posedge clk) a [*3:1] |-> 1);
+      |                                     ^~
+%Error: t/t_assert_rep_bad_count.v:51:41: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   51 |   assert property (@(posedge clk) a [*1:n] |-> 1);
+      |                                         ^
+%Error: t/t_assert_rep_bad_count.v:51:37: Consecutive repetition max count must be constant expression (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   51 |   assert property (@(posedge clk) a [*1:n] |-> 1);
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_assert_rep_bad_count.v:54:37: Unsupported: [*N:0] consecutive repetition with zero max count
+                                                    : ... note: In instance 't'
+   54 |   assert property (@(posedge clk) a [*0:0] |-> 1);
+      |                                     ^~
+%Error: Exiting due to

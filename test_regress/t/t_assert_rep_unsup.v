@@ -7,6 +7,8 @@
 module t (input clk);
   logic a, b;
 
+  // === Consecutive repetition [*N] unsupported forms ===
+
   // Unsupported: non-##1 inter-repetition delay
   assert property (@(posedge clk) a [*2] ##3 b);
 
@@ -15,5 +17,11 @@ module t (input clk);
 
   // Unsupported: trailing consecutive repetition in sequence
   assert property (@(posedge clk) b ##1 a[+]);
+
+  // === Nonconsecutive repetition [=N] unsupported forms ===
+
+  // Unsupported: nonconsecutive rep inside throughout
+  assert property (@(posedge clk) a throughout (b[=2]))
+    else $error("FAIL");
 
 endmodule

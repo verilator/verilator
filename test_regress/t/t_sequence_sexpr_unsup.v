@@ -91,7 +91,9 @@ module t (
   sequence s_booleanabbrev_plus;
     a [+];
   endsequence
-  // a [= 1] is now supported (AstSNonConsRep)
+  sequence s_booleanabbrev_eq;
+    a [= 1];  // Now supported (AstSNonConsRep)
+  endsequence
   sequence s_booleanabbrev_eq_range;
     a [= 1:2];
   endsequence

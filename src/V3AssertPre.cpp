@@ -62,7 +62,7 @@ private:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
     V3UniqueNames m_gotoRepNames{"__VgotoRep"};  // Goto repetition counter name generator
-    V3UniqueNames m_nonConsecRepNames{"__VnonConsecRep"};  // Nonconsecutive rep name generator
+    V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
@@ -864,7 +864,7 @@ private:
         UASSERT_OBJ(sensesp, exprp, "Repetition requires a clock");
 
         const std::string name
-            = isNonConsec ? m_nonConsecRepNames.get(exprp) : m_gotoRepNames.get(exprp);
+            = isNonConsec ? m_nonConsRepNames.get(exprp) : m_gotoRepNames.get(exprp);
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, name + "__counter",
                                            exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);

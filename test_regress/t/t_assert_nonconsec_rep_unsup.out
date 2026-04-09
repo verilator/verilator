@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_assert_nonconsec_rep_unsup.v:14:37: Unsupported: throughout with complex sequence operator
-                                                          : ... note: In instance 't'
-   14 |   assert property (@(posedge clk) a throughout (b[=2]))
-      |                                     ^~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
