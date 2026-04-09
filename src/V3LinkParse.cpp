@@ -1372,15 +1372,32 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
         // Distribute the parse-time raw cross_body list (rawBodyp, op3) into the
-        // typed optionsp slot.  Nodes are properly in-tree here so
-        // unlinkFrBack() works cleanly with no bison-list hackery.
+        // typed optionsp slot.  The grammar produces AstCgOptionAssign nodes for
+        // option.* items; convert them to AstCoverOption exactly as visit(AstCoverpoint*)
+        // does.  Other items (functions, unsupported bin selectors) are discarded.
         for (AstNode *itemp = nodep->rawBodyp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             itemp->unlinkFrBack();
-            if (AstCoverOption* const optp = VN_CAST(itemp, CoverOption)) {
-                nodep->addOptionsp(optp);
+            if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                VCoverOptionType optType = VCoverOptionType::COMMENT;
+                if (optp->name() == "at_least") {
+                    optType = VCoverOptionType::AT_LEAST;
+                } else if (optp->name() == "weight") {
+                    optType = VCoverOptionType::WEIGHT;
+                } else if (optp->name() == "goal") {
+                    optType = VCoverOptionType::GOAL;
+                } else if (optp->name() == "comment") {
+                    optType = VCoverOptionType::COMMENT;
+                } else {
+                    optp->v3warn(COVERIGN,
+                                 "Ignoring unsupported coverage cross option: "
+                                     + optp->prettyNameQ());
+                }
+                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
+                                                      optp->valuep()->cloneTree(false)});
+                VL_DO_DANGLING(optp->deleteTree(), optp);
             } else {
-                // AstCgOptionAssign, AstFunc, and other unsupported items
+                // AstFunc and other unsupported items
                 VL_DO_DANGLING(itemp->deleteTree(), itemp);
             }
         }
