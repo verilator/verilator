@@ -373,7 +373,6 @@ class DataflowOptimize final {
         for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext1);
         endOfStage("cse1", dfg, acyclicComps);
 
-
         // Merge everything back under the main DFG
         dfg.mergeGraphs(std::move(acyclicComps));
         dfg.mergeGraphs(std::move(cyclicComps));
