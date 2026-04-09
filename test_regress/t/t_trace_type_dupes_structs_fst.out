@@ -1,5 +1,5 @@
 $date
-Tue Mar 31 17:14:53 2026
+Fri Apr 10 14:48:27 2026
 
 $end
 $version
@@ -447,8 +447,8 @@ $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
-      $var parameter 4 P! two_fours_var[1] [3:0] $end
-      $var parameter 4 Q! two_fours_var[0] [3:0] $end
+      $var logic 4 P! two_fours_var[1] [3:0] $end
+      $var logic 4 Q! two_fours_var[0] [3:0] $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
@@ -874,8 +874,8 @@ $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
-      $var parameter 4 w" two_fours_var[1] [3:0] $end
-      $var parameter 4 x" two_fours_var[0] [3:0] $end
+      $var logic 4 w" two_fours_var[1] [3:0] $end
+      $var logic 4 x" two_fours_var[0] [3:0] $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
@@ -1301,8 +1301,8 @@ $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
-      $var parameter 4 @$ two_fours_var[1] [3:0] $end
-      $var parameter 4 A$ two_fours_var[0] [3:0] $end
+      $var logic 4 @$ two_fours_var[1] [3:0] $end
+      $var logic 4 A$ two_fours_var[0] [3:0] $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
@@ -1728,8 +1728,8 @@ $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
-      $var parameter 4 g% two_fours_var[1] [3:0] $end
-      $var parameter 4 h% two_fours_var[0] [3:0] $end
+      $var logic 4 g% two_fours_var[1] [3:0] $end
+      $var logic 4 h% two_fours_var[0] [3:0] $end
      $upscope $end
      $attrbegin array packed bounds 4294967296 $end
      $scope sv_array two_fours_var $end
