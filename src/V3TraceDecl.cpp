@@ -113,7 +113,22 @@ class TraceDeclVisitor final : public VNVisitor {
     std::vector<AstCFunc*> m_topFuncps;  // Top level trace initialization functions
     std::vector<AstCFunc*> m_subFuncps;  // Trace sub functions for this scope
     std::set<const AstTraceDecl*> m_declUncalledps;  // Declarations not called
-    std::unordered_map<const AstNodeDType*, AstCFunc*> m_dtypeFuncs;  // Functions per type
+    // Functions per type and variable kind (wire vs logic etc.)
+    struct DtypeFuncKey final {
+        const AstNodeDType* dtypep;
+        VVarType varType;
+        bool operator==(const DtypeFuncKey& other) const {
+            return dtypep == other.dtypep && varType == other.varType;
+        }
+    };
+    struct DtypeFuncKeyHash final {
+        size_t operator()(const DtypeFuncKey& key) const {
+            return std::hash<const AstNodeDType*>{}(key.dtypep)
+                   ^ (std::hash<uint8_t>{}(key.varType) << 1);
+        }
+    };
+    std::unordered_map<DtypeFuncKey, AstCFunc*, DtypeFuncKeyHash>
+        m_dtypeFuncs;  // Functions per type+kind
     AstCFunc* m_dtypeFuncp = nullptr;  // Current type func
     AstCFunc* m_dtypeSubFuncp = nullptr;  // Current type sub func
     const string m_dtypeArgs{", const char* name, uint32_t fidx, uint32_t c, "
@@ -463,7 +478,8 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_traName);
         FileLine* const flp = skipTypep->fileline();
 
-        auto pair = m_dtypeFuncs.emplace(skipTypep, nullptr);
+        const DtypeFuncKey dtypeKey{skipTypep, m_traVscp->varp()->varType()};
+        auto pair = m_dtypeFuncs.emplace(dtypeKey, nullptr);
         AstCFunc** funcpp = &pair.first->second;
         if (pair.second) {
             *funcpp = newCFunc(flp, m_dtypeNames.get("trace_init_dtype__"));
