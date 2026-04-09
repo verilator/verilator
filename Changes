@@ -95,6 +95,7 @@ Verilator 5.047 devel
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
 * Fix virtual interface select from sub-interface instance (#7203) (#7370) (#7203). [Yilou Wang]
 * Fix VPI force of bit-selected signals (#7211) (#7301). [Christian Hecken]
+* Fix `$finish` to immediately stop executing code from non-final blocks (#7213 partial) (#7390).
 * Fix wrong $bits() for parameterized interface struct typedefs (#7218) (#7219). [em2machine]
 * Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
 * Fix array reduction in constraints crashing with class inheritance (#7226) (#7263). [Yilou Wang]
