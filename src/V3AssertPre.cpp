@@ -1106,7 +1106,8 @@ private:
     }
     void visit(AstPExpr* nodep) override {
         if (m_pexprp && m_pexprp->user1()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex property expression inside 'until''");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Complex property expression inside 'until''");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
