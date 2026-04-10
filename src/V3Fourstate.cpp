@@ -1128,20 +1128,29 @@ class FourstateVisitor final : public VNVisitor {
                 selp, getFourStateExpressionValue(selp->fromp(), false), false);
         }
 
+        void visit(AstRedAnd* const redAndp) override {
+            // &(a.value | a.xz)
+            enforceTmp();
+            FileLine* const flp = redAndp->fileline();
+            m_result = new AstRedAnd{
+                flp, new AstOr{flp, getFourStateExpressionValue(redAndp->lhsp(), false),
+                               getFourStateExpressionXZ(redAndp->lhsp())}};
+        }
+
         void visit(AstRedOr* const redOrp) override {
             // |(a.value | a.xz)
             enforceTmp();
             FileLine* const flp = redOrp->fileline();
-            m_result
-                = new AstRedOr{flp, new AstOr{flp, getFourStateExpressionValue(redOrp->lhsp()),
-                                              getFourStateExpressionXZ(redOrp->lhsp())}};
+            m_result = new AstRedOr{
+                flp, new AstOr{flp, getFourStateExpressionValue(redOrp->lhsp(), false),
+                               getFourStateExpressionXZ(redOrp->lhsp())}};
         }
 
         void visit(AstRedXor* const redXorp) override {
-            // a.xz || ^a.value
+            // |a.xz | ^a.value
             FileLine* const flp = redXorp->fileline();
-            m_result = new AstLogOr{
-                flp, getFourStateExpressionXZ(redXorp->lhsp()),
+            m_result = new AstOr{
+                flp, new AstRedOr{flp, getFourStateExpressionXZ(redXorp->lhsp())},
                 new AstRedXor{flp, getFourStateExpressionValue(redXorp->lhsp(), false)}};
         }
 
@@ -1304,6 +1313,13 @@ class FourstateVisitor final : public VNVisitor {
             newp->num().opBitsXZ(constp->num());
             newp->dtypeSetBitSized(newp->width(), newp->dtypep()->numeric());
             m_result = newp;
+        }
+
+        void visit(AstRedAnd* const redAndp) override {
+            // &(a.value | a.xz) & |a.xz
+            FileLine* const flp = redAndp->fileline();
+            m_result = new AstAnd{flp, getFourStateExpressionValue(redAndp),
+                                  new AstRedOr{flp, getFourStateExpressionXZ(redAndp->lhsp())}};
         }
 
         void visit(AstRedOr* const redOrp) override {
