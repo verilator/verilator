@@ -581,7 +581,7 @@ public:
         if (VL_UNLIKELY(diff)) fullFourstateQData(oldp, newval, newvalXZ, bits);
     }
     VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
-        for (int i = 0; i < (bits + 31) / 32; ++i) {
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
                 fullWData(oldp, newvalp, bits);
                 return;
@@ -590,8 +590,9 @@ public:
     }
     VL_ATTR_ALWINLINE void chgFourstateWData(uint32_t* oldp, const WData* newvalp,
                                              const WData* newvalXZp, int bits) {
-        for (int i = 0; i < (bits + 31) / 32; i += 2) {
-            if (VL_UNLIKELY((oldp[i] ^ newvalp[i]) | (oldp[i + 1] ^ newvalXZp[i]))) {
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) {
+            const int oldIdx = i << 1;
+            if (VL_UNLIKELY((oldp[oldIdx] ^ newvalp[i]) | (oldp[oldIdx | 1] ^ newvalXZp[i]))) {
                 fullFourstateWData(oldp, newvalp, newvalXZp, bits);
                 return;
             }
@@ -668,7 +669,7 @@ public:
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_WDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
-        for (int i = 0; i < (bits + 31) / 32; ++i) *m_offloadBufferWritep++ = newvalp[i];
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) *m_offloadBufferWritep++ = newvalp[i];
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     void chgDouble(uint32_t code, double newval) {

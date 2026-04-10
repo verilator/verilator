@@ -963,9 +963,10 @@ template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateWData(uint32_t* oldp, const WData* newvalp,
                                                         const WData* newvalXZp, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    for (int i = 0; i < VL_WORDS_I(bits); i += 2) {
-        oldp[i] = newvalp[i];
-        oldp[i + 1] = newvalXZp[i];
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) {
+        const int oldIdx = i << 1;
+        oldp[oldIdx] = newvalp[i];
+        oldp[oldIdx | 1] = newvalXZp[i];
     }
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     emitFourstateWData(code, newvalp, newvalXZp, bits);
