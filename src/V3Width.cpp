@@ -5492,8 +5492,6 @@ class WidthVisitor final : public VNVisitor {
             }
 
             if (patp) {
-                // Don't want the RHS an array
-                allConstant &= VN_IS(patp->lhssp(), Const);
                 patp->dtypep(arrayDtp->subDTypep());
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
@@ -5502,7 +5500,50 @@ class WidthVisitor final : public VNVisitor {
                             = new AstInitArray{nodep->fileline(), arrayDtp, nullptr};
                         newp = newap;
                     }
-                    VN_AS(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
+                    // If valuep is a reference to an array constant (or a
+                    // slice of one), flatten its elements into the target
+                    // array.  Note: at this point width resolution has run,
+                    // so slices appear as AstSliceSel (the pre-resolution
+                    // AstSelExtract is handled in patVectorMap).
+                    const AstInitArray* subInitp = nullptr;
+                    int flattenLo = 0;
+                    int flattenElements = 0;
+                    if (const auto* vrp = VN_CAST(valuep, VarRef)) {
+                        subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
+                        if (subInitp) {
+                            if (const auto* adtp
+                                = VN_CAST(vrp->varp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                                flattenElements = adtp->declRange().elements();
+                            }
+                        }
+                    } else if (const auto* slicep = VN_CAST(valuep, SliceSel)) {
+                        if (const auto* vrp = VN_CAST(slicep->fromp(), VarRef)) {
+                            subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
+                            if (subInitp) {
+                                flattenLo = slicep->declRange().lo();
+                                flattenElements = slicep->declRange().elements();
+                            }
+                        }
+                    }
+                    if (subInitp && flattenElements > 0) {
+                        // Sub-array values are always constant
+                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                        for (int sn = 0; sn < flattenElements; ++sn) {
+                            UASSERT_OBJ(entn < range.elements(), nodep,
+                                        "Flattened sub-array overflows target array");
+                            VN_AS(newp, InitArray)
+                                ->addIndexValuep(ent - range.lo(),
+                                                 subInitp->getIndexDefaultedValuep(flattenLo + sn)
+                                                     ->cloneTree(false));
+                            if (sn < flattenElements - 1) {
+                                ++entn;
+                                ent += range.leftToRightInc();
+                            }
+                        }
+                    } else {
+                        allConstant &= VN_IS(valuep, Const);
+                        VN_AS(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
+                    }
                 } else {  // Packed. Convert to concat for now.
                     if (!newp) {
                         newp = valuep;
@@ -9502,6 +9543,36 @@ class WidthVisitor final : public VNVisitor {
         return testp;
     }
 
+    // Return how many target-array positions a single pattern member
+    // occupies.  For scalar values this is 1; for a full array reference
+    // or an array slice it is the element count of that array/slice.
+    // Called before width resolution, so slices are still AstSelExtract
+    // and VarRef dtypes may not be set yet — use varp()->dtypep() instead.
+    static int patMemberArrayElements(AstPatMember* patp) {
+        AstNodeExpr* const exprp = patp->lhssp();
+        // For slice expressions (pre-width: SelExtract), compute from bounds
+        if (auto* selp = VN_CAST(exprp, SelExtract)) {
+            if (const auto* vrp = VN_CAST(selp->fromp(), VarRef)) {
+                if (!VN_CAST(vrp->varp()->valuep(), InitArray)) return 1;
+                // Bounds may be parameter expressions; constify before reading
+                V3Const::constifyParamsNoWarnEdit(selp->leftp());
+                V3Const::constifyParamsNoWarnEdit(selp->rightp());
+                const auto* msbp = VN_CAST(selp->leftp(), Const);
+                const auto* lsbp = VN_CAST(selp->rightp(), Const);
+                if (msbp && lsbp) return std::abs(msbp->toSInt() - lsbp->toSInt()) + 1;
+            }
+            return 1;
+        }
+        // Full array reference: check via the variable's dtype (not the
+        // expression's dtype, which may be unset before width resolution).
+        if (const auto* vrp = VN_CAST(exprp, NodeVarRef)) {
+            if (!VN_CAST(vrp->varp()->valuep(), InitArray)) return 1;
+            if (const auto* adtp = VN_CAST(vrp->varp()->dtypep()->skipRefp(), NodeArrayDType))
+                return adtp->declRange().elements();
+        }
+        return 1;
+    }
+
     PatVecMap patVectorMap(AstPattern* nodep, const VNumRange& range) {
         PatVecMap patmap;
         int element = range.left();
@@ -9523,7 +9594,13 @@ class WidthVisitor final : public VNVisitor {
             if (!newEntry) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             }
-            element += range.leftToRightInc();
+            // For positional members that reference an array (or a slice
+            // of one), advance by that array/slice's element count so
+            // subsequent members are mapped correctly.  Note: this runs
+            // before width resolution, so slices are still AstSelExtract
+            // (the post-resolution AstSliceSel is handled in patternArray).
+            const int elementAdvance = patMemberArrayElements(patp);
+            element += range.leftToRightInc() * elementAdvance;
         }
         return patmap;
     }
