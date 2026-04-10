@@ -76,7 +76,7 @@
 %000001       bins write = {1};
             }
 %000001     addr_cmd_opt: cross cp_addr, cp_cmd {
-              option.weight = 2;
+%000001       option.weight = 2;
             }
           endgroup
         
@@ -108,6 +108,51 @@
 %000001     cross_ab: cross cp_addr, cp_cmd;
           endgroup
         
+          // Cross with at_least option in body: covers AT_LEAST case in V3LinkParse visit(AstCoverCross*)
+%000002   covergroup cg_at_least;
+%000001     cp_addr: coverpoint addr {
+%000001       bins addr0 = {0};
+%000001       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000001       bins read  = {0};
+%000001       bins write = {1};
+            }
+%000001     addr_cmd_al: cross cp_addr, cp_cmd {
+%000001       option.at_least = 3;
+            }
+          endgroup
+        
+          // Cross with goal option in body: covers GOAL case in V3LinkParse visit(AstCoverCross*)
+%000002   covergroup cg_goal;
+%000001     cp_addr: coverpoint addr {
+%000001       bins addr0 = {0};
+%000001       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000001       bins read  = {0};
+%000001       bins write = {1};
+            }
+%000001     addr_cmd_goal: cross cp_addr, cp_cmd {
+%000001       option.goal = 90;
+            }
+          endgroup
+        
+          // Cross with unsupported option: covers COVERIGN warning in V3LinkParse visit(AstCoverCross*)
+%000002   covergroup cg_unsup_cross_opt;
+%000001     cp_addr: coverpoint addr {
+%000001       bins addr0 = {0};
+%000001       bins addr1 = {1};
+            }
+%000001     cp_cmd: coverpoint cmd {
+%000001       bins read  = {0};
+%000001       bins write = {1};
+            }
+%000001     addr_cmd_unsup: cross cp_addr, cp_cmd {
+%000001       option.per_instance = 1;  // unsupported for cross; triggers COVERIGN at V3LinkParse:1380
+            }
+          endgroup
+        
           // Covergroup with unnamed cross: exercises crossName.empty() fallback to "cross" (L1395)
 %000002   covergroup cg_unnamed_cross;
 %000001     cp_a: coverpoint addr { bins a0 = {0}; bins a1 = {1}; }
@@ -121,6 +166,9 @@
 %000001   cg3 cg3_inst = new;
 %000001   cg4 cg4_inst = new;
 %000001   cg5 cg5_inst = new;
+%000001   cg_at_least cg_at_least_inst = new;
+%000001   cg_goal cg_goal_inst = new;
+%000001   cg_unsup_cross_opt cg_unsup_cross_opt_inst = new;
 %000001   cg_unnamed_cross cg_unnamed_cross_inst = new;
         
 %000001   initial begin
@@ -158,6 +206,18 @@
 %000001     addr = 2; cmd = 1; cg_range_inst.sample();  // hi_range x write
 %000001     addr = 1; cmd = 1; cg_range_inst.sample();  // lo_range x write
 %000001     addr = 3; cmd = 0; cg_range_inst.sample();  // hi_range x read
+        
+            // Sample cg_at_least (option.at_least in cross body)
+%000001     addr = 0; cmd = 0; cg_at_least_inst.sample();  // addr0 x read
+%000001     addr = 1; cmd = 1; cg_at_least_inst.sample();  // addr1 x write
+        
+            // Sample cg_goal (option.goal in cross body)
+%000001     addr = 0; cmd = 0; cg_goal_inst.sample();  // addr0 x read
+%000001     addr = 1; cmd = 1; cg_goal_inst.sample();  // addr1 x write
+        
+            // Sample cg_unsup_cross_opt: option.per_instance triggers COVERIGN in V3LinkParse
+%000001     addr = 0; cmd = 0; cg_unsup_cross_opt_inst.sample();  // addr0 x read
+%000001     addr = 1; cmd = 1; cg_unsup_cross_opt_inst.sample();  // addr1 x write
         
             // Sample cg_unnamed_cross: exercises unnamed cross (crossName fallback to "cross")
 %000001     addr = 0; cmd = 0; cg_unnamed_cross_inst.sample();  // a0 x read
