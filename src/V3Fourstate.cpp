@@ -2399,13 +2399,9 @@ class FourstateShuffleVisitor final : public VNVisitor {
                         "This loop shall never reach four-state complement");
             if (AstVar* const complement = varp->fourStateComplement()) {
                 shuffledVersion(complement);
-                if (VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef)) {
-                    exprp->nextp()->unlinkFrBack()->deleteTree();
-                } else {
-                    exprp->v3warn(
-                        E_UNSUPPORTED,
-                        "-fshuffle with not variable references arguments is not supported");
-                }
+                UASSERT_OBJ(VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef), exprp,
+                            "Wide four-state signals shall be passed only as lvalue references");
+                exprp->nextp()->unlinkFrBack()->deleteTree();
                 varp = VN_AS(varp->nextp()->nextp(), Var);
             }
             exprp = VN_AS(exprp->nextp(), NodeExpr);
