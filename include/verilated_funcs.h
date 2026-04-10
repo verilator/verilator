@@ -28,6 +28,7 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <initializer_list>
 #include <string>
 
 //=========================================================================
@@ -2904,155 +2905,40 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
 //======================================================================
 // Constification
 
-// VL_CONST_W_#X(int obits, WDataOutP owp, IData data0, .... IData data(#-1))
+// VL_CONST_W_#T/V/X(int obits, WDataOutP owp, {IData data0, .... IData data(#-1)})
 // Sets wide vector words to specified constant words.
 // These macros are used when o might represent more words then are given as constants,
 // hence all upper words must be zeroed.
-// If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
 #define VL_C_END_(obits, wordsSet) \
     VL_MEMSET_ZERO_W(o + (wordsSet), VL_WORDS_I(obits) - (wordsSet)); \
     return o
 
-// clang-format off
-static inline WDataOutP VL_FILL_W_0T(int obits, WDataOutP o) VL_MT_SAFE {
-    VL_C_END_(obits, 0);
+static inline WDataOutP VL_CONST_W_T(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    VL_MEMCPY_W(o, values.begin(), values.size());
+    VL_C_END_(obits, values.size());
 }
-static inline WDataOutP VL_FILL_W_1T(int obits, WDataOutP o) VL_MT_SAFE {
-    VL_MEMSET_ONES_W(o, VL_WORDS_I(obits));
+static inline WDataOutP VL_CONST_W_V(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    std::size_t i = 0;
+    for (EData v : values) {
+        o[i] = v;
+        i += 2;
+    }
+    for (const int size = VL_WORDS_I(obits); i < size; i += 2) o[i] = 0;
     return o;
 }
-static inline WDataOutP VL_FILL_W_0V(int obits, WDataOutP o) VL_MT_SAFE {
-    for (int i = VL_WORDS_I(obits) - 2; i > 0; i -= 2) o[i] = 0;
+static inline WDataOutP VL_CONST_W_X(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    std::size_t i = 1;
+    for (EData v : values) {
+        o[i] = v;
+        i += 2;
+    }
+    for (const int size = VL_WORDS_I(obits); i < size; i += 2) o[i] = 0;
     return o;
 }
-static inline WDataOutP VL_FILL_W_1V(int obits, WDataOutP o) VL_MT_SAFE {
-    for (int i = VL_WORDS_I(obits) - 2; i > 0; i -= 2) o[i] = ~0;
-    return o;
-}
-static inline WDataOutP VL_FILL_W_0X(int obits, WDataOutP o) VL_MT_SAFE {
-    for (int i = VL_WORDS_I(obits) - 1; i > 0; i -= 2) o[i] = 0;
-    VL_C_END_(obits, 0);
-}
-static inline WDataOutP VL_FILL_W_1X(int obits, WDataOutP o) VL_MT_SAFE {
-    for (int i = VL_WORDS_I(obits) - 1; i > 0; i -= 2) o[i] = ~0;
-    return o;
-}
-
-static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o, EData d0) VL_MT_SAFE {
-    o[0] = d0;
-    VL_C_END_(obits, 1);
-}
-static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;
-    VL_C_END_(obits, 2);
-}
-static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o, EData d2, EData d1,
-                                      EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;
-    VL_C_END_(obits, 3);
-}
-static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    VL_C_END_(obits, 4);
-}
-static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
-                                      EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;
-    VL_C_END_(obits, 5);
-}
-static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
-                                      EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;
-    VL_C_END_(obits, 6);
-}
-static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
-                                      EData d6, EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;
-    VL_C_END_(obits, 7);
-}
-static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
-                                      EData d7, EData d6, EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    VL_C_END_(obits, 8);
-}
-//
-static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP o,
-                                        EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 1);
-}
-static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP o,
-                                        EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 2);
-}
-static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP o,
-                                        EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 3);
-}
-static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP o,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 4);
-}
-static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP o,
-                                        EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 5);
-}
-static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP o,
-                                        EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 6);
-}
-static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP o,
-                                        EData d6, EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 7);
-}
-static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP o,
-                                        EData d7, EData d6, EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;  ohi[7] = d7;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 8);
-}
-
-#undef VL_C_END_
-
-// Partial constant, lower words of vector wider than 8*32, starting at bit number lsb
-static inline void VL_CONSTLO_W_8X(int lsb, WDataOutP obase,
-                                   EData d7, EData d6, EData d5, EData d4,
-                                   EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0; o[1] = d1; o[2] = d2; o[3] = d3; o[4] = d4; o[5] = d5; o[6] = d6; o[7] = d7;
-}
-// clang-format on
 
 //======================================================================
 // Strings

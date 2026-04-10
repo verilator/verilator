@@ -1153,10 +1153,6 @@ uint32_t V3Number::edataWord(int eword) const {
     return m_data.num()[eword].m_value;
 }
 
-uint32_t V3Number::edataWordFourstateValue(int eword) const { return m_data.num()[eword].m_value; }
-
-uint32_t V3Number::edataWordFourstateXZ(int eword) const { return m_data.num()[eword].m_valueX; }
-
 uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }

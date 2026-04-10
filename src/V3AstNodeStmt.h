@@ -46,13 +46,10 @@ class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := lhsp : AstNodeExpr
     // @astgen op3 := timingControlp : Optional[AstNode]
-    // @astgen ptr := m_fourstateComplementAssignment : Optional[AstNodeAssign]  // Set only in
-    // four-state assignments - point to the other four-state assignment
 protected:
     AstNodeAssign(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                   AstNode* timingControlp = nullptr)
-        : AstNodeStmt{t, fl}
-        , m_fourstateComplementAssignment{nullptr} {
+        : AstNodeStmt{t, fl} {
         this->rhsp(rhsp);
         this->lhsp(lhsp);
         this->timingControlp(timingControlp);
@@ -67,15 +64,8 @@ public:
     virtual bool cleanRhs() const { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode*) const override { return true; }
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string verilogKwd() const override { return "="; }
     bool isTimingControl() const override { return timingControlp(); }
-    void fourstateComplementAssignment(AstNodeAssign* const assignp) {
-        m_fourstateComplementAssignment = assignp;
-    }
-    AstNodeAssign* fourstateComplementAssignment() const {
-        return m_fourstateComplementAssignment;
-    }
 };
 class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
     // A Begin/fork block

@@ -30,9 +30,6 @@
 #include <unordered_set>
 #include <vector>
 
-// Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
-constexpr int EMITC_NUM_CONSTW = 8;
-
 //######################################################################
 // Emit lazy forward declarations
 
@@ -242,79 +239,23 @@ public:
             return;
         }
 
-        int upWidth = nodep->num().widthToFit();
-        int chunks = 0;
-        const bool isFourstateShuffle = assigntop->varp()->isFourStateShuffle();
-        const int bitSizeMultiplayer = isFourstateShuffle ? 2 : 1;
-        const int emitNumConstW = EMITC_NUM_CONSTW / bitSizeMultiplayer;
-        if (upWidth > emitNumConstW * VL_EDATASIZE) {
-            // Output e.g. 8 words in groups of e.g. 8
-            chunks = (upWidth - 1) / (emitNumConstW * VL_EDATASIZE);
-            upWidth %= (emitNumConstW * VL_EDATASIZE);
-            if (upWidth == 0) upWidth = (emitNumConstW * VL_EDATASIZE);
+        const int width = nodep->num().widthToFit();
+        putnbs(nodep, "VL_CONST_W_");
+        emitTVX(assigntop);
+        puts("(");
+        puts(cvtToStr(assigntop->width()));
+        puts(",");
+        if (!assigntop->selfPointer().isEmpty()) {
+            emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
         }
-        {  // Upper e.g. 8 words
-            if (chunks) {
-                putnbs(nodep, "VL_CONSTHI_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth) * bitSizeMultiplayer));
-                puts("X(");
-                puts(cvtToStr(nodep->width() * bitSizeMultiplayer));
-                puts(",");
-                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            } else {
-                putnbs(nodep, "VL_CONST_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth) * bitSizeMultiplayer));
-                puts("X(");
-                puts(cvtToStr(nodep->widthMin()));
-            }
-            puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(assigntop->varp()->nameProtect());
-            for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                if (isFourstateShuffle) {
-                    ofp()->printf(",0x%08" PRIx64,
-                                  static_cast<uint64_t>(nodep->num().edataWordFourstateXZ(
-                                      word + chunks * emitNumConstW)));
-                    ofp()->printf(",0x%08" PRIx64,
-                                  static_cast<uint64_t>(nodep->num().edataWordFourstateValue(
-                                      word + chunks * emitNumConstW)));
-                } else {
-                    ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                       word + chunks * emitNumConstW)));
-                }
-            }
-            puts(")");
+        puts(assigntop->varp()->nameProtect());
+        puts(", {");
+        for (int word = 0; word < VL_WORDS_I(width); ++word) {
+            // Only 32 bits - llx + long long here just to appease CPP format warning
+            if (word) puts(",");
+            ofp()->printf("0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(word)));
         }
-        for (chunks--; chunks >= 0; chunks--) {
-            puts(";\n");
-            putbs("VL_CONSTLO_W_");
-            puts(cvtToStr(EMITC_NUM_CONSTW));
-            puts("X(");
-            puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(assigntop->varp()->nameProtect());
-            for (int word = emitNumConstW - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                if (isFourstateShuffle) {
-                    ofp()->printf(",0x%08" PRIx64,
-                                  static_cast<uint64_t>(nodep->num().edataWordFourstateXZ(
-                                      word + chunks * emitNumConstW)));
-                    ofp()->printf(",0x%08" PRIx64,
-                                  static_cast<uint64_t>(nodep->num().edataWordFourstateValue(
-                                      word + chunks * emitNumConstW)));
-                } else {
-                    ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                       word + chunks * emitNumConstW)));
-                }
-            }
-            puts(")");
-        }
+        puts("})");
     }
 
     void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
@@ -1697,22 +1638,7 @@ public:
     }
     void visit(AstConst* nodep) override {  //
         if (m_wideTempRefp && nodep->isWide()) {
-            if (nodep->num().isAll0() || nodep->num().isAll1()) {
-                putbs("VL_FILL_W_");
-                puts(nodep->num().isAll1() ? "1" : "0");
-                emitTVX(m_wideTempRefp);
-                puts("(");
-                puts(cvtToStr(m_wideTempRefp->width()));
-                puts(",");
-                if (!m_wideTempRefp->selfPointer().isEmpty()) {
-                    emitDereference(m_wideTempRefp,
-                                    m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
-                }
-                puts(m_wideTempRefp->varp()->nameProtect());
-                puts(")");
-            } else {
-                emitConstantW(nodep, m_wideTempRefp);
-            }
+            emitConstantW(nodep, m_wideTempRefp);
             m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
             emitConstant(nodep);

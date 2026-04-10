@@ -716,8 +716,6 @@ public:
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
-    uint32_t edataWordFourstateValue(int eword) const;
-    uint32_t edataWordFourstateXZ(int eword) const;
     uint8_t dataByte(int byte) const;
     uint32_t countBits(const V3Number& ctrl) const;
     uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
