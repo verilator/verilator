@@ -261,7 +261,16 @@ class LinkLValueVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->rhsp());
         iterateAndNextNull(nodep->thsp());
     }
-
+    // cppcheck-suppress constParameterPointer
+    void prepost_visit(AstNodeUniop* nodep) {
+        VL_RESTORER(m_setRefLvalue);
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->lhsp());
+    }
+    void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
     // Nodes that change LValue state
     void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
@@ -369,7 +378,7 @@ void V3LinkLValue::linkLValueSet(AstNode* nodep) {
 }
 void V3LinkLValue::linkLValueUnset(AstNode* nodep) {
     // Called by later link functions when it is known a node needs
-    // to be converted to a lvalue.
+    // to be converted from a lvalue.
     UINFO(9, __FUNCTION__ << ": ");
     { LinkLValueVisitor{nodep, VAccess::READ}; }
 }

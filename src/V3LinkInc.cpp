@@ -323,7 +323,6 @@ class LinkIncVisitor final : public VNVisitor {
         prepostStmtVisit(nodep, exprp, storeTop, valuep);
     }
     void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
-        V3LinkLValue::linkLValueSet(storeTop);
         V3LinkLValue::linkLValueUnset(valuep);
         AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
@@ -338,7 +337,6 @@ class LinkIncVisitor final : public VNVisitor {
         }
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
-        V3LinkLValue::linkLValueSet(writep);
         V3LinkLValue::linkLValueUnset(readp);
 
         FileLine* fl = nodep->fileline();
@@ -349,7 +347,7 @@ class LinkIncVisitor final : public VNVisitor {
         const string name = "__Vincrement"s + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
-            new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTree(true)}};
+            new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTreePure(true)}};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         if (m_ftaskp) varp->funcLocal(true);
 
