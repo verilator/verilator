@@ -188,7 +188,8 @@ class TraceDeclVisitor final : public VNVisitor {
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
-    std::map<const AstVar*, AstVarScope*> m_varxzToVscp;  //
+    std::map<const AstVar*, AstVarScope*>
+        m_varxzToVscp;  // Map from variable with xz part to its variable scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
     AstNodeExpr* m_traValuep = nullptr;  // Value expression for current signal
     AstNodeExpr* m_traValueXZp = nullptr;  // ValueXZ expression for current signal

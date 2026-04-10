@@ -754,20 +754,21 @@ void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WData* newvalp,
                                             const WData* newvalXZp, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
+    const int lastIdx = (bits - 1) / VL_EDATASIZE;
     {
-        const IData value = newvalp[(bits - 1) / VL_EDATASIZE];
-        const IData xz = newvalXZp[(bits - 1) / VL_EDATASIZE];
+        const EData value = newvalp[lastIdx];
+        const EData xz = newvalXZp[lastIdx];
         for (int i = (bits - 1) % VL_EDATASIZE; i >= 0; --i) {
-            const IData mask = 1 << i;
+            const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
         }
     }
-    for (int w = ((bits - 1) / VL_EDATASIZE) - 1; w >= 0; --w) {
-        const IData value = newvalp[w];
-        const IData xz = newvalXZp[w];
-        for (int i = 31; i >= 0; --i) {
-            const IData mask = 1 << i;
+    for (int w = lastIdx - 1; w >= 0; --w) {
+        const EData value = newvalp[w];
+        const EData xz = newvalXZp[w];
+        for (int i = VL_EDATASIZE - 1; i >= 0; --i) {
+            const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
         }
