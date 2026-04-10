@@ -120,7 +120,7 @@ module tpub (
         if (24'h11bca != got_long) $stop;
         $c("{ uint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
         if (60'haaaa_bbbb_cccc != got_quad) $stop;
-        $c("{ WData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,gw); }");
+        $c("{ WData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W_TT(72,this->got_wide,gw); }");
         if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
         //Below doesn't work, because we're calling it inside the loop that sets var_flop
         // if (12'h321 != var_flop) $stop;

@@ -423,8 +423,10 @@ static inline WDataOutP VL_ASSIGN_W_TT(int obits, WDataOutP owp, WDataInP const 
     return VL_MEMCPY_W(owp, lwp, VL_WORDS_I(obits));
 }
 
+// clang-format off
+
 #define VL_ASSIGN_W_GEN(suffix, outputOffset, outputJump, inputOffset, inputJump) \
-    static inline WDataOutP VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) \
+static inline  WDataOutP VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) \
         VL_MT_SAFE { \
         const WDataOutP result = owp; \
         owp += outputOffset; \
@@ -436,6 +438,9 @@ static inline WDataOutP VL_ASSIGN_W_TT(int obits, WDataOutP owp, WDataInP const 
         } \
         return result; \
     }
+
+// clang-format on
+
 // T - two state value
 // V - value part
 // X - xz part
@@ -891,9 +896,11 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
 //===================================================================
 // SIMPLE LOGICAL OPERATORS
 
+// clang-format off
+
 #define VL_BIOP_GEN(name, op, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, \
                     rhsJump) \
-    static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
                                                    WDataInP rwp) VL_MT_SAFE { \
         const WDataOutP result = owp; \
         owp += outputOffset; \
@@ -907,6 +914,9 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
         } \
         return result; \
     }
+
+// clang-format on
+
 #define VL_BIOP_GEN_HELPER(name, op) \
     VL_BIOP_GEN(name, op, TTT, 0, 1, 0, 1, 0, 1) \
     VL_BIOP_GEN(name, op, TTV, 0, 1, 0, 1, 0, 2) \
@@ -950,8 +960,11 @@ static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const
     return od;
 }
 // EMIT_RULE: VL_NOT:  oclean=dirty; obits=lbits;
+
+// clang-format off
+
 #define VL_NOT_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump) \
-    static inline WDataOutP VL_NOT_W_##suffix(int words, WDataOutP owp, WDataInP lwp) \
+static inline WDataOutP VL_NOT_W_##suffix(int words, WDataOutP owp, WDataInP lwp) \
         VL_MT_SAFE { \
         const WDataOutP result = owp; \
         owp += outputOffset; \
@@ -963,6 +976,9 @@ static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const
         } \
         return result; \
     }
+
+// clang-format on
+
 VL_NOT_GEN(TT, 0, 1, 0, 1)
 VL_NOT_GEN(TV, 0, 1, 0, 2)
 VL_NOT_GEN(TX, 0, 1, 1, 2)
