@@ -23,15 +23,15 @@
                                                     : ... note: In instance 't'
    43 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 43);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:45:44: Unsupported: until in complex property expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:45:44: Unsupported: 'until' in complex property expression
                                                     : ... note: In instance 't'
    45 |   assert property (@(posedge clk) ##1 (val until val)) $display("[%0t] until in sequence, fileline:%d", $time, 45);
       |                                            ^~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:49: Unsupported: until in complex property expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:49: Unsupported: 'until' in complex property expression
                                                     : ... note: In instance 't'
    47 |   assert property (@(posedge clk) val until val until val) $display("[%0t] nested until, fileline:%d", $time, 47);
       |                                                 ^~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:50: Unsupported: Complex property expression inside until
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:50: Unsupported: Complex property expression inside 'until''
                                                     : ... note: In instance 't'
    49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
       |                                                  ^~
