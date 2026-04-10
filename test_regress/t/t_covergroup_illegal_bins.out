@@ -9,3 +9,5 @@ cg2.cp_trans.bad_2step [illegal]: 0
 cg2.cp_trans.bad_3step [illegal]: 0
 cg2.cp_trans.lib_default [illegal]: 0
 cg2.cp_trans.ok: 1
+cg3.cp.ign [ignore]: 2
+cg3.cp.ill [illegal]: 0
