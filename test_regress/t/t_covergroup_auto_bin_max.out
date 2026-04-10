@@ -17,3 +17,15 @@ cg4.cp.auto_1: 1
 cg4.cp.auto_2: 1
 cg4.cp.auto_3: 1
 cg4.cp.ign [ignore]: 0
+cg5.cp_data64.auto_0: 1
+cg5.cp_data64.auto_1: 1
+cg5.cp_data64.auto_2: 1
+cg5.cp_data64.auto_3: 1
+cg6.cp_data3.auto_0: 1
+cg6.cp_data3.auto_1: 0
+cg6.cp_data3.auto_2: 0
+cg6.cp_data3.auto_3: 0
+cg6.cp_data3.auto_4: 0
+cg6.cp_data3.auto_5: 0
+cg6.cp_data3.auto_6: 0
+cg6.cp_data3.auto_7: 1

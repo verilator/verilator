@@ -1782,11 +1782,14 @@ class WidthVisitor final : public VNVisitor {
         // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
         // class bodies, and visitClass sets m_cgClassp before iterating children.
         if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
-            // Extract constant value
+            // Fold and extract constant value; option.auto_bin_max must be a constant expression
+            V3Const::constifyParamsEdit(nodep->valuep());  // valuep may change
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
                 m_cgClassp->cgAutoBinMax(constp->toSInt());
                 UINFO(6, "  Covergroup " << m_cgClassp->name()
                                          << " option.auto_bin_max = " << constp->toSInt() << endl);
+            } else {
+                nodep->valuep()->v3error("option.auto_bin_max must be a constant expression");
             }
         }
         // Add more options here as needed (weight, goal, at_least, per_instance, comment)
