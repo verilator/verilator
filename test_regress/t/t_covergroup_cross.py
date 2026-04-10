@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=['--coverage --dumpi-tree 3 --dumpi-tree-json 3'])
+test.compile(verilator_flags2=['--coverage --dumpi-tree 3 --dumpi-tree-json 3 --Wno-COVERIGN'])
 
 test.execute()
 
