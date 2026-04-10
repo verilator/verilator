@@ -557,20 +557,20 @@ void VerilatedFstBuffer::emitFourstateShuffledWData(uint32_t code, const WData* 
     char buf[VL_BYTESIZE];
     char* wp = buf;
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    const int lastIdx = ((bits - 1) / 32) << 1;
+    const int lastIdx = ((bits - 1) / VL_EDATASIZE) << 1;
     {
         const EData value = newvalp[lastIdx];
         const EData xz = newvalp[lastIdx | 1];
-        for (int i = (bits - 1) % 32; i >= 0; --i) {
+        for (int i = (bits - 1) % VL_EDATASIZE; i >= 0; --i) {
             const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
         }
     }
-    for (int w = ((bits - 1) / 32) - 1; w >= 0; --w) {
+    for (int w = lastIdx - 2; w >= 0; --w) {
         const EData value = newvalp[w];
         const EData xz = newvalp[w | 1];
-        for (int i = 31; i >= 0; --i) {
+        for (int i = VL_EDATASIZE - 1; i >= 0; --i) {
             const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
