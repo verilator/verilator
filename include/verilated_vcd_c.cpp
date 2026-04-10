@@ -783,19 +783,19 @@ void VerilatedVcdBuffer::emitFourstateShuffledWData(uint32_t code, const WData* 
     *wp++ = 'b';
     const int lastIdx = ((bits - 1) / 32) << 1;
     {
-        const IData value = newvalp[lastIdx];
-        const IData xz = newvalp[lastIdx | 1];
+        const EData value = newvalp[lastIdx];
+        const EData xz = newvalp[lastIdx | 1];
         for (int i = (bits - 1) % 32; i >= 0; --i) {
-            const IData mask = 1 << i;
+            const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
         }
     }
     for (int w = lastIdx - 2; w >= 0; w -= 2) {
-        const IData value = newvalp[w];
-        const IData xz = newvalp[w | 1];
+        const EData value = newvalp[w];
+        const EData xz = newvalp[w | 1];
         for (int i = 31; i >= 0; --i) {
-            const IData mask = 1 << i;
+            const EData mask = 1 << i;
             *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
                                 : ('0' | (static_cast<char>(value >> i) & 1));
         }
