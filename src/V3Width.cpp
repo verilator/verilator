@@ -2908,7 +2908,8 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic)
-                   && !VN_IS(m_procedurep, InitialStatic)) {
+                   && !VN_IS(m_procedurep, InitialStatic)
+                   && !nodep->isClassHandleValue()) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
@@ -3691,6 +3692,11 @@ class WidthVisitor final : public VNVisitor {
                         nodep->replaceWith(varRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         return true;
+                    }
+                    if (nodep->access().isWriteOrRW() && varp->isConst()) {
+                        nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
+                                                          << nodep->prettyNameQ()
+                                                          << " (IEEE 1800-2023 6.20.6)");
                     }
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
