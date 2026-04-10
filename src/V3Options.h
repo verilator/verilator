@@ -419,8 +419,8 @@ private:
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
     bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
-    bool m_fReorder;     // main switch: -fno-shuffle: four-state shuffled wide signals
-    bool m_fShuffle = true;  //
+    bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
+    bool m_fShuffle = true;  // main switch: -fno-shuffle: four-state shuffled wide signals
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
     int  m_fSliceElementLimit = 256;  // main switch: --fslice-element-limit
     bool m_fSplit;       // main switch: -fno-split: always assignment splitting

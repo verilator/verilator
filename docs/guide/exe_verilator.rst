@@ -729,6 +729,8 @@ Summary:
 
 .. option:: -fno-reorder
 
+.. option:: -fno-shuffle
+
 .. option:: -fno-slice
 
 .. option:: -fno-split
