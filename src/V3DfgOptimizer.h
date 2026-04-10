@@ -25,9 +25,6 @@
 //============================================================================
 
 namespace V3DfgOptimizer {
-// Extract further logic blocks from the design for additional optimization opportunities
-void extract(AstNetlist*) VL_MT_DISABLED;
-
 // Optimize the design
 void optimize(AstNetlist*) VL_MT_DISABLED;
 }  // namespace V3DfgOptimizer

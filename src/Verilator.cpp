@@ -307,9 +307,6 @@ static void process() {
             v3Global.constRemoveXs(true);
         }
 
-        // If doing DFG optimization, extract some additional candidates
-        if (v3Global.opt.fDfg()) V3DfgOptimizer::extract(v3Global.rootp());
-
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
