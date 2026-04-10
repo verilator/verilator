@@ -1647,6 +1647,15 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstUntil* nodep) override {
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
+
     void visit(AstRand* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

@@ -1,19 +1,19 @@
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:60:14: Logical operator IMPLICATION expects 1 bit on the RHS, but RHS's CMETHODHARD 'at' generates 8 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:66:14: Logical operator IMPLICATION expects 1 bit on the RHS, but RHS's CMETHODHARD 'at' generates 8 bits.
                                                      : ... note: In instance 't.ieee'
-   60 |     $rose(a) |-> q[0];
+   66 |     $rose(a) |-> q[0];
       |              ^~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:65:29: Logical operator SEXPR expects 1 bit on the exprp, but exprp's CMETHODHARD 'at' generates 8 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:71:29: Logical operator SEXPR expects 1 bit on the exprp, but exprp's CMETHODHARD 'at' generates 8 bits.
                                                      : ... note: In instance 't.ieee'
-   65 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
+   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
       |                             ^~
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:86:31: Logical operator SEXPR expects 1 bit on the exprp, but exprp's VARREF 'b' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:92:31: Logical operator SEXPR expects 1 bit on the exprp, but exprp's VARREF 'b' generates 32 bits.
                                                      : ... note: In instance 't.ieee'
-   86 |   assert property (@clk not a ##1 b);
+   92 |   assert property (@clk not a ##1 b);
       |                               ^~
-%Error: Internal Error: t/t_property_sexpr_unsup.v:65:29: ../V3AssertProp.cpp:#: Range delay SExpr without clocking event
+%Error: Internal Error: t/t_property_sexpr_unsup.v:71:29: ../V3AssertProp.cpp:#: Range delay SExpr without clocking event
                                                         : ... note: In instance 't.ieee'
-   65 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
+   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
       |                             ^~
                         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
