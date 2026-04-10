@@ -1250,8 +1250,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                         writeVarp->addPinsp(memberSelp);
                         writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
                                                          static_cast<uint64_t>(memberWidth)});
-                        AstCExpr* const nameRefp = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
-                        nameRefp->dtypep(varp->dtypep());
+                        AstCExpr* const nameRefp = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn"};
                         writeVarp->addPinsp(nameRefp);
                         writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0ULL});
                         ifNonNullp->addThensp(writeVarp->makeStmt());
@@ -1315,9 +1314,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const size_t width = tmpDtypep->width();
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
-                AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                                           "\"" + smtName + "\"", varp->width()};
-                varnamep->dtypep(varp->dtypep());
+                AstNodeExpr* const varnamep
+                    = new AstCExpr{varp->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\""};
                 methodp->addPinsp(varnamep);
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
@@ -1363,10 +1361,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                           m_genp, VAccess::READWRITE},
                             VCMethod::RANDOMIZER_CLEAR_VAR_DISABLED};
                         enablep->dtypeSetVoid();
-                        AstNodeExpr* const ennp
-                            = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                           "\"" + smtName + "\"", varp->width()};
-                        ennp->dtypep(varp->dtypep());
+                        AstNodeExpr* const ennp = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                               "\"" + smtName + "\""};
                         enablep->addPinsp(ennp);
                         // rand_mode OFF: set disabled state
                         AstCMethodHard* const disablep = new AstCMethodHard{
@@ -1375,10 +1371,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                           m_genp, VAccess::READWRITE},
                             VCMethod::RANDOMIZER_SET_VAR_DISABLED};
                         disablep->dtypeSetVoid();
-                        AstNodeExpr* const disnp
-                            = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                           "\"" + smtName + "\"", varp->width()};
-                        disnp->dtypep(varp->dtypep());
+                        AstNodeExpr* const disnp = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                                "\"" + smtName + "\""};
                         disablep->addPinsp(disnp);
                         AstIf* const ifp = new AstIf{varp->fileline(), atp, enablep->makeStmt(),
                                                      disablep->makeStmt()};
@@ -1393,9 +1387,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                       m_genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_MARK_RANDC};
                     markp->dtypeSetVoid();
-                    AstNodeExpr* const nameExprp = new AstCExpr{
-                        varp->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\"", varp->width()};
-                    nameExprp->dtypep(varp->dtypep());
+                    AstNodeExpr* const nameExprp
+                        = new AstCExpr{varp->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\""};
                     markp->addPinsp(nameExprp);
                     initTaskp->addStmtsp(markp->makeStmt());
                 }
