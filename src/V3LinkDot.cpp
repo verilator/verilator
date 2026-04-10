@@ -3406,7 +3406,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
                     const bool existsInDerived = foundp && !foundp->imported();
                     if (m_statep->forPrimary() && !existsInDerived
-                        && !derivedClassp->isInterfaceClass()) {
+                        && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
                             "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
