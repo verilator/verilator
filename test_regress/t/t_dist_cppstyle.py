@@ -57,7 +57,7 @@ for filename in sorted(files.keys()):
         continue
     if not re.search(r'\.(h|c|cpp)(\.in)?$', filename):
         continue
-    if '/gtkwave/' in filename:
+    if '/fstcpp/' in filename:
         continue
 
     contents = test.file_contents(filename) + "\n\n"

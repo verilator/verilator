@@ -34,7 +34,9 @@ typedef uint32_t vlFstEnumHandle;
 
 class VerilatedFstBuffer;
 
-struct fstWriterContext;
+namespace fst {
+class Writer;
+}
 
 //=============================================================================
 // VerilatedFst
@@ -51,7 +53,7 @@ private:
     //=========================================================================
     // FST-specific internals
 
-    fstWriterContext* m_fst = nullptr;
+    fst::Writer* m_fst = nullptr;
     std::map<uint32_t, vlFstHandle> m_code2symbol;
     std::map<void*, std::map<int, vlFstEnumHandle>> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
@@ -211,7 +213,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     VerilatedFst& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
     // The FST file handle
-    fstWriterContext* const m_fst = m_owner.m_fst;
+    fst::Writer* const m_fst = m_owner.m_fst;
     // code to fstHande map, as an array
     const vlFstHandle* const m_symbolp = m_owner.m_symbolp;
     // String buffer long enough to hold maxBits() chars
@@ -229,11 +231,11 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     // called from only one place (the full* methods), so always inline them.
     VL_ATTR_ALWINLINE void emitEvent(uint32_t code);
     VL_ATTR_ALWINLINE void emitBit(uint32_t code, CData newval);
-    VL_ATTR_ALWINLINE void emitCData(uint32_t code, CData newval, int bits);
-    VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int bits);
-    VL_ATTR_ALWINLINE void emitIData(uint32_t code, IData newval, int bits);
-    VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int bits);
-    VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int bits);
+    VL_ATTR_ALWINLINE void emitCData(uint32_t code, CData newval, int);
+    VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int);
+    VL_ATTR_ALWINLINE void emitIData(uint32_t code, IData newval, int);
+    VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int);
+    VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int);
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
 };
 

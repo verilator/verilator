@@ -32,7 +32,7 @@ EXEMPT_FILES_LIST = """
     docs/gen
     docs/spelling.txt
     docs/verilated.dox
-    include/gtkwave
+    include/fstcpp
     include/vltstd
     install-sh
     src/mkinstalldirs
