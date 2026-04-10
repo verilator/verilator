@@ -41,6 +41,7 @@ class AssertPreVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
+    // AstPExpr::user1()                 // bool.         Created from AstUntil
     const VNUser1InUse m_inuser1;
     // STATE
     // Current context:
@@ -58,6 +59,7 @@ private:
     // Reset each assertion:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
+    AstPExpr* m_pexprp = nullptr;  // Last AstPExpr
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
@@ -69,7 +71,6 @@ private:
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
-    bool m_inPExpr = false;  // True if in AstPExpr
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
@@ -430,7 +431,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
-            if (m_inPExpr) {
+            if (m_pexprp) {
                 // ##0 in sequence context = zero delay = same clock tick
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
@@ -461,7 +462,7 @@ private:
         }
         AstSenItem* sensesp = nullptr;
         if (!m_defaultClockingp) {
-            if (!m_inPExpr) {
+            if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -1139,6 +1140,30 @@ private:
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstUntil* nodep) override {
+        FileLine* const flp = nodep->fileline();
+        if (m_pexprp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        AstLoop* const loopp = new AstLoop{flp};
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstLogAnd* const condp
+            = new AstLogAnd{flp, nodep->lhsp()->unlinkFrBack(), new AstLogNot{flp, rhsp}};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+        loopp->addStmtsp(new AstEventControl{flp, newSenTree(nodep), nullptr});
+
+        AstBegin* const beginp = new AstBegin{flp, "", loopp, true};
+        beginp->addStmtsp(new AstIf{flp, rhsp->cloneTreePure(false), new AstPExprClause{flp},
+                                    new AstPExprClause{flp, false}});
+
+        AstPExpr* const pexprp = new AstPExpr{flp, beginp, nodep->dtypep()};
+        pexprp->user1(1);
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
 
     void visit(AstDefaultDisable* nodep) override {
         // Done with these
@@ -1175,6 +1200,13 @@ private:
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
+        if (m_pexprp && m_pexprp->user1()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Complex property expression inside 'until''");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(notp), notp);
@@ -1191,9 +1223,9 @@ private:
                 return;
             }
         }
-        VL_RESTORER(m_inPExpr);
+        VL_RESTORER(m_pexprp);
         VL_RESTORER(m_disableSeqIfp);
-        m_inPExpr = true;
+        m_pexprp = nodep;
 
         if (m_disablep) {
             const AstSampled* sampledp;
