@@ -403,7 +403,7 @@ module t (
   wire logic [63:0] volatile_packed_out_of_cycle /* verilator forceable */ = rand_a;
   assign VOLATILE_PACKED_OUT_OF_CYCLE = volatile_packed_out_of_cycle ^ 64'(VOLATILE_PACKED_OUT_OF_CYCLE[63:1]);
 
-  wire logic [2:0] volatile_packed_in_cycle /* verilator forceable */; // UNOPTFLAT
+  wire logic [2:0] volatile_packed_in_cycle /* verilator forceable */;
   // verilator lint_off UNOPTFLAT
   `signal(VOLATILE_PACKED_IN_CYCLE, 3);
   assign volatile_packed_in_cycle = rand_a[2:0] ^ 3'(volatile_packed_in_cycle[2:1]);
