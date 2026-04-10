@@ -195,7 +195,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         autoBinMaxOut = -1;  // -1 = not set at coverpoint level
         for (AstNode* optionp = coverpointp->optionsp(); optionp; optionp = optionp->nextp()) {
             AstCoverOption* const optp = VN_AS(optionp, CoverOption);
-            AstConst* const constp = VN_AS(optp->valuep(), Const);
+            AstConst* const constp = VN_CAST(optp->valuep(), Const);
+            if (!constp) {
+                optp->valuep()->v3error("option." << optp->prettyName()
+                                                  << " must be a constant expression");
+                continue;
+            }
             if (optp->optionType() == VCoverOptionType::AT_LEAST) {
                 atLeastOut = constp->toSInt();
             } else if (optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {

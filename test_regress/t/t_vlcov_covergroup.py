@@ -14,7 +14,7 @@ test.scenarios('vlt')
 
 test.top_filename = "t/t_covergroup_cross.v"
 
-test.compile(verilator_flags2=['--coverage'])
+test.compile(verilator_flags2=['--coverage', '--Wno-COVERIGN'])
 
 test.execute()
 
