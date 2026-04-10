@@ -13,6 +13,8 @@ test.scenarios('simulator')
 
 test.top_filename = "t/t_fourstate_format.v"
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'], fails=True, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()
