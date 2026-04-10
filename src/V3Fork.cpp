@@ -443,20 +443,11 @@ class DynScopeVisitor final : public VNVisitor {
             if (!isEvent && m_afterTimingControl && nodep->varp()->isWritable()
                 && nodep->access().isWriteOrRW()) {
                 // The output variable may not exist after a delay, so we can't just write to it
-                if (m_inFunc) {
-                    nodep->v3error(
-                        "Writing to an "
-                        << nodep->varp()->verilogKwd()
-                        << " variable of a function after a timing control is not allowed");
-                } else {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
-                                                     << nodep->varp()->verilogKwd()
-                                                     << " variable in a "
-                                                     << (VN_IS(nodep->backp(), AssignDly)
-                                                             ? "non-blocking assignment"
-                                                             : "fork")
-                                                     << " after a timing control");
-                }
+                nodep->v3error(
+                    "Writing to an "
+                    << nodep->varp()->verilogKwd() << " automatic variable of a "
+                    << (m_inFunc ? "function" : "task")
+                    << " after a timing control is not allowed (IEEE 1800-2023 13.2.2)");
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
             framep->captureVarInsert(nodep->varp());
