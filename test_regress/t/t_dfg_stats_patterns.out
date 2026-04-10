@@ -91,8 +91,8 @@ DFG patterns with depth 3
 
 DFG patterns with depth 4
             1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E*/a):F/1 (CONCAT (REDXOR (AND _:D*/a _:G*/a):H/a):I/1 (CONCAT (REDXOR _:J/a):K/1 (CONCAT _:L/1 _:M/b):N/c):O/d):P/e):Q/f
-            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (REDXOR (AND _:G*/a _:D*/a):H/a):I/1 (CONCAT (SEL@0 _:J*/a):K/1 (CONCAT _:L/1 _:M/b):N/c):O/d):P/e):Q/f
-            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (SEL@0 (AND _:B*/a _:G*/a):H*/a):I/1 (CONCAT (REDXOR _:J*/b):K/1 (CONCAT _:L/1 _:M/c):N/d):O/e):P/b):Q/f
+            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (REDXOR (AND _:D*/a _:G*/a):H/a):I/1 (CONCAT (SEL@0 _:J*/a):K/1 (CONCAT _:L/1 _:M/b):N/c):O/d):P/e):Q/f
+            1 (CONCAT (REDXOR (AND (NOT _:A/a):B*/a (NOT _:C/a):D*/a):E/a):F/1 (CONCAT (SEL@0 (AND _:D*/a _:G*/a):H*/a):I/1 (CONCAT (REDXOR _:J*/b):K/1 (CONCAT _:L/1 _:M/c):N/d):O/e):P/b):Q/f
             1 (CONCAT (REDXOR (REPLICATE (NOT _:A*/a):B/a cA:C/a):D*/b):E/1 (CONCAT (REDXOR (SEL@0 _:D*/b):F/c):G/1 (REDXOR (REPLICATE _:A*/a cA:H/a):I/b):J*/1):K/d):L/e
             1 (CONCAT (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/b cA:D/b):E/c):F*/1 (CONCAT (REDXOR (REPLICATE _:G/b cA:H/b):I*/c):J/1 (CONCAT (REDXOR _:K/d):L/1 (REDXOR _:E/c):F*/1):M/e):N/f):O/g
             1 (CONCAT (REDXOR (REPLICATE (REPLICATE _:A*/a cA:B/b):C*/c cA:D/b):E*/b):F/1 (CONCAT (REDXOR (REPLICATE _:E*/b cA:G/b):H/d):I*/1 (CONCAT (REDXOR _:J*/d):K/1 (CONCAT _:L/1 _:I*/1):M/e):N/f):O/g):P/h
