@@ -520,6 +520,7 @@ public:
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullFourstateWData(uint32_t* oldp, const WData* newvalp, const WData* newvalXZp,
                             int bits);
+    void fullFourstateShuffledWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
@@ -594,6 +595,15 @@ public:
             const int oldIdx = i << 1;
             if (VL_UNLIKELY((oldp[oldIdx] ^ newvalp[i]) | (oldp[oldIdx | 1] ^ newvalXZp[i]))) {
                 fullFourstateWData(oldp, newvalp, newvalXZp, bits);
+                return;
+            }
+        }
+    }
+    VL_ATTR_ALWINLINE void chgFourstateShuffledWData(uint32_t* oldp, const WData* newvalp,
+                                                     int bits) {
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) {
+            if (VL_UNLIKELY((oldp[i] ^ newvalp[i]))) {
+                fullFourstateShuffledWData(oldp, newvalp, bits);
                 return;
             }
         }

@@ -264,6 +264,8 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int bits);
     VL_ATTR_ALWINLINE void emitFourstateWData(uint32_t code, const WData* newvalp,
                                               const WData* newvalXZp, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateShuffledWData(uint32_t code, const WData* newvalp,
+                                                      int bits);
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
 };
 

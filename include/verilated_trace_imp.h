@@ -973,6 +973,15 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateWData(uint32_t* oldp, const WD
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateShuffledWData(uint32_t* oldp,
+                                                                const WData* newvalp, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    for (int i = 0; i < VL_WORDS_I(bits) * 2; ++i) { oldp[i] = newvalp[i]; }
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateShuffledWData(code, newvalp, bits);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     std::memcpy(oldp, &newval, sizeof(newval));

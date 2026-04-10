@@ -733,7 +733,7 @@ class EmitCTrace final : public EmitCFunc {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
-        const bool isFourstate = VN_IS(nodep->valuep(), FourstateExpr);
+        AstFourstateExpr* const fourstateExpr = VN_CAST(nodep->valuep(), FourstateExpr);
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
@@ -751,14 +751,25 @@ class EmitCTrace final : public EmitCFunc {
         } else if (nodep->dtypep()->basicp()->isEvent()) {
             stype = "Event";
             emitWidth = false;
-        } else if (isFourstate) {
+        } else if (fourstateExpr) {
             stype = "Logic";
             emitWidth = false;
         } else {
             stype = "Bit";
             emitWidth = false;
         }
-        if (isFourstate && stype != "Logic") func += "Fourstate";
+        if (fourstateExpr && stype != "Logic") {
+            func += "Fourstate";
+            if (v3Global.opt.fshuffle()) {
+                if (const AstNodeVarRef* const valuep
+                    = VN_CAST(fourstateExpr->valuep(), NodeVarRef)) {
+                    if (const AstNodeVarRef* const xzp
+                        = VN_CAST(fourstateExpr->xzp(), NodeVarRef)) {
+                        if (valuep->varp() == xzp->varp()) func += "Shuffled";
+                    }
+                }
+            }
+        }
         putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
@@ -802,16 +813,25 @@ class EmitCTrace final : public EmitCFunc {
         };
         puts("(");
         if (AstFourstateExpr* const exprp = VN_CAST(nodep->valuep(), FourstateExpr)) {
-            if (AstVarRef* const varrefp = VN_CAST(exprp->valuep(), VarRef)) {
-                putVarRef(varrefp);
+            AstVarRef* const valueVarrefp = VN_CAST(exprp->valuep(), VarRef);
+            AstVarRef* const xzVarrefp = VN_CAST(exprp->xzp(), VarRef);
+            if (valueVarrefp && xzVarrefp && valueVarrefp->varp() == xzVarrefp->varp()) {
+                UASSERT_OBJ(valueVarrefp->isWide() && valueVarrefp->varp()->isFourStateShuffle(),
+                            nodep,
+                            "This shall only happen with wide shuffled four-state variables");
+                putVarRef(valueVarrefp);
             } else {
-                iterateConst(exprp->valuep());
-            }
-            puts("), (");
-            if (AstVarRef* const varrefp = VN_CAST(exprp->xzp(), VarRef)) {
-                putVarRef(varrefp);
-            } else {
-                iterateConst(exprp->xzp());
+                if (!valueVarrefp) {
+                    iterateConst(exprp->valuep());
+                } else {
+                    putVarRef(valueVarrefp);
+                }
+                puts("), (");
+                if (!xzVarrefp) {
+                    iterateConst(exprp->xzp());
+                } else {
+                    putVarRef(xzVarrefp);
+                }
             }
         } else if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             putVarRef(varrefp);
