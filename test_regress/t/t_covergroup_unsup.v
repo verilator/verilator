@@ -102,7 +102,7 @@ module t (
     cross a, b iff (!rst) {}
   endgroup
   covergroup cg_cross3;
-    cross a, b { option.comment = "cross"; option.weight = 12; }
+    cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
   endgroup
   covergroup cg_cross4;
     cross a, b {

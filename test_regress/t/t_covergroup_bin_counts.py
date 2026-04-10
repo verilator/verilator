@@ -18,4 +18,13 @@ test.execute()
 test.covergroup_coverage_report()
 test.files_identical(test.obj_dir + '/covergroup_report.txt', test.golden_filename)
 
+# Verify coverage.dat format contains covergroup entries (replaces t_covergroup_database)
+test.file_grep(test.coverage_filename, r'covergroup')
+test.file_grep(test.coverage_filename, r'bin.{0,2}low')
+test.file_grep(test.coverage_filename, r'bin.{0,2}high')
+test.file_grep(test.coverage_filename, r'cg_db\.cp\.low')
+test.file_grep(test.coverage_filename, r'cg_db\.cp\.high')
+test.file_grep(test.coverage_filename, r'.*bin.{0,2}low.*\' [1-9]')
+test.file_grep(test.coverage_filename, r'.*bin.{0,2}high.*\' [1-9]')
+
 test.passes()

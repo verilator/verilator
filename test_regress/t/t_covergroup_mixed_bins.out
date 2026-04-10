@@ -1,5 +1,0 @@
-cg.opcode.arith: 1
-cg.opcode.load: 1
-cg.opcode.nop: 1
-cg.opcode.others: 1
-cg.opcode.store: 1
