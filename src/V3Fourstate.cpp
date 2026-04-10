@@ -1137,6 +1137,14 @@ class FourstateVisitor final : public VNVisitor {
                                               getFourStateExpressionXZ(redOrp->lhsp())}};
         }
 
+        void visit(AstRedXor* const redXorp) override {
+            // a.xz || ^a.value
+            FileLine* const flp = redXorp->fileline();
+            m_result = new AstLogOr{
+                flp, getFourStateExpressionXZ(redXorp->lhsp()),
+                new AstRedXor{flp, getFourStateExpressionValue(redXorp->lhsp(), false)}};
+        }
+
         void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
             // (a.xz | b.xz) ? '1 : (a op b)
             FileLine* const flp = biop->fileline();
@@ -1303,6 +1311,11 @@ class FourstateVisitor final : public VNVisitor {
             FileLine* const flp = redOrp->fileline();
             m_result = new AstAnd{flp, new AstRedOr{flp, getFourStateExpressionXZ(redOrp->lhsp())},
                                   new AstNot{flp, getFourStateExpressionValue(redOrp)}};
+        }
+
+        void visit(AstRedXor* const redXorp) override {
+            // a.xz
+            m_result = getFourStateExpressionXZ(redXorp->lhsp());
         }
 
         void getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {
