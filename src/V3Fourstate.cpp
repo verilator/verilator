@@ -36,6 +36,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - Rest of operators
  *  - Statements - cases etc.
  *  - split asswignw into multiple statements
+ *  - four-states printing
  */
 
 namespace {
@@ -753,12 +754,14 @@ class FourstateVisitor final : public VNVisitor {
 
     private:
         bool m_noTmp = false;
+        bool m_enforceTmp = false;
 
         virtual AstNodeExpr* getCache(const AstNodeExpr* keyp) = 0;
         virtual void setCache(AstNodeExpr* keyp, AstNodeExpr* valuep) = 0;
 
     protected:
         void noTmp() { m_noTmp = true; }
+        void enforceTmp() { m_enforceTmp = true; }
 
         void addPrecalculation(AstNodeStmt* const nodep) {
             FourstateLogicTypePropagator{nodep};
@@ -976,11 +979,15 @@ class FourstateVisitor final : public VNVisitor {
             if (AstNodeExpr* result = getCache(exprp)) return result->cloneTree(false);
             m_result = nullptr;
             VL_RESTORER(m_noTmp);
+            VL_RESTORER(m_enforceTmp);
             m_noTmp = false;
+            m_enforceTmp = false;
             iterate(exprp);
             UASSERT_OBJ(m_result, exprp,
                         "Result shall always be returned - even if it is just a place holder");
-            if (putIntoTmp && !m_noTmp) {
+            UASSERT_OBJ(!(m_noTmp && m_enforceTmp), exprp,
+                        "Expression may not enforce and omit tmp variable at the same time");
+            if (m_enforceTmp || (putIntoTmp && !m_noTmp)) {
                 FileLine* const flp = exprp->fileline();
                 AstVar* const varp = m_fourstateVisitor.createTmp(exprp);
                 AstVarRef* const varRefp = new AstVarRef{flp, varp, VAccess::WRITE};
@@ -1121,6 +1128,15 @@ class FourstateVisitor final : public VNVisitor {
                 selp, getFourStateExpressionValue(selp->fromp(), false), false);
         }
 
+        void visit(AstRedOr* const redOrp) override {
+            // |(a.value | a.xz)
+            enforceTmp();
+            FileLine* const flp = redOrp->fileline();
+            m_result
+                = new AstRedOr{flp, new AstOr{flp, getFourStateExpressionValue(redOrp->lhsp()),
+                                              getFourStateExpressionXZ(redOrp->lhsp())}};
+        }
+
         void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
             // (a.xz | b.xz) ? '1 : (a op b)
             FileLine* const flp = biop->fileline();
@@ -1241,6 +1257,7 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstEq* const eqp) override {
             // a.xz | b.xz != 0
+            enforceTmp();
             FileLine* const flp = eqp->fileline();
             m_result = new AstNeq{flp,
                                   new AstOr{flp, getFourStateExpressionXZ(eqp->lhsp()),
@@ -1250,6 +1267,7 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstNeq* const neqp) override {
             // a.xz | b.xz != 0
+            enforceTmp();
             FileLine* const flp = neqp->fileline();
             m_result = new AstNeq{flp,
                                   new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
@@ -1278,6 +1296,13 @@ class FourstateVisitor final : public VNVisitor {
             newp->num().opBitsXZ(constp->num());
             newp->dtypeSetBitSized(newp->width(), newp->dtypep()->numeric());
             m_result = newp;
+        }
+
+        void visit(AstRedOr* const redOrp) override {
+            // |a.xz & ~|(a.value | a.xz)
+            FileLine* const flp = redOrp->fileline();
+            m_result = new AstAnd{flp, new AstRedOr{flp, getFourStateExpressionXZ(redOrp->lhsp())},
+                                  new AstNot{flp, getFourStateExpressionValue(redOrp)}};
         }
 
         void getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {

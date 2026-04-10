@@ -8,6 +8,6 @@ module t;
   initial begin
     static logic [2:0] x;
     static logic y;
-    y = |x;
+    y = &x;
   end
 endmodule
