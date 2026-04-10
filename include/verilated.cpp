@@ -3785,20 +3785,49 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
 
 VerilatedVar*
 VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
-                                   VerilatedVarType vltype, int vlflags,
+                                   VerilatedVarType vltype, int vlflags, void* forceReadSignalData,
+                                   const char* const forceReadSignalName,
                                    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                    int udims, int pdims...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
 
+    // TODO: While the force read signal would be *expected* to have the same vltype and vlflags
+    // (except for forceable and public flags) as the base signal, this is not guaranteed. It would
+    // be a safer solution to adapt V3EmitCSyms to find the __VforceRd signal and give its vltype
+    // and vlflags to this function as arguments.
+
+    // Use same flags as base signal, but remove forceable and public flags
+    const VerilatedVarFlags forceReadValueVlflags
+        = static_cast<VerilatedVarFlags>(vlflags & ~VLVF_FORCEABLE & ~VLVF_PUB_RW & ~VLVF_PUB_RD);
+
+    VerilatedVar forceReadSignal{forceReadSignalName,
+                                 forceReadSignalData,
+                                 vltype,
+                                 forceReadValueVlflags,
+                                 udims,
+                                 pdims,
+                                 isParam};
+
+    va_list ap;
+    va_start(ap, pdims);
+    assert(udims == 0);  // Forcing unpacked arrays is unsupported (#4735) and should have been
+                         // checked in V3Force already.
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        forceReadSignal.m_packed[i].m_left = msb;
+        forceReadSignal.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
     std::unique_ptr<VerilatedForceControlSignals> verilatedForceControlSignalsp
-        = std::make_unique<VerilatedForceControlSignals>(
-            VerilatedForceControlSignals{forceControlSignals.first, forceControlSignals.second});
+        = std::unique_ptr<VerilatedForceControlSignals>(new VerilatedForceControlSignals{
+            forceControlSignals.first, forceControlSignals.second, std::move(forceReadSignal)});
 
     VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
                      isParam, std::move(verilatedForceControlSignalsp));
     verilatedForceControlSignalsp = nullptr;
 
-    va_list ap;
     va_start(ap, pdims);
     assert(udims == 0);  // Forcing unpacked arrays is unsupported (#4735) and should have been
                          // checked in V3Force already.

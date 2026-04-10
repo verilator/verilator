@@ -18,6 +18,7 @@
 
 #include "V3DfgPasses.h"
 
+#include "V3Ast.h"
 #include "V3Dfg.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -71,7 +72,7 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
         if (vVtxp->hasSinks()) continue;
         if (vVtxp->isObserved()) continue;
         DfgVertex* const srcp = vVtxp->srcp();  // Must be a DfgUnresolved or nullptr
-        AstNode* const varp = vVtxp->nodep();
+        AstVarScope* const vscp = vVtxp->vscp();
         // Can delete the Ast variable too if it has no other references
         const bool delAst = (!srcp || !srcp->nInputs())  //
                             && !vVtxp->hasExtWrRefs()  //
@@ -79,7 +80,7 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
         VL_DO_DANGLING(vVtxp->unlinkDelete(dfg), vVtxp);
         if (srcp) VL_DO_DANGLING(srcp->unlinkDelete(dfg), srcp);
         if (delAst) {
-            VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
+            VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
             ++ctx.m_varsDeleted;
         } else {
             ++ctx.m_varsRemoved;
@@ -96,7 +97,7 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
         // AstVar/AstVarScope::user2p() -> corresponding DfgVertexVar* in the graph
         const VNUser2InUse m_user2InUse;
         logicp->foreachSource([](DfgVertex& src) {
-            src.as<DfgVertexVar>()->nodep()->user2p(&src);
+            src.as<DfgVertexVar>()->vscp()->user2p(&src);
             return false;
         });
         V3DfgPasses::addAstRefs(dfg, logicp->nodep(), [](AstNode* varp) {  //
@@ -181,8 +182,6 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
 }
 
 void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
-    if (!dfg.modulep()) return;  // binToOneHot only works with unscoped DfgGraphs for now
-
     // Structure to keep track of comparison details
     struct Term final {
         DfgVertex* m_vtxp = nullptr;  // Vertex to replace
@@ -291,6 +290,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     // Sequence numbers for name generation
     size_t nTables = 0;
 
+    DfgVertex::ScopeCache scopeCache;
+
     // Create decoders for each srcp
     for (DfgVertex* const srcp : srcps) {
         const Val2Terms& val2Terms = vtx2Val2Terms[srcp];
@@ -318,6 +319,38 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         // - and replace the comparisons with 'tab[const]'
 
         FileLine* const flp = srcp->fileline();
+        AstScope* const scopep = srcp->scopep(scopeCache, true);
+
+        AstActive* const staticActivep = [scopep]() {
+            // Try to find the existing static AstActive
+            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
+                AstActive* const activep = VN_CAST(nodep, Active);
+                if (!activep) continue;
+                if (activep->sentreep()->hasStatic()) return activep;
+            }
+            // If there isn't one, create a new one
+            FileLine* const flp = scopep->fileline();
+            AstSenTree* const stp = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}};
+            AstActive* const activep = new AstActive{flp, "", stp};
+            activep->senTreeStorep(stp);
+            scopep->addBlocksp(activep);
+            return activep;
+        }();
+        AstActive* const combActivep = [scopep]() {
+            // Try to find the existing combinational AstActive
+            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
+                AstActive* const activep = VN_CAST(nodep, Active);
+                if (!activep) continue;
+                if (activep->sentreep()->hasCombo()) return activep;
+            }
+            // If there isn't one, create a new one
+            FileLine* const flp = scopep->fileline();
+            AstSenTree* const stp = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
+            AstActive* const activep = new AstActive{flp, "", stp};
+            activep->senTreeStorep(stp);
+            scopep->addBlocksp(activep);
+            return activep;
+        }();
 
         // Required data types
         const DfgDataType& idxDType = srcp->dtype();
@@ -330,31 +363,31 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             if (DfgVertexVar* const vp = srcp->getResultVar()) return vp->as<DfgVarPacked>();
             // Otherwise create a new variable
             const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
-            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, nullptr);
-            vtxp->varp()->isInternal(true);
+            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, scopep);
+            vtxp->vscp()->varp()->isInternal(true);
             vtxp->srcp(srcp);
             return vtxp->as<DfgVarPacked>();
         }();
-        AstVar* const idxVarp = idxVtxp->varp();
+        AstVarScope* const idxVscp = idxVtxp->vscp();
         // The previous index variable - we don't need a vertex for this
-        AstVar* const preVarp = [&]() {
+        AstVarScope* const preVscp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Pre", nTables);
-            AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, idxDType.astDtypep()};
-            dfg.modulep()->addStmtsp(varp);
-            varp->isInternal(true);
-            varp->noReset(true);
-            varp->setIgnoreSchedWrite();
-            return varp;
+            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, scopep);
+            AstVarScope* const vscp = vtxp->vscp();
+            VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+            vscp->varp()->isInternal(true);
+            vscp->varp()->noReset(true);
+            vscp->varp()->setIgnoreSchedWrite();
+            return vscp;
         }();
         // The table variable
         DfgVarArray* const tabVtxp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Tab", nTables);
-            DfgVarArray* const varp
-                = dfg.makeNewVar(flp, name, tabDType, nullptr)->as<DfgVarArray>();
-            varp->varp()->isInternal(true);
-            varp->varp()->noReset(true);
+            DfgVertexVar* const varp = dfg.makeNewVar(flp, name, tabDType, scopep);
+            varp->vscp()->varp()->isInternal(true);
+            varp->vscp()->varp()->noReset(true);
             varp->setHasModWrRefs();
-            return varp;
+            return varp->as<DfgVarArray>();
         }();
 
         ++nTables;
@@ -362,16 +395,16 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Initialize 'tab' and 'pre' variables statically
         AstInitialStatic* const initp = new AstInitialStatic{flp, nullptr};
-        dfg.modulep()->addStmtsp(initp);
+        staticActivep->addStmtsp(initp);
         {  // pre = 0
             initp->addStmtsp(new AstAssign{
                 flp,  //
-                new AstVarRef{flp, preVarp, VAccess::WRITE},  //
+                new AstVarRef{flp, preVscp, VAccess::WRITE},  //
                 new AstConst{flp, AstConst::WidthedValue{}, static_cast<int>(width), 0}});
         }
         {  // tab.fill(0)
             AstCMethodHard* const callp = new AstCMethodHard{
-                flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE}, VCMethod::UNPACKED_FILL};
+                flp, new AstVarRef{flp, tabVtxp->vscp(), VAccess::WRITE}, VCMethod::UNPACKED_FILL};
             callp->addPinsp(new AstConst{flp, AstConst::BitFalse{}});
             callp->dtypeSetVoid();
             initp->addStmtsp(callp->makeStmt());
@@ -379,28 +412,28 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Build the decoder logic
         AstAlways* const logicp = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, nullptr};
-        dfg.modulep()->addStmtsp(logicp);
+        combActivep->addStmtsp(logicp);
         {  // tab[pre] = 0;
             logicp->addStmtsp(new AstAssign{
                 flp,  //
-                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
-                                new AstVarRef{flp, preVarp, VAccess::READ}},  //
+                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->vscp(), VAccess::WRITE},
+                                new AstVarRef{flp, preVscp, VAccess::READ}},  //
                 new AstConst{flp, AstConst::BitFalse{}}});
         }
         {  // tab[idx] = 1
-            AstVarRef* const idxRefp = new AstVarRef{flp, idxVarp, VAccess::READ};
+            AstVarRef* const idxRefp = new AstVarRef{flp, idxVscp, VAccess::READ};
             logicp->addStmtsp(new AstAssign{
                 flp,  //
-                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
+                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->vscp(), VAccess::WRITE},
                                 idxRefp},  //
                 new AstConst{flp, AstConst::BitTrue{}}});
             DfgAstRd* const astRdp = new DfgAstRd{dfg, idxRefp, false, false};
             astRdp->srcp(idxVtxp);
         }
         {  // pre = idx
-            AstVarRef* const idxRefp = new AstVarRef{flp, idxVarp, VAccess::READ};
+            AstVarRef* const idxRefp = new AstVarRef{flp, idxVscp, VAccess::READ};
             logicp->addStmtsp(new AstAssign{flp,  //
-                                            new AstVarRef{flp, preVarp, VAccess::WRITE},  //
+                                            new AstVarRef{flp, preVscp, VAccess::WRITE},  //
                                             idxRefp});
             DfgAstRd* const astRdp = new DfgAstRd{dfg, idxRefp, false, false};
             astRdp->srcp(idxVtxp);
@@ -432,37 +465,4 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             }
         }
     }
-}
-
-void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
-    // There is absolutely nothing useful we can do with a graph of size 2 or less
-    if (dfg.size() <= 2) return;
-
-    const auto run = [&](const std::string& name, bool dump, std::function<void()> pass) {
-        // Apply the pass
-        pass();
-        // Debug dump
-        if (dump) dfg.dumpDotFilePrefixed(ctx.prefix() + "opt-" + VString::removeWhitespace(name));
-        // Internal type check
-        if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
-    };
-
-    // Currend debug dump level
-    const uint32_t dumpLvl = dumpDfgLevel();
-
-    // Run passes
-    run("input       ", dumpLvl >= 3, [&]() { /* debug dump only */ });
-    run("inlineVars  ", dumpLvl >= 4, [&]() { inlineVars(dfg); });
-    run("cse0        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext0); });
-    run("binToOneHot ", dumpLvl >= 4, [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
-    run("peephole    ", dumpLvl >= 4, [&]() { peephole(dfg, ctx.m_peepholeContext); });
-    // Run only on final scoped DfgGraphs, as otherwise later DfgPeephole wold just undo this work
-    if (!dfg.modulep()) {
-        run("pushDownSels", dumpLvl >= 4, [&]() { pushDownSels(dfg, ctx.m_pushDownSelsContext); });
-    }
-    run("cse1        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext1); });
-    run("output      ", dumpLvl >= 3, [&]() { /* debug dump only */ });
-
-    // Accumulate patterns for reporting
-    if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
 }

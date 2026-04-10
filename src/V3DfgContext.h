@@ -25,11 +25,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3DfgPatternStats.h"
+#include "V3Ast.h"
 #include "V3DfgPeepholePatterns.h"
+#include "V3Error.h"
 #include "V3File.h"
+#include "V3Global.h"
 #include "V3Stats.h"
-#include "V3String.h"
 
 class V3DfgContext;
 
@@ -37,25 +38,17 @@ class V3DfgContext;
 // Base class for all context objects
 
 class V3DfgSubContext VL_NOT_FINAL {
-    V3DfgContext& m_ctx;  // The whole context
-    const std::string m_label;  // Label to add to stats, etc.
     const std::string m_name;  // Pass/algorithm name, to be used in statistics
 
 protected:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
-    V3DfgSubContext(V3DfgContext& ctx, const std::string& label, const char* name)
-        : m_ctx{ctx}
-        , m_label{label}
-        , m_name{name} {}
+    V3DfgSubContext(const std::string& name)
+        : m_name{name} {}
 
     void addStat(const std::string& what, double value) {
-        V3Stats::addStat("Optimizations, DFG " + m_label + " " + m_name + ", " + what, value);
+        V3Stats::addStat("Optimizations, DFG, " + m_name + ", " + what, value);
     }
-
-public:
-    inline const std::string& prefix() const;
-    const std::string& label() const { return m_label; }
 };
 
 //######################################################################
@@ -74,8 +67,8 @@ public:
     VDouble0 m_nonRepVar;  // Non-representable due to unsupported variable properties
 
 private:
-    V3DfgAstToDfgContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "AstToDfg"} {}
+    V3DfgAstToDfgContext()
+        : V3DfgSubContext{"AstToDfg"} {}
     ~V3DfgAstToDfgContext() {
         addStat("input processes", m_inputs);
         addStat("representable", m_representable);
@@ -96,8 +89,8 @@ public:
     VDouble0 m_decodersCreated;  // Number of bianry to one-hot decoders created
 
 private:
-    V3DfgBinToOneHotContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "BinToOneHot"} {}
+    V3DfgBinToOneHotContext()
+        : V3DfgSubContext{"BinToOneHot"} {}
     ~V3DfgBinToOneHotContext() { addStat("decoders created", m_decodersCreated); }
 };
 class V3DfgBreakCyclesContext final : public V3DfgSubContext {
@@ -113,8 +106,8 @@ public:
     VDouble0 m_nImprovements;  // Number of changes made to graphs
 
 private:
-    V3DfgBreakCyclesContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "BreakCycles"} {}
+    V3DfgBreakCyclesContext()
+        : V3DfgSubContext{"BreakCycles"} {}
     ~V3DfgBreakCyclesContext() {
         addStat("made acyclic", m_nFixed);
         addStat("improved", m_nImproved);
@@ -132,8 +125,8 @@ public:
     VDouble0 m_eliminated;  // Number of common sub-expressions eliminated
 
 private:
-    V3DfgCseContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "CSE"} {}
+    explicit V3DfgCseContext(const std::string& label)
+        : V3DfgSubContext{"CSE " + label} {}
     ~V3DfgCseContext() { addStat("expressions eliminated", m_eliminated); }
 };
 
@@ -150,8 +143,8 @@ public:
     VDouble0 m_varRefsSubstituted;  // Number of variable references substituted in the Ast
 
 private:
-    V3DfgDfgToAstContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "DfgToAst"} {}
+    V3DfgDfgToAstContext()
+        : V3DfgSubContext{"DfgToAst"} {}
     ~V3DfgDfgToAstContext() {
         addStat("output variables", m_outputVariables);
         addStat("output variables with default driver", m_outputVariablesWithDefault);
@@ -173,8 +166,34 @@ public:
     std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
 
 private:
-    V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label) VL_MT_DISABLED;
-    ~V3DfgPeepholeContext() VL_MT_DISABLED;
+    V3DfgPeepholeContext()
+        : V3DfgSubContext{"Peephole"} {
+        const auto checkEnabled = [this](VDfgPeepholePattern id) {
+            std::string str{id.ascii()};
+            std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
+                return c == '_' ? '-' : std::tolower(c);
+            });
+            m_enabled[id] = v3Global.opt.fDfgPeepholeEnabled(str);
+        };
+#define OPTIMIZATION_CHECK_ENABLED(id, name) checkEnabled(VDfgPeepholePattern::id);
+        FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_CHECK_ENABLED)
+#undef OPTIMIZATION_CHECK_ENABLED
+    }
+    ~V3DfgPeepholeContext() {
+        for (AstNode* const nodep : m_deleteps) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
+        const auto emitStat = [this](VDfgPeepholePattern id) {
+            std::string str{id.ascii()};
+            std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
+                return c == '_' ? ' ' : std::tolower(c);
+            });
+            addStat(str, m_count[id]);
+        };
+#define OPTIMIZATION_EMIT_STATS(id, name) emitStat(VDfgPeepholePattern::id);
+        FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_EMIT_STATS)
+#undef OPTIMIZATION_EMIT_STATS
+    }
 };
 class V3DfgPushDownSelsContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -185,8 +204,8 @@ public:
     size_t m_pushedDown = 0;  // Number of selects pushed down through concatenations
     size_t m_wouldBeCyclic = 0;  // Number of selects not pushed due to cycle
 private:
-    V3DfgPushDownSelsContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "PushDownSels"} {}
+    V3DfgPushDownSelsContext()
+        : V3DfgSubContext{"PushDownSels"} {}
     ~V3DfgPushDownSelsContext() {
         addStat("sels pushed down", m_pushedDown);
         addStat("would be cyclic", m_wouldBeCyclic);
@@ -204,8 +223,8 @@ public:
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced for reuse
 
 private:
-    V3DfgRegularizeContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "Regularize"} {}
+    V3DfgRegularizeContext()
+        : V3DfgSubContext{"Regularize"} {}
     ~V3DfgRegularizeContext() {
         for (AstNode* const nodep : m_deleteps) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -227,8 +246,8 @@ public:
     VDouble0 m_logicDeleted;  // Number of logic blocks removed from the Dfg and the Ast
 
 private:
-    V3DfgRemoveUnobservableContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "RemoveUnobservable"} {}
+    V3DfgRemoveUnobservableContext()
+        : V3DfgSubContext{"RemoveUnobservable"} {}
     ~V3DfgRemoveUnobservableContext() {
         addStat("variables removed", m_varsRemoved);
         addStat("variables deleted", m_varsDeleted);
@@ -291,8 +310,8 @@ public:
     } m_synt;
 
 private:
-    V3DfgSynthesisContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "Synthesis"} {}
+    V3DfgSynthesisContext()
+        : V3DfgSubContext{"Synthesis"} {}
     ~V3DfgSynthesisContext() {
         // Conversion statistics
         addStat("conv / input assignments", m_conv.inputAssignments);
@@ -367,64 +386,25 @@ private:
 // Top level V3DfgContext
 
 class V3DfgContext final {
-    const std::string m_label;  // Label to add to stats, etc.
-    const std::string m_prefix;  // Prefix to add to file dumps (derived from label)
-
 public:
     // STATE
 
-    // Global statistics
-    VDouble0 m_modules;  // Number of modules optimized
-
     // Sub contexts - keep sorted by type
-    V3DfgAstToDfgContext m_ast2DfgContext{*this, m_label};
-    V3DfgBinToOneHotContext m_binToOneHotContext{*this, m_label};
-    V3DfgBreakCyclesContext m_breakCyclesContext{*this, m_label};
-    V3DfgCseContext m_cseContext0{*this, m_label + " 1st"};
-    V3DfgCseContext m_cseContext1{*this, m_label + " 2nd"};
-    V3DfgDfgToAstContext m_dfg2AstContext{*this, m_label};
-    V3DfgPeepholeContext m_peepholeContext{*this, m_label};
-    V3DfgPushDownSelsContext m_pushDownSelsContext{*this, m_label};
-    V3DfgRegularizeContext m_regularizeContext{*this, m_label};
-    V3DfgRemoveUnobservableContext m_removeUnobservableContext{*this, m_label};
-    V3DfgSynthesisContext m_synthContext{*this, m_label};
-
-    // Node pattern collector
-    V3DfgPatternStats m_patternStats;
+    V3DfgAstToDfgContext m_ast2DfgContext;
+    V3DfgBinToOneHotContext m_binToOneHotContext;
+    V3DfgBreakCyclesContext m_breakCyclesContext;
+    V3DfgCseContext m_cseContext0{"1st"};
+    V3DfgCseContext m_cseContext1{"2nd"};
+    V3DfgDfgToAstContext m_dfg2AstContext;
+    V3DfgPeepholeContext m_peepholeContext;
+    V3DfgPushDownSelsContext m_pushDownSelsContext;
+    V3DfgRegularizeContext m_regularizeContext;
+    V3DfgRemoveUnobservableContext m_removeUnobservableContext;
+    V3DfgSynthesisContext m_synthContext;
 
     // CONSTRUCTOR
-    explicit V3DfgContext(const std::string& label)
-        : m_label{label}
-        , m_prefix{VString::removeWhitespace(label) + "-"} {}
-
-    ~V3DfgContext() {
-        const string front = "Optimizations, DFG " + label() + " General, ";
-        V3Stats::addStat(front + "modules", m_modules);
-
-        // Print the collected patterns
-        if (v3Global.opt.stats()) {
-            // Label to lowercase, without spaces
-            std::string ident = label();
-            std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
-                return c == ' ' ? '_' : std::tolower(c);
-            });
-
-            // File to dump to
-            const std::string filename = v3Global.opt.hierTopDataDir() + "/"
-                                         + v3Global.opt.prefix() + "__stats_dfg_patterns__" + ident
-                                         + ".txt";
-            // Open, write, close
-            const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-            if (ofp->fail()) v3fatal("Can't write file: " << filename);
-            m_patternStats.dump(label(), *ofp);
-        }
-    }
-
-    // ACCESSORS
-    const std::string& label() const { return m_label; }
-    const std::string& prefix() const { return m_prefix; }
+    V3DfgContext() = default;
+    ~V3DfgContext() = default;
 };
-
-const std::string& V3DfgSubContext::prefix() const { return m_ctx.prefix(); }
 
 #endif  //VERILATOR_V3DFGCONTEXT_H_

@@ -80,8 +80,6 @@ test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
-    "-fno-dfg-post-inline",
-    "-fno-dfg-scoped",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",

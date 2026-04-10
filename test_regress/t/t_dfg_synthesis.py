@@ -70,13 +70,10 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "--fdfg-synthesize-all",
-    "-fno-dfg-pre-inline",
-    "-fno-dfg-post-inline",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
-    "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
     "-fno-split", # Dfg will take care of it
     "--debug", "--debugi", "0", "--dumpi-tree", "0",
     "-CFLAGS \"-I .. -I ../obj_ref\"",
@@ -85,13 +82,13 @@ test.compile(verilator_flags2=[
 ])  # yapf:disable
 
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG scoped Synthesis, synt / always blocks considered\s+(\d+)$',
+               r'DFG, Synthesis, synt / always blocks considered\s+(\d+)$',
                nAlwaysSynthesized + nAlwaysReverted + nAlwaysNotSynthesized)
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG scoped Synthesis, synt / always blocks synthesized\s+(\d+)$',
+               r'DFG, Synthesis, synt / always blocks synthesized\s+(\d+)$',
                nAlwaysSynthesized + nAlwaysReverted)
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG scoped Synthesis, synt / reverted \(multidrive\)\s+(\d)$', nAlwaysReverted)
+               r'DFG, Synthesis, synt / reverted \(multidrive\)\s+(\d)$', nAlwaysReverted)
 
 # Execute test to check equivalence
 test.execute(executable=test.obj_dir + "/obj_opt/Vopt")

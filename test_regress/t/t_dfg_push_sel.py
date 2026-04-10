@@ -11,16 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('simulator_st')
 
-test.compile(verilator_flags2=[
-    "--binary", "--stats", "-fno-dfg-pre-inline", "-fno-dfg-post-inline", "-fno-dfg-peephole"
-])
+test.compile(verilator_flags2=["--binary", "--stats", "-fno-dfg-peephole"])
 
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, sels pushed down\s+(\d+)',
-                   49)
-    test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, would be cyclic\s+(\d+)',
-                   1)
+    test.file_grep(test.stats, r'Optimizations, DFG, PushDownSels, sels pushed down\s+(\d+)', 49)
+    test.file_grep(test.stats, r'Optimizations, DFG, PushDownSels, would be cyclic\s+(\d+)', 1)
 
 test.passes()

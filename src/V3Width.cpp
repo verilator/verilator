@@ -294,8 +294,9 @@ class WidthVisitor final : public VNVisitor {
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     void visit(AstLogAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogOr* nodep) override { visit_log_and_or(nodep); }
-    // Sequence and/or (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
+    // Sequence and/or/intersect (IEEE 1800-2023 16.9.2), same width rules as LogAnd/LogOr
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
@@ -1510,19 +1511,34 @@ class WidthVisitor final : public VNVisitor {
             userIterate(nodep->sentreep(), nullptr);
         }
     }
-    void visit(AstConsRep* nodep) override {
-        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N]
+    void visit(AstSConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [+], [*]
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            V3Const::constifyParamsEdit(nodep->countp());  // countp may change
-            const AstConst* const constp = VN_CAST(nodep->countp(), Const);
-            if (!constp) {
+            V3Const::constifyParamsEdit(nodep->countp());
+            const AstConst* const minConstp = VN_CAST(nodep->countp(), Const);
+            if (!minConstp) {
                 nodep->v3error("Consecutive repetition count must be constant expression"
                                " (IEEE 1800-2023 16.9.2)");
-            } else if (constp->toSInt() < 1) {
+            } else if (!nodep->unbounded() && !nodep->maxCountp() && minConstp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
+            }
+            if (nodep->maxCountp()) {
+                userIterateAndNext(nodep->maxCountp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->maxCountp());
+                const AstConst* const maxConstp = VN_CAST(nodep->maxCountp(), Const);
+                if (!maxConstp) {
+                    nodep->v3error("Consecutive repetition max count must be constant"
+                                   " expression (IEEE 1800-2023 16.9.2)");
+                } else if (minConstp && maxConstp->toSInt() < minConstp->toSInt()) {
+                    nodep->v3error("Consecutive repetition max count must be >= min count"
+                                   " (IEEE 1800-2023 16.9.2)");
+                } else if (maxConstp->toSInt() < 1) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*N:0] consecutive repetition"
+                                                 " with zero max count");
+                }
             }
             nodep->dtypeSetBit();
         }
@@ -1631,6 +1647,15 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstUntil* nodep) override {
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
+
     void visit(AstRand* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -1643,6 +1668,14 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSGotoRep* nodep) override {
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstSNonConsRep* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);

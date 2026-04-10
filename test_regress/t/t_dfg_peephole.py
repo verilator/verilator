@@ -106,7 +106,7 @@ test.compile(verilator_flags2=[
 def check(name, enabled):
     name = name.lower()
     name = re.sub(r'_', ' ', name)
-    pattern = r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)\s*$'
+    pattern = r'DFG, Peephole, ' + name + r'\s+([1-9]\d*)\s*$'
     if enabled:
         test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt", pattern)
     else:

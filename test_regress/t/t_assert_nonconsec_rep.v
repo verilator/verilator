@@ -17,7 +17,7 @@ module t (
   int cyc;
   reg [63:0] crc;
 
-  // Derive signals from non-adjacent CRC bits
+  // Derive signals from non-adjacent CRC bits (lesson 17: avoid shift correlation)
   wire a = crc[0];
   wire b = crc[4];
   wire c = crc[8];
@@ -27,31 +27,27 @@ module t (
   int count_fail2 = 0;
   int count_fail3 = 0;
   int count_fail4 = 0;
-  int count_fail5 = 0;
 
-  // Test 1: a[*3] |-> b (3 consecutive, overlapping implication)
-  assert property (@(posedge clk) a [* 3] |-> b)
-  else count_fail1 <= count_fail1 + 1;
+  // Test 1: a[=2] |-> b (overlapping implication, 2 non-consecutive occurrences)
+  assert property (@(posedge clk) a[=2] |-> b)
+    else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a[*1] |-> c (trivial [*1], overlapping)
-  assert property (@(posedge clk) a [* 1] |-> c)
-  else count_fail2 <= count_fail2 + 1;
+  // Test 2: a[=1] |-> c (single occurrence, overlapping)
+  assert property (@(posedge clk) a[=1] |-> c)
+    else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a[*2] |=> d (2 consecutive, non-overlapping implication)
-  assert property (@(posedge clk) a [* 2] |=> d)
-  else count_fail3 <= count_fail3 + 1;
+  // Test 3: a[=3] |=> d (3 occurrences, non-overlapping implication)
+  assert property (@(posedge clk) a[=3] |=> d)
+    else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: standalone consecutive rep (no implication)
-  assert property (@(posedge clk) b [* 2])
-  else count_fail4 <= count_fail4 + 1;
-
-  // Test 5: [*10000] large count -- verifies counter-based lowering compiles
-  assert property (@(posedge clk) a [* 10000] |-> b)
-  else count_fail5 <= count_fail5 + 1;
+  // Test 4: standalone nonconsec rep (no implication)
+  assert property (@(posedge clk) b[=2])
+    else count_fail4 <= count_fail4 + 1;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n",
+           $time, cyc, crc, a, b, c, d);
 `endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -60,11 +56,10 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 5);
-      `checkd(count_fail2, 25);
-      `checkd(count_fail3, 9);
-      `checkd(count_fail4, 74);
-      `checkd(count_fail5, 0);
+      `checkd(count_fail1, 34);
+      `checkd(count_fail2, 27);
+      `checkd(count_fail3, 25);
+      `checkd(count_fail4, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

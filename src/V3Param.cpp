@@ -293,6 +293,9 @@ class ParamProcessor final {
     std::vector<std::pair<AstParamTypeDType*, int>> m_classParams;
     std::unordered_map<AstParamTypeDType*, int> m_paramIndex;
 
+    // Guard against infinite recursion in classTypeMatchesDefaultClone slow path
+    std::unordered_set<const AstClass*> m_defaultCloneInProgress;
+
     // member names cached for fast lookup
     VMemberMap m_memberMap;
 
@@ -1250,13 +1253,20 @@ class ParamProcessor final {
             = VN_CAST(origClassRefp->classp()->user4p(), Class);
         if (defaultClonep && defaultClonep == exprClassRefp->classp()) return true;
         // Slow path: deparameterize the default type and compare the result.
+        // Different templates can never match; use origName() because exprp's
+        // class may already be a specialization (clone) of the template.
         if (!origClassRefp->classp()->hasGParam()) return false;
+        if (origClassRefp->classp()->origName() != exprClassRefp->classp()->origName())
+            return false;
+        // Prevent re-entry when classRefDeparam recurses through cellPinCleanup.
+        if (!m_defaultCloneInProgress.insert(origClassRefp->classp()).second) return false;
         // const_cast safe: cloneTree doesn't modify the source
         AstClassRefDType* const origClonep = static_cast<AstClassRefDType*>(
             const_cast<AstClassRefDType*>(origClassRefp)->cloneTree(false));
         AstNodeModule* const resolvedModp = classRefDeparam(origClonep, origClassRefp->classp());
         const bool match = resolvedModp && VN_CAST(resolvedModp, Class) == exprClassRefp->classp();
         VL_DO_DANGLING(origClonep->deleteTree(), origClonep);
+        m_defaultCloneInProgress.erase(origClassRefp->classp());
         return match;
     }
 

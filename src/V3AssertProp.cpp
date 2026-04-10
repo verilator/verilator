@@ -45,6 +45,229 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Lower consecutive repetition forms not handled by V3AssertPre:
+//   SExpr leading  -- all forms via PExpr forward-looking loop (IEEE 1800-2023 16.9.2)
+//   Standalone     -- [*1]/[+]/[*] to expr/1'b1; range/unbounded unsupported
+//   SExpr trailing -- range/unbounded unsupported
+
+class AssertPropConsRepVisitor final : public VNVisitor {
+    V3UniqueNames m_names{"__VconsRep"};
+
+    struct RepRange final {
+        int minN;
+        int maxN;  // valid only when !unbounded && maxCountp != nullptr
+        bool unbounded;
+    };
+
+    RepRange getCounts(const AstSConsRep* repp) {
+        const AstConst* const minp = VN_CAST(repp->countp(), Const);
+        UASSERT_OBJ(minp, repp, "ConsRep min count must be constant after V3Width");
+        RepRange r;
+        r.minN = minp->toSInt();
+        r.unbounded = repp->unbounded();
+        r.maxN = r.minN;
+        if (repp->maxCountp()) {
+            const AstConst* const maxp = VN_CAST(repp->maxCountp(), Const);
+            UASSERT_OBJ(maxp, repp, "ConsRep max count must be constant after V3Width");
+            r.maxN = maxp->toSInt();
+        }
+        return r;
+    }
+
+    // VISITORS
+
+    void visit(AstSExpr* nodep) override {
+        // Intercept before iterating children: lowerInSExpr deletes nodep, so
+        // calling iterateChildren after would be a use-after-free.
+        if (AstSConsRep* const repp = VN_CAST(nodep->preExprp(), SConsRep)) {
+            lowerInSExpr(nodep, repp);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstSConsRep* nodep) override {
+        // Leading SExpr case is handled by visit(AstSExpr).
+        // Here: trailing position ("b ##1 a[+]") and standalone.
+        if (AstSExpr* const sexprp = VN_CAST(nodep->backp(), SExpr)) {
+            // Trailing range/unbounded: needs forward-looking NFA -- not yet supported.
+            if (nodep == sexprp->exprp() && (nodep->unbounded() || nodep->maxCountp())) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: trailing consecutive repetition range"
+                                             " in sequence expression (e.g. a ##1 b[+])");
+                AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+                nodep->replaceWith(exprp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            }
+            return;
+        }
+        lowerStandalone(nodep);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    void lowerStandalone(AstSConsRep* nodep) {
+        const RepRange r = getCounts(nodep);
+        if (!nodep->maxCountp() && !r.unbounded && r.minN >= 2) return;  // V3AssertPre handles
+
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+
+        if (r.minN <= 1 && (r.unbounded || !nodep->maxCountp())) {
+            // [+], [*], or [*1]: reduce to the expression itself.
+            // [*] (zero-or-more) uses the shortest non-vacuous match (length 1 when expr=true),
+            // matching simulator behavior; zero-length matches do not trigger |-> implications.
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        // [*N:M] or [*N:$] range standalone -- requires NFA, not yet supported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: standalone consecutive repetition range");
+        nodep->replaceWith(exprp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+
+    static bool isCycleDelay1(const AstNode* delayp) {
+        const AstDelay* const dp = VN_CAST(delayp, Delay);
+        if (!dp || !dp->isCycleDelay() || dp->isRangeDelay()) return false;
+        const AstConst* const cp = VN_CAST(dp->lhsp(), Const);
+        return cp && cp->toUInt() == 1;
+    }
+
+    // Lower "expr[*N:M] ##1 next" to a PExpr loop:
+    //   if ($sampled(expr)) { cnt=1; do { ##1; branch on cnt vs N/M; } while (!done); }
+    //   else if (N==0): ##1; if ($sampled(next)) pass; else fail;
+    void lowerInSExpr(AstSExpr* sexprp, AstSConsRep* repp) {
+        const RepRange r = getCounts(repp);
+        FileLine* const flp = sexprp->fileline();
+
+        // Unlink the three components of the SExpr
+        AstNodeExpr* const repExprp = repp->exprp()->unlinkFrBack();
+        AstNodeStmt* const delayp = sexprp->delayp()->unlinkFrBack();
+        AstNodeExpr* const nextExprp = sexprp->exprp()->unlinkFrBack();
+
+        // Trivial case: [*1] exact in SExpr -- just restore the SExpr for DFA
+        if (r.minN == 1 && !r.unbounded && !repp->maxCountp()) {
+            repp->replaceWith(repExprp);
+            VL_DO_DANGLING(repp->deleteTree(), repp);
+            sexprp->delayp(delayp);
+            sexprp->exprp(nextExprp);
+            return;
+        }
+
+        // Non-##1 delay combined with multi-cycle repetition would produce incorrect
+        // inter-repetition timing (IEEE 1800-2023 16.9.2 requires ##1 between matches).
+        if (!isCycleDelay1(delayp)) {
+            sexprp->v3warn(E_UNSUPPORTED,
+                           "Unsupported: consecutive repetition with non-##1 cycle delay");
+            repp->replaceWith(repExprp);
+            VL_DO_DANGLING(repp->deleteTree(), repp);
+            sexprp->delayp(delayp);
+            sexprp->exprp(nextExprp);
+            return;
+        }
+
+        // Build the counter and done-flag variables (AUTOMATIC_EXPLICIT for PExpr scope)
+        AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, m_names.get(sexprp),
+                                           sexprp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        AstVar* const doneVarp
+            = new AstVar{flp, VVarType::BLOCKTEMP, m_names.get(sexprp), sexprp->findBitDType()};
+        doneVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        // Convenience constructors
+        auto cntRef = [&](VAccess acc) { return new AstVarRef{flp, cntVarp, acc}; };
+        auto setDone = [&]() {
+            return new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitTrue{}}};
+        };
+        auto incrCnt = [&]() {
+            return new AstAssign{flp, cntRef(VAccess::WRITE),
+                                 new AstAdd{flp, cntRef(VAccess::READ), new AstConst{flp, 1u}}};
+        };
+        auto passStmts = [&]() {
+            AstBegin* const bp = new AstBegin{flp, "", nullptr, true};
+            bp->addStmtsp(new AstPExprClause{flp, true});
+            bp->addStmtsp(setDone());
+            return bp;
+        };
+        auto failStmts = [&]() {
+            AstBegin* const bp = new AstBegin{flp, "", nullptr, true};
+            bp->addStmtsp(new AstPExprClause{flp, false});
+            bp->addStmtsp(setDone());
+            return bp;
+        };
+
+        // Loop body: ##1 delay, then branch on count vs min
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(delayp);
+
+        // When cnt >= minN: try to match next, or continue accumulating, or fail
+        AstBegin* const continueBlockp = new AstBegin{flp, "", nullptr, true};
+        continueBlockp->addStmtsp(incrCnt());
+        if (!r.unbounded) {
+            // Upper-bound check: if cnt > maxN, the window is exhausted
+            continueBlockp->addStmtsp(
+                new AstIf{flp,
+                          new AstGt{flp, cntRef(VAccess::READ),
+                                    new AstConst{flp, static_cast<uint32_t>(r.maxN)}},
+                          failStmts()});
+        }
+        AstIf* const tryNextp = new AstIf{
+            flp, nextExprp, passStmts(),
+            new AstIf{flp, repExprp->cloneTreePure(false), continueBlockp, failStmts()}};
+
+        if (r.minN > 0) {
+            // When cnt < minN: still accumulating -- must see expr to continue
+            AstIf* const accumulatep
+                = new AstIf{flp, repExprp->cloneTreePure(false), incrCnt(), failStmts()};
+            loopp->addStmtsp(
+                new AstIf{flp,
+                          new AstGte{flp, cntRef(VAccess::READ),
+                                     new AstConst{flp, static_cast<uint32_t>(r.minN)}},
+                          tryNextp, accumulatep});
+        } else {
+            // minN == 0: every iteration is already past the minimum threshold
+            loopp->addStmtsp(tryNextp);
+        }
+        loopp->addStmtsp(new AstLoopTest{
+            flp, loopp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
+
+        // Entry: expr matched at cycle 0 -- initialize counter and start loop
+        AstBegin* const entryBlockp = new AstBegin{flp, "", nullptr, true};
+        entryBlockp->addStmtsp(new AstAssign{flp, cntRef(VAccess::WRITE), new AstConst{flp, 1u}});
+        entryBlockp->addStmtsp(loopp);
+
+        // Else branch: no match at cycle 0
+        AstNode* const elsep = [&]() -> AstNode* {
+            if (r.minN == 0) {
+                // Zero-repetition path: skip directly to ##1 and check next
+                AstBegin* const skipBlockp = new AstBegin{flp, "", nullptr, true};
+                skipBlockp->addStmtsp(delayp->cloneTree(false));
+                skipBlockp->addStmtsp(
+                    new AstIf{flp, nextExprp->cloneTreePure(false), passStmts(), failStmts()});
+                return skipBlockp;
+            }
+            return new AstPExprClause{flp, false};
+        }();
+
+        AstIf* const topIfp = new AstIf{flp, repExprp, entryBlockp, elsep};
+
+        // Wrap everything in a PExpr with cnt and done as locals
+        AstBegin* const bodyp = new AstBegin{flp, "", cntVarp, true};
+        bodyp->addStmtsp(doneVarp);
+        bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                       new AstConst{flp, AstConst::BitFalse{}}});
+        bodyp->addStmtsp(topIfp);
+
+        sexprp->replaceWith(new AstPExpr{flp, bodyp, sexprp->dtypep()});
+        VL_DO_DANGLING(sexprp->deleteTree(), sexprp);
+    }
+
+public:
+    explicit AssertPropConsRepVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~AssertPropConsRepVisitor() override = default;
+};
+
+//######################################################################
 // Data structures (graph types)
 
 class DfaVertex VL_NOT_FINAL : public V3GraphVertex {
@@ -136,8 +359,9 @@ static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
             if (AstConst* const constp = VN_CAST(dlyp->lhsp(), Const)) {
                 cycles = constp->toSInt();
             } else {
-                dlyp->lhsp()->v3warn(E_UNSUPPORTED,
-                                     "Unsupported: non-constant cycle delay in sequence and/or");
+                dlyp->lhsp()->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: non-constant cycle delay in sequence and/or/intersect");
             }
         }
         // The expression after the delay
@@ -156,6 +380,18 @@ static std::vector<SeqStep> extractTimeline(AstNodeExpr* nodep) {
         timeline.push_back({0, nodep});
     }
     return timeline;
+}
+
+// True if any AstSExpr in the subtree has a range delay (##[m:n]).
+// Uses forall(): predicate returns false when a range delay is found,
+// so !forall(...) means "at least one range delay exists".
+static bool subtreeHasRangeDelay(const AstNode* nodep) {
+    return !nodep->forall([](const AstSExpr* sexprp) {
+        if (const AstDelay* const dlyp = VN_CAST(sexprp->delayp(), Delay)) {
+            if (dlyp->isRangeDelay()) return false;
+        }
+        return true;
+    });
 }
 
 // Lower sequence and/or to AST
@@ -225,11 +461,9 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 auto& exprs = it->second;
 
                 // Combine all expressions at this cycle with LogAnd
-                AstNodeExpr* condp = new AstSampled{flp, exprs[0]};
-                condp->dtypeSetBit();
+                AstNodeExpr* condp = exprs[0];
                 for (size_t i = 1; i < exprs.size(); ++i) {
-                    AstNodeExpr* const rp = new AstSampled{flp, exprs[i]};
-                    rp->dtypeSetBit();
+                    AstNodeExpr* const rp = exprs[i];
                     condp = new AstLogAnd{flp, condp, rp};
                     condp->dtypeSetBit();
                 }
@@ -331,23 +565,22 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 const int brMaxCycle = (entry.branchId == 0) ? br0MaxCycle : br1MaxCycle;
                 const bool isLast = (cycle == brMaxCycle);
 
-                AstNodeExpr* const sampledp = new AstSampled{flp, entry.exprp->cloneTree(false)};
-                sampledp->dtypeSetBit();
+                AstNodeExpr* const exprp = entry.exprp->cloneTree(false);
                 AstNodeExpr* const alivep
                     = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
                 alivep->dtypeSetBit();
 
                 if (isLast) {
                     // Last check: alive && passes -> pass
-                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, sampledp};
+                    AstNodeExpr* const passCond = new AstLogAnd{flp, alivep, exprp};
                     passCond->dtypeSetBit();
                     cycleBlock->addStmtsp(new AstIf{flp, passCond, makePass()});
                     // alive && fails -> dead
                     AstNodeExpr* const alive2p
                         = new AstLogNot{flp, new AstVarRef{flp, deadVarp, VAccess::READ}};
                     alive2p->dtypeSetBit();
-                    AstNodeExpr* const failCond = new AstLogAnd{
-                        flp, alive2p, new AstLogNot{flp, sampledp->cloneTree(false)}};
+                    AstNodeExpr* const failCond
+                        = new AstLogAnd{flp, alive2p, new AstLogNot{flp, exprp->cloneTree(false)}};
                     failCond->dtypeSetBit();
                     cycleBlock->addStmtsp(
                         new AstIf{flp, failCond,
@@ -356,7 +589,7 @@ class AssertPropLowerVisitor final : public VNVisitor {
                 } else {
                     // Non-last: alive && fails -> dead
                     AstNodeExpr* const failCond
-                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, sampledp}};
+                        = new AstLogAnd{flp, alivep, new AstLogNot{flp, exprp}};
                     failCond->dtypeSetBit();
                     cycleBlock->addStmtsp(
                         new AstIf{flp, failCond,
@@ -396,12 +629,66 @@ class AssertPropLowerVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
+    // Lower a multi-cycle sequence 'intersect' (IEEE 1800-2023 16.9.6).
+    // intersect = and + equal-length constraint: both operands must match with the same duration.
+    // When total delays are equal constants, this is identical to 'and'; otherwise constant-false.
+    void lowerSeqIntersect(AstNodeBiop* nodep) {
+        const std::vector<SeqStep> lhsTimeline = extractTimeline(nodep->lhsp());
+        const std::vector<SeqStep> rhsTimeline = extractTimeline(nodep->rhsp());
+        int lhsTotal = 0;
+        for (const auto& step : lhsTimeline) lhsTotal += step.delayCycles;
+        int rhsTotal = 0;
+        for (const auto& step : rhsTimeline) rhsTotal += step.delayCycles;
+        if (lhsTotal != rhsTotal) {
+            // Lengths differ: per IEEE 16.9.6, the match set is empty -- constant-false.
+            // Warn the user; mismatched lengths are almost always a mistake.
+            // Skip when either operand had a range delay: RangeDelayExpander already
+            // replaced it with an FSM expression (containsSExpr returns false) and
+            // issued UNSUPPORTED, so no second diagnostic is needed.
+            if (containsSExpr(nodep->lhsp()) && containsSExpr(nodep->rhsp())) {
+                if (lhsTotal > rhsTotal) {
+                    nodep->v3warn(WIDTHEXPAND, "Intersect sequence length mismatch"
+                                               " (left "
+                                                   << lhsTotal << " cycles, right " << rhsTotal
+                                                   << " cycles) -- intersection is always empty");
+                } else {
+                    nodep->v3warn(WIDTHTRUNC, "Intersect sequence length mismatch"
+                                              " (left "
+                                                  << lhsTotal << " cycles, right " << rhsTotal
+                                                  << " cycles) -- intersection is always empty");
+                }
+            }
+            FileLine* const flp = nodep->fileline();
+            AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+            bodyp->addStmtsp(new AstPExprClause{flp, false});
+            AstPExpr* const pexprp = new AstPExpr{flp, bodyp, nodep->dtypep()};
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        // Same length: length restriction is trivially satisfied, lower as 'and'.
+        lowerSeqAnd(nodep);
+    }
+
     void visit(AstSAnd* nodep) override {
         iterateChildren(nodep);
         if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
             lowerSeqAnd(nodep);
         } else {
             // Pure boolean operands: lower to LogAnd
+            AstLogAnd* const newp = new AstLogAnd{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                                  nodep->rhsp()->unlinkFrBack()};
+            newp->dtypeFrom(nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
+    void visit(AstSIntersect* nodep) override {
+        iterateChildren(nodep);
+        if (containsSExpr(nodep->lhsp()) || containsSExpr(nodep->rhsp())) {
+            lowerSeqIntersect(nodep);
+        } else {
+            // Pure boolean operands: length is always 0, lower to LogAnd
             AstLogAnd* const newp = new AstLogAnd{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                                   nodep->rhsp()->unlinkFrBack()};
             newp->dtypeFrom(nodep);
@@ -593,10 +880,8 @@ class AssertPropTransformer final {
         AstBegin* const passsp = new AstBegin{nodep->fileline(), "", nullptr, true};
         AstNode* const failsp = vtxp->outEdges().backp()->top()->as<DfaStmtVertex>()->nodep();
 
-        AstSampled* const sampledp
-            = new AstSampled{nodep->fileline(), VN_AS(vtxp->nodep(), NodeExpr)};
-        sampledp->dtypeFrom(vtxp->nodep());
-        AstIf* const ifp = new AstIf{nodep->fileline(), sampledp, passsp, failsp};
+        AstNodeExpr* const exprp = VN_AS(vtxp->nodep(), NodeExpr);
+        AstIf* const ifp = new AstIf{nodep->fileline(), exprp, passsp, failsp};
         m_current->addStmtsp(ifp);
         m_current = passsp;
         return processEdge(vtxp->outEdges().frontp());
@@ -806,10 +1091,7 @@ class RangeDelayExpander final : public VNVisitor {
     AstNode* makeRangeCheckBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp,
                                 AstVar* failVarp, AstNodeExpr* exprp, AstNode* matchActionp,
                                 bool isUnbounded) {
-        if (isUnbounded) {
-            return new AstIf{flp, new AstSampled{flp, exprp->cloneTree(false)}, matchActionp,
-                             nullptr};
-        }
+        if (isUnbounded) return new AstIf{flp, exprp->cloneTree(false), matchActionp, nullptr};
         AstBegin* const timeoutp = new AstBegin{flp, "", nullptr, true};
         timeoutp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, failVarp, VAccess::WRITE},
                                           new AstConst{flp, AstConst::BitTrue{}}});
@@ -821,8 +1103,7 @@ class RangeDelayExpander final : public VNVisitor {
         AstIf* const failOrRetryp = new AstIf{
             flp, new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
             timeoutp, decrementp};
-        return new AstIf{flp, new AstSampled{flp, exprp->cloneTree(false)}, matchActionp,
-                         failOrRetryp};
+        return new AstIf{flp, exprp->cloneTree(false), matchActionp, failOrRetryp};
     }
 
     AstNode* buildFsmBody(FileLine* flp, AstVar* stateVarp, AstVar* cntVarp, AstVar* failVarp,
@@ -891,8 +1172,7 @@ class RangeDelayExpander final : public VNVisitor {
                                                new AstConst{flp, AstConst::BitTrue{}}});
                 failp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, stateVarp, VAccess::WRITE},
                                                new AstConst{flp, 0}});
-                AstIf* const bodyp = new AstIf{
-                    flp, new AstSampled{flp, step.exprp->cloneTree(false)}, passp, failp};
+                AstIf* const bodyp = new AstIf{flp, step.exprp->cloneTree(false), passp, failp};
                 fsmChainp = chainState(flp, fsmChainp, stateVarp, bounds[i].checkState, bodyp);
             }
         }
@@ -904,12 +1184,12 @@ class RangeDelayExpander final : public VNVisitor {
         // Trigger = antecedent AND/OR first step expression
         AstNodeExpr* triggerp = nullptr;
         if (antExprp && firstStep.exprp) {
-            triggerp = new AstAnd{flp, new AstSampled{flp, antExprp->cloneTree(false)},
-                                  new AstSampled{flp, firstStep.exprp->cloneTree(false)}};
+            triggerp
+                = new AstAnd{flp, antExprp->cloneTree(false), firstStep.exprp->cloneTree(false)};
         } else if (antExprp) {
-            triggerp = new AstSampled{flp, antExprp->cloneTree(false)};
+            triggerp = antExprp->cloneTree(false);
         } else if (firstStep.exprp) {
-            triggerp = new AstSampled{flp, firstStep.exprp->cloneTree(false)};
+            triggerp = firstStep.exprp->cloneTree(false);
         }
 
         if (firstStep.isUnbounded && firstStep.rangeMin == 0 && steps.size() > 1) {
@@ -920,8 +1200,7 @@ class RangeDelayExpander final : public VNVisitor {
             const int checkState = bounds[0].checkState;
             const int afterMatch = checkState + 1;
             const bool isTail = (steps.size() == 2 && nextStep.delay == 0);
-            AstNodeExpr* const immCheckp = new AstSampled{flp, nextStep.exprp->cloneTree(false)};
-            immCheckp->dtypeSetBit();
+            AstNodeExpr* const immCheckp = nextStep.exprp->cloneTree(false);
             AstNode* const immMatchp
                 = makeOnMatchAction(flp, stateVarp, cntVarp, isTail, afterMatch, nextStep.delay);
             AstNode* const toCheckp = makeStateTransition(flp, stateVarp, cntVarp, checkState, 0);
@@ -1055,15 +1334,12 @@ class RangeDelayExpander final : public VNVisitor {
         AstVar* const stateVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__state",
                                              nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         stateVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        stateVarp->noSample(true);
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__cnt",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        cntVarp->noSample(true);
         AstVar* const failVarp = new AstVar{flp, VVarType::MODULETEMP, baseName + "__fail",
                                             nodep->findBasicDType(VBasicDTypeKwd::BIT)};
         failVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        failVarp->noSample(true);
 
         // Build FSM body
         AstNode* const fsmBodyp = buildFsmBody(flp, stateVarp, cntVarp, failVarp, steps, antExprp);
@@ -1099,6 +1375,15 @@ class RangeDelayExpander final : public VNVisitor {
         }
     }
 
+    void visit(AstSIntersect* nodep) override {
+        // intersect with a range-delay operand cannot be lowered: the length-pairing
+        // logic requires knowing each operand's concrete length, which is dynamic.
+        if (subtreeHasRangeDelay(nodep->lhsp()) || subtreeHasRangeDelay(nodep->rhsp())) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: intersect with ranged cycle-delay operand");
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstSThroughout* nodep) override {
         // Reject throughout with range-delay sequences before FSM expansion
         // would silently lose per-tick enforcement (IEEE 1800-2023 16.9.9)
@@ -1111,7 +1396,8 @@ class RangeDelayExpander final : public VNVisitor {
             }
         }
         // Reject throughout with nested throughout or goto repetition
-        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)) {
+        if (VN_IS(nodep->rhsp(), SThroughout) || VN_IS(nodep->rhsp(), SGotoRep)
+            || VN_IS(nodep->rhsp(), SNonConsRep)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: throughout with complex sequence operator");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1147,6 +1433,8 @@ public:
 
 void V3AssertProp::assertPropAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    // Lower range/unbounded consecutive repetition before DFA graph building
+    { AssertPropConsRepVisitor{nodep}; }
     { RangeDelayExpander{nodep}; }
     { AssertPropLowerVisitor{nodep}; }
     {

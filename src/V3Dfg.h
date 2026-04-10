@@ -386,9 +386,6 @@ class DfgGraph final {
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
     size_t m_size = 0;  // Number of vertices in the graph
-    // Parent of the graph (i.e.: the module containing the logic represented by this graph),
-    // or nullptr when run after V3Scope
-    AstModule* const m_modulep;
     const std::string m_name;  // Name of graph - need not be unique
     std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
 
@@ -399,15 +396,13 @@ class DfgGraph final {
 
 public:
     // CONSTRUCTOR
-    explicit DfgGraph(AstModule* modulep, const string& name = "") VL_MT_DISABLED;
+    explicit DfgGraph(const string& name = "") VL_MT_DISABLED;
     ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 
     // METHODS
     // Number of vertices in this graph
     size_t size() const { return m_size; }
-    // Parent module - or nullptr when run after V3Scope
-    AstModule* modulep() const { return m_modulep; }
     // Name of this graph
     const string& name() const { return m_name; }
 
@@ -559,16 +554,6 @@ namespace V3Dfg {
 // Functions for compatibility tests
 
 // Returns true if variable can be represented in the graph
-inline bool isSupported(const AstVar* varp) {
-    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
-    if (varp->delayp()) return false;  // Cannot handle delayed variables
-    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
-    if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
-    if (DfgVertexVar::hasRWRefs(varp)) return false;  // Referenced via READWRITE references
-    return DfgDataType::fromAst(varp->dtypep());
-}
-
-// Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVarScope* vscp) {
     const AstNodeModule* const modp = vscp->scopep()->modp();
     if (VN_IS(modp, Module)) {
@@ -582,7 +567,11 @@ inline bool isSupported(const AstVarScope* vscp) {
     }
     if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
     // Check the AstVar
-    return isSupported(vscp->varp());
+    AstVar* const varp = vscp->varp();
+    if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    if (varp->delayp()) return false;  // Cannot handle delayed variables
+    if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
+    return DfgDataType::fromAst(varp->dtypep());
 }
 
 }  //namespace V3Dfg
