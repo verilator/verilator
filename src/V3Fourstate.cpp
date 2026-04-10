@@ -1075,6 +1075,32 @@ class FourstateVisitor final : public VNVisitor {
                                             getFourStateExpressionValue(neqp->rhsp())}};
         }
 
+        void visit(AstEqWild* const eqWildp) override {
+            // ((a.value | b.xz) == (b.value | b.xz)) | |(a.xz & ~b.xz)
+            FileLine* const flp = eqWildp->fileline();
+            m_result = new AstOr{
+                flp,
+                new AstEq{flp,
+                          new AstOr{flp, getFourStateExpressionValue(eqWildp->lhsp(), false),
+                                    getFourStateExpressionXZ(eqWildp->rhsp())},
+                          new AstOr{flp, getFourStateExpressionValue(eqWildp->lhsp(), false),
+                                    getFourStateExpressionXZ(eqWildp->rhsp())}},
+                getFourStateExpressionXZ(eqWildp)};
+        }
+
+        void visit(AstNeqWild* const neqWildp) override {
+            // ((a.value | b.xz) != (b.value | b.xz)) | |(a.xz & ~b.xz)
+            FileLine* const flp = neqWildp->fileline();
+            m_result = new AstOr{
+                flp,
+                new AstNeq{flp,
+                           new AstOr{flp, getFourStateExpressionValue(neqWildp->lhsp(), false),
+                                     getFourStateExpressionXZ(neqWildp->rhsp())},
+                           new AstOr{flp, getFourStateExpressionValue(neqWildp->lhsp(), false),
+                                     getFourStateExpressionXZ(neqWildp->rhsp())}},
+                getFourStateExpressionXZ(neqWildp)};
+        }
+
         void visit(AstExtend* const extendp) override {
             FileLine* const flp = extendp->fileline();
             m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
@@ -1290,6 +1316,24 @@ class FourstateVisitor final : public VNVisitor {
                                   new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
                                             getFourStateExpressionXZ(neqp->rhsp())},
                                   new AstConst{flp, AstConst::BitFalse{}}};
+        }
+
+        void visit(AstEqWild* const eqWildp) override {
+            // |(a.xz & ~b.xz)
+            enforceTmp();
+            FileLine* const flp = eqWildp->fileline();
+            m_result = new AstRedOr{
+                flp, new AstAnd{flp, getFourStateExpressionXZ(eqWildp->lhsp(), false),
+                                new AstNot{flp, getFourStateExpressionXZ(eqWildp->rhsp())}}};
+        }
+
+        void visit(AstNeqWild* const neqWildp) override {
+            // |(a.xz & ~b.xz)
+            enforceTmp();
+            FileLine* const flp = neqWildp->fileline();
+            m_result = new AstRedOr{
+                flp, new AstAnd{flp, getFourStateExpressionXZ(neqWildp->lhsp(), false),
+                                new AstNot{flp, getFourStateExpressionXZ(neqWildp->rhsp())}}};
         }
 
         void visit(AstExtend* const extendp) override {

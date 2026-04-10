@@ -1858,11 +1858,14 @@ V3Number& V3Number::opWildEq(const V3Number& lhs, const V3Number& rhs) {
     char outc = 1;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIsXZ(bit)) {
+                outc = 'x';
+                goto last;
+            }
             if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
                 outc = 0;
                 goto last;
             }
-            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
     }
 last:
@@ -1875,11 +1878,14 @@ V3Number& V3Number::opWildNeq(const V3Number& lhs, const V3Number& rhs) {
     char outc = 0;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIsXZ(bit)) {
+                outc = 'x';
+                goto last;
+            }
             if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
                 outc = 1;
                 goto last;
             }
-            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
     }
 last:

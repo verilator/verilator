@@ -6,8 +6,8 @@
 
 module t;
   initial begin
-    static logic [2:0] x;
-    static logic y;
-    y = 2 < x;
+    static integer x;
+    static integer y;
+    y = 2 ** x;
   end
 endmodule
