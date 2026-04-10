@@ -71,7 +71,7 @@ class AstNodeAssignCompound VL_NOT_FINAL : public AstNodeAssign {
     // Compound assignments (+=, -=, *=, ...)
 public:
     AstNodeAssignCompound(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                          AstNode* timingControlp = nullptr)
         : AstNodeAssign(t, fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1475,7 +1475,7 @@ public:
 class AstAssignCompoundAdd final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundAdd(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1488,7 +1488,7 @@ public:
 class AstAssignCompoundAnd final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-               AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundAnd(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1501,7 +1501,7 @@ public:
 class AstAssignCompoundDiv final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundDiv(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1514,7 +1514,7 @@ public:
 class AstAssignCompoundModDiv final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundModDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                            AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundModDiv(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1527,7 +1527,7 @@ public:
 class AstAssignCompoundMul final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundMul(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundMul(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1540,7 +1540,7 @@ public:
 class AstAssignCompoundOr final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                        AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundOr(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1553,7 +1553,7 @@ public:
 class AstAssignCompoundShiftL final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                            AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundShiftL(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1566,7 +1566,7 @@ public:
 class AstAssignCompoundShiftR final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                            AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundShiftR(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1579,7 +1579,7 @@ public:
 class AstAssignCompoundShiftRS final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundShiftRS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                             AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundShiftRS(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1592,7 +1592,7 @@ public:
 class AstAssignCompoundSub final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundSub(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
@@ -1605,7 +1605,7 @@ public:
 class AstAssignCompoundXor final : public AstNodeAssignCompound {
 public:
     AstAssignCompoundXor(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-              AstNode* timingControlp = nullptr)
+                         AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompoundXor(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }

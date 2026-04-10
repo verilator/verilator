@@ -46,6 +46,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkInc.h"
+
 #include "V3LinkLValue.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -219,11 +220,13 @@ class LinkIncVisitor final : public VNVisitor {
             }
         }
     }
-    AstNodeExpr* getOperationp(AstNode* const nodep, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp) {
+    AstNodeExpr* getOperationp(AstNode* const nodep, AstNodeExpr* const lhsp,
+                               AstNodeExpr* const rhsp) {
         AstNodeExpr* operationp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub) || VN_IS(nodep, AssignCompoundSub)) {
             operationp = new AstSub{nodep->fileline(), lhsp, rhsp};
-        } else if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PostAdd) || VN_IS(nodep, AssignCompoundAdd)) {
+        } else if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PostAdd)
+                   || VN_IS(nodep, AssignCompoundAdd)) {
             operationp = new AstAdd{nodep->fileline(), lhsp, rhsp};
         } else if (VN_IS(nodep, AssignCompoundMul)) {
             operationp = new AstMul{nodep->fileline(), lhsp, rhsp};
@@ -269,7 +272,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepostStmtSelVisit(AstNode* nodep, AstNodeExpr* lhsp, AstNodeExpr* exprp) {
         AstSelBit* const rdSelbitp = VN_CAST(lhsp, SelBit);
-        AstNodeVarRef* const rdFromp = VN_CAST(rdSelbitp->fromp()->cloneTreePure(true), NodeVarRef);
+        AstNodeVarRef* const rdFromp
+            = VN_CAST(rdSelbitp->fromp()->cloneTreePure(true), NodeVarRef);
         rdFromp->access(VAccess::READ);
         AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
         AstSelBit* const wrSelbitp = VN_CAST(lhsp, SelBit);
@@ -297,7 +301,8 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const storeTop
             = new AstSelBit{fl, wrFromp, new AstVarRef{fl, varp, VAccess::READ}};
 
-        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
+        AstAssign* assignp
+            = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         newp->addNext(assignp);
 
         // if (debug() >= 9) newp->dumpTreeAndNext("-pp-stmt-sel-new: ");
@@ -322,9 +327,11 @@ class LinkIncVisitor final : public VNVisitor {
 
         prepostStmtVisit(nodep, exprp, storeTop, valuep);
     }
-    void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop, AstNodeExpr* valuep) {
+    void prepostStmtVisit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop,
+                          AstNodeExpr* valuep) {
         V3LinkLValue::linkLValueUnset(valuep);
-        AstAssign* assignp = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
+        AstAssign* assignp
+            = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
