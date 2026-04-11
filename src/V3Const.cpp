@@ -3026,6 +3026,12 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->bitp());
+        // Multi-dimensional param array access (fromp is a chain of ArraySels):
+        // delegate to V3Simulate to natively handles InitArray chains
+        if (m_required && VN_IS(nodep->fromp(), ArraySel)) {
+            replaceWithSimulation(nodep);
+            return;
+        }
         if (VN_IS(nodep->bitp(), Const)
             && VN_IS(nodep->fromp(), VarRef)
             // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
