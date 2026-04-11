@@ -3572,12 +3572,12 @@ void AstCoverBin::dumpJson(std::ostream& str) const {
 
 void AstCoverTransItem::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (m_repType != VTransRepType::NONE) str << " " << m_repType.ascii();
+    if (m_repType != VTransRepType::NONE) str << " " << m_repType.ascii();  // LCOV_EXCL_BR_LINE
 }
 
 void AstCoverTransItem::dumpJson(std::ostream& str) const {
     this->AstNode::dumpJson(str);
-    if (m_repType != VTransRepType::NONE) { str << ", \"repType\": " << m_repType.asciiJson(); }
+    if (m_repType != VTransRepType::NONE) { str << ", \"repType\": " << m_repType.asciiJson(); }  // LCOV_EXCL_BR_LINE
 }
 
 void AstCoverTransSet::dump(std::ostream& str) const { this->AstNode::dump(str); }
