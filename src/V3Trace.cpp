@@ -39,13 +39,16 @@
 
 #include "V3Trace.h"
 
+#include "V3Ast.h"
 #include "V3DupFinder.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <limits>
 #include <set>
+#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -118,6 +121,8 @@ class TraceTraceVertex final : public V3GraphVertex {
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
+    // When aliasing to a dtype parent, offset of the member within the dtype
+    uint32_t m_dtypeAliasOffset = 0;
 
 public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
@@ -134,6 +139,9 @@ public:
         UASSERT_OBJ(!duplicatep(), nodep(), "Assigning duplicatep() to already duplicated node");
         m_duplicatep = dupp;
     }
+    void redirectDuplicatep(TraceTraceVertex* dupp) { m_duplicatep = dupp; }
+    uint32_t dtypeAliasOffset() const { return m_dtypeAliasOffset; }
+    void dtypeAliasOffset(uint32_t offset) { m_dtypeAliasOffset = offset; }
 };
 
 class TraceVarVertex final : public V3GraphVertex {
@@ -162,8 +170,10 @@ class TraceVisitor final : public VNVisitor {
     // Cleared entire netlist
     //  AstCFunc::user1()               // V3GraphVertex* for this node
     //  AstTraceDecl::user1()           // V3GraphVertex* for this node
+    //  AstTraceDecl::user2()           // dtype decl cannot be used for _chg
     //  AstVarScope::user1()            // V3GraphVertex* for this node
     //  AstStmtExpr::user2()            // bool; walked next list for other ccalls
+    //  AstVarRef::user2()              // dtype V3TraceDecl* for this node
     //  Ast*::user3()                   // TraceActivityVertex* for this node
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -183,6 +193,15 @@ class TraceVisitor final : public VNVisitor {
     V3Graph m_graph;  // Var/CFunc tracking
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
     bool m_finding = false;  // Pass one of algorithm?
+    struct DtypeFuncs final {
+    public:
+        AstCFunc* fullFuncp = nullptr;
+        AstCFunc* chgFuncp = nullptr;
+    };
+    std::unordered_map<const AstNodeDType*, DtypeFuncs>
+        m_dtypeNonConstFuncs;  // Full / Chg funcs per type
+    std::unordered_map<const AstNodeDType*, AstCFunc*> m_dtypeConstFuncs;  // Const func per type
+    V3UniqueNames m_dtypeNames{""};  // Unique type func names
 
     // Trace parallelism. Only VCD tracing can be parallelized at this time.
     const uint32_t m_parallelism
@@ -203,29 +222,112 @@ class TraceVisitor final : public VNVisitor {
         UINFO(9, "Finding duplicates");
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
+
+        // Compute member offsets within dtype instances incrementally.
+        // For each dtype member TraceDecl, stores its code offset within the
+        // dtype parent's code range.
+        std::unordered_map<const AstTraceDecl*, uint32_t> memberOffsets;
+        std::unordered_map<const AstTraceDecl*, uint32_t> runningOffset;
+
+        // For fixup pass: track dups redirected to dtype parents, so we can
+        // fix them if the parent's user2 is later set during the loop.
+        // Maps dup vertex -> original canonical member vertex.
+        std::vector<std::pair<TraceTraceVertex*, TraceTraceVertex*>> dtypeParentRedirects;
+
         // Hash all of the traced values and find if there are any duplicates
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (TraceTraceVertex* const vvertexp = vtx.cast<TraceTraceVertex>()) {
-                const AstTraceDecl* const nodep = vvertexp->nodep();
+                AstTraceDecl* const nodep = vvertexp->nodep();
+                if (nodep->dtypeCallp()) continue;
+
+                if (nodep->dtypeDeclp()) {
+                    uint32_t& offset = runningOffset[nodep->dtypeDeclp()];
+                    memberOffsets[nodep] = offset;
+                    offset += nodep->codeInc();
+                }
+
                 UASSERT_OBJ(!vvertexp->duplicatep(), nodep, "Should not be a duplicate");
-                const auto dupit = dupFinder.findDuplicate(nodep->valuep());
+                const auto dupit = dupFinder.findDuplicate(nodep);
                 if (dupit == dupFinder.end()) {
-                    dupFinder.insert(nodep->valuep());
+                    dupFinder.insert(nodep);
                 } else {
-                    const AstTraceDecl* const dupDeclp = VN_AS(dupit->second->backp(), TraceDecl);
+                    AstTraceDecl* const dupDeclp = VN_AS(dupit->second, TraceDecl);
                     UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                     TraceTraceVertex* const dupvertexp
                         = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
-                    UINFO(8, "  Orig " << nodep);
-                    UINFO(8, "   dup " << dupDeclp);
-                    // Mark the hashed node as the original and our
-                    // iterating node as duplicated
-                    vvertexp->duplicatep(dupvertexp);
+                    UINFO(8, "  Orig " << dupDeclp << endl);
+                    UINFO(8, "   dup " << nodep << endl);
+
+                    if (dupDeclp->dtypeDeclp() && !dupDeclp->dtypeDeclp()->user2()) {
+                        AstTraceDecl* const dtypeParentp = dupDeclp->dtypeDeclp();
+                        TraceTraceVertex* const dtypeVtxp
+                            = dtypeParentp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
+                        const auto it2 = memberOffsets.find(dupDeclp);
+                        UASSERT_OBJ(it2 != memberOffsets.end(), dupDeclp,
+                                    "Member offset not precomputed");
+                        vvertexp->duplicatep(dtypeVtxp);
+                        vvertexp->dtypeAliasOffset(it2->second);
+                        dtypeParentRedirects.emplace_back(vvertexp, dupvertexp);
+                    } else {
+                        vvertexp->duplicatep(dupvertexp);
+                    }
+                    if (nodep->dtypeDeclp()) nodep->dtypeDeclp()->user2(true);
                 }
             }
         }
+
+        for (const auto& pair : dtypeParentRedirects) {
+            TraceTraceVertex* const dupVtxp = pair.first;
+            TraceTraceVertex* const memberVtxp = pair.second;
+            const AstTraceDecl* const parentDeclp = dupVtxp->duplicatep()->nodep();
+            if (parentDeclp->user2()) {
+                dupVtxp->redirectDuplicatep(memberVtxp);
+                dupVtxp->dtypeAliasOffset(0);
+            }
+        }
+
         if (dumpLevel() || debug() >= 9)
             dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
+    }
+
+    void graphDtypePrune() {
+        for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
+            if (TraceTraceVertex* const vvertexp = vtxp->cast<TraceTraceVertex>()) {
+                AstTraceDecl* const declp = vvertexp->nodep();
+                // This skips the dtype sub-func optimization if a var is affected by multiple
+                // activities.  We really only need to do this for _chg funcs (and not decls,
+                // _const and _full) but it's simpiler to do it all one way or the other.
+                if (declp) {
+                    if (declp->user2() || (declp->dtypeDeclp() && !declp->dtypeDeclp()->user2())) {
+                        AstCCall* const callp = declp->dtypeCallp();
+                        if (callp) {
+                            AstNode* stmtexprp = callp->backp();
+                            VL_DO_DANGLING(pushDeletep(stmtexprp->unlinkFrBack()), stmtexprp);
+                        } else {
+                            bool emptyScope;
+                            do {
+                                emptyScope = false;
+                                AstNode* const declBackp = declp->backp();
+                                AstNode* const declNextp = declp->nextp();
+                                if (VN_IS(declBackp, TracePushPrefix)
+                                    && VN_IS(declNextp, TracePopPrefix)) {
+                                    VL_DO_DANGLING(pushDeletep(declBackp->unlinkFrBack()),
+                                                   declBackp);
+                                    VL_DO_DANGLING(pushDeletep(declNextp->unlinkFrBack()),
+                                                   declNextp);
+                                    emptyScope = true;
+                                }
+                            } while (emptyScope);
+                        }
+                        // Can't purge until we finish this pass
+                        pushDeletep(declp->unlinkFrBack());
+                        vvertexp->rerouteEdges(&m_graph);
+                        vvertexp->unlinkDelete(&m_graph);
+                    }
+                    declp->dtypeDeclp(nullptr);
+                }
+            }
+        }
     }
 
     void graphSimplify(bool initial) {
@@ -481,24 +583,26 @@ class TraceVisitor final : public VNVisitor {
     }
 
     AstCFunc* newCFunc(VTraceType traceType, AstCFunc* topFuncp, uint32_t funcNum,
-                       uint32_t baseCode = 0) {
+                       uint32_t baseCode = 0, const AstTraceDecl* const declp = nullptr,
+                       bool declSub = false) {
         // Create new function
-        const bool isTopFunc = topFuncp == nullptr;
+        const bool isTopFunc = !declp && topFuncp == nullptr;
         std::string funcName;
-        if (isTopFunc) {
-            if (traceType == VTraceType::CONSTANT) {
-                funcName = "trace_const";
-            } else if (traceType == VTraceType::FULL) {
-                funcName = "trace_full";
-            } else {
-                funcName = "trace_chg";
-            }
+        if (isTopFunc || declp) {
+            funcName = traceType.func_prefix();
         } else {
             funcName = topFuncp->name();
             funcName += "_sub";
         }
-        funcName += "_";
-        funcName += cvtToStr(funcNum);
+        if (declp) {
+            funcName += "_dtype";
+            if (declSub) funcName += "_sub";
+            funcName += "__";
+            funcName = m_dtypeNames.get(funcName);
+        } else {
+            funcName += "_";
+            funcName += cvtToStr(funcNum);
+        }
 
         FileLine* const flp = m_topScopep->fileline();
         AstCFunc* const funcp = new AstCFunc{flp, funcName, m_topScopep};
@@ -511,7 +615,10 @@ class TraceVisitor final : public VNVisitor {
         m_topScopep->addBlocksp(funcp);
         const std::string bufArg
             = v3Global.opt.traceClassBase()
-              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp";
+              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp"
+              + (declp ? (", uint32_t offset, const " + declp->dtypep()->cType("", true, true)
+                          + " __VdtypeVar")
+                       : "");
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
@@ -546,33 +653,80 @@ class TraceVisitor final : public VNVisitor {
             if (traceType != VTraceType::CHANGE) {
                 // Full dump sub function
                 funcp->addStmtsp(new AstCStmt{flp,  //
-                                              "uint32_t* const oldp VL_ATTR_UNUSED = "
-                                              "bufp->oldp(vlSymsp->__Vm_baseCode);\n"});
+                                              string("uint32_t* const oldp VL_ATTR_UNUSED = "
+                                                     "bufp->oldp(vlSymsp->__Vm_baseCode")
+                                                  + (declp ? " + offset" : "") + ");\n"});
             } else {
                 // Change dump sub function
                 if (v3Global.opt.useTraceOffload()) {
                     funcp->addStmtsp(new AstCStmt{flp,  //
                                                   "const uint32_t base VL_ATTR_UNUSED = "
                                                   "vlSymsp->__Vm_baseCode + "
-                                                      + cvtToStr(baseCode) + ";\n"});
+                                                      + (declp ? " offset" : cvtToStr(baseCode))
+                                                      + ";\n"});
                     funcp->addStmtsp(
                         new AstCStmt{flp, "(void)bufp;  // Prevent unused variable warning\n"});
                 } else {
                     funcp->addStmtsp(new AstCStmt{flp,  //
                                                   "uint32_t* const oldp VL_ATTR_UNUSED = "
                                                   "bufp->oldp(vlSymsp->__Vm_baseCode + "
-                                                      + cvtToStr(baseCode) + ");\n"});
+                                                      + (declp ? " offset" : cvtToStr(baseCode))
+                                                      + ");\n"});
                 }
             }
-            // Add call to top function
-            AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
-            callp->dtypeSetVoid();
-            callp->argTypes("bufp");
-            topFuncp->addStmtsp(callp->makeStmt());
+            if (!declp) {
+                // Add call to top function
+                AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
+                callp->dtypeSetVoid();
+                callp->argTypes("bufp");
+                topFuncp->addStmtsp(callp->makeStmt());
+            }
         }
         // Done
         UINFO(5, "  newCFunc " << funcp);
         return funcp;
+    }
+
+    AstCFunc* newCDtypeSubFunc(VTraceType traceType, const AstTraceDecl* const declp,
+                               AstCFunc* parentp) {
+        AstCFunc* const funcp = newCFunc(traceType, nullptr, 0, 0, declp, true);
+        FileLine* const flp = m_topScopep->fileline();
+        AstCCall* const callp = new AstCCall{flp, funcp};
+        callp->dtypeSetVoid();
+        callp->argTypes("bufp, offset, __VdtypeVar");
+        parentp->addStmtsp(callp->makeStmt());
+        return funcp;
+    }
+
+    AstCFunc* createConstDtypeTraceFunctions(const AstTraceDecl* declp) {
+        const AstNodeDType* const dtypep = declp->dtypep()->skipRefp();
+        auto pair = m_dtypeConstFuncs.emplace(dtypep, nullptr);
+        if (pair.second) {
+            FileLine* const flp = declp->fileline();
+            AstCFunc* const funcp = newCFunc(VTraceType::CONSTANT, nullptr, 0, 0, declp);
+
+            bool first = true;
+            for (AstNode* callStmtp = declp->dtypeCallp()->funcp()->stmtsp(); callStmtp;
+                 callStmtp = callStmtp->nextp()) {
+                const AstCCall* const callp
+                    = VN_CAST(VN_CAST(callStmtp, StmtExpr)->exprp(), CCall);
+                bool onlyOne = first && !callStmtp->nextp();
+                AstCFunc* const subFuncp
+                    = onlyOne ? funcp : newCDtypeSubFunc(VTraceType::CONSTANT, declp, funcp);
+                for (AstNode* stmtp = callp->funcp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstTraceDecl* const fieldDeclp = VN_CAST(stmtp, TraceDecl)) {
+                        AstTraceInc* const incp
+                            = new AstTraceInc{flp, fieldDeclp, VTraceType::CONSTANT};
+                        subFuncp->addStmtsp(incp);
+                    }
+                }
+                first = false;
+            }
+
+            pair.first->second = funcp;
+        }
+
+        return pair.first->second;
     }
 
     void createConstTraceFunctions(const TraceVec& traces) {
@@ -583,18 +737,12 @@ class TraceVisitor final : public VNVisitor {
         uint32_t subFuncNum = 0;
         AstCFunc* subFuncp = nullptr;
         int subStmts = 0;
+        std::vector<const TraceTraceVertex*> duplicates;
         for (auto it = traces.cbegin(); it != traces.end(); ++it) {
             const TraceTraceVertex* const vtxp = it->second;
             AstTraceDecl* const declp = vtxp->nodep();
-            if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
-                // This is a duplicate trace node. We will assign the signal
-                // number to the canonical node, and emit this as an alias, so
-                // no need to create a TraceInc node.
-                const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
-                UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
-                UASSERT_OBJ(canonDeclp->codeAssigned(), canonDeclp,
-                            "Canonical node should have code assigned already");
-                declp->code(canonDeclp->code());
+            if (vtxp->duplicatep()) {
+                duplicates.push_back(vtxp);
                 continue;
             }
 
@@ -616,11 +764,71 @@ class TraceVisitor final : public VNVisitor {
                     ++subFuncNum;
                 }
                 FileLine* const flp = declp->fileline();
-                AstTraceInc* const incp = new AstTraceInc{flp, declp, VTraceType::CONSTANT};
-                subFuncp->addStmtsp(incp);
-                subStmts += incp->nodeCount();
+                if (declp->dtypeCallp()) {
+                    AstCFunc* const funcp = createConstDtypeTraceFunctions(declp);
+                    AstNodeExpr* argsp = nullptr;
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
+                    AstCCall* const callp = new AstCCall{flp, funcp, argsp};
+                    callp->dtypeSetVoid();
+                    callp->argTypes(callp->argTypes() + "bufp, " + std::to_string(declp->code()));
+                    subFuncp->addStmtsp(callp->makeStmt());
+
+                    subStmts += 1;
+                } else {
+                    AstTraceInc* const incp = new AstTraceInc{flp, declp, VTraceType::CONSTANT};
+                    subFuncp->addStmtsp(incp);
+                    subStmts += incp->nodeCount();
+                }
             }
         }
+
+        // Assign codes to duplicate nodes from their canonicals
+        for (const TraceTraceVertex* const vtxp : duplicates) {
+            AstTraceDecl* const declp = vtxp->nodep();
+            const TraceTraceVertex* const canonVtxp = vtxp->duplicatep();
+            const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
+            UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
+            UASSERT_OBJ(canonDeclp->codeAssigned(), canonDeclp,
+                        "Canonical node should have code assigned already");
+            declp->code(canonDeclp->code() + vtxp->dtypeAliasOffset());
+        }
+    }
+
+    DtypeFuncs createNonConstDtypeTraceFunctions(const AstTraceDecl* declp) {
+        AstNodeDType* dtypep = declp->dtypep()->skipRefp();
+        auto pair = m_dtypeNonConstFuncs.emplace(dtypep, DtypeFuncs{});
+        if (pair.second) {
+            FileLine* const flp = declp->fileline();
+            AstCFunc* const fullFuncp = newCFunc(VTraceType::FULL, nullptr, 0, 0, declp);
+            AstCFunc* const chgFuncp = newCFunc(VTraceType::CHANGE, nullptr, 0, 0, declp);
+
+            bool first = true;
+            for (AstNode* callStmtp = declp->dtypeCallp()->funcp()->stmtsp(); callStmtp;
+                 callStmtp = callStmtp->nextp()) {
+                const AstCCall* const callp
+                    = VN_CAST(VN_CAST(callStmtp, StmtExpr)->exprp(), CCall);
+                bool onlyOne = first && !callStmtp->nextp();
+                AstCFunc* const fullSubFuncp
+                    = onlyOne ? fullFuncp : newCDtypeSubFunc(VTraceType::FULL, declp, fullFuncp);
+                AstCFunc* const chgSubFuncp
+                    = onlyOne ? chgFuncp : newCDtypeSubFunc(VTraceType::CHANGE, declp, chgFuncp);
+                for (AstNode* stmtp = callp->funcp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstTraceDecl* const fieldDeclp = VN_CAST(stmtp, TraceDecl)) {
+                        AstTraceInc* const incFullp
+                            = new AstTraceInc{flp, fieldDeclp, VTraceType::FULL};
+                        fullSubFuncp->addStmtsp(incFullp);
+                        AstTraceInc* const incChgp
+                            = new AstTraceInc{flp, fieldDeclp, VTraceType::CHANGE};
+                        chgSubFuncp->addStmtsp(incChgp);
+                    }
+                }
+                first = false;
+            }
+
+            pair.first->second = {.fullFuncp = fullFuncp, .chgFuncp = chgFuncp};
+        }
+
+        return pair.first->second;
     }
 
     void createNonConstTraceFunctions(const TraceVec& traces, uint32_t nAllCodes,
@@ -698,24 +906,44 @@ class TraceVisitor final : public VNVisitor {
 
                 // Add TraceInc nodes
                 FileLine* const flp = declp->fileline();
-                AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};
-                subFulFuncp->addStmtsp(incFulp);
-                AstTraceInc* const incChgp
-                    = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
-                ifp->addThensp(incChgp);
+                if (declp->dtypeCallp()) {
+                    DtypeFuncs funcs = createNonConstDtypeTraceFunctions(declp);
+                    AstNodeExpr* argsp = nullptr;
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
+                    AstCCall* const callFullp = new AstCCall{flp, funcs.fullFuncp, argsp};
+                    callFullp->dtypeSetVoid();
+                    callFullp->argTypes(callFullp->argTypes() + "bufp, "
+                                        + std::to_string(declp->code()));
+                    subFulFuncp->addStmtsp(callFullp->makeStmt());
+                    argsp = nullptr;
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
+                    AstCCall* const callChgp = new AstCCall{flp, funcs.chgFuncp, argsp};
+                    callChgp->dtypeSetVoid();
+                    callChgp->argTypes(callChgp->argTypes() + "bufp, "
+                                       + std::to_string(declp->code()));
+                    ifp->addThensp(callChgp->makeStmt());
 
-                // Set the function index of the decl
-                declp->fidx(topFuncNum);
-
-                // Track splitting due to size
-                UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
-                            "Should have equal cost");
-                const VNumRange range = declp->arrayRange();
-                if (range.ranged()) {
-                    // 2x because each element is a TraceInc and a VarRef
-                    subStmts += range.elements() * 2;
+                    subStmts += 2;
                 } else {
-                    subStmts += incChgp->nodeCount();
+                    AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};
+                    subFulFuncp->addStmtsp(incFulp);
+                    AstTraceInc* const incChgp
+                        = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
+                    ifp->addThensp(incChgp);
+
+                    // Set the function index of the decl
+                    declp->fidx(topFuncNum);
+
+                    // Track splitting due to size
+                    UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
+                                "Should have equal cost");
+                    const VNumRange range = declp->arrayRange();
+                    if (range.ranged()) {
+                        // 2x because each element is a TraceInc and a VarRef
+                        subStmts += range.elements() * 2;
+                    } else {
+                        subStmts += incChgp->nodeCount();
+                    }
                 }
 
                 // Track partitioning
@@ -761,6 +989,8 @@ class TraceVisitor final : public VNVisitor {
     void createTraceFunctions() {
         // Detect and remove duplicate values
         detectDuplicates();
+
+        graphDtypePrune();
         m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // Simplify & optimize the graph
@@ -885,7 +1115,7 @@ class TraceVisitor final : public VNVisitor {
                 || nodep->isCoroutine()) {
                 // Cannot treat a coroutine as slow, it may be resumed later
                 const bool slow = nodep->slow() && !nodep->isCoroutine();
-                V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, slow);
+                TraceActivityVertex* const activityVtxp = getActivityVertexp(nodep, slow);
                 new V3GraphEdge{&m_graph, activityVtxp, funcVtxp, 1};
             }
         }
@@ -895,7 +1125,7 @@ class TraceVisitor final : public VNVisitor {
     }
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep);
-        if (!m_finding) {
+        if (!m_finding && !nodep->inDtypeFunc()) {
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
 
@@ -906,10 +1136,11 @@ class TraceVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
+        AstVarScope* const varscopep = nodep->varScopep();
+        V3GraphVertex* varVtxp = varscopep->user1u().toGraphVertex();
         if (m_tracep) {
-            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Lvalue in trace?  Should be const.");
-            V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
                 varVtxp = new TraceVarVertex{&m_graph, nodep->varScopep()};
                 nodep->varScopep()->user1p(varVtxp);
@@ -920,12 +1151,23 @@ class TraceVisitor final : public VNVisitor {
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
             }
+            if (m_tracep->dtypeCallp()) varscopep->user2p(m_tracep);
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
-            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
-            V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal
                 new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
+                AstTraceDecl* const declp = VN_AS(varscopep->user2p(), TraceDecl);
+                if (declp) {
+                    V3GraphVertex* const cFuncVtxp = getCFuncVertexp(m_cfuncp);
+                    for (const V3GraphEdge& edge : cFuncVtxp->inEdges()) {
+                        V3GraphVertex* const activityp = edge.fromp();
+                        if (!declp->user3p()) {
+                            declp->user3p(activityp);
+                        } else if (declp->user3u().toGraphVertex() != activityp) {
+                            declp->user2(true);
+                        }
+                    }
+                }
             }
         }
     }
@@ -936,7 +1178,15 @@ public:
     // CONSTRUCTORS
     explicit TraceVisitor(AstNetlist* nodep)
         : m_alwaysVtxp{new TraceActivityVertex{&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS}} {
+        nodep->user2ClearTree();  // TraceDecl multiple activities flag
+        nodep->user3ClearTree();  // TraceDecl TraceActivityVertex (assumes we start at nullptr)
         iterate(nodep);
+        nodep->foreach([](AstTraceDecl* const declp) {
+            if (declp->inDtypeFunc()) {
+                declp->valuep()->unlinkFrBack()->deleteTree();
+                declp->valuep(nullptr);
+            }
+        });
     }
     ~TraceVisitor() override {
         V3Stats::addStat("Tracing, Activity setters", m_statSetters);

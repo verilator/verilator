@@ -34,6 +34,10 @@ def run(test, *, verilator_flags2=()):
     # Run test
     test.compile(verilator_flags2=flags)
 
+    if variant == "structs":
+        trace_cpp = test.obj_dir + "/" + test.vm_prefix + "__Trace__0.cpp"
+        test.file_grep(trace_cpp, r"^ *Vt_.*trace_chg_dtype.*v_strp2")
+
     test.execute()
 
     test.trace_identical(test.trace_filename, test.golden_filename)
