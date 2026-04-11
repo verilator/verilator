@@ -13,15 +13,17 @@
 
 module t;
 
-  class cls #(logic [7:0] T = 8'd1);
+  class cls #(
+      logic [7:0] T = 8'd1
+  );
     static function cls#(T) f();
-      cls#(T) c = new();
+      cls #(T) c = new();
       return c;
     endfunction
   endclass
 
   initial begin
-    static cls#(8'd0) c = cls#(8'd0)::f();
+    static cls #(8'd0) c = cls#(8'd0)::f();
     if (c == null) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
