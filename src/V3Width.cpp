@@ -9569,7 +9569,8 @@ class WidthVisitor final : public VNVisitor {
             // subsequent members are mapped correctly.  Width-resolve the
             // value expression so its dtype is set
             int elementAdvance = 1;
-            if (!patp->keyp()) {
+            if (!patp->keyp()
+                && (VN_IS(patp->lhssp(), NodeVarRef) || VN_IS(patp->lhssp(), SelExtract))) {
                 userIterateAndNext(patp->lhssp(), WidthVP{CONTEXT_DET, PRELIM}.p());
                 AstNodeExpr* const exprp = patp->lhssp();
                 if (const AstNodeDType* const dtypep = exprp->dtypep()) {
