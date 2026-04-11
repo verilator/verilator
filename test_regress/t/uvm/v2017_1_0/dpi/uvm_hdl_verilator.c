@@ -186,7 +186,8 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   s_vpi_value value_s = {vpiIntVal, {0}};
   s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
   int is_partsel, hi, lo;
-  int size;
+  int i, size, chunks;
+
   static int s_maxsize = -1;
 
   r = uvm_hdl_handle_by_name_partsel(path, &is_partsel, &hi, &lo);
@@ -224,6 +225,23 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
       svPutPartselLogic(&value_s.value.vector[i], value[i], lo + (i << 5), subsize);
     }
     vpi_put_value(r, &value_s, &time_s, flag);
+  }
+
+  if (flag == vpiReleaseFlag) {
+    if (s_maxsize == -1) s_maxsize = uvm_hdl_max_width();
+    size = vpi_get(vpiSize, r);
+    if (size > s_maxsize) {
+      m_uvm_error("UVM/DPI/VLOG_PUT",
+                  "hdl path '%s' is %0d bits, but the maximum size is %0d.  "
+                  "You can increase the maximum via a compile-time flag: "
+                  "+define+UVM_HDL_MAX_WIDTH=<value>",
+                  path, size, s_maxsize);
+      vpi_release_handle(r);
+      return 0;
+    }
+
+    chunks = (size - 1) / 32 + 1;
+    for (i = 0; i < chunks; ++i) value[i] = value_s.value.vector[i];
   }
 
   vpi_release_handle(r);
@@ -336,6 +354,10 @@ int uvm_hdl_release_and_read(char *path, p_vpi_vecval value) {
  * or the FLI, and release it.
  */
 int uvm_hdl_release(char *path) {
-  s_vpi_vecval value;
-  return uvm_hdl_set_vlog(path, &value, vpiReleaseFlag);
+  p_vpi_vecval value
+    = (p_vpi_vecval)malloc(sizeof(s_vpi_vecval) * ((uvm_hdl_max_width() - 1) / 32 + 1));
+  if (!value) return 0;
+  int success = uvm_hdl_set_vlog(path, value, vpiReleaseFlag);
+  free(value);
+  return success;
 }
