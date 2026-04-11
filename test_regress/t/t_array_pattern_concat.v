@@ -63,7 +63,7 @@ module t (  /*AUTOARG*/);
   localparam logic [31:0] KEY_ARR_A[4] = '{0: BASE_ADDRS[0:1], 2: 32'hF2, 3: 32'hF3};
   localparam logic [31:0] KEY_ARR_B[4] = '{2: ALL_ADDRS[1:2], default: 32'h00};
 
-  // Keyed pattern where values are indexed from another array param —
+  // Keyed pattern where values are indexed from another array param
   // the key determines position, not the source array's element count.
   localparam logic [31:0] KEYED_FROM_ARR[3] = '{
     0: BASE_ADDRS[2], 1: BASE_ADDRS[0], 2: BASE_ADDRS[1]
