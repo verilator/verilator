@@ -123,6 +123,8 @@ module t (
 
     { bins ba[] = {a}; }
     { bins ba[2] = {a}; }
+    { ignore_bins iga[] = {a}; }
+    { illegal_bins ila[] = {a}; }
 
     { bins ba = {a} with ( b ); }
 
