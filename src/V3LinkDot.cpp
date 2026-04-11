@@ -5588,7 +5588,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp();
                 if (AstClassRefDType* const classRefp = VN_CAST(unwrappedp, ClassRefDType)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
-                    if (paramsp) {
+                    if (!paramsp && classRefp->paramsp()) {
+                        // No explicit #(...) on extends clause; carry over the
+                        // typedef's type-parameter pins so V3Param sees them.
+                        paramsp = classRefp->paramsp()->cloneTree(true);
+                        nodep->parameterized(true);
+                    } else if (paramsp) {
                         paramsp = paramsp->cloneTree(true);
                         nodep->parameterized(true);
                     }
