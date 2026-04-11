@@ -16,24 +16,37 @@ module t;
   endclass
 
   // Inner parameterized classes
-  virtual class if_base #(type T1 = int, type T2 = T1);
+  virtual class if_base #(
+      type T1 = int,
+      type T2 = T1
+  );
   endclass
 
-  virtual class port_base #(type IF = if_base#());
-    function void connect(port_base #(IF) other);
+  virtual class port_base #(
+      type IF = if_base#()
+  );
+    function void connect(port_base#(IF) other);
     endfunction
   endclass
 
-  class pull_port #(type REQ = int, type RSP = REQ)
-    extends port_base #(if_base #(REQ, RSP));
+  class pull_port #(
+      type REQ = int,
+      type RSP = REQ
+  ) extends port_base #(if_base #(REQ, RSP));
   endclass
 
-  class pull_imp #(type REQ = int, type RSP = REQ, type IMP = int)
-    extends port_base #(if_base #(REQ, RSP));
+  class pull_imp #(
+      type REQ = int,
+      type RSP = REQ,
+      type IMP = int
+  ) extends port_base #(if_base #(REQ, RSP));
   endclass
 
   // Outer parameterized class with member using the type param
-  class driver #(type REQ = int, type RSP = REQ);
+  class driver #(
+      type REQ = int,
+      type RSP = REQ
+  );
     pull_port #(REQ, RSP) seq_port;
     function new;
       seq_port = new;
@@ -41,7 +54,10 @@ module t;
   endclass
 
   // Outer parameterized class on the other side
-  class sequencer #(type REQ = int, type RSP = REQ);
+  class sequencer #(
+      type REQ = int,
+      type RSP = REQ
+  );
     pull_imp #(REQ, RSP, sequencer #(REQ, RSP)) seq_export;
     function new;
       seq_export = new;
@@ -49,7 +65,7 @@ module t;
   endclass
 
   // Typedef specialization + extends
-  typedef driver #(my_item) my_driver;
+  typedef driver#(my_item) my_driver;
 
   class low_driver extends my_driver;
     function new;

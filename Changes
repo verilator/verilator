@@ -42,6 +42,7 @@ Verilator 5.047 devel
 * Support `##` delay on implication RHS in SVA properties (#7284). [Yilou Wang]
 * Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
 * Support property-local variables and sequence match items (#7286). [Yilou Wang]
+* Support 'until' property (partial #7290) (#7399). [Ryszard Rozak, Antmicro Ltd.]
 * Support array map() method (#7307) (#7316) (#7344). [Wei-Lun Chiu]
 * Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
 * Support consecutive repetition `[\*N]` in SVA properties (#7311). [Yilou Wang]
@@ -51,6 +52,7 @@ Verilator 5.047 devel
 * Support sequence 'throughout' operator (#7378). [Yilou Wang]
 * Support sequence consecutive repetition `[*N:M]`, `[+]`, and `[*]` (#7379). [Yilou Wang]
 * Support sequence `first_match` operator (#7392). [Yilou Wang]
+* Support nonconsecutive repetition [=N] in sequence expressions (#7397). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -62,6 +64,7 @@ Verilator 5.047 devel
 * Improve E_UNSUPPORTED warning messages (#7329). [Eunseo Song]
 * Change array tracing to dump left index to right index (#7205). [Geza Lore, Testorrent USA, Inc.]
 * Change `--converge-limit` default to 10000 (#7209).
+* Remove DFG extract optimization pass (#7394). [Geza Lore, Testorrent USA, Inc.]
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
@@ -76,6 +79,7 @@ Verilator 5.047 devel
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
+* Fix returning wrong type from static function in parameterized class (#5479) (#7387). [em2machine]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
 * Fix typedef scope resolution for parameterized class aliases (#5977) (#7319). [Nick Brereton]
@@ -89,13 +93,14 @@ Verilator 5.047 devel
 * Fix errant integer promotion (#7012). [Todd Strader]
 * Fix randc solver hang with wide variables (#7068) (#7248). [Yilou Wang]
 * Fix coroutine trace setters (#7078 repair) (#7296). [Igor Zaworski, Antmicro Ltd.]
+* Fix vpi_put_value not updating forced read value (#7092) (#7395) (#7092). [Christian Hecken, Heidelberg University]
 * Fix scheduling non-determinism (#7120) (#7162) (#7165). [Geza Lore, Testorrent USA, Inc.]
 * Fix parameters inside std::randomize `with` clause  (#7140). [Kamil Danecki, Antmicro Ltd.]
 * Fix forcing unpacked variables (#7149). [Ryszard Rozak, Antmicro Ltd.]
 * Fix wide conditional short circuiting (#7155).
 * Fix eliminating assignments to DPI-read variables (#7158). [Geza Lore, Testorrent USA, Inc.]
 * Fix std::randomize() in static function with static class members (#7167) (#7169). [Yilou Wang]
-* Fix resolving default/non-default type parameters (#7171) (#7346) (#7380) (#7385). [em2machine]
+* Fix resolving default/non-default type parameters (#7171) (#7346) (#7380) (#7385) (#7398) (#7406) (#7398). [em2machine]
 * Fix recursive constant function in $unit scope (#7173) (#7174).
 * Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
@@ -134,6 +139,8 @@ Verilator 5.047 devel
 * Fix string `inside` queue (#7373).
 * Fix VPI access to Verilog `force`-ed signals (#7381). [Christian Hecken, Heidelberg University]
 * Fix sampling of hierarchical references (#7386). [Ryszard Rozak, Antmicro Ltd.]
+* Fix virtual class inheritance false error (#7403) (#7405). [Nikolay Puzanov]
+* Fix CMake compiler coroutine flags (#7404). [Shogo Yamazaki]
 
 
 Verilator 5.046 2026-02-28
