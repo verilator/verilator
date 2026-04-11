@@ -1,6 +1,6 @@
-%Error: t/t_covergroup_auto_bin_max_bad.v:13:29: option.auto_bin_max must be a constant expression
+%Error: t/t_covergroup_auto_bin_max_bad.v:14:29: option.auto_bin_max must be a constant expression
                                                : ... note: In instance 't'
-   13 |       option.auto_bin_max = size_var;
+   14 |       option.auto_bin_max = size_var;
       |                             ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
