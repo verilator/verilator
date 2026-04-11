@@ -543,6 +543,40 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
     return createForeachLoop(nodep, bodysp, varp, leftp, rightp,
                              declRange.left() <= declRange.right() ? VNType::LteS : VNType::GteS);
 }
+static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr*& subfromp,
+                                   AstNodeDType* fromDtp, AstNode* bodyPointp) {
+    AstVar* const first_varp
+        = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
+    first_varp->usedLoopIdx(true);
+    first_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    AstNodeExpr* const firstp
+        = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
+                             new AstVarRef{fl, varp, VAccess::READWRITE}};
+    firstp->dtypeSetSigned32();
+    AstNodeExpr* const nextp
+        = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
+                             new AstVarRef{fl, varp, VAccess::READWRITE}};
+    nextp->dtypeSetSigned32();
+    AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
+    subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
+    subfromp->dtypep(fromDtp);
+    AstNode* const first_clearp = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
+                                                new AstConst{fl, AstConst::BitFalse{}}};
+    AstLogOr* const orp = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
+                                       new AstNeq{fl, new AstConst{fl, 0}, nextp}};
+    AstLoop* const lp = new AstLoop{fl};
+    lp->addStmtsp(new AstLoopTest{fl, lp, orp});
+    lp->addStmtsp(first_clearp);
+    first_clearp->addNext(bodyPointp);
+    AstNode* const ifbodyp = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
+                                           new AstConst{fl, AstConst::BitTrue{}}};
+    ifbodyp->addNext(lp);
+    AstNode* loopp = varp;
+    loopp->addNext(first_varp);
+    loopp->addNext(new AstIf{fl, new AstNeq{fl, new AstConst{fl, 0}, firstp}, ifbodyp});
+    return loopp;
+}
+
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // UINFOTREE(1, nodep, "", "foreach-old");
     const AstForeachHeader* const headerp = nodep->headerp();
@@ -605,39 +639,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 //            index__Vfirst = 0;
                 //            if (0 != array.first(index))
                 //                 do body while (index__Vfirst || 0 != array.next(index))
-                AstVar* const first_varp = new AstVar{
-                    fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
-                first_varp->usedLoopIdx(true);
-                first_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                AstNodeExpr* const firstp
-                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
-                                         new AstVarRef{fl, varp, VAccess::READWRITE}};
-                firstp->dtypeSetSigned32();
-                AstNodeExpr* const nextp
-                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
-                                         new AstVarRef{fl, varp, VAccess::READWRITE}};
-                nextp->dtypeSetSigned32();
-                AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
-                subfromp->dtypep(fromDtp);
-                AstNode* const first_clearp
-                    = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
-                                    new AstConst{fl, AstConst::BitFalse{}}};
-                AstLogOr* const orp
-                    = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
-                                   new AstNeq{fl, new AstConst{fl, 0}, nextp}};
-                AstLoop* const lp = new AstLoop{fl};
-                lp->addStmtsp(new AstLoopTest{fl, lp, orp});
-                lp->addStmtsp(first_clearp);
-                first_clearp->addNext(bodyPointp);
-                AstNode* const ifbodyp
-                    = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
-                                    new AstConst{fl, AstConst::BitTrue{}}};
-                ifbodyp->addNext(lp);
-                loopp = varp;
-                loopp->addNext(first_varp);
-                loopp->addNext(
-                    new AstIf{fl, new AstNeq{fl, new AstConst{fl, 0}, firstp}, ifbodyp});
+                loopp = createForeachAssoc(fl, varp, subfromp /*ref*/, fromDtp, bodyPointp);
             }
             UASSERT_OBJ(loopp, argsp, "unable to foreach " << fromDtp);
             // New loop goes UNDER previous loop
