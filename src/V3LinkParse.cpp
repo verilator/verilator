@@ -1396,10 +1396,10 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
                                                       optp->valuep()->cloneTree(false)});
                 VL_DO_DANGLING(optp->deleteTree(), optp);
-            } else {
+            } else {  // LCOV_EXCL_START
                 // AstFunc and other unsupported items
                 VL_DO_DANGLING(itemp->deleteTree(), itemp);
-            }
+            }  // LCOV_EXCL_STOP
         }
         iterateChildren(nodep);
     }

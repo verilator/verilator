@@ -1133,29 +1133,29 @@ public:
         BINS_TRANSITION  // Transition bin
     };
     enum en m_e;
-    VCoverBinsType()
-        : m_e{BINS_USER} {}
+    VCoverBinsType()  // LCOV_EXCL_START
+        : m_e{BINS_USER} {}  // LCOV_EXCL_STOP
     // cppcheck-suppress noExplicitConstructor
     constexpr VCoverBinsType(en _e)
         : m_e{_e} {}
-    explicit VCoverBinsType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
+    explicit VCoverBinsType(int _e)  // LCOV_EXCL_START
+        : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
         static const char* const names[]
             = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
         return names[m_e];
     }
 };
-constexpr bool operator==(const VCoverBinsType& lhs, const VCoverBinsType& rhs) {
+constexpr bool operator==(const VCoverBinsType& lhs, const VCoverBinsType& rhs) {  // LCOV_EXCL_START
     return lhs.m_e == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VCoverBinsType::en lhs, const VCoverBinsType& rhs) {
+constexpr bool operator==(VCoverBinsType::en lhs, const VCoverBinsType& rhs) {  // LCOV_EXCL_START
     return lhs == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 
 //######################################################################
 
@@ -1163,29 +1163,29 @@ class VCoverOptionType final {
 public:
     enum en : uint8_t { WEIGHT, GOAL, AT_LEAST, AUTO_BIN_MAX, PER_INSTANCE, COMMENT };
     enum en m_e;
-    VCoverOptionType()
-        : m_e{WEIGHT} {}
+    VCoverOptionType()  // LCOV_EXCL_START
+        : m_e{WEIGHT} {}  // LCOV_EXCL_STOP
     // cppcheck-suppress noExplicitConstructor
     constexpr VCoverOptionType(en _e)
         : m_e{_e} {}
-    explicit VCoverOptionType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
+    explicit VCoverOptionType(int _e)  // LCOV_EXCL_START
+        : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
         static const char* const names[]
             = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment"};
         return names[m_e];
     }
 };
-constexpr bool operator==(const VCoverOptionType& lhs, const VCoverOptionType& rhs) {
+constexpr bool operator==(const VCoverOptionType& lhs, const VCoverOptionType& rhs) {  // LCOV_EXCL_START
     return lhs.m_e == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 constexpr bool operator==(const VCoverOptionType& lhs, VCoverOptionType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VCoverOptionType::en lhs, const VCoverOptionType& rhs) {
+constexpr bool operator==(VCoverOptionType::en lhs, const VCoverOptionType& rhs) {  // LCOV_EXCL_START
     return lhs == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 
 //######################################################################
 
@@ -1198,14 +1198,14 @@ public:
         NONCONS  // Nonconsecutive repetition [=]
     };
     enum en m_e;
-    VTransRepType()
-        : m_e{NONE} {}
+    VTransRepType()  // LCOV_EXCL_START
+        : m_e{NONE} {}  // LCOV_EXCL_STOP
     // cppcheck-suppress noExplicitConstructor
     constexpr VTransRepType(en _e)
         : m_e{_e} {}
-    explicit VTransRepType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
+    explicit VTransRepType(int _e)  // LCOV_EXCL_START
+        : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
         static const char* const names[] = {"", "[*]", "[->]", "[=]"};
         return names[m_e];
@@ -1215,15 +1215,15 @@ public:
         return names[m_e];
     }
 };
-constexpr bool operator==(const VTransRepType& lhs, const VTransRepType& rhs) {
+constexpr bool operator==(const VTransRepType& lhs, const VTransRepType& rhs) {  // LCOV_EXCL_START
     return lhs.m_e == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 constexpr bool operator==(const VTransRepType& lhs, VTransRepType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VTransRepType::en lhs, const VTransRepType& rhs) {
+constexpr bool operator==(VTransRepType::en lhs, const VTransRepType& rhs) {  // LCOV_EXCL_START
     return lhs == rhs.m_e;
-}
+}  // LCOV_EXCL_STOP
 
 //######################################################################
 
