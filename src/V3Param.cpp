@@ -1295,8 +1295,8 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
-    void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
-                        bool& any_overridesr) {
+    void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
+                        string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
@@ -1336,6 +1336,48 @@ class ParamProcessor final {
                 }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
+                // Width the pin value to match the port type so that the same
+                // logical value always produces the same specialization name.
+                AstConst* normedNamep = nullptr;
+                if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
+                    AstVar* cloneVarp = modvarp->cloneTree(false);
+                    if (AstNode* const oldValuep = cloneVarp->valuep()) {
+                        oldValuep->unlinkFrBack();
+                        VL_DO_DANGLING(oldValuep->deleteTree(), oldValuep);
+                    }
+                    cloneVarp->valuep(exprp->cloneTree(false));
+                    // Clone the dtype and resolve VarRefs to other parameters
+                    // with their already-constified pin values (e.g., N-1 in
+                    // logic [N-1:0] becomes Const-1 which can be folded).
+                    if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
+                        AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
+                        dtypeClonep->foreach([&](AstVarRef* varrefp) {
+                            for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                                if (pp->modVarp() == varrefp->varp()) {
+                                    if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
+                                        varrefp->replaceWith(constp->cloneTree(false));
+                                        VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
+                                    }
+                                    break;
+                                }
+                            }
+                        });
+                        if (cloneVarp->childDTypep())
+                            cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
+                        cloneVarp->childDTypep(dtypeClonep);
+                        cloneVarp->dtypep(nullptr);
+                    }
+                    V3Const::constifyParamsEdit(cloneVarp);
+                    if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
+                        // Set the constant's dtype to the port's widthed type
+                        // so identical values hash the same in paramValueNumber.
+                        if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
+                        widthedp->unlinkFrBack();
+                        normedNamep = widthedp;
+                    }
+                    VL_DO_DANGLING(cloneVarp->deleteTree(), cloneVarp);
+                }
+                AstConst* const namingExprp = normedNamep ? normedNamep : exprp;
                 if (!exprp) {
                     // With DepGraph architecture, all expressions should be constants
                     // by the time V3Param runs. If not, it's an error.
@@ -1356,16 +1398,18 @@ class ParamProcessor final {
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
                     UINFO(9, "cellPinCleanup: same as default " << pinp);
-                } else if (exprp->num().isDouble() || exprp->num().isString()
-                           || exprp->num().isFourState() || exprp->num().width() != 32) {
-                    longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp));
+                } else if (namingExprp->num().isDouble() || namingExprp->num().isString()
+                           || namingExprp->num().isFourState()
+                           || namingExprp->num().width() != 32) {
+                    longnamer += ("_" + paramSmallName(srcModp, modvarp)
+                                  + paramValueNumber(namingExprp));
                     any_overridesr = true;
                 } else {
-                    longnamer
-                        += ("_" + paramSmallName(srcModp, modvarp) + exprp->num().ascii(false));
+                    longnamer += ("_" + paramSmallName(srcModp, modvarp)
+                                  + namingExprp->num().ascii(false));
                     any_overridesr = true;
                 }
+                if (normedNamep) VL_DO_DANGLING(normedNamep->deleteTree(), normedNamep);
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
@@ -1681,7 +1725,8 @@ class ParamProcessor final {
             any_overrides = longname != srcModp->name();
         } else {
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
+                cellPinCleanup(nodep, pinp, paramsp, srcModp, longname /*ref*/,
+                               any_overrides /*ref*/);
             }
         }
         IfaceRefRefs ifaceRefRefs;
