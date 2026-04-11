@@ -214,7 +214,16 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   if (!is_partsel) {
     value_s.format = vpiVectorVal;
     value_s.value.vector = value;
-    vpi_put_value(r, &value_s, &time_s, flag);
+    vpiHandle returnHandle = vpi_put_value(r, &value_s, &time_s, flag);
+    if (returnHandle == 0) {
+      m_uvm_error("UVM/DPI/VLOG_PUT",
+                  "failed to set hdl path '%s'. Common reasons include a signal having an "
+                  "unsupported type, such as a real or a string, or attempting to force a signal "
+                  "that is not marked as /*verilator forceable*/",
+                  path);
+      vpi_release_handle(r);
+      return 0;
+    }
   } else {
     value_s.format = vpiVectorVal;
     vpi_get_value(r, &value_s);
@@ -224,7 +233,16 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
       if (subsize > 32) subsize = 32;
       svPutPartselLogic(&value_s.value.vector[i], value[i], lo + (i << 5), subsize);
     }
-    vpi_put_value(r, &value_s, &time_s, flag);
+    vpiHandle returnHandle = vpi_put_value(r, &value_s, &time_s, flag);
+    if (returnHandle == 0) {
+      m_uvm_error("UVM/DPI/VLOG_PUT",
+                  "failed to set hdl path '%s'. Common reasons include a signal having an "
+                  "unsupported type, such as a real or a string, or attempting to force a signal "
+                  "that is not marked as /*verilator forceable*/",
+                  path);
+      vpi_release_handle(r);
+      return 0;
+    }
   }
 
   if (flag == vpiReleaseFlag) {

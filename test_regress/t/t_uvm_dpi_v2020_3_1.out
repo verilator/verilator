@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:62: id message
+UVM Report t/t_uvm_dpi.v:65: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
@@ -26,6 +26,14 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit to real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_deposit to string (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
 = uvm_hdl_deposit to not exposed (bad)
 ===
 UVM Report expected on next line:
@@ -42,6 +50,5 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 = uvm_hdl_force to not forcable (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed_not_forceable)
- Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.exposed_not_forceable'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
 *-* All Finished *-*

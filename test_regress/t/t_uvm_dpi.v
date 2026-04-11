@@ -40,9 +40,12 @@ module t;
   chandle h;
 
   // To cover testing cases, this has non-zero LSB/LO
-  logic [31+8:8] exposed  /*verilator public*/;
+  logic [31+8:8] exposed  /*verilator public*/  /*verilator forceable*/;
   logic not_exposed;
-  logic exposed_not_forceable;
+  logic exposed_not_forceable  /*verilator public*/;
+
+  real realSignal  /*verilator public*/  /*verilator forceable*/;
+  string stringSignal  /*verilator public*/;
 
   logic [83:4] wide_dec  /* verilator public*/;
   // verilator lint_off ASCRANGE
@@ -233,6 +236,16 @@ module t;
       $display("= uvm_hdl_deposit not found (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_deposit("t.__DEPOSIT_NOT_FOUND", 12);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit to real (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.realSignal", 0);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit to string (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.stringSignal", 0);
       `checkh(i, 0);
 
 `ifdef VERILATOR
