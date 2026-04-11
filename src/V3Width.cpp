@@ -5502,13 +5502,13 @@ class WidthVisitor final : public VNVisitor {
                     }
                     // If valuep is a reference to an array constant (or a
                     // slice of one), flatten its elements into the target
-                    // array.  Note: at this point width resolution has run,
-                    // so slices appear as AstSliceSel (the pre-resolution
-                    // AstSelExtract is handled in patVectorMap).
+                    // array.  Width resolution has already run (including
+                    // early resolution in patVectorMap), so slices appear
+                    // as AstSliceSel.
                     const AstInitArray* subInitp = nullptr;
                     int flattenLo = 0;
                     int flattenElements = 0;
-                    if (const auto* vrp = VN_CAST(valuep, VarRef)) {
+                    if (const auto* vrp = VN_CAST(valuep, NodeVarRef)) {
                         subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
                         if (subInitp) {
                             if (const auto* adtp
@@ -5517,7 +5517,7 @@ class WidthVisitor final : public VNVisitor {
                             }
                         }
                     } else if (const auto* slicep = VN_CAST(valuep, SliceSel)) {
-                        if (const auto* vrp = VN_CAST(slicep->fromp(), VarRef)) {
+                        if (const auto* vrp = VN_CAST(slicep->fromp(), NodeVarRef)) {
                             subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
                             if (subInitp) {
                                 flattenLo = slicep->declRange().lo();
@@ -9543,36 +9543,6 @@ class WidthVisitor final : public VNVisitor {
         return testp;
     }
 
-    // Return how many target-array positions a single pattern member
-    // occupies.  For scalar values this is 1; for a full array reference
-    // or an array slice it is the element count of that array/slice.
-    // Called before width resolution, so slices are still AstSelExtract
-    // and VarRef dtypes may not be set yet — use varp()->dtypep() instead.
-    static int patMemberArrayElements(AstPatMember* patp) {
-        AstNodeExpr* const exprp = patp->lhssp();
-        // For slice expressions (pre-width: SelExtract), compute from bounds
-        if (auto* selp = VN_CAST(exprp, SelExtract)) {
-            if (const auto* vrp = VN_CAST(selp->fromp(), VarRef)) {
-                if (!VN_CAST(vrp->varp()->valuep(), InitArray)) return 1;
-                // Bounds may be parameter expressions; constify before reading
-                V3Const::constifyParamsNoWarnEdit(selp->leftp());
-                V3Const::constifyParamsNoWarnEdit(selp->rightp());
-                const auto* msbp = VN_CAST(selp->leftp(), Const);
-                const auto* lsbp = VN_CAST(selp->rightp(), Const);
-                if (msbp && lsbp) return std::abs(msbp->toSInt() - lsbp->toSInt()) + 1;
-            }
-            return 1;
-        }
-        // Full array reference: check via the variable's dtype (not the
-        // expression's dtype, which may be unset before width resolution).
-        if (const auto* vrp = VN_CAST(exprp, NodeVarRef)) {
-            if (!VN_CAST(vrp->varp()->valuep(), InitArray)) return 1;
-            if (const auto* adtp = VN_CAST(vrp->varp()->dtypep()->skipRefp(), NodeArrayDType))
-                return adtp->declRange().elements();
-        }
-        return 1;
-    }
-
     PatVecMap patVectorMap(AstPattern* nodep, const VNumRange& range) {
         PatVecMap patmap;
         int element = range.left();
@@ -9596,10 +9566,25 @@ class WidthVisitor final : public VNVisitor {
             }
             // For positional members that reference an array (or a slice
             // of one), advance by that array/slice's element count so
-            // subsequent members are mapped correctly.  Note: this runs
-            // before width resolution, so slices are still AstSelExtract
-            // (the post-resolution AstSliceSel is handled in patternArray).
-            const int elementAdvance = patMemberArrayElements(patp);
+            // subsequent members are mapped correctly.  Width-resolve the
+            // value expression so its dtype is set
+            int elementAdvance = 1;
+            if (!patp->keyp()) {
+                userIterateAndNext(patp->lhssp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+                AstNodeExpr* const exprp = patp->lhssp();
+                if (const AstNodeDType* const dtypep = exprp->dtypep()) {
+                    if (const auto* adtp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+                        // Only flatten constant arrays backed by InitArray
+                        const AstNodeVarRef* vrp = VN_CAST(exprp, NodeVarRef);
+                        if (!vrp) {
+                            if (const auto* slicep = VN_CAST(exprp, SliceSel))
+                                vrp = VN_CAST(slicep->fromp(), NodeVarRef);
+                        }
+                        if (vrp && VN_IS(vrp->varp()->valuep(), InitArray))
+                            elementAdvance = adtp->declRange().elements();
+                    }
+                }
+            }
             element += range.leftToRightInc() * elementAdvance;
         }
         return patmap;
