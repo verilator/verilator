@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:65: id message
+UVM Report t/t_uvm_dpi.v:72: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
@@ -42,6 +42,22 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 = uvm_hdl_force
 = uvm_hdl_release
 = uvm_hdl_release_and_read
+= uvm_hdl_force continuously assigned signal
+= uvm_hdl_release continuously assigned signal
+= uvm_hdl_release_and_read continuously assigned signal
+= uvm_hdl_read partially forced signal
+= uvm_hdl_release partially forced signal
+= uvm_hdl_force multi-bit
+= uvm_hdl_release_and_read partially forced signal
+= uvm_hdl_force multi-bit continuously assigned signal
+= uvm_hdl_release partially forced continuously assigned signal
+= uvm_hdl_release_and_read partially forced continuously assigned signal
+= uvm_hdl_force single bit
+= uvm_hdl_release_and_read single bit
+= uvm_hdl_force single bit on continuously assigned signal
+= uvm_hdl_release_and_read single bit on continuously assigned signal
+= uvm_hdl_release_and_read lower 16 bits only
+= uvm_hdl_release upper 16 bits only of continuously assigned signal
 = uvm_hdl_force to not exposed (bad)
 ===
 UVM Report expected on next line:
@@ -51,4 +67,8 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.exposed_not_forceable'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_force to real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
 *-* All Finished *-*
