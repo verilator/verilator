@@ -9,26 +9,31 @@
 
 package pkg;
 
-  class builtin_comp #(type T = int);
+  class builtin_comp #(
+      type T = int
+  );
     static function bit comp(T a, T b);
       return 1;
     endfunction
   endclass
 
-  class class_comp #(type T = int);
+  class class_comp #(
+      type T = int
+  );
     static function bit comp(T a, T b);
       return 1;
     endfunction
   endclass
 
   virtual class comparator #(
-    type T         = int,
-    type comp_type = builtin_comp #(T)
+      type T = int,
+      type comp_type = builtin_comp#(T)
   );
   endclass
 
-  class class_comparator #(type T = int)
-    extends comparator #(T, class_comp #(T));
+  class class_comparator #(
+      type T = int
+  ) extends comparator #(T, class_comp #(T));
   endclass
 
 endpackage
