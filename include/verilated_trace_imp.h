@@ -335,14 +335,15 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 
     // Apply enables
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
-    if (!m_sigs_enabledVec.empty()) {
+    if (!m_sigs_enabledVec.empty() || !m_dumpvars.empty()) {
         // Else if was empty, m_sigs_enabledp = nullptr to short circuit tests
         // But it isn't, so alloc one bit for each code to indicate enablement
         // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
         // guaranteed to be fast
         m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
         m_sigs_enabledVec.reserve(nextCode());
-        for (size_t code = 0; code < nextCode(); ++code) {
+        size_t iter = nextCode() > m_sigs_enabledVec.size() ? m_sigs_enabledVec.size() : nextCode();
+        for (size_t code = 0; code < iter; ++code) {
             if (m_sigs_enabledVec[code]) {
                 m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
             }
@@ -369,7 +370,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 }
 
 template <>
-bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::string& declName,
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code,
+                                                  const DumpvarsPath& path,
                                                   uint32_t bits) {
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
@@ -377,21 +379,8 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
     // To keep it simple, this is O(enables * signals), but we expect few enables
     bool enabled = false;
     if (m_dumpvars.empty()) enabled = true;
-    for (const auto& item : m_dumpvars) {
-        const int dumpvarsLevel = item.first;
-        const char* dvp = item.second.c_str();
-        const char* np = declName.c_str();
-        while (*dvp && *dvp == *np) {
-            ++dvp;
-            ++np;
-        }
-        if (*dvp) continue;  // Didn't match dumpvar item
-        if (*np && *np != ' ') continue;  // e.g. "t" isn't a match for "top"
-        int levels = 0;
-        while (*np) {
-            if (*np++ == ' ') ++levels;
-        }
-        if (levels > dumpvarsLevel) continue;  // Too deep
+    for (const auto& entry : m_dumpvars) {
+        if (!path.matches(entry)) continue;
         // We only need to set first code word if it's a multicode signal
         // as that's all we'll check for later
         if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
@@ -434,16 +423,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_resolution(const std::string& 
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
-    if (level == 0) {
-        m_dumpvars.clear();  // empty = everything on
-    } else {
-        // Convert Verilog . separators to trace space separators
-        std::string hierSpaced = hier;
-        for (auto& i : hierSpaced) {
-            if (i == '.') i = ' ';
-        }
-        m_dumpvars.emplace_back(level, hierSpaced);
-    }
+    if (level == 0 && hier.empty()) m_dumpvars.clear();
+    m_dumpvars.emplace_back(level, hier);
 }
 
 template <>

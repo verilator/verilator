@@ -4216,15 +4216,17 @@ system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returni
         //
         |       yD_DUMPPORTS '(' idDottedSel ',' expr ')'  { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $5}; DEL($3);
                                                           $$->addNext(new AstDumpCtl{$<fl>1, VDumpCtlType::VARS,
-                                                                                     new AstConst{$<fl>1, 1}}); }
+                                                                                     new AstConst{$<fl>1, 0}}); }
         |       yD_DUMPPORTS '(' ',' expr ')'           { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $4};
                                                           $$->addNext(new AstDumpCtl{$<fl>1, VDumpCtlType::VARS,
-                                                                                     new AstConst{$<fl>1, 1}}); }
+                                                                                     new AstConst{$<fl>1, 0}}); }
         |       yD_DUMPFILE '(' expr ')'                { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $3}; }
         |       yD_DUMPVARS parenE                      { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::VARS,
                                                                               new AstConst{$<fl>1, 0}}; }
         |       yD_DUMPVARS '(' expr ')'                { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::VARS, $3}; }
-        |       yD_DUMPVARS '(' expr ',' exprList ')'   { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::VARS, $3}; DEL($5); }
+        |       yD_DUMPVARS '(' expr ',' exprList ')'   { AstDumpCtl* const dumpctlp = new AstDumpCtl{$<fl>1, VDumpCtlType::VARS, $3};
+                                                          dumpctlp->addTargetsp($5);
+                                                          $$ = dumpctlp; }
         |       yD_DUMPALL parenE                       { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::ALL}; }
         |       yD_DUMPALL '(' expr ')'                 { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::ALL}; DEL($3); }
         |       yD_DUMPFLUSH parenE                     { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FLUSH}; }

@@ -6347,7 +6347,14 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstDumpCtl* nodep) override {
         assertAtStatement(nodep);
-        if (nodep->exprp()) iterateCheckString(nodep, "LHS", nodep->exprp(), BOTH);
+        if (nodep->exprp()) {
+            if (nodep->ctlType() == VDumpCtlType::VARS) {
+                // $dumpvars level argument is an integer
+                userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+            } else {
+                iterateCheckString(nodep, "LHS", nodep->exprp(), BOTH);
+            }
+        }
     }
     void visit(AstFOpen* nodep) override {
         // Although a system function in IEEE, here a statement which sets the file pointer (MCD)

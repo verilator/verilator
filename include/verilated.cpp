@@ -2941,6 +2941,17 @@ std::string VerilatedContext::dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDu
     }
     return out;
 }
+void VerilatedContext::dumpvarsAdd(int level,
+                                   const std::string& hier) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    const VerilatedLockGuard lock{m_timeDumpMutex};
+    if (level == 0 && hier.empty()) m_dumpvars.clear();
+    m_dumpvars.emplace_back(level, hier);
+}
+VerilatedTraceDumpVarsEntries
+VerilatedContext::dumpvars() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    const VerilatedLockGuard lock{m_timeDumpMutex};
+    return m_dumpvars;
+}
 void VerilatedContext::errorCount(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_errorCount = val;

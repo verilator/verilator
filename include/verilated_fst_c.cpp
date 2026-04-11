@@ -221,8 +221,9 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
+    const auto dumpvarsPath = Super::dumpvarsPath(m_prefixStack, name);
 
-    const bool enabled = Super::declCode(code, hierarchicalName, bits);
+    const bool enabled = Super::declCode(code, dumpvarsPath, bits);
     if (!enabled) return;
 
     assert(hierarchicalName.rfind(' ') != std::string::npos);
