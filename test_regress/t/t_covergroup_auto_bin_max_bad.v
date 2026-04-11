@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
