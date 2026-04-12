@@ -5148,8 +5148,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 }
             }
-            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)
+                && !nodep->classOrPackagep()) {
                 // need special handling to avoid falling back to std::randomize
+                // Skip if classOrPackagep already set (e.g. std::randomize from prior pass)
                 VMemberMap memberMap;
                 AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
                     memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
