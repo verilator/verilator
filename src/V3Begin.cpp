@@ -499,8 +499,9 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, AstVar* varp,
-                                  AstNodeExpr* leftp, AstNodeExpr* rightp, VNType nodeType) {
+static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bool arrayMayResize,
+                                  AstNodeExpr* subfromp, AstVar* varp, AstNodeExpr* leftp,
+                                  AstNodeExpr* rightp, VNType nodeType) {
     FileLine* const fl = varp->fileline();
     AstNodeExpr* varRefp = new AstVarRef{fl, varp, VAccess::READ};
     AstNodeExpr* condp;
@@ -522,14 +523,35 @@ static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, As
 
     AstLoop* const loopp = new AstLoop{fl};
     loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
+    AstVar* sizeVarp = nullptr;
+    AstNodeExpr* sizeGetp = nullptr;
+    if (arrayMayResize) {
+        sizeVarp = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vloopsize",
+                              varp->findUInt32DType()};
+        sizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        sizeVarp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
+        varp->addNext(sizeVarp);
+        sizeGetp
+            = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::DYN_SIZE, nullptr};
+        sizeGetp->dtypeSetUInt32();
+        loopp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, sizeVarp, VAccess::WRITE}, sizeGetp});
+    }
     loopp->addStmtsp(bodysp);
-    loopp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp});
+    AstNodeStmt* incStmtp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp};
+    if (arrayMayResize) {
+        incStmtp = new AstIf{fl,
+                             new AstLte{fl, new AstVarRef{fl, sizeVarp, VAccess::READ},
+                                        sizeGetp->cloneTreePure(false)},
+                             incStmtp};
+    }
+    loopp->addStmtsp(incStmtp);
     AstNode* const stmtsp = varp;  // New statements for outer loop
     stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp});
     stmtsp->addNext(loopp);
     return stmtsp;
 }
-static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, AstVar* varp,
+static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp,
+                                        AstNodeExpr* subfromp, AstVar* varp,
                                         const VNumRange& declRange) {
     FileLine* const fl = varp->fileline();
     V3Number left{nodep, 32};
@@ -540,41 +562,79 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
     right.setLongS(declRange.right());
     AstNodeExpr* const leftp = new AstConst{fl, left};
     AstNodeExpr* const rightp = new AstConst{fl, right};
-    return createForeachLoop(nodep, bodysp, varp, leftp, rightp,
+    return createForeachLoop(nodep, bodysp, false /*fixed array size*/, subfromp, varp, leftp,
+                             rightp,
                              declRange.left() <= declRange.right() ? VNType::LteS : VNType::GteS);
 }
-static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr*& subfromp,
+static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subfromp,
                                    AstNodeDType* fromDtp, AstNode* bodyPointp) {
-    AstVar* const first_varp
-        = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
-    first_varp->usedLoopIdx(true);
-    first_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    AstNode* loopp = varp;
+    AstVar* const next_varp  // Iterator containing next element (to handle mid-array delete)
+        = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vnext", varp};
+    next_varp->usedLoopIdx(true);
+    next_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    loopp->addNext(next_varp);
+
+    AstVar* const more_varp  // bool var. 0 = loop empty/done, 1 = continue with loop
+        = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vmore", VFlagBitPacked{}, 1};
+    more_varp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
+    more_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    loopp->addNext(more_varp);
+
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
-                             new AstVarRef{fl, varp, VAccess::READWRITE}};
+                             new AstVarRef{fl, next_varp, VAccess::READWRITE}};
     firstp->dtypeSetSigned32();
     AstNodeExpr* const nextp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
-                             new AstVarRef{fl, varp, VAccess::READWRITE}};
+                             new AstVarRef{fl, next_varp, VAccess::READWRITE}};
     nextp->dtypeSetSigned32();
-    AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-    subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
-    subfromp->dtypep(fromDtp);
-    AstNode* const first_clearp = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
-                                                new AstConst{fl, AstConst::BitFalse{}}};
-    AstLogOr* const orp = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
-                                       new AstNeq{fl, new AstConst{fl, 0}, nextp}};
+
+    // _Vmore = array.first(__Vnext)
+    loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
+                                 new AstNeq{fl, new AstConst{fl, 0}, firstp}});
+
+    // LOOP(if (!_Vmore) break;  ...)
     AstLoop* const lp = new AstLoop{fl};
-    lp->addStmtsp(new AstLoopTest{fl, lp, orp});
-    lp->addStmtsp(first_clearp);
-    first_clearp->addNext(bodyPointp);
-    AstNode* const ifbodyp = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
-                                           new AstConst{fl, AstConst::BitTrue{}}};
-    ifbodyp->addNext(lp);
-    AstNode* loopp = varp;
-    loopp->addNext(first_varp);
-    loopp->addNext(new AstIf{fl, new AstNeq{fl, new AstConst{fl, 0}, firstp}, ifbodyp});
+    loopp->addNext(lp);
+    lp->addStmtsp(new AstLoopTest{fl, lp, new AstVarRef{fl, more_varp, VAccess::READ}});
+
+    // index = __Vnext
+    lp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                new AstVarRef{fl, next_varp, VAccess::READ}});
+    // _Vmore = array.next(__Vnext)
+    lp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
+                                new AstNeq{fl, new AstConst{fl, 0}, nextp}});
+    lp->addStmtsp(bodyPointp);
     return loopp;
+}
+
+static bool arrayMayResizeCheck(AstNode* nodesp, AstVar* fromVarp) {
+    // IEEE 1800-2023 12.7.3 "If the dimensions of a dynamically sized
+    // array are changed while iterating over a foreach-loop construct, th
+    // results are undefined".  However UVM calls delete within a foreach
+    // in the uvm_reg code and in the tests, and expects the foreach to see
+    // all elements post-delete.
+    //
+    // Cannot just check body for delete() because the body may call a
+    // function that does a delete.  Cannot easily have the verilated_types
+    // code set a flag on delete, because might be multiple foreach in
+    // flight. Could use generation counter and each loop checks, but adds
+    // time to every array modification. So, we assume if the array
+    // shrinks, we should repeat the loop.
+    if (!nodesp) return false;
+    return nodesp->existsAndNext([&](const AstNode* nodep) -> bool {
+        if (const AstNodeVarRef* varrefp = VN_CAST(nodep, NodeVarRef)) {
+            // Any variable written, as might have indirect ref to array
+            if (varrefp->access().isWriteOrRW()) {
+                if (!fromVarp) return true;
+                if (varrefp->varp() == fromVarp) return true;
+            }
+        }
+        // No idea what a function might be doing
+        if (VN_IS(nodep, MethodCall) || VN_IS(nodep, NodeFTaskRef)) return true;
+        return false;
+    });
 }
 
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
@@ -582,7 +642,9 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     const AstForeachHeader* const headerp = nodep->headerp();
     AstNodeExpr* const fromp = headerp->fromp();
     UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
+    AstVar* const fromVarp = VN_IS(fromp, VarRef) ? VN_CAST(fromp, VarRef)->varp() : nullptr;
     AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
+    const bool arrayMayResize = arrayMayResizeCheck(nodep->bodyp(), fromVarp);
     // Split into for loop
     // We record where the body needs to eventually go with bodyPointp
     AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
@@ -608,15 +670,18 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             VNRelinker handle;
             lastp->unlinkFrBack(&handle);
             if (const AstNodeArrayDType* const adtypep = VN_CAST(fromDtp, NodeArrayDType)) {
-                loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                loopp = createForeachLoopRanged(nodep, bodyPointp, subfromp, varp,
+                                                adtypep->declRange());
             } else if (const AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
                 if (adtypep->isString()) {
                     AstConst* const leftp = new AstConst{fl, 0};
                     AstNodeExpr* const rightp = new AstLenN{fl, fromp->cloneTreePure(false)};
-                    loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
+                    loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp,
+                                              leftp, rightp, VNType::Lt);
                 } else {
                     UASSERT_OBJ(adtypep->isRanged(), varp, "foreach on basic " << adtypep);
-                    loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                    loopp = createForeachLoopRanged(nodep, bodyPointp, subfromp, varp,
+                                                    adtypep->declRange());
                 }
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 AstConst* const leftp = new AstConst{fl, 0};
@@ -628,18 +693,22 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                         : subfromp->cloneTreePure(false),
                     VCMethod::DYN_SIZE};
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
-                subfromp->dtypep(fromDtp);
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
-                loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
+                loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp, leftp,
+                                          rightp, VNType::Lt);
+                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
+                subfromp->dtypep(fromDtp);
             } else if (VN_IS(fromDtp, AssocArrayDType)) {
                 // Make this: var KEY_TYPE index;
                 //            bit index__Vfirst;
                 //            index__Vfirst = 0;
                 //            if (0 != array.first(index))
                 //                 do body while (index__Vfirst || 0 != array.next(index))
-                loopp = createForeachAssoc(fl, varp, subfromp /*ref*/, fromDtp, bodyPointp);
+                loopp = createForeachAssoc(fl, varp, subfromp, fromDtp, bodyPointp);
+                AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
+                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
+                subfromp->dtypep(fromDtp);
             }
             UASSERT_OBJ(loopp, argsp, "unable to foreach " << fromDtp);
             // New loop goes UNDER previous loop
