@@ -1538,8 +1538,8 @@ class ParamProcessor final {
                         rawTypep = VN_CAST(pinp->exprp(), NodeDType);
                         exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                     }
-                    // Deparameterize ClassRefDType type parameters (e.g. iface#(.T(C#(logic[7:0]))))
-                    // before name generation (#7000).
+                    // Deparameterize ClassRefDType type parameters (e.g.
+                    // iface#(.T(C#(logic[7:0])))) before name generation (#7000).
                     if (AstClassRefDType* const classRefDTypep = VN_CAST(exprp, ClassRefDType)) {
                         if (classRefDTypep->paramsp() && classRefDTypep->classp()
                             && classRefDTypep->classp()->hasGParam()) {
