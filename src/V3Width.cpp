@@ -2631,7 +2631,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             int width = nodep->rhsp()->toSInt();
             if (width < 1) {
-                nodep->v3error("Size-changing cast to zero or negative size");
+                nodep->v3error("Size-changing cast to zero or negative size: " << width);
                 width = 1;
             }
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
