@@ -158,6 +158,7 @@ public:
         SHORTREAL,      // Shortreal not supported
         SIDEEFFECT,     // Sideeffect ignored
         SPECIFYIGN,     // Specify construct ignored
+        FSMMULTI,       // Multiple FSM candidates in one always block
         SPLITVAR,       // Cannot split the variable
         STATICVAR,      // Static variable declared in a loop with a declaration assignment
         STMTDLY,        // Delayed statement
@@ -232,7 +233,8 @@ public:
             "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
             "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
+            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "FSMMULTI", "SPLITVAR", "STATICVAR",
+            "STMTDLY",
             "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN",
             "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED",
             "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL",

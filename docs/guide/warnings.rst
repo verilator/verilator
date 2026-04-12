@@ -837,6 +837,17 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FSMMULTI
+
+   Warns that the same always block contains multiple enum-typed case
+   statements that look like FSM candidates for native FSM coverage.
+
+   Verilator's FSM coverage v1 instruments only the first such candidate in
+   source order. Split the FSMs into separate always blocks, or explicitly
+   annotate the intended state variables and restructure the RTL for full
+   coverage of both state machines.
+
+
 .. option:: FUNCTIMECTL
 
    Error that a function contains a time-controlling statement or call of a

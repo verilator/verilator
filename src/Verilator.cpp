@@ -54,6 +54,8 @@
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Force.h"
+#include "V3FsmDetect.h"
+#include "V3FsmEmit.h"
 #include "V3Fork.h"
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
@@ -362,6 +364,7 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
+            if (v3Global.opt.coverage()) V3FsmDetect::detect(v3Global.rootp());
             // Convert case statements to if() blocks.  Must be after V3Unknown
             // Must be before V3Task so don't need to deal with task in case value compares
             V3Case::caseAll(v3Global.rootp());
@@ -449,6 +452,8 @@ static void process() {
             // Create delayed assignments
             // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
             V3Delayed::delayedAll(v3Global.rootp());
+
+            if (v3Global.opt.coverage()) V3FsmEmit::emit(v3Global.rootp());
 
             // Make Active's on the top level.
             // Differs from V3Active, because identical clocks may be pushed

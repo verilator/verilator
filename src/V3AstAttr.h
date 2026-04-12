@@ -320,7 +320,10 @@ public:
         VAR_SC_BIGUINT,                 // V3LinkParse moves to AstVar::attrScBigUint
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
-        VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
+        VAR_SPLIT_VAR,                  // V3LinkParse moves to AstVar::attrSplitVar
+        VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
+        VAR_COVERAGE_FSM_RESET_ARC,     // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_ARC_INCLUDE_COND        // V3LinkParse moves to AstVar::attrFsmArcInclCond
     };
     // clang-format on
     enum en m_e;
@@ -339,7 +342,8 @@ public:
             "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT",
-            "VAR_SPLIT_VAR"
+            "VAR_SPLIT_VAR", "VAR_FSM_STATE", "VAR_COVERAGE_FSM_RESET_ARC",
+            "VAR_FSM_ARC_INCLUDE_COND"
         };
         // clang-format on
         return names[m_e];

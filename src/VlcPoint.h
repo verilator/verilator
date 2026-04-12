@@ -70,6 +70,37 @@ public:
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
     }
     string linescov() const { return keyExtract(VL_CIK_LINESCOV, m_name.c_str()); }
+    bool isFsmState() const { return type() == "fsm_state"; }
+    bool isFsmArc() const { return type() == "fsm_arc"; }
+    bool isFsmResetInclude() const {
+        return isFsmArc() && comment().find("[reset_include]") != string::npos;
+    }
+    bool isFsmResetArc() const {
+        return isFsmArc() && !isFsmResetInclude() && comment().find("[reset]") != string::npos;
+    }
+    string fsmVarName() const {
+        const string cmt = comment();
+        const string::size_type pos = cmt.find("::");
+        return pos == string::npos ? "" : cmt.substr(0, pos);
+    }
+    string fsmFromState() const {
+        const string cmt = comment();
+        const string::size_type start = cmt.find("::");
+        const string::size_type arrow = cmt.find("->");
+        if (start == string::npos || arrow == string::npos || arrow < start + 2) return "";
+        return cmt.substr(start + 2, arrow - (start + 2));
+    }
+    string fsmToState() const {
+        const string cmt = comment();
+        const string::size_type arrow = cmt.find("->");
+        if (arrow == string::npos) return "";
+        string to = cmt.substr(arrow + 2);
+        const string::size_type tag = to.find('[');
+        if (tag != string::npos) to.erase(tag);
+        return to;
+    }
+    bool isFsmDefaultArc() const { return isFsmArc() && fsmFromState() == "default"; }
+    bool fsmIsReset() const { return isFsmResetArc() || isFsmResetInclude(); }
     int lineno() const {
         const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
         return std::atoi(lineStr.c_str());

@@ -100,6 +100,9 @@ set(HEADERS
     V3File.h
     V3FileLine.h
     V3Force.h
+    V3FsmDetect.h
+    V3FsmEmit.h
+    V3FsmShared.h
     V3Fork.h
     V3FuncOpt.h
     V3FunctionTraits.h
@@ -277,6 +280,9 @@ set(COMMON_SOURCES
     V3File.cpp
     V3FileLine.cpp
     V3Force.cpp
+    V3FsmDetect.cpp
+    V3FsmEmit.cpp
+    V3FsmShared.cpp
     V3Fork.cpp
     V3FuncOpt.cpp
     V3Gate.cpp

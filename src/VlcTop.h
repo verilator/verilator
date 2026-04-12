@@ -59,6 +59,7 @@ public:
     void readCoverage(const string& filename, bool nonfatal = false);
     void writeCoverage(const string& filename);
     void writeInfo(const string& filename);
+    void printTypeSummary(bool includeResetArcs = false);
 
     void rank();
 };
