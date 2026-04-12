@@ -1147,7 +1147,8 @@ public:
         return names[m_e];
     }
 };
-constexpr bool operator==(const VCoverBinsType& lhs, const VCoverBinsType& rhs) {  // LCOV_EXCL_START
+constexpr bool operator==(const VCoverBinsType& lhs,
+                          const VCoverBinsType& rhs) {  // LCOV_EXCL_START
     return lhs.m_e == rhs.m_e;
 }  // LCOV_EXCL_STOP
 constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
@@ -1177,13 +1178,15 @@ public:
         return names[m_e];
     }
 };
-constexpr bool operator==(const VCoverOptionType& lhs, const VCoverOptionType& rhs) {  // LCOV_EXCL_START
+constexpr bool operator==(const VCoverOptionType& lhs,
+                          const VCoverOptionType& rhs) {  // LCOV_EXCL_START
     return lhs.m_e == rhs.m_e;
 }  // LCOV_EXCL_STOP
 constexpr bool operator==(const VCoverOptionType& lhs, VCoverOptionType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VCoverOptionType::en lhs, const VCoverOptionType& rhs) {  // LCOV_EXCL_START
+constexpr bool operator==(VCoverOptionType::en lhs,
+                          const VCoverOptionType& rhs) {  // LCOV_EXCL_START
     return lhs == rhs.m_e;
 }  // LCOV_EXCL_STOP
 
