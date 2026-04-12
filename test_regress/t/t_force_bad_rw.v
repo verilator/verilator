@@ -6,15 +6,19 @@
 
 module t;
 
-  int ass[int];
+  int value;
+
+  task increment(ref int i);
+    // verilator no_inline_task
+    ++i;
+  endtask
 
   initial begin
-    ass[2] = 20;
+    value = 3;
+    increment(value);
 
-    foreach (ass[index]) begin
-      force index = 0;
-      $display("ii %d\n", index);
-    end
+    force value = 0;
+    $display("ii %d\n", value);
 
     $write("*-* All Finished *-*\n");
     $finish;
