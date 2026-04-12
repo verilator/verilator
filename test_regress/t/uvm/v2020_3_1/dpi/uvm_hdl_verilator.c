@@ -81,6 +81,7 @@ static int uvm_hdl_max_width() {
     } else {
       vpi_get_value(ms, &value_s);
       UVM_HDL_MAX_WIDTH = value_s.value.integer;
+      vpi_release_handle(ms);
     }
   }
   return UVM_HDL_MAX_WIDTH;
@@ -130,6 +131,7 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
   path_base_ptr = strndup(path, (path_ptr - path));
 
   r = vpi_handle_by_name(path_base_ptr, 0);
+  free(path_base_ptr);
   if (!r) return 0;
 
   {
@@ -159,14 +161,15 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
     if (!decl_ranged) {
       // vpi_printf((PLI_BYTE8 *)"Outside declaration '%s' range %d:%d\n",
       //            path, decl_left, decl_right);
+      vpi_release_handle(r);
       return 0;
     }
     // vpi_printf((PLI_BYTE8 *)"%s:%d: req %d:%d decl %d:%d for '%s'\n",
     //            __FILE__, __LINE__, *hi_ptr, *lo_ptr, decl_left, decl_right, path);
     decl_lo = (decl_left > decl_right) ? decl_right : decl_left;
     decl_hi = (decl_left > decl_right) ? decl_left : decl_right;
-    if (*lo_ptr < decl_lo) return 0;
-    if (*hi_ptr > decl_hi) return 0;
+    if (*lo_ptr < decl_lo) { vpi_release_handle(r); return 0; }
+    if (*hi_ptr > decl_hi) { vpi_release_handle(r); return 0; }
     req_width_m1 = *hi_ptr - *lo_ptr;
     *lo_ptr = (decl_left > decl_right) ? (*lo_ptr - decl_lo) : (decl_right - *hi_ptr);
     *hi_ptr = *lo_ptr + req_width_m1;
@@ -292,6 +295,7 @@ int uvm_hdl_check_path(char *path) {
   vpiHandle handle;
 
   handle = vpi_handle_by_name(path, 0);
+  if (handle) vpi_release_handle(handle);
   return (handle != 0);
 }
 
