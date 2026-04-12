@@ -1215,51 +1215,30 @@ class ParamProcessor final {
 
         const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
 
-        // If the ClassOrPackageRef points to a type parameter (ParamTypeDType), we need
-        // to check if the parameter's value contains a parameterized class that needs
-        // specialization. This handles patterns like:
-        //   interface outer #(parameter type C = class_with_type_param#(T));
-        //     inner #(.P(C::typedef_name)) i();  // C is a type parameter
-        //   endinterface
+        // Specialize parameterized class through type parameter indirection (#7000)
         AstParamTypeDType* const paramTypep
             = VN_CAST(classRefp->classOrPackageNodep(), ParamTypeDType);
         if (paramTypep) {
-            // Traverse through the type parameter to find if there's a ClassRefDType
-            // with parameters that needs specialization
             AstNodeDType* const dtypep = paramTypep->subDTypep();
             AstClassRefDType* const classRefDTypep
                 = dtypep ? VN_CAST(dtypep->skipRefOrNullp(), ClassRefDType) : nullptr;
             if (classRefDTypep) {
                 AstClass* const srcClassp = classRefDTypep->classp();
                 if (srcClassp && srcClassp->hasGParam() && classRefDTypep->paramsp()) {
-                    // The type parameter's value is a parameterized class - specialize it
                     if (lhsClassp == srcClassp || !lhsClassp) {
-                        UINFO(9, "resolveDotToTypedef: specializing type param class "
-                                     << srcClassp->name());
                         classRefDeparam(classRefDTypep, srcClassp);
                         lhsClassp = classRefDTypep->classp();
-                    } else {
-                        UINFO(9, "resolveDotToTypedef: type param class "
-                                     << srcClassp->name() << " already specialized to "
-                                     << lhsClassp->name());
                     }
                 }
             }
         }
 
         if (classRefp->paramsp()) {
-            // ClassOrPackageRef has parameters - may need to specialize the class
             AstClass* const srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
             if (srcClassp && srcClassp->hasGParam()) {
-                // Specialize if the reference still points to the generic class
                 if (lhsClassp == srcClassp || !lhsClassp) {
-                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->name());
                     classRefDeparam(classRefp, srcClassp);
                     lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
-                } else {
-                    UINFO(9, "resolveDotToTypedef: class " << srcClassp->name()
-                                                           << " already specialized to "
-                                                           << lhsClassp->name());
                 }
             }
         }
@@ -1275,14 +1254,12 @@ class ParamProcessor final {
         }
     }
 
-    // Resolve a deferred RefDType referencing a typedef inside a parameterized class (#5461).
-    // When a formal parameter's type is `cls1#()::bool_t`, the RefDType for `bool_t` is
-    // left unresolved during linkDotPrimary. We resolve it here by specializing the class
-    // and looking up the typedef in the specialized class.
+    // Resolve an unresolved RefDType whose classOrPackageOp targets a parameterized
+    // class or a typedef alias of one. Specializes the class and links the typedef.
     void resolveParamClassRefDType(AstNodeDType* dtypep) {
         AstRefDType* const refp = dtypep ? VN_CAST(dtypep, RefDType) : nullptr;
         if (!refp) return;
-        if (refp->typedefp() || refp->refDTypep()) return;  // Already resolved
+        if (refp->typedefp() || refp->refDTypep()) return;
 
         AstClassOrPackageRef* const classRefp
             = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef);
@@ -1290,16 +1267,11 @@ class ParamProcessor final {
 
         AstClass* srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
         if (srcClassp && srcClassp->hasGParam()) {
-            // Direct class reference with parameters on the ClassOrPackageRef
-            // (classRefDeparam also resolves the RefDType via its backp() check
-            // when the ClassOrPackageRef is a child of RefDType)
             classRefDeparam(classRefp, srcClassp);
             return;
         }
 
-        // ClassOrPackageRef targets a typedef to a parameterized class (e.g.,
-        // typedef cls#(N) alias; typedef alias::member_t m_t;).
-        // Follow the typedef chain to find the ClassRefDType with the actual class.
+        // Follow typedef chain to find the underlying ClassRefDType
         AstNode* targetp = classRefp->classOrPackageNodep();
         while (const AstTypedef* const tdefp = VN_CAST(targetp, Typedef))
             targetp = tdefp->subDTypep();
@@ -1313,13 +1285,10 @@ class ParamProcessor final {
 
         AstClass* newClassp = srcClassp;
         if (srcClassp->hasGParam()) {
-            // Specialize using the ClassRefDType (which has the actual parameters)
             classRefDeparam(classRefDTypep, srcClassp);
             newClassp = classRefDTypep->classp();
         }
-        // else: class already specialized, use it directly
 
-        // Look up the member typedef in the specialized class
         AstTypedef* const typedefp
             = VN_CAST(m_memberMap.findMember(newClassp, refp->name()), Typedef);
         if (typedefp) {
@@ -1389,7 +1358,6 @@ class ParamProcessor final {
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
-            // Resolve deferred formal param type referencing parameterized class typedef (#5461)
             resolveParamClassRefDType(modvarp->subDTypep());
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
@@ -1463,15 +1431,11 @@ class ParamProcessor final {
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
             // by this point ClassOrPackageRef should be updated to point to the specialized class.
             resolveDotToTypedef(pinp->exprp());
-            // Resolve deferred formal param type referencing parameterized class typedef (#5461)
             resolveParamClassRefDType(modvarp->subDTypep());
-            // Also resolve deferred RefDType inside the pin expression's typedef chain.
-            // Handles: typedef cls#(N) alias; typedef alias::member_t m_t; mod#(.T(m_t))
-            // where alias::member_t was deferred during linkDotPrimary (#5977).
+            // Also resolve through the pin expression's typedef chain
             if (const AstRefDType* const pinRefp = VN_CAST(pinp->exprp(), RefDType)) {
-                if (const AstTypedef* const tdefp = pinRefp->typedefp()) {
+                if (const AstTypedef* const tdefp = pinRefp->typedefp())
                     resolveParamClassRefDType(tdefp->subDTypep());
-                }
             }
 
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
@@ -1538,8 +1502,7 @@ class ParamProcessor final {
                         rawTypep = VN_CAST(pinp->exprp(), NodeDType);
                         exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                     }
-                    // Deparameterize ClassRefDType type parameters (e.g.
-                    // iface#(.T(C#(logic[7:0])))) before name generation (#7000).
+                    // Deparameterize ClassRefDType before name generation (#7000)
                     if (AstClassRefDType* const classRefDTypep = VN_CAST(exprp, ClassRefDType)) {
                         if (classRefDTypep->paramsp() && classRefDTypep->classp()
                             && classRefDTypep->classp()->hasGParam()) {
