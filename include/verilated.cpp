@@ -330,11 +330,13 @@ static size_t _vl_snprintf_string(std::string& str, const char* format,
 //===========================================================================
 // Process -- parts of std::process implementation
 
-std::string VlProcess::randstate() const VL_MT_UNSAFE {
-    return VlRNG::vl_thread_rng().get_randstate();
-}
-void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
-    VlRNG::vl_thread_rng().set_randstate(state);
+thread_local VlProcess* VlProcess::t_currentp = nullptr;
+
+std::string VlProcess::randstate() const VL_MT_UNSAFE { return m_rng.get_randstate(); }
+void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE { m_rng.set_randstate(state); }
+VlRNG& VlProcess::currentRng() VL_MT_SAFE {
+    if (t_currentp) return t_currentp->m_rng;
+    return VlRNG::vl_thread_rng();
 }
 
 //===========================================================================
@@ -380,7 +382,8 @@ vl_rng_compute_new_state(const std::array<uint64_t, 2>& current_state) VL_PURE {
 }
 
 VlRNG::VlRNG() VL_MT_SAFE {
-    VlRNG& fromr = vl_thread_rng();
+    // Seed from process RNG if in a process, else thread RNG (IEEE 1800-2023 18.14.1)
+    VlRNG& fromr = VlProcess::currentRng();
 
     const uint64_t s0 = vl_rng_result(fromr.m_state);
     fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
@@ -401,6 +404,12 @@ uint64_t VlRNG::rand64() VL_MT_UNSAFE {
 }
 uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
     VlRNG& fromr = vl_thread_rng();
+    const uint64_t result = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+    return result;
+}
+uint64_t VlRNG::vl_current_rng_rand64() VL_MT_SAFE {
+    VlRNG& fromr = VlProcess::currentRng();
     const uint64_t result = vl_rng_result(fromr.m_state);
     fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
     return result;

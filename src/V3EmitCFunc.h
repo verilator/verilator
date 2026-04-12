@@ -388,8 +388,13 @@ public:
         });
         if (m_instantiatesOwnProcess) {
             AstCStmt* const vlprocp = new AstCStmt{nodep->fileline()};
-            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();");
+            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
+            vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
+        } else if (nodep->needProcess()) {
+            AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
+            setProcessp->add("VlProcess::currentp(vlProcess.get());");
+            nodep->stmtsp()->addHereThisAsNext(setProcessp);
         }
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
