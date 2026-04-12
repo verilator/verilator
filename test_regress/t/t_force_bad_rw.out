@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_force_bad_rw.v:14:18: Unsupported: Signals used via read-write reference cannot be forced
-   14 |     foreach (ass[index]) begin
-      |                  ^~~~~
+%Error-UNSUPPORTED: t/t_force_bad_rw.v:18:15: Unsupported: Signals used via read-write reference cannot be forced
+   18 |     increment(value);
+      |               ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
