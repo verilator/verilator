@@ -1,4 +1,4 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_non_base2_pow_unsup.v:12:25: Unsupported: Power (**) expression with non-constant exponent in constraint
+%Warning-CONSTRAINTIGN: t/t_constraint_non_base2_pow_unsup.v:12:25: Unsupported: Power (**) expression with non-2 base in constraint
    12 |   constraint c { x == 3 ** n; }
       |                         ^~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
