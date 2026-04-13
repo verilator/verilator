@@ -1148,6 +1148,14 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
+        if (nodep->isStrong()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_until"
+                                             + (nodep->isOverlapping() ? "_with" : "")
+                                             + " (in property expresion)");
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         AstLoop* const loopp = new AstLoop{flp};
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();

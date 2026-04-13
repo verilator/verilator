@@ -6761,11 +6761,11 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr yUNTIL pexpr
                         { $$ = new AstUntil{$2, $1, $3, false, false}; }
         |       ~o~pexpr yS_UNTIL pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, true, false}; }
         |       ~o~pexpr yUNTIL_WITH pexpr
                         { $$ = new AstUntil{$2, $1, $3, false, true}; }
         |       ~o~pexpr yS_UNTIL_WITH pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until_with (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, true, true}; }
         |       ~o~pexpr yIMPLIES pexpr
                         { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
         //                      // yIFF also used by event_expression
