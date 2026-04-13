@@ -21,6 +21,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
@@ -2995,6 +2996,19 @@ def run_them() -> None:
         runner.wait_and_report()
 
     if runner.fail_cnt:
+        if Args.fail_archive:
+            # Create tarball of failed test obj_dirs for CI artifact collection
+            fail_dirs = []
+            for ftest in runner.fail_tests:
+                if os.path.isdir(ftest.obj_dir):
+                    fail_dirs.append(ftest.obj_dir)
+                fail1_dir = ftest.obj_dir + "__fail1"
+                if os.path.isdir(fail1_dir):
+                    fail_dirs.append(fail1_dir)
+            if fail_dirs:
+                with tarfile.open("obj_dist/test-failures.tar.gz", "w:gz") as tar:
+                    for d in fail_dirs:
+                        tar.add(d)
         sys.exit(10)
 
 
@@ -3054,6 +3068,9 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
     parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--fail-archive',
+                        action='store_true',
+                        help='create obj_dist/test-failures.tar.gz on failure')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,

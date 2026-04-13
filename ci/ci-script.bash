@@ -106,6 +106,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   # Run the specified test
   ccache -z
+  if [ "$CI_FAIL_ARCHIVE" == 1 ]; then
+    export DRIVER_CI_FLAGS=--fail-archive
+  fi
   case $TESTS in
     dist-vlt-0)
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=0/4

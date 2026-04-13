@@ -26,6 +26,10 @@ on:
       dev-gcov:
         required: true
         type: number
+      fail-archive:  # 0 or 1
+        required: false
+        type: number
+        default: 0
 
 env:
   CI_OS_NAME: linux
@@ -51,6 +55,7 @@ jobs:
       CI_RELOC: ${{inputs.reloc }}
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
       CACHE_BASE_KEY: test-${{ inputs.os }}-${{ inputs.cc }}-${{inputs.reloc }}-${{ inputs.suite }}
+      CI_FAIL_ARCHIVE: ${{ inputs.fail-archive }}
       CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
     steps:
 
@@ -89,6 +94,15 @@ jobs:
         run: |
           source .venv/bin/activate
           ./ci/ci-script.bash
+
+      - name: Upload failing test artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          path: |
+            repo/test_regress/obj_dist/test-failures.tar.gz
+            ${{ env.RELOC_DIR }}/test_regress/obj_dist/test-failures.tar.gz
+          name: test-failures-${{ inputs.os }}-${{ inputs.cc }}-${{ inputs.reloc }}-${{ inputs.suite }}
+          if-no-files-found: ignore
 
       - name: Combine code coverage data
         if: ${{ inputs.dev-gcov }}

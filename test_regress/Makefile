@@ -45,10 +45,11 @@ endif
 
 SCENARIOS ?= --vlt --vltmt --dist
 DRIVER_HASHSET ?=
+DRIVER_CI_FLAGS ?=
 
 .PHONY: test
 test:
-	$(PYTHON3) driver.py $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET)
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET) $(DRIVER_CI_FLAGS)
 
 ######################################################################
 
