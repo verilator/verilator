@@ -1634,8 +1634,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 // Non-constant exponent, base == 2: transform to shift-based SMT expression.
                 // AstPow/AstPowSU (unsigned exponent): 2**n -> 1<<n
                 // AstPowSS/AstPowUS (signed exponent): 2**n -> n>=0 ? 1<<n : 0
-                //   IEEE 1800-2023 ss11.4.3: integer base with negative exponent gives 0,
-                //   which ShiftL cannot represent; use SMT ite (AstCond -> bvsge + bvshl).
+                // IEEE 1800-2023 ss11.4.3: integer base with negative exponent gives 0,
+                // which ShiftL cannot represent; use SMT ite (AstCond -> bvsge + bvshl).
                 FileLine* const fl = nodep->fileline();
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 const int width = nodep->width();
@@ -1664,7 +1664,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else {
                 nodep->v3warn(
                     CONSTRAINTIGN,
-                    "Unsupported: Power (**) expression with non-constant exponent in constraint");
+                    "Unsupported: Power (**) expression with non-2 base in constraint");
             }
         } else {
             nodep->v3warn(
