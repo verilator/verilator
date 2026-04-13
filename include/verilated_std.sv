@@ -215,17 +215,6 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
 `endif
     // verilog_format: on
 
-    // When really implemented, srandom must operate on the process, but for
-    // now rely on the srandom() that is automatically generated for all
-    // classes.
-    //
-    // function void srandom(int seed);
-    // endfunction
-
-    // The methods below access the common RNG, full support
-    // of get_randstate/set_randstate requires accessing the RNG state
-    // of the specified process (see IEEE 1800-2023, 18.14.), but as for
-    // now processes do not have their own RNGs.
     function string get_randstate();
       // Initialize with $c to ensure it won't be constified
       string s = string'($c("0"));
