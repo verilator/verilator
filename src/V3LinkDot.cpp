@@ -5148,8 +5148,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 }
             }
-            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)
+                && !VN_IS(nodep->classOrPackagep(), Package)) {
                 // need special handling to avoid falling back to std::randomize
+                // Skip if classOrPackagep is a Package (i.e. std::randomize resolved earlier)
                 VMemberMap memberMap;
                 AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
                     memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
@@ -5231,7 +5233,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
-                        nodep->classOrPackagep(classp);
+                        // Don't overwrite if already resolved to a package (e.g. std::randomize)
+                        if (!VN_IS(nodep->classOrPackagep(), Package))
+                            nodep->classOrPackagep(classp);
                     } else if (nodep->name() == "randomize") {
                         // A std::randomize resolved in V3Width
                         nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
