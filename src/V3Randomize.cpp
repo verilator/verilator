@@ -1653,8 +1653,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                         = new AstConst{fl, AstConst::WidthedValue{}, rhsp->width(), 0};
                     AstGteS* const condp = new AstGteS{fl, nClonep, zeroNp};
                     condp->user1(rhsDependent);
-                    AstConst* const zeroRp
-                        = new AstConst{fl, AstConst::WidthedValue{}, width, 0};
+                    AstConst* const zeroRp = new AstConst{fl, AstConst::WidthedValue{}, width, 0};
                     resultp = new AstCond{fl, condp, shiftp, zeroRp};
                     resultp->dtypeFrom(nodep);
                     resultp->user1(nodep->user1());
