@@ -1059,21 +1059,27 @@ class FourstateVisitor final : public VNVisitor {
                                  getFourStateExpressionXZ(notp->lhsp())};
         }
 
-        void visit(AstEq* const eqp) override {
-            // (a.xz | b.xz != 0) | (a.value == b.value )
-            FileLine* const flp = eqp->fileline();
-            m_result = new AstOr{flp, getFourStateExpressionXZ(eqp),
-                                 new AstEq{flp, getFourStateExpressionValue(eqp->lhsp()),
-                                           getFourStateExpressionValue(eqp->rhsp())}};
+        template <typename CompoarisonOp_T>
+        void visitCompare(CompoarisonOp_T* const cmpp) {
+            // |(a.xz | b.xz) | (a.value op b.value)
+            FileLine* const flp = cmpp->fileline();
+            m_result
+                = new AstOr{flp, getFourStateExpressionXZ(cmpp),
+                            new CompoarisonOp_T{flp, getFourStateExpressionValue(cmpp->lhsp()),
+                                                getFourStateExpressionValue(cmpp->rhsp())}};
         }
 
-        void visit(AstNeq* const neqp) override {
-            // (a.xz | b.xz != 0) | (a.value != b.value )
-            FileLine* const flp = neqp->fileline();
-            m_result = new AstOr{flp, getFourStateExpressionXZ(neqp),
-                                 new AstNeq{flp, getFourStateExpressionValue(neqp->lhsp()),
-                                            getFourStateExpressionValue(neqp->rhsp())}};
-        }
+        void visit(AstEq* const eqp) override { visitCompare(eqp); }
+        void visit(AstNeq* const neqp) override { visitCompare(neqp); }
+        void visit(AstGt* const gtp) override { visitCompare(gtp); }
+        void visit(AstGte* const gtep) override { visitCompare(gtep); }
+        void visit(AstLt* const ltp) override { visitCompare(ltp); }
+        void visit(AstLte* const ltep) override { visitCompare(ltep); }
+
+        void visit(AstGtS* const gtp) override { visitCompare(gtp); }
+        void visit(AstGteS* const gtep) override { visitCompare(gtep); }
+        void visit(AstLtS* const ltp) override { visitCompare(ltp); }
+        void visit(AstLteS* const ltep) override { visitCompare(ltep); }
 
         void visit(AstEqWild* const eqWildp) override {
             // ((a.value | b.xz) == (b.value | b.xz)) | |(a.xz & ~b.xz)
@@ -1107,8 +1113,11 @@ class FourstateVisitor final : public VNVisitor {
             m_result = new AstCond{
                 flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftlp->rhsp())},
                 createZeroOrOnesp(shiftlp->lhsp(), true),
-                new AstShiftL{flp, getFourStateExpressionValue(shiftlp->lhsp(), false),
-                              getFourStateExpressionValue(shiftlp->rhsp())}};
+                new AstShiftL{
+                    flp,
+                    getFourStateExpressionValue(
+                        shiftlp->lhsp(), true /*must be in tmp so it always gets evaluated*/),
+                    getFourStateExpressionValue(shiftlp->rhsp())}};
         }
 
         void visit(AstShiftR* const shiftrp) override {
@@ -1117,8 +1126,11 @@ class FourstateVisitor final : public VNVisitor {
             m_result = new AstCond{
                 flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftrp->rhsp())},
                 createZeroOrOnesp(shiftrp->lhsp(), true),
-                new AstShiftR{flp, getFourStateExpressionValue(shiftrp->lhsp(), false),
-                              getFourStateExpressionValue(shiftrp->rhsp())}};
+                new AstShiftR{
+                    flp,
+                    getFourStateExpressionValue(
+                        shiftrp->lhsp(), true /*must be in tmp so it always gets evaluated*/),
+                    getFourStateExpressionValue(shiftrp->rhsp())}};
         }
 
         void visit(AstExtend* const extendp) override {
@@ -1317,25 +1329,25 @@ class FourstateVisitor final : public VNVisitor {
             m_result = getFourStateExpressionXZ(notp->lhsp());
         }
 
-        void visit(AstEq* const eqp) override {
-            // a.xz | b.xz != 0
+        void visitCompare(AstNodeBiop* const cmpp) {
+            // |(a.xz | b.xz)
             enforceTmp();
-            FileLine* const flp = eqp->fileline();
-            m_result = new AstNeq{flp,
-                                  new AstOr{flp, getFourStateExpressionXZ(eqp->lhsp()),
-                                            getFourStateExpressionXZ(eqp->rhsp())},
-                                  new AstConst{flp, AstConst::BitFalse{}}};
+            FileLine* const flp = cmpp->fileline();
+            m_result = new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(cmpp->lhsp()),
+                                                   getFourStateExpressionXZ(cmpp->rhsp())}};
         }
 
-        void visit(AstNeq* const neqp) override {
-            // a.xz | b.xz != 0
-            enforceTmp();
-            FileLine* const flp = neqp->fileline();
-            m_result = new AstNeq{flp,
-                                  new AstOr{flp, getFourStateExpressionXZ(neqp->lhsp()),
-                                            getFourStateExpressionXZ(neqp->rhsp())},
-                                  new AstConst{flp, AstConst::BitFalse{}}};
-        }
+        void visit(AstEq* const eqp) override { visitCompare(eqp); }
+        void visit(AstNeq* const neqp) override { visitCompare(neqp); }
+        void visit(AstGt* const gtp) override { visitCompare(gtp); }
+        void visit(AstGte* const gtep) override { visitCompare(gtep); }
+        void visit(AstLt* const ltp) override { visitCompare(ltp); }
+        void visit(AstLte* const ltep) override { visitCompare(ltep); }
+
+        void visit(AstGtS* const gtp) override { visitCompare(gtp); }
+        void visit(AstGteS* const gtep) override { visitCompare(gtep); }
+        void visit(AstLtS* const ltp) override { visitCompare(ltp); }
+        void visit(AstLteS* const ltep) override { visitCompare(ltep); }
 
         void visit(AstEqWild* const eqWildp) override {
             // |(a.xz & ~b.xz)
