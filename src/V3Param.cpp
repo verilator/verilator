@@ -1396,8 +1396,7 @@ class ParamProcessor final {
                 }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
-                // Width the pin value to match the port type so that the same
-                // logical value always produces the same specialization name.
+                // Width the pin to the port's type so equal values hash the same (#5479).
                 AstConst* normedNamep = nullptr;
                 if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
                     AstVar* cloneVarp = modvarp->cloneTree(false);
@@ -1406,21 +1405,41 @@ class ParamProcessor final {
                         VL_DO_DANGLING(oldValuep->deleteTree(), oldValuep);
                     }
                     cloneVarp->valuep(exprp->cloneTree(false));
-                    // Clone the dtype and resolve VarRefs to other parameters
-                    // with their already-constified pin values (e.g., N-1 in
-                    // logic [N-1:0] becomes Const-1 which can be folded).
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
                         AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
-                        dtypeClonep->foreach([&](AstVarRef* varrefp) {
-                            for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                                if (pp->modVarp() == varrefp->varp()) {
-                                    if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
-                                        varrefp->replaceWith(constp->cloneTree(false));
-                                        VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
+                        // Inline every param ref so widthing doesn't reach back into the template
+                        // (#7411). Cycle detector for dependent parameters in the same module.
+                        constexpr int maxSubstIters = 1000;
+                        for (int it = 0; it < maxSubstIters; ++it) {
+                            bool any = false;
+                            dtypeClonep->foreach([&](AstVarRef* varrefp) {
+                                AstVar* const targetp = varrefp->varp();
+                                AstNode* replacep = nullptr;
+                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                                    if (pp->modVarp() == targetp) {
+                                        if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
+                                            replacep = constp->cloneTree(false);
+                                        }
+                                        break;
                                     }
-                                    break;
                                 }
-                            }
+                                if (!replacep && targetp->valuep()) {
+                                    replacep = targetp->valuep()->cloneTree(false);
+                                }
+                                if (replacep) {
+                                    varrefp->replaceWith(replacep);
+                                    VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
+                                    any = true;
+                                }
+                            });
+                            if (!any) break;
+                        }
+                        // Bail if anything still points at the template.
+                        dtypeClonep->foreach([&](AstVarRef* varrefp) {
+                            varrefp->v3fatalSrc(
+                                "Unresolved VarRef '"
+                                << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
+                                << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                         });
                         if (cloneVarp->childDTypep())
                             cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
@@ -1429,8 +1448,7 @@ class ParamProcessor final {
                     }
                     V3Const::constifyParamsEdit(cloneVarp);
                     if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
-                        // Set the constant's dtype to the port's widthed type
-                        // so identical values hash the same in paramValueNumber.
+                        // Stamp the port's type on the const so equal values hash the same.
                         if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
                         widthedp->unlinkFrBack();
                         normedNamep = widthedp;
