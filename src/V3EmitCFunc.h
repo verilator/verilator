@@ -391,7 +391,8 @@ public:
             vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
             vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
-        } else if (nodep->needProcess()) {
+        } else if (nodep->needProcess() && nodep->stmtsp()) {
+            // Set current process so VlRNG() constructors in this function seed from it
             AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
             setProcessp->add("VlProcess::currentp(vlProcess.get());");
             nodep->stmtsp()->addHereThisAsNext(setProcessp);
