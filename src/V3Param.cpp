@@ -1408,7 +1408,8 @@ class ParamProcessor final {
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
                         AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
                         // Inline every param ref so widthing doesn't reach back into the template (#7411).
-                        constexpr int maxSubstIters = 10;
+                        // Cycle detector for dependent parameters in the same module.
+                        constexpr int maxSubstIters = 1000;
                         for (int it = 0; it < maxSubstIters; ++it) {
                             bool any = false;
                             dtypeClonep->foreach([&](AstVarRef* varrefp) {
