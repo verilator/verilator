@@ -1630,6 +1630,28 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(powerp);
         } else {
+            // Non-constant exponent: special-case 2**n -> 1<<n for unsigned exponent.
+            // AstShiftL is unsigned, so only safe when the exponent is non-negative:
+            //   AstPow   (unsigned**unsigned) and AstPowSU (signed_base**unsigned_exp).
+            // AstPowSS/PowUS have a signed exponent; n<0 requires result=0 per
+            // IEEE 1800-2023 ss11.4.3, which ShiftL cannot provide.
+            if (VN_IS(nodep, Pow) || VN_IS(nodep, PowSU)) {
+                if (const AstConst* const basep = VN_CAST(nodep->lhsp(), Const);
+                    basep && basep->num().toUInt() == 2) {
+                    // 2**n -> 1<<n; handleShift will emit as SMT bvshl with width fixup
+                    FileLine* const fl = nodep->fileline();
+                    AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                    AstConst* const onep
+                        = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 1};
+                    AstShiftL* const shiftp = new AstShiftL{fl, onep, rhsp, nodep->width()};
+                    shiftp->dtypeFrom(nodep);
+                    shiftp->user1(nodep->user1());
+                    nodep->replaceWith(shiftp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    iterate(shiftp);
+                    return;
+                }
+            }
             nodep->v3warn(
                 CONSTRAINTIGN,
                 "Unsupported: Power (**) expression with non-constant exponent in constraint");
