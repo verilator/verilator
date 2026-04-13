@@ -1407,19 +1407,17 @@ class ParamProcessor final {
                     cloneVarp->valuep(exprp->cloneTree(false));
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
                         AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
-                        // Inline every param ref so widthing doesn't reach back into the template (#7411).
-                        // Cycle detector for dependent parameters in the same module.
+                        // Inline every param ref so widthing doesn't reach back into the template
+                        // (#7411). Cycle detector for dependent parameters in the same module.
                         constexpr int maxSubstIters = 1000;
                         for (int it = 0; it < maxSubstIters; ++it) {
                             bool any = false;
                             dtypeClonep->foreach([&](AstVarRef* varrefp) {
                                 AstVar* const targetp = varrefp->varp();
                                 AstNode* replacep = nullptr;
-                                for (AstPin* pp = paramsp; pp;
-                                     pp = VN_AS(pp->nextp(), Pin)) {
+                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
                                     if (pp->modVarp() == targetp) {
-                                        if (AstConst* const constp
-                                            = VN_CAST(pp->exprp(), Const)) {
+                                        if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
                                             replacep = constp->cloneTree(false);
                                         }
                                         break;
@@ -1439,10 +1437,9 @@ class ParamProcessor final {
                         // Bail if anything still points at the template.
                         dtypeClonep->foreach([&](AstVarRef* varrefp) {
                             varrefp->v3fatalSrc(
-                                "Unresolved VarRef '" << varrefp->prettyName()
-                                << "' in pin dtype clone.  Pin: "
-                                << pinp->prettyNameQ() << " of "
-                                << nodep->prettyNameQ());
+                                "Unresolved VarRef '"
+                                << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
+                                << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                         });
                         if (cloneVarp->childDTypep())
                             cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
