@@ -53,10 +53,10 @@ RUN apt-get update \
 
 WORKDIR /tmp
 
-RUN git clone https://github.com/veripool/vcddiff.git && \
-    make -C vcddiff && \
-    cp -p vcddiff/vcddiff /usr/local/bin/vcddiff && \
-    rm -rf vcddiff
+RUN apt-get update && apt-get install --no-install-recommends -y cargo && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN cargo install wavetools && \
+    cp -p $HOME/.cargo/bin/wavediff /usr/local/bin/wavediff
 
 COPY build.sh /tmp/build.sh
 

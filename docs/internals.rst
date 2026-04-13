@@ -1568,8 +1568,8 @@ For all tests to pass, you must install the following packages:
 
 - SystemC to compile the SystemC outputs, see https://systemc.org
 
-- vcddiff to find differences in VCD outputs. See the readme at
-  https://github.com/veripool/vcddiff
+- wavediff to find differences in waveform outputs. See the readme at
+  https://github.com/hudson-trading/wavetools
 
 - Cmake for build paths that use it.
 

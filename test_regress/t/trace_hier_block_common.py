@@ -93,8 +93,8 @@ def run(test, *, verilator_flags2=()):
                     if "enddefinitions" in la:
                         break
 
-        # The two models must match ignoring enum attributes which can differ
-        test.trace_identical(trace_hier, trace_nonh, ignore_attr=True)
+        # NOCOMMIT: figure out attr handling
+        test.trace_identical(trace_hier, trace_nonh)
     # The hierarchical must match the reference
     test.trace_identical(trace_hier, test.golden_filename)
 

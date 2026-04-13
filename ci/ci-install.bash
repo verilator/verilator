@@ -40,12 +40,8 @@ if [ "$CI_OS_NAME" = "linux" ]; then
   echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 fi
 
-install-vcddiff() {
-  TMP_DIR="$(mktemp -d)"
-  git clone https://github.com/veripool/vcddiff "$TMP_DIR"
-  git -C "${TMP_DIR}" checkout 4db0d84a27e8f148b127e916fc71d650837955c5
-  "$MAKE" -C "${TMP_DIR}"
-  sudo cp "${TMP_DIR}/vcddiff" /usr/local/bin
+install-wavediff() {
+  cargo install wavetools
 }
 
 if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
@@ -120,7 +116,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     fatal "Unknown CI_OS_NAME: '$CI_OS_NAME'"
   fi
   # Common installs
-  install-vcddiff
+  install-wavediff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
 else
