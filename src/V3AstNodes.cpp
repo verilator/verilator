@@ -1973,6 +1973,28 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
 }
 string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prettyName(); }
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
+bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
+    if (m_classp != asamep->m_classp) return false;
+    // Compare type parameters so C#(int) != C#(string)
+    const AstPin* lp = paramsp();
+    const AstPin* rp = asamep->paramsp();
+    while (lp && rp) {
+        if (!lp->exprp() != !rp->exprp()) return false;
+        if (lp->exprp()) {
+            const AstNodeDType* const lDtp = VN_CAST(lp->exprp(), NodeDType);
+            const AstNodeDType* const rDtp = VN_CAST(rp->exprp(), NodeDType);
+            if (lDtp && rDtp) {
+                if (!lDtp->similarDType(rDtp)) return false;
+            } else {
+                if (!lp->exprp()->sameTree(rp->exprp())) return false;
+            }
+        }
+        lp = VN_CAST(lp->nextp(), Pin);
+        rp = VN_CAST(rp->nextp(), Pin);
+    }
+    return !lp && !rp;
+}
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " ["s + this->userType().ascii() + "]";
