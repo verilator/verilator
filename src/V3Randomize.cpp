@@ -1629,38 +1629,44 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(powerp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(powerp);
-        } else if (const AstConst* const basep = VN_CAST(nodep->lhsp(), Const);
-                   basep && basep->num().toUInt() == 2) {
-            // Non-constant exponent, base == 2: transform to shift-based SMT expression.
-            // AstPow/AstPowSU (unsigned exponent): 2**n -> 1<<n
-            // AstPowSS/AstPowUS (signed exponent): 2**n -> n>=0 ? 1<<n : 0
-            //   IEEE 1800-2023 ss11.4.3: integer base with negative exponent gives 0,
-            //   which ShiftL cannot represent; use SMT ite (AstCond -> bvsge + bvshl).
-            FileLine* const fl = nodep->fileline();
-            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-            const int width = nodep->width();
-            const bool rhsDependent = rhsp->user1();
-            AstConst* const onep = new AstConst{fl, AstConst::WidthedValue{}, width, 1};
-            AstShiftL* const shiftp = new AstShiftL{fl, onep, rhsp, width};
-            shiftp->dtypeFrom(nodep);
-            shiftp->user1(rhsDependent);
-            AstNodeExpr* resultp = shiftp;
-            if (VN_IS(nodep, PowSS) || VN_IS(nodep, PowUS)) {
-                // Signed exponent: guard 1<<n with n>=0 check
-                AstNodeExpr* const nClonep = rhsp->cloneTreePure(false);
-                nClonep->user1(rhsDependent);
-                AstConst* const zeroNp
-                    = new AstConst{fl, AstConst::WidthedValue{}, rhsp->width(), 0};
-                AstGteS* const condp = new AstGteS{fl, nClonep, zeroNp};
-                condp->user1(rhsDependent);
-                AstConst* const zeroRp = new AstConst{fl, AstConst::WidthedValue{}, width, 0};
-                resultp = new AstCond{fl, condp, shiftp, zeroRp};
-                resultp->dtypeFrom(nodep);
-                resultp->user1(nodep->user1());
+        } else if (const AstConst* const basep = VN_CAST(nodep->lhsp(), Const)) {
+            if (basep->num().toUInt() == 2) {
+                // Non-constant exponent, base == 2: transform to shift-based SMT expression.
+                // AstPow/AstPowSU (unsigned exponent): 2**n -> 1<<n
+                // AstPowSS/AstPowUS (signed exponent): 2**n -> n>=0 ? 1<<n : 0
+                //   IEEE 1800-2023 ss11.4.3: integer base with negative exponent gives 0,
+                //   which ShiftL cannot represent; use SMT ite (AstCond -> bvsge + bvshl).
+                FileLine* const fl = nodep->fileline();
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                const int width = nodep->width();
+                const bool rhsDependent = rhsp->user1();
+                AstConst* const onep = new AstConst{fl, AstConst::WidthedValue{}, width, 1};
+                AstShiftL* const shiftp = new AstShiftL{fl, onep, rhsp, width};
+                shiftp->dtypeFrom(nodep);
+                shiftp->user1(rhsDependent);
+                AstNodeExpr* resultp = shiftp;
+                if (VN_IS(nodep, PowSS) || VN_IS(nodep, PowUS)) {
+                    // Signed exponent: guard 1<<n with n>=0 check
+                    AstNodeExpr* const nClonep = rhsp->cloneTreePure(false);
+                    nClonep->user1(rhsDependent);
+                    AstConst* const zeroNp
+                        = new AstConst{fl, AstConst::WidthedValue{}, rhsp->width(), 0};
+                    AstGteS* const condp = new AstGteS{fl, nClonep, zeroNp};
+                    condp->user1(rhsDependent);
+                    AstConst* const zeroRp
+                        = new AstConst{fl, AstConst::WidthedValue{}, width, 0};
+                    resultp = new AstCond{fl, condp, shiftp, zeroRp};
+                    resultp->dtypeFrom(nodep);
+                    resultp->user1(nodep->user1());
+                }
+                nodep->replaceWith(resultp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                iterate(resultp);
+            } else {
+                nodep->v3warn(
+                    CONSTRAINTIGN,
+                    "Unsupported: Power (**) expression with non-constant exponent in constraint");
             }
-            nodep->replaceWith(resultp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            iterate(resultp);
         } else {
             nodep->v3warn(
                 CONSTRAINTIGN,
