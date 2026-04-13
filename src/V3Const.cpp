@@ -197,7 +197,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         const size_t m_frozenSize;
         const unsigned m_ops;
         const bool m_polarity;
-        bool m_restore;
+        bool m_restore = true;
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
@@ -205,8 +205,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             , m_polaritiesSize{visitor.m_bitPolarities.size()}
             , m_frozenSize{visitor.m_frozenNodes.size()}
             , m_ops{visitor.m_ops}
-            , m_polarity{visitor.m_polarity}
-            , m_restore{true} {}
+            , m_polarity{visitor.m_polarity} {}
         ~Restorer() {
             UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
                     "m_bitPolarities must grow monotonically");
@@ -1351,7 +1350,7 @@ class ConstVisitor final : public VNVisitor {
             if (newp) {
                 newp->dumpTree(debugPrefix + "RESULT: ");
             } else {
-                cout << debugPrefix << "not replaced" << endl;
+                cout << debugPrefix << "not replaced\n";
             }
         }  // LCOV_EXCL_STOP
 
@@ -1528,7 +1527,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(smallerp);
 
         constp->unlinkFrBack();
-        V3Number num{constp, subsize, constp->num()};
+        const V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
         UINFOTREE(9, nodep, "", "BI(EXTEND)-ou");
@@ -1631,6 +1630,9 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
+        // Must not create an expression with unpacked array type
+        if (VN_IS(thensp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        if (VN_IS(elsesp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
         // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
         return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
@@ -1741,7 +1743,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(oldp), oldp);
     }
     void replaceNum(AstNode* nodep, uint32_t val) {
-        V3Number num{nodep, nodep->width(), val};
+        const V3Number num{nodep, nodep->width(), val};
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceNumSigned(AstNodeBiop* nodep, uint32_t val) {
@@ -2235,7 +2237,7 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            bool need_temp_pure = !nodep->rhsp()->isPure();
+            const bool need_temp_pure = !nodep->rhsp()->isPure();
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
@@ -3817,7 +3819,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = false;
         m_hasLoopTest = false;
         iterateChildren(nodep);
-        bool thisLoopHasJumpDelay = m_hasJumpDelay;
+        const bool thisLoopHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
         // If the first statement always break, the loop is useless
         if (const AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {

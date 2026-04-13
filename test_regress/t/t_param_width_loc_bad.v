@@ -7,7 +7,7 @@
 module t;
 
   // bug1624
-  test #(.PARAM(32'd0)) test_i ();
+  test #(.PARAM(32'd1)) test_i ();
 
   initial begin
     $write("*-* All Finished *-*\n");

@@ -61,6 +61,7 @@ module Testit (
           .clk(clk),
           .w(d[i])
       );
+      initial fnxtclk1.init();
     end
   endgenerate
 
@@ -89,5 +90,8 @@ module fnxtclk (
       w <= u;
     end
   end
+
+  task init;
+  endtask
 
 endmodule

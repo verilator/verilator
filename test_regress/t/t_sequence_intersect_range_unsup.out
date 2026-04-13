@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:12:21: Unsupported: intersect with ranged cycle-delay operand
+                                                              : ... note: In instance 't'
+   12 |       (a ##[1:5] b) intersect (c ##2 d));
+      |                     ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -15,7 +15,7 @@
 //*************************************************************************
 //  Pre steps:
 //      Attach clocks to each assertion
-//      Substitute property references by property body (IEEE 1800-2012 16.12.1).
+//      Substitute property references by property body (IEEE 1800-2023 16.12.1).
 //      Transform clocking blocks into imperative logic
 //*************************************************************************
 
@@ -41,6 +41,7 @@ class AssertPreVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
+    // AstPExpr::user1()                 // bool.         Created from AstUntil
     const VNUser1InUse m_inuser1;
     // STATE
     // Current context:
@@ -58,15 +59,18 @@ private:
     // Reset each assertion:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
+    AstPExpr* m_pexprp = nullptr;  // Last AstPExpr
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
+    V3UniqueNames m_gotoRepNames{"__VgotoRep"};  // Goto repetition counter name generator
+    V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
-    bool m_inPExpr = false;  // True if in AstPExpr
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
@@ -427,7 +431,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
-            if (m_inPExpr) {
+            if (m_pexprp) {
                 // ##0 in sequence context = zero delay = same clock tick
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
@@ -458,7 +462,7 @@ private:
         }
         AstSenItem* sensesp = nullptr;
         if (!m_defaultClockingp) {
-            if (!m_inPExpr) {
+            if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -472,28 +476,75 @@ private:
         AstEventControl* const controlp = new AstEventControl{
             nodep->fileline(), new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
+        AstNodeExpr* throughoutp
+            = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
+
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
+        // Throughout: create flag tracking whether condition held every tick
+        AstVar* throughoutOkp = nullptr;
+        if (throughoutp) {
+            throughoutOkp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
+                                       nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
+            throughoutOkp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            beginp->addStmtsp(throughoutOkp);
+            beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitTrue{}}});
+            // Check condition at tick 0 (sequence start, before entering loop)
+            beginp->addStmtsp(
+                new AstIf{flp, new AstLogNot{flp, throughoutp->cloneTreePure(false)},
+                          new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                        new AstConst{flp, AstConst::BitFalse{}}}});
+        }
+
         {
             AstLoop* const loopp = new AstLoop{flp};
-            loopp->addStmtsp(new AstLoopTest{
-                flp, loopp,
-                new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}}});
+            // When throughout is present, exit loop early if condition fails
+            AstNodeExpr* loopCondp
+                = new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}};
+            if (throughoutOkp) {
+                loopCondp = new AstLogAnd{flp, loopCondp,
+                                          new AstVarRef{flp, throughoutOkp, VAccess::READ}};
+            }
+            loopp->addStmtsp(new AstLoopTest{flp, loopp, loopCondp});
             loopp->addStmtsp(controlp);
             loopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
                               new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
                                          new AstConst{flp, 1}}});
+            // Check throughout condition at each tick during delay (IEEE 1800-2023 16.9.9)
+            if (throughoutp) {
+                loopp->addStmtsp(
+                    new AstIf{flp, new AstLogNot{flp, throughoutp},
+                              new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitFalse{}}}});
+            }
             beginp->addStmtsp(loopp);
         }
-        if (m_disableSeqIfp) {
+        // Compose wrappers on remaining sequence: throughout gate (inner), disable iff (outer)
+        AstNode* remainp = nodep->nextp() ? nodep->nextp()->unlinkFrBackWithNext() : nullptr;
+        if (throughoutOkp) {
+            // If condition failed during delay, fail assertion
+            remainp = new AstIf{flp, new AstVarRef{flp, throughoutOkp, VAccess::READ}, remainp,
+                                new AstPExprClause{flp, /*pass=*/false}};
+        }
+        if (m_disableSeqIfp && remainp) {
             AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
-            disableSeqIfp->addThensp(nodep->nextp()->unlinkFrBackWithNext());
-            nodep->addNextHere(disableSeqIfp);
+            // Keep continuation statements in a proper statement-list container.
+            disableSeqIfp->addThensp(new AstBegin{flp, "", remainp, true});
+            remainp = disableSeqIfp;
+        }
+        if (remainp) {
+            if (throughoutOkp) {
+                // throughoutOkp is declared in beginp scope -- check must be inside it
+                beginp->addStmtsp(remainp);
+            } else {
+                nodep->addNextHere(remainp);
+            }
         }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -651,6 +702,54 @@ private:
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
+    void visit(AstSConsRep* nodep) override {
+        // IEEE 1800-2023 16.9.2 -- Lower standalone exact [*N] (N >= 2) via saturating counter.
+        // Range/unbounded forms and SExpr-contained forms are lowered by V3AssertProp.
+        iterateChildren(nodep);
+        if (nodep->unbounded() || nodep->maxCountp()) return;  // Handled by V3AssertProp
+        const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+        if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
+            nodep->v3fatalSrc("Consecutive repetition count must be a positive constant"
+                              " (should have been caught by V3Width)");
+            return;
+        }
+        const int n = constp->toSInt();
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        if (n == 1) {
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
+        AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
+                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(cntVarp);
+        AstNodeExpr* const exprClonep = exprp->cloneTreePure(false);
+        AstNodeExpr* const saturatingIncrp = new AstCond{
+            flp,
+            new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                      new AstConst{flp, static_cast<uint32_t>(n)}},
+            new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 1u}},
+            new AstConst{flp, static_cast<uint32_t>(n)}};
+        AstAssignDly* const incrAssignp
+            = new AstAssignDly{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, saturatingIncrp};
+        AstAssignDly* const resetAssignp = new AstAssignDly{
+            flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0u}};
+        AstIf* const ifp = new AstIf{flp, exprClonep, incrAssignp, resetAssignp};
+        AstSenTree* const senTreep = newSenTree(nodep);
+        AstAlways* const alwaysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep, ifp};
+        cntVarp->addNextHere(alwaysp);
+        // Match: cnt >= N-1 (previous cycles via NBA) && expr (current cycle)
+        AstNodeExpr* const cntCheckp = new AstGte{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                  new AstConst{flp, static_cast<uint32_t>(n - 1)}};
+        cntCheckp->dtypeSetBit();
+        AstNodeExpr* const matchp = new AstAnd{flp, cntCheckp, exprp};
+        matchp->dtypeSetBit();
+        nodep->replaceWith(matchp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstRising* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
@@ -709,6 +808,173 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    // Validate repetition count: must be a non-negative elaboration-time constant.
+    // Shared by goto [->N] and nonconsecutive [=N] repetition.
+    // On error, replaces nodep with BitFalse placeholder and returns nullptr.
+    const AstConst* validateRepCount(AstNode* nodep, AstNodeExpr*& countp) {
+        countp = V3Const::constifyEdit(countp);
+        const AstConst* const constp = VN_CAST(countp, Const);
+        if (!constp) {
+            nodep->v3error("Repetition count is not an elaboration-time constant"
+                           " (IEEE 1800-2023 16.9.2)");
+            VL_DO_DANGLING(pushDeletep(countp), countp);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return nullptr;
+        }
+        if (constp->toSInt() < 0) {
+            nodep->v3error("Repetition count must be non-negative"
+                           " (IEEE 1800-2023 16.9.2)");
+            VL_DO_DANGLING(pushDeletep(countp), countp);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return nullptr;
+        }
+        if (constp->isZero()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: zero repetition count"
+                                         " (IEEE 1800-2023 16.9.2)");
+            VL_DO_DANGLING(pushDeletep(countp), countp);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return nullptr;
+        }
+        return constp;
+    }
+
+    // Lower goto/nonconsecutive repetition to a counter-based PExpr loop.
+    // IEEE 1800-2023 16.9.2:
+    //   Goto [->N]: count N occurrences, then check consequent
+    //   Nonconsec [=N] = [->N] ##1 !b[*0:$]: count N, then scan trailing !b window
+    // Generated structure for goto [->N]:
+    //   begin
+    //     automatic uint32 cnt = 0;
+    //     loop { test(cnt < N); if (sampled(expr)) cnt++; if (cnt < N) @(clk); }
+    //     // consequent check or pass clause
+    //   end
+    // Generated structure for nonconsec [=N] with implication:
+    //   begin
+    //     automatic uint32 cnt = 0;
+    //     loop { test(cnt < N); if (sampled(expr)) cnt++; if (cnt < N) @(clk); }
+    //     @(clk);  // ##1
+    //     if (!isOverlapped) @(clk);  // |=> delay
+    //     loop { if (sampled(expr)) fail; if (sampled(rhs)) pass; @(clk); }
+    //   end
+    AstPExpr* createRepPExpr(FileLine* flp, AstNodeExpr* exprp, AstNodeExpr* countp,
+                             AstNodeExpr* rhsp, bool isOverlapped, bool isNonConsec) {
+        AstSenItem* const sensesp = m_senip;
+        UASSERT_OBJ(sensesp, exprp, "Repetition requires a clock");
+
+        const std::string name
+            = isNonConsec ? m_nonConsRepNames.get(exprp) : m_gotoRepNames.get(exprp);
+        AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, name + "__counter",
+                                           exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
+        beginp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0}});
+
+        // Counting loop: find N occurrences of expr (shared by goto and nonconsec)
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp,
+                                         new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                                   countp->cloneTreePure(false)}});
+        // if (expr) cnt++ -- sampled is applied to whole property expr by V3Assert
+        loopp->addStmtsp(
+            new AstIf{flp, exprp,
+                      new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                                    new AstAdd{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                               new AstConst{flp, 1}}}});
+        loopp->addStmtsp(new AstIf{
+            flp, new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, countp},
+            new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr}});
+
+        beginp->addStmtsp(loopp);
+
+        if (isNonConsec && rhsp) {
+            // IEEE 16.9.2: b[=N] = b[->N] ##1 !b[*0:$]
+            // Trailing window: ##1 advance, then scan !expr cycles checking rhs.
+            // Window closes when expr becomes true again (fail if rhs was never true).
+            beginp->addStmtsp(new AstEventControl{
+                flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});  // ##1
+            if (!isOverlapped) {
+                beginp->addStmtsp(new AstEventControl{
+                    flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});  // |=>
+            }
+            // Window loop: check rhs at each !expr cycle (done variable for termination)
+            AstVar* const doneVarp
+                = new AstVar{flp, VVarType::BLOCKTEMP, name + "__done", exprp->findBitDType()};
+            doneVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            beginp->addStmtsp(doneVarp);
+            beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                            new AstConst{flp, AstConst::BitFalse{}}});
+            auto setDone = [&]() {
+                return new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
+                                     new AstConst{flp, AstConst::BitTrue{}}};
+            };
+            AstLoop* const windowp = new AstLoop{flp};
+            // LoopTest: continue while !done
+            windowp->addStmtsp(new AstLoopTest{
+                flp, windowp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
+            // if (expr) { fail; done = 1; } -- window closed, expr true again
+            AstBegin* const failBlockp = new AstBegin{flp, "", nullptr, true};
+            failBlockp->addStmtsp(new AstPExprClause{flp, false});
+            failBlockp->addStmtsp(setDone());
+            windowp->addStmtsp(new AstIf{flp, exprp->cloneTreePure(false), failBlockp});
+            // if (rhs) { pass; done = 1; } -- consequent true at this !expr endpoint
+            AstBegin* const passBlockp = new AstBegin{flp, "", nullptr, true};
+            passBlockp->addStmtsp(new AstPExprClause{flp, true});
+            passBlockp->addStmtsp(setDone());
+            windowp->addStmtsp(new AstIf{flp, rhsp, passBlockp});
+            // @(clk) -- advance to next cycle in window
+            windowp->addStmtsp(
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            beginp->addStmtsp(windowp);
+        } else if (isNonConsec) {
+            // Standalone nonconsec: ##1 into window, then pass
+            beginp->addStmtsp(
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            beginp->addStmtsp(new AstPExprClause{flp, true});
+        } else if (rhsp) {
+            // Goto rep: check consequent once at match endpoint
+            if (!isOverlapped) {
+                beginp->addStmtsp(new AstEventControl{
+                    flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+            }
+            beginp->addStmtsp(new AstIf{flp, rhsp, new AstPExprClause{flp, true},
+                                        new AstPExprClause{flp, false}});
+        } else {
+            // Standalone goto: pass after counting
+            beginp->addStmtsp(new AstPExprClause{flp, true});
+        }
+
+        return new AstPExpr{flp, beginp, exprp->findBitDType()};
+    }
+
+    void visit(AstSGotoRep* nodep) override {
+        // Standalone goto rep (not inside implication antecedent)
+        iterateChildren(nodep);
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
+        if (!validateRepCount(nodep, countp)) return;
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        AstPExpr* const pexprp = createRepPExpr(flp, exprp, countp, nullptr, true, false);
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
+    void visit(AstSNonConsRep* nodep) override {
+        // Standalone nonconsecutive rep (not inside implication antecedent)
+        iterateChildren(nodep);
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
+        if (!validateRepCount(nodep, countp)) return;
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        AstPExpr* const pexprp = createRepPExpr(flp, exprp, countp, nullptr, true, true);
+        nodep->replaceWith(pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     void visit(AstFuncRef* nodep) override {
         // IEEE 1800-2023 16.8: Inline sequence instances wherever they appear
         // in the expression tree (inside implications, boolean ops, nested refs, etc.)
@@ -722,6 +988,40 @@ private:
     }
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
+
+        // Handle goto repetition as antecedent before iterateChildren,
+        // so the standalone AstSGotoRep visitor doesn't process it
+        if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
+            iterateChildren(gotop);
+            iterateAndNextNull(nodep->rhsp());
+            FileLine* const flp = nodep->fileline();
+            AstNodeExpr* countp = gotop->countp()->unlinkFrBack();
+            if (!validateRepCount(nodep, countp)) return;
+            AstNodeExpr* const exprp = gotop->exprp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstPExpr* const pexprp
+                = createRepPExpr(flp, exprp, countp, rhsp, nodep->isOverlapped(), false);
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
+        // Handle nonconsecutive repetition as antecedent before iterateChildren,
+        // so the standalone AstSNonConsRep visitor doesn't process it
+        if (AstSNonConsRep* const ncrp = VN_CAST(nodep->lhsp(), SNonConsRep)) {
+            iterateChildren(ncrp);
+            iterateAndNextNull(nodep->rhsp());
+            FileLine* const flp = nodep->fileline();
+            AstNodeExpr* countp = ncrp->countp()->unlinkFrBack();
+            if (!validateRepCount(nodep, countp)) return;
+            AstNodeExpr* const exprp = ncrp->exprp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstPExpr* const pexprp
+                = createRepPExpr(flp, exprp, countp, rhsp, nodep->isOverlapped(), true);
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
 
         iterateChildren(nodep);
 
@@ -803,8 +1103,7 @@ private:
                 // Overlapped implication (|->): check antecedent on same cycle.
                 // disable iff is applied at the assertion level, not at the
                 // antecedent gate, matching the existing non-PExpr overlapped path.
-                condp = new AstSampled{flp, lhsp};
-                condp->dtypeFrom(lhsp);
+                condp = lhsp;
             } else {
                 // Non-overlapped implication (|=>): check antecedent from previous cycle
                 if (m_disablep) {
@@ -820,7 +1119,7 @@ private:
             // */ }
             AstBegin* const bodyp = pexprp->bodyp();
             AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
+            AstIf* const guardp = new AstIf{flp, condp, new AstBegin{flp, "", origStmtsp, true}};
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
             // Don't iterate pexprp here -- it was already iterated when created
@@ -839,6 +1138,30 @@ private:
             exprp->dtypeSetBit();
             nodep->replaceWith(exprp);
         }
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstUntil* nodep) override {
+        FileLine* const flp = nodep->fileline();
+        if (m_pexprp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        AstLoop* const loopp = new AstLoop{flp};
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstLogAnd* const condp
+            = new AstLogAnd{flp, nodep->lhsp()->unlinkFrBack(), new AstLogNot{flp, rhsp}};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+        loopp->addStmtsp(new AstEventControl{flp, newSenTree(nodep), nullptr});
+
+        AstBegin* const beginp = new AstBegin{flp, "", loopp, true};
+        beginp->addStmtsp(new AstIf{flp, rhsp->cloneTreePure(false), new AstPExprClause{flp},
+                                    new AstPExprClause{flp, false}});
+
+        AstPExpr* const pexprp = new AstPExpr{flp, beginp, nodep->dtypep()};
+        pexprp->user1(1);
+        nodep->replaceWith(pexprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
@@ -877,6 +1200,13 @@ private:
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
+        if (m_pexprp && m_pexprp->user1()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Complex property expression inside 'until''");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(notp), notp);
@@ -893,9 +1223,9 @@ private:
                 return;
             }
         }
-        VL_RESTORER(m_inPExpr);
+        VL_RESTORER(m_pexprp);
         VL_RESTORER(m_disableSeqIfp);
-        m_inPExpr = true;
+        m_pexprp = nodep;
 
         if (m_disablep) {
             const AstSampled* sampledp;
@@ -932,11 +1262,14 @@ private:
             AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
                                                    nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
             initialCntp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            bodyp->stmtsp()->addHereThisAsNext(initialCntp);
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
                                 readCntRefp->cloneTree(false)};
+            // Prepend to the sequence body to keep statement list structure valid.
+            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
+            bodyp->addStmtsp(initialCntp);
             initialCntp->addNextHere(assignp);
+            assignp->addNextHere(origStmtsp);
 
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},

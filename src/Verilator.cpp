@@ -76,6 +76,7 @@
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
 #include "V3LinkResolve.h"
+#include "V3LinkWith.h"
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
@@ -145,7 +146,7 @@ static void emitSerialized() VL_MT_DISABLED {
 
 static void process() {
     {
-        VlOs::DeltaWallTime elabWallTime{true};
+        const VlOs::DeltaWallTime elabWallTime{true};
 
         // Sort modules by level so later algorithms don't need to care
         V3LinkLevel::modSortByLevel();
@@ -182,6 +183,11 @@ static void process() {
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
+
+        // Link cleanup of 'with' as final link phase before V3Width
+        // (called only once, not when width a single params)
+        V3LinkWith::linkWith(v3Global.rootp());
+
         V3Error::abortIfErrors();
 
         // Fix any remaining cross-interface refs created during V3Width::widthParamsEdit
@@ -218,7 +224,7 @@ static void process() {
 
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
-        VlOs::DeltaWallTime cvtWallTime{true};
+        const VlOs::DeltaWallTime cvtWallTime{true};
         if (v3Global.opt.debugExitElab()) {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitSerialized();
@@ -301,16 +307,6 @@ static void process() {
             v3Global.constRemoveXs(true);
         }
 
-        if (v3Global.opt.fDfgPreInline() || v3Global.opt.fDfgPostInline()) {
-            // If doing DFG optimization, extract some additional candidates
-            V3DfgOptimizer::extract(v3Global.rootp());
-        }
-
-        if (v3Global.opt.fDfgPreInline()) {
-            // Pre inline DFG optimization
-            V3DfgOptimizer::optimize(v3Global.rootp(), "pre inline");
-        }
-
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
@@ -323,15 +319,10 @@ static void process() {
 
         if (v3Global.opt.trace()) V3Interface::interfaceAll(v3Global.rootp());
 
-        if (v3Global.opt.fDfgPostInline()) {
-            // Post inline DFG optimization
-            V3DfgOptimizer::optimize(v3Global.rootp(), "post inline");
-        }
-
         // --PRE-FLAT OPTIMIZATIONS------------------
 
         // Initial const/dead to reduce work for ordering code
-        V3Const::constifyAll(v3Global.rootp());
+        if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
         v3Global.checkTree();
 
         V3Dead::deadifyDTypes(v3Global.rootp());
@@ -349,7 +340,7 @@ static void process() {
             V3Inst::instAll(v3Global.rootp());
 
             // Inst may have made lots of concats; fix them
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
             // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
             // No more AstAlias after linkDotScope
@@ -364,7 +355,7 @@ static void process() {
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Cleanup
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
         }
@@ -392,7 +383,7 @@ static void process() {
             V3Slice::sliceAll(v3Global.rootp());
 
             // Push constants across variables and remove redundant assignments
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
@@ -403,7 +394,7 @@ static void process() {
             }
 
             // Cleanup
-            V3Const::constifyAll(v3Global.rootp());
+            if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
 
@@ -423,10 +414,8 @@ static void process() {
             // forcing.
             V3Force::forceAll(v3Global.rootp());
 
-            if (v3Global.opt.fDfgScoped()) {
-                // Scoped DFG optimization
-                V3DfgOptimizer::optimize(v3Global.rootp(), "scoped");
-            }
+            // DFG optimization
+            if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 
             // Gate-based logic elimination; eliminate signals and push constant across cell
             // boundaries Instant propagation makes lots-o-constant reduction possibilities.
@@ -836,7 +825,7 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
-    VlOs::DeltaWallTime buildWallTime{true};
+    const VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
@@ -868,8 +857,8 @@ static void execHierVerilation() {
 int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
-    VlOs::DeltaWallTime wallTimeTotal{true};
-    VlOs::DeltaCpuTime cpuTimeTotal{true};
+    const VlOs::DeltaWallTime wallTimeTotal{true};
+    const VlOs::DeltaCpuTime cpuTimeTotal{true};
 
     time_t randseed;
     time(&randseed);

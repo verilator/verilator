@@ -10,7 +10,7 @@
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
-// Test solve...before constraint (IEEE 1800-2017 18.5.11)
+// Test solve...before constraint (IEEE 1800-2023 18.5.11)
 // Verifies phased solving: 'before' variables are determined first,
 // then 'after' variables are solved with all constraints applied.
 

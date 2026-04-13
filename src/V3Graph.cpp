@@ -68,8 +68,8 @@ void V3GraphVertex::unlinkDelete(V3Graph* graphp) {
 
 void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     // Make new edges for each from/to pair
-    for (V3GraphEdge& iedge : inEdges()) {
-        for (V3GraphEdge& oedge : outEdges()) {
+    for (const V3GraphEdge& iedge : inEdges()) {
+        for (const V3GraphEdge& oedge : outEdges()) {
             new V3GraphEdge{graphp, iedge.fromp(), oedge.top(),
                             std::min(iedge.weight(), oedge.weight()),
                             iedge.cutable() && oedge.cutable()};

@@ -33,7 +33,7 @@
 
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
-#if defined _LIBCPP_VERSION  // libc++
+#ifdef _LIBCPP_VERSION  // libc++
 # if defined(__has_include) && !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
 #  if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
 #   pragma clang diagnostic push
@@ -190,10 +190,11 @@ public:
     bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
-        return (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
+        return !m_context.gotFinish()
+               && (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
     }
     // Are there coroutines to resume in the inactive region after a #0 delay?
-    bool awaitingZeroDelay() const { return !m_zeroDelayed.empty(); }
+    bool awaitingZeroDelay() const { return !m_context.gotFinish() && !m_zeroDelayed.empty(); }
 #ifdef VL_DEBUG
     void dump() const;
 #endif

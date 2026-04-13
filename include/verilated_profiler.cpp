@@ -40,7 +40,7 @@ constexpr const char* const VlExecutionRecord::s_ascii[];
 template <size_t N>
 static size_t roundUptoMultipleOf(size_t value) {
     static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
-    size_t mask = N - 1;
+    const size_t mask = N - 1;
     return (value + mask) & ~mask;
 }
 

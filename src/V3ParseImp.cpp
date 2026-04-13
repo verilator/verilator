@@ -168,8 +168,8 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnO
     while (*sp && !std::isspace(*sp)) ++sp;
     while (*sp && std::isspace(*sp)) ++sp;
     string msg = sp;
-    string::size_type pos;
-    if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
+    string::size_type pos = msg.find('*');
+    if (pos != string::npos) msg.erase(pos);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
     const string err = parsep()->lexFileline()->warnOffParse(msg, turnOff);
     if (!err.empty())
@@ -207,8 +207,8 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
 
 string V3ParseImp::lexParseTag(const char* textp) {
     string tmp = textp + std::strlen("/*verilator tag ");
-    string::size_type pos;
-    if ((pos = tmp.rfind("*/")) != string::npos) tmp.erase(pos);
+    string::size_type pos = tmp.rfind("*/");
+    if (pos != string::npos) tmp.erase(pos);
     return tmp;
 }
 
@@ -267,15 +267,16 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
     }
     if (debug() >= 9) {
         const string out = std::string{buf, got};
-        cout << "   inputToLex  got=" << got << " '" << out << "'" << endl;
+        cout << "   inputToLex  got=" << got << " '" << out << "'\n";
     }
     // Note returns 0 at EOF
     return got;
 }
 
 void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
-    bool noblanks = forInputs || (v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine());
-    bool nolines = forInputs;
+    const bool noblanks
+        = forInputs || (v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine());
+    const bool nolines = forInputs;
     bool anyNonVerilog = false;
     for (auto& buf : m_ppBuffers) {
         if (noblanks) {
@@ -529,7 +530,7 @@ size_t V3ParseImp::tokenPipeScanParam(size_t inDepth, bool forCell) {
     if (tokenPeekp(depth)->token != '(') {
         if (!forCell) return inDepth;
         // For module cells, we can have '#' and a number, or, annoyingly an idDotted
-        int ntoken = tokenPeekp(depth)->token;
+        const int ntoken = tokenPeekp(depth)->token;
         if (ntoken == yaINTNUM || ntoken == yaFLOATNUM || ntoken == yaTIMENUM
             || ntoken == yaID__LEX) {
             ++depth;

@@ -130,11 +130,18 @@ typedef enum byte {
   // Verify that vpi_put_value still works with vpiInertialDelay
   logic [ 31:0] delayed    `PUBLIC_FORCEABLE; // IData
 
+  // Verify that VPI still sees forced value if signal is forced through
+  // SystemVerilog, but not marked as forceable
+  logic [  7:0] forcedNonForceable /*verilator public_flat_rw*/; // CData
+
   // Clocked signals
 
   // Force with vpiIntVal
   logic         onebit     `PUBLIC_FORCEABLE; // CData
   logic [ 31:0] intval     `PUBLIC_FORCEABLE; // IData
+
+  // Force with vpiScalarVal
+  logic         scalarbit  `PUBLIC_FORCEABLE; // CData
 
   // Force with vpiVectorVal
   logic [  7:0] vectorC    `PUBLIC_FORCEABLE; // CData
@@ -208,9 +215,14 @@ typedef enum byte {
 
   // Continuously assigned signals:
 
+  wire [  7:0] forcedNonForceableContinuously /*verilator public_flat_rw*/; // CData
+
   // Force with vpiIntVal
   wire         onebitContinuously     `PUBLIC_FORCEABLE; // CData
   wire [ 31:0] intvalContinuously     `PUBLIC_FORCEABLE; // IData
+
+  // Force with vpiScalarVal
+  wire         scalarbitContinuously  `PUBLIC_FORCEABLE; // CData
 
   // Force with vpiVectorVal
   wire [  7:0] vectorCContinuously    `PUBLIC_FORCEABLE; // CData
@@ -282,9 +294,12 @@ typedef enum byte {
 
   always @(posedge clk) begin
     nonPublic <= 1;
+    forcedNonForceable <= 8'hAA;
 
     onebit <= 1;
     intval <= 32'hAAAAAAAA;
+
+    scalarbit <= 1;
 
     vectorC <= 8'hAA;
     vectorQ <= 62'h2AAAAAAA_AAAAAAAA;
@@ -356,9 +371,12 @@ typedef enum byte {
     ascPacked4dW <= '{'{'{'{32'hAAAAAAAA, 32'hAAAAAAAA, 32'hAAAAAAAA, 32'hAAAAAAAA}}}};
 `endif
   end
+  assign forcedNonForceableContinuously = 8'hAA;
 
   assign onebitContinuously = 1;
   assign intvalContinuously = 32'hAAAAAAAA;
+
+  assign scalarbitContinuously = 1;
 
   assign vectorCContinuously = 8'hAA;
   assign vectorQContinuously = 62'h2AAAAAAA_AAAAAAAA;
@@ -431,8 +449,10 @@ typedef enum byte {
 `endif
 
   task automatic svForceValues();
+    force forcedNonForceable = 8'h55;
     force onebit = 0;
     force intval = 32'h55555555;
+    force scalarbit = 0;
     force vectorC = 8'h55;
     force vectorQ = 62'h15555555_55555555;
     force vectorW = 128'h55555555_55555555_55555555_55555555;
@@ -491,8 +511,10 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5] = 32'h55555555;
 `endif
 
+    force forcedNonForceableContinuously = 8'h55;
     force onebitContinuously = 0;
     force intvalContinuously = 32'h55555555;
+    force scalarbitContinuously = 0;
     force vectorCContinuously = 8'h55;
     force vectorQContinuously = 62'h15555555_55555555;
     force vectorWContinuously = 128'h55555555_55555555_55555555_55555555;
@@ -550,6 +572,8 @@ typedef enum byte {
   endtask
 
   task automatic svPartiallyForceValues();
+    force forcedNonForceable[3:0] = 4'h5;
+
     force intval[15:0] = 16'h5555;
 
     force vectorC[3:0] = 4'h5;
@@ -584,6 +608,8 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5][24:39] = 16'h5555;
 `endif
 `endif
+
+    force forcedNonForceableContinuously[3:0] = 4'h5;
 
     force intvalContinuously[15:0] = 16'h5555;
 
@@ -622,6 +648,7 @@ typedef enum byte {
   endtask
 
   task automatic svForceSingleBit();
+    force forcedNonForceable[0] = 1;
     force intval[0] = 1;
     force vectorC[0] = 1;
     force vectorQ[0] = 1;
@@ -650,6 +677,7 @@ typedef enum byte {
     force ascPacked4dW[-3][2][-1][5][39] = 1;
 `endif
 
+    force forcedNonForceableContinuously[0] = 1;
     force intvalContinuously[0] = 1;
     force vectorCContinuously[0] = 1;
     force vectorQContinuously[0] = 1;
@@ -861,8 +889,10 @@ typedef enum byte {
   endtask
 
   task automatic svReleaseValues();
+    release forcedNonForceable;
     release onebit;
     release intval;
+    release scalarbit;
     release vectorC;
     release vectorQ;
     release vectorW;
@@ -899,8 +929,10 @@ typedef enum byte {
     release ascPacked4dW[-3][2][-1][5];
 `endif
 
+    release forcedNonForceableContinuously;
     release onebitContinuously;
     release intvalContinuously;
+    release scalarbitContinuously;
     release vectorCContinuously;
     release vectorQContinuously;
     release vectorWContinuously;
@@ -968,6 +1000,8 @@ typedef enum byte {
   endtask
 
   task automatic svPartiallyReleaseValues();
+    release forcedNonForceable[3:0];
+
     release intval[15:0];
 
     release vectorC[3:0];
@@ -1000,6 +1034,8 @@ typedef enum byte {
     release ascPacked4dQ[-3][2][-1][5][16:23];
     release ascPacked4dW[-3][2][-1][5][24:39];
 `endif
+
+    release forcedNonForceableContinuously[3:0];
 
     release intvalContinuously[15:0];
 
@@ -1095,6 +1131,7 @@ typedef enum byte {
   endtask
 
   task automatic svReleaseSingleBit();
+    release forcedNonForceable[0];
     release intval[0];
     release vectorC[0];
     release vectorQ[0];
@@ -1123,6 +1160,7 @@ typedef enum byte {
     release ascPacked4dW[-3][2][-1][5][39];
 `endif
 
+    release forcedNonForceableContinuously[0];
     release intvalContinuously[0];
     release vectorCContinuously[0];
     release vectorQContinuously[0];
@@ -1224,8 +1262,10 @@ typedef enum byte {
   task automatic svCheckValuesForced();
     svCheckNonContinuousValuesForced();
 
+    `checkh(forcedNonForceableContinuously, 8'h55);
     `checkh(onebitContinuously, 0);
     `checkh(intvalContinuously, 32'h55555555);
+    `checkh(scalarbitContinuously, 0);
     `checkh(vectorCContinuously, 8'h55);
     `checkh(vectorQContinuously, 62'h15555555_55555555);
     `checkh(vectorWContinuously, 128'h55555555_55555555_55555555_55555555);
@@ -1290,8 +1330,10 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousValuesForced();
+    `checkh(forcedNonForceable, 8'h55);
     `checkh(onebit, 0);
     `checkh(intval, 32'h55555555);
+    `checkh(scalarbit, 0);
     `checkh(vectorC, 8'h55);
     `checkh(vectorQ, 62'h15555555_55555555);
     `checkh(vectorW, 128'h55555555_55555555_55555555_55555555);
@@ -1355,8 +1397,10 @@ typedef enum byte {
   endtask
 
   task automatic svCheckContinuousValuesReleased();
+    `checkh(forcedNonForceableContinuously, 8'hAA);
     `checkh(onebitContinuously, 1);
     `checkh(intvalContinuously, 32'hAAAAAAAA);
+    `checkh(scalarbitContinuously, 1);
     `checkh(vectorCContinuously, 8'hAA);
     `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
@@ -1421,6 +1465,7 @@ typedef enum byte {
   task automatic svCheckValuesPartiallyForced();
     svCheckNonContinuousValuesPartiallyForced();
 
+    `checkh(forcedNonForceableContinuously, 8'h A5);
     `checkh(intvalContinuously, 32'hAAAA_5555);
     `checkh(vectorCContinuously, 8'h A5);
     `checkh(vectorQContinuously, 62'h2AAAAAAAD5555555);
@@ -1457,6 +1502,7 @@ typedef enum byte {
   task automatic svCheckSingleBitForced();
     svCheckNonContinuousSingleBitForced();
 
+    `checkh(forcedNonForceableContinuously, 8'hAB);
     `checkh(intvalContinuously, 32'hAAAAAAAB);
     `checkh(vectorCContinuously, 8'hAB);
     `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAB);
@@ -1535,6 +1581,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousValuesPartiallyForced();
+    `checkh(forcedNonForceable, 8'h A5);
     `checkh(intval, 32'hAAAA_5555);
     `checkh(vectorC, 8'h A5);
     `checkh(vectorQ, 62'h2AAAAAAAD5555555);
@@ -1593,6 +1640,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckNonContinuousSingleBitForced();
+    `checkh(forcedNonForceable, 8'hAB);
     `checkh(intval, 32'hAAAAAAAB);
     `checkh(vectorC, 8'hAB);
     `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAB);
@@ -1648,8 +1696,10 @@ typedef enum byte {
   endtask
 
   task automatic svCheckValuesReleased();
+    `checkh(forcedNonForceable, 8'hAA);
     `checkh(onebit, 1);
     `checkh(intval, 32'hAAAAAAAA);
+    `checkh(scalarbit, 1);
     `checkh(vectorC, 8'hAA);
     `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
@@ -1714,6 +1764,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckValuesPartiallyReleased();
+    `checkh(forcedNonForceable, 'h5a);
     `checkh(intval, 'h5555aaaa);
     `checkh(vectorC, 'h5a);
     `checkh(vectorQ, 'h155555552aaaaaaa);
@@ -1750,6 +1801,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckContinuousValuesPartiallyReleased();
+    `checkh(forcedNonForceableContinuously, 'h5a);
     `checkh(intvalContinuously, 'h5555aaaa);
     `checkh(vectorCContinuously, 'h5a);
     `checkh(vectorQContinuously, 'h155555552aaaaaaa);
@@ -1830,6 +1882,7 @@ typedef enum byte {
   endtask
 
  task automatic svCheckContinuousValuesSingleBitReleased();
+    `checkh(forcedNonForceableContinuously, 8'h54);
     `checkh(intvalContinuously, 32'h55555554);
     `checkh(vectorCContinuously, 8'h54);
     `checkh(vectorQContinuously, 62'h15555555_55555554);
@@ -1886,6 +1939,7 @@ typedef enum byte {
   endtask
 
   task automatic svCheckSingleBitReleased();
+    `checkh(forcedNonForceable, 8'h54);
     `checkh(intval, 32'h55555554);
     `checkh(vectorC, 8'h54);
     `checkh(vectorQ, 62'h15555555_55555554);
@@ -1975,10 +2029,11 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
       do begin
         if (`verbose) $display("Forcing with %s, releasing with %s", forceDimIndexingMethod.name(), releaseDimIndexingMethod.name());
         vpiForceValues(forceDimIndexingMethod);
-        // Time delay to ensure setting and checking values does not happen
-        // at the same time, so that the signals can have their values overwritten
-        // by other processes
-        #8 vpiCheckValuesForced();
+        // Check *immediately* after forcing (no eval)
+        vpiCheckValuesForced();
+        svCheckValuesForced();
+        // Wait until after positive clock edge to ensure signals did not get overwritten
+        @(posedge clk) #1 vpiCheckValuesForced();
         svCheckValuesForced();
         // Wait until negedge, then release
         @(negedge clk) vpiReleaseValues(releaseDimIndexingMethod);
@@ -1986,12 +2041,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
         // should still have their forced value, because the posedge re-assigning
         // the non-continuously assigned signals has not happened yet, but
         // continuously assigned signals should have their non-forced value again
+
+        // Check *immediately* after releasing (no eval)
+        vpiCheckNonContinuousValuesForced();
+        vpiCheckContinuousValuesReleased();
+        svCheckNonContinuousValuesForced();
+        svCheckContinuousValuesReleased();
+
+        // Conduct an `eval` and check that the values are still correct
         #1 vpiCheckNonContinuousValuesForced();
         vpiCheckContinuousValuesReleased();
         svCheckNonContinuousValuesForced();
         svCheckContinuousValuesReleased();
-        #8;  // All signals should be released by now
-        vpiCheckValuesReleased();
+        // Non-continuous signals should have their non-forced values back now
+        @(posedge clk) #1 vpiCheckValuesReleased();
         svCheckValuesReleased();
 
         releaseDimIndexingMethod = releaseDimIndexingMethod.next();
@@ -2006,14 +2069,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing with %s, releasing through Verilog", forceDimIndexingMethod.name());
       #8 vpiForceValues(forceDimIndexingMethod);
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) svReleaseValues();
+      vpiCheckNonContinuousValuesForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousValuesForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       forceDimIndexingMethod = forceDimIndexingMethod.next();
     end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
@@ -2024,14 +2093,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing through Verilog, releasing with %s", releaseDimIndexingMethod.name());
       #8 svForceValues();
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) vpiReleaseValues(releaseDimIndexingMethod);
+      vpiCheckNonContinuousValuesForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousValuesForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       releaseDimIndexingMethod = releaseDimIndexingMethod.next();
     end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2040,14 +2115,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // VPI)
     if (`verbose) $display("*** Forcing through Verilog, releasing through Verilog ***");
     #8 svForceValues();
-    #8 vpiCheckValuesForced();
+    vpiCheckValuesForced();
+    svCheckValuesForced();
+    @(posedge clk) #1 vpiCheckValuesForced();
     svCheckValuesForced();
     @(negedge clk) svReleaseValues();
+    vpiCheckNonContinuousValuesForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesReleased();
     #1 vpiCheckNonContinuousValuesForced();
     vpiCheckContinuousValuesReleased();
     svCheckNonContinuousValuesForced();
     svCheckContinuousValuesReleased();
-    #8 vpiCheckValuesReleased();
+    @(posedge clk) #1 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Partial forcing tests obtain partial handles through
@@ -2065,14 +2146,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Partially forcing with through VPI, releasing with %s", releaseDimIndexingMethod.name());
       #8 vpiPartiallyForceValues(Descending);
-      #8 vpiCheckValuesPartiallyForced();
+      vpiCheckValuesPartiallyForced();
+      svCheckValuesPartiallyForced();
+      @(posedge clk) #1 vpiCheckValuesPartiallyForced();
       svCheckValuesPartiallyForced();
       @(negedge clk) vpiReleasePartiallyForcedValues(releaseDimIndexingMethod);
+      vpiCheckNonContinuousValuesPartiallyForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousValuesPartiallyForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousValuesPartiallyForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousValuesPartiallyForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       releaseDimIndexingMethod = releaseDimIndexingMethod.next();
     end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2080,14 +2167,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Partially force through VPI, release through Verilog
     if (`verbose) $display("*** Partially forcing through VPI, releasing through Verilog ***");
     #8 vpiPartiallyForceValues(Descending);
-    #8 vpiCheckValuesPartiallyForced();
+    vpiCheckValuesPartiallyForced();
+    svCheckValuesPartiallyForced();
+    @(posedge clk) #1 vpiCheckValuesPartiallyForced();
     svCheckValuesPartiallyForced();
     @(negedge clk) svReleaseValues();
+    vpiCheckNonContinuousValuesPartiallyForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesPartiallyForced();
+    svCheckContinuousValuesReleased();
     #1 vpiCheckNonContinuousValuesPartiallyForced();
     vpiCheckContinuousValuesReleased();
     svCheckNonContinuousValuesPartiallyForced();
     svCheckContinuousValuesReleased();
-    #8 vpiCheckValuesReleased();
+    @(posedge clk) #1 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Xrun doesn't support ascending bit ranges in vpi_handle_by_name
@@ -2100,14 +2193,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Partially forcing through VPI, releasing with %s", releaseDimIndexingMethod.name());
       #8 vpiPartiallyForceValues(Ascending);
-      #8 vpiCheckValuesPartiallyForced();
+      vpiCheckValuesPartiallyForced();
+      svCheckValuesPartiallyForced();
+      @(posedge clk) #1 vpiCheckValuesPartiallyForced();
       svCheckValuesPartiallyForced();
       @(negedge clk) vpiReleasePartiallyForcedValues(releaseDimIndexingMethod);
+      vpiCheckNonContinuousValuesPartiallyForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousValuesPartiallyForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousValuesPartiallyForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousValuesPartiallyForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       releaseDimIndexingMethod = releaseDimIndexingMethod.next();
     end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2115,14 +2214,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Partially force through VPI, release through Verilog
     if (`verbose) $display("*** Partially forcing through VPI, releasing through Verilog ***");
     #8 vpiPartiallyForceValues(Ascending);
-    #8 vpiCheckValuesPartiallyForced();
+    vpiCheckValuesPartiallyForced();
+    svCheckValuesPartiallyForced();
+    @(posedge clk) #1 vpiCheckValuesPartiallyForced();
     svCheckValuesPartiallyForced();
     @(negedge clk) svReleaseValues();
+    vpiCheckNonContinuousValuesPartiallyForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesPartiallyForced();
+    svCheckContinuousValuesReleased();
     #1 vpiCheckNonContinuousValuesPartiallyForced();
     vpiCheckContinuousValuesReleased();
     svCheckNonContinuousValuesPartiallyForced();
     svCheckContinuousValuesReleased();
-    #8 vpiCheckValuesReleased();
+    @(posedge clk) #1 vpiCheckValuesReleased();
     svCheckValuesReleased();
 `endif
 
@@ -2134,14 +2239,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Partially forcing through Verilog, releasing with %s", releaseDimIndexingMethod.name());
       #8 svPartiallyForceValues();
-      #8 vpiCheckValuesPartiallyForced();
+      vpiCheckValuesPartiallyForced();
+      svCheckValuesPartiallyForced();
+      @(posedge clk) #1 vpiCheckValuesPartiallyForced();
       svCheckValuesPartiallyForced();
       @(negedge clk) vpiReleasePartiallyForcedValues(releaseDimIndexingMethod);
+      vpiCheckNonContinuousValuesPartiallyForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousValuesPartiallyForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousValuesPartiallyForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousValuesPartiallyForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       releaseDimIndexingMethod = releaseDimIndexingMethod.next();
     end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2149,27 +2260,39 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Partially force through Verilog, release through Verilog
     if (`verbose) $display("*** Partially forcing through Verilog, releasing through Verilog ***");
     #8 svPartiallyForceValues();
-    #8 vpiCheckValuesPartiallyForced();
+    vpiCheckValuesPartiallyForced();
+    svCheckValuesPartiallyForced();
+    @(posedge clk) #1 vpiCheckValuesPartiallyForced();
     svCheckValuesPartiallyForced();
     @(negedge clk) svReleaseValues();
+    vpiCheckNonContinuousValuesPartiallyForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesPartiallyForced();
+    svCheckContinuousValuesReleased();
     #1 vpiCheckNonContinuousValuesPartiallyForced();
     vpiCheckContinuousValuesReleased();
     svCheckNonContinuousValuesPartiallyForced();
     svCheckContinuousValuesReleased();
-    #8 vpiCheckValuesReleased();
+    @(posedge clk) #1 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force through Verilog, partially release through Verilog
     if (`verbose) $display("*** Forcing through Verilog, partially releasing through Verilog ***");
     #8 svForceValues();
-    #8 vpiCheckValuesForced();
+    vpiCheckValuesForced();
+    svCheckValuesForced();
+    @(posedge clk) #1 vpiCheckValuesForced();
     svCheckValuesForced();
     @(negedge clk) svPartiallyReleaseValues();
+    vpiCheckNonContinuousValuesForced;
+    vpiCheckContinuousValuesPartiallyReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesPartiallyReleased();
     #1 vpiCheckNonContinuousValuesForced;
     vpiCheckContinuousValuesPartiallyReleased();
     svCheckNonContinuousValuesForced();
     svCheckContinuousValuesPartiallyReleased();
-    #8 vpiCheckValuesPartiallyReleased();
+    @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
     svCheckValuesPartiallyReleased();
 
 `ifndef IVERILOG
@@ -2184,14 +2307,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing with %s, partially releasing through VPI", forceDimIndexingMethod.name());
       #8 vpiForceValues(forceDimIndexingMethod);
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) vpiPartiallyReleaseValues(Descending);
+      vpiCheckNonContinuousValuesForced();
+      vpiCheckContinuousValuesPartiallyReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesPartiallyReleased();
       #1 vpiCheckNonContinuousValuesForced();
       vpiCheckContinuousValuesPartiallyReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesPartiallyReleased();
-      #8 vpiCheckValuesPartiallyReleased();
+      @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
       svCheckValuesPartiallyReleased();
       forceDimIndexingMethod = forceDimIndexingMethod.next();
     end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
@@ -2199,14 +2328,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Force through Verilog, partially release through VPI
     if (`verbose) $display("*** Forcing through Verilog, partially releasing through VPI ***");
     #8 svForceValues();
-    #8 vpiCheckValuesForced();
+    vpiCheckValuesForced();
+    svCheckValuesForced();
+    @(posedge clk) #1 vpiCheckValuesForced();
     svCheckValuesForced();
     @(negedge clk) vpiPartiallyReleaseValues(Descending);
+    vpiCheckNonContinuousValuesForced;
+    vpiCheckContinuousValuesPartiallyReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesPartiallyReleased();
     #1 vpiCheckNonContinuousValuesForced;
     vpiCheckContinuousValuesPartiallyReleased();
     svCheckNonContinuousValuesForced();
     svCheckContinuousValuesPartiallyReleased();
-    #8 vpiCheckValuesPartiallyReleased();
+    @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
     svCheckValuesPartiallyReleased();
 
     // Ascending
@@ -2219,14 +2354,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing through VPI, partially releasing with %s", forceDimIndexingMethod.name());
       #8 vpiForceValues(forceDimIndexingMethod);
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) vpiPartiallyReleaseValues(Ascending);
+      vpiCheckNonContinuousValuesForced;
+      vpiCheckContinuousValuesPartiallyReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesPartiallyReleased();
       #1 vpiCheckNonContinuousValuesForced;
       vpiCheckContinuousValuesPartiallyReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesPartiallyReleased();
-      #8 vpiCheckValuesPartiallyReleased();
+      @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
       svCheckValuesPartiallyReleased();
       forceDimIndexingMethod = forceDimIndexingMethod.next();
     end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
@@ -2234,14 +2375,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Force through Verilog, partially release through VPI
     if (`verbose) $display("*** Forcing through Verilog, partially releasing through VPI ***");
     #8 svForceValues();
-    #8 vpiCheckValuesForced();
+    vpiCheckValuesForced();
+    svCheckValuesForced();
+    @(posedge clk) #1 vpiCheckValuesForced();
     svCheckValuesForced();
     @(negedge clk) vpiPartiallyReleaseValues(Ascending);
+    vpiCheckNonContinuousValuesForced;
+    vpiCheckContinuousValuesPartiallyReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesPartiallyReleased();
     #1 vpiCheckNonContinuousValuesForced;
     vpiCheckContinuousValuesPartiallyReleased();
     svCheckNonContinuousValuesForced();
     svCheckContinuousValuesPartiallyReleased();
-    #8 vpiCheckValuesPartiallyReleased();
+    @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
     svCheckValuesPartiallyReleased();
 
 `endif
@@ -2254,14 +2401,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing with %s, partially releasing through Verilog", forceDimIndexingMethod.name());
       #8 vpiForceValues(forceDimIndexingMethod);
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) svPartiallyReleaseValues();
+      vpiCheckNonContinuousValuesForced;
+      vpiCheckContinuousValuesPartiallyReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesPartiallyReleased();
       #1 vpiCheckNonContinuousValuesForced;
       vpiCheckContinuousValuesPartiallyReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesPartiallyReleased();
-      #8 vpiCheckValuesPartiallyReleased();
+      @(posedge clk) #1 vpiCheckValuesPartiallyReleased();
       svCheckValuesPartiallyReleased();
     end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
 
@@ -2284,14 +2437,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
         do begin
           if (`verbose) $display("Forcing single bit with bit indexing method %s and dimension indexing method %s, releasing with dimension indexing method %s", bitIndexingMethod.name(), forceDimIndexingMethod.name(), releaseDimIndexingMethod.name());
           #8 vpiForceSingleBit(bitIndexingMethod, forceDimIndexingMethod);
-          #8 vpiCheckSingleBitForced();
+          vpiCheckSingleBitForced();
+          svCheckSingleBitForced();
+          @(posedge clk) #1 vpiCheckSingleBitForced();
           svCheckSingleBitForced();
           @(negedge clk) vpiReleaseSingleBitForcedValues(releaseDimIndexingMethod);
+          vpiCheckNonContinuousSingleBitForced();
+          vpiCheckContinuousValuesReleased();
+          svCheckNonContinuousSingleBitForced();
+          svCheckContinuousValuesReleased();
           #1 vpiCheckNonContinuousSingleBitForced();
           vpiCheckContinuousValuesReleased();
           svCheckNonContinuousSingleBitForced();
           svCheckContinuousValuesReleased();
-          #8 vpiCheckValuesReleased();
+          @(posedge clk) #1 vpiCheckValuesReleased();
           svCheckValuesReleased();
           releaseDimIndexingMethod = releaseDimIndexingMethod.next();
         end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2308,14 +2467,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
       do begin
         if (`verbose) $display("Forcing single bit with bit indexing method %s and dimension indexing method %s, releasing through Verilog", bitIndexingMethod.name(), forceDimIndexingMethod.name());
         #8 vpiForceSingleBit(bitIndexingMethod, forceDimIndexingMethod);
-        #8 vpiCheckSingleBitForced();
+        vpiCheckSingleBitForced();
+        svCheckSingleBitForced();
+        @(posedge clk) #1 vpiCheckSingleBitForced();
         svCheckSingleBitForced();
         @(negedge clk) svReleaseValues();
+        vpiCheckNonContinuousSingleBitForced();
+        vpiCheckContinuousValuesReleased();
+        svCheckNonContinuousSingleBitForced();
+        svCheckContinuousValuesReleased();
         #1 vpiCheckNonContinuousSingleBitForced();
         vpiCheckContinuousValuesReleased();
         svCheckNonContinuousSingleBitForced();
         svCheckContinuousValuesReleased();
-        #8 vpiCheckValuesReleased();
+        @(posedge clk) #1 vpiCheckValuesReleased();
         svCheckValuesReleased();
         forceDimIndexingMethod = forceDimIndexingMethod.next();
       end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
@@ -2328,14 +2493,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing single bit through Verilog, releasing with %s", releaseDimIndexingMethod.name());
       #8 svForceSingleBit();
-      #8 vpiCheckSingleBitForced();
+      vpiCheckSingleBitForced();
+      svCheckSingleBitForced();
+      @(posedge clk) #1 vpiCheckSingleBitForced();
       svCheckSingleBitForced();
       @(negedge clk) vpiReleaseSingleBitForcedValues(releaseDimIndexingMethod);
+      vpiCheckNonContinuousSingleBitForced();
+      vpiCheckContinuousValuesReleased();
+      svCheckNonContinuousSingleBitForced();
+      svCheckContinuousValuesReleased();
       #1 vpiCheckNonContinuousSingleBitForced();
       vpiCheckContinuousValuesReleased();
       svCheckNonContinuousSingleBitForced();
       svCheckContinuousValuesReleased();
-      #8 vpiCheckValuesReleased();
+      @(posedge clk) #1 vpiCheckValuesReleased();
       svCheckValuesReleased();
       releaseDimIndexingMethod = releaseDimIndexingMethod.next();
     end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2343,14 +2514,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Force single bit through Verilog, release through Verilog
     if (`verbose) $display("*** Forcing single bit through Verilog, releasing through Verilog ***");
     #8 svForceSingleBit();
-    #8 vpiCheckSingleBitForced();
+    vpiCheckSingleBitForced();
+    svCheckSingleBitForced();
+    @(posedge clk) #1 vpiCheckSingleBitForced();
     svCheckSingleBitForced();
     @(negedge clk) svReleaseValues();
+    vpiCheckNonContinuousSingleBitForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousSingleBitForced();
+    svCheckContinuousValuesReleased();
     #1 vpiCheckNonContinuousSingleBitForced();
     vpiCheckContinuousValuesReleased();
     svCheckNonContinuousSingleBitForced();
     svCheckContinuousValuesReleased();
-    #8 vpiCheckValuesReleased();
+    @(posedge clk) #1 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force through VPI, release single bit through VPI
@@ -2363,14 +2540,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
         do begin
           if (`verbose) $display("Forcing with %s, releasing single bit with bit indexing method %s and dimension indexing method %s", forceDimIndexingMethod.name(), bitIndexingMethod.name(), releaseDimIndexingMethod.name());
           #8 vpiForceValues(forceDimIndexingMethod);
-          #8 vpiCheckValuesForced();
+          vpiCheckValuesForced();
+          svCheckValuesForced();
+          @(posedge clk) #1 vpiCheckValuesForced();
           svCheckValuesForced();
           @(negedge clk) vpiReleaseSingleBit(bitIndexingMethod, releaseDimIndexingMethod);
+          vpiCheckNonContinuousValuesForced();
+          vpiCheckContinuousValuesSingleBitReleased();
+          svCheckNonContinuousValuesForced();
+          svCheckContinuousValuesSingleBitReleased();
           #1 vpiCheckNonContinuousValuesForced();
           vpiCheckContinuousValuesSingleBitReleased();
           svCheckNonContinuousValuesForced();
           svCheckContinuousValuesSingleBitReleased();
-          #8 vpiCheckSingleBitReleased();
+          @(posedge clk) #1 vpiCheckSingleBitReleased();
           svCheckSingleBitReleased();
           releaseDimIndexingMethod = releaseDimIndexingMethod.next();
         end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2385,14 +2568,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     do begin
       if (`verbose) $display("Forcing with %s, releasing single bit through Verilog", forceDimIndexingMethod.name());
       #8 vpiForceValues(forceDimIndexingMethod);
-      #8 vpiCheckValuesForced();
+      vpiCheckValuesForced();
+      svCheckValuesForced();
+      @(posedge clk) #1 vpiCheckValuesForced();
       svCheckValuesForced();
       @(negedge clk) svReleaseSingleBit();
+      vpiCheckNonContinuousValuesForced();
+      vpiCheckContinuousValuesSingleBitReleased();
+      svCheckNonContinuousValuesForced();
+      svCheckContinuousValuesSingleBitReleased();
       #1 vpiCheckNonContinuousValuesForced();
       vpiCheckContinuousValuesSingleBitReleased();
       svCheckNonContinuousValuesForced();
       svCheckContinuousValuesSingleBitReleased();
-      #8 vpiCheckSingleBitReleased();
+      @(posedge clk) #1 vpiCheckSingleBitReleased();
       svCheckSingleBitReleased();
       forceDimIndexingMethod = forceDimIndexingMethod.next();
     end while (forceDimIndexingMethod != forceDimIndexingMethod.first());
@@ -2405,14 +2594,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
       do begin
         if (`verbose) $display("Forcing through Verilog, releasing single bit with bit indexing method %s and dimension indexing method %s", bitIndexingMethod.name(), releaseDimIndexingMethod.name());
         #8 svForceValues();
-        #8 vpiCheckValuesForced();
+        vpiCheckValuesForced();
+        svCheckValuesForced();
+        @(posedge clk) #1 vpiCheckValuesForced();
         svCheckValuesForced();
         @(negedge clk) vpiReleaseSingleBit(bitIndexingMethod, releaseDimIndexingMethod);
+        vpiCheckNonContinuousValuesForced();
+        vpiCheckContinuousValuesSingleBitReleased();
+        svCheckNonContinuousValuesForced();
+        svCheckContinuousValuesSingleBitReleased();
         #1 vpiCheckNonContinuousValuesForced();
         vpiCheckContinuousValuesSingleBitReleased();
         svCheckNonContinuousValuesForced();
         svCheckContinuousValuesSingleBitReleased();
-        #8 vpiCheckSingleBitReleased();
+        @(posedge clk) #1 vpiCheckSingleBitReleased();
         svCheckSingleBitReleased();
         releaseDimIndexingMethod = releaseDimIndexingMethod.next();
       end while (releaseDimIndexingMethod != releaseDimIndexingMethod.first());
@@ -2422,14 +2617,20 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     // Force through Verilog, release single bit through Verilog
     if (`verbose) $display("*** Forcing through Verilog, releasing single bit through Verilog ***");
     #8 svForceValues();
-    #8 vpiCheckValuesForced();
+    vpiCheckValuesForced();
+    svCheckValuesForced();
+    @(posedge clk) #1 vpiCheckValuesForced();
     svCheckValuesForced();
     @(negedge clk) svReleaseSingleBit();
+    vpiCheckNonContinuousValuesForced();
+    vpiCheckContinuousValuesSingleBitReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesSingleBitReleased();
     #1 vpiCheckNonContinuousValuesForced();
     vpiCheckContinuousValuesSingleBitReleased();
     svCheckNonContinuousValuesForced();
     svCheckContinuousValuesSingleBitReleased();
-    #8 vpiCheckSingleBitReleased();
+    @(posedge clk) #1 vpiCheckSingleBitReleased();
     svCheckSingleBitReleased();
 `endif
 `endif
@@ -2443,12 +2644,14 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("time: %0t\tclk:%b", $time, clk);
 
     $display("nonPublic: %x", nonPublic);
+    $display("forcedNonForceable: %x", forcedNonForceable);
 
     $display("str1: %s", str1);
     $display("delayed: %x", delayed);
 
     $display("onebit: %x", onebit);
     $display("intval: %x", intval);
+    $display("scalarbit: %x", scalarbit);
     $display("vectorC: %x", vectorC);
     $display("vectorQ: %x", vectorQ);
     $display("vectorW: %x", vectorW);
@@ -2484,8 +2687,10 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("ascPacked4dQ: %x", ascPacked4dQ);
     $display("ascPacked4dW: %x", ascPacked4dW);
 
+    $display("forcedNonForceableContinuously: %x", forcedNonForceableContinuously);
     $display("onebitContinuously: %x", onebitContinuously);
     $display("intvalContinuously: %x", intvalContinuously);
+    $display("scalarbitContinuously: %x", scalarbitContinuously);
     $display("vectorCContinuously: %x", vectorCContinuously);
     $display("vectorQContinuously: %x", vectorQContinuously);
     $display("vectorWContinuously: %x", vectorWContinuously);

@@ -390,9 +390,9 @@ class WidthSelVisitor final : public VNVisitor {
             // queue size, this allows a single queue reference, to support
             // for equations in side effects that select the queue to
             // operate upon.
-            VCMethod method = (qleftBacknessp    ? VCMethod::DYN_SLICE_BACK_BACK
-                               : qrightBacknessp ? VCMethod::DYN_SLICE_FRONT_BACK
-                                                 : VCMethod::DYN_SLICE);
+            const VCMethod method = (qleftBacknessp    ? VCMethod::DYN_SLICE_BACK_BACK
+                                     : qrightBacknessp ? VCMethod::DYN_SLICE_FRONT_BACK
+                                                       : VCMethod::DYN_SLICE);
             AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, method};
             if (qleftBacknessp) {
                 VL_DO_DANGLING(pushDeletep(qleftp), qleftp);
@@ -448,21 +448,15 @@ class WidthSelVisitor final : public VNVisitor {
                         adtypep,
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
-            if (fromRange.ascending()) {
-                // Below code assumes descending bit range; just works out if we swap
-                const int x = msb;
-                msb = lsb;
-                lsb = x;
-            }
+            // Below code assumes descending bit range; just works out if we swap
+            if (fromRange.ascending()) std::swap(msb, lsb);
             if (lsb > msb) {
                 nodep->v3warn(
                     SELRANGE,
                     "[" << msb << ":" << lsb
                         << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                const int x = msb;
-                msb = lsb;
-                lsb = x;
+                std::swap(msb, lsb);
             }
             const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* const newp
@@ -477,21 +471,15 @@ class WidthSelVisitor final : public VNVisitor {
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType)) {
-            if (fromRange.ascending()) {
-                // Below code assumes descending bit range; just works out if we swap
-                const int x = msb;
-                msb = lsb;
-                lsb = x;
-            }
+            // Below code assumes descending bit range; just works out if we swap
+            if (fromRange.ascending()) std::swap(msb, lsb);
             if (lsb > msb) {
                 nodep->v3warn(
                     SELRANGE,
                     "[" << msb << ":" << lsb
                         << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                const int x = msb;
-                msb = lsb;
-                lsb = x;
+                std::swap(msb, lsb);
             }
             AstSel* const newp = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange),
                                             msb + 1 - lsb};
@@ -508,9 +496,7 @@ class WidthSelVisitor final : public VNVisitor {
                     "[" << msb << ":" << lsb
                         << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                const int x = msb;
-                msb = lsb;
-                lsb = x;
+                std::swap(msb, lsb);
             }
             AstSel* const newp = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange),
                                             msb + 1 - lsb};

@@ -208,7 +208,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     static std::pair<bool, std::string> isForceControlSignal(const AstVar* const signalVarp) {
         // __VforceRd should not show up here because it is never public, but just in case it does,
-        // it should be skipped because the VPI code lazily re-creates its value
+        // it should be skipped because forceableVarInsert creates its VerilatedVar.
         for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal", "__VforceRd"}) {
             const std::size_t suffixPos = signalVarp->name().find(forceControlSuffix);
             const bool suffixFound = suffixPos != std::string::npos;
@@ -277,6 +277,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += varp->vlEnumType();  // VLVT_UINT32 etc
         stmt += ", ";
         stmt += varp->vlEnumDir();  // VLVD_IN etc
+        stmt += ", &(";
+        stmt += varName + "__VforceRd";
+        stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
+                + "__VforceRd" + '"';
         stmt += ", {";
 
         // Find __VforceEn
@@ -1086,7 +1090,7 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string& na
     // Reduce into a balanced tree of sub-function calls until we end up with a single statement
     while (stmts.size() > 1) {
         size_t nSplits = 0;
-        size_t nStmts = stmts.size();
+        const size_t nStmts = stmts.size();
         for (size_t splitStart = 0, splitEnd = 0; splitStart < nStmts; splitStart = splitEnd) {
             // Gather up at at most 'maxCost' worth of statements in this split,
             // but always at least 2 (if less than 2, the reduction makes no

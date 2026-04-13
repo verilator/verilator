@@ -541,11 +541,12 @@ public:
 };
 class AstDelay final : public AstNodeStmt {
     // Delay statement
-    // @astgen op1 := lhsp : AstNodeExpr // Delay value
+    // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max bound for cycle range or fall delay
+    // @astgen op4 := throughoutp : Optional[AstNodeExpr] // Throughout condition (IEEE 16.9.9)
     VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
-
 public:
     AstDelay(FileLine* fl, AstNodeExpr* lhsp, bool isCycle)
         : ASTGEN_SUPER_Delay(fl)
@@ -560,6 +561,10 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
     bool isCycleDelay() const { return m_isCycle; }
+    bool isRangeDelay() const { return m_isCycle && rhsp() != nullptr; }
+    bool isUnbounded() const { return isRangeDelay() && VN_IS(rhsp(), Unbounded); }
+    void fallDelay(AstNodeExpr* const fallDelayp) { rhsp(fallDelayp); }
+    AstNodeExpr* fallDelay() const { return m_isCycle ? nullptr : rhsp(); }
 };
 class AstDisable final : public AstNodeStmt {
     // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot

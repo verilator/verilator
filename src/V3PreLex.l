@@ -249,7 +249,7 @@ bom             [\357\273\277]
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
                           static char s_buf[25];
-                          VL_SNPRINTF(s_buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
+                          (void)VL_SNPRINTF(s_buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
                           yytext = s_buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 

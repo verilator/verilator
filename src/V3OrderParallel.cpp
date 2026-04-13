@@ -1637,7 +1637,7 @@ private:
                            chain_len * 2, nullptr, nullptr, /* slowAsserts: */ false);
 
         // All vertices should merge into one
-        UASSERT_SELFTEST(bool, mTaskGraph.vertices().hasSingleElement(), true);
+        UASSERT_SELFTEST(const bool, mTaskGraph.vertices().hasSingleElement(), true);
 
         const uint64_t endUsecs = V3Os::timeUsecs();
         const uint64_t elapsedUsecs = endUsecs - startUsecs;
@@ -1686,10 +1686,10 @@ private:
 
         // Checking exact values here is maybe overly precise.  What we're
         // mostly looking for is a healthy reduction in the number of mTaskGraphp.
-        UASSERT_SELFTEST(uint64_t, report.criticalPathCost(), 19);
-        UASSERT_SELFTEST(uint64_t, report.totalGraphCost(), 101);
-        UASSERT_SELFTEST(uint64_t, report.vertexCount(), 14);
-        UASSERT_SELFTEST(uint64_t, report.edgeCount(), 13);
+        UASSERT_SELFTEST(const uint64_t, report.criticalPathCost(), 19);
+        UASSERT_SELFTEST(const uint64_t, report.totalGraphCost(), 101);
+        UASSERT_SELFTEST(const uint64_t, report.vertexCount(), 14);
+        UASSERT_SELFTEST(const uint64_t, report.edgeCount(), 13);
     }
 
 public:
@@ -2244,7 +2244,7 @@ class Partitioner final {
             };
 
             // Iterate downstream direct dependents
-            for (V3GraphEdge& dEdge : mVtxp->outEdges()) {
+            for (const V3GraphEdge& dEdge : mVtxp->outEdges()) {
                 V3GraphVertex* const top = dEdge.top();
                 if (LogicMTask* const otherp = static_cast<LogicMTask*>(top->userp())) {
                     // The opposite end of the edge is not a bypassed vertex, add as direct
@@ -2252,7 +2252,7 @@ class Partitioner final {
                     addEdge(otherp);
                 } else {
                     // The opposite end of the edge is a bypassed vertex, add transitive dependents
-                    for (V3GraphEdge& tEdge : top->outEdges()) {
+                    for (const V3GraphEdge& tEdge : top->outEdges()) {
                         LogicMTask* const transp = static_cast<LogicMTask*>(tEdge.top()->userp());
                         // The Move graph is bipartite (logic <-> var), and logic is never
                         // bypassed, hence 'transp' must be non-nullptr.
@@ -2359,7 +2359,7 @@ class Partitioner final {
             OrderMoveVertex::List& vertexList = mtaskp->vertexList();
             // Check if MTask is empty
             bool empty = true;
-            for (OrderMoveVertex& mVtx : vertexList) {
+            for (const OrderMoveVertex& mVtx : vertexList) {
                 if (mVtx.logicp()) {
                     empty = false;
                     break;

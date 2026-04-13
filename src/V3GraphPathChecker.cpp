@@ -44,7 +44,7 @@ struct GraphPCNode final {
     uint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
-    GraphPCNode() {}
+    GraphPCNode() = default;
     ~GraphPCNode() = default;
 };
 

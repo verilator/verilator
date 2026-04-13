@@ -385,7 +385,7 @@ void V3Options::addLibraryFile(const string& filename, const string& libname) {
 void V3Options::addVFile(const string& filename, const string& libname) {
     // We use a list for v files, because it's legal to have includes
     // in a specific order and multiple of them.
-    m_vFiles.push_back({filename, libname});
+    m_vFiles.push_back({filename, libname});  // Not emplace
 }
 void V3Options::addVltFile(const string& filename, const string& libname) {
     m_vltFiles.insert({filename, libname});
@@ -677,7 +677,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     return "";
 }
 
-string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
+string V3Options::filePathLookedMsg(FileLine* /*fl*/, const string& modname) {
     static bool s_shown_notfound_msg = false;
     std::ostringstream ss;
     if (modname.find("__Vhsh") != string::npos) {
@@ -775,7 +775,7 @@ string V3Options::getenvSYSTEMC() {
     string var = V3Os::getenvStr("SYSTEMC", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_SYSTEMC}.c_str();
+    const string defenv = string{DEFENV_SYSTEMC};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("SYSTEMC", var, "Hardcoded at build time");
@@ -787,7 +787,7 @@ string V3Options::getenvSYSTEMC_ARCH() {
     string var = V3Os::getenvStr("SYSTEMC_ARCH", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_SYSTEMC_ARCH}.c_str();
+    const string defenv = string{DEFENV_SYSTEMC_ARCH};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
@@ -822,7 +822,7 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
     string var = V3Os::getenvStr("SYSTEMC_INCLUDE", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_SYSTEMC_INCLUDE}.c_str();
+    const string defenv = string{DEFENV_SYSTEMC_INCLUDE};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
@@ -838,7 +838,7 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
     string var = V3Os::getenvStr("SYSTEMC_LIBDIR", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_SYSTEMC_LIBDIR}.c_str();
+    const string defenv = string{DEFENV_SYSTEMC_LIBDIR};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
@@ -855,7 +855,7 @@ string V3Options::getenvVERILATOR_ROOT() {
     string var = V3Os::getenvStr("VERILATOR_ROOT", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_VERILATOR_ROOT}.c_str();
+    const string defenv = string{DEFENV_VERILATOR_ROOT};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
@@ -868,7 +868,7 @@ string V3Options::getenvVERILATOR_SOLVER() {
     string var = V3Os::getenvStr("VERILATOR_SOLVER", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
     // binary patching for relocatable installs (e.g. conda)
-    string defenv = string{DEFENV_VERILATOR_SOLVER}.c_str();
+    const string defenv = string{DEFENV_VERILATOR_SOLVER};
     if (var == "" && defenv != "") {
         var = defenv;
         V3Os::setenvStr("VERILATOR_SOLVER", var, "Hardcoded at build time");
@@ -958,14 +958,14 @@ void V3Options::notify() VL_MT_DISABLED {
     std::vector<std::string> backendFlags;
     if (m_build) {
         if (m_binary)
-            backendFlags.push_back("--binary");
+            backendFlags.emplace_back("--binary");
         else
-            backendFlags.push_back("--build");
+            backendFlags.emplace_back("--build");
     }
-    if (m_preprocOnly) backendFlags.push_back("-E");
-    if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
-    if (m_lintOnly) backendFlags.push_back("--lint-only");
-    if (m_jsonOnly) backendFlags.push_back("--json-only");
+    if (m_preprocOnly) backendFlags.emplace_back("-E");
+    if (m_dpiHdrOnly) backendFlags.emplace_back("--dpi-hdr-only");
+    if (m_lintOnly) backendFlags.emplace_back("--lint-only");
+    if (m_jsonOnly) backendFlags.emplace_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
@@ -1455,11 +1455,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
-    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
-        m_fDfgPreInline = flag;
-        m_fDfgPostInline = flag;
-        m_fDfgScoped = flag;
-    });
+    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
@@ -1468,11 +1464,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fno-dfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.emplace(optp);
     });
-    DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
-    DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdfg-pre-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-pre-inline' is deprecated and has no effect");
+    });
+    DECL_OPTION("-fdfg-post-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-post-inline' is deprecated and has no effect");
+    });
     DECL_OPTION("-fdfg-push-down-sels", FOnOff, &m_fDfgPushDownSels);
-    DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
     DECL_OPTION("-fdfg-synthesize-all", FOnOff, &m_fDfgSynthesizeAll);
+    DECL_OPTION("-fdfg-scoped", CbFOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-scoped' is deprecated, use '-fno-dfg' instead.");
+        m_fDfg = flag;
+    });
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -1509,15 +1512,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
-        cout << protectKeyDefaulted() << endl;
+        cout << protectKeyDefaulted() << '\n';
         v3Global.vlExit(0);
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
-        cout << V3Options::getenvBuiltins(valp) << endl;
+        cout << V3Options::getenvBuiltins(valp) << '\n';
         v3Global.vlExit(0);
     });
     DECL_OPTION("-get-supported", CbVal, [](const char* valp) {
-        cout << V3Options::getSupported(valp) << endl;
+        cout << V3Options::getSupported(valp) << '\n';
         v3Global.vlExit(0);
     });
 
@@ -2351,9 +2354,7 @@ void V3Options::optimize(int level) {
     m_fConst = flag;
     m_fConstBitOpTree = flag;
     m_fDedupe = flag;
-    m_fDfgPreInline = flag;
-    m_fDfgPostInline = flag;
-    m_fDfgScoped = flag;
+    m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fExpand = flag;

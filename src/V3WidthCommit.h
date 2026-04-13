@@ -36,9 +36,8 @@ public:
             newp->dtypeFrom(nodep);
             newp->user1(true);
             return newp;
-        } else {
-            return nullptr;
         }
+        return nullptr;
     }
 
     // Final step... Mark all widths as equal

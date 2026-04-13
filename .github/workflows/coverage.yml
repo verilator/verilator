@@ -90,7 +90,7 @@ jobs:
           find obj_coverage -type f | paste -sd, | sed "s/^/files=/" >> "$GITHUB_OUTPUT"
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           disable_file_fixes: true
           disable_search: true

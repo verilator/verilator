@@ -175,7 +175,7 @@ class RandSequenceVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "newProd", "");
     }
 
-    AstNode* newProdRandJoin(AstRSProd* prodp, AstRSProdList* prodlistp) {
+    AstNode* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
         // For weight == 1.0 longer sequence (favor stay in a)
         // For weight == 0.0 shorter squence (favor change a/b)
         UASSERT_OBJ(prodlistp->weightp(), prodlistp, "Weight should have default CONST(0.5)");
@@ -629,6 +629,6 @@ public:
 
 void V3RandSequence::randSequenceNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { RandSequenceVisitor randSequenceVisitor{nodep}; }
+    { const RandSequenceVisitor randSequenceVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("randsequence", 0, dumpTreeEitherLevel() >= 3);
 }

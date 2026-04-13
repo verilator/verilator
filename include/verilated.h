@@ -392,7 +392,7 @@ protected:
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
         int m_randSeed = 0;  // Random seed: 0=random
-        enum { UNITS_NONE = 99 };  // Default based on precision
+        static constexpr int UNITS_NONE = 99;  // Default based on precision
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
@@ -415,6 +415,7 @@ protected:
         std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
+        std::string m_solverLogFilename;  // SMT solver log filename
         std::string m_solverProgram;  // SMT solver program
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
@@ -540,7 +541,7 @@ public:
     /// Enable quiet (also prevents need for OS calls to get CPU time)
     void quiet(bool flag) VL_MT_SAFE;
     /// Return randReset value
-    int randReset() VL_MT_SAFE { return m_s.m_randReset; }
+    int randReset() const VL_MT_SAFE { return m_s.m_randReset; }
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
@@ -586,6 +587,8 @@ public:
     void time(uint64_t value) VL_MT_SAFE { m_s.m_time = value; }
     /// Advance current simulation time. See time() for side effect details
     void timeInc(uint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
+    /// Return time as unit string
+    std::string timeWithUnitString() const VL_MT_SAFE;
     /// Return time units as power-of-ten
     int timeunit() const VL_MT_SAFE { return -m_s.m_timeunit; }
     /// Set time units as power-of-ten
@@ -666,6 +669,9 @@ public:
     std::string profVltFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
 
+    // Internal: Solver log filename
+    std::string solverLogFilename() const VL_MT_SAFE;
+    void solverLogFilename(const std::string& flag) VL_MT_SAFE;
     // Internal: SMT solver program
     std::string solverProgram() const VL_MT_SAFE;
     void solverProgram(const std::string& flag) VL_MT_SAFE;
@@ -740,6 +746,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
+                                     void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     // ACCESSORS

@@ -542,6 +542,20 @@ class TimingControlVisitor final : public VNVisitor {
             = timeunit.powerOfTen() - m_netlistp->timeprecision().powerOfTen();
         return std::pow(10.0, scalePowerOfTen);
     }
+    static bool staticallyNonZeroDelay(const AstNodeExpr* valuep) {
+        if (const AstConst* const constp = VN_CAST(valuep, Const)) return !constp->isZero();
+        if (const AstCond* const condp = VN_CAST(valuep, Cond)) {
+            return staticallyNonZeroDelay(condp->thenp())
+                   && staticallyNonZeroDelay(condp->elsep());
+        }
+        if (const AstMul* const mulp = VN_CAST(valuep, Mul)) {
+            const AstConst* const lhsConstp = VN_CAST(mulp->lhsp(), Const);
+            const AstConst* const rhsConstp = VN_CAST(mulp->rhsp(), Const);
+            if (lhsConstp && !lhsConstp->isZero()) return staticallyNonZeroDelay(mulp->rhsp());
+            if (rhsConstp && !rhsConstp->isZero()) return staticallyNonZeroDelay(mulp->lhsp());
+        }
+        return false;
+    }
     // Creates the global delay scheduler variable
     AstVarScope* getCreateDelayScheduler() {
         if (m_delaySchedp) return m_delaySchedp;
@@ -741,7 +755,7 @@ class TimingControlVisitor final : public VNVisitor {
         const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
         if (!methodp || methodp->name() != "push_back") return false;
         const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->name().rfind("__VprocessQueue_", 0) == 0;
+        return queueRefp && queueRefp->varp()->processQueue();
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
@@ -883,7 +897,11 @@ class TimingControlVisitor final : public VNVisitor {
         m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
         // TODO: Disallow killing `always` at runtime (throw an error)
-        if (hasFlags(nodep, T_HAS_PROC)) addFlags(nodep, T_SUSPENDEE);
+        // Skip for combinational blocks; if the body has timing controls
+        // iterateChildren will add T_SUSPENDEE, otherwise it would spin.
+        if (hasFlags(nodep, T_HAS_PROC)
+            && !(m_activep && m_activep->sentreep() && m_activep->sentreep()->hasCombo()))
+            addFlags(nodep, T_SUSPENDEE);
 
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
@@ -1009,6 +1027,9 @@ class TimingControlVisitor final : public VNVisitor {
                 m_hasStaticZeroDelay = true;
                 // Don't warn on variable delays, as no point
                 m_unknownDelayFlps.clear();
+            } else if (staticallyNonZeroDelay(valuep)) {
+                // Delay is dynamic, but every statically known outcome is non-zero.
+                // So we don't need #0 delay support and there should be no warning.
             } else if (!VN_IS(valuep, Const)) {
                 // Delay is not known at compiile time. Conservatively schedule for #0 support,
                 // but warn if no static #0 delays used as performance might be improved
@@ -1037,7 +1058,9 @@ class TimingControlVisitor final : public VNVisitor {
         // Do not allow waiting on local named events, as they get enqueued for clearing, but can
         // go out of scope before that happens
         if (!nodep->sentreep()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: no sense equation (@*)");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Event control with implicit sensitivity (@*)"
+                          " in this context; use an explicit sensitivity list instead");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
@@ -1246,6 +1269,15 @@ class TimingControlVisitor final : public VNVisitor {
         AstNodeExpr* const lhs1p = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* const rhs1p = nodep->rhsp()->unlinkFrBack();
         AstNode* const controlp = nodep->timingControlp()->unlinkFrBack();
+        if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+            if (AstNodeExpr* fallDelayp = delayp->fallDelay()) {
+                fallDelayp = fallDelayp->unlinkFrBack();
+                // Use fall only for an all-zero value, rise otherwise.
+                delayp->lhsp(
+                    new AstCond{flp, new AstEq{flp, rhs1p->cloneTree(false), new AstConst{flp, 0}},
+                                fallDelayp, delayp->lhsp()->unlinkFrBack()});
+            }
+        }
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};
         // Put the assignment in a fork..join_none.
         AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
@@ -1443,7 +1475,7 @@ void V3Timing::timingAll(AstNetlist* nodep) {
     {
         const VNUser1InUse m_user1InUse;
         const VNUser2InUse m_user2InUse;
-        TimingSuspendableVisitor{nodep};
+        { TimingSuspendableVisitor{nodep}; }
         if (v3Global.usesTiming()) TimingControlVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);

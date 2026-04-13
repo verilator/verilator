@@ -1,4 +1,4 @@
-%Error: t/t_cast_size_bad.v:14:13: Size-changing cast to zero or negative size
+%Error: t/t_cast_size_bad.v:14:13: Size-changing cast to zero or negative size: -1
                                  : ... note: In instance 't'
    14 |     b = (-1)'(a);   
       |             ^

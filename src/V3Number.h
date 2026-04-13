@@ -135,7 +135,6 @@ public:
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
 
-public:
     // CONSTRUCTORS
     V3NumberData()
         : m_type{V3NumberDataType::UNINITIALIZED}
@@ -580,7 +579,7 @@ public:
     V3Number(V3Number&& other) = default;
     V3Number& operator=(V3Number&& other) = default;
 
-    ~V3Number() {}
+    ~V3Number() = default;
 
 private:
     void selfTestThis();
@@ -666,6 +665,7 @@ public:
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
     bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
     bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
+    bool isOpaque() const VL_MT_SAFE { return isDouble() || isString(); }
     bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;

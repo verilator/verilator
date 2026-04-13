@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: randc variables with additional constraints limiting values
-// IEEE 1800 Section 18.4.2: randc cyclic behavior over constrained domain
+// IEEE 1800-2023 18.4.2: randc cyclic behavior over constrained domain
 
 // verilog_format: off
 `define stop $stop

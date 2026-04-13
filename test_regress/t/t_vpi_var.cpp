@@ -26,6 +26,9 @@
 #elif defined(T_VPI_VAR3)
 #include "Vt_vpi_var3.h"
 #include "Vt_vpi_var3__Dpi.h"
+#elif defined(T_VPI_FORCEABLE_VAR)
+#include "Vt_vpi_forceable_var.h"
+#include "Vt_vpi_forceable_var__Dpi.h"
 #else
 #include "Vt_vpi_var.h"
 #include "Vt_vpi_var__Dpi.h"
@@ -232,19 +235,19 @@ int _mon_check_value_callbacks() {
     return 0;
 }
 
-int _mon_check_too_big() {
+int _mon_check_big() {
 #ifdef VERILATOR
     s_vpi_value v;
     v.format = vpiVectorVal;
 
-    TestVpiHandle h = VPI_HANDLE("too_big");
+    TestVpiHandle h = VPI_HANDLE("big");
     CHECK_RESULT_NZ(h);
 
     Verilated::fatalOnVpiError(false);
     vpi_get_value(h, &v);
     Verilated::fatalOnVpiError(true);
     s_vpi_error_info info;
-    CHECK_RESULT_NZ(vpi_chk_error(&info));
+    CHECK_RESULT_Z(vpi_chk_error(&info));
 
     v.format = vpiStringVal;
     vpi_get_value(h, &v);
@@ -1559,7 +1562,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_vlog_info()) return status;
     if (int status = _mon_check_multi_index()) return status;
     if (int status = _mon_check_delayed()) return status;
-    if (int status = _mon_check_too_big()) return status;
+    if (int status = _mon_check_big()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

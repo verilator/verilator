@@ -53,7 +53,8 @@ class V3DfgCse final {
         // Special vertices
         case VDfgType::Const:  // LCOV_EXCL_START
         case VDfgType::VarArray:
-        case VDfgType::VarPacked:  // LCOV_EXCL_STOP
+        case VDfgType::VarPacked:
+        case VDfgType::AstRd:  // LCOV_EXCL_STOP
             vtx.v3fatalSrc("Hash should have been pre-computed");
 
         // Vertices with internal information
@@ -80,6 +81,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:
@@ -124,7 +126,9 @@ class V3DfgCse final {
         case VDfgType::StreamL:
         case VDfgType::StreamR:
         case VDfgType::SAnd:
+        case VDfgType::SIntersect:
         case VDfgType::SOr:
+        case VDfgType::SThroughout:
         case VDfgType::Sub:
         case VDfgType::Xor: return V3Hash{};
         }
@@ -163,12 +167,16 @@ class V3DfgCse final {
         case VDfgType::Unresolved:  // LCOV_EXCL_STOP
             a.v3fatalSrc("Should not have reached CSE");
 
+        // Not reachable via operation vertices
+        case VDfgType::AstRd:  // LCOV_EXCL_LINE
+            a.v3fatalSrc("Should not be reachable via operation vertices");
+
         // Special vertices
         case VDfgType::Const: return a.as<DfgConst>()->num().isCaseEq(b.as<DfgConst>()->num());
 
         case VDfgType::VarArray:
-        case VDfgType::VarPacked:
-            return false;  // CSE does not combine variables
+        case VDfgType::VarPacked:  // CSE does not combine variables
+            return false;
 
         // Vertices with internal information
         case VDfgType::Sel: return a.as<DfgSel>()->lsb() == b.as<DfgSel>()->lsb();
@@ -200,6 +208,7 @@ class V3DfgCse final {
         case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
+        case VDfgType::CountOnes:
         case VDfgType::Div:
         case VDfgType::DivS:
         case VDfgType::Eq:
@@ -243,7 +252,9 @@ class V3DfgCse final {
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
         case VDfgType::SAnd:
+        case VDfgType::SIntersect:
         case VDfgType::SOr:
+        case VDfgType::SThroughout:
         case VDfgType::StreamR:
         case VDfgType::Sub:
         case VDfgType::Xor: return true;
@@ -296,6 +307,8 @@ class V3DfgCse final {
         // Pre-hash variables, these are all unique, so just set their hash to a unique value
         uint32_t varHash = 0;
         for (const DfgVertexVar& vtx : dfg.varVertices()) m_hashCache[vtx] = V3Hash{++varHash};
+        // Pre-hash Ast references, these are all unique like variables
+        for (const DfgVertexAst& vtx : dfg.astVertices()) m_hashCache[vtx] = V3Hash{++varHash};
 
         // Similarly pre-hash constants for speed. While we don't combine constants, we do want
         // expressions using the same constants to be combined, so we do need to hash equal
@@ -334,7 +347,7 @@ class V3DfgCse final {
 
 public:
     static void apply(DfgGraph& dfg, V3DfgCseContext& ctx) {
-        V3DfgCse{dfg, ctx};
+        { V3DfgCse{dfg, ctx}; }
         // Prune unused nodes
         V3DfgPasses::removeUnused(dfg);
     }
