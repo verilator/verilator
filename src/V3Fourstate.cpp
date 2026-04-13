@@ -1211,25 +1211,54 @@ class FourstateVisitor final : public VNVisitor {
                 new AstRedXor{flp, getFourStateExpressionValue(redXorp->lhsp(), false)}};
         }
 
-        void getFourStateExpressionArithmeticValue(AstNodeBiop* const biop) {
-            // (a.xz | b.xz) ? '1 : (a op b)
+        template <typename CompoarisonOp_T>
+        void getFourStateExpressionArithmeticValue(CompoarisonOp_T* const biop) {
+            // |(a.xz | b.xz) ? '1 : (a op b)
             FileLine* const flp = biop->fileline();
-            AstNodeBiop* const newp = biop->cloneTree(false);
-            newp->dtypeSetBitSized(biop->width(), biop->dtypep()->numeric());
-            newp->lhsp()->unlinkFrBack()->deleteTree();
-            newp->rhsp()->unlinkFrBack()->deleteTree();
-            newp->lhsp(getFourStateExpressionValue(biop->lhsp(), false));
-            newp->rhsp(getFourStateExpressionValue(biop->rhsp(), false));
             m_result = new AstCond{
                 flp,
                 new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
                                             getFourStateExpressionXZ(biop->rhsp())}},
-                createZeroOrOnesp(biop, true), newp};
+                createZeroOrOnesp(biop, true),
+                new CompoarisonOp_T{
+                    flp,
+                    getFourStateExpressionValue(
+                        biop->lhsp(), true /*must be in tmp so it always gets evaluated*/),
+                    getFourStateExpressionValue(
+                        biop->rhsp(), true /*must be in tmp so it always gets evaluated*/)}};
         }
 
         void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticValue(addp); }
         void visit(AstSub* const subp) override { getFourStateExpressionArithmeticValue(subp); }
         void visit(AstMul* const mulp) override { getFourStateExpressionArithmeticValue(mulp); }
+        void visit(AstMulS* const mulsp) override { getFourStateExpressionArithmeticValue(mulsp); }
+
+        template <typename CompoarisonOp_T>
+        void getFourStateExpressionDivValue(CompoarisonOp_T* const biop) {
+            // |(a.xz | b.xz) | ~|b.value ? '1 : (a op b)
+            FileLine* const flp = biop->fileline();
+            m_result = new AstCond{
+                flp,
+                new AstOr{
+                    flp,
+                    new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                                getFourStateExpressionXZ(biop->rhsp())}},
+                    new AstNot{flp, new AstRedOr{flp, getFourStateExpressionValue(biop->rhsp())}}},
+                createZeroOrOnesp(biop, true),
+                new CompoarisonOp_T{
+                    flp,
+                    getFourStateExpressionValue(
+                        biop->lhsp(), true /*must be in tmp so it always gets evaluated*/),
+                    getFourStateExpressionValue(
+                        biop->rhsp(), true /*must be in tmp so it always gets evaluated*/)}};
+        }
+
+        void visit(AstDiv* const divp) override { getFourStateExpressionDivValue(divp); }
+        void visit(AstDivS* const divsp) override { getFourStateExpressionDivValue(divsp); }
+        void visit(AstModDiv* const moddivp) override { getFourStateExpressionDivValue(moddivp); }
+        void visit(AstModDivS* const moddivsp) override {
+            getFourStateExpressionDivValue(moddivsp);
+        }
 
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
@@ -1436,7 +1465,7 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         void getFourStateExpressionArithmeticXZ(AstNodeBiop* const biop) {
-            // (a.xz | b.xz) ? '1 : '0
+            // |(a.xz | b.xz) ? '1 : '0
             FileLine* const flp = biop->fileline();
             m_result = new AstCond{
                 flp,
@@ -1448,6 +1477,27 @@ class FourstateVisitor final : public VNVisitor {
         void visit(AstAdd* const addp) override { getFourStateExpressionArithmeticXZ(addp); }
         void visit(AstSub* const subp) override { getFourStateExpressionArithmeticXZ(subp); }
         void visit(AstMul* const mulp) override { getFourStateExpressionArithmeticXZ(mulp); }
+        void visit(AstMulS* const mulsp) override { getFourStateExpressionArithmeticXZ(mulsp); }
+
+        void getFourStateExpressionDivValue(AstNodeBiop* const biop) {
+            // |(a.xz | b.xz) | ~|b.value ? '1 : '0
+            FileLine* const flp = biop->fileline();
+            m_result = new AstCond{
+                flp,
+                new AstOr{
+                    flp,
+                    new AstRedOr{flp, new AstOr{flp, getFourStateExpressionXZ(biop->lhsp()),
+                                                getFourStateExpressionXZ(biop->rhsp())}},
+                    new AstNot{flp, new AstRedOr{flp, getFourStateExpressionValue(biop->rhsp())}}},
+                createZeroOrOnesp(biop, true), createZeroOrOnesp(biop, false)};
+        }
+
+        void visit(AstDiv* const divp) override { getFourStateExpressionDivValue(divp); }
+        void visit(AstDivS* const divsp) override { getFourStateExpressionDivValue(divsp); }
+        void visit(AstModDiv* const moddivp) override { getFourStateExpressionDivValue(moddivp); }
+        void visit(AstModDivS* const moddivsp) override {
+            getFourStateExpressionDivValue(moddivsp);
+        }
 
         void visit(AstNodeFTaskRef* const funcp) override {
             getFourStateExpressionFuncRefHandler(funcp);
