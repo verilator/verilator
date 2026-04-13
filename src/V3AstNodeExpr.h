@@ -3914,7 +3914,16 @@ class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftL(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        if (setwidth) {
+            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        } else if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+                   && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBitUnsized(lhsp->width(), lhsp->dtypep()->widthMin(),
+                               lhsp->dtypep()->numeric());
+        } else if (lhsp->dtypep()) {
+            dtypeSetLogicUnsized(lhsp->width(), lhsp->dtypep()->widthMin(),
+                                 lhsp->dtypep()->numeric());
+        }
     }
     ASTGEN_MEMBERS_AstShiftL;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3957,7 +3966,16 @@ class AstShiftR final : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftR(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        if (setwidth) {
+            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        } else if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+                   && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBitUnsized(lhsp->width(), lhsp->dtypep()->widthMin(),
+                               lhsp->dtypep()->numeric());
+        } else if (lhsp->dtypep()) {
+            dtypeSetLogicUnsized(lhsp->width(), lhsp->dtypep()->widthMin(),
+                                 lhsp->dtypep()->numeric());
+        }
     }
     ASTGEN_MEMBERS_AstShiftR;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {

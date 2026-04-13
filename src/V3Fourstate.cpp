@@ -1101,6 +1101,26 @@ class FourstateVisitor final : public VNVisitor {
                 getFourStateExpressionXZ(neqWildp)};
         }
 
+        void visit(AstShiftL* const shiftlp) override {
+            // |b.xz ? '1 : (a.value << b.value)
+            FileLine* const flp = shiftlp->fileline();
+            m_result = new AstCond{
+                flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftlp->rhsp())},
+                createZeroOrOnesp(shiftlp->lhsp(), true),
+                new AstShiftL{flp, getFourStateExpressionValue(shiftlp->lhsp(), false),
+                              getFourStateExpressionValue(shiftlp->rhsp())}};
+        }
+
+        void visit(AstShiftR* const shiftrp) override {
+            // |b.xz ? '1 : (a.value >> b.value)
+            FileLine* const flp = shiftrp->fileline();
+            m_result = new AstCond{
+                flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftrp->rhsp())},
+                createZeroOrOnesp(shiftrp->lhsp(), true),
+                new AstShiftR{flp, getFourStateExpressionValue(shiftrp->lhsp(), false),
+                              getFourStateExpressionValue(shiftrp->rhsp())}};
+        }
+
         void visit(AstExtend* const extendp) override {
             FileLine* const flp = extendp->fileline();
             m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
@@ -1333,6 +1353,26 @@ class FourstateVisitor final : public VNVisitor {
             m_result = new AstRedOr{
                 flp, new AstAnd{flp, getFourStateExpressionXZ(neqWildp->lhsp(), false),
                                 new AstNot{flp, getFourStateExpressionXZ(neqWildp->rhsp())}}};
+        }
+
+        void visit(AstShiftL* const shiftlp) override {
+            // |b.xz ? '1 : (a.xz << b.value)
+            FileLine* const flp = shiftlp->fileline();
+            m_result
+                = new AstCond{flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftlp->rhsp())},
+                              createZeroOrOnesp(shiftlp->lhsp(), true),
+                              new AstShiftL{flp, getFourStateExpressionXZ(shiftlp->lhsp(), false),
+                                            getFourStateExpressionValue(shiftlp->rhsp())}};
+        }
+
+        void visit(AstShiftR* const shiftrp) override {
+            // |b.xz ? '1 : (a.xz >> b.value)
+            FileLine* const flp = shiftrp->fileline();
+            m_result
+                = new AstCond{flp, new AstRedOr{flp, getFourStateExpressionXZ(shiftrp->rhsp())},
+                              createZeroOrOnesp(shiftrp->lhsp(), true),
+                              new AstShiftR{flp, getFourStateExpressionXZ(shiftrp->lhsp(), false),
+                                            getFourStateExpressionValue(shiftrp->rhsp())}};
         }
 
         void visit(AstExtend* const extendp) override {
