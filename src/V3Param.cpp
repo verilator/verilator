@@ -1214,13 +1214,29 @@ class ParamProcessor final {
         if (!parseRefp) return;
 
         const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+
+        // Specialize parameterized class through type parameter indirection (#7000)
+        AstParamTypeDType* const paramTypep
+            = VN_CAST(classRefp->classOrPackageNodep(), ParamTypeDType);
+        if (paramTypep) {
+            AstNodeDType* const dtypep = paramTypep->subDTypep();
+            AstClassRefDType* const classRefDTypep
+                = dtypep ? VN_CAST(dtypep->skipRefOrNullp(), ClassRefDType) : nullptr;
+            if (classRefDTypep) {
+                AstClass* const srcClassp = classRefDTypep->classp();
+                if (srcClassp && srcClassp->hasGParam() && classRefDTypep->paramsp()) {
+                    if (lhsClassp == srcClassp || !lhsClassp) {
+                        classRefDeparam(classRefDTypep, srcClassp);
+                        lhsClassp = classRefDTypep->classp();
+                    }
+                }
+            }
+        }
+
         if (classRefp->paramsp()) {
-            // ClassOrPackageRef has parameters - may need to specialize the class
             AstClass* const srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
             if (srcClassp && srcClassp->hasGParam()) {
-                // Specialize if the reference still points to the generic class
                 if (lhsClassp == srcClassp || !lhsClassp) {
-                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->name());
                     classRefDeparam(classRefp, srcClassp);
                     lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
                 }
@@ -1235,6 +1251,49 @@ class ParamProcessor final {
             refp->typedefp(tdefp);
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
+        }
+    }
+
+    // Resolve an unresolved RefDType whose classOrPackageOp targets a parameterized
+    // class or a typedef alias of one. Specializes the class and links the typedef.
+    void resolveParamClassRefDType(AstNodeDType* dtypep) {
+        AstRefDType* const refp = dtypep ? VN_CAST(dtypep, RefDType) : nullptr;
+        if (!refp) return;
+        if (refp->typedefp() || refp->refDTypep()) return;
+
+        AstClassOrPackageRef* const classRefp
+            = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef);
+        if (!classRefp) return;
+
+        AstClass* srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
+        if (srcClassp && srcClassp->hasGParam()) {
+            classRefDeparam(classRefp, srcClassp);
+            return;
+        }
+
+        // Follow typedef chain to find the underlying ClassRefDType
+        AstNode* targetp = classRefp->classOrPackageNodep();
+        while (const AstTypedef* const tdefp = VN_CAST(targetp, Typedef))
+            targetp = tdefp->subDTypep();
+        if (AstNodeDType* const dtargetp = VN_CAST(targetp, NodeDType))
+            targetp = dtargetp->skipRefOrNullp();
+        if (!targetp) return;
+        AstClassRefDType* const classRefDTypep = VN_CAST(targetp, ClassRefDType);
+        if (!classRefDTypep) return;
+        srcClassp = classRefDTypep->classp();
+        if (!srcClassp) return;
+
+        AstClass* newClassp = srcClassp;
+        if (srcClassp->hasGParam()) {
+            classRefDeparam(classRefDTypep, srcClassp);
+            newClassp = classRefDTypep->classp();
+        }
+
+        AstTypedef* const typedefp
+            = VN_CAST(m_memberMap.findMember(newClassp, refp->name()), Typedef);
+        if (typedefp) {
+            refp->typedefp(typedefp);
+            refp->classOrPackagep(newClassp);
         }
     }
 
@@ -1299,6 +1358,7 @@ class ParamProcessor final {
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
+            resolveParamClassRefDType(modvarp->subDTypep());
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -1415,6 +1475,12 @@ class ParamProcessor final {
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
             // by this point ClassOrPackageRef should be updated to point to the specialized class.
             resolveDotToTypedef(pinp->exprp());
+            resolveParamClassRefDType(modvarp->subDTypep());
+            // Also resolve through the pin expression's typedef chain
+            if (const AstRefDType* const pinRefp = VN_CAST(pinp->exprp(), RefDType)) {
+                if (const AstTypedef* const tdefp = pinRefp->typedefp())
+                    resolveParamClassRefDType(tdefp->subDTypep());
+            }
 
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             // Guard against widthing a struct/union still owned by a
@@ -1479,6 +1545,15 @@ class ParamProcessor final {
                         VL_DO_DANGLING(V3Const::constifyParamsEdit(exprp), exprp);
                         rawTypep = VN_CAST(pinp->exprp(), NodeDType);
                         exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+                    }
+                    // Deparameterize ClassRefDType before name generation (#7000)
+                    if (AstClassRefDType* const classRefDTypep = VN_CAST(exprp, ClassRefDType)) {
+                        if (classRefDTypep->paramsp() && classRefDTypep->classp()
+                            && classRefDTypep->classp()->hasGParam()) {
+                            classRefDeparam(classRefDTypep, classRefDTypep->classp());
+                            rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+                            exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+                        }
                     }
                     longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                     any_overridesr = true;
