@@ -1662,9 +1662,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 iterate(resultp);
             } else {
-                nodep->v3warn(
-                    CONSTRAINTIGN,
-                    "Unsupported: Power (**) expression with non-2 base in constraint");
+                nodep->v3warn(CONSTRAINTIGN,
+                              "Unsupported: Power (**) expression with non-2 base in constraint");
             }
         } else {
             nodep->v3warn(
