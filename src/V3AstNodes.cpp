@@ -2531,8 +2531,8 @@ void AstUntil::dump(std::ostream& str) const {
 }
 void AstUntil::dumpJson(std::ostream& str) const {
     this->AstNodeExpr::dumpJson(str);
-    // dumpJsonBool(str, isStrong);
-    // dumpJsonBoolFuncIf(str, isOverlapping);
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonBoolFuncIf(str, isOverlapping);
 }
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";
