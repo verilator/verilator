@@ -4,6 +4,12 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef VERILATOR
+`define IMPURE_ONE ($c(1))
+`else
+`define IMPURE_ONE (|($random | $random))
+`endif
+
 module t;
   function logic f(logic a);
     if (a === 1'b1) $write("1");
@@ -30,49 +36,49 @@ module t;
     static bit [3:0] b = 3;
     static bit [3:0] c = 7;
     $write("0: ");
-    f(x[0]);
+    f(x[`IMPURE_ONE ? 0 : 'x]);
     $write("1: ");
-    f(x[1]);
+    f(x[`IMPURE_ONE ? 1 : 'x]);
     $write("2: ");
-    f(x[2]);
+    f(x[`IMPURE_ONE ? 2 : 'x]);
     $write("3: ");
-    f(x[3]);
+    f(x[`IMPURE_ONE ? 3 : 'x]);
     $write("4: ");
-    f(x[4]);
+    f(x[`IMPURE_ONE ? 4 : 'x]);
     $write("y: ");
-    f(x[y]);
+    f(x[`IMPURE_ONE ? y : 'x]);
     $write("z: ");
-    f(x[z]);
+    f(x[`IMPURE_ONE ? z : 'x]);
     $write("w: ");
-    f(x[w]);
+    f(x[`IMPURE_ONE ? w : 'x]);
     $write("a: ");
-    f(x[a]);
+    f(x[`IMPURE_ONE ? a : 'x]);
     $write("b: ");
-    f(x[b]);
+    f(x[`IMPURE_ONE ? b : 'x]);
     $write("c: ");
-    f(x[c]);
+    f(x[`IMPURE_ONE ? c : 'x]);
     $write("0: ");
-    f(xx[0]);
+    f(xx[`IMPURE_ONE ? 0 : 'x]);
     $write("1: ");
-    f(xx[1]);
+    f(xx[`IMPURE_ONE ? 1 : 'x]);
     $write("2: ");
-    f(xx[2]);
+    f(xx[`IMPURE_ONE ? 2 : 'x]);
     $write("3: ");
-    f(xx[3]);
+    f(xx[`IMPURE_ONE ? 3 : 'x]);
     $write("4: ");
-    f(xx[4]);
+    f(xx[`IMPURE_ONE ? 4 : 'x]);
     $write("y: ");
-    f(xx[y]);
+    f(xx[`IMPURE_ONE ? y : 'x]);
     $write("z: ");
-    f(xx[z]);
+    f(xx[`IMPURE_ONE ? z : 'x]);
     $write("w: ");
-    f(xx[w]);
+    f(xx[`IMPURE_ONE ? w : 'x]);
     $write("a: ");
-    f(xx[a]);
+    f(xx[`IMPURE_ONE ? a : 'x]);
     $write("b: ");
-    f(xx[b]);
+    f(xx[`IMPURE_ONE ? b : 'x]);
     $write("c: ");
-    f(xx[c]);
+    f(xx[`IMPURE_ONE ? c : 'x]);
     $write("*-* All Finished *-*\n");
     $finish;
   end
