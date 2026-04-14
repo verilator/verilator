@@ -16,7 +16,9 @@ module t (/*AUTOARG*/);
       bins high     = {[8:11]};
       ignore_bins reserved  = {[12:15]};
       ignore_bins catch_all = default;  // null rangesp: exercises generateBinMatchCode !fullCondp
+      ignore_bins arr[]     = {4, 5};   // array form: exercises bins_orBraE $3 true branch
       wildcard ignore_bins wib = {4'b1?00};  // wildcard ignore bins (L7084-7085)
+      illegal_bins bad[] = {6, 7};   // illegal array form: exercises bins_orBraE $3 true branch
     }
   endgroup
 

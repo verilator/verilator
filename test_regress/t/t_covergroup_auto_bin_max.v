@@ -49,7 +49,7 @@ module t;
     cp_data64: coverpoint data64;
   endgroup
 
-  // Test type_option.auto_bin_max: exercises V3Width.cpp:1766 typeOption branch
+  // Test type_option.auto_bin_max: treated same as option.auto_bin_max, creates 4 bins [0:1],[2:3],[4:5],[6:7]
   covergroup cg6;
     type_option.auto_bin_max = 4;
     cp_data3: coverpoint data3;

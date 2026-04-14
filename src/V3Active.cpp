@@ -644,17 +644,7 @@ class CovergroupCollectVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstScope* nodep) override {
-        if (AstClass* const classp = VN_CAST(nodep->modp(), Class)) {
-            if (classp->isCovergroup()) {
-                VL_RESTORER(m_classp);
-                m_classp = classp;
-                iterateChildren(nodep);
-                return;
-            }
-        }
-        iterateChildren(nodep);
-    }
+    void visit(AstScope* nodep) override { iterateChildren(nodep); }
 
     void visit(AstCFunc* nodep) override {
         if (!m_classp) return;
@@ -712,7 +702,6 @@ class CovergroupInjectVisitor final : public VNVisitor {
         if (!classRefp) return;
 
         AstClass* const classp = classRefp->classp();
-        if (!classp || !classp->isCovergroup()) return;
 
         // Check if this covergroup has an automatic sampling event
         const auto evtIt = m_state.m_samplingEvents.find(classp);

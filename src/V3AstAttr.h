@@ -1214,19 +1214,10 @@ public:
         return names[m_e];
     }
     const char* asciiJson() const {
-        static const char* const names[] = {"", "\"consec\"", "\"goto\"", "\"noncons\""};
+        static const char* const names[] = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
         return names[m_e];
     }
 };
-constexpr bool operator==(const VTransRepType& lhs, const VTransRepType& rhs) {  // LCOV_EXCL_START
-    return lhs.m_e == rhs.m_e;
-}  // LCOV_EXCL_STOP
-constexpr bool operator==(const VTransRepType& lhs, VTransRepType::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VTransRepType::en lhs, const VTransRepType& rhs) {  // LCOV_EXCL_START
-    return lhs == rhs.m_e;
-}  // LCOV_EXCL_STOP
 
 //######################################################################
 
