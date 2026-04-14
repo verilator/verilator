@@ -137,9 +137,11 @@ class FourstateLogicTypePropagator final : public VNVisitor {
             }
             return fourstateInSubtree;
         };
-        m_fourstateInSubtree
-            = static_cast<bool>(foreach(nodep->op1p()) | foreach(nodep->op2p())
-                                | foreach(nodep->op3p()) | foreach(nodep->op4p()));
+        // Cast to char so, there is no warnings
+        m_fourstateInSubtree = static_cast<bool>(static_cast<char>(foreach(nodep->op1p()))
+                                                 | static_cast<char>(foreach(nodep->op2p()))
+                                                 | static_cast<char>(foreach(nodep->op3p()))
+                                                 | static_cast<char>(foreach(nodep->op4p())));
     }
 
     void visit(AstConst* const nodep) override {
