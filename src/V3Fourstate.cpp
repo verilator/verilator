@@ -775,7 +775,7 @@ class FourstateVisitor final : public VNVisitor {
             m_fourstateVisitor.m_currentStmtp->addHereThisAsNext(nodep);
         }
 
-        void getFourStateExpressionFuncRefHandler(AstNodeFTaskRef* const funcp) {
+        void fourStateExpressionFuncRefHandler(AstNodeFTaskRef* const funcp) {
             // Its ok to use this instead of output since we only need width which is the same
             AstVar* const functionReturnVarp = VN_AS(VN_AS(funcp->taskp(), Func)->fvarp(), Var);
             AstVar* const resultValuep = m_fourstateVisitor.createTmp(functionReturnVarp);
@@ -817,7 +817,7 @@ class FourstateVisitor final : public VNVisitor {
             funcp->user2p(varRefXzp);
         }
 
-        void getFourStateExpressionCondHandler(AstCond* const condp) {
+        void fourStateExpressionCondHandler(AstCond* const condp) {
             FileLine* const flp = condp->fileline();
             AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(condp->thenp());
             AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(condp->thenp());
@@ -897,7 +897,7 @@ class FourstateVisitor final : public VNVisitor {
             condp->user2p(resultXZTmpVarRefp);
         }
 
-        void getFourStateExpressionLogAndHandler(AstLogAnd* const logAndp) {
+        void fourStateExpressionLogAndHandler(AstLogAnd* const logAndp) {
             FileLine* const flp = logAndp->fileline();
             AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(logAndp);
             AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(logAndp);
@@ -937,7 +937,7 @@ class FourstateVisitor final : public VNVisitor {
             logAndp->user2p(resultXZTmpVarRefp);
         }
 
-        void getFourStateExpressionLogOrHandler(AstLogOr* const logOrp) {
+        void fourStateExpressionLogOrHandler(AstLogOr* const logOrp) {
             FileLine* const flp = logOrp->fileline();
             AstVar* const resultValueTmpVarp = m_fourstateVisitor.createTmp(logOrp);
             AstVar* const resultXZTmpVarp = m_fourstateVisitor.createTmp(logOrp);
@@ -1165,25 +1165,25 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         void visit(AstNodeFTaskRef* const funcp) override {
-            getFourStateExpressionFuncRefHandler(funcp);
+            fourStateExpressionFuncRefHandler(funcp);
             noTmp();
             m_result = VN_AS(funcp->user1p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstCond* const condp) override {
-            getFourStateExpressionCondHandler(condp);
+            fourStateExpressionCondHandler(condp);
             noTmp();
             m_result = VN_AS(condp->user1p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstLogAnd* const logAndp) override {
-            getFourStateExpressionLogAndHandler(logAndp);
+            fourStateExpressionLogAndHandler(logAndp);
             noTmp();
             m_result = VN_AS(logAndp->user1p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstLogOr* const logOrp) override {
-            getFourStateExpressionLogOrHandler(logOrp);
+            fourStateExpressionLogOrHandler(logOrp);
             noTmp();
             m_result = VN_AS(logOrp->user1p(), NodeExpr)->cloneTree(false);
         }
@@ -1507,25 +1507,25 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         void visit(AstNodeFTaskRef* const funcp) override {
-            getFourStateExpressionFuncRefHandler(funcp);
+            fourStateExpressionFuncRefHandler(funcp);
             noTmp();
             m_result = VN_AS(funcp->user2p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstCond* const condp) override {
-            getFourStateExpressionCondHandler(condp);
+            fourStateExpressionCondHandler(condp);
             noTmp();
             m_result = VN_AS(condp->user2p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstLogAnd* const logAndp) override {
-            getFourStateExpressionLogAndHandler(logAndp);
+            fourStateExpressionLogAndHandler(logAndp);
             noTmp();
             m_result = VN_AS(logAndp->user2p(), NodeExpr)->cloneTree(false);
         }
 
         void visit(AstLogOr* const logOrp) override {
-            getFourStateExpressionLogOrHandler(logOrp);
+            fourStateExpressionLogOrHandler(logOrp);
             noTmp();
             m_result = VN_AS(logOrp->user2p(), NodeExpr)->cloneTree(false);
         }
