@@ -13,7 +13,7 @@
 
 module sub #(
     parameter int dims_p = 2,
-    parameter int dirs_lp = dims_p*2 + 1,
+    parameter int dirs_lp = dims_p * 2 + 1,
     parameter bit [1:0][dirs_lp-1:0][dirs_lp-1:0] matrix_p = '0
 ) ();
 endmodule
@@ -27,7 +27,10 @@ module t;
   sub #(.matrix_p(big_matrix)) s1 ();
 
   // Second instance overrides dims_p=1, so dirs_lp must recompute to 3.
-  sub #(.dims_p(1), .matrix_p(small_matrix)) s2 ();
+  sub #(
+      .dims_p(1),
+      .matrix_p(small_matrix)
+  ) s2 ();
 
   initial begin
     if (s1.dirs_lp !== 5) begin
