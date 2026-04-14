@@ -302,6 +302,11 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
+    void visit(AstFOpenMcd* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
+
     void visit(AstLambdaArgRef* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
@@ -529,6 +534,10 @@ class FourstateVisitor final : public VNVisitor {
         case VVarType::PORT:  // The issue with ports is that we lose information about the wire
                               // type (tri/triand/trior)
         case VVarType::WIRE: m_assignWToWire[varp].emplace_back(assignwValuep, assignwXzp); break;
+        case VVarType::SUPPLY0:
+        case VVarType::SUPPLY1:
+            varp->v3warn(E_UNSUPPORTED, "supply0 and supply1 are not supported with --fourstate");
+            break;
         default:
             assignwValuep->v3fatalSrc(
                 "Unexpected variable type on lhs of assign: " << varp->varType().ascii());
@@ -1729,6 +1738,19 @@ class FourstateVisitor final : public VNVisitor {
         }
         iterateAndNextNull(nodep->thensp());
         iterateAndNextNull(nodep->elsesp());
+    }
+
+    void visit(AstCase* const nodep) override {
+        VL_RESTORER(m_currentStmtp);
+        m_currentStmtp = nodep;
+        if (isFourstate(nodep->exprp())) {
+            nodep->v3warn(E_UNSUPPORTED, "All case statements with four-state value as an "
+                                         "expression are unsupported with --fourstate");
+        } else {
+            iterate(nodep->exprp());
+        }
+        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextNull(nodep->notParallelp());
     }
 
     void visit(AstSenItem* const nodep) override {

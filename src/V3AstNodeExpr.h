@@ -1613,6 +1613,8 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstFourstateExpr final : public AstNodeExpr {
+    // When AstNode wants a value as an child and that value is a splitted four-state value (so, it
+    // has value and xz part) this node shall be used to put them both there
     // @astgen op1 := valuep : AstNodeExpr // value part of a four-state expression
     // @astgen op2 := xzp : AstNodeExpr // xz part of a four-state expression
 public:
