@@ -55,7 +55,6 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3FsmDetect.h"
-#include "V3FsmEmit.h"
 #include "V3Fork.h"
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
@@ -234,9 +233,11 @@ static void process() {
             v3Global.vlExit(0);
         }
 
-        // Coverage insertion
+        // Generic non-FSM coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
-        if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+        //    FSM coverage is still detected later once scopes exist, then
+        //    lowered under the generic coverage umbrella at that later point.
+        if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
@@ -349,6 +350,12 @@ static void process() {
             // No more AstAlias after linkDotScope
             V3Scope::scopeAll(v3Global.rootp());
             V3LinkDot::linkDotScope(v3Global.rootp());
+            // FSM coverage needs scopes, but should otherwise run as early as
+            // possible before later lowering rewrites user-visible clocked
+            // case structure. This entry point runs two adjacent phases:
+            // detect into local graph state, then lower that completed state
+            // into the concrete coverage machinery.
+            if (v3Global.opt.coverageFsm()) V3FsmDetect::detect(v3Global.rootp());
 
             // Relocate classes (after linkDot)
             V3Class::classAll(v3Global.rootp());
@@ -364,7 +371,6 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
-            if (v3Global.opt.coverage()) V3FsmDetect::detect(v3Global.rootp());
             // Convert case statements to if() blocks.  Must be after V3Unknown
             // Must be before V3Task so don't need to deal with task in case value compares
             V3Case::caseAll(v3Global.rootp());
@@ -431,8 +437,9 @@ static void process() {
                        "This may cause ordering problems.");
             }
 
-            // Combine COVERINCs with duplicate terms
-            if (v3Global.opt.coverage()) V3CoverageJoin::coverageJoin(v3Global.rootp());
+            // Combine generic COVERINCs with duplicate terms. FSM coverage is
+            // already lowered separately inside V3FsmDetect.
+            if (v3Global.opt.coverageNonFsm()) V3CoverageJoin::coverageJoin(v3Global.rootp());
 
             // Remove unused vars
             V3Const::constifyAll(v3Global.rootp());
@@ -450,10 +457,8 @@ static void process() {
             }
 
             // Create delayed assignments
-            // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
+            // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step.
             V3Delayed::delayedAll(v3Global.rootp());
-
-            if (v3Global.opt.coverage()) V3FsmEmit::emit(v3Global.rootp());
 
             // Make Active's on the top level.
             // Differs from V3Active, because identical clocks may be pushed

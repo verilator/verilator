@@ -24,6 +24,9 @@ class AstNetlist;
 
 class V3FsmDetect final {
 public:
+    // Detect FSMs while the original clocked/case structure is still visible,
+    // then immediately lower the recovered graphs into concrete coverage
+    // instrumentation as a second local phase in the same pass.
     static void detect(AstNetlist* rootp) VL_MT_DISABLED;
 };
 

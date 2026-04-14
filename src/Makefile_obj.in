@@ -281,8 +281,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Expand.o \
   V3Force.o \
   V3FsmDetect.o \
-  V3FsmEmit.o \
-  V3FsmShared.o \
+  V3FsmGraph.o \
   V3Fork.o \
   V3Gate.o \
   V3HierBlock.o \

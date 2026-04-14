@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSMMULTI warning test
+# DESCRIPTION: Verilator: FSMMULTI warning disabled without --coverage-fsm
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(
-    verilator_flags2=["--coverage-fsm"],
-    fails=True,
-    expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--coverage-line"])
+test.file_grep_not(test.compile_log_filename, r"FSMMULTI")
 
 test.passes()

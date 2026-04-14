@@ -358,6 +358,7 @@ detailed descriptions of these arguments.
     --coverage                  Enable all coverage
     --coverage-expr             Enable expression coverage
     --coverage-expr-max <value>     Maximum permutations allowed for an expression
+    --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage

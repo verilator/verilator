@@ -15,7 +15,7 @@ module t (
 
   logic rst;
   integer cyc;
-  state_t state_incl /*verilator coverage_fsm_reset_arc*/;
+  state_t state_incl /*verilator fsm_reset_arc*/;
   state_t state_excl;
 
   initial begin

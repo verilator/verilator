@@ -317,12 +317,6 @@ class OrderGraphBuilder final : public VNVisitor {
         m_inPost = true;
         iterateLogic(nodep);
     }
-    void visit(AstAlwaysPostponed* nodep) override {
-        UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
-        VL_RESTORER(m_inPost);
-        m_inPost = true;
-        iterateLogic(nodep);
-    }
     void visit(AstAlwaysObserved* nodep) override {  //
         iterateLogic(nodep);
     }

@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage basic test
+// DESCRIPTION: Verilator: FSM coverage stays off without --coverage-fsm
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder

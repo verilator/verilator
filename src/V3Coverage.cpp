@@ -32,7 +32,6 @@
 #include "V3UniqueNames.h"
 
 #include <list>
-#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -1110,6 +1109,7 @@ public:
 
 void V3Coverage::coverage(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
+    if (!v3Global.opt.coverageNonFsm()) return;
     { CoverageVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coverage", 0, dumpTreeEitherLevel() >= 3);
 }

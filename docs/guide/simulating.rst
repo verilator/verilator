@@ -185,6 +185,7 @@ SystemVerilog code coverage. With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
 - :ref:`User Coverage`
+- :ref:`FSM Coverage`
 - :ref:`Line Coverage`
 - :ref:`Toggle Coverage`
 
@@ -207,6 +208,50 @@ point under the coverage name "DefaultClock":
 .. code-block:: sv
 
    DefaultClock: cover property (@(posedge clk) cyc==3);
+
+
+.. _line coverage:
+
+.. _fsm coverage:
+
+FSM Coverage
+------------
+
+With :vlopt:`--coverage` or :vlopt:`--coverage-fsm`, Verilator can
+instrument a conservative subset of single-process FSMs and report both
+state coverage (`fsm_state`) and transition coverage (`fsm_arc`).
+
+This feature is currently experimental and might change in subsequent
+releases. In particular, the native FSM coverage extraction heuristics,
+:vlopt:`--coverage-fsm`, and the Verilator-specific FSM metacomments below
+should be treated as subject to change while the interface settles.
+
+FSM extraction is intentionally narrow. The current implementation targets
+clocked, enum-driven state machines that can be recovered directly from the
+RTL. It does not claim broad support for two-process FSMs, one-hot
+inference, helper-function next-state recovery, or deeply nested control
+recovery.
+
+The following metacomments may be attached to the state variable to steer
+the extracted coverage model:
+
+- :option:`/*verilator&32;fsm_state*/` forces the variable to be treated as
+  FSM state.
+- :option:`/*verilator&32;fsm_reset_arc*/` marks reset transitions as
+  user-visible reset arcs instead of defaulting to a hidden reset-only
+  summary.
+- :option:`/*verilator&32;fsm_arc_include_cond*/` keeps conditional branch
+  arcs that would otherwise be skipped by the conservative extractor.
+
+Reset transitions are included in the collected data either way. By
+default, :command:`verilator_coverage` summarizes reset-only arcs rather
+than printing them alongside non-reset arcs. Use
+:vlopt:`--include-reset-arcs` on :command:`verilator_coverage` to include
+those arcs in the printed summary and annotated output.
+
+Annotated output produced by :command:`verilator_coverage --annotate` will
+label FSM points with `fsm_state` and `fsm_arc`, and synthetic fallback
+transitions with `SYNTHETIC DEFAULT ARC`.
 
 
 .. _line coverage:

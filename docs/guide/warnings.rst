@@ -840,7 +840,8 @@ List Of Warnings
 .. option:: FSMMULTI
 
    Warns that the same always block contains multiple enum-typed case
-   statements that look like FSM candidates for native FSM coverage.
+   statements that look like FSM candidates for native FSM coverage when
+   :vlopt:`--coverage-fsm` or :vlopt:`--coverage` is enabled.
 
    Verilator's FSM coverage v1 instruments only the first such candidate in
    source order. Split the FSMs into separate always blocks, or explicitly
