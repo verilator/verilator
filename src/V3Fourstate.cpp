@@ -1269,6 +1269,13 @@ class FourstateVisitor final : public VNVisitor {
             getFourStateExpressionDivValue(moddivsp);
         }
 
+        void visit(AstConcat* const concatp) override {
+            // {a.value, b.value}
+            m_result = new AstConcat{concatp->fileline(),
+                                     getFourStateExpressionValue(concatp->lhsp(), false),
+                                     getFourStateExpressionValue(concatp->rhsp(), false)};
+        }
+
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
             if (varRefp->varp()->dtypep()->isFourstate()) {
@@ -1506,6 +1513,13 @@ class FourstateVisitor final : public VNVisitor {
         void visit(AstModDiv* const moddivp) override { getFourStateExpressionDivValue(moddivp); }
         void visit(AstModDivS* const moddivsp) override {
             getFourStateExpressionDivValue(moddivsp);
+        }
+
+        void visit(AstConcat* const concatp) override {
+            // {a.xz, b.xz}
+            m_result = new AstConcat{concatp->fileline(),
+                                     getFourStateExpressionXZ(concatp->lhsp(), false),
+                                     getFourStateExpressionXZ(concatp->rhsp(), false)};
         }
 
         void visit(AstNodeFTaskRef* const funcp) override {
@@ -1751,6 +1765,19 @@ class FourstateVisitor final : public VNVisitor {
         }
         iterateAndNextNull(nodep->itemsp());
         iterateAndNextNull(nodep->notParallelp());
+    }
+
+    void visit(AstCaseItem* const nodep) override {
+        for (AstNodeExpr* condp = nodep->condsp(); condp;
+             condp = VN_AS(condp->nextp(), NodeExpr)) {
+            if (isFourstate(condp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Four-state case items values are unsupported with --fourstate");
+            } else {
+                iterate(condp);
+            }
+        }
+        iterateAndNextNull(nodep->stmtsp());
     }
 
     void visit(AstSenItem* const nodep) override {
