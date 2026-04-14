@@ -2374,23 +2374,23 @@ class FourstateShuffleVisitor final : public VNVisitor {
     //                                  signal
 
     static bool needsShuffle(const AstVar* const varp) {
-        return varp->isWide() && (varp->fourStateComplement() || varp->isFourStateComplement());
+        return varp->isWide() && (varp->fourStateComplementp() || varp->isFourStateComplement());
     }
 
     AstVar* getCreateShuffledVariantp(AstVar* varp) {
         UASSERT_OBJ(
-            varp->fourStateComplement() || varp->isFourStateComplement(), varp,
+            varp->fourStateComplementp() || varp->isFourStateComplement(), varp,
             "This function is ment to be called on variables which create a four-state value");
         UASSERT_OBJ(varp->isWide(), varp,
                     "This function is only ment to be called on wide wariables");
-        if (AstVar* newp = varp->fourStateComplement()) varp = newp;
+        if (AstVar* newp = varp->fourStateComplementp()) varp = newp;
         UASSERT_OBJ(
             VString::endsWith(varp->name(), "__Vxz"), varp,
             "Four-state complementary value (xz part) shall have '__Vxz' suffix, but it is named: "
                 << varp->name());
         if (AstVar* resultp = VN_AS(varp->user1p(), Var)) return resultp;
         AstVar* const resultp = varp->cloneTree(false);
-        resultp->unsetFourStateComplement();
+        resultp->unsetIsFourStateComplement();
         resultp->name(resultp->name().erase(resultp->name().size() + 1 - sizeof("__Vxz")));
         resultp->dtypeSetBitUnsized(resultp->widthWords() * 2 * VL_IDATASIZE,
                                     resultp->dtypep()->widthMin() * 2, varp->dtypep()->numeric());
@@ -2407,7 +2407,7 @@ class FourstateShuffleVisitor final : public VNVisitor {
             UASSERT_OBJ(exprp, varp, "Too little arguments");
             UASSERT_OBJ(!varp->isFourStateComplement(), varp,
                         "This loop shall never reach four-state complement");
-            if (AstVar* const complement = varp->fourStateComplement()) {
+            if (AstVar* const complement = varp->fourStateComplementp()) {
                 getCreateShuffledVariantp(complement);
                 UASSERT_OBJ(VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef), exprp,
                             "Wide four-state signals shall be passed only as lvalue references");

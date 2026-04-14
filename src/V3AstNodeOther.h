@@ -2151,7 +2151,7 @@ public:
         m_fourstateOriginalDTypeKwd = dtypeKwd;
     }
     bool isFourStateComplement() const { return m_isFourStateComplement; }
-    void unsetFourStateComplement() { m_isFourStateComplement = false; }
+    void unsetIsFourStateComplement() { m_isFourStateComplement = false; }
     void setFourStateShuffle() {
         // * 2 because we need to store value and xz part
         UASSERT_OBJ(width() > VL_QUADSIZE * 2, this, "This shall only happen on wide signals");
