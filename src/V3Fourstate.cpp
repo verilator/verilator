@@ -2056,6 +2056,15 @@ class FourstateVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstModportVarRef* const nodep) override {
+        if ((nodep->exprp() && isFourstate(nodep->exprp()))
+            || (nodep->varp() && nodep->varp()->dtypep()->isFourstate())) {
+            nodep->v3warn(E_UNSUPPORTED, "modports are not supported with --fourstate");
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
     void visit(AstNodeModule* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
         VL_RESTORER(m_tmpUnusedVarps);
