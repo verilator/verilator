@@ -145,6 +145,7 @@ Verilator 5.047 devel
 * Fix CMake compiler coroutine flags (#7404). [Shogo Yamazaki]
 * Fix delete inside foreach skipping elements (#7407) (#7410)
 * Fix std::randomize in parameterized-derived class (#7409) (#7416). [Yilou Wang]
+* Fix virtual interface implied comparison with null (#7421). [Alex Solomatnikov]
 
 
 Verilator 5.046 2026-02-28
