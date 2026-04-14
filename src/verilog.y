@@ -3783,27 +3783,27 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
-                        { $$ = new AstAssignCompoundAdd{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Add, $2, $1, $3}; }
         |       fexprLvalue yP_MINUSEQ   expr
-                        { $$ = new AstAssignCompoundSub{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Sub, $2, $1, $3}; }
         |       fexprLvalue yP_TIMESEQ   expr
-                        { $$ = new AstAssignCompoundMul{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Mul, $2, $1, $3}; }
         |       fexprLvalue yP_DIVEQ     expr
-                        { $$ = new AstAssignCompoundDiv{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Div, $2, $1, $3}; }
         |       fexprLvalue yP_MODEQ     expr
-                        { $$ = new AstAssignCompoundModDiv{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ModDiv, $2, $1, $3}; }
         |       fexprLvalue yP_ANDEQ     expr
-                        { $$ = new AstAssignCompoundAnd{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::And, $2, $1, $3}; }
         |       fexprLvalue yP_OREQ      expr
-                        { $$ = new AstAssignCompoundOr{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Or, $2, $1, $3}; }
         |       fexprLvalue yP_XOREQ     expr
-                        { $$ = new AstAssignCompoundXor{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Xor, $2, $1, $3}; }
         |       fexprLvalue yP_SLEFTEQ   expr
-                        { $$ = new AstAssignCompoundShiftL{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftL, $2, $1, $3}; }
         |       fexprLvalue yP_SRIGHTEQ  expr
-                        { $$ = new AstAssignCompoundShiftR{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftR, $2, $1, $3}; }
         |       fexprLvalue yP_SSRIGHTEQ expr
-                        { $$ = new AstAssignCompoundShiftRS{$2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftRS, $2, $1, $3}; }
         ;
 
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
