@@ -33,29 +33,29 @@ $timescale 1ps $end
     $upscope $end
    $upscope $end
    $var wire 2 , v_arrp [2:1] $end
-   $var wire 2 - v_arrp_arrp[3] [2:1] $end
-   $var wire 2 . v_arrp_arrp[4] [2:1] $end
-   $scope module v_arrp_strp[3] $end
+   $var wire 2 - v_arrp_arrp[4] [2:1] $end
+   $var wire 2 . v_arrp_arrp[3] [2:1] $end
+   $scope module v_arrp_strp[4] $end
     $var wire 1 / b1 $end
     $var wire 1 0 b0 $end
    $upscope $end
-   $scope module v_arrp_strp[4] $end
+   $scope module v_arrp_strp[3] $end
     $var wire 1 1 b1 $end
     $var wire 1 2 b0 $end
    $upscope $end
-   $var wire 1 G v_arru[1] $end
-   $var wire 1 H v_arru[2] $end
-   $var wire 1 I v_arru_arru[3][1] $end
-   $var wire 1 J v_arru_arru[3][2] $end
-   $var wire 1 K v_arru_arru[4][1] $end
-   $var wire 1 L v_arru_arru[4][2] $end
-   $var wire 2 3 v_arru_arrp[3] [2:1] $end
-   $var wire 2 4 v_arru_arrp[4] [2:1] $end
-   $scope module v_arru_strp[3] $end
+   $var wire 1 G v_arru[2] $end
+   $var wire 1 H v_arru[1] $end
+   $var wire 1 I v_arru_arru[4][2] $end
+   $var wire 1 J v_arru_arru[4][1] $end
+   $var wire 1 K v_arru_arru[3][2] $end
+   $var wire 1 L v_arru_arru[3][1] $end
+   $var wire 2 3 v_arru_arrp[4] [2:1] $end
+   $var wire 2 4 v_arru_arrp[3] [2:1] $end
+   $scope module v_arru_strp[4] $end
     $var wire 1 5 b1 $end
     $var wire 1 6 b0 $end
    $upscope $end
-   $scope module v_arru_strp[4] $end
+   $scope module v_arru_strp[3] $end
     $var wire 1 7 b1 $end
     $var wire 1 8 b0 $end
    $upscope $end
@@ -63,10 +63,10 @@ $timescale 1ps $end
    $var real 64 ; v_arr_real[0] $end
    $var real 64 = v_arr_real[1] $end
    $var wire 64 M v_chandle [63:0] $end
-   $scope module v_str32x2[0] $end
+   $scope module v_str32x2[1] $end
     $var wire 32 ? data [31:0] $end
    $upscope $end
-   $scope module v_str32x2[1] $end
+   $scope module v_str32x2[0] $end
     $var wire 32 @ data [31:0] $end
    $upscope $end
    $var wire 32 A v_enumed [31:0] $end
@@ -112,8 +112,8 @@ b00 4
 r0 9
 r0 ;
 r0 =
-b00000000000000000000000011111111 ?
-b00000000000000000000000000000000 @
+b00000000000000000000000000000000 ?
+b00000000000000000000000011111111 @
 b00000000000000000000000000000000 A
 b00000000000000000000000000000000 B
 b000 C
@@ -157,8 +157,8 @@ b11 4
 r0.1 9
 r0.2 ;
 r0.3 =
-b00000000000000000000000011111110 ?
-b00000000000000000000000000000001 @
+b00000000000000000000000000000001 ?
+b00000000000000000000000011111110 @
 b00000000000000000000000000000001 A
 b00000000000000000000000000000010 B
 b111 C
@@ -191,8 +191,8 @@ b00 4
 r0.2 9
 r0.4 ;
 r0.6 =
-b00000000000000000000000011111101 ?
-b00000000000000000000000000000010 @
+b00000000000000000000000000000010 ?
+b00000000000000000000000011111101 @
 b00000000000000000000000000000010 A
 b00000000000000000000000000000100 B
 b110 C
@@ -227,8 +227,8 @@ b11 4
 r0.3 9
 r0.6000000000000001 ;
 r0.8999999999999999 =
-b00000000000000000000000011111100 ?
-b00000000000000000000000000000011 @
+b00000000000000000000000000000011 ?
+b00000000000000000000000011111100 @
 b00000000000000000000000000000011 A
 b00000000000000000000000000000110 B
 b101 C
@@ -263,8 +263,8 @@ b00 4
 r0.4 9
 r0.8 ;
 r1.2 =
-b00000000000000000000000011111011 ?
-b00000000000000000000000000000100 @
+b00000000000000000000000000000100 ?
+b00000000000000000000000011111011 @
 b00000000000000000000000000000100 A
 b00000000000000000000000000001000 B
 b100 C
@@ -299,8 +299,8 @@ b11 4
 r0.5 9
 r1 ;
 r1.5 =
-b00000000000000000000000011111010 ?
-b00000000000000000000000000000101 @
+b00000000000000000000000000000101 ?
+b00000000000000000000000011111010 @
 b00000000000000000000000000000101 A
 b00000000000000000000000000001010 B
 b011 C
@@ -335,8 +335,8 @@ b00 4
 r0.6 9
 r1.2 ;
 r1.8 =
-b00000000000000000000000011111001 ?
-b00000000000000000000000000000110 @
+b00000000000000000000000000000110 ?
+b00000000000000000000000011111001 @
 b00000000000000000000000000000110 A
 b00000000000000000000000000001100 B
 b010 C
