@@ -2907,8 +2907,7 @@ class WidthVisitor final : public VNVisitor {
             }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
-                   && !VN_IS(m_procedurep, InitialAutomatic)
-                   && !VN_IS(m_procedurep, InitialStatic)
+                   && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !nodep->isClassHandleValue()) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
