@@ -207,9 +207,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         puts(";\n");
-    } else if (nodep->isPrimaryIO() && basicp && !basicp->isOpaque()
-               && !nodep->dtypep()->skipRefp()->isCompound()
-               && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+    } else if (nodep->isVLIO()) {
         if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {
