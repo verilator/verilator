@@ -41,6 +41,7 @@
 #include "V3Ast.h"
 #include "V3Dfg.h"
 #include "V3DfgCache.h"
+#include "V3DfgDataType.h"
 #include "V3DfgPasses.h"
 #include "V3DfgPeepholePatterns.h"
 
@@ -51,6 +52,8 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 // clang-format off
+namespace {
+
 template <typename T_Reduction>
 struct ReductionToBitwiseImpl {};
 template <> struct ReductionToBitwiseImpl<DfgRedAnd> { using type = DfgAnd; };
@@ -67,7 +70,74 @@ template <> struct BitwiseToReductionImpl<DfgXor> { using type = DfgRedXor; };
 template <typename T_Reduction>
 using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reduction>::type;
 
-namespace {
+// Associative binary operators (a op (b op c) == (a op b) op c)
+template<typename Vertex>
+struct IsAssociative : public std::false_type {};
+template <> struct IsAssociative<DfgAnd> : public std::true_type {};
+template <> struct IsAssociative<DfgOr>  : public std::true_type {};
+template <> struct IsAssociative<DfgXor> : public std::true_type {};
+template <> struct IsAssociative<DfgAdd> : public std::true_type {};
+template <> struct IsAssociative<DfgConcat> : public std::true_type {};
+template <> struct IsAssociative<DfgMul> : public std::true_type {};
+template <> struct IsAssociative<DfgMulS> : public std::true_type {};
+
+// Commutative binary operators (a op b == b op a)
+template<typename Vertex>
+struct IsCommutative : public std::false_type {};
+template <> struct IsCommutative<DfgAnd> : public std::true_type {};
+template <> struct IsCommutative<DfgOr>  : public std::true_type {};
+template <> struct IsCommutative<DfgXor> : public std::true_type {};
+template <> struct IsCommutative<DfgAdd> : public std::true_type {};
+template <> struct IsCommutative<DfgEq> : public std::true_type {};
+template <> struct IsCommutative<DfgMul> : public std::true_type {};
+template <> struct IsCommutative<DfgMulS> : public std::true_type {};
+template <> struct IsCommutative<DfgNeq> : public std::true_type {};
+
+// Idempotent binary operators (a op a == a)
+template<typename Vertex>
+struct IsIdempotent : public std::false_type {};
+template <> struct IsIdempotent<DfgAnd> : public std::true_type {};
+template <> struct IsIdempotent<DfgOr>  : public std::true_type {};
+
+// Binary result dtype
+template<typename Vertex>
+const DfgDataType& resultDType(const DfgVertex* lhsp, const DfgVertex* rhsp);
+template <> const DfgDataType& resultDType<DfgAdd>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgAnd>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgConcat>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(lhsp->width() + rhsp->width()); }
+template <> const DfgDataType& resultDType<DfgDiv>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgDivS>       (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgEq>         (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgGt>         (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgGtS>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgGte>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgGteS>       (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLogAnd>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLogEq>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLogIf>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLogOr>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLt>         (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLtS>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLte>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgLteS>       (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgModDiv>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgModDivS>    (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgMul>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgMulS>       (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgNeq>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return DfgDataType::packed(1); }
+template <> const DfgDataType& resultDType<DfgOr>         (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgPow>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgPowSS>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgPowSU>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgPowUS>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+// template <> const DfgDataType& resultDType<DfgReplicate>  (const DfgVertex* lhsp, const DfgVertex* rhsp) { return ; }
+template <> const DfgDataType& resultDType<DfgShiftL>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgShiftR>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgShiftRS>    (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgSub>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+template <> const DfgDataType& resultDType<DfgXor>        (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
+
+// Unary constant folding
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
 template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
 template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
@@ -78,6 +148,7 @@ template <> void foldOp<DfgRedAnd>     (V3Number& out, const V3Number& src) { ou
 template <> void foldOp<DfgRedOr>      (V3Number& out, const V3Number& src) { out.opRedOr(src); }
 template <> void foldOp<DfgRedXor>     (V3Number& out, const V3Number& src) { out.opRedXor(src); }
 
+// Binary constant folding
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& lhs, const V3Number& rhs);
 template <> void foldOp<DfgAdd>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs, rhs); }
 template <> void foldOp<DfgAnd>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs, rhs); }
@@ -299,6 +370,9 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgConst* makeZero(FileLine* flp, uint32_t width) {
         return new DfgConst{m_dfg, flp, width, 0};
     }
+    DfgConst* makeZero(FileLine* flp, const DfgDataType& dtype) {
+        return makeZero(flp, dtype.size());
+    }
 
     // Create a DfgConst vertex with the given width and value all ones
     DfgConst* makeOnes(FileLine* flp, uint32_t width) {
@@ -389,128 +463,116 @@ class V3DfgPeephole final : public DfgVisitor {
         return false;
     }
 
-    // Constant fold binary vertex, return true if folded
+    // Generic transformations that apply to binary vertices. Returns true if vtxp was replaced.
     template <typename Vertex>
-    VL_ATTR_WARN_UNUSED_RESULT bool foldBinary(Vertex* const vtxp) {
-        static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value, "Must invoke on binary");
-        static_assert(std::is_final<Vertex>::value, "Must invoke on final class");
-        if (DfgConst* const lhsp = vtxp->inputp(0)->template cast<DfgConst>()) {
-            if (DfgConst* const rhsp = vtxp->inputp(1)->template cast<DfgConst>()) {
-                APPLYING(FOLD_BINARY) {
-                    DfgConst* const resultp = makeZero(vtxp->fileline(), vtxp->width());
-                    foldOp<Vertex>(resultp->num(), lhsp->num(), rhsp->num());
-                    replace(resultp);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // Transformations that apply to all associative binary vertices.
-    // Returns true if vtxp was replaced.
-    template <typename Vertex>
-    VL_ATTR_WARN_UNUSED_RESULT bool associativeBinary(Vertex* const vtxp) {
+    VL_ATTR_WARN_UNUSED_RESULT bool binary(Vertex* const vtxp) {
         static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value, "Must invoke on binary");
         static_assert(std::is_final<Vertex>::value, "Must invoke on final class");
 
+        FileLine* const flp = vtxp->fileline();
+        // LHS/RHS of the vertex
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
+        // LHS/RHS as constant
         DfgConst* const lConstp = lhsp->cast<DfgConst>();
         DfgConst* const rConstp = rhsp->cast<DfgConst>();
+        // LHS/RHS as same vertex type
+        Vertex* const lSamep = lhsp->cast<Vertex>();
+        Vertex* const rSamep = rhsp->cast<Vertex>();
 
+        // Constant folding
         if (lConstp && rConstp) {
-            APPLYING(FOLD_ASSOC_BINARY) {
-                DfgConst* const resultp = makeZero(flp, vtxp->width());
+            APPLYING(FOLD_BINARY) {
+                DfgConst* const resultp = makeZero(flp, resultDType<Vertex>(lhsp, rhsp));
                 foldOp<Vertex>(resultp->num(), lConstp->num(), rConstp->num());
                 replace(resultp);
                 return true;
             }
         }
 
-        if (lConstp) {
-            if (Vertex* const rVtxp = rhsp->cast<Vertex>()) {
-                if (DfgConst* const rlConstp = rVtxp->lhsp()->template cast<DfgConst>()) {
+        // Idempotent
+        if VL_CONSTEXPR_CXX17 (IsIdempotent<Vertex>::value) {
+            if (isSame(lhsp, rhsp)) {
+                APPLYING(REMOVE_IDEMPOTENT_BINARY) {
+                    replace(lhsp);
+                    return true;
+                }
+            }
+        }
+
+        // Associative
+        if VL_CONSTEXPR_CXX17 (IsAssociative<Vertex>::value) {
+            // Also commutative and idempotent
+            if VL_CONSTEXPR_CXX17 (IsCommutative<Vertex>::value && IsIdempotent<Vertex>::value) {
+                if (lSamep && (isSame(lSamep->lhsp(), rhsp) || isSame(lSamep->rhsp(), rhsp))) {
+                    APPLYING(REMOVE_ACI_BINARY_LHS) {
+                        replace(lSamep);
+                        return true;
+                    }
+                }
+                if (rSamep && (isSame(lhsp, rSamep->lhsp()) || isSame(lhsp, rSamep->rhsp()))) {
+                    APPLYING(REMOVE_ACI_BINARY_RHS) {
+                        replace(rSamep);
+                        return true;
+                    }
+                }
+            }
+
+            if (lConstp && rSamep) {
+                if (DfgConst* const rlConstp = rSamep->lhsp()->template cast<DfgConst>()) {
+                    // TODO: Maybe only if !rSamep->hasMultipleSinks()
                     APPLYING(FOLD_ASSOC_BINARY_LHS_OF_RHS) {
-                        // Fold constants
-                        const uint32_t width = std::is_same<DfgConcat, Vertex>::value
-                                                   ? lConstp->width() + rlConstp->width()
-                                                   : vtxp->width();
-                        DfgConst* const constp = makeZero(flp, width);
-                        foldOp<Vertex>(constp->num(), lConstp->num(), rlConstp->num());
-
-                        // Replace vertex
-                        replace(make<Vertex>(vtxp, constp, rVtxp->rhsp()));
+                        DfgConst* const cp = makeZero(flp, resultDType<Vertex>(lConstp, rlConstp));
+                        foldOp<Vertex>(cp->num(), lConstp->num(), rlConstp->num());
+                        replace(make<Vertex>(vtxp, cp, rSamep->rhsp()));
                         return true;
                     }
                 }
             }
-        }
 
-        if (rConstp) {
-            if (Vertex* const lVtxp = lhsp->cast<Vertex>()) {
-                if (DfgConst* const lrConstp = lVtxp->rhsp()->template cast<DfgConst>()) {
+            if (lSamep && rConstp) {
+                if (DfgConst* const lrConstp = lSamep->rhsp()->template cast<DfgConst>()) {
+                    // TODO: Maybe only if !lSameps->hasMultipleSinks()
                     APPLYING(FOLD_ASSOC_BINARY_RHS_OF_LHS) {
-                        // Fold constants
-                        const uint32_t width = std::is_same<DfgConcat, Vertex>::value
-                                                   ? lrConstp->width() + rConstp->width()
-                                                   : vtxp->width();
-                        DfgConst* const constp = makeZero(flp, width);
-                        foldOp<Vertex>(constp->num(), lrConstp->num(), rConstp->num());
-
-                        // Replace vertex
-                        replace(make<Vertex>(vtxp, lVtxp->lhsp(), constp));
+                        DfgConst* const cp = makeZero(flp, resultDType<Vertex>(lrConstp, rConstp));
+                        foldOp<Vertex>(cp->num(), lrConstp->num(), rConstp->num());
+                        replace(make<Vertex>(vtxp, lSamep->lhsp(), cp));
                         return true;
                     }
                 }
             }
-        }
 
-        // Make associative trees right leaning to reduce pattern variations, and for better CSE
-        if (Vertex* const alhsp = vtxp->lhsp()->template cast<Vertex>()) {
-            if (!alhsp->hasMultipleSinks()) {
-                DfgVertex* const ap = alhsp->lhsp();
-                DfgVertex* const bp = alhsp->rhsp();
-                DfgVertex* const cp = vtxp->rhsp();
-                // Only do this if the rhs is not th same as the operands of the LHS, otherwise
+            // Make associative trees right leaning to reduce variations
+            if (lSamep && !lSamep->hasMultipleSinks()) {
+                DfgVertex* const ap = lSamep->lhsp();
+                DfgVertex* const bp = lSamep->rhsp();
+                DfgVertex* const cp = rhsp;
+                // Only do this if the rhs is not the same as the operands of the LHS, otherwise
                 // SWAP_SIDE_IN_COMMUTATIVE_BINARY can get in a loop with this pattern.
                 if (ap != cp && bp != cp) {
                     APPLYING(RIGHT_LEANING_ASSOC) {
                         // Rotate the expression tree rooted at 'vtxp' to the right,
                         // producing a right-leaning tree
-
-                        // Concatenation dtypes need adjusting, other assoc vertices preserve types
-                        const DfgDataType& childDType
-                            = std::is_same<Vertex, DfgConcat>::value
-                                  ? DfgDataType::packed(bp->width() + cp->width())
-                                  : vtxp->dtype();
-
+                        const DfgDataType& childDType = resultDType<Vertex>(bp, cp);
                         Vertex* const bcp = make<Vertex>(vtxp->fileline(), childDType, bp, cp);
-                        replace(make<Vertex>(alhsp->fileline(), vtxp->dtype(), ap, bcp));
+                        replace(make<Vertex>(lSamep->fileline(), vtxp->dtype(), ap, bcp));
                         return true;
                     }
                 }
             }
-        }
 
-        // Attempt to reuse associative binary expressions if hey already exist, e.g.:
-        // '(a OP (b OP c))' -> '(a OP b) OP c', iff '(a OP b)' already exists, or
-        // '(a OP c) OP b' iff '(a OP c)' already exists and the vertex is commutative.
-        // Only do this is 'b OP c' has a single use and can subsequently be removed,
-        // otherwise there is no improvement.
-        if (!rhsp->hasMultipleSinks()) {
-            if (Vertex* rVtxp = rhsp->template cast<Vertex>()) {
-                DfgVertex* const rlVtxp = rVtxp->lhsp();
-                DfgVertex* const rrVtxp = rVtxp->rhsp();
+            // Attempt to reuse associative binary expressions if hey already exist, e.g.:
+            // '(a OP (b OP c))' -> '(a OP b) OP c', iff '(a OP b)' already exists, or
+            // '(a OP c) OP b' iff '(a OP c)' already exists and the vertex is commutative.
+            // Only do this is 'b OP c' has a single use and can subsequently be removed,
+            // otherwise there is no improvement.
+            if (rSamep && !rSamep->hasMultipleSinks()) {
+                DfgVertex* const rlVtxp = rSamep->lhsp();
+                DfgVertex* const rrVtxp = rSamep->rhsp();
 
-                const DfgDataType& dtype
-                    = std::is_same<Vertex, DfgConcat>::value
-                          ? DfgDataType::packed(lhsp->width() + rlVtxp->width())
-                          : vtxp->dtype();
-
-                if (Vertex* const existingp = m_cache.get<Vertex>(dtype, lhsp, rlVtxp)) {
+                // '(a OP (b OP c))' -> '(a OP b) OP c'
+                if (Vertex* const existingp
+                    = m_cache.get<Vertex>(resultDType<Vertex>(lhsp, rlVtxp), lhsp, rlVtxp)) {
                     UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
                     if (existingp != rhsp) {
                         APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_LHS_OF_RHS) {
@@ -519,9 +581,11 @@ class V3DfgPeephole final : public DfgVisitor {
                         }
                     }
                 }
-                // Concat is not commutative
-                if VL_CONSTEXPR_CXX17 (!std::is_same<Vertex, DfgConcat>::value) {
-                    if (Vertex* const existingp = m_cache.get<Vertex>(dtype, lhsp, rrVtxp)) {
+
+                // '(a OP (b OP c))' -> '(a OP c) OP b' iff also commutative
+                if VL_CONSTEXPR_CXX17 (IsCommutative<Vertex>::value) {
+                    if (Vertex* const existingp
+                        = m_cache.get<Vertex>(resultDType<Vertex>(lhsp, rrVtxp), lhsp, rrVtxp)) {
                         UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
                         if (existingp != rhsp) {
                             APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_RHS_OF_RHS) {
@@ -534,88 +598,47 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        return false;
-    }
-
-    // Transformations that apply to all commutative binary vertices
-    template <typename Vertex>
-    VL_ATTR_WARN_UNUSED_RESULT bool commutativeBinary(Vertex* const vtxp) {
-        static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value, "Must invoke on binary");
-        static_assert(std::is_final<Vertex>::value, "Must invoke on final class");
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-
-        // If constant LHS, push through cond if used once. (Enables branch combining)
-        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
-            if (DfgCond* const rCondp = rhsp->cast<DfgCond>()) {
-                if (!rCondp->hasMultipleSinks()) {
-                    APPLYING(PUSH_COMMUTATIVE_BINARY_THROUGH_COND) {
-                        DfgVertex* const tp = make<Vertex>(vtxp, lConstp, rCondp->thenp());
-                        DfgVertex* const ep = make<Vertex>(vtxp, lConstp, rCondp->elsep());
-                        replace(make<DfgCond>(vtxp, rCondp->condp(), tp, ep));
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        // Ensure Const is on left-hand side to simplify other patterns
-        {
-            const bool lIsConst = lhsp->is<DfgConst>();
-            const bool rIsConst = rhsp->is<DfgConst>();
-            if (lIsConst != rIsConst) {
-                if (rIsConst) {
-                    APPLYING(SWAP_CONST_IN_COMMUTATIVE_BINARY) {
-                        replace(make<Vertex>(vtxp, rhsp, lhsp));
-                        return true;
+        // Commutative
+        if VL_CONSTEXPR_CXX17 (IsCommutative<Vertex>::value) {
+            // If constant LHS, push through cond if used once. (Enables branch combining)
+            if (lConstp) {
+                if (DfgCond* const rCondp = rhsp->cast<DfgCond>()) {
+                    if (!rCondp->hasMultipleSinks()) {
+                        APPLYING(PUSH_COMMUTATIVE_BINARY_THROUGH_COND) {
+                            DfgVertex* const tp = make<Vertex>(vtxp, lConstp, rCondp->thenp());
+                            DfgVertex* const ep = make<Vertex>(vtxp, lConstp, rCondp->elsep());
+                            replace(make<DfgCond>(vtxp, rCondp->condp(), tp, ep));
+                            return true;
+                        }
                     }
                 }
                 return false;
             }
         }
 
-        // Ensure Not is on the left-hand side to simplify other patterns
-        {
-            const bool lIsNot = lhsp->is<DfgNot>();
-            const bool rIsNot = rhsp->is<DfgNot>();
-            if (lIsNot != rIsNot) {
-                if (rIsNot) {
-                    APPLYING(SWAP_NOT_IN_COMMUTATIVE_BINARY) {
-                        replace(make<Vertex>(vtxp, rhsp, lhsp));
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-
-        // Ensure same vertex is on the right-hand side to simplify other patterns
-        {
-            const bool lIsSame = lhsp->is<Vertex>();
-            const bool rIsSame = rhsp->is<Vertex>();
-            if (lIsSame != rIsSame) {
-                if (lIsSame) {
-                    APPLYING(SWAP_SAME_IN_COMMUTATIVE_BINARY) {
-                        replace(make<Vertex>(vtxp, rhsp, lhsp));
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-
-        // Otherwise put sides in order based on unique iD, this makes
-        // 'a op b' and 'b op a' end up the same for better combining.
-        {
+        // Swap sides to simplify other patterns - This needs to be the last pattern
+        const bool swapSides = [&]() {
+            // Don't swap if not commutative, duh
+            if VL_CONSTEXPR_CXX17 (!IsCommutative<Vertex>::value) return false;
+            // Const go on left
+            if (lConstp) return false;
+            if (rConstp) return true;
+            // Not go on left
+            if (lhsp->is<DfgNot>()) return false;
+            if (rhsp->is<DfgNot>()) return true;
+            // Same go on right
+            if (rSamep) return false;
+            if (lSamep) return true;
+            // Otherwise put sides in order based on unique ID, this makes
+            // 'a op b' and 'b op a' end up the same for better combining.
             const VertexInfo& lInfo = m_vInfo[lhsp];
             const VertexInfo& rInfo = m_vInfo[rhsp];
-            if (lInfo.m_id > rInfo.m_id) {
-                APPLYING(SWAP_SIDE_IN_COMMUTATIVE_BINARY) {
-                    replace(make<Vertex>(vtxp, rhsp, lhsp));
-                    return true;
-                }
+            return lInfo.m_id > rInfo.m_id;
+        }();
+        if (swapSides) {
+            APPLYING(SWAP_SIDES_IN_BINARY) {
+                replace(make<Vertex>(vtxp, rhsp, lhsp));
+                return true;
             }
         }
 
@@ -711,9 +734,11 @@ class V3DfgPeephole final : public DfgVisitor {
     tryPushCompareOpThroughConcat(Vertex* const vtxp, DfgConst* constp, DfgConcat* concatp) {
         FileLine* const flp = vtxp->fileline();
 
-        // If at least one of the sides of the Concat is constant, then push the Vertex past
-        // the Concat
-        if (concatp->lhsp()->is<DfgConst>() || concatp->rhsp()->is<DfgConst>()) {
+        // If at least one of the sides of the Concat is constant, or the concat is unused once,
+        // then push the Vertex past the Concat
+        if (!concatp->hasMultipleSinks()  //
+            || concatp->lhsp()->is<DfgConst>()  //
+            || concatp->rhsp()->is<DfgConst>()) {
             APPLYING(PUSH_COMPARE_OP_THROUGH_CONCAT) {
                 const uint32_t width = concatp->width();
                 const uint32_t lWidth = concatp->lhsp()->width();
@@ -732,16 +757,13 @@ class V3DfgPeephole final : public DfgVisitor {
                     = make<Vertex>(flp, m_bitDType, newRhsConstp, concatp->rhsp());
 
                 // The replacement Vertex
-                DfgVertexBinary* const resp
-                    = std::is_same<Vertex, DfgEq>::value
-                          ? make<DfgAnd>(concatp->fileline(), m_bitDType, newLhsp, newRhsp)
-                          : nullptr;
-                UASSERT_OBJ(resp, vtxp,
-                            "Unhandled vertex type in 'tryPushCompareOpThroughConcat': "
-                                << vtxp->typeName());
-
-                // Replace this vertex
-                replace(resp);
+                if VL_CONSTEXPR_CXX17 (std::is_same<Vertex, DfgEq>::value) {
+                    replace(make<DfgAnd>(concatp->fileline(), m_bitDType, newLhsp, newRhsp));
+                } else if VL_CONSTEXPR_CXX17 (std::is_same<Vertex, DfgNeq>::value) {
+                    replace(make<DfgOr>(concatp->fileline(), m_bitDType, newLhsp, newRhsp));
+                } else {
+                    vtxp->v3fatalSrc("Unhandled vertex type: " << vtxp->typeName());
+                }
                 return true;
             }
         }
@@ -1218,9 +1240,9 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // Sel from a partial temporary (including narrowed vertex)
+        // Sel from a partial variable (including narrowed vertex)
         if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-            if (varp->tmpForp() && varp->srcp()) {
+            if (varp->srcp() && !varp->isVolatile()) {
                 // Must be a splice, otherwise it would have been inlined
                 DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
                 DfgVertex* driverp = nullptr;
@@ -1276,20 +1298,10 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
 
     void visit(DfgAnd* const vtxp) override {
+        if (binary(vtxp)) return;
+
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(REMOVE_AND_WITH_SELF) {
-                replace(lhsp);
-                return;
-            }
-        }
-
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
-
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing (De Morgan)
@@ -1360,23 +1372,31 @@ class V3DfgPeephole final : public DfgVisitor {
         if (vtxp->dtype() == m_bitDType) {
             if (tryReplaceBitwiseWithReduction(vtxp)) return;
         }
+
+        {
+            DfgReplicate* repp = lhsp->cast<DfgReplicate>();
+            DfgCond* condp = rhsp->cast<DfgCond>();
+            if (!repp && !condp) {
+                repp = rhsp->cast<DfgReplicate>();
+                condp = lhsp->cast<DfgCond>();
+            }
+            if (repp && condp && repp->srcp()->size() == 1 && !condp->hasMultipleSinks()
+                && isZero(condp->elsep())) {
+                APPLYING(REPLACE_AND_REP_COND_ELSE_ZERO) {
+                    DfgAnd* const newCondp
+                        = make<DfgAnd>(condp->condp(), repp->srcp(), condp->condp());
+                    replace(make<DfgCond>(condp, newCondp, condp->thenp(), condp->elsep()));
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgOr* const vtxp) override {
+        if (binary(vtxp)) return;
+
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(REMOVE_OR_WITH_SELF) {
-                replace(lhsp);
-                return;
-            }
-        }
-
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
-
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing (De Morgan)
@@ -1473,6 +1493,8 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgXor* const vtxp) override {
+        if (binary(vtxp)) return;
+
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
 
@@ -1482,10 +1504,6 @@ class V3DfgPeephole final : public DfgVisitor {
                 return;
             }
         }
-
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
 
         if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
             if (lConstp->isZero()) {
@@ -1517,9 +1535,7 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
 
     void visit(DfgAdd* const vtxp) override {
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
+        if (binary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -1622,7 +1638,7 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgConcat* const vtxp) override {
-        if (associativeBinary(vtxp)) return;
+        if (binary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -1844,20 +1860,216 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
+
+        // Convert various forms to REPLICATE
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(REPLACE_CONCAT_SAME) {
+                replace(make<DfgReplicate>(vtxp, lhsp, makeI32(flp, 2)));
+                return;
+            }
+        }
+        if (DfgReplicate* const lRepp = lhsp->cast<DfgReplicate>()) {
+            if (isSame(lRepp->srcp(), rhsp)) {
+                APPLYING(REPLACE_CONCAT_SAME_REP_ON_LHS) {
+                    const uint32_t count = lRepp->countp()->as<DfgConst>()->toU32() + 1;
+                    replace(make<DfgReplicate>(vtxp, rhsp, makeI32(flp, count)));
+                    return;
+                }
+            }
+        }
+        if (DfgReplicate* const rRepp = rhsp->cast<DfgReplicate>()) {
+            if (isSame(lhsp, rRepp->srcp())) {
+                APPLYING(REPLACE_CONCAT_SAME_REP_ON_RHS) {
+                    const uint32_t count = rRepp->countp()->as<DfgConst>()->toU32() + 1;
+                    replace(make<DfgReplicate>(vtxp, lhsp, makeI32(flp, count)));
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgDiv* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgDivS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgGt* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GT) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgGtS* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTS) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgGte* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTE) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgGteS* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_GTES) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLogAnd* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (lhsp->width() == 1 && rhsp->width() == 1) {
+            APPLYING(REPLACE_LOGAND_WITH_AND) {
+                replace(make<DfgAnd>(vtxp, lhsp, rhsp));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLogEq* const vtxp) override {
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgLogIf* const vtxp) override {
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgLogOr* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (lhsp->width() == 1 && rhsp->width() == 1) {
+            APPLYING(REPLACE_LOGOR_WITH_OR) {
+                replace(make<DfgOr>(vtxp, lhsp, rhsp));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLt* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LT) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLtS* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTS) {
+                replace(makeZero(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLte* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTE) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgLteS* const vtxp) override {
+        if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_LTES) {
+                replace(makeOnes(flp, 1));
+                return;
+            }
+        }
+    }
+
+    void visit(DfgModDiv* const vtxp) override {
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgModDivS* const vtxp) override {
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgMul* const vtxp) override {
+        if (binary(vtxp)) return;
+    }
+
+    void visit(DfgMulS* const vtxp) override {
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgEq* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
+        if (binary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -1874,187 +2086,27 @@ class V3DfgPeephole final : public DfgVisitor {
             if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
                 if (tryPushCompareOpThroughConcat(vtxp, lhsConstp, rhsConcatp)) return;
             }
-        }
-    }
 
-    void visit(DfgGt* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+            if (rhsp->dtype() == m_bitDType) {
+                if (isZero(lhsConstp)) {
+                    APPLYING(REPLACE_EQ_BIT_0) {
+                        replace(make<DfgNot>(vtxp, rhsp));
+                        return;
+                    }
+                }
 
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_GT) {
-                replace(makeZero(flp, 1));
-                return;
+                if (isOnes(lhsConstp)) {
+                    APPLYING(REMOVE_EQ_BIT_1) {
+                        replace(rhsp);
+                        return;
+                    }
+                }
             }
         }
-    }
-
-    void visit(DfgGtS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_GTS) {
-                replace(makeZero(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgGte* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_GTE) {
-                replace(makeOnes(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgGteS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_GTES) {
-                replace(makeOnes(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLogAnd* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-
-        if (lhsp->width() == 1 && rhsp->width() == 1) {
-            APPLYING(REPLACE_LOGAND_WITH_AND) {
-                replace(make<DfgAnd>(vtxp, lhsp, rhsp));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLogEq* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-    }
-
-    void visit(DfgLogIf* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-    }
-
-    void visit(DfgLogOr* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-
-        if (lhsp->width() == 1 && rhsp->width() == 1) {
-            APPLYING(REPLACE_LOGOR_WITH_OR) {
-                replace(make<DfgOr>(vtxp, lhsp, rhsp));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLt* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_LT) {
-                replace(makeZero(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLtS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_LTS) {
-                replace(makeZero(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLte* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_LTE) {
-                replace(makeOnes(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgLteS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        FileLine* const flp = vtxp->fileline();
-
-        if (isSame(lhsp, rhsp)) {
-            APPLYING(FOLD_SELF_LTES) {
-                replace(makeOnes(flp, 1));
-                return;
-            }
-        }
-    }
-
-    void visit(DfgModDiv* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-    }
-
-    void visit(DfgModDivS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
-    }
-
-    void visit(DfgMul* const vtxp) override {
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
-    }
-
-    void visit(DfgMulS* const vtxp) override {
-        if (associativeBinary(vtxp)) return;
-
-        if (commutativeBinary(vtxp)) return;
     }
 
     void visit(DfgNeq* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -2066,37 +2118,67 @@ class V3DfgPeephole final : public DfgVisitor {
                 return;
             }
         }
+
+        if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
+            if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
+                if (tryPushCompareOpThroughConcat(vtxp, lhsConstp, rhsConcatp)) return;
+            }
+
+            if (rhsp->dtype() == m_bitDType) {
+                if (isZero(lhsConstp)) {
+                    APPLYING(REMOVE_NEQ_BIT_0) {
+                        replace(rhsp);
+                        return;
+                    }
+                }
+
+                if (isOnes(lhsConstp)) {
+                    APPLYING(REPLACE_NEQ_BIT_1) {
+                        replace(make<DfgNot>(vtxp, rhsp));
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     void visit(DfgPow* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgPowSS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgPowSU* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgPowUS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
     }
 
     void visit(DfgReplicate* const vtxp) override {
+        if (DfgConst* const sConstp = vtxp->srcp()->cast<DfgConst>()) {
+            DfgConst* const cConstp = vtxp->countp()->as<DfgConst>();
+            APPLYING(FOLD_REPLICATE) {
+                DfgConst* const resultp = makeZero(vtxp->fileline(), vtxp->width());
+                foldOp<DfgReplicate>(resultp->num(), sConstp->num(), cConstp->num());
+                replace(resultp);
+                return;
+            }
+        }
+
         if (vtxp->dtype() == vtxp->srcp()->dtype()) {
             APPLYING(REMOVE_REPLICATE_ONCE) {
                 replace(vtxp->srcp());
                 return;
             }
         }
-
-        if (foldBinary(vtxp)) return;
     }
 
     void visit(DfgShiftL* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
         if (optimizeShiftRHS(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -2185,7 +2267,7 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgShiftR* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
         if (optimizeShiftRHS(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -2274,12 +2356,12 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgShiftRS* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
         if (optimizeShiftRHS(vtxp)) return;
     }
 
     void visit(DfgSub* const vtxp) override {
-        if (foldBinary(vtxp)) return;
+        if (binary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -2465,6 +2547,22 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+            if (DfgOr* const tOrp = thenp->cast<DfgOr>()) {
+                if (isSame(tOrp->lhsp(), elsep)) {  // a ? b | c : b becomes b | (a & c)
+                    APPLYING(REPLACE_COND_THEN_OR_LHS) {
+                        DfgAnd* const andp = make<DfgAnd>(vtxp, condp, tOrp->rhsp());
+                        replace(make<DfgOr>(vtxp, tOrp->lhsp(), andp));
+                        return;
+                    }
+                }
+                if (isSame(tOrp->rhsp(), elsep)) {  // a ? b | c : c becomes c | (a & b)
+                    APPLYING(REPLACE_COND_THEN_OR_RHS) {
+                        DfgAnd* const andp = make<DfgAnd>(vtxp, condp, tOrp->lhsp());
+                        replace(make<DfgOr>(vtxp, tOrp->rhsp(), andp));
+                        return;
+                    }
+                }
+            }
         }
 
         if (DfgConcat* const tConcatp = thenp->cast<DfgConcat>()) {
@@ -2494,7 +2592,7 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        if (isZero(elsep) && isEqOne(thenp)) {
+        if (isEqOne(thenp) && isZero(elsep)) {
             APPLYING(REPLACE_COND_CONST_ONE_ZERO) {
                 DfgVertex* resp = condp;
                 if (const uint32_t extend = vtxp->width() - 1) {
@@ -2514,6 +2612,21 @@ class V3DfgPeephole final : public DfgVisitor {
                     resp = make<DfgConcat>(vtxp, zerop, resp);
                 }
                 replace(resp);
+                return;
+            }
+        }
+
+        if (isOnes(thenp) && isZero(elsep)) {
+            APPLYING(REPLACE_COND_CONST_ONES_ZERO) {
+                replace(make<DfgReplicate>(vtxp, condp, makeI32(flp, vtxp->width())));
+                return;
+            }
+        }
+
+        if (isZero(thenp) && isOnes(elsep)) {
+            APPLYING(REPLACE_COND_CONST_ZERO_ONES) {
+                replace(make<DfgReplicate>(vtxp, make<DfgNot>(condp, condp),
+                                           makeI32(flp, vtxp->width())));
                 return;
             }
         }
