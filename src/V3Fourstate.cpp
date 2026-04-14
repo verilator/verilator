@@ -2359,16 +2359,25 @@ public:
     ~FourstateVisitor() override = default;
 };
 
+// Creates one wide shuffled variable from two wide signals that together create a four-state
+// From:
+//      VlWide<128> a_value;
+//      VlWide<128> a_xz;
+// creates a:
+//      VlWide<256> a;  // keeps [value1, xz1, value2, xz2,...]
 class FourstateShuffleVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
-    std::vector<AstVar*> m_varpsToRemove;
+    // Node status
+    // AstVar*::user1p  ->  AstVar*.    Four-state wide complemetary (xz part) variable keeps here
+    //                                  a pointer to a newly created wide four-state shuffled
+    //                                  signal
 
     static bool needsShuffle(const AstVar* const varp) {
         return varp->isWide() && (varp->fourStateComplement() || varp->isFourStateComplement());
     }
 
-    AstVar* shuffledVersion(AstVar* varp) {
+    AstVar* getCreateShuffledVariantp(AstVar* varp) {
         UASSERT_OBJ(
             varp->fourStateComplement() || varp->isFourStateComplement(), varp,
             "This function is ment to be called on variables which create a four-state value");
@@ -2377,7 +2386,8 @@ class FourstateShuffleVisitor final : public VNVisitor {
         if (AstVar* newp = varp->fourStateComplement()) varp = newp;
         UASSERT_OBJ(
             VString::endsWith(varp->name(), "__Vxz"), varp,
-            "Four-state complement shall have '__Vxz' suffix it is named: " << varp->name());
+            "Four-state complementary value (xz part) shall have '__Vxz' suffix, but it is named: "
+                << varp->name());
         if (AstVar* resultp = VN_AS(varp->user1p(), Var)) return resultp;
         AstVar* const resultp = varp->cloneTree(false);
         resultp->unsetFourStateComplement();
@@ -2398,7 +2408,7 @@ class FourstateShuffleVisitor final : public VNVisitor {
             UASSERT_OBJ(!varp->isFourStateComplement(), varp,
                         "This loop shall never reach four-state complement");
             if (AstVar* const complement = varp->fourStateComplement()) {
-                shuffledVersion(complement);
+                getCreateShuffledVariantp(complement);
                 UASSERT_OBJ(VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef), exprp,
                             "Wide four-state signals shall be passed only as lvalue references");
                 exprp->nextp()->unlinkFrBack()->deleteTree();
@@ -2412,15 +2422,15 @@ class FourstateShuffleVisitor final : public VNVisitor {
     void visit(AstVar* const nodep) override {
         iterateChildren(nodep);
         if (needsShuffle(nodep)) {
-            shuffledVersion(nodep);
-            m_varpsToRemove.push_back(nodep);
+            getCreateShuffledVariantp(nodep);
+            pushDeletep(nodep->unlinkFrBack());
         }
     }
 
     void visit(AstNodeVarRef* const nodep) override {
         iterateChildren(nodep);
         if (!needsShuffle(nodep->varp())) return;
-        AstVar* const varp = shuffledVersion(nodep->varp());
+        AstVar* const varp = getCreateShuffledVariantp(nodep->varp());
         FileLine* const flp = nodep->fileline();
         if (AstVarScope* const oldVscp = nodep->varScopep()) {
             AstVarScope* const vscp = new AstVarScope{flp, oldVscp->scopep(), varp};
@@ -2443,9 +2453,7 @@ class FourstateShuffleVisitor final : public VNVisitor {
 
 public:
     explicit FourstateShuffleVisitor(AstNetlist* const netlistp) { iterate(netlistp); }
-    ~FourstateShuffleVisitor() override {
-        for (AstVar* varp : m_varpsToRemove) varp->unlinkFrBack()->deleteTree();
-    }
+    ~FourstateShuffleVisitor() override = default;
 };
 
 void V3Fourstate::fourstateAll(AstNetlist* const netlistp) {
