@@ -460,7 +460,8 @@ class TraceDeclVisitor final : public VNVisitor {
                         // traversal.
                         m_traValuep
                             = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
-                        if (AstVar* const complementp = m_traVscp->varp()->fourStateComplement()) {
+                        if (AstVar* const complementp
+                            = m_traVscp->varp()->fourStateComplementp()) {
                             m_traValueXZp
                                 = new AstVarRef{m_traVscp->fileline(),
                                                 m_varxzToVscp.at(complementp), VAccess::READ};

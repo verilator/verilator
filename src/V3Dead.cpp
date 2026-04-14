@@ -487,7 +487,7 @@ class DeadVisitor final : public VNVisitor {
                 AstVar* const varp = *it;
                 if (!varp || varp->isFourStateComplement()) continue;
                 if (varp->user1() == 0) {
-                    if (AstVar* const varComplementp = varp->fourStateComplement()) {
+                    if (AstVar* const varComplementp = varp->fourStateComplementp()) {
                         if (varComplementp->user1() != 0) continue;
                         deleting(varComplementp);
                     }

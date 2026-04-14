@@ -1902,7 +1902,7 @@ class AstVar final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
-    // @astgen ptr := m_fourStateComplement : Optional[AstVar]  // Set in four-state value part -
+    // @astgen ptr := m_fourStateComplementp : Optional[AstVar]  // Set in four-state value part -
     //                                                             points to an xz part
 
     string m_name;  // Name of variable
@@ -2130,14 +2130,14 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
-    void fourStateComplement(AstVar* const varp) {
+    void fourStateComplementp(AstVar* const varp) {
         UASSERT_OBJ(!isFourStateComplement(), this, "Varp is four-state complement i");
-        UASSERT_OBJ(!m_fourStateComplement, this, "Varp already has a complement");
+        UASSERT_OBJ(!m_fourStateComplementp, this, "Varp already has a complement");
         UASSERT_OBJ(!varp->isFourStateComplement(), varp, "It is already a four-state complement");
         varp->m_isFourStateComplement = true;
-        m_fourStateComplement = varp;
+        m_fourStateComplementp = varp;
     }
-    AstVar* fourStateComplement() const { return m_fourStateComplement; }
+    AstVar* fourStateComplementp() const { return m_fourStateComplementp; }
     VBasicDTypeKwd fourstateOriginalDTypeKwd() const { return m_fourstateOriginalDTypeKwd; }
     void fourstateOriginalDTypeKwd(const VBasicDTypeKwd dtypeKwd) {
         m_fourstateOriginalDTypeKwd = dtypeKwd;

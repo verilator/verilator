@@ -137,10 +137,9 @@ class FourstateLogicTypePropagator final : public VNVisitor {
             }
             return fourstateInSubtree;
         };
-        m_fourstateInSubtree = static_cast<bool>(static_cast<char>(foreach(nodep->op1p()))
-                                                 | static_cast<char>(foreach(nodep->op2p()))
-                                                 | static_cast<char>(foreach(nodep->op3p()))
-                                                 | static_cast<char>(foreach(nodep->op4p())));
+        m_fourstateInSubtree
+            = static_cast<bool>(foreach(nodep->op1p()) | foreach(nodep->op2p())
+                                | foreach(nodep->op3p()) | foreach(nodep->op4p()));
     }
 
     void visit(AstConst* const nodep) override {
@@ -150,7 +149,6 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstNodeVarRef* const nodep) override {
-        iterateChildrenSeparately(nodep);
         setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
@@ -659,7 +657,7 @@ class FourstateVisitor final : public VNVisitor {
                 portEndp->addNextHere(returnXzp);
                 portEndp->addNextHere(returnValuep);
                 varp->user1p(returnValuep);
-                returnValuep->fourStateComplement(returnXzp);
+                returnValuep->fourStateComplementp(returnXzp);
                 ftaskp->dtypeSetVoid();
                 return;
             }
@@ -684,7 +682,7 @@ class FourstateVisitor final : public VNVisitor {
             newValuep->valuep(getFourStateExpressionValue(valuep));
             valuep->deleteTree();
         }
-        newValuep->fourStateComplement(newXzp);
+        newValuep->fourStateComplementp(newXzp);
         varp->addNextHere(newValuep);
         varp->user1p(newValuep);
     }
@@ -697,7 +695,7 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     static AstVar* getSplittedXZ(AstVar* const varp) {
-        return getSplittedValue(varp)->fourStateComplement();
+        return getSplittedValue(varp)->fourStateComplementp();
     }
 
     void addPrecalculation(AstNodeStmt* const nodep) {
@@ -788,12 +786,12 @@ class FourstateVisitor final : public VNVisitor {
             AstNode* varStmtp = funcp->taskp()->stmtsp();
             for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 const AstVar* const varp = VN_AS(varStmtp, Var);
-                if (varp->dtypep()->isFourstate() || varp->fourStateComplement()) {
+                if (varp->dtypep()->isFourstate() || varp->fourStateComplementp()) {
                     newCallp->addArgsp(
                         new AstArg{flp, "", getFourStateExpressionValue(argp->exprp(), false)});
                     newCallp->addArgsp(
                         new AstArg{flp, "", getFourStateExpressionXZ(argp->exprp(), false)});
-                    if (varp->fourStateComplement()) varStmtp = varStmtp->nextp();
+                    if (varp->fourStateComplementp()) varStmtp = varStmtp->nextp();
                 } else if (isFourstate(argp->exprp())) {
                     newCallp->addArgsp(
                         new AstArg{flp, "", m_fourstateVisitor.getTwoStateCast(argp->exprp())});

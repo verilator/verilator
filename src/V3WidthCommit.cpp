@@ -563,12 +563,12 @@ void V3WidthCommit::widthCommit(AstNetlist* nodep) {
 void V3WidthCommit::widthCommitClean(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
-        std::vector<AstCastWrap*> c;
-        v3Global.rootp()->foreach([&c](AstCastWrap* nodep) {
+        std::vector<AstCastWrap*> castWrapsToDelete;
+        v3Global.rootp()->foreach([&castWrapsToDelete](AstCastWrap* nodep) {
             UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp());
-            c.push_back(nodep);
+            castWrapsToDelete.push_back(nodep);
         });
-        for (AstCastWrap* const nodep : c) {
+        for (AstCastWrap* const nodep : castWrapsToDelete) {
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
             nodep->deleteTree();
         }
