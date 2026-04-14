@@ -55,7 +55,9 @@ package my_pkg;
 endpackage
 
 // std::randomize outside package, multi-level parameterized inheritance
-class base_c #(type T = int);
+class base_c #(
+    type T = int
+);
   T item;
 endclass
 
