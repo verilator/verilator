@@ -262,8 +262,7 @@ class LinkIncVisitor final : public VNVisitor {
             case AstAssignCompound::Operation::Xor:
                 operationp = new AstXor{nodep->fileline(), lhsp, rhsp};
                 break;
-            default:
-                nodep->v3fatalSrc("Unhandled compound assignment operation");
+            default: nodep->v3fatalSrc("Unhandled compound assignment operation");
             }
         } else {
             nodep->v3fatalSrc("Unhandled compound assignment operation");
@@ -346,7 +345,7 @@ class LinkIncVisitor final : public VNVisitor {
         prepost_stmt_visit(nodep, exprp, storeTop, valuep);
     }
     void prepost_stmt_visit(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* storeTop,
-                          AstNodeExpr* valuep) {
+                            AstNodeExpr* valuep) {
         V3LinkLValue::linkLValueUnset(valuep);
         AstAssign* assignp
             = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};

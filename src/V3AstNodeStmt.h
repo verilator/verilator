@@ -1422,8 +1422,8 @@ public:
         Sub,
         Xor,
     };
-    AstAssignCompound(AstAssignCompound::Operation operation, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-                          AstNode* timingControlp = nullptr)
+    AstAssignCompound(AstAssignCompound::Operation operation, FileLine* fl, AstNodeExpr* lhsp,
+                      AstNodeExpr* rhsp, AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompound(fl, lhsp, rhsp, timingControlp) {
         this->m_operation = operation;
         dtypeFrom(lhsp);
@@ -1433,9 +1433,8 @@ public:
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignCompound{operation(), fileline(), lhsp, rhsp, controlp};
     }
-    Operation operation() {
-        return m_operation;
-    }
+    Operation operation() { return m_operation; }
+
 private:
     Operation m_operation;
 };
