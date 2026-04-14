@@ -8352,7 +8352,8 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNodeExpr* newp;
-            if (VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)) {
+            AstNodeDType* const dtypeSkipp = nodep->dtypep()->skipRefp();
+            if (VN_IS(dtypeSkipp, ClassRefDType) || VN_IS(dtypeSkipp, IfaceRefDType)) {
                 // Cannot use AstRedOr, as we may be redurcing a class handle
                 newp = new AstNeq{nodep->fileline(),
                                   new AstConst{nodep->fileline(), AstConst::Null{}},
