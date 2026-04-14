@@ -2587,6 +2587,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         iterate(inlinedp);
     }
+    // Skip non-constraint stmts appended to the iterating list during inline randomize-with
+    void visit(AstNodeStmt* nodep) override {}
     void visit(AstNodeExpr* nodep) override {
         if (editFormat(nodep)) return;
         nodep->v3fatalSrc(
