@@ -30,6 +30,11 @@ module t;
     cp_multi_item: coverpoint state {
       bins multi = (0 => 1, 2);  // second element is a two-value list
     }
+    // Repetition-type bins: exercises GOTO and NONCONS repTypes in the AST dump
+    cp_reptype: coverpoint state {
+      bins goto_bin = (0 => 1 [->2]);    // GOTO repetition, treated as simple (0=>1) match
+      bins noncons_bin = (2 [=1] => 3);  // NONCONS repetition, treated as simple (2=>3) match
+    }
   endgroup
 
   cg cg_inst = new;

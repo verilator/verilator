@@ -1015,10 +1015,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstClassRefDType* nodep) override {
-        putfs(nodep, nodep->classp() ? EmitCUtil::prefixNameProtect(
-                                           nodep->classp())  // LCOV_EXCL_BR_LINE - false: classp
-                                                             // always set after linking
-                                     : nodep->prettyDTypeName(false));
+        UASSERT_OBJ(nodep->classp(), nodep, "AstClassRefDType not linked");
+        putfs(nodep, EmitCUtil::prefixNameProtect(nodep->classp()));
     }
     void visit(AstRequireDType* nodep) override { iterateConst(nodep->lhsp()); }
     void visit(AstModport* nodep) override {

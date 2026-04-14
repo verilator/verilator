@@ -268,8 +268,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         UINFO(4, "  Creating implicit automatic bins for coverpoint: " << coverpointp->name());
 
-        if (!excluded.empty()) { UINFO(4, "    Found " << excluded.size() << " excluded values"); }
-
         const int width = exprp->width();
         const uint64_t maxVal = (width >= 64) ? UINT64_MAX : ((1ULL << width) - 1);
         const uint64_t numTotalValues = (width >= 64) ? UINT64_MAX : (1ULL << width);
