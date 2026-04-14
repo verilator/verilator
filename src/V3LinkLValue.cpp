@@ -378,7 +378,7 @@ void V3LinkLValue::linkLValueSet(AstNode* nodep) {
 }
 void V3LinkLValue::linkLValueUnset(AstNode* nodep) {
     // Called by later link functions when it is known a node needs
-    // to be converted from a lvalue.
+    // to be converted to an rvalue.
     UINFO(9, __FUNCTION__ << ": ");
     { LinkLValueVisitor{nodep, VAccess::READ}; }
 }

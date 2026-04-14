@@ -57,7 +57,7 @@ class LinkIncVisitor final : public VNVisitor {
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeModule* m_modp = nullptr;  // Module we're inside
-    int m_modIncrementsNum = 0;  // Var name counter
+    int m_modCompoundAssignmentsNum = 0;  // Var name counter
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
@@ -89,9 +89,9 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_modIncrementsNum);
+        VL_RESTORER(m_modCompoundAssignmentsNum);
         m_modp = nodep;
-        m_modIncrementsNum = 0;
+        m_modCompoundAssignmentsNum = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -265,8 +265,7 @@ class LinkIncVisitor final : public VNVisitor {
         // Special case array[something] += expr, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
-        AstNodeExpr* const exprp = nodep->rhsp();
-        exprp->unlinkFrBack();
+        AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
 
         prepost_stmt_sel_visit(nodep, nodep->lhsp(), exprp);
     }
@@ -282,7 +281,7 @@ class LinkIncVisitor final : public VNVisitor {
 
         // Prepare a temporary variable
         FileLine* const fl = nodep->fileline();
-        const string name = "__VincIndex"s + cvtToStr(++m_modIncrementsNum);
+        const string name = "__VtempIndex"s + cvtToStr(++m_modCompoundAssignmentsNum);
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, rdBitp->cloneTree(true)}};
@@ -351,7 +350,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstNodeExpr* const newconstp = new AstConst{nodep->fileline(), numOne};
 
         // Prepare a temporary variable
-        const string name = "__Vincrement"s + cvtToStr(++m_modIncrementsNum);
+        const string name = "__Vincrement"s + cvtToStr(++m_modCompoundAssignmentsNum);
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTreePure(true)}};
