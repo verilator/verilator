@@ -1133,7 +1133,8 @@ class LinkParseVisitor final : public VNVisitor {
     // Create boilerplate covergroup methods on the given AstClass.
     // argsp/sampleArgsp are the raw arg lists still owned by the caller; they are iterated
     // (cloned) but not deleted here.
-    static void createCovergroupMethods(AstClass* nodep, AstNode* argsp, AstNode* sampleArgsp) {
+    static void createCovergroupMethods(AstClass* nodep, AstFunc* newFuncp, AstNode* argsp,
+                                        AstNode* sampleArgsp) {
         // Hidden static to take unspecified reference argument results
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
@@ -1142,19 +1143,6 @@ class LinkParseVisitor final : public VNVisitor {
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {
-            // Find the 'new' function to add parameters to.
-            // At this point the only AstFunc in the class is the "new" constructor
-            // created just above; other members are AstVar or AstCovergroup sentinel.
-            AstFunc* newFuncp = nullptr;
-            for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
-                if (AstFunc* const funcp = VN_CAST(memberp, Func)) {
-                    UASSERT_OBJ(
-                        funcp->name() == "new", funcp,
-                        "Unexpected non-new function in covergroup class during arg setup");
-                    newFuncp = funcp;
-                    break;
-                }
-            }
             UASSERT_OBJ(newFuncp, nodep,
                         "Covergroup class must have a 'new' constructor function");
             // Save the existing body statements and unlink them
@@ -1312,21 +1300,19 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Create the constructor; detach membersp (coverage body) and use as its body
-        {
-            AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
-            newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-            newp->classMethod(true);
-            newp->isConstructor(true);
-            newp->dtypep(cgClassp->dtypep());
-            if (AstNode* const bodyp = nodep->membersp()) {
-                bodyp->unlinkFrBackWithNext();
-                newp->addStmtsp(bodyp);
-            }
-            cgClassp->addMembersp(newp);
+        AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        newFuncp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
+        newFuncp->classMethod(true);
+        newFuncp->isConstructor(true);
+        newFuncp->dtypep(cgClassp->dtypep());
+        if (AstNode* const bodyp = nodep->membersp()) {
+            bodyp->unlinkFrBackWithNext();
+            newFuncp->addStmtsp(bodyp);
         }
+        cgClassp->addMembersp(newFuncp);
 
         // Add all boilerplate covergroup methods (reads argsp/sampleArgsp from nodep)
-        createCovergroupMethods(cgClassp, nodep->argsp(), nodep->sampleArgsp());
+        createCovergroupMethods(cgClassp, newFuncp, nodep->argsp(), nodep->sampleArgsp());
 
         // Replace AstCovergroup with AstClass and process the new class normally
         nodep->replaceWith(cgClassp);

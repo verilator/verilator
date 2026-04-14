@@ -7188,11 +7188,13 @@ trans_range_list<nodep>:  // ==IEEE: trans_range_list (returns AstCoverTransItem
         |       trans_item yP_BRASTAR cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[*]' in cover transition"); DEL($1, $3, $5); }
         |       trans_item yP_BRAMINUSGT cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition"); DEL($1, $3); }
+                        { BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition"); DEL($3);
+                          $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::GOTO}; }
         |       trans_item yP_BRAMINUSGT cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition"); DEL($1, $3, $5); }
         |       trans_item yP_BRAEQ cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition"); DEL($1, $3); }
+                        { BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition"); DEL($3);
+                          $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONCONS}; }
         |       trans_item yP_BRAEQ cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition"); DEL($1, $3, $5); }
         ;

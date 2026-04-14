@@ -1781,7 +1781,7 @@ class WidthVisitor final : public VNVisitor {
         // Extract covergroup option values and store in AstClass before deleting.
         // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
         // class bodies, and visitClass sets m_cgClassp before iterating children.
-        if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
+        if (nodep->name() == "auto_bin_max") {
             // By V3Width time, V3Param has already folded any parameter references.
             // If the value is still not a constant, it is a runtime expression - emit error.
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
