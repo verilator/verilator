@@ -199,23 +199,23 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
     return 0;
   }
 
+  if (s_maxsize == -1) s_maxsize = uvm_hdl_max_width();
+  size = vpi_get(vpiSize, r);
+  if (size > s_maxsize) {
+    m_uvm_error("UVM/DPI/VLOG_PUT",
+                "hdl path '%s' is %0d bits, but the maximum size is %0d.  "
+                "You can increase the maximum via a compile-time flag: "
+                "+define+UVM_HDL_MAX_WIDTH=<value>",
+                path, size, s_maxsize);
+    vpi_release_handle(r);
+    return 0;
+  }
+
   if (!is_partsel) {
     value_s.format = vpiVectorVal;
     value_s.value.vector = value;
     vpi_put_value(r, &value_s, &time_s, flag);
   } else {
-    if (s_maxsize == -1) s_maxsize = uvm_hdl_max_width();
-    size = vpi_get(vpiSize, r);
-    if (size > s_maxsize) {
-      m_uvm_error("UVM/DPI/VLOG_PUT",
-                  "hdl path '%s' is %0d bits, but the maximum size is %0d.  "
-                  "You can increase the maximum via a compile-time flag: "
-                  "+define+UVM_HDL_MAX_WIDTH=<value>",
-                  path, size, s_maxsize);
-      vpi_release_handle(r);
-      return 0;
-    }
-
     value_s.format = vpiVectorVal;
     vpi_get_value(r, &value_s);
 
