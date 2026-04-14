@@ -39,6 +39,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - four-states printing
  */
 
+#define VALUE_SUFFIX "__Vvalue"
+#define XZ_SUFFIX "__Vxz"
+
 namespace {
 struct FourStatePair final {
     AstNodeExpr* valuep;
@@ -642,10 +645,10 @@ class FourstateVisitor final : public VNVisitor {
                         portEndp = createPlaceholderVarp(ftaskp->fileline()));
                 }
                 AstVar* const returnValuep
-                    = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + "__Vvalue",
+                    = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + VALUE_SUFFIX,
                                  VFlagBitPacked{}, varp->width()};
                 AstVar* const returnXzp
-                    = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + "__Vxz",
+                    = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + XZ_SUFFIX,
                                  VFlagBitPacked{}, varp->width()};
                 returnValuep->direction(VDirection::OUTPUT);
                 returnXzp->direction(VDirection::OUTPUT);
@@ -665,7 +668,7 @@ class FourstateVisitor final : public VNVisitor {
             }
         }
         AstVar* const newXzp = varp->cloneTree(false);
-        newXzp->name(newXzp->name() + "__Vxz");
+        newXzp->name(newXzp->name() + XZ_SUFFIX);
         newXzp->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
         newXzp->dtypeSetBitUnsized(varp->width(), varp->widthMin(), varp->dtypep()->numeric());
         if (AstNodeExpr* const valuep = VN_CAST(newXzp->valuep(), NodeExpr)) {
@@ -675,7 +678,7 @@ class FourstateVisitor final : public VNVisitor {
         }
         varp->addNextHere(newXzp);
         AstVar* const newValuep = varp->cloneTree(false);
-        newValuep->name(newValuep->name() + "__Vvalue");
+        newValuep->name(newValuep->name() + VALUE_SUFFIX);
         newValuep->trace(varp->isTrace());
         newValuep->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
         newValuep->dtypeSetBitUnsized(varp->width(), varp->widthMin(), varp->dtypep()->numeric());
@@ -1281,6 +1284,9 @@ class FourstateVisitor final : public VNVisitor {
             if (varRefp->varp()->dtypep()->isFourstate()) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
+                if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
+                    varXRefp->name(varXRefp->name() + VALUE_SUFFIX);
+                }
                 newp->varp(getSplittedValue(varRefp->varp()));
                 newp->dtypeSetBitSized(varRefp->varp()->width(),
                                        varRefp->varp()->dtypep()->numeric());
@@ -1556,6 +1562,9 @@ class FourstateVisitor final : public VNVisitor {
             if (varRefp->varp()->dtypep()->isFourstate()) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
+                if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
+                    varXRefp->name(varXRefp->name() + VALUE_SUFFIX);
+                }
                 newp->varp(getSplittedXZ(varRefp->varp()));
                 newp->dtypeSetBitSized(varRefp->varp()->width(),
                                        varRefp->varp()->dtypep()->numeric());
