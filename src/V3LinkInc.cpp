@@ -262,6 +262,8 @@ class LinkIncVisitor final : public VNVisitor {
             case AstAssignCompound::Operation::Xor:
                 operationp = new AstXor{nodep->fileline(), lhsp, rhsp};
                 break;
+            default:
+                nodep->v3fatalSrc("Unhandled compound assignment operation");
             }
         } else {
             nodep->v3fatalSrc("Unhandled compound assignment operation");
