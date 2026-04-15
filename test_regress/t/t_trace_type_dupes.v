@@ -13,10 +13,10 @@
 `endif
 
 
-module t (/*AUTOARG*/
-          // Inputs
-          clk
-          );
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
   input clk;
 
   int cyc;
@@ -36,22 +36,19 @@ module t (/*AUTOARG*/
     int loop_cyc;
     always_comb loop_cyc = cyc + i;
     sub #(
-      .data_t (pkg::some_struct_t)
-    )
-    the_sub (
-      .a (loop_cyc[i%32]),
-      .b (loop_cyc[(i+1)%32]),
-      .x (x[i]),
-      .out_2d_unpacked (),
-      .data (),
-      .cyc (loop_cyc),
-      .clk
+        .data_t(pkg::some_struct_t)
+    ) the_sub (
+        .a(loop_cyc[i%32]),
+        .b(loop_cyc[(i+1)%32]),
+        .x(x[i]),
+        .out_2d_unpacked(),
+        .data(),
+        .cyc(loop_cyc),
+        .clk
     );
   end
 
-  intf
-  the_intf_a (.*),
-  the_intf_b (.*);
+  intf the_intf_a (.*), the_intf_b (.*);
 
   for (genvar m = 0; m < 4; m++) begin : gen_intf_loop
     always_comb begin
@@ -71,7 +68,7 @@ package pkg;
 
   typedef struct packed {
     logic foo;
-    logic [3:0] [31:0] bar;
+    logic [3:0][31:0] bar;
     logic [15:0] baz;
     logic [127:0] qux;
     some_sub_struct_t sub_struct;
@@ -82,18 +79,18 @@ package pkg;
 endpackage
 
 module sub #(
-  parameter type data_t = bit
-)(
-  input a,
-  input b,
-  output logic x,
-  output out_2d_unpacked [3][4],
-  output data_t data,
-  input int cyc,
-  input clk
+    parameter type data_t = bit
+) (
+    input a,
+    input b,
+    output logic x,
+    output out_2d_unpacked[3][4],
+    output data_t data,
+    input int cyc,
+    input clk
 );
   pkg::some_struct_t the_struct;
-  pkg::some_struct_t the_structs [3:0];
+  pkg::some_struct_t the_structs[3:0];
   pkg::some_struct_t [2:0] the_packed_structs;
 
   typedef struct packed {
@@ -114,9 +111,7 @@ module sub #(
   some_unpacked_struct_t the_local_unpacked_struct;
 
   typedef union packed {
-    struct packed {
-      logic [7:0] field_0;
-    } union_a;
+    struct packed {logic [7:0] field_0;} union_a;
     struct packed {
       logic [3:0] field_1;
       logic [3:0] field_2;
@@ -128,13 +123,13 @@ module sub #(
   } some_union_t;
   some_union_t the_local_union;
 
-  typedef logic [1:0] [31:0] logic_array_t;
-  typedef logic [1:0] [31:0] logic_array_2_t;
+  typedef logic [1:0][31:0] logic_array_t;
+  typedef logic [1:0][31:0] logic_array_2_t;
   logic_array_t the_logic_array;
   logic_array_2_t the_other_logic_array;
-  logic [15:0] the_unpacked_array [5];
-  logic the_2d_unpacked [3][4];
-  string the_string_array [3:0];
+  logic [15:0] the_unpacked_array[5];
+  logic the_2d_unpacked[3][4];
+  string the_string_array[3:0];
 
   typedef logic [3:0] four_bit_t;
   typedef four_bit_t [1:0] two_fours_t;
@@ -144,24 +139,16 @@ module sub #(
   always_ff @(posedge clk) begin
     x <= a ^ b;
     the_struct <= '{
-      foo : cyc[0],
-      bar : '{cyc, cyc+1, cyc+2, cyc+3},
-      baz : cyc[15:0],
-      qux : 128'(cyc),
-      sub_struct : '{
-        field_a : cyc[0],
-        field_b : cyc[5:0],
-        field_c : cyc[9:0]
-      }
+        foo : cyc[0],
+        bar : '{cyc, cyc + 1, cyc + 2, cyc + 3},
+        baz : cyc[15:0],
+        qux : 128'(cyc),
+        sub_struct : '{field_a : cyc[0], field_b : cyc[5:0], field_c : cyc[9:0]}
     };
-    for (int i = 0; i < 4; i++) the_structs[i] <= {$bits(pkg::some_struct_t){cyc[i]}};
+    for (int i = 0; i < 4; i++) the_structs[i] <= {$bits(pkg::some_struct_t) {cyc[i]}};
     the_local_struct <= cyc[2:0];
     the_typedefed_struct <= cyc[3:1];
-    the_local_unpacked_struct <= '{
-      field_a : cyc[0],
-      field_b : cyc[1],
-      field_c : cyc[2]
-    };
+    the_local_unpacked_struct <= '{field_a : cyc[0], field_b : cyc[1], field_c : cyc[2]};
     the_local_union <= cyc[7:0];
     for (int i = 0; i < 2; i++) begin
       the_logic_array[i] <= cyc + i;
@@ -169,18 +156,19 @@ module sub #(
     end
     for (int i = 0; i < 5; i++) the_unpacked_array[i] <= cyc[15:0];
     for (int i = 0; i < 3; i++)
-      for (int j = 0; j < 4; j++) begin
-        the_2d_unpacked [i][j] <= ~(cyc[i] ^ cyc[j]);
-        out_2d_unpacked [i][j] <= cyc[i] ^ cyc[j];
-      end
+    for (int j = 0; j < 4; j++) begin
+      the_2d_unpacked[i][j] <= ~(cyc[i] ^ cyc[j]);
+      out_2d_unpacked[i][j] <= cyc[i] ^ cyc[j];
+    end
   end
 
   always_comb data = the_struct;
 endmodule
 
-interface intf
-  (input wire clk);
-  logic [3:0] [7:0] data;
+interface intf (
+    input wire clk
+);
+  logic [3:0][7:0] data;
   int data_typed;
   always_comb data_typed = data;
 endinterface

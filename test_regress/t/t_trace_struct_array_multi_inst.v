@@ -22,8 +22,14 @@ module t (
     end
   end
 
-  sub sub_a (.clk, .seed(cnt));
-  sub sub_b (.clk, .seed(cnt + 100));
+  sub sub_a (
+      .clk,
+      .seed(cnt)
+  );
+  sub sub_b (
+      .clk,
+      .seed(cnt + 100)
+  );
 endmodule
 
 module sub (
@@ -38,19 +44,23 @@ module sub (
 
   typedef struct packed {
     inner_t sub;
-    logic [1:0] [7:0] arr;
+    logic [1:0][7:0] arr;
     logic [7:0] simple;
   } outer_t;
 
   // Unpacked array of struct with nested sub-struct and packed array
-  outer_t uarr [1:0];
+  outer_t uarr[1:0];
 
   always @(posedge clk) begin
-    uarr[0] <= '{sub: '{x: seed[7:0], y: seed[15:8]},
-                 arr: '{seed[7:0], seed[7:0]+8'd1},
-                 simple: seed[7:0]};
-    uarr[1] <= '{sub: '{x: ~seed[7:0], y: ~seed[15:8]},
-                 arr: '{~seed[7:0], ~seed[7:0]+8'd1},
-                 simple: ~seed[7:0]};
+    uarr[0] <= '{
+        sub: '{x: seed[7:0], y: seed[15:8]},
+        arr: '{seed[7:0], seed[7:0] + 8'd1},
+        simple: seed[7:0]
+    };
+    uarr[1] <= '{
+        sub: '{x: ~seed[7:0], y: ~seed[15:8]},
+        arr: '{~seed[7:0], ~seed[7:0] + 8'd1},
+        simple: ~seed[7:0]
+    };
   end
 endmodule
