@@ -1024,6 +1024,94 @@ class V3DfgPeephole final : public DfgVisitor {
         return {nullptr, 0, 0};
     }
 
+    // The following patterns all unwind a Sel throgh it's source and replace it with
+    // another single Sel. Doing this one at a time can take a long time with nested
+    // concatenations/selects/etc, so instead unwind as much as possible in one go.
+    std::pair<DfgVertex*, uint32_t> unwindSel(DfgVertex* fromp, uint32_t lsb,
+                                              const uint32_t width) {
+        while (true) {
+            const uint32_t msb = lsb + width - 1;
+
+            // Sel from Concat
+            if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
+                DfgVertex* const lhsp = concatp->lhsp();
+                DfgVertex* const rhsp = concatp->rhsp();
+
+                if (msb < rhsp->width()) {
+                    // If the select is entirely from rhs, then replace with sel from rhs
+                    APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {
+                        fromp = rhsp;
+                        continue;
+                    }
+                } else if (lsb >= rhsp->width()) {
+                    // If the select is entirely from the lhs, then replace with sel from lhs
+                    APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
+                        fromp = lhsp;
+                        lsb -= rhsp->width();
+                        continue;
+                    }
+                }
+            }
+
+            if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
+                // If the Sel is wholly into the source of the Replicate, push the Sel through
+                // the Replicate and apply it directly to the source of the Replicate.
+                const uint32_t srcWidth = repp->srcp()->width();
+                if (width <= srcWidth) {
+                    const uint32_t newLsb = lsb % srcWidth;
+                    const uint32_t newMsb = newLsb + width - 1;
+                    if (newMsb < srcWidth) {
+                        APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
+                            fromp = repp->srcp();
+                            lsb = newLsb;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            // Sel from Sel
+            if (DfgSel* const selp = fromp->cast<DfgSel>()) {
+                APPLYING(REPLACE_SEL_FROM_SEL) {
+                    // Select from the source of the source Sel with adjusted LSB
+                    fromp = selp->fromp();
+                    lsb += selp->lsb();
+                    continue;
+                }
+            }
+
+            // Sel from a partial variable (including narrowed vertex)
+            if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
+                if (varp->srcp() && !varp->isVolatile()) {
+                    // Must be a splice, otherwise it would have been inlined
+                    DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
+                    DfgVertex* driverp = nullptr;
+                    uint32_t driverLsb = 0;
+                    splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
+                        const uint32_t dMsb = dLsb + src.width() - 1;
+                        // If it does not cover the whole searched bit range, move on
+                        if (lsb < dLsb || dMsb < msb) return false;
+                        // Save the driver
+                        driverp = &src;
+                        driverLsb = dLsb;
+                        return true;
+                    });
+                    if (driverp) {
+                        APPLYING(PUSH_SEL_THROUGH_SPLICE) {
+                            fromp = driverp;
+                            lsb -= driverLsb;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            // No patterns matched, stop
+            break;
+        }
+        return {fromp, lsb};
+    }
+
     // VISIT methods
 
     void visit(DfgVertex*) override {}
@@ -1151,38 +1239,12 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // Sel from Concat
-        if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
-            DfgVertex* const lhsp = concatp->lhsp();
-            DfgVertex* const rhsp = concatp->rhsp();
-
-            if (msb < rhsp->width()) {
-                // If the select is entirely from rhs, then replace with sel from rhs
-                APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {  //
-                    replace(make<DfgSel>(vtxp, rhsp, vtxp->lsb()));
-                    return;
-                }
-            } else if (lsb >= rhsp->width()) {
-                // If the select is entirely from the lhs, then replace with sel from lhs
-                APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
-                    replace(make<DfgSel>(vtxp, lhsp, lsb - rhsp->width()));
-                    return;
-                }
-            }
-        }
-
-        if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
-            // If the Sel is wholly into the source of the Replicate, push the Sel through the
-            // Replicate and apply it directly to the source of the Replicate.
-            const uint32_t srcWidth = repp->srcp()->width();
-            if (width <= srcWidth) {
-                const uint32_t newLsb = lsb % srcWidth;
-                if (newLsb + width <= srcWidth) {
-                    APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
-                        replace(make<DfgSel>(vtxp, repp->srcp(), newLsb));
-                        return;
-                    }
-                }
+        // Unwind through bit packing in one go
+        {
+            const auto res = unwindSel(fromp, lsb, width);
+            if (res.first != fromp || res.second != lsb) {
+                replace(make<DfgSel>(vtxp, res.first, res.second));
+                return;
             }
         }
 
@@ -1197,15 +1259,6 @@ class V3DfgPeephole final : public DfgVisitor {
                     replace(make<DfgNot>(notp->fileline(), vtxp->dtype(), newSelp));
                     return;
                 }
-            }
-        }
-
-        // Sel from Sel
-        if (DfgSel* const selp = fromp->cast<DfgSel>()) {
-            APPLYING(REPLACE_SEL_FROM_SEL) {
-                // Select from the source of the source Sel with adjusted LSB
-                replace(make<DfgSel>(vtxp, selp->fromp(), lsb + selp->lsb()));
-                return;
             }
         }
 
@@ -1239,31 +1292,6 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSel* const newSelp = make<DfgSel>(vtxp, shiftLp->lhsp(), vtxp->lsb());
                     replace(make<DfgShiftL>(vtxp, newSelp, shiftLp->rhsp()));
                     return;
-                }
-            }
-        }
-
-        // Sel from a partial variable (including narrowed vertex)
-        if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-            if (varp->srcp() && !varp->isVolatile()) {
-                // Must be a splice, otherwise it would have been inlined
-                DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
-                DfgVertex* driverp = nullptr;
-                uint32_t driverLsb = 0;
-                splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
-                    const uint32_t dMsb = dLsb + src.width() - 1;
-                    // If it does not cover the whole searched bit range, move on
-                    if (lsb < dLsb || dMsb < msb) return false;
-                    // Save the driver
-                    driverp = &src;
-                    driverLsb = dLsb;
-                    return true;
-                });
-                if (driverp) {
-                    APPLYING(PUSH_SEL_THROUGH_SPLICE) {
-                        replace(make<DfgSel>(vtxp, driverp, lsb - driverLsb));
-                        return;
-                    }
                 }
             }
         }
