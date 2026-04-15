@@ -1,38 +1,18 @@
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:29:41: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   29 |   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, 29);
-      |                                         ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:31:41: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   31 |   assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 31);
-      |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:35:45: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   35 |   assert property (@(posedge clk) (##1 val) |-> (not val)) $display("[%0t] single delay with negated implication stmt, fileline:%d", $time, 35);
-      |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:37:45: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   37 |   assert property (@(posedge clk) ##1 (val) |-> not (val)) $display("[%0t] single delay with negated implication brackets stmt, fileline:%d", $time, 37);
-      |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:41:41: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   41 |   assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, 41);
-      |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:43:45: Unsupported: Implication with sequence expression as antecedent
-                                                    : ... note: In instance 't'
-   43 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 43);
-      |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:45:44: Unsupported: 'until' in complex property expression
-                                                    : ... note: In instance 't'
-   45 |   assert property (@(posedge clk) ##1 (val until val)) $display("[%0t] until in sequence, fileline:%d", $time, 45);
-      |                                            ^~~~~
 %Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:49: Unsupported: 'until' in complex property expression
                                                     : ... note: In instance 't'
    47 |   assert property (@(posedge clk) val until val until val) $display("[%0t] nested until, fileline:%d", $time, 47);
       |                                                 ^~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:50: Unsupported: Complex property expression inside 'until''
-                                                    : ... note: In instance 't'
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_property_sexpr_unsup.v:49:50: Duplicate declaration of block: '__VcycleDly_h########__2__block'
+                                        : ... note: In instance 't'
    49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
       |                                                  ^~
-%Error: Exiting due to
+        t/t_property_sexpr_unsup.v:49:50: ... Location of original declaration
+   49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
+      |                                                  ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Internal Error: t/t_property_sexpr_unsup.v:45:44: ../V3Ast.cpp:#: AstPExpr::bodyp() cannot have a non-nullptr nextp()
+                                                        : ... note: In instance 't'
+   45 |   assert property (@(posedge clk) ##1 (val until val)) $display("[%0t] until in sequence, fileline:%d", $time, 45);
+      |                                            ^~~~~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.
