@@ -576,6 +576,10 @@ public:
             vscp->user1Inc();
             vscp->varp()->user1Inc();
         }
+        if (AstVarScope* const vscp = nodep->dpiImportTriggerp()) {
+            vscp->user1Inc();
+            vscp->varp()->user1Inc();
+        }
 
         // If data type has a reference in another package, then keep defining package around
         for (auto& itr : m_dtypePkgsp) {

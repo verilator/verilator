@@ -1885,6 +1885,7 @@ class VSelfPointerText final {
     // Keep these in shared pointers to avoid branching for special cases
     static const std::shared_ptr<const string> s_emptyp;  // Holds ""
     static const std::shared_ptr<const string> s_thisp;  // Holds "this"
+    static const std::shared_ptr<const string> s_dpip;
 
     // MEMBERS
     std::shared_ptr<const string> m_strp;
@@ -1902,6 +1903,9 @@ public:
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+    class VlSymsDpi {};
+    VSelfPointerText(VlSymsDpi, const string &symClassName, const string& field)
+        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)" + "(Verilated::dpiScope()->symsp()))" + "->" + field + ")")} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }
