@@ -40,7 +40,7 @@ To build using MSVC:
 .. code-block:: bash
 
    cd verilator  # directory containing source files of verilator
-   mkdir build
+   mkdir -p build && cd build
    cmake .. -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install
    cmake --build . --config Release
    cmake --install . --prefix $PWD/../install
@@ -50,7 +50,7 @@ To build using ninja:
 .. code-block:: bash
 
    cd verilator
-   mkdir build
+   mkdir -p build && cd build
    cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install -DCMAKE_MAKE_PROGRAM=<path to ninja binary> -DBISON_EXECUTABLE=<path to bison> -DFLEX_EXECUTABLE=<path to flex>
    <path to ninja binary> #execute ninja
    cmake --install . --prefix $PWD/../install
