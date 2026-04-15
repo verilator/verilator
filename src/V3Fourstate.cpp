@@ -1826,7 +1826,21 @@ class FourstateVisitor final : public VNVisitor {
         AstVar* const varp = nodep->modVarp();
         if (!(varp->fourStateComplementp() || varp->isFourStateComplement())) {
             if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
-                if (varp->dtypep()->isFourstate()) {
+                if (VL_UNLIKELY(!(VN_IS(exprp, NodeVarRef) || VN_IS(exprp, Const)))) {
+                    // The issue lays in need for precalculations, potential side effects and lack
+                    // of arguments order evaluation guarantees. The idea to support it is to do
+                    // something like:
+                    //   Pin(foo())
+                    // will turn into:
+                    //   func helper()
+                    //     if (called) return;
+                    //     called = true;
+                    //     foo(tmpValue, tmpXZ)
+                    //   Pin((helper(), tmpValue), (helper(), tmpXZ))
+                    exprp->v3warn(E_UNSUPPORTED,
+                                  "Cells with pins that are not a variable reference or a "
+                                  "constant are not supported with  --fourstate");
+                } else if (varp->dtypep()->isFourstate()) {
                     AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
                                                     getFourStateExpressionXZ(exprp)};
                     nodep->addNextHere(newp);
