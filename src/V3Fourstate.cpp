@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - four-states printing
  */
 
-#define VALUE_SUFFIX "__Vvalue"
+#define VALUE_SUFFIX ""  // Needs to be empty so C++ api won't change
 #define XZ_SUFFIX "__Vxz"
 
 namespace {
@@ -388,7 +388,6 @@ class FourstateVisitor final : public VNVisitor {
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
     AstNode* m_currentFTaskArgp = nullptr;  // Current argument variable of FTaskRef - if not
                                             // variable it is meaningless
-    AstNode* m_currentArgVarp = nullptr;  // Current FTaskRef Argument Variable
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
 
     // array - whether numeric

@@ -657,13 +657,7 @@ class EmitCTrace final : public EmitCFunc {
 
         // Name
         puts(",");
-        {
-            std::string name = nodep->showname();
-            if (VString::endsWith(name, "__Vvalue")) {
-                name = name.erase(name.size() - (sizeof("__Vvalue") - 1));
-            }
-            putsQuoted(VIdProtect::protectWordsIf(name, nodep->protect()));
-        }
+        putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
 
         // Enum number
         puts("," + cvtToStr(enumNum));
