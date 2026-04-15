@@ -53,10 +53,14 @@ RUN apt-get update \
 
 WORKDIR /tmp
 
-RUN apt-get update && apt-get install --no-install-recommends -y cargo && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN cargo install wavetools && \
-    cp -p $HOME/.cargo/bin/wavediff /usr/local/bin/wavediff
+COPY wavetools.conf /tmp/wavetools.conf
+ARG WGET_EXTRA_ARGS=
+RUN . /tmp/wavetools.conf && \
+    wget -q ${WGET_EXTRA_ARGS} -O /tmp/wavetools.tar.gz \
+    "https://github.com/hudson-trading/wavetools/releases/download/${WAVETOOLS_VERSION}/wavetools-${WAVETOOLS_VERSION}-linux-x86_64.tar.gz" && \
+    tar -xzf /tmp/wavetools.tar.gz -C /tmp && \
+    cp /tmp/wavetools-${WAVETOOLS_VERSION}-linux-x86_64/wavediff /usr/local/bin/wavediff && \
+    rm -rf /tmp/wavetools.tar.gz /tmp/wavetools-* /tmp/wavetools.conf
 
 COPY build.sh /tmp/build.sh
 
