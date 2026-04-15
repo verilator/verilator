@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_assert_consec_rep_unsup.v:13:3: Unsupported: assertion antecedent contains SVA construct not yet supported by NFA engine
+                                                      : ... note: In instance 't'
+   13 |   assert property (@(posedge clk) a [* 10000] |-> b);
+      |   ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_consec_rep_unsup.v:27:3: Unsupported: assertion contains SVA construct not yet supported by NFA engine (e.g. intersect, sequence and, complex throughout)
+                                                      : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) a throughout (b[=2]))
+      |   ^~~~~~
+%Error: Exiting due to

@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 module t (
@@ -24,6 +25,11 @@ module t (
   wire e = crc[4];
 
   wire [63:0] result = {61'h0, c, b, a};
+
+  int count_fail1 = 0;
+  int count_fail2 = 0;
+  int count_fail3 = 0;
+  int count_fail4 = 0;
 
   always_ff @(posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -43,6 +49,13 @@ module t (
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkh(sum, 64'h38c614665c6b71ad);
+      // count_fail1 overcounts Questa by 1: NFA per-cycle reject merging
+      // OR's requiredStep-fail and terminal-fail into one signal; Questa
+      // resolves the same overlap as a single per-attempt miss.
+      `checkd(count_fail1, 25);  // Questa: 24
+      `checkd(count_fail2, 50);  // Questa: 50
+      `checkd(count_fail3, 24);  // Questa: 24
+      `checkd(count_fail4, 1);   // Questa: 1
       $write("*-* All Finished *-*\n");
       $finish;
     end
@@ -70,15 +83,18 @@ module t (
 
   // Range with binary SExpr: nextStep has delay > 0 after range match
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> b ##[1:2] (a | b | c | d | e) ##3 (a | b | c | d | e));
+      a |-> b ##[1:2] (a | b | c | d | e) ##3 (a | b | c | d | e))
+    else count_fail1 <= count_fail1 + 1;
 
   // Binary SExpr without implication (covers firstStep.exprp path without antecedent)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a ##[1:3] (a | b | c | d | e));
+      a ##[1:3] (a | b | c | d | e))
+    else count_fail2 <= count_fail2 + 1;
 
   // Implication with binary SExpr RHS (covers antExprp AND firstStep.exprp)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> b ##[1:2] (a | b | c | d | e));
+      a |-> b ##[1:2] (a | b | c | d | e))
+    else count_fail3 <= count_fail3 + 1;
 
   // Fixed delay before range (covers firstStep.delay path in IDLE)
   assert property (@(posedge clk) disable iff (cyc < 2)
@@ -86,7 +102,8 @@ module t (
 
   // Unary range with no antecedent and no preExpr (covers unconditional start)
   assert property (@(posedge clk) disable iff (cyc < 2)
-      ##[1:3] (a | b | c | d | e));
+      ##[1:3] (a | b | c | d | e))
+    else count_fail4 <= count_fail4 + 1;
 
   // ##[+] (= ##[1:$]): wait >= 1 cycle for b (CRC-driven, exercises CHECK stay)
   assert property (@(posedge clk) disable iff (cyc < 2)
