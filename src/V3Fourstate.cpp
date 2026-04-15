@@ -62,22 +62,22 @@ enum LogicType : char {
     FOUR_STATE,  // Four-state expression
 };
 
-static inline void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
+static void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
     exprp->user4(static_cast<int>(logic));
 }
 
-static inline void setFourstate(AstNodeExpr* const exprp, bool fourstate = true,
-                                bool fourstateInSubTree = false) {
+static void setFourstate(AstNodeExpr* const exprp, bool fourstate = true,
+                         bool fourstateInSubTree = false) {
     setLogicType(exprp, fourstate ? FOUR_STATE
                                   : (fourstateInSubTree ? TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE
                                                         : TWO_STATE));
 }
 
-static inline LogicType getLogicType(const AstNodeExpr* const exprp) {
+static LogicType getLogicType(const AstNodeExpr* const exprp) {
     return static_cast<LogicType>(exprp->user4());
 }
 
-static inline bool isFourstate(const AstNodeExpr* const exprp) {
+static bool isFourstate(const AstNodeExpr* const exprp) {
     const LogicType logic = getLogicType(exprp);
     UASSERT_OBJ(logic != UNINITIALIZED, exprp,
                 "Logic type of expression: " << exprp->typeName() << " is unevaluated");
@@ -85,7 +85,7 @@ static inline bool isFourstate(const AstNodeExpr* const exprp) {
 }
 
 // Return true when the expression is two-state and has four-state expression in sub-tree
-static inline bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
+static bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
     return getLogicType(exprp) == TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE;
 }
 
@@ -98,7 +98,7 @@ struct ReducerTrait<
                                      FourStatePair>::value>>
     final : std::true_type {};
 
-static inline bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+static bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
     FileLine* const flp = exprp->fileline();
     const int exprpWidth = exprp->width();
     if (V3Number{flp, 1, 0}
@@ -115,7 +115,7 @@ static inline bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const
     }
     return false;
 }
-static inline bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp) {
     FileLine* const flp = exprp->fileline();
     if (const AstConst* const constp = VN_CAST(exprp, Const)) {
         return constp->num().isAnyXZ() || V3Number{flp, 1, 0}.opLt(msb, constp->num()).isNeqZero();
