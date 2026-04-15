@@ -1278,6 +1278,20 @@ class FourstateVisitor final : public VNVisitor {
                                      getFourStateExpressionValue(concatp->rhsp(), false)};
         }
 
+        void visit(AstReplicate* const replicatep) override {
+            // {count{src.value}}
+            // IEEE 1800-2023 11.4.12.1 Replication operator:
+            // 'A replication operator (also called a multiple concatenation) is expressed by a
+            // concatenation preceded by a non-negative, non-x, and non-z constant expression,
+            // called a multiplier'...
+            // Because of that `replicatep->countp()` is just cloned
+            m_result = new AstReplicate{replicatep->fileline(),
+                                        getFourStateExpressionValue(replicatep->srcp(), false),
+                                        replicatep->countp()->cloneTree(false)};
+            m_result->dtypeSetBitUnsized(replicatep->width(), replicatep->dtypep()->widthMin(),
+                                         replicatep->dtypep()->numeric());
+        }
+
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
             if (varRefp->varp()->dtypep()->isFourstate()) {
@@ -1525,6 +1539,20 @@ class FourstateVisitor final : public VNVisitor {
             m_result = new AstConcat{concatp->fileline(),
                                      getFourStateExpressionXZ(concatp->lhsp(), false),
                                      getFourStateExpressionXZ(concatp->rhsp(), false)};
+        }
+
+        void visit(AstReplicate* const replicatep) override {
+            // {count{src.value}}
+            // IEEE 1800-2023 11.4.12.1 Replication operator:
+            // 'A replication operator (also called a multiple concatenation) is expressed by a
+            // concatenation preceded by a non-negative, non-x, and non-z constant expression,
+            // called a multiplier'...
+            // Because of that `replicatep->countp()` is just cloned
+            m_result = new AstReplicate{replicatep->fileline(),
+                                        getFourStateExpressionXZ(replicatep->srcp(), false),
+                                        replicatep->countp()->cloneTree(false)};
+            m_result->dtypeSetBitUnsized(replicatep->width(), replicatep->dtypep()->widthMin(),
+                                         replicatep->dtypep()->numeric());
         }
 
         void visit(AstNodeFTaskRef* const funcp) override {
@@ -1839,6 +1867,7 @@ class FourstateVisitor final : public VNVisitor {
                     exprp->v3warn(E_UNSUPPORTED,
                                   "Cells with pins that are not a variable reference or a "
                                   "constant are not supported with  --fourstate");
+                    return;
                 } else if (varp->dtypep()->isFourstate()) {
                     AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
                                                     getFourStateExpressionXZ(exprp)};
