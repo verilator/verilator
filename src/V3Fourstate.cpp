@@ -1757,6 +1757,11 @@ class FourstateVisitor final : public VNVisitor {
             if (AstAssignW* const assignWValuep = VN_CAST(nodep, AssignW)) {
                 assignWConflictResolution(lhsVarRefp->varp(), assignWValuep,
                                           VN_AS(assignXZp, AssignW));
+                if (const AstNode* const timingControlp = assignWValuep->timingControlp()) {
+                    timingControlp->v3warn(
+                        E_UNSUPPORTED,
+                        "Continuous assignment delays are unsupported with --fourstate");
+                }
             }
         } else if (isFourstate(nodep->rhsp())) {
             AstNodeExpr* const newRhsp = getTwoStateCast(nodep->rhsp());
