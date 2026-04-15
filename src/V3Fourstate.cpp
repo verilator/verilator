@@ -62,22 +62,22 @@ enum LogicType : char {
     FOUR_STATE,  // Four-state expression
 };
 
-static void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
+static inline void setLogicType(AstNodeExpr* const exprp, const LogicType logic) {
     exprp->user4(static_cast<int>(logic));
 }
 
-static void setFourstate(AstNodeExpr* const exprp, bool fourstate = true,
-                         bool fourstateInSubTree = false) {
+static inline void setFourstate(AstNodeExpr* const exprp, bool fourstate = true,
+                                bool fourstateInSubTree = false) {
     setLogicType(exprp, fourstate ? FOUR_STATE
                                   : (fourstateInSubTree ? TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE
                                                         : TWO_STATE));
 }
 
-static LogicType getLogicType(const AstNodeExpr* const exprp) {
+static inline LogicType getLogicType(const AstNodeExpr* const exprp) {
     return static_cast<LogicType>(exprp->user4());
 }
 
-static bool isFourstate(const AstNodeExpr* const exprp) {
+static inline bool isFourstate(const AstNodeExpr* const exprp) {
     const LogicType logic = getLogicType(exprp);
     UASSERT_OBJ(logic != UNINITIALIZED, exprp,
                 "Logic type of expression: " << exprp->typeName() << " is unevaluated");
@@ -85,7 +85,7 @@ static bool isFourstate(const AstNodeExpr* const exprp) {
 }
 
 // Return true when the expression is two-state and has four-state expression in sub-tree
-static bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
+static inline bool hasFourstateInSubtree(const AstNodeExpr* const exprp) {
     return getLogicType(exprp) == TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE;
 }
 
@@ -98,7 +98,7 @@ struct ReducerTrait<
                                      FourStatePair>::value>>
     final : std::true_type {};
 
-static bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+static inline bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
     FileLine* const flp = exprp->fileline();
     const int exprpWidth = exprp->width();
     if (V3Number{flp, 1, 0}
@@ -115,7 +115,7 @@ static bool isStaticallyGte(const V3Number& msb, const AstNodeExpr* const exprp)
     }
     return false;
 }
-static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+static inline bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp) {
     FileLine* const flp = exprp->fileline();
     if (const AstConst* const constp = VN_CAST(exprp, Const)) {
         return constp->num().isAnyXZ() || V3Number{flp, 1, 0}.opLt(msb, constp->num()).isNeqZero();
@@ -521,6 +521,33 @@ class FourstateVisitor final : public VNVisitor {
         return resultp;
     }
 
+    // {whether supported, whether four state} - second is needed for the recursion
+    static std::pair<bool, bool> isDTypepSupported(const AstNodeDType* const dtypep) {
+        if (const AstNodeUOrStructDType* const containerDTypep
+            = VN_CAST(dtypep, NodeUOrStructDType)) {
+            return {!containerDTypep->isFourstate(), containerDTypep->isFourstate()};
+        }
+        if (const AstBasicDType* const basicp = dtypep->basicp()) {
+            return {true, basicp->isFourstate()};
+        }
+        if (const AstQueueDType* const containerDTypep = VN_CAST(dtypep, QueueDType)) {
+            std::pair<bool, bool> subDtype
+                = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
+            return {subDtype.first && !subDtype.second, false};
+        }
+        if (const AstAssocArrayDType* const containerDTypep = VN_CAST(dtypep, AssocArrayDType)) {
+            std::pair<bool, bool> subDtype
+                = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
+            return {subDtype.first && !subDtype.second, false};
+        }
+        if (const AstUnpackArrayDType* const containerDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            std::pair<bool, bool> subDtype
+                = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
+            return {subDtype.first && !subDtype.second, false};
+        }
+        return {true, false};
+    }
+
     void assignWConflictResolution(AstVar* const varp, AstAssignW* const assignwValuep,
                                    AstAssignW* const assignwXzp) {
         // Assignments to different things are unsupported
@@ -538,7 +565,10 @@ class FourstateVisitor final : public VNVisitor {
         case VVarType::WIRE: m_assignWToWire[varp].emplace_back(assignwValuep, assignwXzp); break;
         case VVarType::SUPPLY0:
         case VVarType::SUPPLY1:
-            varp->v3warn(E_UNSUPPORTED, "supply0 and supply1 are not supported with --fourstate");
+        case VVarType::TRI0:
+        case VVarType::TRI1:
+            varp->v3warn(E_UNSUPPORTED,
+                         "supply0/tri0 and supply1/tri1 are not supported with --fourstate");
             break;
         default:
             assignwValuep->v3fatalSrc(
@@ -2085,7 +2115,13 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstVar* const nodep) override {
-        if (nodep->dtypep()->isFourstate()) splitVar(nodep);
+        if (VL_UNLIKELY(!isDTypepSupported(nodep->dtypep()->skipRefp()).first)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Variables of type: " << nodep->dtypep()->prettyDTypeNameQ()
+                                                << " are unsupported with --fourstate");
+        } else if (nodep->dtypep()->isFourstate()) {
+            splitVar(nodep);
+        }
         iterateChildren(nodep);
     }
 
