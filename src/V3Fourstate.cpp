@@ -336,10 +336,10 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
-    void visit(AstFScanF* const nodep) override {
-        iterateChildrenSeparately(nodep);
-        setFourstate(nodep, false, m_fourstateInSubtree);
-    }
+    // void visit(AstFScanF* const nodep) override {  // We want to get UNSUPPORTED error right now
+    //     iterateChildrenSeparately(nodep);
+    //     setFourstate(nodep, false, m_fourstateInSubtree);
+    // }
 
     void visit(AstNodeExpr* const nodep) override {
         iterateChildrenSeparately(nodep);
@@ -1856,13 +1856,59 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstDisplay* const nodep) override {
+        VL_RESTORER(m_currentStmtp);
+        m_currentStmtp = nodep;
+        if (nodep->filep() && isFourstate(nodep->filep())) {
+            nodep->filep()->v3warn(
+                LOGICCAST,
+                "Some features are not supported with four-state values - cast it to two-state "
+                "logic or suppress this warning and it will be done implicitly");
+            AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
+            nodep->filep()->unlinkFrBack()->deleteTree();
+            nodep->filep(newp);
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstFClose* const nodep) override {
+        VL_RESTORER(m_currentStmtp);
+        m_currentStmtp = nodep;
+        if (isFourstate(nodep->filep())) {
+            nodep->filep()->v3warn(
+                LOGICCAST,
+                "Some features are not supported with four-state values - cast it to two-state "
+                "logic or suppress this warning and it will be done implicitly");
+            AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
+            nodep->filep()->unlinkFrBack()->deleteTree();
+            nodep->filep(newp);
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstFFlush* const nodep) override {
+        VL_RESTORER(m_currentStmtp);
+        m_currentStmtp = nodep;
+        if (nodep->filep() && isFourstate(nodep->filep())) {
+            nodep->filep()->v3warn(
+                LOGICCAST,
+                "Some features are not supported with four-state values - cast it to two-state "
+                "logic or suppress this warning and it will be done implicitly");
+            AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
+            nodep->filep()->unlinkFrBack()->deleteTree();
+            nodep->filep(newp);
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstSFormatF* const nodep) override {
         for (AstNodeExpr* exprp = nodep->exprsp(); exprp;
              exprp = VN_AS(exprp->nextp(), NodeExpr)) {
             if (isFourstate(exprp)) {
-                exprp->v3warn(LOGICCAST,
-                              "Using four-state values in formatting strings is not supported yet "
-                              "- all four-state values will be implicitly casted to two-state");
+                exprp->v3warn(
+                    LOGICCAST,
+                    "Some features are not supported with four-state values - cast it to "
+                    "two-state logic or suppress this warning and it will be done implicitly");
                 if (AstSFormatArg* const sformatArgp = VN_CAST(exprp, SFormatArg)) {
                     AstNodeExpr* const currentExprp = sformatArgp->exprp();
                     currentExprp->replaceWith(getTwoStateCast(currentExprp));

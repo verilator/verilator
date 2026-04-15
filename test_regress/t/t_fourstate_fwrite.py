@@ -11,10 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=[
-    '--fourstate', '-Wno-FUTURE'
-])
+test.compile(verilator_flags2=['--fourstate', '-Wno-FUTURE', '-Wno-LOGICCAST'])
 
 test.execute()
+
+test.files_identical(test.obj_dir + "/" + test.name + "_logger.log", test.golden_filename)
 
 test.passes()
