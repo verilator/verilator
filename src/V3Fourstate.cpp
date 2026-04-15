@@ -128,6 +128,37 @@ static bool needsSplitting(const AstNodeDType* const dtypep) {
     }
     return false;
 }
+
+class FTaskPortsHelper final {
+    std::vector<AstVar*>
+        m_currentFTaskRefPortps;  // Ports of FTask in order so we can connect AstArgs to them
+    std::map<std::string, AstVar*>
+        m_currentFTaskRefPortpsNamesToVarps;  // Ports names to their Vars so we can handle
+                                              // named arguments
+
+public:
+    explicit FTaskPortsHelper(const AstNodeFTask* const ftaskp) {
+        // TODO: Add caching
+        UASSERT_OBJ(m_currentFTaskRefPortps.empty(), ftaskp,
+                    "Tried to build a port map while another exists");
+        UASSERT_OBJ(m_currentFTaskRefPortpsNamesToVarps.empty(), ftaskp,
+                    "Tried to build a port map while another exists");
+        for (AstNode* stmtp = ftaskp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->varType() == VVarType::PORT
+                    && !(varp->fourStateComplementp() || varp->isFourStateComplement())) {
+                    m_currentFTaskRefPortps.push_back(varp);
+                    m_currentFTaskRefPortpsNamesToVarps[varp->name()] = varp;
+                }
+            }
+        }
+    }
+
+    AstVar* getArgPortVar(const std::string& name, const size_t idx) const {
+        return name.empty() ? m_currentFTaskRefPortps.at(idx)
+                            : m_currentFTaskRefPortpsNamesToVarps.at(name);
+    }
+};
 }  // namespace
 
 // Propagates the logic type (two or four-state) on AstNodeExpr
@@ -388,18 +419,15 @@ class FourstateVisitor final : public VNVisitor {
 
     V3UniqueNames m_tmpNames;  // Unique names generator for temporary variables
 
-    AstVar* m_currentTmpSpotp = nullptr;  // Node after which put AstVar* for temporary variable
+    AstNode* m_currentTmpSpotp = nullptr;  // Node after which put AstVar* for temporary variable
     bool m_tmpFuncLocal
         = false;  // Whether temporary variables shall be created as function locals
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
 
     size_t m_currentArgIdx = 0;  // Counter of arguments so we know at which postion AstArg is
-    std::vector<AstVar*>
-        m_currentFTaskRefPortps;  // Ports of FTask in order so we can connect AstArgs to them
-    std::map<std::string, AstVar*>
-        m_currentFTaskRefPortpsNamesToVarps;  // Ports names to their Vars so we can handle named
-                                              // arguments
+    AstNodeFTaskRef* m_currentFTaskRefp = nullptr;  // Currently visited AstNodeFTaskRef*
+    std::vector<FTaskPortsHelper> m_ftaskPortHelpers;  // Cache of FTaskPortsHelpers
 
     // array - whether numeric
     // map - width
@@ -748,6 +776,13 @@ class FourstateVisitor final : public VNVisitor {
         return getSplittedValue(varp)->fourStateComplementp();
     }
 
+    const FTaskPortsHelper& getFTaskPortHelper(AstNodeFTask* const ftaskp) {
+        if (ftaskp->user1()) return m_ftaskPortHelpers[ftaskp->user1() - 1];
+        ftaskp->user1(m_ftaskPortHelpers.size() + 1);
+        m_ftaskPortHelpers.emplace_back(static_cast<const AstNodeFTask*>(ftaskp));
+        return m_ftaskPortHelpers.back();
+    }
+
     void addPrecalculation(AstNodeStmt* const nodep) {
         FourstateLogicTypePropagator{nodep};
         m_currentStmtp->addHereThisAsNext(nodep);
@@ -833,22 +868,26 @@ class FourstateVisitor final : public VNVisitor {
             AstNodeFTaskRef* const newCallp = funcp->cloneTree(false);
             if (newCallp->argsp()) newCallp->argsp()->unlinkFrBackWithNext()->deleteTree();
             FileLine* const flp = funcp->fileline();
-            AstNode* varStmtp = funcp->taskp()->stmtsp();
-            for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
-                const AstVar* const varp = VN_AS(varStmtp, Var);
-                if (needsSplitting(varp->dtypep()) || varp->fourStateComplementp()) {
-                    newCallp->addArgsp(
-                        new AstArg{flp, "", getFourStateExpressionValue(argp->exprp(), false)});
-                    newCallp->addArgsp(
-                        new AstArg{flp, "", getFourStateExpressionXZ(argp->exprp(), false)});
-                    if (varp->fourStateComplementp()) varStmtp = varStmtp->nextp();
-                } else if (isFourstate(argp->exprp())) {
-                    newCallp->addArgsp(
-                        new AstArg{flp, "", m_fourstateVisitor.getTwoStateCast(argp->exprp())});
-                } else {
-                    newCallp->addArgsp(argp->cloneTree(false));
+            {
+                size_t argIdx = 0;
+                const FTaskPortsHelper& ftaskPortsHelper
+                    = m_fourstateVisitor.getFTaskPortHelper(funcp->taskp());
+                for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+                    const AstVar* const varp
+                        = ftaskPortsHelper.getArgPortVar(argp->name(), argIdx);
+                    ++argIdx;
+                    if (needsSplitting(varp->dtypep())) {
+                        newCallp->addArgsp(new AstArg{
+                            flp, "", getFourStateExpressionValue(argp->exprp(), false)});
+                        newCallp->addArgsp(
+                            new AstArg{flp, "", getFourStateExpressionXZ(argp->exprp(), false)});
+                    } else if (isFourstate(argp->exprp())) {
+                        newCallp->addArgsp(new AstArg{
+                            flp, "", m_fourstateVisitor.getTwoStateCast(argp->exprp())});
+                    } else {
+                        newCallp->addArgsp(argp->cloneTree(false));
+                    }
                 }
-                varStmtp = varStmtp->nextp();
             }
             AstVarRef* const resultValueRefp = new AstVarRef{flp, resultValuep, VAccess::WRITE};
             AstVarRef* const resultXzRefp = new AstVarRef{flp, resultXzp, VAccess::WRITE};
@@ -1987,26 +2026,15 @@ class FourstateVisitor final : public VNVisitor {
 
     void visit(AstNodeFTaskRef* const nodep) override {
         VL_RESTORER(m_currentArgIdx);
-        VL_RESTORER(m_currentFTaskRefPortps);
-        VL_RESTORER(m_currentFTaskRefPortpsNamesToVarps);
-
-        for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->varType() == VVarType::PORT
-                    && !(varp->fourStateComplementp() || varp->isFourStateComplement())) {
-                    m_currentFTaskRefPortps.push_back(varp);
-                    m_currentFTaskRefPortpsNamesToVarps[varp->name()] = varp;
-                }
-            }
-        }
+        VL_RESTORER(m_currentFTaskRefp);
+        m_currentFTaskRefp = nodep;
         iterateChildren(nodep);
     }
 
     void visit(AstArg* const nodep) override {
         if (!nodep->user1()) {
-            AstVar* const varp = nodep->name().empty()
-                                     ? m_currentFTaskRefPortps.at(m_currentArgIdx)
-                                     : m_currentFTaskRefPortpsNamesToVarps.at(nodep->name());
+            AstVar* const varp = getFTaskPortHelper(m_currentFTaskRefp->taskp())
+                                     .getArgPortVar(nodep->name(), m_currentArgIdx);
             ++m_currentArgIdx;
             if (needsSplitting(varp->dtypep())) {
                 AstArg* const newp = new AstArg{
@@ -2181,13 +2209,7 @@ class FourstateVisitor final : public VNVisitor {
         VL_RESTORER(m_tmpUnusedVarps);
         VL_RESTORER(m_tmpFuncLocal);
         m_tmpFuncLocal = true;
-        m_currentTmpSpotp = createPlaceholderVarp(nodep->fileline());
-        if (AstNode* stmtp = nodep->stmtsp()) {
-            while (VN_IS(stmtp->nextp(), Var)) stmtp = stmtp->nextp();
-            stmtp->addNextHere(m_currentTmpSpotp);
-        } else {
-            nodep->addStmtsp(m_currentTmpSpotp);
-        }
+        m_currentTmpSpotp = nodep->stmtsp();
         TmpVarsReleaser releaser{*this};
         // Make sure FTasks use only local variables - prevents using tmp
         // which may be used by a caller
@@ -2218,12 +2240,7 @@ class FourstateVisitor final : public VNVisitor {
     void visit(AstNodeModule* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
         VL_RESTORER(m_tmpUnusedVarps);
-        m_currentTmpSpotp = createPlaceholderVarp(nodep->fileline());
-        if (AstNode* stmtp = nodep->stmtsp()) {
-            stmtp->addHereThisAsNext(m_currentTmpSpotp);
-        } else {
-            nodep->addStmtsp(m_currentTmpSpotp);
-        }
+        m_currentTmpSpotp = nodep->stmtsp();
         iterateChildren(nodep);
     }
 
