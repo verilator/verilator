@@ -158,6 +158,9 @@ public:
         return name.empty() ? m_currentFTaskRefPortps.at(idx)
                             : m_currentFTaskRefPortpsNamesToVarps.at(name);
     }
+    AstVar* last() const {
+        return m_currentFTaskRefPortps.empty() ? nullptr : m_currentFTaskRefPortps.back();
+    }
 };
 }  // namespace
 
@@ -621,13 +624,6 @@ class FourstateVisitor final : public VNVisitor {
         }
     }
 
-    AstVar* createPlaceholderVarp(FileLine* const flp) {
-        AstVar* const newp
-            = new AstVar{flp, VVarType::BLOCKTEMP, "__VplaceHolder", VFlagBitPacked{}, 1};
-        m_varpsToRemove.push_back(newp);
-        return newp;
-    }
-
     class StatementPlaceHolder final {
         FourstateVisitor& m_visitor;
         AstNodeStmt* const m_prevStmtp;
@@ -697,26 +693,8 @@ class FourstateVisitor final : public VNVisitor {
         if (varp->user1p()) return;
         m_varpsToRemove.push_back(varp);
         if (AstNodeFTask* const ftaskp = VN_CAST(varp->backp(), NodeFTask)) {
-            AstVar* portEndp;
             if (ftaskp->fvarp() == varp) {
-                if (!ftaskp->stmtsp()) {
-                    ftaskp->addStmtsp(portEndp = createPlaceholderVarp(ftaskp->fileline()));
-                } else if (AstVar* const portp = VN_CAST(ftaskp->stmtsp(), Var)) {
-                    if (portp->varType() != VVarType::PORT) {
-                        portp->addHereThisAsNext(portEndp
-                                                 = createPlaceholderVarp(ftaskp->fileline()));
-                    } else {
-                        portEndp = portp;
-                        AstVar* iter;
-                        while ((iter = VN_CAST(portEndp->nextp(), Var))
-                               && iter->varType() == VVarType::PORT) {
-                            portEndp = iter;
-                        }
-                    }
-                } else {
-                    ftaskp->stmtsp()->addHereThisAsNext(
-                        portEndp = createPlaceholderVarp(ftaskp->fileline()));
-                }
+                AstVar* const portEndp = getFTaskPortHelper(ftaskp).last();
                 AstVar* const returnValuep
                     = new AstVar{varp->fileline(), VVarType::PORT, varp->name() + VALUE_SUFFIX,
                                  VFlagBitPacked{}, varp->width()};
@@ -732,8 +710,14 @@ class FourstateVisitor final : public VNVisitor {
                 returnValuep->trace(varp->isTrace());
                 returnValuep->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
                 returnXzp->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
-                portEndp->addNextHere(returnXzp);
-                portEndp->addNextHere(returnValuep);
+                if (portEndp) {
+                    portEndp->addNextHere(returnXzp);
+                    portEndp->addNextHere(returnValuep);
+                } else {
+                    AstNode* stmtp = ftaskp->stmtsp();
+                    stmtp->addHereThisAsNext(returnValuep);
+                    stmtp->addHereThisAsNext(returnXzp);
+                }
                 varp->user1p(returnValuep);
                 returnValuep->fourStateComplementp(returnXzp);
                 ftaskp->dtypeSetVoid();
@@ -893,8 +877,12 @@ class FourstateVisitor final : public VNVisitor {
             AstVarRef* const resultXzRefp = new AstVarRef{flp, resultXzp, VAccess::WRITE};
             setFourstate(resultValueRefp, false);
             setFourstate(resultXzRefp, false);
-            newCallp->addArgsp(new AstArg{flp, "", resultValueRefp});
-            newCallp->addArgsp(new AstArg{flp, "", resultXzRefp});
+            {
+                std::string resultName = funcp->taskp()->fvarp()->name();
+                newCallp->addArgsp(new AstArg{flp, resultName + VALUE_SUFFIX, resultValueRefp});
+                newCallp->addArgsp(
+                    new AstArg{flp, std::move(resultName) + XZ_SUFFIX, resultXzRefp});
+            }
             AstStmtExpr* const newStmtExprp = new AstStmtExpr{flp, newCallp};
             newStmtExprp->user3(1);
             addPrecalculation(newStmtExprp);
