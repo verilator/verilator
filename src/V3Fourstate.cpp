@@ -379,6 +379,7 @@ class FourstateVisitor final : public VNVisitor {
     // Node status
     // AstVar*::user1p      ->  AstVar*.        Where is value part of splitted variable - xz
     //                                          shall be nexp() of user1p
+    // AstArg*::user1       ->  bool.           Whether it is a product of a splitting
     // AstNodeExpr::user1p  ->  AstNodeExpr*.   Expression evaluating value component
     // AstNodeExpr::user2p  ->  AstNodeExpr*.   Expression evaluating xz component
     // AstNode::user3       ->  bool.           Whether visited
@@ -391,9 +392,14 @@ class FourstateVisitor final : public VNVisitor {
     bool m_tmpFuncLocal
         = false;  // Whether temporary variables shall be created as function locals
     AstNodeStmt* m_currentStmtp = nullptr;  // Current statement
-    AstNode* m_currentFTaskArgp = nullptr;  // Current argument variable of FTaskRef - if not
-                                            // variable it is meaningless
     std::vector<AstVar*> m_varpsToRemove;  // Vars to unlink and remove in destructor
+
+    size_t m_currentArgIdx = 0;  // Counter of arguments so we know at which postion AstArg is
+    std::vector<AstVar*>
+        m_currentFTaskRefPortps;  // Ports of FTask in order so we can connect AstArgs to them
+    std::map<std::string, AstVar*>
+        m_currentFTaskRefPortpsNamesToVarps;  // Ports names to their Vars so we can handle named
+                                              // arguments
 
     // array - whether numeric
     // map - width
@@ -1980,30 +1986,44 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
-        VL_RESTORER(m_currentFTaskArgp);
-        m_currentFTaskArgp = nodep->taskp()->stmtsp();
+        VL_RESTORER(m_currentArgIdx);
+        VL_RESTORER(m_currentFTaskRefPortps);
+        VL_RESTORER(m_currentFTaskRefPortpsNamesToVarps);
+
+        for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->varType() == VVarType::PORT
+                    && !(varp->fourStateComplementp() || varp->isFourStateComplement())) {
+                    m_currentFTaskRefPortps.push_back(varp);
+                    m_currentFTaskRefPortpsNamesToVarps[varp->name()] = varp;
+                }
+            }
+        }
         iterateChildren(nodep);
     }
 
     void visit(AstArg* const nodep) override {
-        AstVar* const varp = VN_CAST(m_currentFTaskArgp, Var);
-        UASSERT_OBJ(varp, nodep, "FTask has no more arguments?");
-        if (needsSplitting(varp->dtypep())) {
-            nodep->addNextHere(
-                new AstArg{nodep->fileline(), "", getFourStateExpressionXZ(nodep->exprp())});
-            AstNodeExpr* const oldp = nodep->exprp()->unlinkFrBack();
-            nodep->exprp(getFourStateExpressionValue(oldp));
-            oldp->deleteTree();
-            splitVar(varp);  // Ensure that variable is splitted
-            UASSERT_OBJ(m_currentFTaskArgp->nextp() && m_currentFTaskArgp->nextp()->nextp(), varp,
-                        "Varp was not split correctly");
-            m_currentFTaskArgp = m_currentFTaskArgp->nextp();
-        } else if (isFourstate(nodep->exprp())) {
-            AstNodeExpr* const oldp = nodep->exprp()->unlinkFrBack();
-            nodep->exprp(getTwoStateCast(oldp));
-            oldp->deleteTree();
+        if (!nodep->user1()) {
+            AstVar* const varp = nodep->name().empty()
+                                     ? m_currentFTaskRefPortps.at(m_currentArgIdx)
+                                     : m_currentFTaskRefPortpsNamesToVarps.at(nodep->name());
+            ++m_currentArgIdx;
+            if (needsSplitting(varp->dtypep())) {
+                AstArg* const newp = new AstArg{
+                    nodep->fileline(), nodep->name().empty() ? "" : (varp->name() + XZ_SUFFIX),
+                    getFourStateExpressionXZ(nodep->exprp())};
+                newp->user1(1);
+                nodep->addNextHere(newp);
+                AstNodeExpr* const oldp = nodep->exprp()->unlinkFrBack();
+                nodep->exprp(getFourStateExpressionValue(oldp));
+                oldp->deleteTree();
+                nodep->name(nodep->name() + VALUE_SUFFIX);
+            } else if (isFourstate(nodep->exprp())) {
+                AstNodeExpr* const oldp = nodep->exprp()->unlinkFrBack();
+                nodep->exprp(getTwoStateCast(oldp));
+                oldp->deleteTree();
+            }
         }
-        m_currentFTaskArgp = m_currentFTaskArgp->nextp();
         iterateChildren(nodep);
     }
 
