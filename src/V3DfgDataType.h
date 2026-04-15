@@ -125,18 +125,13 @@ public:
     // Thanks to the interning, equality is identity
     bool operator==(const DfgDataType& that) const { return this == &that; }
     bool operator!=(const DfgDataType& that) const { return this != &that; }
+    // Similarly for hash
+    V3Hash hash() const { return V3Hash{this}; }
 
     // Type of elements, for arrays only
     const DfgDataType& elemDtype() const {
         UASSERT(isArray(), "Non-array has no 'elemDType'");
         return *m_elemDtypep;
-    }
-
-    V3Hash hash() const {
-        V3Hash hash{static_cast<uint32_t>(m_kind)};
-        hash += m_size;
-        if (m_elemDtypep) hash += m_elemDtypep->hash();
-        return hash;
     }
 
     //-----------------------------------------------------------------------
