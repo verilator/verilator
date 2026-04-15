@@ -1822,36 +1822,27 @@ class FourstateVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstCell* const nodep) override {
-        VL_RESTORER(m_currentArgVarp);
-        m_currentArgVarp = nodep->modp()->stmtsp();
-        iterateChildren(nodep);
-    }
-
     void visit(AstPin* const nodep) override {
-        AstVar* const varp = VN_CAST(m_currentArgVarp, Var);
-        UASSERT_OBJ(varp, nodep, "Cell has no more arguments?");
-        if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
-            if (varp->dtypep()->isFourstate()) {
-                AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
-                                                getFourStateExpressionXZ(exprp)};
-                nodep->addNextHere(newp);
-                AstNodeExpr* const oldp = exprp->unlinkFrBack();
-                nodep->exprp(getFourStateExpressionValue(oldp));
-                oldp->deleteTree();
-                splitVar(varp);  // Ensure that variable is splitted
-                UASSERT_OBJ(m_currentArgVarp->nextp() && m_currentArgVarp->nextp()->nextp(), varp,
-                            "Varp was not split correctly");
-                m_currentArgVarp = m_currentArgVarp->nextp();
-                nodep->modVarp(VN_AS(m_currentArgVarp, Var));
-                newp->modVarp(VN_AS(m_currentArgVarp->nextp(), Var));
-            } else if (isFourstate(exprp)) {
-                AstNodeExpr* const oldp = exprp->unlinkFrBack();
-                nodep->exprp(getTwoStateCast(oldp));
-                oldp->deleteTree();
+        AstVar* const varp = nodep->modVarp();
+        if (!(varp->fourStateComplementp() || varp->isFourStateComplement())) {
+            if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
+                if (varp->dtypep()->isFourstate()) {
+                    AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
+                                                    getFourStateExpressionXZ(exprp)};
+                    nodep->addNextHere(newp);
+                    AstNodeExpr* const oldp = exprp->unlinkFrBack();
+                    nodep->exprp(getFourStateExpressionValue(oldp));
+                    oldp->deleteTree();
+                    splitVar(varp);  // Ensure that variable is splitted
+                    nodep->modVarp(getSplittedValue(varp));
+                    newp->modVarp(getSplittedXZ(varp));
+                } else if (isFourstate(exprp)) {
+                    AstNodeExpr* const oldp = exprp->unlinkFrBack();
+                    nodep->exprp(getTwoStateCast(oldp));
+                    oldp->deleteTree();
+                }
             }
         }
-        m_currentArgVarp = m_currentArgVarp->nextp();
         iterateChildren(nodep);
     }
 
