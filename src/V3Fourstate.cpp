@@ -122,6 +122,12 @@ static bool isStaticallyNGte(const V3Number& msb, const AstNodeExpr* const exprp
     }
     return false;
 }
+static bool needsSplitting(const AstNodeDType* const dtypep) {
+    if (const AstBasicDType* const basicp = VN_CAST(dtypep->skipRefp(), BasicDType)) {
+        return basicp->isFourstate();
+    }
+    return false;
+}
 }  // namespace
 
 // Propagates the logic type (two or four-state) on AstNodeExpr
@@ -149,19 +155,19 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstConst* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->dtypep()), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeVarRef* const nodep) override {
-        setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep,
-                     nodep->taskp()->fvarp() && nodep->taskp()->fvarp()->dtypep()->isFourstate(),
+                     nodep->taskp()->fvarp() && needsSplitting(nodep->taskp()->fvarp()->dtypep()),
                      m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
@@ -173,7 +179,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstCastWrap* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->dtypep()), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
@@ -277,7 +283,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstMemberSel* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, nodep->varp()->dtypep()->isFourstate(), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()), m_fourstateInSubtree);
     }
 
     void visit(AstSFormatF* const nodep) override {
@@ -312,7 +318,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstLambdaArgRef* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, nodep->dtypep()->isFourstate(), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->dtypep()), m_fourstateInSubtree);
     }
 
     void visit(AstTestPlusArgs* const nodep) override {
@@ -327,8 +333,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstCvtArrayToPacked* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, nodep->fromp()->dtypep()->skipRefp()->isFourstate(),
-                     m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->fromp()->dtypep()), m_fourstateInSubtree);
     }
 
     void visit(AstSScanF* const nodep) override {
@@ -523,12 +528,17 @@ class FourstateVisitor final : public VNVisitor {
 
     // {whether supported, whether four state} - second is needed for the recursion
     static std::pair<bool, bool> isDTypepSupported(const AstNodeDType* const dtypep) {
+        if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+            return {true, basicp->isFourstate()};
+        }
         if (const AstNodeUOrStructDType* const containerDTypep
             = VN_CAST(dtypep, NodeUOrStructDType)) {
             return {!containerDTypep->isFourstate(), containerDTypep->isFourstate()};
         }
-        if (const AstBasicDType* const basicp = dtypep->basicp()) {
-            return {true, basicp->isFourstate()};
+        if (const AstSampleQueueDType* const containerDTypep = VN_CAST(dtypep, SampleQueueDType)) {
+            std::pair<bool, bool> subDtype
+                = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
+            return {subDtype.first && !subDtype.second, false};
         }
         if (const AstQueueDType* const containerDTypep = VN_CAST(dtypep, QueueDType)) {
             std::pair<bool, bool> subDtype
@@ -648,7 +658,7 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void splitVar(AstVar* const varp) {
-        UASSERT_OBJ(varp->dtypep()->isFourstate(), varp,
+        UASSERT_OBJ(needsSplitting(varp->dtypep()), varp,
                     "Split shall be called only on four-state variables");
         if (varp->user1p()) return;
         m_varpsToRemove.push_back(varp);
@@ -722,7 +732,7 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     static AstVar* getSplittedValue(AstVar* const varp) {
-        UASSERT_OBJ(varp->dtypep()->isFourstate(), varp,
+        UASSERT_OBJ(needsSplitting(varp->dtypep()), varp,
                     "Split shall be called only on four-state variables");
         UASSERT_OBJ(varp->user1p(), varp, "Variable shall be split first");
         return VN_AS(varp->user1p(), Var);
@@ -820,7 +830,7 @@ class FourstateVisitor final : public VNVisitor {
             AstNode* varStmtp = funcp->taskp()->stmtsp();
             for (AstArg* argp = funcp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 const AstVar* const varp = VN_AS(varStmtp, Var);
-                if (varp->dtypep()->isFourstate() || varp->fourStateComplementp()) {
+                if (needsSplitting(varp->dtypep()) || varp->fourStateComplementp()) {
                     newCallp->addArgsp(
                         new AstArg{flp, "", getFourStateExpressionValue(argp->exprp(), false)});
                     newCallp->addArgsp(
@@ -1324,7 +1334,7 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
-            if (varRefp->varp()->dtypep()->isFourstate()) {
+            if (needsSplitting(varRefp->varp()->dtypep())) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
                 if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
@@ -1616,7 +1626,7 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstNodeVarRef* const varRefp) override {
             noTmp();
-            if (varRefp->varp()->dtypep()->isFourstate()) {
+            if (needsSplitting(varRefp->varp()->dtypep())) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
                 if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
@@ -1780,7 +1790,7 @@ class FourstateVisitor final : public VNVisitor {
             if (isFourstate(nodep->exprp())) return true;
             if (AstNodeFTaskRef* const taskRefp = VN_CAST(nodep->exprp(), NodeFTaskRef)) {
                 AstNodeDType* const dtypep = taskRefp->taskp()->dtypep();
-                return dtypep && dtypep->isFourstate();
+                return dtypep && needsSplitting(dtypep);
             }
             return false;
         };
@@ -1949,7 +1959,7 @@ class FourstateVisitor final : public VNVisitor {
                                   "Cells with pins that are not a variable reference or a "
                                   "constant are not supported with  --fourstate");
                     return;
-                } else if (varp->dtypep()->isFourstate()) {
+                } else if (needsSplitting(varp->dtypep())) {
                     AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
                                                     getFourStateExpressionXZ(exprp)};
                     nodep->addNextHere(newp);
@@ -1978,7 +1988,7 @@ class FourstateVisitor final : public VNVisitor {
     void visit(AstArg* const nodep) override {
         AstVar* const varp = VN_CAST(m_currentFTaskArgp, Var);
         UASSERT_OBJ(varp, nodep, "FTask has no more arguments?");
-        if (varp->dtypep()->isFourstate()) {
+        if (needsSplitting(varp->dtypep())) {
             nodep->addNextHere(
                 new AstArg{nodep->fileline(), "", getFourStateExpressionXZ(nodep->exprp())});
             AstNodeExpr* const oldp = nodep->exprp()->unlinkFrBack();
@@ -2170,7 +2180,7 @@ class FourstateVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "Variables of type: " << nodep->dtypep()->prettyDTypeNameQ()
                                                 << " are unsupported with --fourstate");
-        } else if (nodep->dtypep()->isFourstate()) {
+        } else if (needsSplitting(nodep->dtypep())) {
             splitVar(nodep);
         }
         iterateChildren(nodep);
@@ -2178,7 +2188,7 @@ class FourstateVisitor final : public VNVisitor {
 
     void visit(AstModportVarRef* const nodep) override {
         if ((nodep->exprp() && isFourstate(nodep->exprp()))
-            || (nodep->varp() && nodep->varp()->dtypep()->isFourstate())) {
+            || (nodep->varp() && needsSplitting(nodep->varp()->dtypep()))) {
             nodep->v3warn(E_UNSUPPORTED, "modports are not supported with --fourstate");
         } else {
             iterateChildren(nodep);
