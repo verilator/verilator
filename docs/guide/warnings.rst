@@ -2601,11 +2601,11 @@ List Of Warnings
    Since version 5.046:
 
    Issued if neither :vlopt:`--sched-zero-delay`, nor
-   :vlopt:`--sched-zero-delay` is used on the command line, and the input does
-   not contain a compile time known ``#0`` delay, but does contain a
-   ``#(expressin)`` where the delay value cannot be determined at compile time.
-   Passing :vlopt:`--no-sched-zero-delay` can improve runtime performance if
-   variable delays are all known to be non-zero at runtime.
+   :vlopt:`--sched-zero-delay` is used on the command line, and the input
+   does not contain a compile time known ``#0`` delay, but does contain a
+   ``#(expression)`` where the delay value cannot be determined at compile
+   time. Passing :vlopt:`--no-sched-zero-delay` can improve runtime
+   performance if variable delays are all known to be non-zero at runtime.
 
    Also issued if :vlopt:`--no-sched-zero-delay` is used on the command line,
    but the input contains a compile time known ``#0`` delay. This is safe to
