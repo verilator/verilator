@@ -172,33 +172,41 @@ private:
     }
 
     template <typename T>
-    static T applyEntry(T result, const Entry& entry) {
-        if VL_CONSTEXPR_CXX17 (VlIsVlWide<T>::value) {
-            EData* const reswp = result.data();
-            const int lword = VL_BITWORD_E(entry.m_lsb);
-            const int hword = VL_BITWORD_E(entry.m_msb);
-            for (int word = lword; word <= hword; ++word) {
-                const int wordLsb = word * VL_EDATASIZE;
-                const int segLsb = std::max(entry.m_lsb, wordLsb);
-                const int segMsb = std::min(entry.m_msb, wordLsb + VL_EDATASIZE - 1);
-                const int segWidth = segMsb - segLsb + 1;
-                const int bitOffset = segLsb - wordLsb;
-                const int rhsLsb = segLsb - entry.m_rhsLsb;
-                reswp[word] = applyBits(reswp[word], entry, bitOffset, segWidth, rhsLsb);
-            }
-            return result;
-        } else if VL_CONSTEXPR_CXX17 (VlForceTypeInfo<T>::bitwise) {
-            using U = VlForceStorageType<T>;
-            const int width = entry.m_msb - entry.m_lsb + 1;
-            const int bits = static_cast<int>(sizeof(U) * 8);
-            const int rhsLsb = entry.m_lsb - entry.m_rhsLsb;
-            const QData rhsChunk = extractRhsChunk(entry, rhsLsb, width);
-            if (width >= bits) return static_cast<T>(static_cast<U>(rhsChunk));
-            return static_cast<T>(
-                applyBits(static_cast<U>(result), entry, entry.m_lsb, width, rhsLsb));
-        } else {
-            return *static_cast<const VlForceBaseType<T>*>(entry.m_rhsDatap);
+    static typename std::enable_if<VlIsVlWide<T>::value, T>::type applyEntry(T result,
+                                                                             const Entry& entry) {
+        EData* const reswp = result.data();
+        const int lword = VL_BITWORD_E(entry.m_lsb);
+        const int hword = VL_BITWORD_E(entry.m_msb);
+        for (int word = lword; word <= hword; ++word) {
+            const int wordLsb = word * VL_EDATASIZE;
+            const int segLsb = std::max(entry.m_lsb, wordLsb);
+            const int segMsb = std::min(entry.m_msb, wordLsb + VL_EDATASIZE - 1);
+            const int segWidth = segMsb - segLsb + 1;
+            const int bitOffset = segLsb - wordLsb;
+            const int rhsLsb = segLsb - entry.m_rhsLsb;
+            reswp[word] = applyBits(reswp[word], entry, bitOffset, segWidth, rhsLsb);
         }
+        return result;
+    }
+
+    template <typename T>
+    static typename std::enable_if<!VlIsVlWide<T>::value && VlForceTypeInfo<T>::bitwise, T>::type
+    applyEntry(T result, const Entry& entry) {
+        using U = VlForceStorageType<T>;
+        const int width = entry.m_msb - entry.m_lsb + 1;
+        const int bits = static_cast<int>(sizeof(U) * 8);
+        const int rhsLsb = entry.m_lsb - entry.m_rhsLsb;
+        const QData rhsChunk = extractRhsChunk(entry, rhsLsb, width);
+        if (width >= bits) return static_cast<T>(static_cast<U>(rhsChunk));
+        return static_cast<T>(
+            applyBits(static_cast<U>(result), entry, entry.m_lsb, width, rhsLsb));
+    }
+
+    template <typename T>
+    static typename std::enable_if<!VlForceTypeInfo<T>::bitwise, T>::type
+    applyEntry(T result, const Entry& entry) {
+        static_cast<void>(result);
+        return *static_cast<const VlForceBaseType<T>*>(entry.m_rhsDatap);
     }
 
 public:
