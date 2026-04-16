@@ -2051,6 +2051,14 @@ class FourstateVisitor final : public VNVisitor {
                     nodep->exprp(getTwoStateCast(oldp));
                     oldp->deleteTree();
                 }
+            } else if (!nodep->exprp() && needsSplitting(varp->dtypep())) {
+                AstPin* const newp
+                    = new AstPin{nodep->fileline(), nodep->pinNum(),
+                                 nodep->name().empty() ? "" : nodep->name() + XZ_SUFFIX, nullptr};
+                nodep->addNextHere(newp);
+                splitVar(varp);  // Ensure that variable is splitted
+                nodep->modVarp(getSplittedValue(varp));
+                newp->modVarp(getSplittedXZ(varp));
             }
         }
         iterateChildren(nodep);
