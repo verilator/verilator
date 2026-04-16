@@ -39,6 +39,7 @@ endclass
 
 module t;
   OuterDyn od;
+  OuterDyn od_arr[5];
   OuterQueue oq;
 
   initial begin
@@ -102,6 +103,17 @@ module t;
         $display("FAIL: queue items[%0d].tag=%0d should be > 0", i, oq.items[i].tag);
         $stop;
       end
+    end
+
+    // === Test 4: Array of objects with inline constraint for sub-object members ===
+    // Verifies that member resolution works when randomize() target is array-indexed
+    // (regression test for verilator/verilator#7431)
+    foreach (od_arr[i]) begin
+      od_arr[i] = new(3);
+      assert(od_arr[i].randomize() with {
+        od_arr[i].items[0].val > 8'd10;
+        od_arr[i].items[0].val < 8'd200;
+      } != 0);
     end
 
     $write("*-* All Finished *-*\n");
