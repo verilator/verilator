@@ -19,11 +19,11 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET NU
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[10:3])
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[10:3])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[99:15])
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[99:15])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit empty name (bad)
 ===
@@ -32,7 +32,7 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT NU
 = uvm_hdl_deposit not found (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit to real (bad)
 ===
@@ -45,7 +45,7 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT fa
 = uvm_hdl_deposit to not exposed (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.not_exposed)
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.not_exposed)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force
 = uvm_hdl_release
@@ -69,7 +69,7 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 = uvm_hdl_force to not exposed (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.not_exposed)
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.not_exposed)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force to not forcable (bad)
 ===

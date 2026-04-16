@@ -102,7 +102,7 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
 
   r = vpi_handle_by_name(path, 0);
   if (r == 0) {
-    m_uvm_error("UVM/DPI/HDL_SET",
+    m_uvm_error("UVM/DPI/VLOG_PUT",
                 "set: unable to locate hdl path (%s)\n Either the name is incorrect, "
                 "or you may not have PLI/ACC visibility to that name",
                 path);
