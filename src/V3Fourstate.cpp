@@ -804,14 +804,13 @@ class FourstateVisitor final : public VNVisitor {
             newp->lsbp(lsbp->cloneTree(false));
             return newp;
         }
-        AstConst* const maxmsbConstp = new AstConst{flp, maxmsb};
         AstNodeExpr* conditionp;
         if (isLsbpFourstete) {
             conditionp = getFourStateExpressionXZ(lsbp, isFourstate(selp));
             if (!isStaticallyInRange) {
-                conditionp = new AstOr{
-                    flp, conditionp,
-                    new AstLt{flp, maxmsbConstp, getFourStateExpressionValue(lsbp, true)}};
+                conditionp = new AstOr{flp, conditionp,
+                                       new AstLt{flp, new AstConst{flp, maxmsb},
+                                                 getFourStateExpressionValue(lsbp, true)}};
             }
             lsbp = getFourStateExpressionValue(lsbp, true);
         } else {
@@ -823,7 +822,7 @@ class FourstateVisitor final : public VNVisitor {
             } else {
                 lsbp = lsbp->cloneTree(false);
             }
-            conditionp = new AstLt{flp, maxmsbConstp, lsbp->cloneTree(false)};
+            conditionp = new AstLt{flp, new AstConst{flp, maxmsb}, lsbp->cloneTree(false)};
         }
         newp->lsbp(lsbp);
         return new AstCond{flp, conditionp, createZeroOrOnesp(selp, !defaultsToZero), newp};
