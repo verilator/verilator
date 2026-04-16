@@ -1999,8 +1999,10 @@ class FourstateVisitor final : public VNVisitor {
                                   "constant are not supported with  --fourstate");
                     return;
                 } else if (needsSplitting(varp->dtypep())) {
-                    AstPin* const newp = new AstPin{nodep->fileline(), nodep->pinNum(), "",
-                                                    getFourStateExpressionXZ(exprp)};
+                    AstPin* const newp
+                        = new AstPin{nodep->fileline(), nodep->pinNum(),
+                                     nodep->name().empty() ? "" : nodep->name() + XZ_SUFFIX,
+                                     getFourStateExpressionXZ(exprp)};
                     nodep->addNextHere(newp);
                     AstNodeExpr* const oldp = exprp->unlinkFrBack();
                     nodep->exprp(getFourStateExpressionValue(oldp));
