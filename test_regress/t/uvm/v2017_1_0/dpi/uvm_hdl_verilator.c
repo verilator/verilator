@@ -95,6 +95,11 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   int i, size, chunks;
   static int s_maxsize = -1;
 
+  if (path == NULL || path[0] == '\0') {
+    m_uvm_error("UVM/DPI/VLOG_PUT", "NULL or empty HDL path passed to uvm_hdl_set_vlog");
+    return 0;
+  }
+
   r = vpi_handle_by_name(path, 0);
   if (r == 0) {
     m_uvm_error("UVM/DPI/HDL_SET",
@@ -149,6 +154,11 @@ static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value) {
   vpiHandle r;
   s_vpi_value value_s;
 
+  if (path == NULL || path[0] == '\0') {
+    m_uvm_error("UVM/DPI/VLOG_GET", "NULL or empty HDL path passed to uvm_hdl_get_vlog");
+    return 0;
+  }
+
   r = vpi_handle_by_name(path, 0);
   if (r == 0) {
     m_uvm_error("UVM/DPI/VLOG_GET",
@@ -194,6 +204,11 @@ static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value) {
  */
 int uvm_hdl_check_path(char *path) {
   vpiHandle handle;
+
+  if (path == NULL || path[0] == '\0') {
+    m_uvm_error("UVM/DPI/VLOG_CHECK", "NULL or empty HDL path passed to uvm_hdl_check_path");
+    return 0;
+  }
 
   handle = vpi_handle_by_name(path, 0);
   if (handle) vpi_release_handle(handle);

@@ -12,6 +12,10 @@ uvm_dpi_get_tool_name_c() = Verilator
 = uvm_hdl_read/deposit wide ascending
 = uvm_hdl_read/deposit 1D memory
 = uvm_hdl_read/deposit 2D memory
+= uvm_hdl_read empty name (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET NULL or empty HDL path passed to uvm_hdl_get_vlog
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:
@@ -21,6 +25,10 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[99:15])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit empty name (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT NULL or empty HDL path passed to uvm_hdl_set_vlog
 = uvm_hdl_deposit not found (bad)
 ===
 UVM Report expected on next line:

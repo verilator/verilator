@@ -231,6 +231,14 @@ module t;
       `checkh(mem2d[2][3], 32'h2300);
     end
 
+    begin : t_read_bad
+      $display("= uvm_hdl_read empty name (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("", lval);
+      `checkh(i, 0);
+
+    end
+
     begin : t_deposit_bad
       $display("= uvm_hdl_deposit bad ranges");
       $display("===\nUVM Report expected on next line:");
@@ -238,6 +246,11 @@ module t;
       `checkh(i, 0);
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_deposit("t.exposed[99:15]", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit empty name (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("", lval);
       `checkh(i, 0);
 
       $display("= uvm_hdl_deposit not found (bad)");
