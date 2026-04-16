@@ -243,9 +243,7 @@ int uvm_hdl_check_path(char *path) {
  * Given a path, look the path name up using the PLI
  * or the FLI, and return its 'value'.
  */
-int uvm_hdl_read(char *path, p_vpi_vecval value) {
-  return uvm_hdl_get_vlog(path, value);
-}
+int uvm_hdl_read(char *path, p_vpi_vecval value) { return uvm_hdl_get_vlog(path, value); }
 
 /*
  * Given a path, look the path name up using the PLI
