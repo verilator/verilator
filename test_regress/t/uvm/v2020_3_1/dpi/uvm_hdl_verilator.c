@@ -133,8 +133,8 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   value_s.format = value ? vpiVectorVal : vpiSuppressVal;
   value_s.value.vector = value;
   vpiHandle returnHandle = vpi_put_value(r, &value_s, &time_s, flag);
-  vpi_release_handle(r);
   if (returnHandle == 0) {
+    vpi_release_handle(r);
     m_uvm_error("UVM/DPI/VLOG_PUT",
                 "failed to set hdl path '%s'. Common reasons include a signal having an "
                 "unsupported type, such as a real or a string, or attempting to force a signal "
@@ -147,6 +147,8 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
     chunks = (size - 1) / 32 + 1;
     for (i = 0; i < chunks; ++i) value[i] = value_s.value.vector[i];
   }
+
+  vpi_release_handle(r);
 
   return 1;
 }
