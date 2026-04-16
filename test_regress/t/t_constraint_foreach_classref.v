@@ -106,14 +106,26 @@ module t;
     end
 
     // === Test 4: Array of objects with inline constraint for sub-object members ===
-    // Verifies that member resolution works when randomize() target is array-indexed
-    // (regression test for verilator/verilator#7431)
+    // Verifies member resolution AND runtime enforcement when randomize()
+    // target is array-indexed (regression test for verilator/verilator#7431)
     foreach (od_arr[i]) begin
       od_arr[i] = new(3);
       assert(od_arr[i].randomize() with {
         od_arr[i].items[0].val > 8'd10;
         od_arr[i].items[0].val < 8'd200;
+        od_arr[i].items[0].tag > 0;
       } != 0);
+
+      if (!(od_arr[i].items[0].val > 10 && od_arr[i].items[0].val < 200)) begin
+        $display("FAIL: od_arr[%0d].items[0].val=%0d out of range",
+                 i, od_arr[i].items[0].val);
+        $stop;
+      end
+      if (od_arr[i].items[0].tag == 0) begin
+        $display("FAIL: od_arr[%0d].items[0].tag=%0d should be > 0",
+                 i, od_arr[i].items[0].tag);
+        $stop;
+      end
     end
 
     $write("*-* All Finished *-*\n");
