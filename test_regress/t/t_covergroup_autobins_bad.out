@@ -27,4 +27,8 @@
                                            : ... note: In instance 't'
    34 |       ignore_bins ign = {size_var};       
       |                          ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:41:25: option.at_least must be a constant expression
+                                           : ... note: In instance 't'
+   41 |       option.at_least = size_var;   
+      |                         ^~~~~~~~
 %Error: Exiting due to
