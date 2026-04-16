@@ -12,10 +12,29 @@ uvm_dpi_get_tool_name_c() = Verilator
 = uvm_hdl_read/deposit wide ascending
 = uvm_hdl_read/deposit 1D memory
 = uvm_hdl_read/deposit 2D memory
+= uvm_hdl_read bad ranges
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[10:3])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[99:15])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_read empty name (bad)
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET NULL or empty HDL path passed to uvm_hdl_get_vlog
+= uvm_hdl_read not found (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET unable to locate hdl path (t.__READ_NOT_FOUND)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_read with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[15+8:8])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_read from real (bad)
 ===
 UVM Report expected on next line:
@@ -24,6 +43,11 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET fa
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET failed to get value for hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string
+= uvm_hdl_read from not exposed (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET unable to locate hdl path (t.not_exposed)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:
@@ -41,6 +65,11 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT NU
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[15+8:8])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit to real (bad)
 ===
@@ -78,6 +107,11 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT se
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.not_exposed)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_force with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[15+8:8])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force to not forcable (bad)
 ===

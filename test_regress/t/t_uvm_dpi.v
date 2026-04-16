@@ -232,9 +232,27 @@ module t;
     end
 
     begin : t_read_bad
+      $display("= uvm_hdl_read bad ranges");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[10:3]", lval);
+      `checkh(i, 0);
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[99:15]", lval);
+      `checkh(i, 0);
+
       $display("= uvm_hdl_read empty name (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_read("", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read not found (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.__READ_NOT_FOUND", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[15+8:8]", lval);
       `checkh(i, 0);
 
       $display("= uvm_hdl_read from real (bad)");
@@ -247,6 +265,12 @@ module t;
       i = uvm_hdl_read("t.stringSignal", lval);
       `checkh(i, 0);
 
+`ifdef VERILATOR
+      $display("= uvm_hdl_read from not exposed (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.not_exposed", lval);
+      `checkh(i, 0);
+`endif
     end
 
     begin : t_deposit_bad
@@ -266,6 +290,11 @@ module t;
       $display("= uvm_hdl_deposit not found (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_deposit("t.__DEPOSIT_NOT_FOUND", 12);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.exposed[15+8:8]", 0);
       `checkh(i, 0);
 
       $display("= uvm_hdl_deposit to real (bad)");
@@ -453,6 +482,13 @@ module t;
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_force("t.not_exposed", 12);
       `checkh(i, 0);
+
+      exposed = 32'hFFFF_FFFF;
+      $display("= uvm_hdl_force with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_force("t.exposed[15+8:8]", 0);
+      `checkh(i, 0);
+      `checkh(exposed, 32'hFFFF_FFFF);
 
       $display("= uvm_hdl_force to not forcable (bad)");
       $display("===\nUVM Report expected on next line:");
