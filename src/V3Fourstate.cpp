@@ -2290,6 +2290,10 @@ class FourstateVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstPull* const nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Pullups and pulldowns are unsupported with --fourstate");
+    }
+
     void visit(AstModportVarRef* const nodep) override {
         if ((nodep->exprp() && isFourstate(nodep->exprp()))
             || (nodep->varp() && needsSplitting(nodep->varp()->dtypep()))) {
