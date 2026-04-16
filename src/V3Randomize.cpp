@@ -753,6 +753,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                // (used to format "%s.%s" for struct arrays)
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
+    std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
@@ -1133,14 +1134,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
 
-        // For global constraints: check if this specific path has been written
-        // For normal constraints: only call write_var if varp->user3() is not set
-        const bool alreadyWritten
-            = isGlobalConstrained ? m_writtenVars.count(smtName) > 0 : varp->user3();
+        // For global constraints: check shared path-level set
+        // For inline constraints: check per-instance set (each __Vrandwith has own randomizer)
+        // For class-level constraints: check varp->user3()
+        const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
+                                    : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
+                                                        : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
             if (isGlobalConstrained) m_writtenVars.insert(smtName);
+            if (m_inlineInitTaskp) m_inlineWrittenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
