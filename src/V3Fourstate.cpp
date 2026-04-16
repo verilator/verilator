@@ -145,7 +145,7 @@ public:
                     "Tried to build a port map while another exists");
         for (AstNode* stmtp = ftaskp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->varType() == VVarType::PORT
+                if (varp->direction().isAny()
                     && !(varp->fourStateComplementp() || varp->isFourStateComplement())) {
                     m_currentFTaskRefPortps.push_back(varp);
                     m_currentFTaskRefPortpsNamesToVarps[varp->name()] = varp;
