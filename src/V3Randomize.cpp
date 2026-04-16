@@ -1124,10 +1124,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // For global constraints: check shared path-level set
         // For inline constraints: check per-instance set (each __Vrandwith has own randomizer)
         // For class-level constraints: check varp->user3()
-        const bool alreadyWritten
-            = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
-              : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
-                                  : varp->user3();
+        const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
+                                    : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
+                                                        : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
