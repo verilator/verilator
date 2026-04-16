@@ -35,9 +35,17 @@ module t;
     }
   endgroup
 
+  // Error: non-constant coverpoint option value
+  covergroup cg4;
+    cp1: coverpoint cp_expr {
+      option.at_least = size_var;  // non-constant coverpoint option value
+    }
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg3 cg3_inst = new;
+  cg4 cg4_inst = new;
 
   initial $finish;
 endmodule
