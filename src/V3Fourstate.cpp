@@ -194,14 +194,16 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstNodeVarRef* const nodep) override {
-        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()), m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()->skipRefp()),
+                     m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep,
-                     nodep->taskp()->fvarp() && needsSplitting(nodep->taskp()->fvarp()->dtypep()),
+                     nodep->taskp()->fvarp()
+                         && needsSplitting(nodep->taskp()->fvarp()->dtypep()->skipRefp()),
                      m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
@@ -594,6 +596,11 @@ class FourstateVisitor final : public VNVisitor {
             return {subDtype.first && !subDtype.second, false};
         }
         if (const AstUnpackArrayDType* const containerDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            std::pair<bool, bool> subDtype
+                = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
+            return {subDtype.first && !subDtype.second, false};
+        }
+        if (const AstPackArrayDType* const containerDTypep = VN_CAST(dtypep, PackArrayDType)) {
             std::pair<bool, bool> subDtype
                 = isDTypepSupported(containerDTypep->subDTypep()->skipRefp());
             return {subDtype.first && !subDtype.second, false};
