@@ -351,7 +351,7 @@ module Vt_debug_emitv_t;
             end
             force sum = 'sha;
             begin : unnamedblk1_1
-                integer signed __Vrepeat0;
+                int signed __Vrepeat0;
                 __Vrepeat0 = 'sh2;
                 while ((__Vrepeat0 > 32'h0)) begin
                     if ((sum != 'sha)) begin
