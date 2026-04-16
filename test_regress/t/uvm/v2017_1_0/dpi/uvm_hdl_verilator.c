@@ -48,7 +48,7 @@ static char m_uvm_temp_print_buffer[1024];
 static void m_uvm_error(const char *id, const char *msg, ...) {
   va_list argptr;
   va_start(argptr, msg);
-  vsprintf(m_uvm_temp_print_buffer, msg, argptr);
+  vsnprintf(m_uvm_temp_print_buffer, sizeof(m_uvm_temp_print_buffer), msg, argptr);
   va_end(argptr);
   m_uvm_report_dpi(M_UVM_ERROR, (char *)id, &m_uvm_temp_print_buffer[0], M_UVM_NONE,
                    (char *)__FILE__, __LINE__);
