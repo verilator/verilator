@@ -236,7 +236,7 @@ class DescopeVisitor final : public VNVisitor {
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
-        } else if (varp->isReadByDpi()) {
+        } else if (m_funcp && m_funcp->dpiExportDispatcher()) {
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::VlSymsDpi(),
                                                 EmitCUtil::symClassName(), scopep->nameDotless()});
         } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {

@@ -1885,7 +1885,6 @@ class VSelfPointerText final {
     // Keep these in shared pointers to avoid branching for special cases
     static const std::shared_ptr<const string> s_emptyp;  // Holds ""
     static const std::shared_ptr<const string> s_thisp;  // Holds "this"
-    static const std::shared_ptr<const string> s_dpip;
 
     // MEMBERS
     std::shared_ptr<const string> m_strp;
