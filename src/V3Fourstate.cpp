@@ -1237,12 +1237,14 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstExtend* const extendp) override {
             FileLine* const flp = extendp->fileline();
-            m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false)};
+            m_result = new AstExtend{flp, getFourStateExpressionValue(extendp->lhsp(), false),
+                                     extendp->width()};
         }
 
         void visit(AstExtendS* const extendsp) override {
             FileLine* const flp = extendsp->fileline();
-            m_result = new AstExtendS{flp, getFourStateExpressionValue(extendsp->lhsp(), false)};
+            m_result = new AstExtendS{flp, getFourStateExpressionValue(extendsp->lhsp(), false),
+                                      extendsp->width()};
         }
 
         void visit(AstCReset* const cresetp) override {
@@ -1544,12 +1546,14 @@ class FourstateVisitor final : public VNVisitor {
 
         void visit(AstExtend* const extendp) override {
             FileLine* const flp = extendp->fileline();
-            m_result = new AstExtend{flp, getFourStateExpressionXZ(extendp->lhsp(), false)};
+            m_result = new AstExtend{flp, getFourStateExpressionXZ(extendp->lhsp(), false),
+                                     extendp->width()};
         }
 
         void visit(AstExtendS* const extendsp) override {
             FileLine* const flp = extendsp->fileline();
-            m_result = new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false)};
+            m_result = new AstExtendS{flp, getFourStateExpressionXZ(extendsp->lhsp(), false),
+                                      extendsp->width()};
         }
 
         void visit(AstCReset* const cresetp) override {
