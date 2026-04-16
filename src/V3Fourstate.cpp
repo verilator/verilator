@@ -189,7 +189,7 @@ class FourstateLogicTypePropagator final : public VNVisitor {
 
     void visit(AstConst* const nodep) override {
         iterateChildrenSeparately(nodep);
-        setFourstate(nodep, needsSplitting(nodep->dtypep()), m_fourstateInSubtree);
+        setFourstate(nodep, nodep->num().isAnyXZ(), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
@@ -379,6 +379,14 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     //     iterateChildrenSeparately(nodep);
     //     setFourstate(nodep, false, m_fourstateInSubtree);
     // }
+
+    void visit(AstFourstateExpr* const nodep) override {
+        iterateChildrenSeparately(nodep);
+        // The `false` is a lie but this visitor is here just for debug purposes so, after
+        // FourstateVisitor we can check whether any four-state expression has not been handled.
+        // This lie is safe since before V3Fourstate no AstFourstateExpr exists
+        setFourstate(nodep, false, m_fourstateInSubtree);
+    }
 
     void visit(AstNodeExpr* const nodep) override {
         iterateChildrenSeparately(nodep);
@@ -713,10 +721,12 @@ class FourstateVisitor final : public VNVisitor {
                 if (portEndp) {
                     portEndp->addNextHere(returnXzp);
                     portEndp->addNextHere(returnValuep);
-                } else {
-                    AstNode* stmtp = ftaskp->stmtsp();
+                } else if (AstNode* const stmtp = ftaskp->stmtsp()) {
                     stmtp->addHereThisAsNext(returnValuep);
                     stmtp->addHereThisAsNext(returnXzp);
+                } else {
+                    ftaskp->addStmtsp(returnValuep);
+                    ftaskp->addStmtsp(returnXzp);
                 }
                 varp->user1p(returnValuep);
                 returnValuep->fourStateComplementp(returnXzp);
@@ -1955,6 +1965,31 @@ class FourstateVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void cArgsHandler(AstNode* nodep) {
+        for (; nodep; nodep = nodep->nextp()) {
+            if (AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
+                if (isFourstate(exprp)) {
+                    exprp->v3warn(
+                        LOGICCAST,
+                        "Some features are not supported with four-state values - cast it to "
+                        "two-state "
+                        "logic or suppress this warning and it will be done implicitly");
+                    exprp->replaceWith(getTwoStateCast(exprp->unlinkFrBack()));
+                    exprp->deleteTree();
+                }
+            }
+        }
+    }
+
+    void visit(AstCStmtUser* const nodep) override {
+        VL_RESTORER(m_currentStmtp);
+        m_currentStmtp = nodep;
+        cArgsHandler(nodep->nodesp());
+    }
+
+    void visit(AstCExprUser* const nodep) override { cArgsHandler(nodep->nodesp()); }
+    void visit(AstCExpr* const nodep) override { cArgsHandler(nodep->nodesp()); }
+
     void visit(AstSFormatF* const nodep) override {
         for (AstNodeExpr* exprp = nodep->exprsp(); exprp;
              exprp = VN_AS(exprp->nextp(), NodeExpr)) {
@@ -2259,11 +2294,21 @@ public:
         triorTriandReduce(m_assignWToTriand, triandReducer);
         triorTriandReduce(m_assignWToTrior, triorReducer);
         triorTriandReduce(m_assignWToWire, triReducer);
-    }
-    ~FourstateVisitor() override {
+        V3Error::abortIfErrors();
+        { FourstateLogicTypePropagator{netlistp}; }
+        netlistp->foreach([](const AstNodeExpr* const nodep) {
+            if (VN_IS(nodep, NodeFTaskRef)) {
+                // Changing it in type propagador is unnecessary since those will be 100% handled
+                return;
+            }
+            if (isFourstate(nodep)) {
+                nodep->v3warn(E_UNSUPPORTED, "This four-state expression has not been handled");
+            }
+        });
         V3Error::abortIfErrors();
         for (AstVar* const varp : m_varpsToRemove) varp->unlinkFrBack()->deleteTree();
     }
+    ~FourstateVisitor() override = default;
 };
 
 void V3Fourstate::fourstateAll(AstNetlist* netlistp) {
