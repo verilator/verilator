@@ -109,6 +109,13 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
     return 0;
   }
 
+  if (value == NULL && flag != vpiReleaseFlag) {
+    m_uvm_error("UVM/DPI/VLOG_PUT",
+                "NULL value pointer passed for hdl path '%s' in non-release operation", path);
+    vpi_release_handle(r);
+    return 0;
+  }
+
   if (value) {
     if (s_maxsize == -1) s_maxsize = uvm_hdl_max_width();
     size = vpi_get(vpiSize, r);
@@ -165,6 +172,12 @@ static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value) {
                 "unable to locate hdl path (%s)\n Either the name is incorrect, or you "
                 "may not have PLI/ACC visibility to that name",
                 path);
+    return 0;
+  }
+
+  if (value == NULL) {
+    m_uvm_error("UVM/DPI/VLOG_GET", "NULL value pointer passed for hdl path '%s'", path);
+    vpi_release_handle(r);
     return 0;
   }
 
