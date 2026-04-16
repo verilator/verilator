@@ -781,6 +781,8 @@ class FourstateVisitor final : public VNVisitor {
         if (isStaticallyNGte(maxmsb, lsbp)) {
             if (!selp->fromp()->isPure()) {
                 addPrecalculation(new AstStmtExpr{flp, valueExpr});
+                // No precalculation of lsbp because right now:
+                // isStaticallyNGte(lsbp) => VN_IS(lsbp, Const)
             } else {
                 valueExpr->deleteTree();
             }
@@ -796,16 +798,21 @@ class FourstateVisitor final : public VNVisitor {
         }();
         newp->user3(1);
         newp->fromp(valueExpr);
-        if (isStaticallyGte(maxmsb, lsbp)) {
+        const bool isStaticallyInRange = isStaticallyGte(maxmsb, lsbp);
+        const bool isLsbpFourstete = isFourstate(lsbp);
+        if (isStaticallyInRange && !isLsbpFourstete) {
             newp->lsbp(lsbp->cloneTree(false));
             return newp;
         }
         AstConst* const maxmsbConstp = new AstConst{flp, maxmsb};
         AstNodeExpr* conditionp;
-        if (isFourstate(lsbp)) {
-            conditionp
-                = new AstOr{flp, getFourStateExpressionXZ(lsbp, isFourstate(selp)),
-                            new AstLt{flp, maxmsbConstp, getFourStateExpressionValue(lsbp, true)}};
+        if (isLsbpFourstete) {
+            conditionp = getFourStateExpressionXZ(lsbp, isFourstate(selp));
+            if (!isStaticallyInRange) {
+                conditionp = new AstOr{
+                    flp, conditionp,
+                    new AstLt{flp, maxmsbConstp, getFourStateExpressionValue(lsbp, true)}};
+            }
             lsbp = getFourStateExpressionValue(lsbp, true);
         } else {
             if (!VN_IS(lsbp, NodeVarRef) && !VN_IS(lsbp, Const)) {
