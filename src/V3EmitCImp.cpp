@@ -813,6 +813,8 @@ class EmitCTrace final : public EmitCFunc {
             } else {
                 iterateConst(exprp->xzp());
             }
+        } else if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
+            putVarRef(varrefp);
         } else {
             puts("(");
             iterateConst(nodep->valuep());
