@@ -237,6 +237,16 @@ module t;
       i = uvm_hdl_read("", lval);
       `checkh(i, 0);
 
+      $display("= uvm_hdl_read from real (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.realSignal", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read from string (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.stringSignal", lval);
+      `checkh(i, 0);
+
     end
 
     begin : t_deposit_bad

@@ -161,7 +161,7 @@ static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value) {
   static int s_maxsize = -1;
   int i, size, chunks;
   vpiHandle r;
-  s_vpi_value value_s;
+  s_vpi_value value_s = {vpiVectorVal, {0}};
 
   if (path == NULL || path[0] == '\0') {
     m_uvm_error("UVM/DPI/VLOG_GET", "NULL or empty HDL path passed to uvm_hdl_get_vlog");
@@ -197,8 +197,17 @@ static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value) {
 
   chunks = (size - 1) / 32 + 1;
 
-  value_s.format = vpiVectorVal;
+  value_s.value.vector = NULL;
   vpi_get_value(r, &value_s);
+  if (value_s.format != vpiVectorVal || value_s.value.vector == 0) {
+    m_uvm_error("UVM/DPI/VLOG_GET",
+                "failed to get value for hdl path '%s'. Common reasons include a signal having an "
+                "unsupported type, such as a real or a string",
+                path);
+    vpi_release_handle(r);
+    return 0;
+  }
+
   // Note upper bits are not cleared, other simulators do likewise
   for (i = 0; i < chunks; ++i) {
     value[i].aval = value_s.value.vector[i].aval;

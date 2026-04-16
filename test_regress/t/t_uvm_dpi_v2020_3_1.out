@@ -16,6 +16,14 @@ uvm_dpi_get_tool_name_c() = Verilator
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET NULL or empty HDL path passed to uvm_hdl_get_vlog
+= uvm_hdl_read from real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET failed to get value for hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string
+= uvm_hdl_read from string (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET failed to get value for hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:
