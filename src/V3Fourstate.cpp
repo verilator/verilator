@@ -295,10 +295,10 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
-    void visit(AstCMethodHard* const nodep) override {
-        iterateChildrenSeparately(nodep);
-        setFourstate(nodep, false, m_fourstateInSubtree);
-    }
+    // void visit(AstCMethodHard* const nodep) override {
+    //     iterateChildrenSeparately(nodep);
+    //     setFourstate(nodep, false, m_fourstateInSubtree);
+    // }
 
     void visit(AstCExpr* const nodep) override {
         iterateChildrenSeparately(nodep);
@@ -345,25 +345,25 @@ class FourstateLogicTypePropagator final : public VNVisitor {
         setFourstate(nodep, false, m_fourstateInSubtree);
     }
 
-    void visit(AstFOpenMcd* const nodep) override {
-        iterateChildrenSeparately(nodep);
-        setFourstate(nodep, false, m_fourstateInSubtree);
-    }
+    // void visit(AstFOpenMcd* const nodep) override {
+    //     iterateChildrenSeparately(nodep);
+    //     setFourstate(nodep, false, m_fourstateInSubtree);
+    // }
 
     void visit(AstLambdaArgRef* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep, needsSplitting(nodep->dtypep()), m_fourstateInSubtree);
     }
 
-    void visit(AstTestPlusArgs* const nodep) override {
-        iterateChildrenSeparately(nodep);
-        setFourstate(nodep, false, m_fourstateInSubtree);
-    }
+    // void visit(AstTestPlusArgs* const nodep) override {
+    //     iterateChildrenSeparately(nodep);
+    //     setFourstate(nodep, false, m_fourstateInSubtree);
+    // }
 
-    void visit(AstValuePlusArgs* const nodep) override {
-        iterateChildrenSeparately(nodep);
-        setFourstate(nodep, false, m_fourstateInSubtree);
-    }
+    // void visit(AstValuePlusArgs* const nodep) override {
+    //     iterateChildrenSeparately(nodep);
+    //     setFourstate(nodep, false, m_fourstateInSubtree);
+    // }
 
     void visit(AstCvtArrayToPacked* const nodep) override {
         iterateChildrenSeparately(nodep);
@@ -686,7 +686,7 @@ class FourstateVisitor final : public VNVisitor {
         }
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tmpNames.get(nodep), VFlagBitPacked{}, nodep->width()};
-        m_currentTmpSpotp->addNextHere(varp);
+        m_currentTmpSpotp->addHereThisAsNext(varp);
         varp->funcLocal(m_tmpFuncLocal);
         varp->noSubst(true);
         m_tmpVarpsInUse.push_back(varp);
@@ -1973,8 +1973,10 @@ class FourstateVisitor final : public VNVisitor {
                         "Some features are not supported with four-state values - cast it to "
                         "two-state "
                         "logic or suppress this warning and it will be done implicitly");
-                    exprp->replaceWith(getTwoStateCast(exprp->unlinkFrBack()));
+                    AstNodeExpr* const newp = getTwoStateCast(exprp);
+                    exprp->replaceWith(newp);
                     exprp->deleteTree();
+                    nodep = newp;
                 }
             }
         }
@@ -2231,6 +2233,22 @@ class FourstateVisitor final : public VNVisitor {
         nodep->unlinkFrBack(&relinker);
         relinker.relink(newp);
         nodep->deleteTree();
+    }
+
+    void visit(AstCvtPackedToArray* const) override {
+        // Skip this tree since this expr is not supported anyway
+    }
+    void visit(AstTestPlusArgs* const) override {
+        // Skip this tree since this expr is not supported anyway
+    }
+    void visit(AstValuePlusArgs* const) override {
+        // Skip this tree since this expr is not supported anyway
+    }
+    void visit(AstFOpenMcd* const) override {
+        // Skip this tree since this expr is not supported anyway
+    }
+    void visit(AstCMethodHard* const) override {
+        // Skip this tree since this expr is not supported anyway
     }
 
     void visit(AstNodeFTask* const nodep) override {
