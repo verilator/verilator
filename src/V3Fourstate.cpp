@@ -2258,6 +2258,9 @@ class FourstateVisitor final : public VNVisitor {
     void visit(AstCMethodHard* const) override {
         // Skip this tree since this expr is not supported anyway
     }
+    void visit(AstConsPackUOrStruct* const) override {
+        // Skip this tree since this expr is not supported anyway
+    }
 
     void visit(AstNodeFTask* const nodep) override {
         VL_RESTORER(m_currentTmpSpotp);
