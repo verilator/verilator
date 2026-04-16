@@ -1259,14 +1259,16 @@ class LinkParseVisitor final : public VNVisitor {
     }
 
     void visit(AstCovergroup* nodep) override {
+        // AstCovergroup can only appear inside a module/class/package; never at root level.
+        UASSERT_OBJ(m_modp, nodep, "AstCovergroup not under module");
         // If we're already inside a covergroup class, this is the sentinel AstCovergroup
         // node carrying the clocking event for V3Covergroup - don't re-transform it.
-        if (m_modp && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isCovergroup()) return;
+        if (VN_IS(m_modp, Class) && VN_AS(m_modp, Class)->isCovergroup()) return;
 
         // Transform raw parse-time AstCovergroup into a fully-formed AstClass
         cleanFileline(nodep);
 
-        const string libname = m_modp ? m_modp->libname() : "";
+        const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
         cgClassp->isCovergroup(true);
         v3Global.useCovergroup(true);
