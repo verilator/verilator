@@ -1377,11 +1377,11 @@ class LinkParseVisitor final : public VNVisitor {
             } else if (optp->name() == "comment") {
                 optType = VCoverOptionType::COMMENT;
             } else {
-                optp->v3warn(COVERIGN, "Ignoring unsupported coverage cross option: "
-                                           + optp->prettyNameQ());
+                optp->v3warn(COVERIGN,
+                             "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
-            nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
-                                                  optp->valuep()->cloneTree(false)});
+            nodep->addOptionsp(
+                new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
         iterateChildren(nodep);
