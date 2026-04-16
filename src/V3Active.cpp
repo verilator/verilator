@@ -742,7 +742,6 @@ class CovergroupInjectVisitor final : public VNVisitor {
         // via visit(AstNodeProcedure*) like any other clocked always block.
         activep->addStmtsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
-
     }
 
     void visit(AstActive*) override {}  // Don't iterate into actives
