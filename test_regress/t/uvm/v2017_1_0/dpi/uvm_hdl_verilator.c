@@ -66,9 +66,6 @@ static void m_uvm_error(const char *id, const char *msg, ...) {
  * If no such variable is found, then the default
  * width of 1024 is used.
  *
- * This function should only get called once or twice,
- * its return value is cached in the caller.
- *
  */
 static int UVM_HDL_MAX_WIDTH = 0;
 static int uvm_hdl_max_width() {
