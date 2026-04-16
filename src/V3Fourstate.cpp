@@ -895,9 +895,14 @@ class FourstateVisitor final : public VNVisitor {
             setFourstate(resultXzRefp, false);
             {
                 std::string resultName = funcp->taskp()->fvarp()->name();
-                newCallp->addArgsp(new AstArg{flp, resultName + VALUE_SUFFIX, resultValueRefp});
-                newCallp->addArgsp(
-                    new AstArg{flp, std::move(resultName) + XZ_SUFFIX, resultXzRefp});
+                AstArg* const resultValueArgp
+                    = new AstArg{flp, resultName + VALUE_SUFFIX, resultValueRefp};
+                AstArg* const resultXZArgp
+                    = new AstArg{flp, std::move(resultName) + XZ_SUFFIX, resultXzRefp};
+                resultValueArgp->user1(1);
+                resultXZArgp->user1(1);
+                newCallp->addArgsp(resultValueArgp);
+                newCallp->addArgsp(resultXZArgp);
             }
             AstStmtExpr* const newStmtExprp = new AstStmtExpr{flp, newCallp};
             newStmtExprp->user3(1);
