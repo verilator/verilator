@@ -138,9 +138,7 @@ private:
         assert(width > 0 && width <= std::numeric_limits<QData>::digits);
         assert(rhsLsb >= 0);
 
-        const QData mask = width >= std::numeric_limits<QData>::digits
-                               ? ~static_cast<QData>(0)
-                               : ((static_cast<QData>(1) << width) - 1);
+        const QData mask = static_cast<QData>(VL_MASK_Q(width));
         const int rhsWidth = entry.m_msb - entry.m_rhsLsb + 1;
         if (rhsWidth <= std::numeric_limits<QData>::digits) {
             const QData rhsVal = static_cast<QData>(*static_cast<const QData*>(entry.m_rhsDatap));
@@ -151,20 +149,19 @@ private:
         const int startWord = VL_BITWORD_E(rhsLsb);
         const int startBit = VL_BITBIT_E(rhsLsb);
         QData out = static_cast<QData>(rhswp[startWord]) >> startBit;
-        int outBits = VL_EDATASIZE - startBit;
-        if (outBits < width) {
-            out |= static_cast<QData>(rhswp[startWord + 1]) << outBits;
-            outBits += VL_EDATASIZE;
-            if (outBits < width) { out |= static_cast<QData>(rhswp[startWord + 2]) << outBits; }
+        for (int outBits = VL_EDATASIZE - startBit, word = startWord + 1; outBits < width;
+             outBits += VL_EDATASIZE, ++word) {
+            out |= static_cast<QData>(rhswp[word]) << outBits;
         }
         return out & mask;
     }
 
     template <typename T>
     static T applyBits(T cur, const Entry& entry, int lsb, int width, int rhsLsb) {
-        const T lowMask = width >= static_cast<int>(sizeof(T) * 8)
-                              ? ~static_cast<T>(0)
-                              : static_cast<T>((static_cast<QData>(1) << width) - 1);
+        const int topBit = width - 1;
+        const QData lowMaskQ
+            = (static_cast<QData>(1) << topBit) | ((static_cast<QData>(1) << topBit) - 1);
+        const T lowMask = static_cast<T>(lowMaskQ);
         const T mask = static_cast<T>(lowMask << lsb);
         const T rhsBits = static_cast<T>(
             (static_cast<T>(extractRhsChunk(entry, rhsLsb, width)) & lowMask) << lsb);

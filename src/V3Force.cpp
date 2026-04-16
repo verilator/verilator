@@ -90,28 +90,14 @@ public:
                 out += "|S" + cvtToStr(selp->lsbConst()) + ":" + cvtToStr(selp->widthConst());
                 return;
             }
-            if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
-                if (const AstConst* const constp = VN_CAST(selp->bitp(), Const)) {
-                    out += "|A" + cvtToStr(constp->toSInt());
-                } else {
-                    out += "|A?";
-                }
-                return;
-            }
-            if (const AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
-                out += "|M" + selp->name();
-                return;
-            }
-            if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
+            if (AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+                AstNodeExpr* const fromp = selp->fromp();
+                buildForcePathKeyRecurse(fromp, out);
                 out += "|T" + selp->name();
                 return;
             }
-            UASSERT_OBJ(false, nodep,
-                        "Unsupported: force path contains selector node type "
-                            << nodep->prettyTypeName());
+            nodep->v3fatalSrc("Unsupported: opaque force path selector "
+                              << nodep->prettyTypeName());
         }
 
         static string forcePathKey(AstNodeExpr* nodep) {
@@ -171,9 +157,7 @@ public:
     static AstConst* makeRangeMaskConst(AstNode* nodep, int width, int lsb, int msb) {
         V3Number mask{nodep, width};
         mask.setAllBits0();
-        if (width > 0 && msb >= lsb) {
-            for (int bit = lsb; bit <= msb; ++bit) mask.setBit(bit, 1);
-        }
+        for (int bit = lsb; bit <= msb; ++bit) mask.setBit(bit, 1);
         return new AstConst{nodep->fileline(), mask};
     }
 
@@ -195,20 +179,6 @@ public:
         return VN_IS(dtypep->skipRefp(), UnpackArrayDType);
     }
 
-    static void fullUnpackedRange(const AstNodeDType* dtypep, int& lsb, int& msb) {
-        const AstNodeDType* curp = dtypep->skipRefp();
-        int total = 0;
-        if (VN_IS(curp, UnpackArrayDType)) {
-            total = 1;
-            while (const AstUnpackArrayDType* const dimp = VN_CAST(curp, UnpackArrayDType)) {
-                total *= dimp->declRange().elements();
-                curp = dimp->subDTypep() ? dimp->subDTypep()->skipRefp() : nullptr;
-            }
-        }
-        lsb = 0;
-        msb = total > 0 ? (total - 1) : 0;
-    }
-
     static bool isBitwiseDType(AstNode* nodep) {
         const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
         return basicp && !basicp->isDouble() && !basicp->isString() && !basicp->isOpaque();
@@ -228,8 +198,7 @@ public:
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user1SetOnce(); }
 
     static bool isOpaquePathSelector(const AstNode* nodep) {
-        return VN_IS(nodep, Sel) || VN_IS(nodep, NodeSel) || VN_IS(nodep, MemberSel)
-               || VN_IS(nodep, StructSel);
+        return VN_IS(nodep, Sel) || VN_IS(nodep, NodeSel) || VN_IS(nodep, StructSel);
     }
 
     static bool isOutermostOpaquePathSelector(const AstNode* nodep) {
@@ -286,7 +255,8 @@ public:
 
             info.m_rangeMsb = info.m_rangeLsb;
         } else if (isUnpackedArrayDType(varp->dtypep())) {
-            fullUnpackedRange(varp->dtypep(), info.m_rangeLsb, info.m_rangeMsb);
+            lhsp->v3fatalSrc("Whole unpacked-array force/release should have been lowered via "
+                             "element selections");
         }
         if (!isBitwiseDType(varp) && !info.m_hasArraySel && !VN_IS(lhsp, VarRef)) {
             // Non-bitwise member/struct paths cannot use a real bit range, so map each distinct
@@ -294,10 +264,8 @@ public:
             // for force, release, and readback.
             VarForceInfo& varInfo = getOrCreateVarInfo(varp);
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
-            if (index >= 0) {
-                info.m_rangeLsb = index;
-                info.m_rangeMsb = index;
-            }
+            info.m_rangeLsb = index;
+            info.m_rangeMsb = index;
         }
         return info;
     }
@@ -332,7 +300,7 @@ public:
     VarForceInfo& getOrCreateVarInfo(AstVar* varp) { return m_varInfo[varp]; }
 
     const VarForceInfo* getVarInfo(AstVar* varp) const {
-        auto it = m_varInfo.find(varp);
+        const auto it = m_varInfo.find(varp);
         return it != m_varInfo.end() ? &it->second : nullptr;
     }
 
@@ -370,15 +338,12 @@ public:
     }
 
     static void collectArraySelInfo(AstNodeExpr* exprp, ArraySelInfo& info) {
-        if (!exprp) return;
         if (const auto* const selp = VN_CAST(exprp, Sel)) {
             info.m_hasBitSel = true;
             collectArraySelInfo(selp->fromp(), info);
         } else if (auto* const selp = VN_CAST(exprp, ArraySel)) {
             collectArraySelInfo(selp->fromp(), info);
             info.m_sels.push_back(selp);
-        } else if (const auto* const memberp = VN_CAST(exprp, MemberSel)) {
-            collectArraySelInfo(memberp->fromp(), info);
         } else if (const auto* const memberp = VN_CAST(exprp, StructSel)) {
             collectArraySelInfo(memberp->fromp(), info);
         }
@@ -414,48 +379,17 @@ public:
     }
 
     static AstNodeExpr* buildFlattenIndexExpr(FileLine* flp, const ArraySelInfo& info) {
-        if (info.m_sels.empty()) return makeConst32(flp, 0);
         const std::vector<int> dimSizes = arraySelDimSizes(info);
         std::vector<int> constIndices;
         constIndices.reserve(info.m_sels.size());
         for (AstArraySel* const selp : info.m_sels) {
-            const AstConst* const constp = VN_CAST(selp->bitp(), Const);
-            if (!constp) break;
-            constIndices.push_back(constp->toSInt());
+            constIndices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
         }
-        if (constIndices.size() == info.m_sels.size()) {
-            return makeConst32(flp, flattenIndex(constIndices, dimSizes));
-        }
-        AstNodeExpr* exprp = nullptr;
-        int stride = 1;
-        for (int i = static_cast<int>(dimSizes.size()) - 1; i >= 0; --i) {
-            AstNodeExpr* termp = info.m_sels[i]->bitp()->cloneTreePure(false);
-            if (stride != 1) {
-                AstNodeExpr* const mulp = new AstMul{flp, termp, makeConst32(flp, stride)};
-                mulp->dtypeFrom(termp);
-                termp = mulp;
-            }
-            exprp = exprp ? new AstAdd{flp, termp, exprp} : termp;
-            if (exprp != termp) exprp->dtypeFrom(termp);
-            stride *= dimSizes[i];
-        }
-        return exprp;
+        return makeConst32(flp, flattenIndex(constIndices, dimSizes));
     }
 
     static AstNodeExpr* buildRhsDataExpr(FileLine* flp, const ForceInfo& finfo) {
         UASSERT(finfo.m_rhsVarVscp, "RHS var scope not assigned");
-        if (isUnpackedArrayDType(finfo.m_rhsVarVscp->dtypep())) {
-            // VlForceVec stores one pointer per force; for unpacked-array RHS temps we use the
-            // address of element 0 as the base and let the runtime index from there.
-            AstNodeExpr* exprp = new AstVarRef{flp, finfo.m_rhsVarVscp, VAccess::READ};
-            AstNodeDType* dtypep = finfo.m_rhsVarVscp->dtypep();
-            while (const AstUnpackArrayDType* const arrayp
-                   = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
-                exprp = new AstArraySel{flp, exprp, 0};
-                dtypep = arrayp->subDTypep();
-            }
-            return exprp;
-        }
         return new AstVarRef{flp, finfo.m_rhsVarVscp, VAccess::READ};
     }
 
@@ -556,11 +490,8 @@ public:
                 markNonReplaceable(origSenRefp);
                 AstSenItem* const origItemp
                     = new AstSenItem{flp, VEdgeType::ET_CHANGED, origSenRefp};
-                if (itemsp) {
-                    itemsp->addNext(origItemp);
-                } else {
-                    itemsp = origItemp;
-                }
+                if (!itemsp) varp->v3fatalSrc("force-rd-update missing force-enable sen item");
+                itemsp->addNext(origItemp);
                 for (ForceInfo* const finfop : forceps) addSenItem(finfop->m_rhsVarVscp);
 
                 AstActive* const activep
@@ -738,12 +669,12 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             });
 
             // Compute full assignment range (including unpacked arrays) for force bookkeeping.
-            const int padMsb
-                = ForceState::isBitwiseDType(varp) && varp->width() ? (varp->width() - 1) : 0;
+            const bool bitwiseVar = ForceState::isBitwiseDType(varp);
+            const int padMsb = bitwiseVar ? (varp->width() - 1) : 0;
             int rangeLsb = 0;
             int rangeMsb = padMsb;
             if (ForceState::isUnpackedArrayDType(varp->dtypep())) {
-                ForceState::fullUnpackedRange(varp->dtypep(), rangeLsb, rangeMsb);
+                nodep->v3fatalSrc("Forceable unpacked arrays should have been rejected earlier");
             }
             m_state.addForceAssignment(varp, nodep, rhsClonep, forceAssignp, rangeLsb, rangeMsb, 0,
                                        padMsb, false);
@@ -787,6 +718,7 @@ class ForceConvertVisitor final : public VNVisitor {
 
         AstAssign* valAssignp = nullptr;
         AstAssign* enAssignp = nullptr;
+        const bool bitwiseForcedVar = ForceState::isBitwiseDType(forcedVarp);
         // When an externally forceable signal is also forced in (System)Verilog code
         // keep the public __VforceEn/__VforceVal signals in sync with the procedural force too.
         // Don't do this for array selections; those are represented only in VlForceVec.
@@ -795,11 +727,11 @@ class ForceConvertVisitor final : public VNVisitor {
             AstNodeExpr* baseExprp = nodep->rhsp()->cloneTreePure(false);
             baseExprp->foreach(
                 [](AstVarRef* const refp) { ForceState::markNonReplaceable(refp); });
-            if (ForceState::isBitwiseDType(forcedVarp)) {
+            if (bitwiseForcedVar) {
                 baseExprp = ForceState::zeroPadToBaseWidth(baseExprp, forcedVarp->width(),
                                                            info.m_padLsb, info.m_padMsb);
             }
-            if (ForceState::isBitwiseDType(forcedVarp) && forcedVarp->width() > 0) {
+            if (bitwiseForcedVar) {
                 // forceVal = (forceVal & ~mask(range)) | (rhs_padded & mask(range));
                 // forceEn  = forceEn | mask(range);
                 AstConst* const maskConstp = ForceState::makeRangeMaskConst(
@@ -871,10 +803,11 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVar* const releasedVarp = lhsVarRefp->varp();
 
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(releasedVarp);
-        if (!varInfo || varInfo->m_forces.empty()) {
+        if (!varInfo) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        UASSERT_OBJ(!varInfo->m_forces.empty(), nodep, "Var info for variable with no forces");
 
         FileLine* const flp = nodep->fileline();
 
@@ -898,20 +831,18 @@ class ForceConvertVisitor final : public VNVisitor {
                 = new AstVarRef{flp, varInfo->m_forceEnVscp, VAccess::WRITE};
             if (ForceState::isBitwiseDType(releasedVarp)) {
                 const int varWidth = releasedVarp->width();
-                if (varWidth > 0) {
-                    if (rangeInfo.m_rangeLsb == 0 && rangeInfo.m_rangeMsb == varWidth - 1) {
-                        clearEnp = new AstAssign{flp, enWritep,
-                                                 ForceState::makeZeroConst(nodep, varWidth)};
-                    } else {
-                        // forceEn = forceEn & ~mask(range);
-                        AstNodeExpr* const enReadp
-                            = new AstVarRef{flp, varInfo->m_forceEnVscp, VAccess::READ};
-                        AstConst* const maskConst = ForceState::makeRangeMaskConst(
-                            nodep, varWidth, rangeInfo.m_rangeLsb, rangeInfo.m_rangeMsb);
-                        AstNodeExpr* const newEnp
-                            = new AstAnd{flp, enReadp, new AstNot{flp, maskConst}};
-                        clearEnp = new AstAssign{flp, enWritep, newEnp};
-                    }
+                if (rangeInfo.m_rangeLsb == 0 && rangeInfo.m_rangeMsb == varWidth - 1) {
+                    clearEnp
+                        = new AstAssign{flp, enWritep, ForceState::makeZeroConst(nodep, varWidth)};
+                } else {
+                    // forceEn = forceEn & ~mask(range);
+                    AstNodeExpr* const enReadp
+                        = new AstVarRef{flp, varInfo->m_forceEnVscp, VAccess::READ};
+                    AstConst* const maskConst = ForceState::makeRangeMaskConst(
+                        nodep, varWidth, rangeInfo.m_rangeLsb, rangeInfo.m_rangeMsb);
+                    AstNodeExpr* const newEnp
+                        = new AstAnd{flp, enReadp, new AstNot{flp, maskConst}};
+                    clearEnp = new AstAssign{flp, enWritep, newEnp};
                 }
             } else {
                 clearEnp = new AstAssign{flp, enWritep, ForceState::makeZeroConst(nodep, 1)};
@@ -1024,29 +955,24 @@ class ForceReplaceVisitor final : public VNVisitor {
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
         // Skip non-forceable reads, reads we intentionally protected earlier, and intermediate
         // selections that still evaluate to an unpacked array rather than a scalar element.
-        if (ForceState::isNotReplaceable(baseRefp) || !varInfo || varInfo->m_forces.empty()
+        if (ForceState::isNotReplaceable(baseRefp) || !varInfo
             || !ForceState::isUnpackedArrayDType(varp->dtypep())
             || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             iterateChildren(nodep);
             return;
         }
 
-        if (baseRefp->access().isRW()) {
-            baseRefp->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Signals used via read-write reference cannot be forced");
+        if (!baseRefp->access().isReadOnly()) {
             iterateChildren(nodep);
-        } else if (baseRefp->access().isReadOnly()) {
-            const ForceState::ArraySelInfo arrayInfo = ForceState::getArraySelInfo(nodep);
-            AstNodeExpr* const indexExprp
-                = ForceState::buildFlattenIndexExpr(nodep->fileline(), arrayInfo);
-            AstNodeExpr* const readExprp
-                = m_state.createForceReadIndexExpression(*varInfo, nodep, indexExprp);
-            nodep->replaceWith(readExprp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {
-            iterateChildren(nodep);
+            return;
         }
+        const ForceState::ArraySelInfo arrayInfo = ForceState::getArraySelInfo(nodep);
+        AstNodeExpr* const indexExprp
+            = ForceState::buildFlattenIndexExpr(nodep->fileline(), arrayInfo);
+        AstNodeExpr* const readExprp
+            = m_state.createForceReadIndexExpression(*varInfo, nodep, indexExprp);
+        nodep->replaceWith(readExprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void visit(AstVarRef* nodep) override {
@@ -1079,15 +1005,13 @@ class ForceReplaceVisitor final : public VNVisitor {
 
         // For opaque member/struct paths we rewrite the outer path node instead of the base
         // VarRef, so leave the base reference alone and let visit(AstNode*) handle it.
-        if (nodep->backp()
-            && (VN_IS(nodep->backp(), Sel) || VN_IS(nodep->backp(), MemberSel)
-                || VN_IS(nodep->backp(), StructSel))
+        if (nodep->backp() && (VN_IS(nodep->backp(), Sel) || VN_IS(nodep->backp(), StructSel))
             && !ForceState::isBitwiseDType(nodep->varp())
             && !ForceState::isUnpackedArrayDType(nodep->varp()->dtypep())) {
             return;
         }
 
-        if (varInfo->m_forces.empty()) return;
+        UASSERT_OBJ(!varInfo->m_forces.empty(), nodep, "Var info for variable with no forces");
 
         if (nodep->access().isRW()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1111,26 +1035,16 @@ class ForceReplaceVisitor final : public VNVisitor {
                 if (!ForceState::isBitwiseDType(varp)
                     && !ForceState::isUnpackedArrayDType(varp->dtypep())) {
                     const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
-                    if (!ForceState::isNotReplaceable(baseRefp) && varInfo
-                        && !varInfo->m_forces.empty()) {
+                    if (!ForceState::isNotReplaceable(baseRefp) && varInfo) {
                         const int forcePathIndex = varInfo->findForcePathIndex(exprp);
                         if (forcePathIndex >= 0) {
-                            if (baseRefp->access().isRW()) {
-                                baseRefp->v3warn(E_UNSUPPORTED,
-                                                 "Unsupported: Signals used via read-write "
-                                                 "reference cannot be forced");
-                                return;
-                            }
-                            if (baseRefp->access().isReadOnly()) {
-                                AstNodeExpr* const readExprp
-                                    = m_state.createForceReadIndexExpression(
-                                        *varInfo, exprp,
-                                        ForceState::makeConst32(nodep->fileline(),
-                                                                forcePathIndex));
-                                nodep->replaceWith(readExprp);
-                                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                                return;
-                            }
+                            if (!baseRefp->access().isReadOnly()) return;
+                            AstNodeExpr* const readExprp = m_state.createForceReadIndexExpression(
+                                *varInfo, exprp,
+                                ForceState::makeConst32(nodep->fileline(), forcePathIndex));
+                            nodep->replaceWith(readExprp);
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                            return;
                         }
                     }
                 }
