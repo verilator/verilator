@@ -2514,7 +2514,7 @@ class VlTest:
 
     def vcd_identical(self, fn1: str, fn2: str) -> None:
         """Test if two VCD/FST files have logically-identical contents"""
-        cmd = 'wavediff --epsilon 0.0000001 ' + fn1 + ' ' + fn2
+        cmd = VtOs.getenv_def('WAVEDIFF', 'wavediff') + ' --epsilon 0.0000001 ' + fn1 + ' ' + fn2
         proc = subprocess.run([cmd], capture_output=True, text=True, shell=True, check=False)
         if proc.returncode:
             print(proc.stderr)
