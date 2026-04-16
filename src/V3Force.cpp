@@ -240,6 +240,9 @@ public:
 
     static AstVarRef* getOneVarRef(AstNodeExpr* forceStmtp) {
         AstNode* const basep = AstArraySel::baseFromp(forceStmtp, true);
+        if (AstSampled* sampledp = VN_CAST(basep, Sampled))
+            if (AstNodeExpr* exprp = VN_CAST(sampledp->exprp(), NodeExpr))
+                return getOneVarRef(exprp);
         AstVarRef* const varRefp = VN_CAST(basep, VarRef);
         UASSERT_OBJ(varRefp, forceStmtp, "`force` assignment has no VarRef on LHS");
         return varRefp;
