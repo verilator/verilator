@@ -54,6 +54,7 @@ Verilator 5.047 devel
 * Support sequence `first_match` operator (#7392). [Yilou Wang]
 * Support nonconsecutive repetition [=N] in sequence expressions (#7397). [Yilou Wang]
 * Support per-process RNG for process::srandom() and object seeding (#7408) (#7415) (#7408). [Yilou Wang]
+* Support 2**n expressions in constraint randomization (#7422). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -66,6 +67,7 @@ Verilator 5.047 devel
 * Change array tracing to dump left index to right index (#7205). [Geza Lore, Testorrent USA, Inc.]
 * Change `--converge-limit` default to 10000 (#7209).
 * Remove DFG extract optimization pass (#7394). [Geza Lore, Testorrent USA, Inc.]
+* Optimize trace code for faster compiles on repeated types (#6707) (#6832). [Todd Strader]
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
@@ -77,6 +79,7 @@ Verilator 5.047 devel
 * Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
 * Optimize read references in DFG (#7354). [Geza Lore, Testorrent USA, Inc.]
 * Optimize DFG only once, after scoping (#7362). [Geza Lore, Testorrent USA, Inc.]
+* Optimize more DFG peephole patterns (#7423). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
@@ -139,6 +142,7 @@ Verilator 5.047 devel
 * Fix virtual interface function calls binding to wrong instance (#7363). [Yilou Wang]
 * Fix false ASSIGNIN on interface input port connections (#7365). [Yilou Wang]
 * Fix string `inside` queue (#7373).
+* Fix subclass with rand_mode(0) getting randomized (#7376) (#7383). [Yilou Wang]
 * Fix VPI access to Verilog `force`-ed signals (#7381). [Christian Hecken, Heidelberg University]
 * Fix sampling of hierarchical references (#7386). [Ryszard Rozak, Antmicro Ltd.]
 * Fix virtual class inheritance false error (#7403) (#7405). [Nikolay Puzanov]
