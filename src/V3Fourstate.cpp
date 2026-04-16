@@ -1909,13 +1909,14 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstSenItem* const nodep) override {
-        if (isFourstate(nodep->sensp())) {
+        if (!VN_IS(nodep->sensp(), FourstateExpr) && isFourstate(nodep->sensp())) {
             AstNodeExpr* const sensp = nodep->sensp()->unlinkFrBack();
             nodep->sensp(new AstFourstateExpr{nodep->fileline(),
                                               getFourStateExpressionValue(sensp),
                                               getFourStateExpressionXZ(sensp)});
             sensp->deleteTree();
         }
+        iterateChildren(nodep);
     }
 
     void visit(AstDisplay* const nodep) override {
