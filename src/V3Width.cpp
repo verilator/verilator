@@ -218,6 +218,7 @@ class WidthVisitor final : public VNVisitor {
     bool m_underFork = false;  // Visiting under a fork
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
+    bool m_underMemberSel = false;  // Viting under a MemberSel
     bool m_hasNamedType = false;  // Packed array is defined using named type
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
@@ -2924,8 +2925,8 @@ class WidthVisitor final : public VNVisitor {
             }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
-                   && !VN_IS(m_procedurep, InitialAutomatic)
-                   && !VN_IS(m_procedurep, InitialStatic)) {
+                   && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
+                   && !m_underMemberSel) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
@@ -3561,6 +3562,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep);
         if (nodep->didWidth()) return;
+        VL_RESTORER(m_underMemberSel);
+        m_underMemberSel = true;
         UINFOTREE(9, nodep, "", "mbs-in");
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         UINFOTREE(9, nodep, "", "mbs-ic");
@@ -3708,6 +3711,11 @@ class WidthVisitor final : public VNVisitor {
                         nodep->replaceWith(varRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         return true;
+                    }
+                    if (nodep->access().isWriteOrRW() && varp->isConst()) {
+                        nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
+                                                          << nodep->prettyNameQ()
+                                                          << " (IEEE 1800-2023 6.20.6)");
                     }
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
