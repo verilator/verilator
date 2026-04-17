@@ -32,6 +32,7 @@
 #include "svdpi.h"
 #include "vpi_user.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,17 +41,47 @@ static void m_uvm_error(const char *ID, const char *msg, ...);
 static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag);
 static int uvm_hdl_get_vlog(char *path, p_vpi_vecval value);
 static int uvm_hdl_max_width();
-
-// static print buffer
-static char m_uvm_temp_print_buffer[1024];
+static char *m_uvm_temp_print_buffer = NULL;
+static size_t m_uvm_temp_print_buffer_size = 0;
 
 // static print error
 static void m_uvm_error(const char *id, const char *msg, ...) {
   va_list argptr;
+  va_list size_argptr;
+  int msg_size;
+  size_t formatted_msg_size;
+
   va_start(argptr, msg);
-  vsnprintf(m_uvm_temp_print_buffer, sizeof(m_uvm_temp_print_buffer), msg, argptr);
+
+  va_copy(size_argptr, argptr);
+  msg_size = vsnprintf(NULL, 0, msg, size_argptr);
+  va_end(size_argptr);
+  if (msg_size < 0) {
+    va_end(argptr);
+    m_uvm_report_dpi(M_UVM_ERROR, (char *)id,
+                     (char *)"Failed to format UVM DPI error message", M_UVM_NONE,
+                     (char *)__FILE__, __LINE__);
+    return;
+  }
+
+  formatted_msg_size = (size_t)msg_size + 1;
+  if (formatted_msg_size > m_uvm_temp_print_buffer_size) {
+    char *const new_buffer = (char *)realloc(m_uvm_temp_print_buffer, formatted_msg_size);
+    if (new_buffer == NULL) {
+      va_end(argptr);
+      m_uvm_report_dpi(M_UVM_ERROR, (char *)id,
+                       (char *)"Failed to allocate memory for UVM DPI error message",
+                       M_UVM_NONE, (char *)__FILE__, __LINE__);
+      return;
+    }
+    m_uvm_temp_print_buffer = new_buffer;
+    m_uvm_temp_print_buffer_size = formatted_msg_size;
+  }
+
+  vsnprintf(m_uvm_temp_print_buffer, m_uvm_temp_print_buffer_size, msg, argptr);
   va_end(argptr);
-  m_uvm_report_dpi(M_UVM_ERROR, (char *)id, &m_uvm_temp_print_buffer[0], M_UVM_NONE,
+
+  m_uvm_report_dpi(M_UVM_ERROR, (char *)id, m_uvm_temp_print_buffer, M_UVM_NONE,
                    (char *)__FILE__, __LINE__);
 }
 
