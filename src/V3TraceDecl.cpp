@@ -681,7 +681,7 @@ class TraceDeclVisitor final : public VNVisitor {
                         m_traValuep
                             = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
                         if (AstVar* const complementp
-                            = m_traVscp->varp()->fourStateComplementp()) {
+                            = m_traVscp->varp()->fourstateComplementp()) {
                             m_traValueXZp
                                 = new AstVarRef{m_traVscp->fileline(),
                                                 m_varxzToVscp.at(complementp), VAccess::READ};
@@ -775,7 +775,7 @@ class TraceDeclVisitor final : public VNVisitor {
             if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
         }
 
-        if (nodep->varp()->isFourStateComplement()) {
+        if (nodep->varp()->isFourstateComplement()) {
             m_varxzToVscp.emplace(nodep->varp(), nodep);
         } else {
             // Add to traced signal list

@@ -485,9 +485,9 @@ class DeadVisitor final : public VNVisitor {
             retry = false;
             for (std::vector<AstVar*>::iterator it = m_varsp.begin(); it != m_varsp.end(); ++it) {
                 AstVar* const varp = *it;
-                if (!varp || varp->isFourStateComplement()) continue;
+                if (!varp || varp->isFourstateComplement()) continue;
                 if (varp->user1() == 0) {
-                    if (AstVar* const varComplementp = varp->fourStateComplementp()) {
+                    if (AstVar* const varComplementp = varp->fourstateComplementp()) {
                         if (varComplementp->user1() != 0) continue;
                         deleting(varComplementp);
                     }

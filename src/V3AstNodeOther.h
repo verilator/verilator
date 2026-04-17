@@ -1902,7 +1902,7 @@ class AstVar final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
-    // @astgen ptr := m_fourStateComplementp : Optional[AstVar]  // Set in four-state value part -
+    // @astgen ptr := m_fourstateComplementp : Optional[AstVar]  // Set in four-state value part -
     //                                                             points to an xz part
 
     string m_name;  // Name of variable
@@ -1973,7 +1973,7 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
-    bool m_isFourStateComplement : 1;  // Set in four-state xz part
+    bool m_isFourstateComplement : 1;  // Set in four-state xz part
     void init() {
         m_fourstateOriginalDTypeKwd = VBasicDTypeKwd::UNKNOWN;
         m_ansi = false;
@@ -2033,7 +2033,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_processQueue = false;
-        m_isFourStateComplement = false;
+        m_isFourstateComplement = false;
     }
 
 public:
@@ -2136,19 +2136,19 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
-    void fourStateComplementp(AstVar* const varp) {
-        UASSERT_OBJ(!isFourStateComplement(), this, "Varp is four-state complement i");
-        UASSERT_OBJ(!m_fourStateComplementp, this, "Varp already has a complement");
-        UASSERT_OBJ(!varp->isFourStateComplement(), varp, "It is already a four-state complement");
-        varp->m_isFourStateComplement = true;
-        m_fourStateComplementp = varp;
+    void fourstateComplementp(AstVar* const varp) {
+        UASSERT_OBJ(!isFourstateComplement(), this, "Varp is four-state complement i");
+        UASSERT_OBJ(!m_fourstateComplementp, this, "Varp already has a complement");
+        UASSERT_OBJ(!varp->isFourstateComplement(), varp, "It is already a four-state complement");
+        varp->m_isFourstateComplement = true;
+        m_fourstateComplementp = varp;
     }
-    AstVar* fourStateComplementp() const { return m_fourStateComplementp; }
+    AstVar* fourstateComplementp() const { return m_fourstateComplementp; }
     VBasicDTypeKwd fourstateOriginalDTypeKwd() const { return m_fourstateOriginalDTypeKwd; }
     void fourstateOriginalDTypeKwd(const VBasicDTypeKwd dtypeKwd) {
         m_fourstateOriginalDTypeKwd = dtypeKwd;
     }
-    bool isFourStateComplement() const { return m_isFourStateComplement; }
+    bool isFourstateComplement() const { return m_isFourstateComplement; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
