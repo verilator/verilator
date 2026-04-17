@@ -387,8 +387,6 @@ void VlcTop::covergroupCalc() {
     }
 }
 
-
-
 //######################################################################
 
 void VlcTop::annotateCalc() {
