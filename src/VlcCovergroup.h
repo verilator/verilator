@@ -198,10 +198,9 @@ public:
 
             for (const auto& cp : cg.coverpoints()) {
                 os << "\n";
-                os << "  " << (cp.isCross() ? "Cross" : "Coverpoint") << ": " << cp.name()
-                   << "\n";
-                os << "    Coverage: " << cp.normalCovered() << "/" << cp.normalTotal() << " bins ("
-                   << pctStr(cp.normalCovered(), cp.normalTotal()) << "%)\n";
+                os << "  " << (cp.isCross() ? "Cross" : "Coverpoint") << ": " << cp.name() << "\n";
+                os << "    Coverage: " << cp.normalCovered() << "/" << cp.normalTotal()
+                   << " bins (" << pctStr(cp.normalCovered(), cp.normalTotal()) << "%)\n";
                 os << "    Bins:\n";
 
                 size_t maxNameLen = 0;

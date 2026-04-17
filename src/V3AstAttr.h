@@ -1160,8 +1160,7 @@ public:
         : m_e{_e} {}
     const char* ascii() const {
         static const char* const names[]
-            = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment",
-               "unknown"};
+            = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment", "unknown"};
         return names[m_e];
     }
 };
