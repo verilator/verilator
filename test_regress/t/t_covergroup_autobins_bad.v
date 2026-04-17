@@ -25,6 +25,13 @@ module t;
     }
   endgroup
 
+  // Error: array size exceeds limit of 1000
+  covergroup cg2b;
+    cp1: coverpoint cp_expr {
+      bins auto[1001];
+    }
+  endgroup
+
   // Error: non-constant value in bin ranges
   covergroup cg3;
     cp1: coverpoint cp_expr {
@@ -46,6 +53,7 @@ module t;
 
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
+  cg2b cg2b_inst = new;
   cg3 cg3_inst = new;
   cg4 cg4_inst = new;
 
