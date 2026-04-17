@@ -1356,14 +1356,15 @@ class LinkParseVisitor final : public VNVisitor {
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             const VCoverOptionType optType = optp->optionType();
-            if (optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT
-                || optType == VCoverOptionType::GOAL || optType == VCoverOptionType::COMMENT) {
-                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
-                                                      optp->valuep()->cloneTree(false)});
-            } else {
+            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT
+                  || optType == VCoverOptionType::GOAL || optType == VCoverOptionType::COMMENT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
+            // Always preserve the option node so V3Coverage can track its source line
+            // for coverage annotation, even when the option itself is unsupported.
+            nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
+                                                  optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
         iterateChildren(nodep);
