@@ -33,9 +33,7 @@ module Vt_debug_emitv_t;
     function ident;
         input int signed value;
         begin : label0
-            ident = 
-            ???? // CRESET
-            ;
+            ident = /*CRESET*/;
             ident = value;
             disable label0;
         end
@@ -128,9 +126,7 @@ module Vt_debug_emitv_t;
     initial begin
         begin : unnamedblk1
             int signed other;
-            other = 
-            ???? // CRESET
-            ;
+            other = /*CRESET*/;
             begin
                 begin : unnamedblk2
                     int signed i;
@@ -732,16 +728,12 @@ module Vt_debug_emitv_t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = 
-        ???? // CRESET
-        ;
+        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = 
-        ???? // CRESET
-        ;
+        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
@@ -783,16 +775,12 @@ module Vt_debug_emitv_t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = 
-        ???? // CRESET
-        ;
+        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = 
-        ???? // CRESET
-        ;
+        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
@@ -838,16 +826,12 @@ module Vt_debug_emitv_t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = 
-        ???? // CRESET
-        ;
+        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = 
-        ???? // CRESET
-        ;
+        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
@@ -897,16 +881,12 @@ module Vt_debug_emitv_t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = 
-        ???? // CRESET
-        ;
+        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = 
-        ???? // CRESET
-        ;
+        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
     endfunction
@@ -1229,9 +1209,7 @@ module Vt_debug_emitv_sub;
     task inc;
         input int signed i;
         output int signed o;
-        o = 
-        ???? // CRESET
-        ;
+        o = /*CRESET*/;
         o = ({32'h1{{1'h0, i[31:1]}}} + 32'h1);
     endtask
     function f;
