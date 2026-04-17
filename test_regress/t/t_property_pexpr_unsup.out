@@ -5,15 +5,6 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:27:9: Unsupported: weak (in property expression)
    27 |     weak(a);
       |         ^
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:31:7: Unsupported: s_until (in property expression)
-   31 |     a s_until b;
-      |       ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:35:7: Unsupported: until_with (in property expression)
-   35 |     a until_with b;
-      |       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:39:7: Unsupported: s_until_with (in property expression)
-   39 |     a s_until_with b;
-      |       ^~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:43:7: Unsupported: #-# (in property expression)
    43 |     a #-# b;
       |       ^~~
