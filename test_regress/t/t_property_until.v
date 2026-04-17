@@ -24,7 +24,7 @@ module t (  /*AUTOARG*/
   result_t expected[int];
 
   localparam MAX = 15;
-  integer cyc = 0;
+  integer cyc = 1;
 
   assert property (@(posedge clk) 0 until 1)
     results[1].passs++;
@@ -42,13 +42,18 @@ module t (  /*AUTOARG*/
     results[4].passs++;
   else results[4].fails++;
 
-  always @(clk) begin
+  assert property (@(posedge clk) cyc % 3 != 0 until_with cyc % 4 != 0)
+    results[5].passs++;
+  else results[5].fails++;
+
+  always @(edge clk) begin
     ++cyc;
     if (cyc == MAX) begin
       expected[1] = '{0, 7};
       // expected[2] shouldn't be initialized
       expected[3] = '{0, 7};
       expected[4] = '{5, 2};
+      expected[5] = '{2, 5};
       `checkh(results, expected);
       $write("*-* All Finished *-*\n");
       $finish;
