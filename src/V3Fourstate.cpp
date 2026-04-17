@@ -194,16 +194,14 @@ class FourstateLogicTypePropagator final : public VNVisitor {
     }
 
     void visit(AstNodeVarRef* const nodep) override {
-        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()->skipRefp()),
-                     m_fourstateInSubtree);
+        setFourstate(nodep, needsSplitting(nodep->varp()->dtypep()), m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
         iterateChildrenSeparately(nodep);
         setFourstate(nodep,
-                     nodep->taskp()->fvarp()
-                         && needsSplitting(nodep->taskp()->fvarp()->dtypep()->skipRefp()),
+                     nodep->taskp()->fvarp() && needsSplitting(nodep->taskp()->fvarp()->dtypep()),
                      m_fourstateInSubtree);
         m_fourstateInSubtree |= isFourstate(nodep);
     }
@@ -551,6 +549,17 @@ class FourstateVisitor final : public VNVisitor {
             for (const auto& assignp : assignps) {
                 exprps.push_back({assignp.first->rhsp()->unlinkFrBack(),
                                   assignp.second->rhsp()->unlinkFrBack()});
+                const AstVarXRef* xarefp = nullptr;
+                if (exprps.back().valuep->exists([&xarefp](const AstVarXRef* const refp) {
+                        xarefp = refp;
+                        return true;
+                    })) {
+                    // The issue is when hierarchical reference is being moved to another module.
+                    // Then it shall be fixed
+                    xarefp->v3warn(
+                        E_UNSUPPORTED,
+                        "Hierarchical references are unsupported in assigns with --fourstate");
+                }
             }
             FourStatePair result = buildTree(std::move(exprps), reducer);
             assignps[0].first->rhsp(result.valuep);
@@ -1397,9 +1406,7 @@ class FourstateVisitor final : public VNVisitor {
             if (needsSplitting(varRefp->varp()->dtypep())) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
-                if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
-                    varXRefp->name(varXRefp->name() + VALUE_SUFFIX);
-                }
+                if (!newp->name().empty()) newp->name(newp->name() + VALUE_SUFFIX);
                 newp->varp(getSplittedValue(varRefp->varp()));
                 newp->dtypeSetBitSized(varRefp->varp()->width(),
                                        varRefp->varp()->dtypep()->numeric());
@@ -1691,9 +1698,7 @@ class FourstateVisitor final : public VNVisitor {
             if (needsSplitting(varRefp->varp()->dtypep())) {
                 m_fourstateVisitor.splitVar(varRefp->varp());
                 AstNodeVarRef* const newp = varRefp->cloneTree(false);
-                if (AstVarXRef* const varXRefp = VN_CAST(newp, VarXRef)) {
-                    varXRefp->name(varXRefp->name() + VALUE_SUFFIX);
-                }
+                if (!newp->name().empty()) newp->name(newp->name() + XZ_SUFFIX);
                 newp->varp(getSplittedXZ(varRefp->varp()));
                 newp->dtypeSetBitSized(varRefp->varp()->width(),
                                        varRefp->varp()->dtypep()->numeric());
