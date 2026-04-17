@@ -41,6 +41,7 @@ module t;
       bins b_range2 = {[0:size_var]};    // non-constant regular bin range (rhs non-const)
       bins b2 = {size_var};              // non-constant simple bin value
       ignore_bins ign = {size_var};      // non-constant ignore_bins value
+      ignore_bins ign_range = {[0:size_var]};  // non-constant ignore_bins range (rhs non-const)
     }
   endgroup
 
