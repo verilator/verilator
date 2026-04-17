@@ -217,31 +217,12 @@ void VlcTop::rank() {
 
 void VlcTop::covergroup() {
     UINFO(2, "covergroup...");
-    // Structs for accumulating report data
-    struct BinEntry final {
-        std::string name;
-        std::string binType;  // "ignore", "illegal", or "" (normal)
-        bool covered = false;
-        uint64_t count = 0;
-    };
-    struct CpEntry final {
-        std::string name;
-        bool isCross = false;
-        std::vector<BinEntry> bins;
-        uint64_t normalTotal = 0;
-        uint64_t normalCovered = 0;
-    };
-    struct CgEntry final {
-        std::string typeName;
-        std::string filename;
-        int lineno = 0;
-        std::vector<CpEntry> coverpoints;
-        std::map<std::string, size_t> cpIndex;
-    };
+    covergroupCalc();
+    m_covergroups.dump(std::cout);
+}
 
-    std::map<std::string, CgEntry> cgMap;
-
-    // Collect covergroup points from all loaded coverage data
+void VlcTop::covergroupCalc() {
+    // Collect covergroup points from all loaded coverage data into m_covergroups
     for (const auto& nameNum : m_points) {
         const VlcPoint& pt = m_points.pointNumber(nameNum.second);
         if (pt.type() != "covergroup") continue;
@@ -261,124 +242,19 @@ void VlcTop::covergroup() {
         const std::string cpName = hier.substr(dot1 + 1, dot2 - dot1 - 1);
         const std::string binName = hier.substr(dot2 + 1);
 
-        auto& cg = cgMap[cgTypeName];
-        if (cg.typeName.empty()) {
-            cg.typeName = cgTypeName;
-            cg.filename = pt.filename();
-            cg.lineno = pt.lineno();
-        }
+        VlcCovergroupType& cg
+            = m_covergroups.findNewCovergroupType(cgTypeName, pt.filename(), pt.lineno());
+        VlcCgCoverpoint& cp = cg.findNewCoverpoint(cpName, pt.isCross());
 
-        auto it = cg.cpIndex.find(cpName);
-        size_t cpIdx;
-        if (it == cg.cpIndex.end()) {
-            cpIdx = cg.coverpoints.size();
-            cg.cpIndex[cpName] = cpIdx;
-            CpEntry cp;
-            cp.name = cpName;
-            cp.isCross = pt.isCross();
-            cg.coverpoints.push_back(cp);
-        } else {
-            cpIdx = it->second;
-        }
-
-        BinEntry bin;
-        bin.name = binName;
-        bin.binType = pt.binType();
         // Threshold: use per-bin thresh key (option.at_least) if present, else 1 (SV default)
         const std::string threshStr = pt.thresh();
         const uint64_t binThresh = threshStr.empty() ? 1 : std::stoull(threshStr);
-        bin.count = pt.count();
-        bin.covered = (bin.count >= binThresh);
-        cg.coverpoints[cpIdx].bins.push_back(bin);
-
-        if (bin.binType.empty()) {
-            ++cg.coverpoints[cpIdx].normalTotal;
-            if (bin.covered) ++cg.coverpoints[cpIdx].normalCovered;
-        }
+        const uint64_t count = pt.count();
+        cp.addBin(binName, pt.binType(), count >= binThresh, count);
     }
-
-    // Compute grand totals
-    uint64_t grandTotal = 0, grandCovered = 0, grandIgnored = 0, grandIllegal = 0;
-    for (const auto& cgPair : cgMap) {
-        for (const auto& cp : cgPair.second.coverpoints) {
-            grandTotal += cp.normalTotal;
-            grandCovered += cp.normalCovered;
-            for (const auto& bin : cp.bins) {
-                if (bin.binType == "ignore")
-                    ++grandIgnored;
-                else if (bin.binType == "illegal")
-                    ++grandIllegal;
-            }
-        }
-    }
-
-    // Format a percentage string "xx.xx"
-    const auto pctStr = [](uint64_t covered, uint64_t total) -> std::string {
-        std::ostringstream oss;
-        const double pct = (total == 0) ? 100.0 : (100.0 * covered / total);
-        oss << std::fixed << std::setprecision(2) << pct;
-        return oss.str();
-    };
-
-    const std::string divider(78, '-');
-
-    // Header and grand total
-    std::cout << "COVERGROUP COVERAGE REPORT\n";
-    std::cout << "==========================\n";
-    std::cout << "\n";
-    std::cout << "TOTAL: " << grandCovered << "/" << grandTotal << " bins covered ("
-              << pctStr(grandCovered, grandTotal) << "%)\n";
-    if (grandIgnored || grandIllegal)
-        std::cout << "       (" << grandIgnored << " ignored, " << grandIllegal << " illegal)\n";
-
-    // One section per covergroup type (map is sorted alphabetically)
-    for (const auto& cgPair : cgMap) {
-        const CgEntry& cg = cgPair.second;
-
-        uint64_t cgTotal = 0, cgCovered = 0;
-        for (const auto& cp : cg.coverpoints) {
-            cgTotal += cp.normalTotal;
-            cgCovered += cp.normalCovered;
-        }
-
-        std::cout << "\n" << divider << "\n";
-        std::cout << "Covergroup Type: " << cg.typeName << "  [" << cg.filename << ":" << cg.lineno
-                  << "]\n";
-        std::cout << "  Type Coverage: " << cgCovered << "/" << cgTotal << " bins ("
-                  << pctStr(cgCovered, cgTotal) << "%)\n";
-
-        for (const auto& cp : cg.coverpoints) {
-            std::cout << "\n";
-            std::cout << "  " << (cp.isCross ? "Cross" : "Coverpoint") << ": " << cp.name << "\n";
-            std::cout << "    Coverage: " << cp.normalCovered << "/" << cp.normalTotal << " bins ("
-                      << pctStr(cp.normalCovered, cp.normalTotal) << "%)\n";
-            std::cout << "    Bins:\n";
-
-            // Align bin name column to max name length in this coverpoint
-            size_t maxNameLen = 0;
-            for (const auto& bin : cp.bins)
-                if (bin.name.size() > maxNameLen) maxNameLen = bin.name.size();
-
-            for (const auto& bin : cp.bins) {
-                const char* status;
-                if (bin.binType == "ignore")
-                    status = "IGNORE ";
-                else if (bin.binType == "illegal")
-                    status = "ILLEGAL";
-                else if (bin.covered)
-                    status = "COVERED";
-                else
-                    status = "ZERO   ";
-
-                std::cout << "      " << status << "  " << std::left
-                          << std::setw(static_cast<int>(maxNameLen)) << bin.name << std::right
-                          << "  " << bin.count << " hits\n";
-            }
-        }
-    }
-
-    std::cout << "\n" << divider << "\n";
 }
+
+
 
 //######################################################################
 
