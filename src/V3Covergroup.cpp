@@ -35,6 +35,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Functional coverage visitor
 
 class FunctionalCoverageVisitor final : public VNVisitor {
+    // NODE STATE
+    // Entire netlist:
+    //  AstCoverpoint::user1p()  -> AstVar*.  Previous-value variable for transition bins
+    const VNUser1InUse m_inuser1;
+
     // STATE
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
@@ -59,9 +64,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             , crossp{cr} {}
     };
     std::vector<BinInfo> m_binInfos;  // All bins in current covergroup
-
-    // Track coverpoints that need previous value tracking (for transition bins)
-    std::map<AstCoverpoint*, AstVar*> m_prevValueVars;  // coverpoint -> prev_value variable
 
     VMemberMap m_memberMap;  // Member names cached for fast lookup
 
@@ -227,8 +229,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else if (AstInsideRange* rangep = VN_CAST(np, InsideRange)) {
                 AstNodeExpr* const lhsp = V3Const::constifyEdit(rangep->lhsp());
                 AstNodeExpr* const rhsp = V3Const::constifyEdit(rangep->rhsp());
-                AstConst* const loConstp = VN_AS(lhsp, Const);
-                AstConst* const hiConstp = VN_AS(rhsp, Const);
+                AstConst* const loConstp = VN_CAST(lhsp, Const);
+                AstConst* const hiConstp = VN_CAST(rhsp, Const);
+                if (!loConstp || !hiConstp) {
+                    rangep->v3error("Non-constant expression in bin range; "
+                                    "range bounds must be constants");
+                    continue;
+                }
                 const uint64_t lo = loConstp->toUQuad();
                 const uint64_t hi = hiConstp->toUQuad();
                 for (uint64_t v = lo; v <= hi; v++) values.insert(v);
@@ -350,8 +357,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Create previous value variable for transition tracking
     AstVar* createPrevValueVar(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Check if already created
-        const auto it = m_prevValueVars.find(coverpointp);
-        if (it != m_prevValueVars.end()) return it->second;
+        if (AstVar* const prevVarp = VN_CAST(coverpointp->user1p(), Var)) return prevVarp;
 
         // Create variable to store previous sampled value
         const string varName = "__Vprev_" + coverpointp->name();
@@ -370,7 +376,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             initExprp};
         m_constructorp->addStmtsp(initStmtp);
 
-        m_prevValueVars[coverpointp] = prevVarp;
+        coverpointp->user1p(prevVarp);
         return prevVarp;
     }
 
@@ -493,7 +499,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // After all bins processed, if coverpoint has transition bins, update previous value
         if (hasTransition) {
-            AstVar* const prevVarp = m_prevValueVars[coverpointp];
+            AstVar* const prevVarp = VN_AS(coverpointp->user1p(), Var);
             // Generate: __Vprev_cpname = current_value;
             AstNodeStmt* updateStmtp
                 = new AstAssign{coverpointp->fileline(),
@@ -1171,8 +1177,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (AstInsideRange* irp = VN_CAST(currRangep, InsideRange)) {
                 AstNodeExpr* const minExprp = irp->lhsp();
                 AstNodeExpr* const maxExprp = irp->rhsp();
-                AstConst* const minConstp = VN_AS(minExprp, Const);
-                AstConst* const maxConstp = VN_AS(maxExprp, Const);
+                AstConst* const minConstp = VN_CAST(minExprp, Const);
+                AstConst* const maxConstp = VN_CAST(maxExprp, Const);
+                if (!minConstp || !maxConstp) {
+                    irp->v3error("Non-constant expression in bin range; "
+                                 "range bounds must be constants");
+                    return nullptr;
+                }
                 if (minConstp->toUQuad() == maxConstp->toUQuad()) {
                     // Single value
                     if (isWildcard) {
