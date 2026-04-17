@@ -419,14 +419,34 @@ class FourstateVisitor final : public VNVisitor {
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
     // Node status
-    // AstVar::user1p       ->  AstVar*.        Where is value part of splitted variable - xz
-    //                                          shall be nexp() of user1p
-    // AstNodeExpr::user1p  ->  AstNodeExpr*.   Expression evaluating value component
-    // AstNodeExpr::user2p  ->  AstNodeExpr*.   Expression evaluating xz component
-    // AstSel::user3        ->  bool.           Whether it has been handled
-    // NodeFTaskRef::user3  ->  bool.           Whether it has been handled
-    // AstNodeExpr::user4   ->  LogicType.      Expression logic type (whether it is four
-    //                                          or two state)
+    // AstVar::user1p           ->  AstVar*.        Where is value part of splitted variable - xz
+    // AstNodeExpr::user1p      ->  AstNodeExpr*.   Expression evaluating value component
+    // AstNodeExpr::user2p      ->  AstNodeExpr*.   Expression evaluating xz component
+    // AstSel::user3            ->  bool.           Whether it has been handled
+    // AstNodeFTaskRef::user3   ->  bool.           Whether it has been handled
+    // AstNodeExpr::user4       ->  LogicType.      Expression logic type (whether it is four
+    //                                              or two state)
+
+    static void setValuePartVarp(AstVar* const varp, AstVar* const valuep) {
+        varp->user1p(valuep);
+    }
+    static AstVar* getValuePartVarp(AstVar* const varp) { return VN_AS(varp->user1p(), Var); }
+    static void setSelpHandled(AstSel* const selp) { selp->user3(1); }
+    static bool isSelpHandled(AstSel* const selp) { return selp->user3(); }
+    static void setFTaskRefHandled(AstNodeFTaskRef* const ftaskRefp) { ftaskRefp->user3(1); }
+    static bool isFTaskRefHandled(AstNodeFTaskRef* const ftaskRefp) { return ftaskRefp->user3(); }
+    static void setExprValuep(AstNodeExpr* const fourstateExprp, AstNode* const valuep) {
+        fourstateExprp->user1p(valuep);
+    }
+    static AstNodeExpr* getExprValuep(const AstNodeExpr* const fourstateExprp) {
+        return VN_AS(fourstateExprp->user1p(), NodeExpr);
+    }
+    static void setExprXZp(AstNodeExpr* const fourstateExprp, AstNode* const xzp) {
+        fourstateExprp->user2p(xzp);
+    }
+    static AstNodeExpr* getExprXZp(const AstNodeExpr* const fourstateExprp) {
+        return VN_AS(fourstateExprp->user2p(), NodeExpr);
+    }
 
     V3UniqueNames m_tmpNames;  // Unique names generator for temporary variables
 
@@ -712,7 +732,7 @@ class FourstateVisitor final : public VNVisitor {
     void splitVar(AstVar* const varp) {
         UASSERT_OBJ(needsSplitting(varp->dtypep()), varp,
                     "Split shall be called only on four-state variables");
-        if (varp->user1p()) return;
+        if (getValuePartVarp(varp)) return;
         m_varpsToRemove.push_back(varp);
         if (AstNodeFTask* const ftaskp = VN_CAST(varp->backp(), NodeFTask)) {
             if (ftaskp->fvarp() == varp) {
@@ -742,7 +762,7 @@ class FourstateVisitor final : public VNVisitor {
                     ftaskp->addStmtsp(returnValuep);
                     ftaskp->addStmtsp(returnXzp);
                 }
-                varp->user1p(returnValuep);
+                setValuePartVarp(varp, returnValuep);
                 returnValuep->fourstateComplementp(returnXzp);
                 ftaskp->dtypeSetVoid();
                 return;
@@ -770,14 +790,15 @@ class FourstateVisitor final : public VNVisitor {
         }
         newValuep->fourstateComplementp(newXzp);
         varp->addNextHere(newValuep);
-        varp->user1p(newValuep);
+        setValuePartVarp(varp, newValuep);
     }
 
     static AstVar* getSplittedValue(AstVar* const varp) {
         UASSERT_OBJ(needsSplitting(varp->dtypep()), varp,
                     "Split shall be called only on four-state variables");
-        UASSERT_OBJ(varp->user1p(), varp, "Variable shall be split first");
-        return VN_AS(varp->user1p(), Var);
+        AstVar* const result = getValuePartVarp(varp);
+        UASSERT_OBJ(result, varp, "Variable shall be split first");
+        return result;
     }
 
     static AstVar* getSplittedXZ(AstVar* const varp) {
@@ -820,7 +841,7 @@ class FourstateVisitor final : public VNVisitor {
             selp->lsbp(lsbp);
             return newp;
         }();
-        newp->user3(1);
+        setSelpHandled(newp);
         newp->fromp(valueExpr);
         const bool isStaticallyInRange = isStaticallyGte(maxmsb, lsbp);
         const bool isLsbpFourstete = isFourstate(lsbp);
@@ -880,8 +901,9 @@ class FourstateVisitor final : public VNVisitor {
             AstVar* const resultValuep = m_fourstateVisitor.createTmp(functionReturnVarp);
             AstVar* const resultXzp = m_fourstateVisitor.createTmp(functionReturnVarp);
             AstNodeFTaskRef* const newCallp = funcRefp->cloneTree(false);
-            UASSERT_OBJ(!newCallp->user3SetOnce(), funcRefp,
+            UASSERT_OBJ(!isFTaskRefHandled(newCallp), funcRefp,
                         "Trying to handle already handled four-state function call");
+            setFTaskRefHandled(newCallp);
             if (newCallp->argsp()) newCallp->argsp()->unlinkFrBackWithNext()->deleteTree();
             FileLine* const flp = funcRefp->fileline();
             {
@@ -924,8 +946,8 @@ class FourstateVisitor final : public VNVisitor {
             AstVarRef* const varRefXzp = new AstVarRef{flp, resultXzp, VAccess::READ};
             pushDeletep(varRefValuep);
             pushDeletep(varRefXzp);
-            funcRefp->user1p(varRefValuep);
-            funcRefp->user2p(varRefXzp);
+            setExprValuep(funcRefp, varRefValuep);
+            setExprXZp(funcRefp, varRefXzp);
         }
 
         void fourstateExpressionCondHandler(AstCond* const condp) {
@@ -1004,8 +1026,8 @@ class FourstateVisitor final : public VNVisitor {
                 = new AstVarRef{flp, resultXZTmpVarp, VAccess::READ};
             pushDeletep(resultValueTmpVarRefp);
             pushDeletep(resultXZTmpVarRefp);
-            condp->user1p(resultValueTmpVarRefp);
-            condp->user2p(resultXZTmpVarRefp);
+            setExprValuep(condp, resultValueTmpVarRefp);
+            setExprXZp(condp, resultXZTmpVarRefp);
         }
 
         void fourstateExpressionLogAndHandler(AstLogAnd* const logAndp) {
@@ -1044,8 +1066,8 @@ class FourstateVisitor final : public VNVisitor {
                 = new AstVarRef{flp, resultXZTmpVarp, VAccess::READ};
             pushDeletep(resultValueTmpVarRefp);
             pushDeletep(resultXZTmpVarRefp);
-            logAndp->user1p(resultValueTmpVarRefp);
-            logAndp->user2p(resultXZTmpVarRefp);
+            setExprValuep(logAndp, resultValueTmpVarRefp);
+            setExprXZp(logAndp, resultXZTmpVarRefp);
         }
 
         void fourstateExpressionLogOrHandler(AstLogOr* const logOrp) {
@@ -1088,8 +1110,8 @@ class FourstateVisitor final : public VNVisitor {
                 = new AstVarRef{flp, resultXZTmpVarp, VAccess::READ};
             pushDeletep(resultValueTmpVarRefp);
             pushDeletep(resultXZTmpVarRefp);
-            logOrp->user1p(resultValueTmpVarRefp);
-            logOrp->user2p(resultXZTmpVarRefp);
+            setExprValuep(logOrp, resultValueTmpVarRefp);
+            setExprXZp(logOrp, resultXZTmpVarRefp);
         }
 
         AstNodeExpr* get(AstNodeExpr* const exprp, bool putIntoTmp = true) {
@@ -1280,25 +1302,25 @@ class FourstateVisitor final : public VNVisitor {
         void visit(AstNodeFTaskRef* const funcp) override {
             fourstateExpressionFuncRefHandler(funcp);
             noTmp();
-            m_result = VN_AS(funcp->user1p(), NodeExpr)->cloneTree(false);
+            m_result = getExprValuep(funcp)->cloneTree(false);
         }
 
         void visit(AstCond* const condp) override {
             fourstateExpressionCondHandler(condp);
             noTmp();
-            m_result = VN_AS(condp->user1p(), NodeExpr)->cloneTree(false);
+            m_result = getExprValuep(condp)->cloneTree(false);
         }
 
         void visit(AstLogAnd* const logAndp) override {
             fourstateExpressionLogAndHandler(logAndp);
             noTmp();
-            m_result = VN_AS(logAndp->user1p(), NodeExpr)->cloneTree(false);
+            m_result = getExprValuep(logAndp)->cloneTree(false);
         }
 
         void visit(AstLogOr* const logOrp) override {
             fourstateExpressionLogOrHandler(logOrp);
             noTmp();
-            m_result = VN_AS(logOrp->user1p(), NodeExpr)->cloneTree(false);
+            m_result = getExprValuep(logOrp)->cloneTree(false);
         }
 
         void visit(AstSel* const selp) override {
@@ -1431,10 +1453,10 @@ class FourstateVisitor final : public VNVisitor {
         }
 
         AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
-            return VN_AS(keyp->user1p(), NodeExpr);
+            return getExprValuep(keyp);
         }
         void setCache(AstNodeExpr* keyp, AstNodeExpr* const valuep) override {
-            keyp->user1p(valuep);
+            setExprValuep(keyp, valuep);
         }
 
     public:
@@ -1667,25 +1689,25 @@ class FourstateVisitor final : public VNVisitor {
         void visit(AstNodeFTaskRef* const funcp) override {
             fourstateExpressionFuncRefHandler(funcp);
             noTmp();
-            m_result = VN_AS(funcp->user2p(), NodeExpr)->cloneTree(false);
+            m_result = getExprXZp(funcp)->cloneTree(false);
         }
 
         void visit(AstCond* const condp) override {
             fourstateExpressionCondHandler(condp);
             noTmp();
-            m_result = VN_AS(condp->user2p(), NodeExpr)->cloneTree(false);
+            m_result = getExprXZp(condp)->cloneTree(false);
         }
 
         void visit(AstLogAnd* const logAndp) override {
             fourstateExpressionLogAndHandler(logAndp);
             noTmp();
-            m_result = VN_AS(logAndp->user2p(), NodeExpr)->cloneTree(false);
+            m_result = getExprXZp(logAndp)->cloneTree(false);
         }
 
         void visit(AstLogOr* const logOrp) override {
             fourstateExpressionLogOrHandler(logOrp);
             noTmp();
-            m_result = VN_AS(logOrp->user2p(), NodeExpr)->cloneTree(false);
+            m_result = getExprXZp(logOrp)->cloneTree(false);
         }
 
         void visit(AstSel* const selp) override {
@@ -1722,11 +1744,9 @@ class FourstateVisitor final : public VNVisitor {
             nodep->v3fatalSrc("This node shall be unreachable in this visitor");
         }
 
-        AstNodeExpr* getCache(const AstNodeExpr* const keyp) override {
-            return VN_AS(keyp->user2p(), NodeExpr);
-        }
+        AstNodeExpr* getCache(const AstNodeExpr* const keyp) override { return getExprXZp(keyp); }
         void setCache(AstNodeExpr* keyp, AstNodeExpr* const valuep) override {
-            keyp->user2p(valuep);
+            setExprXZp(keyp, valuep);
         }
 
     public:
@@ -1854,7 +1874,7 @@ class FourstateVisitor final : public VNVisitor {
         TmpVarsReleaser tmpVarsReleaser{*this};
         auto isFourState = [nodep]() -> bool {
             if (AstNodeFTaskRef* const taskRefp = VN_CAST(nodep->exprp(), NodeFTaskRef)) {
-                return isFourstate(taskRefp) && (taskRefp->user3() == 0);
+                return isFourstate(taskRefp) && !isFTaskRefHandled(taskRefp);
             }
             return isFourstate(nodep->exprp());
         };
@@ -2081,7 +2101,8 @@ class FourstateVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTaskRef* const nodep) override {
-        if (!nodep->user3SetOnce()) {
+        if (!isFTaskRefHandled(nodep)) {
+            setFTaskRefHandled(nodep);
             size_t currentArgIdx = 0;
             const FTaskPortsHelper& fTaskPortsHelper = getFTaskPortHelper(nodep->taskp());
             for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
@@ -2177,7 +2198,8 @@ class FourstateVisitor final : public VNVisitor {
     void visit(AstSel* const nodep) override {
         UASSERT_OBJ(!isFourstate(nodep), nodep,
                     "This visitor shall never be reached for four-state AstSel");
-        if (!nodep->user3SetOnce()) {
+        if (!isSelpHandled(nodep)) {
+            setSelpHandled(nodep);
             AstNodeExpr* const newp
                 = getFourstateExpressionSelHandler(nodep, nodep->fromp()->cloneTree(false), true);
             { FourstateLogicTypePropagator{newp}; }
