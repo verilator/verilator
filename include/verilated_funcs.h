@@ -901,19 +901,19 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
 #define VL_BIOP_GEN(name, op, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, \
                     rhsJump) \
 static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
-                                                   WDataInP rwp) VL_MT_SAFE { \
-        const WDataOutP result = owp; \
-        owp += outputOffset; \
-        lwp += lhsOffset; \
-        rwp += rhsOffset; \
-        for (int i = 0; (i < words); ++i) { \
-            *owp = (*lwp op * rwp); \
-            owp += outputJump; \
-            lwp += lhsJump; \
-            rwp += rhsJump; \
-        } \
-        return result; \
-    }
+                                               WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    for (int i = 0; (i < words); ++i) { \
+        *owp = (*lwp op * rwp); \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    return result; \
+}
 
 // clang-format on
 
@@ -1126,31 +1126,88 @@ static inline QData VL_MODDIV_QQQ(int /*lbits*/, QData lhs, QData rhs) {
 }
 #define VL_MODDIV_WWW(lbits, owp, lwp, rwp) (_vl_moddiv_w(lbits, owp, lwp, rwp, 1))
 
-static inline WDataOutP VL_ADD_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    QData carry = 0;
-    for (int i = 0; i < words; ++i) {
-        carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(rwp[i]);
-        owp[i] = (carry & 0xffffffffULL);
-        carry = (carry >> 32ULL) & 0xffffffffULL;
-    }
-    // Last output word is dirty
-    return owp;
+// clang-format off
+#define VL_ADD_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_ADD_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                            WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    QData carry = 0; \
+    for (int i = 0; i < words; ++i) { \
+        carry = carry + static_cast<QData>(*lwp) + static_cast<QData>(*rwp); \
+        *owp = (carry & 0xffffffffULL); \
+        carry = (carry >> 32ULL) & 0xffffffffULL; \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
 
-static inline WDataOutP VL_SUB_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    QData carry = 0;
-    for (int i = 0; i < words; ++i) {
-        carry = (carry + static_cast<QData>(lwp[i])
-                 + static_cast<QData>(static_cast<IData>(~rwp[i])));
-        if (i == 0) ++carry;  // Negation of rwp
-        owp[i] = (carry & 0xffffffffULL);
-        carry = (carry >> 32ULL) & 0xffffffffULL;
-    }
-    // Last output word is dirty
-    return owp;
+// clang-format off
+#define VL_SUB_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_SUB_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                            WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    QData carry = 0; \
+    for (int i = 0; i < words; ++i) { \
+        carry = (carry + static_cast<QData>(*lwp) \
+                    + static_cast<QData>(static_cast<IData>(~*rwp))); \
+        if (i == 0) ++carry; /* Negation of rwp */ \
+        *owp = (carry & 0xffffffffULL); \
+        carry = (carry >> 32ULL) & 0xffffffffULL; \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
+
+// clang-format off
+#define VL_ADD_SUB_GEN_HELPER(macro) \
+    macro(TTT, 0, 1, 0, 1, 0, 1) \
+    macro(TTV, 0, 1, 0, 1, 0, 2) \
+    macro(TTX, 0, 1, 0, 1, 1, 2) \
+    macro(TVT, 0, 1, 0, 2, 0, 1) \
+    macro(TVV, 0, 1, 0, 2, 0, 2) \
+    macro(TVX, 0, 1, 0, 2, 1, 2) \
+    macro(TXT, 0, 1, 1, 2, 0, 1) \
+    macro(TXV, 0, 1, 1, 2, 0, 2) \
+    macro(TXX, 0, 1, 1, 2, 1, 2) \
+    macro(VTT, 0, 2, 0, 1, 0, 1) \
+    macro(VTV, 0, 2, 0, 1, 0, 2) \
+    macro(VTX, 0, 2, 0, 1, 1, 2) \
+    macro(VVT, 0, 2, 0, 2, 0, 1) \
+    macro(VVV, 0, 2, 0, 2, 0, 2) \
+    macro(VVX, 0, 2, 0, 2, 1, 2) \
+    macro(VXT, 0, 2, 1, 2, 0, 1) \
+    macro(VXV, 0, 2, 1, 2, 0, 2) \
+    macro(VXX, 0, 2, 1, 2, 1, 2) \
+    macro(XTT, 1, 2, 0, 1, 0, 1) \
+    macro(XTV, 1, 2, 0, 1, 0, 2) \
+    macro(XTX, 1, 2, 0, 1, 1, 2) \
+    macro(XVT, 1, 2, 0, 2, 0, 1) \
+    macro(XVV, 1, 2, 0, 2, 0, 2) \
+    macro(XVX, 1, 2, 0, 2, 1, 2) \
+    macro(XXT, 1, 2, 1, 2, 0, 1) \
+    macro(XXV, 1, 2, 1, 2, 0, 2) \
+    macro(XXX, 1, 2, 1, 2, 1, 2)
+// clang-format on
+
+VL_ADD_SUB_GEN_HELPER(VL_ADD_GEN)
+VL_ADD_SUB_GEN_HELPER(VL_SUB_GEN)
+#undef VL_ADD_SUB_GEN_HELPER
+#undef VL_SUB_GEN
+#undef VL_ADD_GEN
 
 static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
                                  WDataInP const rwp) VL_MT_SAFE {

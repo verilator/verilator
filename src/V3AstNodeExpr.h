@@ -4081,7 +4081,7 @@ public:
         out.opSub(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f- %r)"; }
-    string emitC() override { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SUB_%lq_%pf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvsub %l %r)"; }
     string emitSimpleOperator() override { return "-"; }
     bool cleanOut() const override { return false; }
@@ -4382,7 +4382,7 @@ public:
         out.opAdd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f+ %r)"; }
-    string emitC() override { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_ADD_%lq_%pf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvadd %l %r)"; }
     string emitSimpleOperator() override { return "+"; }
     bool cleanOut() const override { return false; }

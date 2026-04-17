@@ -840,7 +840,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
                 VL_ZERO_W(maxdecwidth, tmp2.data());
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
                 VL_ASSIGN_W_TT(maxdecwidth, tmp.data(), bcd.data());
-                VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd.data(), tmp.data(), tmp2.data());
+                VL_ADD_W_TTT(VL_WORDS_I(maxdecwidth), bcd.data(), tmp.data(), tmp2.data());
             }
         }
         // Shift; bcd = bcd << 1
