@@ -35,4 +35,12 @@
                                                     : ... note: In instance 't'
    49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
       |                                                  ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:51:39: Unsupported: s_until (in property expresion)
+                                                    : ... note: In instance 't'
+   51 |   assert property (@(posedge clk) val s_until !val) $display("[%0t] s_until, fileline:%d", $time, 51);
+      |                                       ^~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:53:39: Unsupported: s_until_with (in property expresion)
+                                                    : ... note: In instance 't'
+   53 |   assert property (@(posedge clk) val s_until_with val) $display("[%0t] s_until_with, fileline:%d", $time, 53);
+      |                                       ^~~~~~~~~~~~
 %Error: Exiting due to
