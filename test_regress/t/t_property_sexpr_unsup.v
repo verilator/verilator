@@ -48,6 +48,10 @@ module t (  /*AUTOARG*/
 
   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, `__LINE__);
 
+  assert property (@(posedge clk) val s_until !val) $display("[%0t] s_until, fileline:%d", $time, `__LINE__);
+
+  assert property (@(posedge clk) val s_until_with val) $display("[%0t] s_until_with, fileline:%d", $time, `__LINE__);
+
   property prop_implication;
     ##1 cyc == 4 |-> 1;
   endproperty

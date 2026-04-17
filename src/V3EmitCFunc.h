@@ -159,7 +159,7 @@ public:
     }
     void emitTVX(AstNode* nodep) {
         const AstVarRef* const varRefp = VN_CAST(nodep, VarRef);
-        if (varRefp && varRefp->varp()->isFourStateShuffle()) {
+        if (varRefp && varRefp->varp()->isFourstateShuffle()) {
             puts(varRefp->fourstateXZPart() ? "X" : "V");
         } else {
             puts("T");

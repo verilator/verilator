@@ -816,7 +816,7 @@ class EmitCTrace final : public EmitCFunc {
             AstVarRef* const valueVarrefp = VN_CAST(exprp->valuep(), VarRef);
             AstVarRef* const xzVarrefp = VN_CAST(exprp->xzp(), VarRef);
             if (valueVarrefp && xzVarrefp && valueVarrefp->varp() == xzVarrefp->varp()) {
-                UASSERT_OBJ(valueVarrefp->isWide() && valueVarrefp->varp()->isFourStateShuffle(),
+                UASSERT_OBJ(valueVarrefp->isWide() && valueVarrefp->varp()->isFourstateShuffle(),
                             nodep,
                             "This shall only happen with wide shuffled four-state variables");
                 putVarRef(valueVarrefp);
