@@ -7020,10 +7020,16 @@ coverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
 coverage_option<nodep>:  // ==IEEE: coverage_option
         //                      // option/type_option aren't really keywords
                 id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr
-                        { if (*$1 == "option") {
-                              $$ = new AstCgOptionAssign{$<fl>1, false, *$3, $5};
-                          } else if (*$1 == "type_option") {
-                              $$ = new AstCgOptionAssign{$<fl>1, true, *$3, $5};
+                        { if (*$1 == "option" || *$1 == "type_option") {
+                              const bool typeOpt = (*$1 == "type_option");
+                              VCoverOptionType optType = VCoverOptionType::UNKNOWN;
+                              if (*$3 == "at_least") optType = VCoverOptionType::AT_LEAST;
+                              else if (*$3 == "weight") optType = VCoverOptionType::WEIGHT;
+                              else if (*$3 == "goal") optType = VCoverOptionType::GOAL;
+                              else if (*$3 == "auto_bin_max") optType = VCoverOptionType::AUTO_BIN_MAX;
+                              else if (*$3 == "per_instance") optType = VCoverOptionType::PER_INSTANCE;
+                              else if (*$3 == "comment") optType = VCoverOptionType::COMMENT;
+                              $$ = new AstCgOptionAssign{$<fl>1, typeOpt, optType, *$3, $5};
                           } else {
                               $$ = nullptr;
                               $<fl>1->v3error("Syntax error; expected 'option' or 'type_option': '" << *$1 << "'");

@@ -1153,14 +1153,15 @@ constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
 
 class VCoverOptionType final {
 public:
-    enum en : uint8_t { WEIGHT, GOAL, AT_LEAST, AUTO_BIN_MAX, PER_INSTANCE, COMMENT };
+    enum en : uint8_t { WEIGHT, GOAL, AT_LEAST, AUTO_BIN_MAX, PER_INSTANCE, COMMENT, UNKNOWN };
     enum en m_e;
     // cppcheck-suppress noExplicitConstructor
     constexpr VCoverOptionType(en _e)
         : m_e{_e} {}
     const char* ascii() const {
         static const char* const names[]
-            = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment"};
+            = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment",
+               "unknown"};
         return names[m_e];
     }
 };

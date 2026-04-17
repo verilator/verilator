@@ -1332,25 +1332,13 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 optp->unlinkFrBack();
-                VCoverOptionType optType = VCoverOptionType::COMMENT;
-                if (optp->name() == "at_least") {
-                    optType = VCoverOptionType::AT_LEAST;
-                } else if (optp->name() == "weight") {
-                    optType = VCoverOptionType::WEIGHT;
-                } else if (optp->name() == "goal") {
-                    optType = VCoverOptionType::GOAL;
-                } else if (optp->name() == "auto_bin_max") {
-                    optType = VCoverOptionType::AUTO_BIN_MAX;
-                } else if (optp->name() == "per_instance") {
-                    optType = VCoverOptionType::PER_INSTANCE;
-                } else if (optp->name() == "comment") {
-                    optType = VCoverOptionType::COMMENT;
-                } else {
+                if (optp->optionType() == VCoverOptionType::UNKNOWN) {
                     optp->v3warn(COVERIGN,
                                  "Ignoring unsupported coverage option: " + optp->prettyNameQ());
+                } else {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
+                                                          optp->valuep()->cloneTree(false)});
                 }
-                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
-                                                      optp->valuep()->cloneTree(false)});
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
         }
@@ -1367,21 +1355,15 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
-            VCoverOptionType optType = VCoverOptionType::COMMENT;
-            if (optp->name() == "at_least") {
-                optType = VCoverOptionType::AT_LEAST;
-            } else if (optp->name() == "weight") {
-                optType = VCoverOptionType::WEIGHT;
-            } else if (optp->name() == "goal") {
-                optType = VCoverOptionType::GOAL;
-            } else if (optp->name() == "comment") {
-                optType = VCoverOptionType::COMMENT;
+            const VCoverOptionType optType = optp->optionType();
+            if (optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT
+                || optType == VCoverOptionType::GOAL || optType == VCoverOptionType::COMMENT) {
+                nodep->addOptionsp(
+                    new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
             } else {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
-            nodep->addOptionsp(
-                new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
         iterateChildren(nodep);
