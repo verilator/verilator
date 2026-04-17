@@ -1197,8 +1197,9 @@ static inline WDataOutP VL_MUL_W_##suffix(int words, WDataOutP owp, WDataInP lwp
         owp += (outputJump); \
     } \
     for (int lword = 0; lword < words; ++lword) { \
+        WDataInP currentRwp = rwp; \
         for (int rword = 0; rword < words; ++rword) { \
-            QData mul = static_cast<QData>(*lwp) * static_cast<QData>(rwp[rword]); \
+            QData mul = static_cast<QData>(*lwp) * static_cast<QData>(*currentRwp); \
             int qword = lword + rword; \
             owp = result + (outputOffset) + qword * (outputJump); \
             for (; qword < words; ++qword) { \
@@ -1207,7 +1208,7 @@ static inline WDataOutP VL_MUL_W_##suffix(int words, WDataOutP owp, WDataInP lwp
                 mul = (mul >> 32ULL) & 0xffffffffULL; \
                 owp += (outputJump); \
             } \
-            rwp += (rhsJump); \
+            currentRwp += (rhsJump); \
         } \
         lwp += (lhsJump); \
     } \
