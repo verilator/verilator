@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:72: id message
+UVM Report t/t_uvm_dpi.v:74: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
@@ -79,6 +79,10 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT fa
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= Test uvm_hdl_deposit to signal wider than UVM_HDL_MAX_WIDTH (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT hdl path 't.tooWide' is 2048 bits, but the maximum size is 1024.  You can increase the maximum via a compile-time flag: +define+UVM_HDL_MAX_WIDTH=<value>
 = uvm_hdl_deposit to not exposed (bad)
 ===
 UVM Report expected on next line:
@@ -121,4 +125,8 @@ UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT fa
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT failed to set hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_force to signal wider than UVM_HDL_MAX_WIDTH (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2017_1_0/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_PUT hdl path 't.tooWide' is 2048 bits, but the maximum size is 1024.  You can increase the maximum via a compile-time flag: +define+UVM_HDL_MAX_WIDTH=<value>
 *-* All Finished *-*

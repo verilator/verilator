@@ -57,6 +57,8 @@ module t;
   logic [31:0] mem1d[1:2]  /* verilator public*/;
   logic [31:0] mem2d[1:2][3:4]  /* verilator public*/;
 
+  logic [2047:0] tooWide  /* verilator public*/  /* verilator forceable*/ = 2048'h0;
+
   uvm_hdl_data_t lval;
 
   task releaseExposedContinuously(input logic [31:0] din, output int i);
@@ -307,6 +309,15 @@ module t;
       i = uvm_hdl_deposit("t.stringSignal", 0);
       `checkh(i, 0);
 
+      // lval is only 1024 bits, so if vpi_put_value is called on a 2048-bit
+      // signal, it would read out of bounds of lval if unchecked
+      $display("= Test uvm_hdl_deposit to signal wider than UVM_HDL_MAX_WIDTH (bad)");
+      $display("===\nUVM Report expected on next line:");
+      lval = 1024'hAAAA;
+      i = uvm_hdl_deposit("t.tooWide", lval);
+      `checkh(i, 0);
+      `checkh(tooWide, 2048'h0);
+
 `ifdef VERILATOR
       $display("= uvm_hdl_deposit to not exposed (bad)");
       $display("===\nUVM Report expected on next line:");
@@ -499,6 +510,13 @@ module t;
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_force("t.realSignal", 0);
       `checkh(i, 0);
+
+      $display("= uvm_hdl_force to signal wider than UVM_HDL_MAX_WIDTH (bad)");
+      $display("===\nUVM Report expected on next line:");
+      lval = 1024'hAAAA;
+      i = uvm_hdl_force("t.tooWide", lval);
+      `checkh(i, 0);
+      `checkh(tooWide, 2048'h0);
     end
 
     $write("*-* All Finished *-*\n");
