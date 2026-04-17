@@ -107,6 +107,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         clearBinInfos();
     }
 
+    static constexpr int COVER_BINS_LIMIT = 1000;  // Sanity limit to avoid hangs from e.g. signed underflow
+
     void expandAutomaticBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Find and expand any automatic bins
         AstNode* prevBinp = nullptr;
@@ -130,8 +132,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
                 const int numBins = constp->toSInt();
                 if (numBins <= 0) {
-                    cbinp->v3error("Automatic bins array size must be >= 1, got "
-                                   + std::to_string(numBins));
+                    cbinp->v3error("Automatic bins array size must be >= 1, got " << numBins);
+                    binp = nextBinp;
+                    continue;
+                }
+                if (numBins > COVER_BINS_LIMIT) {
+                    cbinp->v3error("Automatic bins array size of "
+                                   << numBins << " exceeds limit of " << COVER_BINS_LIMIT);
                     binp = nextBinp;
                     continue;
                 }
