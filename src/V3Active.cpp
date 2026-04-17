@@ -648,10 +648,7 @@ class CovergroupCollectVisitor final : public VNVisitor {
 
     void visit(AstCFunc* nodep) override {
         if (!m_classp) return;
-        if (nodep->name().find("sample") != string::npos) {
-            m_state.m_sampleFuncs[m_classp] = nodep;
-            nodep->isCovergroupSample(true);
-        }
+        if (nodep->isCovergroupSample()) m_state.m_sampleFuncs[m_classp] = nodep;
     }
 
     void visit(AstCovergroup* nodep) override {
