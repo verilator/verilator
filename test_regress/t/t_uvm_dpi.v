@@ -267,6 +267,14 @@ module t;
       i = uvm_hdl_read("t.stringSignal", lval);
       `checkh(i, 0);
 
+      $display("= uvm_hdl_read producing error message larger than print buffer (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read(
+          "t.lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_duis_autem_vel_eum_iriure_dolor_in_hendrerit_in_vulputate_velit_esse_molestie_consequat_vel_illum_dolore_eu_feugiat_nulla_facilisis_at_vero",
+          lval
+      );
+      `checkh(i, 0);
+
 `ifdef VERILATOR
       $display("= uvm_hdl_read from not exposed (bad)");
       $display("===\nUVM Report expected on next line:");
