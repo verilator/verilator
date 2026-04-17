@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import coverage_covergroup_common
 
 test.scenarios('vlt')
 
@@ -15,7 +16,7 @@ test.compile(verilator_flags2=['--coverage'])
 
 test.execute()
 
-test.covergroup_coverage_report()
+coverage_covergroup_common.covergroup_coverage_report(test)
 test.files_identical(test.obj_dir + '/covergroup_report.txt', test.golden_filename)
 
 # Verify coverage.dat format contains covergroup entries (replaces t_covergroup_database)
