@@ -1358,8 +1358,8 @@ class LinkParseVisitor final : public VNVisitor {
             const VCoverOptionType optType = optp->optionType();
             if (optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT
                 || optType == VCoverOptionType::GOAL || optType == VCoverOptionType::COMMENT) {
-                nodep->addOptionsp(
-                    new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
+                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
+                                                      optp->valuep()->cloneTree(false)});
             } else {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
