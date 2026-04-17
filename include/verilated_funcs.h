@@ -897,7 +897,37 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
 // SIMPLE LOGICAL OPERATORS
 
 // clang-format off
+#define VL_BIOP_GEN_HELPER(macro) \
+    macro(TTT, 0, 1, 0, 1, 0, 1) \
+    macro(TTV, 0, 1, 0, 1, 0, 2) \
+    macro(TTX, 0, 1, 0, 1, 1, 2) \
+    macro(TVT, 0, 1, 0, 2, 0, 1) \
+    macro(TVV, 0, 1, 0, 2, 0, 2) \
+    macro(TVX, 0, 1, 0, 2, 1, 2) \
+    macro(TXT, 0, 1, 1, 2, 0, 1) \
+    macro(TXV, 0, 1, 1, 2, 0, 2) \
+    macro(TXX, 0, 1, 1, 2, 1, 2) \
+    macro(VTT, 0, 2, 0, 1, 0, 1) \
+    macro(VTV, 0, 2, 0, 1, 0, 2) \
+    macro(VTX, 0, 2, 0, 1, 1, 2) \
+    macro(VVT, 0, 2, 0, 2, 0, 1) \
+    macro(VVV, 0, 2, 0, 2, 0, 2) \
+    macro(VVX, 0, 2, 0, 2, 1, 2) \
+    macro(VXT, 0, 2, 1, 2, 0, 1) \
+    macro(VXV, 0, 2, 1, 2, 0, 2) \
+    macro(VXX, 0, 2, 1, 2, 1, 2) \
+    macro(XTT, 1, 2, 0, 1, 0, 1) \
+    macro(XTV, 1, 2, 0, 1, 0, 2) \
+    macro(XTX, 1, 2, 0, 1, 1, 2) \
+    macro(XVT, 1, 2, 0, 2, 0, 1) \
+    macro(XVV, 1, 2, 0, 2, 0, 2) \
+    macro(XVX, 1, 2, 0, 2, 1, 2) \
+    macro(XXT, 1, 2, 1, 2, 0, 1) \
+    macro(XXV, 1, 2, 1, 2, 0, 2) \
+    macro(XXX, 1, 2, 1, 2, 1, 2)
+// clang-format on
 
+// clang-format off
 #define VL_BIOP_GEN(name, op, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, \
                     rhsJump) \
 static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
@@ -914,45 +944,23 @@ static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataIn
     } \
     return result; \
 }
-
 // clang-format on
 
-#define VL_BIOP_GEN_HELPER(name, op) \
-    VL_BIOP_GEN(name, op, TTT, 0, 1, 0, 1, 0, 1) \
-    VL_BIOP_GEN(name, op, TTV, 0, 1, 0, 1, 0, 2) \
-    VL_BIOP_GEN(name, op, TTX, 0, 1, 0, 1, 1, 2) \
-    VL_BIOP_GEN(name, op, TVT, 0, 1, 0, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, TVV, 0, 1, 0, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, TVX, 0, 1, 0, 2, 1, 2) \
-    VL_BIOP_GEN(name, op, TXT, 0, 1, 1, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, TXV, 0, 1, 1, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, TXX, 0, 1, 1, 2, 1, 2) \
-    VL_BIOP_GEN(name, op, VTT, 0, 2, 0, 1, 0, 1) \
-    VL_BIOP_GEN(name, op, VTV, 0, 2, 0, 1, 0, 2) \
-    VL_BIOP_GEN(name, op, VTX, 0, 2, 0, 1, 1, 2) \
-    VL_BIOP_GEN(name, op, VVT, 0, 2, 0, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, VVV, 0, 2, 0, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, VVX, 0, 2, 0, 2, 1, 2) \
-    VL_BIOP_GEN(name, op, VXT, 0, 2, 1, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, VXV, 0, 2, 1, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, VXX, 0, 2, 1, 2, 1, 2) \
-    VL_BIOP_GEN(name, op, XTT, 1, 2, 0, 1, 0, 1) \
-    VL_BIOP_GEN(name, op, XTV, 1, 2, 0, 1, 0, 2) \
-    VL_BIOP_GEN(name, op, XTX, 1, 2, 0, 1, 1, 2) \
-    VL_BIOP_GEN(name, op, XVT, 1, 2, 0, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, XVV, 1, 2, 0, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, XVX, 1, 2, 0, 2, 1, 2) \
-    VL_BIOP_GEN(name, op, XXT, 1, 2, 1, 2, 0, 1) \
-    VL_BIOP_GEN(name, op, XXV, 1, 2, 1, 2, 0, 2) \
-    VL_BIOP_GEN(name, op, XXX, 1, 2, 1, 2, 1, 2)
 // EMIT_RULE: VL_AND:  oclean=lclean||rclean; obits=lbits; lbits==rbits;
-VL_BIOP_GEN_HELPER(AND, &)
+#define VL_AND_GEN(...) VL_BIOP_GEN(AND, &, __VA_ARGS__)
+VL_BIOP_GEN_HELPER(VL_AND_GEN)
+#undef VL_AND_GEN
 // EMIT_RULE: VL_OR:   oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-VL_BIOP_GEN_HELPER(OR, |)
+#define VL_OR_GEN(...) VL_BIOP_GEN(OR, |, __VA_ARGS__)
+VL_BIOP_GEN_HELPER(VL_OR_GEN)
+#undef VL_OR_GEN
 // EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-VL_BIOP_GEN_HELPER(XOR, ^)
-#undef VL_BIOP_GEN_HELPER
+#define VL_XOR_GEN(...) VL_BIOP_GEN(XOR, ^, __VA_ARGS__)
+VL_BIOP_GEN_HELPER(VL_XOR_GEN)
+#undef VL_XOR_GEN
+
 #undef VL_BIOP_GEN
+
 // EMIT_RULE: VL_CHANGEXOR:  oclean=1; obits=32; lbits==rbits;
 static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     IData od = 0;
@@ -1147,6 +1155,8 @@ static inline WDataOutP VL_ADD_W_##suffix(int words, WDataOutP owp, WDataInP lwp
     return result; \
 }
 // clang-format on
+VL_BIOP_GEN_HELPER(VL_ADD_GEN)
+#undef VL_ADD_GEN
 
 // clang-format off
 #define VL_SUB_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
@@ -1171,60 +1181,43 @@ static inline WDataOutP VL_SUB_W_##suffix(int words, WDataOutP owp, WDataInP lwp
     return result; \
 }
 // clang-format on
+VL_BIOP_GEN_HELPER(VL_SUB_GEN)
+#undef VL_SUB_GEN
 
 // clang-format off
-#define VL_ADD_SUB_GEN_HELPER(macro) \
-    macro(TTT, 0, 1, 0, 1, 0, 1) \
-    macro(TTV, 0, 1, 0, 1, 0, 2) \
-    macro(TTX, 0, 1, 0, 1, 1, 2) \
-    macro(TVT, 0, 1, 0, 2, 0, 1) \
-    macro(TVV, 0, 1, 0, 2, 0, 2) \
-    macro(TVX, 0, 1, 0, 2, 1, 2) \
-    macro(TXT, 0, 1, 1, 2, 0, 1) \
-    macro(TXV, 0, 1, 1, 2, 0, 2) \
-    macro(TXX, 0, 1, 1, 2, 1, 2) \
-    macro(VTT, 0, 2, 0, 1, 0, 1) \
-    macro(VTV, 0, 2, 0, 1, 0, 2) \
-    macro(VTX, 0, 2, 0, 1, 1, 2) \
-    macro(VVT, 0, 2, 0, 2, 0, 1) \
-    macro(VVV, 0, 2, 0, 2, 0, 2) \
-    macro(VVX, 0, 2, 0, 2, 1, 2) \
-    macro(VXT, 0, 2, 1, 2, 0, 1) \
-    macro(VXV, 0, 2, 1, 2, 0, 2) \
-    macro(VXX, 0, 2, 1, 2, 1, 2) \
-    macro(XTT, 1, 2, 0, 1, 0, 1) \
-    macro(XTV, 1, 2, 0, 1, 0, 2) \
-    macro(XTX, 1, 2, 0, 1, 1, 2) \
-    macro(XVT, 1, 2, 0, 2, 0, 1) \
-    macro(XVV, 1, 2, 0, 2, 0, 2) \
-    macro(XVX, 1, 2, 0, 2, 1, 2) \
-    macro(XXT, 1, 2, 1, 2, 0, 1) \
-    macro(XXV, 1, 2, 1, 2, 0, 2) \
-    macro(XXX, 1, 2, 1, 2, 1, 2)
-// clang-format on
-
-VL_ADD_SUB_GEN_HELPER(VL_ADD_GEN)
-VL_ADD_SUB_GEN_HELPER(VL_SUB_GEN)
-#undef VL_ADD_SUB_GEN_HELPER
-#undef VL_SUB_GEN
-#undef VL_ADD_GEN
-
-static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; i < words; ++i) owp[i] = 0;
-    for (int lword = 0; lword < words; ++lword) {
-        for (int rword = 0; rword < words; ++rword) {
-            QData mul = static_cast<QData>(lwp[lword]) * static_cast<QData>(rwp[rword]);
-            for (int qword = lword + rword; qword < words; ++qword) {
-                mul += static_cast<QData>(owp[qword]);
-                owp[qword] = (mul & 0xffffffffULL);
-                mul = (mul >> 32ULL) & 0xffffffffULL;
-            }
-        }
-    }
-    // Last output word is dirty
-    return owp;
+#define VL_MUL_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_MUL_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                 WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    for (int i = 0; i < words; ++i) { \
+        *owp = 0; \
+        owp += (outputJump); \
+    } \
+    for (int lword = 0; lword < words; ++lword) { \
+        for (int rword = 0; rword < words; ++rword) { \
+            QData mul = static_cast<QData>(*lwp) * static_cast<QData>(rwp[rword]); \
+            int qword = lword + rword; \
+            owp = result + (outputOffset) + qword * (outputJump); \
+            for (; qword < words; ++qword) { \
+                mul += static_cast<QData>(*owp); \
+                *owp = (mul & 0xffffffffULL); \
+                mul = (mul >> 32ULL) & 0xffffffffULL; \
+                owp += (outputJump); \
+            } \
+            rwp += (rhsJump); \
+        } \
+        lwp += (lhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
+VL_BIOP_GEN_HELPER(VL_MUL_GEN)
+#undef VL_MUL_GEN
+#undef VL_BIOP_GEN_HELPER
 
 static inline IData VL_MULS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const int32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
@@ -1259,7 +1252,7 @@ static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp
         VL_NEGATE_W(words, rwstore, rwp);
         rwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
-    VL_MUL_W(words, owp, lwusp, rwusp);
+    VL_MUL_W_TTT(words, owp, lwusp, rwusp);
     owp[words - 1] &= VL_MASK_E(
         lbits);  // Clean.  Note it's ok for the multiply to overflow into the sign bit
     if ((lneg ^ rneg) & 1) {  // Negate output (not using NEGATE, as owp==lwp)

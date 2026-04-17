@@ -713,11 +713,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W_TT(obits, lastpowstore, powstore);
-            VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
+            VL_MUL_W_TTT(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
             VL_ASSIGN_W_TT(obits, lastoutstore, owp);
-            VL_MUL_W(owords, owp, lastoutstore, powstore);
+            VL_MUL_W_TTT(owords, owp, lastoutstore, powstore);
         }
     }
     return owp;
@@ -883,7 +883,7 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
             shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
         } else {
             const WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
-            shifted = VL_MUL_W(w, tmp2, shifted, pow10);
+            shifted = VL_MUL_W_TTT(w, tmp2, shifted, pow10);
         }
 
         const WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
