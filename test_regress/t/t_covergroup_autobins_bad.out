@@ -15,6 +15,10 @@
                                            : ... note: In instance 't'
    43 |       ignore_bins ign = {size_var};       
       |                          ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:44:32: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   44 |       ignore_bins ign_range = {[0:size_var]};   
+      |                                ^
 %Error: t/t_covergroup_autobins_bad.v:38:12: Non-constant expression in array bins range; range bounds must be constants
                                            : ... note: In instance 't'
    38 |       bins b[] = {[size_var:size_var]};   
@@ -39,8 +43,8 @@
                                            : ... note: In instance 't'
    43 |       ignore_bins ign = {size_var};       
       |                          ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:50:25: option.at_least must be a constant expression
+%Error: t/t_covergroup_autobins_bad.v:51:25: option.at_least must be a constant expression
                                            : ... note: In instance 't'
-   50 |       option.at_least = size_var;   
+   51 |       option.at_least = size_var;   
       |                         ^~~~~~~~
 %Error: Exiting due to
