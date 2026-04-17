@@ -107,7 +107,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         clearBinInfos();
     }
 
-    static constexpr int COVER_BINS_LIMIT = 1000;  // Sanity limit to avoid hangs from e.g. signed underflow
+    static constexpr int COVER_BINS_LIMIT
+        = 1000;  // Sanity limit to avoid hangs from e.g. signed underflow
 
     void expandAutomaticBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Find and expand any automatic bins
