@@ -947,15 +947,18 @@ static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataIn
 // clang-format on
 
 // EMIT_RULE: VL_AND:  oclean=lclean||rclean; obits=lbits; lbits==rbits;
-#define VL_AND_GEN(...) VL_BIOP_GEN(AND, &, __VA_ARGS__)
+#define VL_AND_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(AND, &, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
 VL_BIOP_GEN_HELPER(VL_AND_GEN)
 #undef VL_AND_GEN
 // EMIT_RULE: VL_OR:   oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-#define VL_OR_GEN(...) VL_BIOP_GEN(OR, |, __VA_ARGS__)
+#define VL_OR_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(OR, |, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
 VL_BIOP_GEN_HELPER(VL_OR_GEN)
 #undef VL_OR_GEN
 // EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-#define VL_XOR_GEN(...) VL_BIOP_GEN(XOR, ^, __VA_ARGS__)
+#define VL_XOR_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(XOR, ^, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
 VL_BIOP_GEN_HELPER(VL_XOR_GEN)
 #undef VL_XOR_GEN
 
