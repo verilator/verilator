@@ -1516,6 +1516,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Find the sample() method and constructor
             m_sampleFuncp = VN_CAST(m_memberMap.findMember(nodep, "sample"), Func);
+            if (m_sampleFuncp) m_sampleFuncp->isCovergroupSample(true);
             m_constructorp = VN_CAST(m_memberMap.findMember(nodep, "new"), Func);
             UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no"));
             UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no"));
