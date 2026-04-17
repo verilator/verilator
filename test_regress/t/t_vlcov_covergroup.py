@@ -33,6 +33,7 @@ test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate",
     test.obj_dir + "/annotated",
+    "--annotate-points",
     test.obj_dir + "/coverage.dat",
 ],
          verilator_run=True)
