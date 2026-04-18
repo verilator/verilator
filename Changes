@@ -55,6 +55,7 @@ Verilator 5.047 devel
 * Support nonconsecutive repetition [=N] in sequence expressions (#7397). [Yilou Wang]
 * Support per-process RNG for process::srandom() and object seeding (#7408) (#7415) (#7408). [Yilou Wang]
 * Support 2**n expressions in constraint randomization (#7422). [Yilou Wang]
+* Support `until_with` property (#7290 partial) (#7436). [Ryszard Rozak, Antmicro Ltd.]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -150,6 +151,8 @@ Verilator 5.047 devel
 * Fix delete inside foreach skipping elements (#7407) (#7410)
 * Fix std::randomize in parameterized-derived class (#7409) (#7416). [Yilou Wang]
 * Fix virtual interface implied comparison with null (#7421). [Alex Solomatnikov]
+* Fix inline constraint on array-indexed randomize target (#7431) (#7434). [Yilou Wang]
+* Fix modification of members of object with const handle (#7433). [Kamil Danecki, Antmicro Ltd.]
 
 
 Verilator 5.046 2026-02-28
