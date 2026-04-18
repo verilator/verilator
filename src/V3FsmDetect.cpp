@@ -81,15 +81,14 @@ static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
 // active block with the same edge semantics.
 static std::vector<FsmSenDesc> describeSenTree(AstSenTree* sentreep) {
     std::vector<FsmSenDesc> senses;
-    if (!sentreep) return senses;
     for (AstSenItem* itemp = sentreep->sensesp(); itemp; itemp = VN_AS(itemp->nextp(), SenItem)) {
         AstNodeVarRef* const vrefp = itemp->varrefp();
         if (!vrefp) continue;
         FsmSenDesc desc;
         desc.edgeType = static_cast<uint8_t>(itemp->edgeType());
         AstVarScope* const vscp = vrefp->varScopep();
-        desc.varScopeName = vscp ? vscp->name() : "";
-        desc.varName = vrefp->varp() ? vrefp->varp()->name() : "";
+        desc.varScopeName = vscp->name();
+        desc.varName = vrefp->varp()->name();
         senses.push_back(desc);
     }
     return senses;
@@ -152,15 +151,6 @@ public:
         return it == m_varScopeps.end() ? nullptr : it->second;
     }
 };
-
-static AstVarScope* findVarScopeInScope(AstScope* scopep, const string& varName) {
-    if (!scopep || varName.empty()) return nullptr;
-    for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
-        nextp = VN_AS(vscp->nextp(), VarScope);
-        if (vscp->varp()->name() == varName) return vscp;
-    }
-    return nullptr;
-}
 
 static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
                                    const FsmResetCondDesc& resetCond) {
@@ -442,7 +432,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // Find the first supported FSM candidate in a clocked always block, warn on
     // additional candidates, and attach reset arcs when present.
     void processAlways(AstAlways* alwaysp) {
-        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked() || !m_scopep) return;
+        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return;
         std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
         AstNode* stmtsp = unwrapSingleBlock(alwaysp->stmtsp());
         AstIf* const firstIfp = VN_CAST(stmtsp, If);
@@ -532,8 +522,7 @@ class FsmLowerVisitor final {
         const auto it = m_state.byVar.find(graph.stateVarScopeName());
         AstAlways* const alwaysp = (it == m_state.byVar.end()) ? nullptr : it->second.alwaysp;
         AstScope* const scopep = m_resolver.findScope(graph.scopeName());
-        AstVarScope* stateVscp = m_resolver.findVarScope(graph.stateVarScopeName());
-        if (!stateVscp) stateVscp = findVarScopeInScope(scopep, graph.stateVarInternalName());
+        AstVarScope* const stateVscp = m_resolver.findVarScope(graph.stateVarScopeName());
         if (!scopep || !stateVscp || !alwaysp) return;
         FileLine* const flp = graph.fileline() ? graph.fileline() : stateVscp->fileline();
         AstNodeModule* const modp = scopep->modp();
@@ -572,8 +561,7 @@ class FsmLowerVisitor final {
         std::vector<std::pair<FsmSenDesc, AstVarScope*>> senses;
         senses.reserve(graph.senses().size());
         for (const FsmSenDesc& sense : graph.senses()) {
-            AstVarScope* senseVscp = m_resolver.findVarScope(sense.varScopeName);
-            if (!senseVscp) senseVscp = findVarScopeInScope(scopep, sense.varName);
+            AstVarScope* const senseVscp = m_resolver.findVarScope(sense.varScopeName);
             senses.emplace_back(sense, senseVscp);
         }
 
@@ -621,8 +609,8 @@ class FsmLowerVisitor final {
                     // graph, then reconstructed here into the original simple
                     // reset predicate combined with the destination state.
                     if (!graph.hasResetCond()) continue;
-                    AstVarScope* resetVscp = m_resolver.findVarScope(graph.resetCond().varScopeName);
-                    if (!resetVscp) resetVscp = findVarScopeInScope(scopep, graph.resetCond().varName);
+                    AstVarScope* const resetVscp
+                        = m_resolver.findVarScope(graph.resetCond().varScopeName);
                     if (!resetVscp) continue;
                     guardp = buildResetCond(flp, resetVscp, graph.resetCond());
                     guardp = andExpr(flp, guardp,
