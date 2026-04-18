@@ -169,6 +169,24 @@ static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
     return condp;
 }
 
+// Rebuild the original event control from the saved sense description so the
+// post-state coverage sampling runs on the same triggering edges as the FSM
+// process being instrumented.
+static AstSenTree* buildSenTree(
+    FileLine* flp, const std::vector<std::pair<FsmSenDesc, AstVarScope*>>& senses) {
+    AstSenTree* const sentreep = new AstSenTree{flp, nullptr};
+    for (const auto& entry : senses) {
+        const FsmSenDesc& sense = entry.first;
+        AstVarScope* const vscp = entry.second;
+        if (!vscp) continue;
+        auto* const senItemp = new AstSenItem{
+            flp, VEdgeType{static_cast<int>(sense.edgeType)},
+            new AstVarRef{flp, vscp, VAccess::READ}};
+        sentreep->addSensesp(senItemp);
+    }
+    return sentreep;
+}
+
 // Detection runs while the original clocked/case structure is still intact and
 // populates graph-backed FSM models without mutating the tree mid-traversal.
 class FsmDetectVisitor final : public VNVisitor {
@@ -541,15 +559,23 @@ class FsmLowerVisitor final {
                                new AstVarRef{flp, stateVscp, VAccess::READ}}});
         scopep->addBlocksp(initActivep);
 
-        AstAlwaysPre* const preSavep = new AstAlwaysPre{flp};
         AstAlwaysPost* const covPostp = new AstAlwaysPost{flp};
-        // Save the previous state before the user logic commits, then evaluate
-        // coverage after the state update so arc/state guards see old/new.
-        // Lower into the same eventual AstActive as the original process so
-        // MT scheduling keeps the FSM sampling attached to the user logic
-        // instead of treating it as an unrelated sibling process.
-        preSavep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                                          new AstVarRef{flp, stateVscp, VAccess::READ}});
+        // Save the previous state as plain sequential logic at the front of
+        // the original always_ff body, then evaluate coverage in post logic
+        // after the delayed state update commits. This avoids a scheduler race
+        // between a separate AstAlwaysPre task and the real state commit.
+        AstNode* const bodysp = alwaysp->stmtsp() ? alwaysp->stmtsp()->unlinkFrBackWithNext() : nullptr;
+        alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
+                                         new AstVarRef{flp, stateVscp, VAccess::READ}});
+        if (bodysp) alwaysp->addStmtsp(bodysp);
+
+        std::vector<std::pair<FsmSenDesc, AstVarScope*>> senses;
+        senses.reserve(graph.senses().size());
+        for (const FsmSenDesc& sense : graph.senses()) {
+            AstVarScope* senseVscp = m_resolver.findVarScope(sense.varScopeName);
+            if (!senseVscp) senseVscp = findVarScopeInScope(scopep, sense.varName);
+            senses.emplace_back(sense, senseVscp);
+        }
 
         for (const V3GraphVertex& vtx : graph.vertices()) {
             const FsmVertex* const vertexp = vtx.as<FsmVertex>();
@@ -629,16 +655,10 @@ class FsmLowerVisitor final {
             }
         }
 
-        AstSenTree* const sentreep = alwaysp->sentreep();
-        if (!sentreep) return;
-        sentreep->unlinkFrBack();
+        AstSenTree* const sentreep = buildSenTree(flp, senses);
         AstActive* const activep = new AstActive{flp, "fsm-coverage", sentreep};
         activep->senTreeStorep(sentreep);
         scopep->addBlocksp(activep);
-        alwaysp->unlinkFrBack();
-        alwaysp->sentreep(nullptr);
-        activep->addStmtsp(preSavep);
-        activep->addStmtsp(alwaysp);
         activep->addStmtsp(covPostp);
     }
 
