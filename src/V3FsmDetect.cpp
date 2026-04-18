@@ -62,15 +62,15 @@ static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
     FsmResetCondDesc desc;
     if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
         AstVarScope* const vscp = vrefp->varScopep();
-        desc.varScopeName = vscp ? vscp->name() : "";
-        desc.varName = vrefp->varp() ? vrefp->varp()->name() : "";
+        desc.varScopeName = vscp->name();
+        desc.varName = vrefp->varp()->name();
         return desc;
     }
     if (AstNot* const notp = VN_CAST(condp, Not)) {
         if (AstVarRef* const vrefp = VN_CAST(notp->lhsp(), VarRef)) {
             AstVarScope* const vscp = vrefp->varScopep();
-            desc.varScopeName = vscp ? vscp->name() : "";
-            desc.varName = vrefp->varp() ? vrefp->varp()->name() : "";
+            desc.varScopeName = vscp->name();
+            desc.varName = vrefp->varp()->name();
             desc.negated = true;
         }
     }
@@ -98,8 +98,7 @@ static std::vector<FsmSenDesc> describeSenTree(AstSenTree* sentreep) {
 // bring-up can inspect extracted state/transition structure using the same
 // --dumpi-graph machinery as other graph-based passes.
 static string dumpTagForGraph(const FsmGraph& graph, size_t index) {
-    string tag = graph.stateVarInternalName().empty() ? graph.stateVarScopeName() : graph.stateVarInternalName();
-    if (tag.empty()) tag = "fsm";
+    string tag = graph.stateVarInternalName();
     for (char& ch : tag) {
         if (!std::isalnum(static_cast<unsigned char>(ch))) ch = '_';
     }
@@ -168,7 +167,6 @@ static AstSenTree* buildSenTree(
     for (const auto& entry : senses) {
         const FsmSenDesc& sense = entry.first;
         AstVarScope* const vscp = entry.second;
-        if (!vscp) continue;
         auto* const senItemp = new AstSenItem{
             flp, VEdgeType{static_cast<int>(sense.edgeType)},
             new AstVarRef{flp, vscp, VAccess::READ}};
@@ -188,7 +186,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // Enum-backed FSMs may be wrapped in refs/typedefs; normalize to the
     // underlying enum type before deciding whether a case is a candidate.
     static AstNodeDType* unwrapEnumCandidate(AstNodeDType* dtypep) {
-        return dtypep ? dtypep->skipRefToEnump() : nullptr;
+        return dtypep->skipRefToEnump();
     }
 
     // Reset arcs are only modeled for simple signal or !signal forms so build
@@ -199,23 +197,14 @@ class FsmDetectVisitor final : public VNVisitor {
         return false;
     }
 
-    // Accept either a bare case or a trivial begin-wrapped case so detection
-    // tolerates common structural wrapping around the FSM body.
-    static AstCase* caseFromStmt(AstNode* stmtp) {
-        if (!stmtp) return nullptr;
-        if (AstCase* const casep = VN_CAST(stmtp, Case)) return casep;
-        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
-            if (beginp->stmtsp() && !beginp->stmtsp()->nextp()) return VN_CAST(beginp->stmtsp(), Case);
-        }
-        return nullptr;
-    }
+    // V3Begin has already normalized away trivial begin/end wrappers before
+    // this pass runs, so only a direct case survives to detection here.
+    static AstCase* caseFromStmt(AstNode* stmtp) { return VN_CAST(stmtp, Case); }
 
-    // Many helpers operate on a single logical statement; this strips a
-    // one-level begin/end wrapper so those checks stay simple.
-    static AstNode* unwrapSingleBlock(AstNode* stmtp) {
-        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) return beginp->stmtsp();
-        return stmtp;
-    }
+    // By detect time, begin/end wrappers relevant to FSM extraction have
+    // already been normalized away, so helpers can examine the statement list
+    // directly.
+    static AstNode* unwrapSingleBlock(AstNode* stmtp) { return stmtp; }
 
     // Ignore existing coverage increments so FSM detection sees the user logic
     // rather than other instrumentation already attached to the block.
@@ -245,16 +234,6 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    // Nested conditionals are currently outside the conservative extractor, so
-    // this helps distinguish the supported simple if/else arc shape.
-    static bool branchHasNestedIf(AstNode* stmtp) {
-        for (AstNode* nodep = unwrapSingleBlock(stmtp); nodep; nodep = nodep->nextp()) {
-            if (isIgnorableStmt(nodep)) continue;
-            if (VN_IS(nodep, If)) return true;
-        }
-        return false;
-    }
-
     // Prefer enum labels in reports; fall back to synthetic labels for forced
     // non-enum FSMs so coverage points remain human-readable.
     static string labelForValue(const std::unordered_map<int, string>& labels, int value) {
@@ -262,18 +241,11 @@ class FsmDetectVisitor final : public VNVisitor {
         return it == labels.end() ? ("S" + cvtToStr(value)) : it->second;
     }
 
-    // The extractor only models constant-valued state transitions, so normalize
-    // enum item refs and raw constants to the same integer form here.
+    // The extractor only models constant-valued state transitions, and by the
+    // time detect runs those values have already been constant-folded.
     static bool exprConstValue(AstNodeExpr* exprp, int& value) {
         if (!exprp) return false;
         if (AstConst* const constp = VN_CAST(exprp, Const)) {
-            value = constp->toSInt();
-            return true;
-        }
-        if (AstEnumItemRef* const itemRefp = VN_CAST(exprp, EnumItemRef)) {
-            AstConst* const constp = itemRefp->itemp() ? VN_CAST(itemRefp->itemp()->valuep(), Const)
-                                                       : nullptr;
-            if (!constp) return false;
             value = constp->toSInt();
             return true;
         }
@@ -288,7 +260,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     // Extract supported case-item transitions in one place so the conservative
-    // policy for direct, ternary, and simple if/else forms stays consistent.
+    // policy for direct and ternary forms stays consistent.
     static bool emitCaseItemArcs(FsmGraph& graph, AstCaseItem* itemp, AstVarScope* stateVscp,
                                  const std::unordered_map<int, string>& labels, bool inclCond) {
         std::vector<std::pair<string, int>> froms;
@@ -332,26 +304,6 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
 
-        AstNode* const itemStmtp = singleMeaningfulStmt(itemp->stmtsp());
-        if (AstIf* const ifp = VN_CAST(itemStmtp, If)) {
-            const bool tier2 = !branchHasNestedIf(ifp->thensp()) && !branchHasNestedIf(ifp->elsesp())
-                               && directStateAssign(ifp->thensp(), stateVscp)
-                               && directStateAssign(ifp->elsesp(), stateVscp);
-            if (tier2 || inclCond) {
-                for (AstNode* branchp : {ifp->thensp(), ifp->elsesp()}) {
-                    if (AstNodeAssign* const assp = directStateAssign(branchp, stateVscp)) {
-                        int toValue = 0;
-                        if (exprConstValue(assp->rhsp(), toValue)) {
-                            for (const auto& from : froms) {
-                                addArc(graph, from.second, toValue, false, true,
-                                       itemp->isDefault(), assp->fileline());
-                            }
-                        }
-                    }
-                }
-                return true;
-            }
-        }
         return false;
     }
 
