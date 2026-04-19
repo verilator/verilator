@@ -448,6 +448,14 @@ void AstConsDynArray::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
+void AstSConsRep::dump(std::ostream& str) const {  // LCOV_EXCL_START
+    this->AstNodeExpr::dump(str);
+    if (unbounded()) str << " [unbounded]";
+}
+void AstSConsRep::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, unbounded);
+    dumpJsonGen(str);
+}  // LCOV_EXCL_STOP
 void AstConsQueue::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";
@@ -614,7 +622,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const {
+                         bool asRef, bool constRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -622,7 +630,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && isReadOnly() && asRef) ostatic = ostatic + "const ";
+    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
 
     string oname;
     if (named) {
@@ -1012,6 +1020,11 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
 }
 
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
+
+bool AstNodeDType::isNonPackedArray() const {
+    return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType) || VN_IS(this, QueueDType)
+           || VN_IS(this, AssocArrayDType);
+}
 
 class AstNodeDType::CTypeRecursed final {
 public:
@@ -1935,9 +1948,8 @@ AstClass* AstClassExtends::classOrNullp() const {
     if (refp && !refp->paramsp()) {
         // Class already resolved
         return refp->classp();
-    } else {
-        return nullptr;
     }
+    return nullptr;
 }
 AstClass* AstClassExtends::classp() const {
     AstClass* const clsp = classOrNullp();
@@ -1961,6 +1973,28 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
 }
 string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prettyName(); }
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
+bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
+    if (m_classp != asamep->m_classp) return false;
+    // Compare type parameters so C#(int) != C#(string)
+    const AstPin* lp = paramsp();
+    const AstPin* rp = asamep->paramsp();
+    while (lp && rp) {
+        if (!lp->exprp() != !rp->exprp()) return false;
+        if (lp->exprp()) {
+            const AstNodeDType* const lDtp = VN_CAST(lp->exprp(), NodeDType);
+            const AstNodeDType* const rDtp = VN_CAST(rp->exprp(), NodeDType);
+            if (lDtp && rDtp) {
+                if (!lDtp->similarDType(rDtp)) return false;
+            } else {
+                if (!lp->exprp()->sameTree(rp->exprp())) return false;
+            }
+        }
+        lp = VN_CAST(lp->nextp(), Pin);
+        rp = VN_CAST(rp->nextp(), Pin);
+    }
+    return !lp && !rp;
+}
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " ["s + this->userType().ascii() + "]";
@@ -2019,7 +2053,7 @@ void AstEnumDType::dump(std::ostream& str) const {
     str << " enum";
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "enum", 1);
+    dumpJsonBoolIf(str, "enum", true);
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
@@ -2152,11 +2186,8 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
 }
 AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
-    if (it == m_map.end()) {
-        return nullptr;
-    } else {
-        return it->second->valuep();
-    }
+    if (it == m_map.end()) { return nullptr; }
+    return it->second->valuep();
 }
 AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
     AstNodeExpr* valuep = getIndexValuep(index);
@@ -2312,12 +2343,14 @@ void AstPin::dump(std::ostream& str) const {
     } else {
         str << " ->UNLINKED";
     }
+    if (!paramPath().empty()) str << " paramPath=" << paramPath();
     if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, svDotName);
     dumpJsonBoolFuncIf(str, svImplicit);
+    if (!paramPath().empty()) dumpJsonStr(str, "paramPath", paramPath());
     dumpJsonGen(str);
 }
 string AstPin::prettyOperatorName() const {
@@ -2491,6 +2524,16 @@ bool AstUnionDType::sameNode(const AstNode* samep) const {
     const AstUnionDType* const asamep = VN_DBG_AS(samep, UnionDType);
     return m_isSoft == asamep->m_isSoft && m_isTagged == asamep->m_isTagged;
 }
+void AstUntil::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isStrong()) str << " [strong]";
+    if (isOverlapping()) str << " [overlapping]";
+}
+void AstUntil::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonBoolFuncIf(str, isOverlapping);
+}
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";
     if (full) {  // else shorten for errors
@@ -2513,7 +2556,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, generic);
-    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", 1);
+    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", true);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -2633,6 +2676,7 @@ void AstNodeModule::dump(std::ostream& str) const {
     str << " D" << depth();
     if (modPublic()) str << " [P]";
     if (inLibrary()) str << " [LIB]";
+    if (ctorVarReset()) str << " [CVRESET]";
     if (dead()) str << " [DEAD]";
     if (recursiveClone()) {
         str << " [RECURSIVE-CLONE]";
@@ -2650,6 +2694,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, level);
     dumpJsonBoolFuncIf(str, modPublic);
     dumpJsonBoolFuncIf(str, inLibrary);
+    dumpJsonBoolFuncIf(str, ctorVarReset);
     dumpJsonBoolFuncIf(str, dead);
     dumpJsonBoolFuncIf(str, recursiveClone);
     dumpJsonBoolFuncIf(str, recursive);
@@ -2956,6 +3001,8 @@ void AstVar::dump(std::ostream& str) const {
     if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (noCReset()) str << " [!CRST]";
     if (noReset()) str << " [!RST]";
+    if (processQueue()) str << " [PROCQ]";
+    if (sampled()) str << " [SAMPLED]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
@@ -2986,6 +3033,8 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isUsedLoopIdx);
     dumpJsonBoolFuncIf(str, noCReset);
     dumpJsonBoolFuncIf(str, noReset);
+    dumpJsonBoolFuncIf(str, processQueue);
+    dumpJsonBoolFuncIf(str, sampled);
     dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
@@ -3111,6 +3160,7 @@ void AstActive::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (containsGenBlock()) str << " [GENBLK]";
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
     if (taskp()) {
@@ -3121,6 +3171,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
 }
 void AstNodeFTaskRef::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dotted);
+    dumpJsonBoolFuncIf(str, containsGenBlock);
     dumpJsonGen(str);
 }
 void AstNodeFTask::dump(std::ostream& str) const {
@@ -3276,7 +3327,8 @@ void AstStop::dumpJson(std::ostream& str) const {
 }
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    if (code()) str << " [code=" << code() << "]";
+    if (codeAssigned()) str << " [code=" << code() << "]";
+    if (dtypeCallp()) str << " [dtypeCallp=" << dtypeCallp() << "]";
 }
 void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, code);
@@ -3398,6 +3450,14 @@ void AstCMethodHard::setPurity() {
     }
 }
 
+void AstCStmt::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (!stmtType().isNone()) str << " [" << stmtType().ascii() << "]";
+}
+void AstCStmt::dumpJson(std::ostream& str) const {
+    dumpJsonGen(str);
+    if (!stmtType().isNone()) dumpJsonStr(str, "stmtType", stmtType().ascii());
+}
 void AstCUse::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << useType() << "]";
@@ -3418,18 +3478,12 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 
 string AstCase::pragmaString() const {
-    if (fullPragma() && parallelPragma())
-        return "synthesis full_case parallel_case";
-    else if (fullPragma())
-        return "synthesis full_case";
-    else if (parallelPragma())
-        return "synthesis parallel_case";
-    else if (uniquePragma())
-        return "unique case";
-    else if (unique0Pragma())
-        return "unique0 case";
-    else if (priorityPragma())
-        return "priority case";
+    if (fullPragma() && parallelPragma()) return "synthesis full_case parallel_case";
+    if (fullPragma()) return "synthesis full_case";
+    if (parallelPragma()) return "synthesis parallel_case";
+    if (uniquePragma()) return "unique case";
+    if (unique0Pragma()) return "unique0 case";
+    if (priorityPragma()) return "priority case";
     return "";
 }
 

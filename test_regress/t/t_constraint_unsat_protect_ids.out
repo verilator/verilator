@@ -2,8 +2,6 @@
 === Test 1: Valid constraints ===
 
 === Test 2: addr out of range ===
-%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
-%Warning-UNSATCONSTR: PSTByA:12: Unsatisfied constraint
 %Warning-UNSATCONSTR: PSTByA:11: Unsatisfied constraint
 %Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
 Randomization failed.

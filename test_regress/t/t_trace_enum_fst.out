@@ -1,5 +1,5 @@
 $date
-Sat Mar 14 09:16:43 2026
+Tue Apr 14 15:20:42 2026
 
 $end
 $version
@@ -12,8 +12,6 @@ $end
   $attrbegin misc 07 $unit::state_t 4 VAL_A VAL_B VAL_C VAL_D 00 01 10 11 1 $end
   $attrbegin misc 07 t.other_state_t 3 VAL_X VAL_Y VAL_Z 00 01 10 2 $end
   $var wire 1 ! clk $end
-  $scope module $unit $end
-  $upscope $end
   $scope module t $end
    $var wire 1 ! clk $end
    $attrbegin misc 07 "" 1 $end

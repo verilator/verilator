@@ -12,6 +12,9 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_timing_clkgen2.v"
 
+if re.search(r'clang', test.cxx_version):
+    test.skip("Known clang bug on ubuntu-26.04")
+
 test.compile(verilator_flags2=["--sc --exe --timing --timescale 10ps/1ps"])
 
 test.execute()

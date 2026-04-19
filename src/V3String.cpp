@@ -378,13 +378,14 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
     const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
-    case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
-    case 6: h ^= uint64_t(data2[5]) << 40; /* fallthrough */
-    case 5: h ^= uint64_t(data2[4]) << 32; /* fallthrough */
-    case 4: h ^= uint64_t(data2[3]) << 24; /* fallthrough */
-    case 3: h ^= uint64_t(data2[2]) << 16; /* fallthrough */
-    case 2: h ^= uint64_t(data2[1]) << 8; /* fallthrough */
-    case 1: h ^= uint64_t(data2[0]); h *= m; /* fallthrough */
+    case 7: h ^= static_cast<uint64_t>(data2[6]) << 48;  // FALLTHRU
+    case 6: h ^= static_cast<uint64_t>(data2[5]) << 40;  // FALLTHRU
+    case 5: h ^= static_cast<uint64_t>(data2[4]) << 32;  // FALLTHRU
+    case 4: h ^= static_cast<uint64_t>(data2[3]) << 24;  // FALLTHRU
+    case 3: h ^= static_cast<uint64_t>(data2[2]) << 16;  // FALLTHRU
+    case 2: h ^= static_cast<uint64_t>(data2[1]) << 8;  // FALLTHRU
+    case 1: h ^= static_cast<uint64_t>(data2[0]); h *= m;  // FALLTHRU
+    default:;
     };
 
     h ^= h >> r;
@@ -686,23 +687,22 @@ string VName::hashedName() {
     if (s_maxLength == 0 || m_name.length() < s_maxLength) {
         m_hashed = m_name;
         return m_hashed;
-    } else {
-        VHashSha256 hash{m_name};
-        const string suffix = "__Vhsh" + hash.digestSymbol();
-        if (s_minLength < s_maxLength) {
-            // Keep a prefix from the original name
-            // Backup over digits so adding __Vhash doesn't look like a encoded hex digit
-            // ("__0__Vhsh")
-            size_t prefLength = s_minLength;
-            while (prefLength >= 1 && m_name[prefLength - 1] != '_') --prefLength;
-            s_dehashMap[suffix] = m_name.substr(prefLength);
-            m_hashed = m_name.substr(0, prefLength) + suffix;
-        } else {
-            s_dehashMap[suffix] = m_name;
-            m_hashed = suffix;
-        }
-        return m_hashed;
     }
+    VHashSha256 hash{m_name};
+    const string suffix = "__Vhsh" + hash.digestSymbol();
+    if (s_minLength < s_maxLength) {
+        // Keep a prefix from the original name
+        // Backup over digits so adding __Vhash doesn't look like a encoded hex digit
+        // ("__0__Vhsh")
+        size_t prefLength = s_minLength;
+        while (prefLength >= 1 && m_name[prefLength - 1] != '_') --prefLength;
+        s_dehashMap[suffix] = m_name.substr(prefLength);
+        m_hashed = m_name.substr(0, prefLength) + suffix;
+    } else {
+        s_dehashMap[suffix] = m_name;
+        m_hashed = suffix;
+    }
+    return m_hashed;
 }
 
 //######################################################################
@@ -786,8 +786,8 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
 }
 
 void VSpellCheck::selfTestDistanceOne(const string& a, const string& b, EditDistance expected) {
-    UASSERT_SELFTEST(EditDistance, editDistance(a, b), expected);
-    UASSERT_SELFTEST(EditDistance, editDistance(b, a), expected);
+    UASSERT_SELFTEST(const EditDistance, editDistance(a, b), expected);
+    UASSERT_SELFTEST(const EditDistance, editDistance(b, a), expected);
 }
 
 void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string& goal,
@@ -798,7 +798,7 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     const string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
         UASSERT_SELFTEST(const string&, got, c);
-        UASSERT_SELFTEST(EditDistance, gdist, dist);
+        UASSERT_SELFTEST(const EditDistance, gdist, dist);
     } else {
         UASSERT_SELFTEST(const string&, got, "");
     }
@@ -821,16 +821,16 @@ void VSpellCheck::selfTest() {
     }
     {
         const VSpellCheck speller;
-        UASSERT_SELFTEST(string, "", speller.bestCandidate(""));
+        UASSERT_SELFTEST(const string, "", speller.bestCandidate(""));
     }
     {
         VSpellCheck speller;
         speller.pushCandidate("fred");
         speller.pushCandidate("wilma");
         speller.pushCandidate("barney");
-        UASSERT_SELFTEST(string, "fred", speller.bestCandidate("fre"));
-        UASSERT_SELFTEST(string, "wilma", speller.bestCandidate("whilma"));
-        UASSERT_SELFTEST(string, "barney", speller.bestCandidate("Barney"));
-        UASSERT_SELFTEST(string, "", speller.bestCandidate("nothing close"));
+        UASSERT_SELFTEST(const string, "fred", speller.bestCandidate("fre"));
+        UASSERT_SELFTEST(const string, "wilma", speller.bestCandidate("whilma"));
+        UASSERT_SELFTEST(const string, "barney", speller.bestCandidate("Barney"));
+        UASSERT_SELFTEST(const string, "", speller.bestCandidate("nothing close"));
     }
 }

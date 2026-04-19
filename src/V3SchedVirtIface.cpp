@@ -16,13 +16,12 @@
 //*************************************************************************
 // V3SchedVirtIface's Transformations:
 //
-// Each interface type written to via virtual interface, or written to normally but read via
-// virtual interface:
-//     Create a trigger var for it
-// Each statement:
-//     If it writes to a virtual interface, or to a variable read via virtual interface:
-//         Set the corresponding trigger to 1
-//         If the write is done by an AssignDly, the trigger is also set by AssignDly
+// Identify interface members written through virtual interface variables (VIF writes).
+// For each such member, collect all VarScopes across all instantiations of that
+// interface type. Each VarScope gets its own value-change trigger in the scheduler.
+//
+// Also disables lifetime optimization for variables in AlwaysPost blocks that
+// write through virtual interfaces.
 //
 //*************************************************************************
 
@@ -30,7 +29,6 @@
 
 #include "V3AstNodeExpr.h"
 #include "V3Sched.h"
-#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -40,103 +38,72 @@ namespace {
 
 class VirtIfaceVisitor final : public VNVisitor {
 private:
-    // NODE STATE
-    // AstVarRef::user1() -> bool. Whether it has been visited
-    // AstMemberSel::user1() -> bool. Whether it has been visited
-    const VNUser1InUse m_user1InUse;
-
-    // TYPES
-    using OnWriteToVirtIface = std::function<void(AstVarRef*, AstIface*)>;
-    using OnWriteToVirtIfaceMember
-        = std::function<void(AstVarRef*, AstIface*, const std::string&)>;
-
     // STATE
-    AstNetlist* const m_netlistp;  // Root node
-    V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
-                                                       // triggers
-    VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars
+    // Set of (iface, member) pairs written through VIF -- defines which members need triggers
+    std::set<std::pair<const AstIface*, const std::string>> m_vifWrittenMembers;
+    // All candidate VarScopes of interface members (keyed by interface type + member name)
+    std::map<std::pair<const AstIface*, const std::string>, std::vector<AstVarScope*>>
+        m_candidateVscps;
+    VirtIfaceTriggers m_triggers;
 
     // METHODS
-    // For each write across a virtual interface boundary
-    // Returns true if there is a write across a virtual interface boundary
+    // Returns true if statement writes across a virtual interface boundary
     static bool writesToVirtIface(const AstNode* const nodep) {
-        return nodep->exists([](const AstVarRef* const refp) {
-            if (!refp->access().isWriteOrRW()) return false;
-            AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
-            const bool writesToVirtIfaceMember
-                = (dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel));
-            const bool writesToIfaceSensVar = refp->varp()->isVirtIface();
-            return writesToVirtIfaceMember || writesToIfaceSensVar;
+        return nodep->exists([](const AstMemberSel* const memberSelp) {
+            if (!memberSelp->access().isWriteOrRW()) return false;
+            AstIfaceRefDType* const dtypep
+                = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            return dtypep && dtypep->isVirtual();
         });
     }
 
-    // Create trigger reference for a specific interface member
-    AstVarRef* createVirtIfaceMemberTriggerRefp(FileLine* const flp, AstIface* ifacep,
-                                                const AstVar* memberVarp) {
-        // Check if we already have a trigger for this specific member
-        AstVarScope* existingTrigger = m_triggers.findMemberTrigger(ifacep, memberVarp);
-        if (!existingTrigger) {
-            AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
-            // Create a unique name for this member trigger
-            const std::string triggerName
-                = m_vifTriggerNames.get(ifacep) + "_Vtrigm_" + memberVarp->name();
-            AstVarScope* const vscp = scopeTopp->createTemp(triggerName, 1);
-            m_triggers.addMemberTrigger(ifacep, memberVarp, vscp);
-            existingTrigger = vscp;
-        }
-        return new AstVarRef{flp, existingTrigger, VAccess::WRITE};
-    }
-
-    template <typename T>
-    void handleIface(T nodep) {
-        static_assert(std::is_same<typename std::remove_cv<T>::type,
-                                   typename std::add_pointer<AstVarRef>::type>::value
-                          || std::is_same<typename std::remove_cv<T>::type,
-                                          typename std::add_pointer<AstMemberSel>::type>::value,
-                      "Node has to be of AstVarRef* or AstMemberSel* type");
-        if (nodep->access().isReadOnly()) return;
-        if (nodep->user1SetOnce()) return;
-        AstIface* ifacep = nullptr;
-        AstVar* memberVarp = nullptr;
-        if (nodep->varp()->isVirtIface()) {
-            if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
-                ifacep = VN_AS(nodep->varp()->dtypep(), IfaceRefDType)->ifacep();
-                memberVarp = memberSelp->varp();
-            }
-        } else if ((ifacep = nodep->varp()->sensIfacep())) {
-            memberVarp = nodep->varp();
-        }
-
-        if (ifacep && memberVarp) {
-            FileLine* const flp = nodep->fileline();
-            VNRelinker relinker;
-            nodep->unlinkFrBack(&relinker);
-            relinker.relink(new AstExprStmt{
-                flp,
-                new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
-                              new AstConst{flp, AstConst::BitTrue{}}},
-                nodep});
-        }
-    }
-
     // VISITORS
+    void visit(AstMemberSel* nodep) override {
+        // Detect writes through VIF: the MemberSel's fromp resolves to a virtual interface type.
+        // Handles both direct VIF access (vif.member) and class chain (obj.vif.member).
+        if (nodep->access().isWriteOrRW()) {
+            AstIfaceRefDType* const dtypep
+                = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->isVirtual()) {
+                m_vifWrittenMembers.emplace(dtypep->ifacep(), nodep->varp()->name());
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstVarScope* nodep) override {
+        // Collect candidate VarScopes. sensIfacep() is set on interface members
+        // accessed via any MemberSel (virtual or non-virtual).
+        if (const AstIface* const ifacep = nodep->varp()->sensIfacep()) {
+            m_candidateVscps[{ifacep, nodep->varp()->name()}].push_back(nodep);
+        }
+    }
     void visit(AstNodeProcedure* nodep) override {
-        // Not sure if needed, but be paranoid to match previous behavior as didn't optimize
-        // before ..
+        // Disable lifetime optimization for variables in AlwaysPost blocks
+        // that write to virtual interface members, as VIF reads may observe them
         if (VN_IS(nodep, AlwaysPost) && writesToVirtIface(nodep)) {
             nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
         }
         iterateChildren(nodep);
     }
-    void visit(AstMemberSel* const nodep) override { handleIface(nodep); }
-    void visit(AstVarRef* const nodep) override { handleIface(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    // Build final trigger list by intersecting VIF writes with candidate VarScopes
+    void buildTriggers() {
+        for (const auto& written : m_vifWrittenMembers) {
+            const auto it = m_candidateVscps.find(written);
+            if (it == m_candidateVscps.end()) continue;
+            for (AstVarScope* const vscp : it->second) {
+                const AstIface* const ifacep = written.first;
+                m_triggers.addTrigger(ifacep, vscp->varp(), vscp);
+            }
+        }
+    }
 
 public:
     // CONSTRUCTORS
-    explicit VirtIfaceVisitor(AstNetlist* nodep)
-        : m_netlistp{nodep} {
+    explicit VirtIfaceVisitor(AstNetlist* nodep) {
         iterate(nodep);
+        buildTriggers();
     }
     ~VirtIfaceVisitor() override = default;
 
@@ -151,7 +118,7 @@ VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
     VirtIfaceTriggers triggers{};
     if (v3Global.hasVirtIfaces()) {
         triggers = VirtIfaceVisitor{nodep}.take_triggers();
-        // Dump afer destructor so VNDeleter runs
+        // Dump after destructor so VNDeleter runs
         V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);
     }
     return triggers;

@@ -398,9 +398,12 @@ CPPCHECK_RUNTIME_CPP = $(wildcard $(srcdir)/include/*.cpp)
 CPPCHECK_VLC_CPP = $(wildcard $(srcdir)/src/Vlc*.cpp)
 CPPCHECK_EXAMPLES_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
 CHECK_CPP = $(CPPCHECK_VERILATOR_CPP) $(CPPCHECK_RUNTIME_CPP) $(CPPCHECK_VLC_CPP) $(CPPCHECK_EXAMPLES_CPP)
-CHECK_H = $(wildcard \
+CHECK_H = $(filter-out \
+  $(srcdir)/src/config_package.h \
+  $(srcdir)/src/config_rev.h, \
+  $(wildcard \
   $(srcdir)/include/*.h \
-  $(srcdir)/src/*.h )
+  $(srcdir)/src/*.h ))
 CHECK_YL = $(wildcard \
   $(srcdir)/src/*.y \
   $(srcdir)/src/*.l )
@@ -441,7 +444,9 @@ cppcheck:
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
   -header-filter='.*' \
-  -checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+  -checks='*,-abseil-*,-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+
+# Good checks: -checks='-*,bugprone-assignment-in-if-condition,google-build-using-namespace,google-readability-casting,modernize-use-default-member-init,modernize-use-emplace,modernize-use-equals-default,modernize-use-equals-delete,modernize-use-nullptr,performance-faster-string-find,readability-isolate-declaration,readability-redundant-control-flow,readability-redundant-member-init,readability-redundant-string-cstr,readability-uppercase-literal-suffix
 
 CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_CPPCHECK=1
@@ -517,6 +522,7 @@ PY_PROGRAMS = \
   nodist/lint_py_test_filter \
   nodist/log_changes \
   nodist/uvm_pkg_packer \
+  nodist/verilator_bisect \
   nodist/verilator_saif_diff \
   src/.gdbinit.py \
   src/astgen \

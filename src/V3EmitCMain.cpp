@@ -73,6 +73,9 @@ private:
 
         if (v3Global.opt.debugRuntimeTimeout()) {
             puts("void alarmHandler(int signum) {\n");
+            // Add newline so %Error is at beginning-of-line, as might get the alarm
+            // when in the middle of some other print with no newline
+            puts("    VL_PRINTF_MT(\"\\n\");\n");
             puts("    VL_FATAL_MT(\"\", 0, \"\", \"Alarm signal received,"s
                  + " '--debug-runtime-timeout "s
                  + std::to_string(v3Global.opt.debugRuntimeTimeout()) + "' exceeded\\n\");\n");
@@ -174,5 +177,5 @@ private:
 
 void V3EmitCMain::emit() {
     UINFO(2, __FUNCTION__ << ":");
-    { EmitCMain visitor; }
+    { const EmitCMain visitor; }
 }

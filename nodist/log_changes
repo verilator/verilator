@@ -89,8 +89,10 @@ def process() -> None:
                               line,
                               flags=re.IGNORECASE)
                 if m:
-                    # print("K %s" % line)
-                    msgs[key] += ' (#' + m.group(2) + ')'
+                    mid = m.group(2)
+                    if ("#" + mid) not in msgs[key]:
+                        # print("K %s" % line)
+                        msgs[key] += ' (#' + mid + ')'
 
     if not msgs:
         print("No Changes need to be inserted.")

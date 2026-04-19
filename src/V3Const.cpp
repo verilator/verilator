@@ -197,7 +197,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         const size_t m_frozenSize;
         const unsigned m_ops;
         const bool m_polarity;
-        bool m_restore;
+        bool m_restore = true;
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
@@ -205,8 +205,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             , m_polaritiesSize{visitor.m_bitPolarities.size()}
             , m_frozenSize{visitor.m_frozenNodes.size()}
             , m_ops{visitor.m_ops}
-            , m_polarity{visitor.m_polarity}
-            , m_restore{true} {}
+            , m_polarity{visitor.m_polarity} {}
         ~Restorer() {
             UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
                     "m_bitPolarities must grow monotonically");
@@ -1351,7 +1350,7 @@ class ConstVisitor final : public VNVisitor {
             if (newp) {
                 newp->dumpTree(debugPrefix + "RESULT: ");
             } else {
-                cout << debugPrefix << "not replaced" << endl;
+                cout << debugPrefix << "not replaced\n";
             }
         }  // LCOV_EXCL_STOP
 
@@ -1528,7 +1527,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(smallerp);
 
         constp->unlinkFrBack();
-        V3Number num{constp, subsize, constp->num()};
+        const V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
         UINFOTREE(9, nodep, "", "BI(EXTEND)-ou");
@@ -1599,7 +1598,13 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(const AstNode* node1p, const AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (const AstConst* const const1p = VN_CAST(node1p, Const)) {
+            if (const AstConst* const const2p = VN_CAST(node2p, Const)) {
+                return V3Number{node1p->fileline(), 1, 0}
+                    .opEq(const1p->num(), const2p->num())
+                    .isEqOne();
+            }
+        }
         if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
@@ -1625,6 +1630,9 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
+        // Must not create an expression with unpacked array type
+        if (VN_IS(thensp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        if (VN_IS(elsesp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
         // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
         return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
@@ -1735,7 +1743,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(oldp), oldp);
     }
     void replaceNum(AstNode* nodep, uint32_t val) {
-        V3Number num{nodep, nodep->width(), val};
+        const V3Number num{nodep, nodep->width(), val};
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceNumSigned(AstNodeBiop* nodep, uint32_t val) {
@@ -2229,7 +2237,7 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            bool need_temp_pure = !nodep->rhsp()->isPure();
+            const bool need_temp_pure = !nodep->rhsp()->isPure();
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
@@ -2389,6 +2397,32 @@ class ConstVisitor final : public VNVisitor {
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamL reverses, so reverse=true)
+            if ((VN_IS(srcDTypep, UnpackArrayDType) || VN_IS(srcDTypep, QueueDType)
+                 || VN_IS(srcDTypep, DynArrayDType))
+                && (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType))) {
+                int blockSize = 1;
+                if (const AstConst* const constp
+                    = VN_CAST(VN_AS(streamp, StreamL)->rhsp(), Const)) {
+                    blockSize = constp->toSInt();
+                    if (VL_UNLIKELY(blockSize <= 0)) blockSize = 1;
+                }
+                int srcElementBits = 0;
+                if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    srcElementBits = elemDtp->width();
+                }
+                int dstElementBits = 0;
+                if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    dstElementBits = elemDtp->width();
+                }
+                nodep->lhsp(dstp);
+                nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, true,
+                                                   blockSize, dstElementBits, srcElementBits});
+                nodep->dtypep(dstDTypep);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                return true;
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
@@ -2420,6 +2454,44 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
+            // Handle unpacked/queue/dynarray source -> queue/dynarray dest via
+            // CvtArrayToArray (StreamR does not reverse, so reverse=false).
+            // V3Width may have wrapped the source in CvtArrayToPacked; unwrap it.
+            if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                AstNodeExpr* origSrcp = srcp;
+                if (AstCvtArrayToPacked* const cvtp = VN_CAST(srcp, CvtArrayToPacked)) {
+                    origSrcp = cvtp->fromp();
+                }
+                const AstNodeDType* const origSrcDTypep = origSrcp->dtypep()->skipRefp();
+                if (VN_IS(origSrcDTypep, UnpackArrayDType) || VN_IS(origSrcDTypep, QueueDType)
+                    || VN_IS(origSrcDTypep, DynArrayDType)) {
+                    int srcElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = origSrcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
+                    }
+                    int dstElementBits = 0;
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
+                    }
+                    if (VN_IS(srcp, CvtArrayToPacked)) {
+                        origSrcp = VN_AS(srcp, CvtArrayToPacked)->fromp()->unlinkFrBack();
+                        VL_DO_DANGLING(pushDeletep(srcp), srcp);
+                        srcp = origSrcp;
+                    }
+                    // Descending unpacked arrays need element reversal
+                    bool reverse = false;
+                    if (const AstUnpackArrayDType* const unpackDtp
+                        = VN_CAST(origSrcDTypep, UnpackArrayDType)) {
+                        reverse = !unpackDtp->declRange().ascending();
+                    }
+                    nodep->lhsp(dstp);
+                    nodep->rhsp(new AstCvtArrayToArray{srcp->fileline(), srcp, dstDTypep, reverse,
+                                                       1, dstElementBits, srcElementBits});
+                    nodep->dtypep(dstDTypep);
+                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                    return true;
+                }
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
@@ -2434,12 +2506,20 @@ class ConstVisitor final : public VNVisitor {
                 }
                 srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
             } else {
-                UASSERT_OBJ(sWidth >= dWidth, nodep,
-                            "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
                 } else if (sWidth >= dWidth) {
                     srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+                } else {
+                    // Source narrower than destination: left-justify by shifting left.
+                    // The right stream operator packs left-to-right, so remaining
+                    // LSBs are zero-filled (IEEE 1800-2023 11.4.14.2).
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
+                    extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                    srcp = new AstShiftL{
+                        srcp->fileline(), extendp,
+                        new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
+                        dWidth};
                 }
             }
             nodep->lhsp(dstp);
@@ -3739,7 +3819,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = false;
         m_hasLoopTest = false;
         iterateChildren(nodep);
-        bool thisLoopHasJumpDelay = m_hasJumpDelay;
+        const bool thisLoopHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
         // If the first statement always break, the loop is useless
         if (const AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {

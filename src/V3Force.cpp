@@ -117,7 +117,7 @@ public:
                 lhsVarRefp->replaceWith(new AstVarRef{flp, m_enVscp, VAccess::WRITE});
                 lhsVarRefp->deleteTree();
                 assignp->rhsp()->unlinkFrBack()->deleteTree();
-                V3Number zero{m_enVscp, assignp->lhsp()->dtypep()->width()};
+                const V3Number zero{m_enVscp, assignp->lhsp()->dtypep()->width()};
                 assignp->rhsp(new AstConst{flp, zero});
             }
             activeInitp->addStmtsp(new AstInitial{flp, enInitStmtsp});
@@ -205,6 +205,7 @@ public:
                 return currInitp;
             } else {
                 lhsDtypep->v3fatalSrc("Unhandled type");
+                return nullptr;  // LCOV_EXCL_LINE
             }
         }
         static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,

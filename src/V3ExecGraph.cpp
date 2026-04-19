@@ -517,7 +517,7 @@ class PackThreads final {
             // Update the ready list
             const size_t erased = readyMTasks.erase(bestMtaskp);
             UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
-            for (V3GraphEdge& edgeOut : bestMtaskp->outEdges()) {
+            for (const V3GraphEdge& edgeOut : bestMtaskp->outEdges()) {
                 ExecMTask* const nextp = edgeOut.top()->as<ExecMTask>();
                 // Dependent MTask should not yet be assigned to a thread
                 UASSERT(schedule.threadId(nextp) == ThreadSchedule::UNASSIGNED,
@@ -598,76 +598,76 @@ public:
                            10};  // Sandbag denom
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
-        UASSERT_SELFTEST(size_t, scheduled.size(), 3);
-        UASSERT_SELFTEST(size_t, scheduled[0].m_threads.size(), threads);
-        UASSERT_SELFTEST(size_t, scheduled[0].m_threads[0].size(), 2);
+        UASSERT_SELFTEST(const size_t, scheduled.size(), 3);
+        UASSERT_SELFTEST(const size_t, scheduled[0].m_threads.size(), threads);
+        UASSERT_SELFTEST(const size_t, scheduled[0].m_threads[0].size(), 2);
         for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[0].m_threads[i].size(), 0);
+            UASSERT_SELFTEST(const size_t, scheduled[0].m_threads[i].size(), 0);
 
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][0], t0);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][1], t1);
 
-        UASSERT_SELFTEST(size_t, scheduled[1].m_threads.size(), hierThreads / 3);
+        UASSERT_SELFTEST(const size_t, scheduled[1].m_threads.size(), hierThreads / 3);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][0], t2);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][1], t3);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[1][0], t4);
 
-        UASSERT_SELFTEST(size_t, scheduled[2].m_threads.size(), threads);
+        UASSERT_SELFTEST(const size_t, scheduled[2].m_threads.size(), threads);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[2].m_threads[0][0], t5);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[2].m_threads[1][0], t6);
 
-        UASSERT_SELFTEST(size_t, ThreadSchedule::s_mtaskState.size(), 7);
+        UASSERT_SELFTEST(const size_t, ThreadSchedule::s_mtaskState.size(), 7);
 
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t2), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t3), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t4), 1);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t5), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t6), 1);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t0), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t1), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t2), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t3), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t4), 1);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t5), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t6), 1);
 
         // On its native thread, we see the actual end time for t0:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
         // On the other thread, we see a sandbagged end time which does not
         // exceed the t1 end time:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t0, 1), 1099);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t0, 1), 1099);
 
         // Actual end time on native thread:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t1, 0), 1100);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t1, 0), 1100);
         // Sandbagged end time seen on thread 1.  Note it does not compound
         // with t0's sandbagged time; compounding caused trouble in
         // practice.
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t1, 1), 1130);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t1, 1), 1130);
 
         // Wide task scheduling
 
         // Task does not depend on previous or future schedules
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t2, 0), 0);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[2], t2, 0), 0);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t2, 0), 0);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[2], t2, 0), 0);
 
         // We allow sandbagging for hierarchical children tasks, this does not affect
         // wide task scheduling. When the next schedule is created it doesn't matter
         // anyway.
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 0), 1200);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 1), 1230);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 2), 1230);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 3), 1230);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 4), 1230);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 5), 1230);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 0), 1200);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 1), 1230);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 2), 1230);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 3), 1230);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 4), 1230);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t2, 5), 1230);
 
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 0), 1300);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 1), 1330);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 2), 1330);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 3), 1330);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 4), 1330);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 5), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 0), 1300);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 1), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 2), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 3), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 4), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t3, 5), 1330);
 
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 0), 1360);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 1), 1330);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 2), 1360);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 3), 1360);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 4), 1360);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 0), 1360);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 1), 1330);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 2), 1360);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 3), 1360);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 4), 1360);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
 
         for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
@@ -700,29 +700,29 @@ public:
                            10};  // Sandbag denom
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
-        UASSERT_SELFTEST(size_t, scheduled.size(), 2);
-        UASSERT_SELFTEST(size_t, scheduled[0].m_threads.size(), hierThreads / 2);
-        UASSERT_SELFTEST(size_t, scheduled[0].m_threads[0].size(), 1);
+        UASSERT_SELFTEST(const size_t, scheduled.size(), 2);
+        UASSERT_SELFTEST(const size_t, scheduled[0].m_threads.size(), hierThreads / 2);
+        UASSERT_SELFTEST(const size_t, scheduled[0].m_threads[0].size(), 1);
         for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[0].m_threads[i].size(), 0);
+            UASSERT_SELFTEST(const size_t, scheduled[0].m_threads[i].size(), 0);
 
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][0], t0);
 
-        UASSERT_SELFTEST(size_t, scheduled[1].m_threads.size(), threads);
-        UASSERT_SELFTEST(size_t, scheduled[1].m_threads[0].size(), 1);
+        UASSERT_SELFTEST(const size_t, scheduled[1].m_threads.size(), threads);
+        UASSERT_SELFTEST(const size_t, scheduled[1].m_threads[0].size(), 1);
         for (size_t i = 1; i < scheduled[1].m_threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[1].m_threads[i].size(), 0);
+            UASSERT_SELFTEST(const size_t, scheduled[1].m_threads[i].size(), 0);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][0], t1);
 
-        UASSERT_SELFTEST(size_t, ThreadSchedule::s_mtaskState.size(), 2);
+        UASSERT_SELFTEST(const size_t, ThreadSchedule::s_mtaskState.size(), 2);
 
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t0), 0);
+        UASSERT_SELFTEST(const uint32_t, ThreadSchedule::threadId(t1), 0);
 
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
 
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 0), 1100);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 1), 1130);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t1, 0), 1100);
+        UASSERT_SELFTEST(const uint32_t, packer.completionTime(scheduled[1], t1, 1), 1130);
 
         for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
@@ -1201,12 +1201,12 @@ void selfTest() {
                      {2, {20, 0}},  // Note no profile
                      {3, {30, 3000}}});
         normalizeCosts(costs);
-        UASSERT_SELFTEST(uint64_t, costs[1].first, 1000);
-        UASSERT_SELFTEST(uint64_t, costs[1].second, 1000);
-        UASSERT_SELFTEST(uint64_t, costs[2].first, 2000);
-        UASSERT_SELFTEST(uint64_t, costs[2].second, 0);
-        UASSERT_SELFTEST(uint64_t, costs[3].first, 3000);
-        UASSERT_SELFTEST(uint64_t, costs[3].second, 3000);
+        UASSERT_SELFTEST(const uint64_t, costs[1].first, 1000);
+        UASSERT_SELFTEST(const uint64_t, costs[1].second, 1000);
+        UASSERT_SELFTEST(const uint64_t, costs[2].first, 2000);
+        UASSERT_SELFTEST(const uint64_t, costs[2].second, 0);
+        UASSERT_SELFTEST(const uint64_t, costs[3].first, 3000);
+        UASSERT_SELFTEST(const uint64_t, costs[3].second, 3000);
     }
     {  // Test that very large profile data properly scales
         Costs costs({// id  est  prof
@@ -1214,12 +1214,12 @@ void selfTest() {
                      {2, {20, 200000000000}},
                      {3, {30, 1}}});  // Make sure doesn't underflow
         normalizeCosts(costs);
-        UASSERT_SELFTEST(uint64_t, costs[1].first, 2500000);
-        UASSERT_SELFTEST(uint64_t, costs[1].second, 5000000);
-        UASSERT_SELFTEST(uint64_t, costs[2].first, 5000000);
-        UASSERT_SELFTEST(uint64_t, costs[2].second, 10000000);
-        UASSERT_SELFTEST(uint64_t, costs[3].first, 7500000);
-        UASSERT_SELFTEST(uint64_t, costs[3].second, 1);
+        UASSERT_SELFTEST(const uint64_t, costs[1].first, 2500000);
+        UASSERT_SELFTEST(const uint64_t, costs[1].second, 5000000);
+        UASSERT_SELFTEST(const uint64_t, costs[2].first, 5000000);
+        UASSERT_SELFTEST(const uint64_t, costs[2].second, 10000000);
+        UASSERT_SELFTEST(const uint64_t, costs[3].first, 7500000);
+        UASSERT_SELFTEST(const uint64_t, costs[3].second, 1);
     }
 
     PackThreads::selfTest();

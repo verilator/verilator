@@ -834,6 +834,7 @@ glibc
 gmake
 gmon
 gotFinish
+goto
 gprof
 gtkwave
 hdr
@@ -878,6 +879,7 @@ iostream
 ish
 isunbounded
 isunknown
+jemalloc
 jobserver
 json
 jwoutersymatra
@@ -891,6 +893,7 @@ len
 libc
 libext
 libgoogle
+libjemalloc
 liblist
 libsystemc
 libtcmalloc
@@ -917,6 +920,7 @@ lxt
 macromodule
 makefile
 makefiles
+malloc
 manpages
 metacomment
 metacomments
@@ -1146,6 +1150,7 @@ sys
 systemc
 taskify
 tcmalloc
+tcmalloc
 tenghtt
 testbench
 threadsafe
@@ -1239,6 +1244,7 @@ vpiConstType
 vpiDefName
 vpiInertialDelay
 vpiInstance
+vpiIntVal
 vpiLeftRange
 vpiModule
 vpiSigned

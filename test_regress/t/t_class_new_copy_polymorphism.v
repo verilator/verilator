@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test that `new <handle>` (shallow copy) preserves the runtime type
-// of the source object, per IEEE 1800-2017 8.7.
+// of the source object, per IEEE 1800-2023 8.7.
 
 // verilog_format: off
 `define stop $stop

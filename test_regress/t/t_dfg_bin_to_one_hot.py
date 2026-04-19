@@ -11,11 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=["--stats", "-fno-table", "-fno-inline"])
 
 test.execute()
 
-test.file_grep(test.stats, r'Optimizations, DFG pre inline BinToOneHot, decoders created\s+(\d+)',
-               4)
+test.file_grep(test.stats, r'Optimizations, DFG, BinToOneHot, decoders created\s+(\d+)', 5)
 
 test.passes()

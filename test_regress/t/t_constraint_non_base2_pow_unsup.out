@@ -1,0 +1,6 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_non_base2_pow_unsup.v:12:25: Unsupported: Power (**) expression with non-2 base in constraint
+   12 |   constraint c { x == 3 ** n; }
+      |                         ^~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

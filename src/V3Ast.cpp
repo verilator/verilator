@@ -63,7 +63,7 @@ VCMethod VCMethod::arrayMethod(const string& name) {
 void VCMethod::selfTest() {
     int i = 0;
     for (const auto& it : s_itemData) {
-        VCMethod exp{i};
+        const VCMethod exp{i};
         UASSERT_STATIC(it.m_e == exp,
                        "VCMethod::s_itemData table rows are out-of-order, starting at row "s
                            + cvtToStr(i) + " '" + +it.m_name + '\'');
@@ -181,11 +181,8 @@ string AstNode::encodeName(const string& namein) {
 }
 
 string AstNode::encodeNumber(int64_t num) {
-    if (num < 0) {
-        return "__02D" + cvtToStr(-num);  // 2D=-
-    } else {
-        return cvtToStr(num);
-    }
+    if (num < 0) return "__02D" + cvtToStr(-num);  // 2D=-
+    return cvtToStr(num);
 }
 
 string AstNode::nameProtect() const { return VIdProtect::protectIf(name(), protect()); }
@@ -394,36 +391,36 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
     debugTreeChange(nodep, "-addNextThs: ", __LINE__, false);
     debugTreeChange(newp, "-addNextNew: ", __LINE__, true);
-    if (!nodep) {  // verilog.y and lots of other places assume this
+    if (!nodep)  // verilog.y and lots of other places assume this
         return newp;
-    } else {
-        // Find end of old list
-        AstNode* oldtailp = nodep;
-        if (oldtailp->m_nextp) {
-            if (oldtailp->m_headtailp) {
-                oldtailp = oldtailp->m_headtailp;  // This=beginning of list, jump to end
-                UDEBUGONLY(UASSERT_OBJ(!oldtailp->m_nextp, nodep,
-                                       "Node had next, but headtail says it shouldn't"););
-            } else {
-                // Though inefficient, we are occasionally passed an
-                // addNext in the middle of a list.
-                while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
-            }
+
+    // Find end of old list
+    AstNode* oldtailp = nodep;
+    if (oldtailp->m_nextp) {
+        if (oldtailp->m_headtailp) {
+            oldtailp = oldtailp->m_headtailp;  // This=beginning of list, jump to end
+            UDEBUGONLY(UASSERT_OBJ(!oldtailp->m_nextp, nodep,
+                                   "Node had next, but headtail says it shouldn't"););
+        } else {
+            // Though inefficient, we are occasionally passed an
+            // addNext in the middle of a list.
+            while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
         }
-        // Link it in
-        oldtailp->m_nextp = newp;
-        newp->m_backp = oldtailp;
-        // New tail needs the head
-        AstNode* const newtailp = newp->m_headtailp;
-        AstNode* const headp = oldtailp->m_headtailp;
-        oldtailp->m_headtailp = nullptr;  // May be written again as new head
-        newp->m_headtailp = nullptr;  // May be written again as new tail
-        newtailp->m_headtailp = headp;
-        headp->m_headtailp = newtailp;
-        newp->editCountInc();
-        // No change of m_iterpp, as only changing m_nextp of current node;
-        // the current node is still the one at the iteration point
     }
+    // Link it in
+    oldtailp->m_nextp = newp;
+    newp->m_backp = oldtailp;
+    // New tail needs the head
+    AstNode* const newtailp = newp->m_headtailp;
+    AstNode* const headp = oldtailp->m_headtailp;
+    oldtailp->m_headtailp = nullptr;  // May be written again as new head
+    newp->m_headtailp = nullptr;  // May be written again as new tail
+    newtailp->m_headtailp = headp;
+    headp->m_headtailp = newtailp;
+    newp->editCountInc();
+    // No change of m_iterpp, as only changing m_nextp of current node;
+    // the current node is still the one at the iteration point
+
     debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
 }
@@ -1594,11 +1591,12 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
             // Enums need to become direct sizes to avoid later ENUMVALUE errors
             && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
             return;  // Correct already
-        // FUTURE: We may be pointing at a two state data type, and this may
-        // convert it to logic.  Since the AstVar remains correct, we
-        // work OK but this assumption may break in the future.
-        // Note we can't just clone and do a widthForce, as if it's a BasicDType
-        // the msb() indications etc will be incorrect.
+        if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
+            if (basicp->keyword() == VBasicDTypeKwd::BIT) {
+                dtypeSetBitUnsized(width, widthMin, numeric);
+                return;
+            }
+        }
         dtypeSetLogicUnsized(width, widthMin, numeric);
     }
 }
@@ -1650,7 +1648,8 @@ static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
         if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
             nodep = packp->subDTypep();
             continue;
-        } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
+        }
+        if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
             if (refp != nodep) {
                 nodep = refp;
                 continue;
@@ -1678,9 +1677,9 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const bool toNumericable
         = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
 
-    if (toBaseDtp == fromBaseDtp) {
-        return VCastable::COMPATIBLE;
-    } else if (toNumericable) {
+    if (toBaseDtp == fromBaseDtp) return VCastable::COMPATIBLE;
+
+    if (toNumericable) {
         if (fromNumericable) return VCastable::COMPATIBLE;
     } else if (VN_IS(toBaseDtp, EnumDType)) {
         if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
@@ -1696,13 +1695,9 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         const AstClass* const fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
         const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
         const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
-        if (upcast) {
-            return VCastable::COMPATIBLE;
-        } else if (downcast) {
-            return VCastable::DYNAMIC_CLASS;
-        } else {
-            return VCastable::INCOMPATIBLE;
-        }
+        if (upcast) return VCastable::COMPATIBLE;
+        if (downcast) return VCastable::DYNAMIC_CLASS;
+        return VCastable::INCOMPATIBLE;
     }
     return castable;
 }
@@ -1726,11 +1721,9 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
             return node1p->dtypep();
-        } else if (castable == VCastable::DYNAMIC_CLASS) {
-            return node2p->dtypep();
-        }
+        if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 
     AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep(), ClassRefDType);

@@ -7,17 +7,11 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Verifies that skipWidthForTemplateStruct fires in V3Param::cellPinCleanup
-# when struct typedefs from a nested parameterized interface are passed as
-# type parameters through two levels of interface nesting.
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=["--binary --stats"])
-
-test.file_grep(test.stats, r'Param, Template struct width skips\s+(\d+)', 2)
+test.compile(v_flags2=["--binary"])
 
 test.execute()
 

@@ -95,7 +95,7 @@ class ExecMTask;
 
 struct VNTypeInfo final {
     const char* m_namep;
-    enum uint8_t {
+    enum OpEn : uint8_t {
         OP_UNUSED,
         OP_USED,
         OP_LIST,
@@ -147,7 +147,7 @@ public:
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
     VNUser(int i) {
-        m_u.up = 0;
+        m_u.up = nullptr;
         m_u.ui = i;
     }
     explicit VNUser(void* p) { m_u.up = p; }
@@ -766,7 +766,7 @@ public:
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
-    AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }

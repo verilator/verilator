@@ -48,9 +48,10 @@ extern "C" int mon_check();
   reg [7:0]       mem_2d[3:0][7:0]  /*verilator public_flat_rw */;  // Descending indices
   // verilator lint_off ASCRANGE
   reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
-  // verilator lint_on ASCRANGE
 
-  reg [15:0] [7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  reg [0:15][0:3][7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  reg [8:-7] [3:-4] negative_multi_packed[0:-2]  /*verilator public_flat_rw */;
+  // verilator lint_on ASCRANGE
   reg             unpacked_only[7:0];
 
   reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
@@ -58,7 +59,7 @@ extern "C" int mon_check();
   reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
   reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
   reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
-  reg [2047:0]    too_big      /*verilator public_flat_rw @(posedge clk) */;
+  reg [2047:0]    big      /*verilator public_flat_rw @(posedge clk) */;
 
   integer        status;
 
@@ -95,7 +96,7 @@ extern "C" int mon_check();
     text_word = "Word";
     text_long = "Long64b";
     text = "Verilog Test module";
-    too_big = "some text";
+    big = "some text";
 
     bit1 = 1;
     integer1 = 123;
@@ -125,9 +126,21 @@ extern "C" int mon_check();
 
     for (int i = 0; i < 3; i++) begin
       for (int j = 0; j < 16; j++) begin
-        multi_packed[i][j] = 8'((i * 16) + j);
+        for (int k = 0; k < 4; k++) begin
+          multi_packed[i][j][k] = 8'(((i * 64) + (j * 4) + k));
+        end
       end
     end
+
+    for (int i = -2; i <= 0; i++) begin
+      for (int j = -7; j <= 8; j++) begin
+        negative_multi_packed[i][j] = 8'(((i + 2) * 4) + (j + 2));
+      end
+    end
+
+`ifdef T_VPI_FORCEABLE_VAR
+    #0; // TODO: Workaround to force signal initialization, else `gen_sig` stays at 0
+`endif
 
 `ifdef VERILATOR
     status = $c32("mon_check()");

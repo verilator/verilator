@@ -1,0 +1,6 @@
+%Error: t/t_lint_paramnodefault_top_bad.v:8:13: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'NODEF'
+                                              : ... note: In instance 't'
+    8 |   parameter NODEF);   
+      |             ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

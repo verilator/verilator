@@ -6,7 +6,7 @@
 
 `define printtype(mytype, expec) $write({"\"", $typename(mytype), "\" ==? \"", expec, "\"\n"});
 
-// Copied from 20.6.1 Type name function in IEEE 1800-2017
+// Copied from IEEE 1800-2023 20.6.1 Type name function
 // source code // $typename would return
 typedef bit node;  // "bit"
 node [2:0] X;  // "bit [2:0]"

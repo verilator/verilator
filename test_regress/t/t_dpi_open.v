@@ -49,6 +49,19 @@ module t;
   integer    i_integer [1:0];
   integer    o_integer [1:0];
 
+  bit i_oba_b1;
+  bit o_oba_b1;
+  bit [7:0] i_oba_b8;
+  bit [7:0] o_oba_b8;
+  bit [15:0] i_oba_b16;
+  bit [15:0] o_oba_b16;
+  bit [16:0] i_oba_b17;
+  bit [16:0] o_oba_b17;
+  bit [31:0] i_oba_b32;
+  bit [31:0] o_oba_b32;
+  bit [63:0] i_oba_b64;
+  bit [63:0] o_oba_b64;
+
   import "DPI-C" function int dpii_failure();
 
   import "DPI-C" function void dpii_unused(input reg u []);
@@ -79,6 +92,8 @@ module t;
   import "DPI-C" function void dpii_open_int_u1(int u, input int i [], output int o []);
   import "DPI-C" function void dpii_open_int_u2(int u, input int i [] [], output int o [] []);
   import "DPI-C" function void dpii_open_int_u3(int u, input int i [] [] [], output int o [] [] []);
+
+  import "DPI-C" function void dpii_oba(int width, input int i [], output int o []);
 
   // verilator lint_on UNUSED
 
@@ -156,6 +171,25 @@ module t;
         end
       end
     end
+
+    i_oba_b1 = crc[0];
+    i_oba_b8 = crc[7:0];
+    i_oba_b16 = crc[15:0];
+    i_oba_b17 = crc[16:0];
+    i_oba_b32 = crc[31:0];
+    i_oba_b64 = crc[63:0];
+    dpii_oba(1, i_oba_b1, o_oba_b1);
+    dpii_oba(8, i_oba_b8, o_oba_b8);
+    dpii_oba(16, i_oba_b16, o_oba_b16);
+    dpii_oba(17, i_oba_b17, o_oba_b17);
+    dpii_oba(32, i_oba_b32, o_oba_b32);
+    dpii_oba(64, i_oba_b64, o_oba_b64);
+    `checkh(o_oba_b1, ~crc[0]);
+    `checkh(o_oba_b8, ~crc[7:0]);
+    `checkh(o_oba_b16, ~crc[15:0]);
+    `checkh(o_oba_b17, ~crc[16:0]);
+    `checkh(o_oba_b32, ~crc[31:0]);
+    `checkh(o_oba_b64, ~crc[63:0]);
 
     if (dpii_failure()!=0) begin
       $write("%%Error: Failure in DPI tests\n");

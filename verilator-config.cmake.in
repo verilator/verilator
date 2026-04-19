@@ -297,10 +297,6 @@ function(verilate TARGET)
         list(APPEND VERILATOR_ARGS --threads ${VERILATE_THREADS})
     endif()
 
-    if(VERILATE_TRACE_THREADS)
-        list(APPEND VERILATOR_ARGS --trace-threads ${VERILATE_TRACE_THREADS})
-    endif()
-
     if(VERILATE_COVERAGE)
         list(APPEND VERILATOR_ARGS --coverage)
     endif()
@@ -750,12 +746,11 @@ function(verilate TARGET)
     target_compile_features(${TARGET} PRIVATE cxx_std_11)
 
     if(${VERILATE_PREFIX}_TIMING)
-        check_cxx_compiler_flag(-fcoroutines-ts COROUTINES_TS_FLAG)
-        target_compile_options(
-            ${TARGET}
-            PRIVATE
-                $<IF:$<BOOL:${COROUTINES_TS_FLAG}>,-fcoroutines-ts,-fcoroutines>
-        )
+        if("@CFG_CXXFLAGS_COROUTINES@" STREQUAL "-std=gnu++20")
+            target_compile_features(${TARGET} PRIVATE cxx_std_20)
+        else()
+            target_compile_options(${TARGET} PRIVATE @CFG_CXXFLAGS_COROUTINES@)
+        endif()
     endif()
 endfunction()
 

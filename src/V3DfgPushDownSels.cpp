@@ -136,8 +136,8 @@ class V3DfgPushDownSels final {
     // if the edge was indeed added, so caller must add the actual edge.
     bool addEdge(DfgVertex& src, DfgVertex& dst) {
         UASSERT_OBJ(&src != &dst, &src, "Should be different");
-        State& srcState = m_stateMap[src];
-        State& dstState = m_stateMap[dst];
+        const State& srcState = m_stateMap[src];
+        const State& dstState = m_stateMap[dst];
         // If 'dst' is after 'src' in the topological ordering,
         // then ok to add edge and no need to update the ordering.
         if (dstState.ord > srcState.ord) return true;
@@ -169,7 +169,7 @@ class V3DfgPushDownSels final {
 
             // Enqueue unvisited sinks in affeced area
             const bool cyclic = vtx.foreachSink([&](DfgVertex& sink) {
-                State& sinkState = m_stateMap[sink];
+                const State& sinkState = m_stateMap[sink];
                 if (sinkState.ord == srcOrd) return true;  // Stop completely if cyclic
                 if (sinkState.visited) return false;  // Stop search if already visited
                 if (sinkState.ord > srcOrd) return false;  // Stop search if outside critical area

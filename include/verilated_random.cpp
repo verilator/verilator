@@ -23,6 +23,7 @@
 
 #include "verilated_random.h"
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -61,6 +62,9 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
 
+    std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
+    uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
+
 public:
     typedef std::streambuf::traits_type traits_type;
 
@@ -69,8 +73,8 @@ protected:
         const char c2 = static_cast<char>(c);
         if (pbase() == pptr()) return 0;
         const size_t size = pptr() - pbase();
+        log("  ", std::string(pbase(), size));
         const ssize_t n = ::write(m_writeFd, pbase(), size);
-        // VL_PRINTF_MT("solver-write '%s'\n", std::string(pbase(), size).c_str());
         if (VL_UNLIKELY(n == -1)) perror("write");
         if (n <= 0) {
             wait_report();
@@ -91,6 +95,7 @@ protected:
             wait_report();
             return traits_type::eof();
         }
+        log("< ", std::string(m_readBuf, n));
         setg(m_readBuf, m_readBuf, m_readBuf + n);
         return traits_type::to_int_type(m_readBuf[0]);
     }
@@ -104,6 +109,7 @@ public:
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
+        logOpen();
         open(cmd);
     }
 
@@ -175,6 +181,7 @@ public:
             return false;
         }
 
+        log("", "# Open: "s + cmd[0]);
         const pid_t pid = fork();
         if (VL_UNLIKELY(pid < 0)) {
             perror("VlRProcess::open: fork");
@@ -211,6 +218,35 @@ public:
 #else
         return false;
 #endif
+    }
+
+private:
+    void logOpen() {
+        const std::string filename = Verilated::threadContextp()->solverLogFilename();
+        if (filename.empty()) return;
+        m_logfp = std::make_unique<std::ofstream>(filename);
+        if (m_logfp.get() && m_logfp.get()->fail()) m_logfp = nullptr;
+        if (!m_logfp) {
+            const std::string msg = "%Error: Can't write '"s + filename + "'";
+            VL_FATAL_MT("", 0, "", msg.c_str());
+            return;
+        }
+        *m_logfp << "# Verilator solver log\n";
+    }
+    void log(const std::string& prefix, const std::string& text) {
+        if (VL_LIKELY(!m_logfp.get()) || text.empty()) return;
+        if (m_logLastTime != Verilated::threadContextp()->time()) {
+            m_logLastTime = Verilated::threadContextp()->time();
+            *m_logfp << "# [" << Verilated::threadContextp()->timeWithUnitString() << "]\n";
+        }
+        std::size_t startPos = 0;
+        while (1) {
+            const std::size_t endPos = text.find('\n', startPos);
+            if (endPos == std::string::npos) break;
+            *m_logfp << prefix << text.substr(startPos, endPos - startPos) << '\n';
+            startPos = endPos + 1;
+        }
+        if (startPos < text.length()) *m_logfp << prefix << text.substr(startPos) << '\n';
     }
 };
 
@@ -274,7 +310,8 @@ static std::string readUntilBalanced(std::istream& stream) {
 static std::string parseNestedSelect(const std::string& nested_select_expr,
                                      std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
-    std::string name, idx;
+    std::string name;
+    std::string idx;
     nestedStream >> name;
     if (name == "(select") {
         const std::string further_nested_expr = readUntilBalanced(nestedStream);
@@ -442,7 +479,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Soft constraint relaxation (IEEE 1800-2017 18.5.13, last-wins priority):
+        // Soft constraint relaxation (IEEE 1800-2023 18.5.13, last-wins priority):
         // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
         // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
@@ -468,16 +505,36 @@ bool VlRandomizer::next(VlRNG& rngr) {
 
         const size_t nSoft = m_softConstraints.size();
         bool sat = false;
-        for (size_t phase = 0; phase <= nSoft && !sat; ++phase) {
-            const bool hasSoft = (phase < nSoft);
-            if (hasSoft) {
-                os << "(push 1)\n";
-                for (size_t i = phase; i < nSoft; ++i)
-                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
-            }
+        if (nSoft > 0) {
+            // Fast path: try all soft constraints at once
+            os << "(push 1)\n";
+            for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
             os << "(check-sat)\n";
-            sat = parseSolution(os, /*log=*/phase == nSoft);
-            if (!sat && hasSoft) os << "(pop 1)\n";
+            sat = parseSolution(os, false);
+            if (!sat) {
+                // Some soft constraints conflict. Incrementally add from back
+                // (highest priority first), keeping only compatible ones.
+                // This preserves the maximum set of compatible soft constraints.
+                os << "(pop 1)\n";
+                for (int i = static_cast<int>(nSoft) - 1; i >= 0; --i) {
+                    os << "(push 1)\n";
+                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
+                    os << "(check-sat)\n";
+                    if (checkSat(os)) {
+                        // Compatible -- keep this push level
+                    } else {
+                        // Incompatible -- remove this soft constraint
+                        os << "(pop 1)\n";
+                    }
+                }
+                // Read solution with remaining compatible soft constraints
+                os << "(check-sat)\n";
+                sat = parseSolution(os, false);
+            }
+        } else {
+            // No soft constraints -- hard-only
+            os << "(check-sat)\n";
+            sat = parseSolution(os, false);
         }
 
         if (!sat) {
@@ -530,6 +587,12 @@ bool VlRandomizer::next(VlRNG& rngr) {
     return false;  // Should not reach here
 }
 
+bool VlRandomizer::checkSat(std::iostream& os) {
+    std::string result;
+    do { std::getline(os, result); } while (result.empty());
+    return result == "sat";
+}
+
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
@@ -540,7 +603,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         std::getline(os, sat);
         std::vector<int> numbers;
         std::string currentNum;
-        for (char c : sat) {
+        for (const char c : sat) {
             if (std::isdigit(c)) {
                 currentNum += c;
                 numbers.push_back(std::stoi(currentNum));
@@ -548,14 +611,14 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
             }
         }
         if (Verilated::threadContextp()->warnUnsatConstr()) {
-            for (int n : numbers) {
+            for (const int n : numbers) {
                 if (n < m_constraints_line.size()) {
                     const std::string& constraint_info = m_constraints_line[n];
                     // Parse "filename:linenum   source" format
-                    size_t colon_pos = constraint_info.find(':');
+                    const size_t colon_pos = constraint_info.find(':');
                     if (colon_pos != std::string::npos) {
-                        std::string filename = constraint_info.substr(0, colon_pos);
-                        size_t space_pos = constraint_info.find("   ", colon_pos);
+                        const std::string filename = constraint_info.substr(0, colon_pos);
+                        const size_t space_pos = constraint_info.find("   ", colon_pos);
                         std::string linenum_str;
                         std::string source;
                         if (space_pos != std::string::npos) {
@@ -569,7 +632,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                         std::string msg = "UNSATCONSTR: Unsatisfied constraint";
                         if (!source.empty()) {
                             // Trim leading whitespace and add quotes
-                            size_t start = source.find_first_not_of(" \t");
+                            const size_t start = source.find_first_not_of(" \t");
                             if (start != std::string::npos) {
                                 msg += ": '" + source.substr(start) + "'";
                             }
@@ -617,7 +680,9 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-        std::string name, idx, value;
+        std::string name;
+        std::string idx;
+        std::string value;
         std::vector<std::string> indices;
         os >> name;
         indices.clear();
@@ -632,6 +697,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         if (m_randmodep && !varr.randModeIdxNone()) {
             if (!m_randmodep->at(varr.randModeIdx())) continue;
         }
+        if (m_disabledVars.count(name)) continue;
         if (!indices.empty()) {
             std::ostringstream oss;
             oss << varr.name();
@@ -696,7 +762,7 @@ void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint
 }
 
 void VlRandomizer::disable_soft(const std::string& varName) {
-    // IEEE 1800-2017 18.5.13: Remove all soft constraints referencing the variable
+    // IEEE 1800-2023 18.5.13: Remove all soft constraints referencing the variable
     m_softConstraints.erase(
         std::remove_if(m_softConstraints.begin(), m_softConstraints.end(),
                        [&](const std::string& c) { return c.find(varName) != std::string::npos; }),

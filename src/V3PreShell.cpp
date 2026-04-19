@@ -45,7 +45,7 @@ protected:
     //---------------------------------------
     // METHODS
 
-    void boot() {
+    static void boot() {
         // Create the implementation pointer
         if (!s_preprocp) {
             FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};

@@ -170,12 +170,9 @@ public:
     const std::vector<VerilatedRange>& packedRanges() const VL_MT_SAFE { return m_packed; }
     const std::vector<VerilatedRange>& unpackedRanges() const VL_MT_SAFE { return m_unpacked; }
     const VerilatedRange* range(int dim) const VL_MT_SAFE {
-        if (dim < udims())
-            return &m_unpacked[dim];
-        else if (dim < dims())
-            return &m_packed[dim - udims()];
-        else
-            return nullptr;
+        if (dim < udims()) return &m_unpacked[dim];
+        if (dim < dims()) return &m_packed[dim - udims()];
+        return nullptr;
     }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
@@ -251,17 +248,10 @@ public:
 };
 
 //===========================================================================
-// Force control signals of a VerilatedVar
-
-struct VerilatedForceControlSignals final {
-    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
-    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
-};
-
-//===========================================================================
 // Verilator variable
 // Thread safety: Assume is constructed only with model, then any number of readers
 
+struct VerilatedForceControlSignals;
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
@@ -298,6 +288,15 @@ public:
     const VerilatedForceControlSignals* forceControlSignals() const {
         return m_forceControlSignals.get();
     }
+};
+
+//===========================================================================
+// Force control signals of a VerilatedVar
+
+struct VerilatedForceControlSignals final {
+    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
+    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
+    const VerilatedVar forceReadSignal;  // __VforceRd signal
 };
 
 #endif  // Guard

@@ -71,6 +71,7 @@ set(HEADERS
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
+    V3DebugBisect.h
     V3Delayed.h
     V3Depth.h
     V3DepthBlock.h
@@ -81,7 +82,6 @@ set(HEADERS
     V3DfgDataType.h
     V3DfgOptimizer.h
     V3DfgPasses.h
-    V3DfgPatternStats.h
     V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
@@ -131,6 +131,7 @@ set(HEADERS
     V3LinkLevel.h
     V3LinkParse.h
     V3LinkResolve.h
+    V3LinkWith.h
     V3List.h
     V3Localize.h
     V3MemberMap.h
@@ -243,12 +244,12 @@ set(COMMON_SOURCES
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
     V3DfgBreakCycles.cpp
-    V3DfgCache.cpp
     V3DfgColorSCCs.cpp
     V3DfgCse.cpp
     V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
+    V3DfgDumpPatterns.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
@@ -306,6 +307,7 @@ set(COMMON_SOURCES
     V3LinkLevel.cpp
     V3LinkParse.cpp
     V3LinkResolve.cpp
+    V3LinkWith.cpp
     V3Localize.cpp
     V3MergeCond.cpp
     V3Name.cpp

@@ -13,8 +13,7 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=["--stats"])
 
-test.file_grep(
-    test.stats,
-    r'Optimizations, DFG scoped Synthesis, conv / non-representable \(oobsel\)\s+(\d+)', 1)
+test.file_grep(test.stats,
+               r'Optimizations, DFG, Synthesis, conv / non-representable \(oobsel\)\s+(\d+)', 1)
 
 test.passes()

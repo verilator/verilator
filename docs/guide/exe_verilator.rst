@@ -649,9 +649,12 @@ Summary:
 
 .. option:: -fno-dfg
 
-   Rarely needed. Disable all use of the DFG-based combinational logic
-   optimizer. Alias for :vlopt:`-fno-dfg-pre-inline`,
-   :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
+   Rarely needed. Disable the DFG-based combinational logic optimizer.
+
+   In versions before 5.048:
+
+   Alias for :vlopt:`-fno-dfg-pre-inline`, :vlopt:`-fno-dfg-post-inline` and
+   :vlopt:`-fno-dfg-scoped`.
 
 .. option:: -fno-dfg-break-cycles
 
@@ -667,11 +670,15 @@ Summary:
 
 .. option:: -fno-dfg-post-inline
 
-   Rarely needed. Do not apply the DFG optimizer after inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-dfg-pre-inline
 
-   Rarely needed. Do not apply the DFG optimizer before inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer before inlining.
 
 .. option:: -fno-dfg-push-down-sels
 
@@ -679,7 +686,10 @@ Summary:
 
 .. option:: -fno-dfg-scoped
 
-   Rarely needed. Do not apply the DFG optimizer across module scopes.
+   Deprecated; use :vlopt:`-fno-dfg` instead.
+
+   In versions before 5.048: Do not apply the DFG optimizer across module
+   scopes.
 
 .. option:: -fno-expand
 
@@ -1682,6 +1692,8 @@ Summary:
 
 .. option:: --structs-packed
 
+   Deprecated; discontinue use of this option.
+
    Converts all unpacked structures to packed structures, and issues an
    :option:`UNPACKED` warning. Specifying this option allows for backward
    compatibility with versions before Verilator 5.006, when Verilator would
@@ -1813,7 +1825,7 @@ Summary:
 .. option:: --trace-fst
 
    Enable FST waveform tracing in the model. This overrides
-   :vlopt:`--trace`. See also :vlopt:`--trace-threads` option.
+   :vlopt:`--trace`.
 
 .. option:: --trace-max-array <depth>
 
@@ -1846,6 +1858,10 @@ Summary:
    and larger trace files.
 
 .. option:: --trace-threads <threads>
+
+   Deprecated and has no effect.
+
+   In versions before 5.048:
 
    Enable waveform tracing using separate threads. This is typically faster
    in simulation runtime but uses more total compute. This option only

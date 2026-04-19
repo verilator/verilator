@@ -311,6 +311,7 @@ public:
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
+    const VCStmtType m_stmtType;  // Special statement (instead of comparing name())
 
     static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
         // Compute the label
@@ -337,8 +338,10 @@ class AstCStmt final : public AstNodeStmt {
     }
 
 public:
-    explicit AstCStmt(FileLine* fl, const std::string& text = "")
-        : ASTGEN_SUPER_CStmt(fl) {
+    explicit AstCStmt(FileLine* fl, const std::string& text = "",
+                      const VCStmtType& stmtType = VCStmtType::NONE)
+        : ASTGEN_SUPER_CStmt(fl)
+        , m_stmtType{stmtType} {
         if (!text.empty()) add(text);
     }
     ASTGEN_MEMBERS_AstCStmt;
@@ -347,6 +350,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
     bool sameNode(const AstNode*) const override { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VCStmtType stmtType() const { return m_stmtType; }
     // Add some text, or a node to this statement
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
@@ -535,11 +541,12 @@ public:
 };
 class AstDelay final : public AstNodeStmt {
     // Delay statement
-    // @astgen op1 := lhsp : AstNodeExpr // Delay value
+    // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max bound for cycle range or fall delay
+    // @astgen op4 := throughoutp : Optional[AstNodeExpr] // Throughout condition (IEEE 16.9.9)
     VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
-
 public:
     AstDelay(FileLine* fl, AstNodeExpr* lhsp, bool isCycle)
         : ASTGEN_SUPER_Delay(fl)
@@ -554,6 +561,10 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
     bool isCycleDelay() const { return m_isCycle; }
+    bool isRangeDelay() const { return m_isCycle && rhsp() != nullptr; }
+    bool isUnbounded() const { return isRangeDelay() && VN_IS(rhsp(), Unbounded); }
+    void fallDelay(AstNodeExpr* const fallDelayp) { rhsp(fallDelayp); }
+    AstNodeExpr* fallDelay() const { return m_isCycle ? nullptr : rhsp(); }
 };
 class AstDisable final : public AstNodeStmt {
     // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot
@@ -1256,6 +1267,9 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
+    //
+    // @astgen ptr := m_dtypeCallp: Optional[AstCCall] // Type init function call
+    // @astgen ptr := m_dtypeDeclp: Optional[AstTraceDecl] // CCall TraceDecl which replaces this
     uint32_t m_code{std::numeric_limits<uint32_t>::max()};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -1263,18 +1277,23 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
+    const bool m_inDtypeFunc;  // Trace decl inside type init function
+    int m_codeInc{0};  // Code increment for type
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
+                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
+                 AstCCall* const dtypeCallp, const bool inDtypeFunc)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_varType{varp->varType()}
-        , m_declDirection{varp->declDirection()} {
+        , m_declDirection{varp->declDirection()}
+        , m_inDtypeFunc{inDtypeFunc} {
         dtypeFrom(valuep);
         this->valuep(valuep);
+        this->dtypeCallp(dtypeCallp);
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1283,7 +1302,7 @@ public:
     string name() const override VL_MT_STABLE { return m_showname; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool hasDType() const override VL_MT_SAFE { return true; }
-    bool sameNode(const AstNode* samep) const override { return false; }
+    bool sameNode(const AstNode* samep) const override { return true; }
     string showname() const { return m_showname; }  // * = Var name
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
@@ -1291,7 +1310,9 @@ public:
     bool codeAssigned() const { return m_code != std::numeric_limits<uint32_t>::max(); }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
+    void codeInc(uint32_t codeInc) { m_codeInc = codeInc; }
     uint32_t codeInc() const {
+        if (m_codeInc) { return m_codeInc; }
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
@@ -1300,6 +1321,11 @@ public:
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
     VDirection declDirection() const { return m_declDirection; }
+    AstCCall* dtypeCallp() const { return m_dtypeCallp; }
+    void dtypeCallp(AstCCall* const callp) { m_dtypeCallp = callp; }
+    AstTraceDecl* dtypeDeclp() const { return m_dtypeDeclp; }
+    void dtypeDeclp(AstTraceDecl* const declp) { m_dtypeDeclp = declp; }
+    bool inDtypeFunc() const { return m_inDtypeFunc; }
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
@@ -1348,20 +1374,23 @@ class AstTracePushPrefix final : public AstNodeStmt {
     const VTracePrefixType m_prefixType;  // Type of prefix being pushed
     const int m_left;  // Array left index, or struct/union member count
     const int m_right;  // Array right index
+    const bool m_quotedPrefix;  // Quote prefix name
 public:
     AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType,
-                       int left = 0, int right = 0)
+                       int left = 0, int right = 0, bool quotedPrefix = true)
         : ASTGEN_SUPER_TracePushPrefix(fl)
         , m_prefix{prefix}
         , m_prefixType{prefixType}
         , m_left{left}
-        , m_right{right} {}
+        , m_right{right}
+        , m_quotedPrefix{quotedPrefix} {}
     ASTGEN_MEMBERS_AstTracePushPrefix;
     bool sameNode(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
     int left() const { return m_left; }
     int right() const { return m_right; }
+    bool quotedPrefix() const { return m_quotedPrefix; }
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr

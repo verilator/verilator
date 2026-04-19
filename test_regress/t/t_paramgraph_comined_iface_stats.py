@@ -21,9 +21,9 @@ test.compile(v_flags2=["--binary --stats"])
 test.file_grep(test.stats, r'IfaceCapture, Entries total\s+(\d+)', 18)
 test.file_grep(test.stats, r'IfaceCapture, Entries template\s+(\d+)', 8)
 test.file_grep(test.stats, r'IfaceCapture, Entries cloned\s+(\d+)', 10)
-test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 10)
+test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 8)
 test.file_grep(test.stats, r'IfaceCapture, Wrong-clone refs fixed\s+(\d+)', 10)
-test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 6)
+test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 2)
 
 test.execute()
 

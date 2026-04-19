@@ -72,8 +72,8 @@ class DescopeVisitor final : public VNVisitor {
         auto& ret = m_scopeToSelf[scopep];
         if (ret.thisPtr.isEmpty()) {
             string name = scopep->name();
-            string::size_type pos;
-            if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
+            string::size_type pos = name.rfind('.');
+            if (pos != string::npos) name.erase(0, pos + 1);
             ret.thisPtr = VSelfPointerText{VSelfPointerText::This{}, name};
         }
         return ret.thisPtr;

@@ -1234,6 +1234,13 @@ def write_dfg_macros(filename):
 
             fh.write("    static_assert(true, \"\")\n")  # Swallowing the semicolon
 
+        fh.write("\n\n#define FOREACH_DFG_VERTEX_TYPE(macro) \\\n")
+        for node in DfgVertexList:
+            if not node.isLeaf:
+                continue
+            fh.write(f"    macro(Dfg{node.name}) \\\n")
+        fh.write("\n")
+
 
 def write_dfg_auto_classes(filename):
     with open_file(filename) as fh:
@@ -1498,7 +1505,6 @@ DfgIgnored = (
     "CAwait",
     "CCast",
     "CLog2",
-    "CountOnes",
     "IsUnknown",
     "NullCheck",
     "OneHot",

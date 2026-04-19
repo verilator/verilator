@@ -9,11 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt')
 test.top_filename = "t/t_gate_basic.v"
 
-test.lint(verilator_flags2=["-Wall", "-Wno-DECLFILENAME -Wno-SPECIFYIGN -Wno-UNUSED"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(
+    verilator_flags2=["--timing", "-Wall", "-Wno-DECLFILENAME -Wno-SPECIFYIGN -Wno-UNUSED"],
+    fails=True,
+    expect_filename=test.golden_filename)
 
 test.passes()

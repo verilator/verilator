@@ -1,13 +1,13 @@
 %Error: t/t_lint_dtype_compare_bad.v:52:19: Comparison requires matching data types
                                           : ... note: In instance 't'
                                           : ... Left-hand data type: 'int$[$]'
-                                          : ... Right-hand data type: 'logic[31:0]'
+                                          : ... Right-hand data type: 'bit[31:0]'
    52 |     if (queue_var == 1) begin end
       |                   ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_lint_dtype_compare_bad.v:55:11: Comparison requires matching data types
                                           : ... note: In instance 't'
-                                          : ... Left-hand data type: 'logic[31:0]'
+                                          : ... Left-hand data type: 'bit[31:0]'
                                           : ... Right-hand data type: 'int$[$]'
    55 |     if (1 == queue_var) begin end
       |           ^~

@@ -137,8 +137,8 @@ class StatsReport final {
                 lastName = repp->name();
                 {
                     string commaName = lastName;
-                    string::size_type pos;
-                    if ((pos = commaName.find(',')) != string::npos) commaName.erase(pos);
+                    string::size_type pos = commaName.find(',');
+                    if (pos != string::npos) commaName.erase(pos);
                     if (lastCommaName != commaName) {
                         lastCommaName = commaName;
                         os << '\n';
@@ -215,7 +215,8 @@ void V3Stats::statsStage(const string& name) {
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
     V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 
-    uint64_t memPeak, memCurrent;
+    uint64_t memPeak;
+    uint64_t memCurrent;
     VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
     V3Stats::addStatPerf("Stage, Memory current (MB), " + digitName, memCurrent / 1024.0 / 1024.0);
     V3Stats::addStatPerf("Stage, Memory peak (MB), " + digitName, memPeak / 1024.0 / 1024.0);
@@ -268,7 +269,8 @@ void V3Stats::summaryReport() {
               << ", cvt=" << walltimeCvt << ", bld=" << walltimeBuild << "); cpu " << cputime
               << " s on " << std::max(v3Global.opt.verilateJobs(), v3Global.opt.buildJobs())
               << " threads";
-    uint64_t memPeak, memCurrent;
+    uint64_t memPeak;
+    uint64_t memCurrent;
     VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
     const double memory = memPeak / 1024.0 / 1024.0;
     if (VL_UNCOVERABLE(memory != 0.0)) std::cout << "; allocated " << memory << " MB";

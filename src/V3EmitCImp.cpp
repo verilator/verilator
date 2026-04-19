@@ -92,8 +92,9 @@ class EmitCImp final : public EmitCFunc {
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
-        m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                         "(" + modName + "* vlSelf);");
+        if (modp->ctorVarReset())
+            m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
+                             "(" + modName + "* vlSelf);");
         puts("\n");
 
         const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
@@ -148,7 +149,7 @@ class EmitCImp final : public EmitCFunc {
         }
 
         putsDecoration(modp, "// Reset structure values\n");
-        puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
+        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");
@@ -626,6 +627,16 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
+        std::string direction;
+        direction = nodep->declDirection().traceSigDirection();
+
+        AstCCall* const callp = nodep->dtypeCallp();
+        if (callp) {
+            callp->argTypes(callp->argTypes() + ", " + cvtToStr(nodep->fidx()) + ", c+"
+                            + cvtToStr(nodep->code()) + ", " + direction);
+            return;
+        }
+
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("VL_TRACE_DECL_DOUBLE");
         } else if (nodep->isWide()) {
@@ -652,7 +663,11 @@ class EmitCTrace final : public EmitCFunc {
 
         // Function index
         puts(",");
-        puts(cvtToStr(nodep->fidx()));
+        if (nodep->inDtypeFunc()) {
+            puts("fidx");
+        } else {
+            puts(cvtToStr(nodep->fidx()));
+        }
 
         // Name
         puts(",");
@@ -662,14 +677,10 @@ class EmitCTrace final : public EmitCFunc {
         puts("," + cvtToStr(enumNum));
 
         // Direction
-        if (nodep->declDirection().isInout()) {
-            puts(", VerilatedTraceSigDirection::INOUT");
-        } else if (nodep->declDirection().isWritable()) {
-            puts(", VerilatedTraceSigDirection::OUTPUT");
-        } else if (nodep->declDirection().isNonOutput()) {
-            puts(", VerilatedTraceSigDirection::INPUT");
+        if (nodep->inDtypeFunc()) {
+            puts(", direction");
         } else {
-            puts(", VerilatedTraceSigDirection::NONE");
+            puts(", " + direction);
         }
 
         // Kind
@@ -741,9 +752,7 @@ class EmitCTrace final : public EmitCFunc {
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        puts(v3Global.opt.useTraceOffload() && nodep->traceType() == VTraceType::CHANGE
-                 ? "(base+"
-                 : "(oldp+");
+        puts("(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
         const VNumRange& arrayRange = nodep->declp()->arrayRange();
@@ -766,16 +775,7 @@ class EmitCTrace final : public EmitCFunc {
                 puts("VL_SC_BV_DATAP(");
             }
             iterateConst(varrefp);  // Put var name out
-            // Tracing only supports 1D arrays
-            if (nodep->declp()->arrayRange().ranged()) {
-                if (arrayindex == -2) {
-                    puts("[i]");
-                } else if (arrayindex == -1) {
-                    puts("[0]");
-                } else {
-                    puts("[" + cvtToStr(arrayindex) + "]");
-                }
-            }
+            emitTraceIndex(nodep, arrayindex);
             if (varp->isSc()) puts(".read()");
             if (emitTraceIsScUint(nodep)) {
                 puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
@@ -788,7 +788,21 @@ class EmitCTrace final : public EmitCFunc {
         } else {
             puts("(");
             iterateConst(nodep->valuep());
+            emitTraceIndex(nodep, arrayindex);
             puts(")");
+        }
+    }
+
+    void emitTraceIndex(const AstTraceInc* const nodep, int arrayindex) {
+        // Tracing only supports 1D arrays
+        if (nodep->declp()->arrayRange().ranged()) {
+            if (arrayindex == -2) {
+                puts("[i]");
+            } else if (arrayindex == -1) {
+                puts("[0]");
+            } else {
+                puts("[" + cvtToStr(arrayindex) + "]");
+            }
         }
     }
 
@@ -811,7 +825,11 @@ class EmitCTrace final : public EmitCFunc {
     }
     void visit(AstTracePushPrefix* nodep) override {
         putns(nodep, "VL_TRACE_PUSH_PREFIX(tracep, ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        if (nodep->quotedPrefix()) {
+            putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        } else {
+            puts(nodep->prefix());
+        }
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
         puts(", " + std::to_string(nodep->left()));

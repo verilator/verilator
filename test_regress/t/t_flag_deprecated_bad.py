@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--trace-fst-thread --order-clock-delay --clk foo --no-clk bar"],
+test.lint(verilator_flags2=[
+    "--trace-fst-thread --trace-threads 2 --order-clock-delay --clk foo --no-clk bar -fno-dfg-pre-inline -fno-dfg-post-inline -fno-dfg-scoped"
+],
           fails=True,
           expect_filename=test.golden_filename)
 

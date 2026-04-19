@@ -70,9 +70,7 @@ public:
     VFileLibName(const string& filename, const string& libname)
         : m_filename{filename}
         , m_libname{libname} {}
-    VFileLibName(const VFileLibName& rhs)
-        : m_filename{rhs.m_filename}
-        , m_libname{rhs.m_libname} {}
+    VFileLibName(const VFileLibName& rhs) = default;
     string filename() const { return m_filename; }
     string libname() const { return m_libname; }
     bool operator==(const VFileLibName& rhs) const {
@@ -254,6 +252,7 @@ private:
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
+    bool m_fourstate = false;       // main switch: --fourstate
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
     bool m_jsonOnly = false;        // main switch: --json-only
@@ -352,7 +351,6 @@ private:
     int         m_traceDepth = 0;   // main switch: --trace-depth
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
     int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
-    int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollLimit = 16384;  // main switch: --unroll-limit
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
@@ -400,10 +398,8 @@ private:
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
     bool m_fDfgBreakCycles = true; // main switch: -fno-dfg-break-cycles
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
-    bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
-    bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fDfgPushDownSels = true; // main switch: -fno-dfg-push-down-sels
-    bool m_fDfgScoped;       // main switch: -fno-dfg-scoped and -fno-dfg
+    bool m_fDfg;         // main switch: -fno-dfg
     bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
@@ -435,7 +431,6 @@ private:
 
     bool m_available = false;  // Set to true at the end of option parsing
 
-private:
     // METHODS
     void addArg(char** argv, size_t count, bool isForRerun);
     void addArg(const std::string& arg, bool isForRerun);
@@ -545,6 +540,7 @@ public:
     bool emitAccessors() const { return m_emitAccessors; }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
+    bool fourstate() const { return m_fourstate; }
     bool gmake() const { return m_gmake; }
     bool makeJson() const { return m_makeJson; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
@@ -637,12 +633,9 @@ public:
     int traceDepth() const { return m_traceDepth; }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
-    int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffload() const { return trace() && traceEnabledFst() && traceThreads() > 1; }
     bool useTraceParallel() const {
         return trace() && traceEnabledVcd() && (threads() > 1 || hierChild() > 1);
     }
-    bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     int unrollCount() const { return m_unrollCount; }
     int unrollLimit() const { return m_unrollLimit; }
     int unrollStmts() const { return m_unrollStmts; }
@@ -663,7 +656,7 @@ public:
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
-    string libCreateName(bool shared) {
+    string libCreateName(bool shared) const {
         string libName = "lib" + libCreate();
         if (shared) {
             libName += ".so";
@@ -719,12 +712,10 @@ public:
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfg() const { return m_fDfg; }
     bool fDfgBreakCycles() const { return m_fDfgBreakCycles; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
-    bool fDfgPreInline() const { return m_fDfgPreInline; }
-    bool fDfgPostInline() const { return m_fDfgPostInline; }
     bool fDfgPushDownSels() const { return m_fDfgPushDownSels; }
-    bool fDfgScoped() const { return m_fDfgScoped; }
     bool fDfgSynthesizeAll() const { return m_fDfgSynthesizeAll; }
     bool fDfgPeepholeEnabled(const std::string& name) const {
         return !m_fDfgPeepholeDisabled.count(name);

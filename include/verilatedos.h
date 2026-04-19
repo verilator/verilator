@@ -37,7 +37,7 @@
 //=========================================================================
 // Compiler pragma abstraction
 
-#if defined(__clang__)
+#ifdef __clang__
 # define VL_CLANG_ATTR(attr) __attribute__(( attr ))
 #else
 # define VL_CLANG_ATTR(attr)
@@ -127,7 +127,7 @@
         VL_CLANG_ATTR(no_thread_safety_analysis)
 
 // Require mutex locks only in code units which work with enabled multi-threading.
-#if !defined(VL_MT_DISABLED_CODE_UNIT)
+#ifndef VL_MT_DISABLED_CODE_UNIT
 // Function requires not having a capability inbound (-fthread-safety)
 # define VL_REQUIRES(x) \
         VL_CLANG_ATTR(annotate("REQUIRES")) \
@@ -350,6 +350,8 @@ extern "C" void __gcov_dump();
 #  pragma warning(disable:4189)  // C4189: local variable is initialized but not referenced (L4)
 #  pragma warning(disable:4244)  // C4244: conversion from 'uint64_t' to 'uint_32_t', possible loss of data
 #  pragma warning(disable:4245)  // C4245: conversion from 'int' to 'unsigned', signed/unsigned mismatch
+#  pragma warning(disable:4267)  // C4267: conversion from 'size_t' to 'int', possible loss of data
+#  pragma warning(disable:4316)  // C4316: 'Vtop': object allocated on the heap may not be aligned 64
 #  pragma warning(disable:4996)  // C4996: sscanf/fopen/etc may be unsafe
 # endif
 #endif
@@ -382,7 +384,7 @@ using vlsint32_t = int32_t;  ///< 32-bit signed type (backward compatibility)
 using vlsint64_t = int64_t;  ///< 64-bit signed type (backward compatibility)
 #endif
 
-#if defined(__CYGWIN__)
+#ifdef __CYGWIN__
 
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
@@ -483,23 +485,18 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 // Declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
-    Type(const Type& other) = delete; \
+    Type(const Type& other) = delete;         \
     Type& operator=(const Type&) = delete
 
 // Declare a class as unmovable; put after a private:
 #define VL_UNMOVABLE(Type) \
-    Type(Type&& other) = delete; \
+    Type(Type&& other) = delete;              \
     Type& operator=(Type&&) = delete
 
 //=========================================================================
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 128  ///< Max size in words of MULS operation
-
-#ifndef VL_VALUE_STRING_MAX_WORDS
-    #define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
-#endif
-#define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS) * 4
 
 //=========================================================================
 // Base macros

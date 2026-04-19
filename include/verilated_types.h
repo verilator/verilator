@@ -78,11 +78,14 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 //=========================================================================
 // Declare net data types
 
+#ifndef VL_NO_LEGACY
 #define VL_SIG8(name, msb, lsb) CData name  ///< Declare signal, 1-8 bits
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
 #define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+#endif
+
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
@@ -107,14 +110,47 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
     return lhs <= 1 ? 0 : VL_CLOG2_CE_Q((lhs + 1) >> 1ULL) + 1;
 }
 
+//===================================================================
+// Random
+
+// Random Number Generator with internal state
+class VlRNG final {
+    std::array<uint64_t, 2> m_state;
+
+public:
+    // The default constructor simply sets state, to avoid vl_rand64()
+    // having to check for construction at each call
+    // Alternative: seed with zero and check on rand64() call
+    VlRNG() VL_MT_SAFE;
+    explicit VlRNG(uint64_t seed) VL_PURE;
+    void srandom(uint64_t n) VL_MT_UNSAFE;
+    std::string get_randstate() const VL_MT_UNSAFE;
+    void set_randstate(const std::string& state) VL_MT_UNSAFE;
+    uint64_t rand64() VL_MT_UNSAFE;
+    // Threadsafe, but requires use on vl_thread_rng or vl_current_rng
+    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
+    static uint64_t vl_current_rng_rand64() VL_MT_SAFE;
+    static VlRNG& vl_thread_rng() VL_MT_SAFE;
+};
+
+//===================================================================
 // Metadata of processes
 using VlProcessRef = std::shared_ptr<VlProcess>;
+class VlForkSync;
+class VlForkSyncState;
 
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
+    VlForkSyncState* m_forkSyncOnKillp
+        = nullptr;  // Optional fork..join counter to decrement on kill
+    bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
+    VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
+
+    // Thread-local current process pointer for hierarchical object seeding
+    static thread_local VlProcess* t_currentp;
 
 public:
     // TYPES
@@ -145,14 +181,18 @@ public:
     void detach(VlProcess* childp) { m_children.erase(childp); }
 
     int state() const { return m_state; }
-    void state(int s) { m_state = s; }
+    void state(int s);
     void disable() {
         state(KILLED);
         disableFork();
     }
     void disableFork() {
-        for (VlProcess* childp : m_children) childp->disable();
+        // childp->disable() may resume coroutines and mutate m_children
+        const std::set<VlProcess*> children = m_children;
+        for (VlProcess* childp : children) childp->disable();
     }
+    void forkSyncOnKill(VlForkSyncState* forkSyncp);
+    void forkSyncOnKillClear(VlForkSyncState* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
         for (const VlProcess* const childp : m_children)
@@ -160,11 +200,22 @@ public:
         return true;
     }
 
+    // Random state (IEEE 1800-2023 9.7, 18.14)
+    void srandom(uint64_t seed) VL_MT_UNSAFE { m_rng.srandom(seed); }
     std::string randstate() const VL_MT_UNSAFE;
     void randstate(const std::string& state) VL_MT_UNSAFE;
+
+    // Current process tracking for hierarchical object seeding
+    static VlProcess* currentp() VL_MT_UNSAFE { return t_currentp; }
+    static void currentp(VlProcess* processp) VL_MT_UNSAFE { t_currentp = processp; }
+    // Return process RNG if in a process, else thread RNG
+    static VlRNG& currentRng() VL_MT_SAFE;
 };
 
-inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
+inline std::string VL_TO_STRING(const VlProcessRef&) { return std::string("process"); }
+
+// Use process RNG if in a process, else thread RNG (IEEE 1800-2023 18.14)
+inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_current_rng_rand64(); }
 
 //===================================================================
 // SystemVerilog event type
@@ -231,30 +282,6 @@ inline std::string VL_TO_STRING(const VlEventBase& e) {
     }
     return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
-
-//===================================================================
-// Random
-
-// Random Number Generator with internal state
-class VlRNG final {
-    std::array<uint64_t, 2> m_state;
-
-public:
-    // The default constructor simply sets state, to avoid vl_rand64()
-    // having to check for construction at each call
-    // Alternative: seed with zero and check on rand64() call
-    VlRNG() VL_MT_SAFE;
-    explicit VlRNG(uint64_t seed) VL_PURE;
-    void srandom(uint64_t n) VL_MT_UNSAFE;
-    std::string get_randstate() const VL_MT_UNSAFE;
-    void set_randstate(const std::string& state) VL_MT_UNSAFE;
-    uint64_t rand64() VL_MT_UNSAFE;
-    // Threadsafe, but requires use on vl_thread_rng
-    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
-    static VlRNG& vl_thread_rng() VL_MT_SAFE;
-};
-
-inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_thread_rng_rand64(); }
 
 // RNG for shuffle()
 class VlURNG final {
@@ -602,11 +629,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
         // Needs to work for dynamic arrays, so does not use N_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            return atDefault();
-        } else {
-            return m_deque[index];
-        }
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return atDefault();
+        return m_deque[index];
     }
     // Access with an index counted from end (e.g. q[$])
     T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
@@ -637,6 +661,24 @@ public:
     }
     VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
         return slice(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb);
+    }
+    // Assign src elements to q[lsb:msb]
+    void sliceAssign(int32_t lsb, int32_t msb, const VlQueue& src) {
+        const int32_t sz = static_cast<int32_t>(m_deque.size());
+        const int32_t srcSz = static_cast<int32_t>(src.m_deque.size());
+        if (VL_UNLIKELY(sz <= 0 || srcSz <= 0)) return;
+        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
+        if (VL_UNLIKELY(lsb >= sz)) lsb = sz - 1;
+        if (VL_UNLIKELY(msb >= sz)) msb = sz - 1;
+        const int32_t count = std::min(msb - lsb + 1, srcSz);
+        if (VL_UNLIKELY(count <= 0)) return;
+        std::copy_n(src.m_deque.begin(), count, m_deque.begin() + lsb);
+    }
+    void sliceAssignFrontBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(lsb, m_deque.size() - 1 - msb, src);
+    }
+    void sliceAssignBackBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb, src);
     }
 
     // For save/restore
@@ -776,6 +818,17 @@ public:
             --index;
         }
         return VlQueue<IData>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            out.push_back(with_func(index, i));
+            ++index;
+        }
+        return out;
     }
 
     // Reduction operators
@@ -989,11 +1042,8 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
         const auto it = m_map.find(index);
-        if (it == m_map.end()) {
-            return m_defaultValue;
-        } else {
-            return it->second;
-        }
+        if (it == m_map.end()) return m_defaultValue;
+        return it->second;
     }
     // Setting as a chained operation
     VlAssocArray& set(const T_Key& index, const T_Value& value) {
@@ -1112,6 +1162,13 @@ public:
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
         if (it == m_map.rend()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (const auto& i : m_map) out.push_back(with_func(i.first, i.second));
+        return out;
     }
 
     // Reduction operators
@@ -1297,7 +1354,6 @@ public:
     // Default copy assignment operators are used.
 
     // METHODS
-public:
     // Raw access
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
@@ -1316,11 +1372,8 @@ public:
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::true_type) const {
-        if (dimension == N_CurrentDimension) {
-            return size();
-        } else {
-            return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
-        }
+        if (dimension == N_CurrentDimension) return size();
+        return m_storage[0].template find_length<N_CurrentDimension + 1>(dimension);
     }
 
     template <std::size_t N_CurrentDimension = 0>
@@ -1504,6 +1557,13 @@ public:
             if (with_func(i, m_storage[i])) return VlQueue<IData>::consV(i);
         }
         return VlQueue<T_Key>{};
+    }
+    // Map method (IEEE 1800-2023 7.12.5)
+    template <typename T_Func>
+    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>> out;
+        for (IData i = 0; i < N_Depth; ++i) out.push_back(with_func(i, m_storage[i]));
+        return out;
     }
 
     // Reduction operators
@@ -1896,7 +1956,7 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 public:
     // CONSTRUCTORS
     VlClass() {}
-    VlClass(const VlClass& copied) {}
+    VlClass(const VlClass& /*copied*/) {}
     ~VlClass() override = default;
     // Polymorphic shallow clone. Overridden in each generated concrete class.
     virtual VlClass* clone() const { return nullptr; }
@@ -1913,7 +1973,10 @@ public:
 
 struct VlNull final {
     operator bool() const { return false; }
-    bool operator==(const void* ptr) const { return !ptr; }
+    template <class T>
+    operator T*() const {
+        return nullptr;
+    }
 };
 inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
@@ -2038,7 +2101,7 @@ public:
     VlClassRef<T_OtherClass> dynamicCast() const {
         return VlClassRef<T_OtherClass>{dynamic_cast<T_OtherClass*>(m_objp)};
     }
-    // Polymorphic shallow clone (IEEE 1800-2017 8.7: new <handle> preserves runtime type)
+    // Polymorphic shallow clone (IEEE 1800-2023 8.7: new <handle> preserves runtime type)
     VlClassRef clone(VlDeleter& deleter) const {
         VlClass* clonedp = m_objp->clone();
         if (VL_UNLIKELY(!clonedp)) return {};
@@ -2077,13 +2140,12 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
     if (VL_LIKELY(casted)) {
         outr = casted;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
+static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

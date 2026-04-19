@@ -1,4 +1,4 @@
-%Error: t/t_struct_type_bad.v:13:5: Expecting a data type: 'i'
+%Error: t/t_struct_type_bad.v:13:5: Expecting a data type: 'i', found: VAR 'i'
    13 |     i badi;   
       |     ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

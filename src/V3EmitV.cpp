@@ -267,7 +267,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
-    void visit(AstCReset* nodep) override { puts("/*CRESET*/"); }
+    void visit(AstCReset* /*nodep*/) override { puts("/*CRESET*/"); }
     void visit(AstCase* nodep) override {
         putfs(nodep, "");
         if (nodep->priorityPragma()) puts("priority ");
@@ -795,7 +795,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->fromp());
         puts(cvtToStr(nodep->declRange()));
     }
-    void visit(AstThisRef* nodep) override { puts("this"); }
+    void visit(AstThisRef* /*nodep*/) override { puts("this"); }
     void visit(AstTypedef* nodep) override {
         putfs(nodep, "typedef ");
         iterateConstNull(nodep->subDTypep());
@@ -1067,7 +1067,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateConst(nodep->exprp());
     }
-
     // Terminals
     void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {
@@ -1128,7 +1127,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         VL_RESTORER(m_prefixed);
         m_prefixed = false;
-        iterateConst(nodep->lhsp());
+        if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
+            puts("(");
+            iterateConst(nodep->lhsp());
+            puts(", ");
+            iterateConst(fallDelayp);
+            puts(")");
+        } else {
+            iterateConst(nodep->lhsp());
+        }
         if (!m_suppressSemi) {
             puts(";\n");
         } else {
