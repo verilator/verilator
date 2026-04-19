@@ -297,10 +297,6 @@ function(verilate TARGET)
         list(APPEND VERILATOR_ARGS --threads ${VERILATE_THREADS})
     endif()
 
-    if(VERILATE_TRACE_THREADS)
-        list(APPEND VERILATOR_ARGS --trace-threads ${VERILATE_TRACE_THREADS})
-    endif()
-
     if(VERILATE_COVERAGE)
         list(APPEND VERILATOR_ARGS --coverage)
     endif()
