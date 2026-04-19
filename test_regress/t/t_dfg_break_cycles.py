@@ -81,6 +81,7 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "--exe",
+    "-fno-const-before-dfg",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
