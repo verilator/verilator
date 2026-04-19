@@ -1435,23 +1435,31 @@ class ParamProcessor final {
                                     any = true;
                                 }
                             });
-                            // Substitute RefDType to an overridden paramtype.
+                            // Substitute RefDType to an overridden paramtype.  RefDType is
+                            // not a foreach leaf, so collect matches and replace after the
+                            // walk.  Reverse order so descendants are replaced before
+                            // ancestors -- replacing an ancestor would free its descendants.
+                            std::vector<std::pair<AstRefDType*, AstNodeDType*>> toReplace;
                             cloneVarp->foreach([&](AstRefDType* refp) {
                                 AstParamTypeDType* const ptdp
                                     = VN_CAST(refp->refDTypep(), ParamTypeDType);
                                 if (!ptdp) return;
-                                AstNodeDType* overDtp = nullptr;
                                 for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
                                     if (pp->modPTypep() == ptdp) {
-                                        overDtp = VN_CAST(pp->exprp(), NodeDType);
+                                        if (AstNodeDType* const overDtp
+                                            = VN_CAST(pp->exprp(), NodeDType)) {
+                                            toReplace.emplace_back(refp, overDtp);
+                                        }
                                         break;
                                     }
                                 }
-                                if (!overDtp) return;
-                                refp->replaceWith(overDtp->cloneTree(false));
+                            });
+                            for (auto it = toReplace.rbegin(); it != toReplace.rend(); ++it) {
+                                AstRefDType* const refp = it->first;
+                                refp->replaceWith(it->second->cloneTree(false));
                                 VL_DO_DANGLING(refp->deleteTree(), refp);
                                 any = true;
-                            });
+                            }
                             if (!any) break;
                         }
                         // Bail if anything still points at the template.
