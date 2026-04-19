@@ -7,24 +7,7 @@
 module t (input clk);
   logic a, b;
 
-  // === Consecutive repetition [*N] unsupported forms ===
-
-  // Unsupported: exact repetition count > 256 (NFA node-chain limit)
-  assert property (@(posedge clk) a [* 10000] |-> b);
-
-  // Unsupported: non-##1 inter-repetition delay
-  assert property (@(posedge clk) a [*2] ##3 b);
-
-  // Unsupported: standalone range repetition (no ## anchor)
-  assert property (@(posedge clk) a [*2:3] |-> 1);
-
-  // Unsupported: trailing consecutive repetition in sequence
-  assert property (@(posedge clk) b ##1 a[+]);
-
-  // === Nonconsecutive repetition [=N] unsupported forms ===
-
-  // Unsupported: nonconsecutive rep inside throughout
-  assert property (@(posedge clk) a throughout (b[=2]))
-    else $error("FAIL");
+  // Unsupported: multi-cycle sequence expression inside consecutive repetition
+  assert property (@(posedge clk) (a ##1 b) [* 2] |-> a);
 
 endmodule

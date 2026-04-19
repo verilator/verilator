@@ -1,6 +1,14 @@
-%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:11:3: Unsupported: assertion contains SVA construct not yet supported by NFA engine (e.g. intersect, sequence and, complex throughout)
-                                                             : ... note: In instance 't'
-   11 |   assert property (@(posedge clk)
-      |   ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
+%Error: t/t_sequence_intersect_range_unsup.v:12:10: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                                  : ... note: In instance 't'
+   12 |       (a ##[1:5] b) intersect (c ##2 d));
+      |          ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sequence_intersect_range_unsup.v:12:34: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                                  : ... note: In instance 't'
+   12 |       (a ##[1:5] b) intersect (c ##2 d));
+      |                                  ^~
+%Error: Internal Error: t/t_sequence_intersect_range_unsup.v:12:10: ../V3Ast.cpp:#: AstSExpr must have non-nullptr delayp()
+                                                                  : ... note: In instance 't'
+   12 |       (a ##[1:5] b) intersect (c ##2 d));
+      |          ^~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

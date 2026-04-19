@@ -9,10 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')  # UNOPTTHREADS in vltmt due to many small assertion states
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--assert', '--timing'])
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

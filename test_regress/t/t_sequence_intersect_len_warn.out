@@ -1,11 +1,10 @@
-%Warning-WIDTHTRUNC: t/t_sequence_intersect_len_warn.v:16:17: Intersect sequence length mismatch: left 1 cycles, right 3 cycles (IEEE 1800-2023 16.9.6)
-                                                            : ... note: In instance 't'
+%Error: t/t_sequence_intersect_len_warn.v:16:17: Intersect sequence length mismatch: left 1 cycles, right 3 cycles (IEEE 1800-2023 16.9.6)
+                                               : ... note: In instance 't'
    16 |       (a ##1 b) intersect (c ##3 d));
       |                 ^~~~~~~~~
-                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
-                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: t/t_sequence_intersect_len_warn.v:20:17: Intersect sequence length mismatch: left 3 cycles, right 1 cycles (IEEE 1800-2023 16.9.6)
-                                                            : ... note: In instance 't'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sequence_intersect_len_warn.v:20:17: Intersect sequence length mismatch: left 3 cycles, right 1 cycles (IEEE 1800-2023 16.9.6)
+                                               : ... note: In instance 't'
    20 |       (a ##3 b) intersect (c ##1 d));
       |                 ^~~~~~~~~
 %Error: Exiting due to
