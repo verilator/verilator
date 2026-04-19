@@ -135,18 +135,12 @@ class ScopeVarResolver final : public VNVisitor {
 public:
     explicit ScopeVarResolver(AstNetlist* rootp) { iterate(rootp); }
 
-    AstScope* findScope(const string& name) const {
-        const auto it = m_scopeps.find(name);
-        return it == m_scopeps.end() ? nullptr : it->second;
-    }
-    AstVarScope* findVarScope(const string& name) const {
-        const auto it = m_varScopeps.find(name);
-        return it == m_varScopeps.end() ? nullptr : it->second;
-    }
+    AstScope* findScope(const string& name) const { return m_scopeps.at(name); }
+    AstVarScope* findVarScope(const string& name) const { return m_varScopeps.at(name); }
 };
 
 static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
-                                   const FsmResetCondDesc& resetCond) {
+                                   const FsmResetCondDesc&) {
     return new AstVarRef{flp, resetVscp, VAccess::READ};
 }
 
