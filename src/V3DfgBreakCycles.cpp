@@ -471,6 +471,44 @@ class TraceDriver final : public DfgVisitor {
     void visit(DfgGt* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
     void visit(DfgGte* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
 
+    void visit(DfgShiftRS* vtxp) override {
+        DfgVertex* const lhsp = vtxp->lhsp();
+        if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            const uint32_t shiftAmnt = rConstp->toU32();
+            // Width of lower half of result
+            const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
+            // If the traced bits are wholly in the input
+            if (lowerWidth > m_msb) {
+                SET_RESULT(trace(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt));
+                return;
+            }
+            // If the traced bits are wholly in the extension
+            if (m_lsb >= lowerWidth) {
+                DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+                resp->srcp(trace(lhsp, lhsp->width() - 1, lhsp->width() - 1));
+                SET_RESULT(resp);
+                return;
+            }
+            // The traced bits span both sides
+            DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+            resp->srcp(trace(lhsp, lowerWidth - 1 + shiftAmnt, m_lsb + shiftAmnt));
+            SET_RESULT(resp);
+            return;
+        }
+
+        DfgShiftRS* const shiftrsp = make<DfgShiftRS>(vtxp, vtxp->lhsp()->width() - m_lsb);
+        shiftrsp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
+        shiftrsp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, m_lsb));
+        if (m_msb == vtxp->lhsp()->width() - 1) {
+            SET_RESULT(shiftrsp);
+            return;
+        }
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(shiftrsp);
+        selp->lsb(0);
+        SET_RESULT(selp);
+    }
+
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const lhsp = vtxp->lhsp();
         if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
@@ -823,6 +861,38 @@ class IndependentBits final : public DfgVisitor {
         MASK(vtxp).setBit(0, independent ? '1' : '0');
     }
 
+    void visit(DfgShiftRS* vtxp) override {
+        DfgVertex* const rhsp = vtxp->rhsp();
+        DfgVertex* const lhsp = vtxp->lhsp();
+        const uint32_t width = vtxp->width();
+
+        // Constant shift can be computed precisely
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            const uint32_t shiftAmount = rConstp->toU32();
+            if (shiftAmount >= width) {
+                if (MASK(lhsp).bitIs0(width - 1)) {
+                    MASK(vtxp).setAllBits0();
+                } else {
+                    MASK(vtxp).setAllBits1();
+                }
+            } else {
+                V3Number& m = MASK(vtxp);
+                m.opShiftRS(MASK(lhsp), rConstp->num(), width);
+                m.opSetRange(width - shiftAmount, shiftAmount, '1');
+            }
+            return;
+        }
+
+        // Otherwise, as the shift amount is non-negative, all independent
+        // and consecutive top bits in the lhs yield an independent result
+        // if the shift amount is independent.
+        if (MASK(rhsp).isEqAllOnes()) {
+            V3Number& m = MASK(vtxp);
+            m = MASK(lhsp);
+            floodTowardsLsb(m);
+        }
+    }
+
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const rhsp = vtxp->rhsp();
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -831,10 +901,10 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            V3Number& m = MASK(vtxp);
             if (shiftAmount >= width) {
-                m.setAllBits1();
+                MASK(vtxp).setAllBits1();
             } else {
+                V3Number& m = MASK(vtxp);
                 m.opShiftR(MASK(lhsp), rConstp->num());
                 m.opSetRange(width - shiftAmount, shiftAmount, '1');
             }
@@ -859,10 +929,10 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            V3Number& m = MASK(vtxp);
             if (shiftAmount >= width) {
-                m.setAllBits1();
+                MASK(vtxp).setAllBits1();
             } else {
+                V3Number& m = MASK(vtxp);
                 m.opShiftL(MASK(lhsp), rConstp->num());
                 m.opSetRange(0, shiftAmount, '1');
             }
