@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:62: id message
+UVM Report t/t_uvm_dpi.v:74: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
@@ -12,36 +12,126 @@ uvm_dpi_get_tool_name_c() = Verilator
 = uvm_hdl_read/deposit wide ascending
 = uvm_hdl_read/deposit 1D memory
 = uvm_hdl_read/deposit 2D memory
+= uvm_hdl_read bad ranges
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[10:3])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[99:15])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_read empty name (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET NULL or empty HDL path passed to uvm_hdl_get_vlog
+= uvm_hdl_read not found (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.__READ_NOT_FOUND)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_read with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.exposed[15+8:8])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_read from real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET failed to get value for hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string
+= uvm_hdl_read from string (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET failed to get value for hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string
+= uvm_hdl_read producing error message larger than print buffer (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_duis_autem_vel_eum_iriure_dolor_in_hendrerit_in_vulputate_velit_esse_molestie_consequat_vel_illum_dolore_eu_feugiat_nulla_facilisis_at_vero)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_read from not exposed (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_GET unable to locate hdl path (t.not_exposed)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[10:3])
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[10:3])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[99:15])
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[99:15])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit empty name (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT NULL or empty HDL path passed to uvm_hdl_set_vlog
 = uvm_hdl_deposit not found (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[15+8:8])
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit to real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT failed to set hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_deposit to string (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT failed to set hdl path 't.stringSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= Test uvm_hdl_deposit to signal wider than UVM_HDL_MAX_WIDTH (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT hdl path 't.tooWide' is 2048 bits, but the maximum size is 1024.  You can increase the maximum via a compile-time flag: +define+UVM_HDL_MAX_WIDTH=<value>
 = uvm_hdl_deposit to not exposed (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.not_exposed)
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.not_exposed)
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force
 = uvm_hdl_release
 = uvm_hdl_release_and_read
+= uvm_hdl_force continuously assigned signal
+= uvm_hdl_release continuously assigned signal
+= uvm_hdl_release_and_read continuously assigned signal
+= uvm_hdl_read partially forced signal
+= uvm_hdl_release partially forced signal
+= uvm_hdl_force multi-bit
+= uvm_hdl_release_and_read partially forced signal
+= uvm_hdl_force multi-bit continuously assigned signal
+= uvm_hdl_release partially forced continuously assigned signal
+= uvm_hdl_release_and_read partially forced continuously assigned signal
+= uvm_hdl_force single bit
+= uvm_hdl_release_and_read single bit
+= uvm_hdl_force single bit on continuously assigned signal
+= uvm_hdl_release_and_read single bit on continuously assigned signal
+= uvm_hdl_release_and_read lower 16 bits only
+= uvm_hdl_release upper 16 bits only of continuously assigned signal
 = uvm_hdl_force to not exposed (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.not_exposed)
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.not_exposed)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_force with indexed part-select (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT set: unable to locate hdl path (t.exposed[15+8:8])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force to not forcable (bad)
 ===
 UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed_not_forceable)
- Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT failed to set hdl path 't.exposed_not_forceable'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_force to real (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT failed to set hdl path 't.realSignal'. Common reasons include a signal having an unsupported type, such as a real or a string, or attempting to force a signal that is not marked as /*verilator forceable*/
+= uvm_hdl_force to signal wider than UVM_HDL_MAX_WIDTH (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:85: UVM/DPI/VLOG_PUT hdl path 't.tooWide' is 2048 bits, but the maximum size is 1024.  You can increase the maximum via a compile-time flag: +define+UVM_HDL_MAX_WIDTH=<value>
 *-* All Finished *-*
