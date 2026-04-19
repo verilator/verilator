@@ -2295,7 +2295,10 @@ void V3Options::setDebugMode(int level) {
     if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
-    if (level) cout << "Starting " << version() << "\n";
+    if (level) {
+        cout << "- Starting " << version() << "\n";
+        UINFO(1, "Current working directory (CWD) is " << V3Os::cwd());
+    }
 }
 
 unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
