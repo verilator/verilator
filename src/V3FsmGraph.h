@@ -49,14 +49,13 @@ public:
     string varName;
 };
 
-// Captures the supported simple reset predicate shapes so reset arcs can be
-// reconstructed when lowering the graph into concrete coverage logic.
+// Captures the simple reset predicate shape that survives to this pass after
+// earlier normalization so reset arcs can be reconstructed during lowering.
 class FsmResetCondDesc final {
 public:
     // MEMBERS
     string varScopeName;
     string varName;
-    bool negated = false;
 };
 
 class FsmVertex VL_NOT_FINAL : public V3GraphVertex {

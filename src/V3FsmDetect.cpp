@@ -56,23 +56,17 @@ struct FsmState final {
     DetectedFsmMap byVar;
 };
 
-// Normalize the supported reset-condition shapes into a compact description so
-// the lowering phase can regenerate the same predicate after detection.
+// Normalize the reset condition into a compact description so the lowering
+// phase can regenerate the same predicate after detection. By the time this
+// pass runs, active-low source forms such as "!rst_n" have already been
+// canonicalized to a positive-condition if/else shape, so only a plain VarRef
+// survives here.
 static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
     FsmResetCondDesc desc;
     if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
         AstVarScope* const vscp = vrefp->varScopep();
         desc.varScopeName = vscp->name();
         desc.varName = vrefp->varp()->name();
-        return desc;
-    }
-    if (AstNot* const notp = VN_CAST(condp, Not)) {
-        if (AstVarRef* const vrefp = VN_CAST(notp->lhsp(), VarRef)) {
-            AstVarScope* const vscp = vrefp->varScopep();
-            desc.varScopeName = vscp->name();
-            desc.varName = vrefp->varp()->name();
-            desc.negated = true;
-        }
     }
     return desc;
 }
@@ -153,9 +147,7 @@ public:
 
 static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
                                    const FsmResetCondDesc& resetCond) {
-    AstNodeExpr* condp = new AstVarRef{flp, resetVscp, VAccess::READ};
-    if (resetCond.negated) condp = new AstNot{flp, condp};
-    return condp;
+    return new AstVarRef{flp, resetVscp, VAccess::READ};
 }
 
 // Rebuild the original event control from the saved sense description so the
@@ -189,12 +181,10 @@ class FsmDetectVisitor final : public VNVisitor {
         return dtypep->skipRefToEnump();
     }
 
-    // Reset arcs are only modeled for simple signal or !signal forms so build
-    // can reproduce them later without needing a general expression serializer.
+    // Reset arcs are only modeled for the simple signal form that survives to
+    // this pass after earlier normalization.
     static bool isSimpleResetCond(AstNodeExpr* condp) {
-        if (VN_IS(condp, VarRef)) return true;
-        if (const AstNot* const notp = VN_CAST(condp, Not)) return VN_IS(notp->lhsp(), VarRef);
-        return false;
+        return VN_IS(condp, VarRef);
     }
 
     // V3Begin has already normalized away trivial begin/end wrappers before
@@ -329,7 +319,6 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
         if (!selp) return;
         AstVarScope* const stateVscp = selp->varScopep();
-        if (!stateVscp) return;
         AstVar* const stateVarp = selp->varp();
         AstEnumDType* enump = VN_CAST(unwrapEnumCandidate(stateVscp->dtypep()), EnumDType);
         if (!enump) enump = VN_CAST(unwrapEnumCandidate(stateVarp->dtypep()), EnumDType);
@@ -388,7 +377,7 @@ class FsmDetectVisitor final : public VNVisitor {
         std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
         AstNode* stmtsp = unwrapSingleBlock(alwaysp->stmtsp());
         AstIf* const firstIfp = VN_CAST(stmtsp, If);
-        if (firstIfp && firstIfp == stmtsp) {
+        if (firstIfp) {
             if (AstCase* const casep = caseFromStmt(firstIfp->elsesp())) {
                 candidates.emplace_back(casep, isSimpleResetCond(firstIfp->condp()) ? firstIfp->condp()
                                                                                      : nullptr);
@@ -471,11 +460,10 @@ class FsmLowerVisitor final {
     // used by generated models: declarations, previous-state tracking, and the
     // pre/post-triggered increment logic for states and arcs.
     void buildOne(const FsmGraph& graph) {
-        const auto it = m_state.byVar.find(graph.stateVarScopeName());
-        AstAlways* const alwaysp = (it == m_state.byVar.end()) ? nullptr : it->second.alwaysp;
+        const DetectedFsm& entry = m_state.byVar.at(graph.stateVarScopeName());
+        AstAlways* const alwaysp = entry.alwaysp;
         AstScope* const scopep = m_resolver.findScope(graph.scopeName());
         AstVarScope* const stateVscp = m_resolver.findVarScope(graph.stateVarScopeName());
-        if (!scopep || !stateVscp || !alwaysp) return;
         FileLine* const flp = graph.fileline() ? graph.fileline() : stateVscp->fileline();
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep
@@ -563,7 +551,6 @@ class FsmLowerVisitor final {
                     if (!graph.hasResetCond()) continue;
                     AstVarScope* const resetVscp
                         = m_resolver.findVarScope(graph.resetCond().varScopeName);
-                    if (!resetVscp) continue;
                     guardp = buildResetCond(flp, resetVscp, graph.resetCond());
                     guardp = andExpr(flp, guardp,
                                      new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
