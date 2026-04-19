@@ -475,6 +475,12 @@ class ParamProcessor final {
         }
         return nullptr;
     }
+    // Peel all unpacked-array layers to reach the innermost subDTypep.
+    // Used for multi-dim iface arrays where port dtype is nested UnpackArrayDType.
+    static AstNodeDType* arraySubDTypeDeepp(AstNodeDType* nodep) {
+        while (AstNodeDType* const subp = arraySubDTypep(nodep)) nodep = subp;
+        return nodep;
+    }
     static bool isString(AstNodeDType* nodep) {
         if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToNonRefp(), BasicDType))
             return basicp->isString();
@@ -1590,8 +1596,9 @@ class ParamProcessor final {
             if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
-                if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
-                    portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
+                if (!portIrefp && arraySubDTypeDeepp(modvarp->subDTypep())) {
+                    portIrefp
+                        = VN_CAST(arraySubDTypeDeepp(modvarp->subDTypep()), IfaceRefDType);
                 }
                 AstIfaceRefDType* pinIrefp = nullptr;
                 const AstNode* const exprp = pinp->exprp();
@@ -1600,19 +1607,20 @@ class ParamProcessor final {
                                                : nullptr;
                 if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
-                           && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
+                } else if (varp && varp->subDTypep() && arraySubDTypeDeepp(varp->subDTypep())
+                           && VN_CAST(arraySubDTypeDeepp(varp->subDTypep()), IfaceRefDType)) {
+                    pinIrefp = VN_CAST(arraySubDTypeDeepp(varp->subDTypep()), IfaceRefDType);
                 } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
                            && VN_CAST(exprp->op1p(), VarRef)->varp()
                            && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                           && arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
-                           && VN_CAST(
-                               arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                               IfaceRefDType)) {
-                    pinIrefp
-                        = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                                IfaceRefDType);
+                           && arraySubDTypeDeepp(
+                                  VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
+                           && VN_CAST(arraySubDTypeDeepp(
+                                          VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
+                                      IfaceRefDType)) {
+                    pinIrefp = VN_AS(arraySubDTypeDeepp(
+                                         VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
+                                     IfaceRefDType);
                 } else if (VN_IS(exprp, CellArrayRef)) {
                     // Interface array element selection (e.g., l1(l2.l1[0]) for nested iface
                     // array) The CellArrayRef is not yet fully linked to an interface type. Skip
@@ -2813,32 +2821,57 @@ class ParamVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCellArrayRef* nodep) override {
-        V3Const::constifyParamsEdit(nodep->selp());
-        if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
-            const string index = AstNode::encodeNumber(constp->toSInt());
-            // For nested interface array ports, the node name may have a __Viftop suffix
-            // that doesn't exist in the original unlinked text. Try without the suffix.
-            const string viftopSuffix = "__Viftop";
-            const string baseName
-                = VString::endsWith(nodep->name(), viftopSuffix)
-                      ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
-                      : nodep->name();
-            const string replacestr = baseName + "__BRA__??__KET__";
-            const size_t pos = m_unlinkedTxt.find(replacestr);
-            // For interface port array element selections (e.g., l1(l2.l1[0])),
-            // the AstCellArrayRef may be visited outside of an AstUnlinkedRef context.
-            // In such cases, m_unlinkedTxt won't contain the expected pattern.
-            // Simply skip the replacement - the cell array ref will be resolved later.
-            if (pos == string::npos) {
-                UINFO(9, "Skipping unlinked text replacement for " << nodep);
+        // Collect const indices for each select expression (outer-first order).
+        // Multi-dim iface arrays chain multiple selps via nextp().
+        std::vector<int> indices;
+        int selIdx = 0;
+        while (true) {
+            AstNodeExpr* s = nodep->selp();
+            for (int k = 0; k < selIdx && s; ++k) s = VN_CAST(s->nextp(), NodeExpr);
+            if (!s) break;
+            V3Const::constifyParamsEdit(s);
+            // Re-walk; constify may have replaced s.
+            AstNodeExpr* s2 = nodep->selp();
+            for (int k = 0; k < selIdx && s2; ++k) s2 = VN_CAST(s2->nextp(), NodeExpr);
+            if (!s2) break;
+            const AstConst* const constp = VN_CAST(s2, Const);
+            if (!constp) {
+                nodep->v3error("Could not expand constant selection inside dotted reference: "
+                               << s2->prettyNameQ());
                 return;
             }
-            m_unlinkedTxt.replace(pos, replacestr.length(),
-                                  baseName + "__BRA__" + index + "__KET__");
-        } else {
-            nodep->v3error("Could not expand constant selection inside dotted reference: "
-                           << nodep->selp()->prettyNameQ());
+            indices.push_back(constp->toSInt());
+            ++selIdx;
+        }
+        // For nested interface array ports, the node name may have a __Viftop suffix
+        // that doesn't exist in the original unlinked text. Try without the suffix.
+        const string viftopSuffix = "__Viftop";
+        const string baseName
+            = VString::endsWith(nodep->name(), viftopSuffix)
+                  ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
+                  : nodep->name();
+        const string placeholder = "__BRA__??__KET__";
+        const string anchor = baseName + placeholder;
+        size_t pos = m_unlinkedTxt.find(anchor);
+        // For interface port array element selections (e.g., l1(l2.l1[0])),
+        // the AstCellArrayRef may be visited outside of an AstUnlinkedRef context.
+        // In such cases, m_unlinkedTxt won't contain the expected pattern.
+        // Simply skip the replacement - the cell array ref will be resolved later.
+        if (pos == string::npos) {
+            UINFO(9, "Skipping unlinked text replacement for " << nodep);
             return;
+        }
+        pos += baseName.length();  // pos now at the first placeholder
+        for (int idx : indices) {
+            const string replacement
+                = "__BRA__" + AstNode::encodeNumber(idx) + "__KET__";
+            if (m_unlinkedTxt.compare(pos, placeholder.length(), placeholder) != 0) {
+                nodep->v3fatalSrc(  // LCOV_EXCL_LINE
+                    "Expected placeholder at position in multi-dim iface dotted reference");
+                return;
+            }
+            m_unlinkedTxt.replace(pos, placeholder.length(), replacement);
+            pos += replacement.length();
         }
     }
 

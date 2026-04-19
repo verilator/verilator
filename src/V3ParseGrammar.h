@@ -71,6 +71,7 @@ public:
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
+    AstRange* scrubRangeMulti(AstNodeRange* rangep) VL_MT_DISABLED;
     AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep,
                               bool isPacked) VL_MT_DISABLED;
@@ -90,7 +91,7 @@ public:
             singletonp()->m_instModule,
             pinlistp,
             (singletonp()->m_instParamp ? singletonp()->m_instParamp->cloneTree(true) : nullptr),
-            singletonp()->scrubRange(rangelistp)};
+            singletonp()->scrubRangeMulti(rangelistp)};
         nodep->trace(singletonp()->allTracingOn(fileline));
         return nodep;
     }
