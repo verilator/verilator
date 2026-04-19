@@ -622,7 +622,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const {
+                         bool asRef, bool constRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -630,7 +630,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && isReadOnly() && asRef) ostatic = ostatic + "const ";
+    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
 
     string oname;
     if (named) {
@@ -2524,6 +2524,16 @@ bool AstUnionDType::sameNode(const AstNode* samep) const {
     const AstUnionDType* const asamep = VN_DBG_AS(samep, UnionDType);
     return m_isSoft == asamep->m_isSoft && m_isTagged == asamep->m_isTagged;
 }
+void AstUntil::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isStrong()) str << " [strong]";
+    if (isOverlapping()) str << " [overlapping]";
+}
+void AstUntil::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonBoolFuncIf(str, isOverlapping);
+}
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";
     if (full) {  // else shorten for errors
@@ -3317,7 +3327,8 @@ void AstStop::dumpJson(std::ostream& str) const {
 }
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    if (code()) str << " [code=" << code() << "]";
+    if (codeAssigned()) str << " [code=" << code() << "]";
+    if (dtypeCallp()) str << " [dtypeCallp=" << dtypeCallp() << "]";
 }
 void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, code);

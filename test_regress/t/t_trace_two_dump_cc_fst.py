@@ -12,4 +12,4 @@ import trace_two_common
 
 test.scenarios('vlt_all')
 
-trace_two_common.run(test, verilator_flags2=["--trace-threads", "1"])
+trace_two_common.run(test)

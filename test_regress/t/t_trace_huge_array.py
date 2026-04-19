@@ -4,12 +4,20 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import trace_complex_common
 
-test.scenarios('vlt_all')
+test.scenarios("vlt_all")
 
-trace_complex_common.run(test, verilator_flags2=["--trace-threads", "1"])
+test.compile(v_flags2=[
+    "--trace-vcd --trace-max-width 0 --trace-max-array 0 --output-split-ctrace 10 --trace-structs"
+])
+trace_files = glob.glob(test.obj_dir + "/*Trace*.cpp")
+if len(trace_files) < 10:
+    test.error("Too few trace files")
+
+test.execute()
+
+test.passes()

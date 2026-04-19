@@ -8,8 +8,9 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import trace_array_common
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-trace_array_common.run(test, verilator_flags2=["--trace-threads", "2"])
+test.lint(fails=True, expect_filename=test.golden_filename)
+
+test.passes()

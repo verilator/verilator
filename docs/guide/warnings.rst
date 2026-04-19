@@ -1524,7 +1524,12 @@ List Of Warnings
    ANSI-style `#(...)` declarations. IEEE 1800-2023 6.20.1 requires this
    error, but some simulators accept this syntax.
 
-   Faulty example:
+   Also issued with ANSI format where a parameter without default is
+   present in the top-level module, and as such Verilator cannot know how
+   to process that module. For such cases suggest adding a default so the
+   module can lint cleanly.
+
+   Faulty non-ANSI example:
 
    .. include:: ../../docs/gen/ex_PARAMNODEFAULT_faulty.rst
 
@@ -1534,8 +1539,8 @@ List Of Warnings
 
    To fix the issue, move to an ANSI-style declaration.
 
-   Suppressing this error will only suppress the IEEE-required check; it
-   will simulate correctly.
+   For the non-ANSI case, suppressing this error will only suppress the
+   IEEE-required check; it will simulate correctly.
 
 
 .. option:: PINCONNECTEMPTY
@@ -2601,11 +2606,11 @@ List Of Warnings
    Since version 5.046:
 
    Issued if neither :vlopt:`--sched-zero-delay`, nor
-   :vlopt:`--sched-zero-delay` is used on the command line, and the input does
-   not contain a compile time known ``#0`` delay, but does contain a
-   ``#(expressin)`` where the delay value cannot be determined at compile time.
-   Passing :vlopt:`--no-sched-zero-delay` can improve runtime performance if
-   variable delays are all known to be non-zero at runtime.
+   :vlopt:`--sched-zero-delay` is used on the command line, and the input
+   does not contain a compile time known ``#0`` delay, but does contain a
+   ``#(expression)`` where the delay value cannot be determined at compile
+   time. Passing :vlopt:`--no-sched-zero-delay` can improve runtime
+   performance if variable delays are all known to be non-zero at runtime.
 
    Also issued if :vlopt:`--no-sched-zero-delay` is used on the command line,
    but the input contains a compile time known ``#0`` delay. This is safe to

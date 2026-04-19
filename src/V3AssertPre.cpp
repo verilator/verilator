@@ -1152,16 +1152,28 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
+        if (nodep->isStrong()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_until"
+                                             << (nodep->isOverlapping() ? "_with" : "")
+                                             << " (in property expresion)");
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         AstLoop* const loopp = new AstLoop{flp};
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-        AstLogAnd* const condp
-            = new AstLogAnd{flp, nodep->lhsp()->unlinkFrBack(), new AstLogNot{flp, rhsp}};
-        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstLogAnd* const loopCondp = new AstLogAnd{flp, lhsp, new AstLogNot{flp, rhsp}};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, loopCondp});
         loopp->addStmtsp(new AstEventControl{flp, newSenTree(nodep), nullptr});
 
+        AstNodeExpr* const rhsCopyp = rhsp->cloneTreePure(false);
+        AstNodeExpr* const passCondp
+            = nodep->isOverlapping() ? new AstLogAnd{flp, lhsp->cloneTreePure(false), rhsCopyp}
+                                     : rhsCopyp;
         AstBegin* const beginp = new AstBegin{flp, "", loopp, true};
-        beginp->addStmtsp(new AstIf{flp, rhsp->cloneTreePure(false), new AstPExprClause{flp},
-                                    new AstPExprClause{flp, false}});
+        beginp->addStmtsp(
+            new AstIf{flp, passCondp, new AstPExprClause{flp}, new AstPExprClause{flp, false}});
 
         AstPExpr* const pexprp = new AstPExpr{flp, beginp, nodep->dtypep()};
         pexprp->user1(1);
