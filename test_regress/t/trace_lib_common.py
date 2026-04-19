@@ -21,8 +21,6 @@ def run(test, *, verilator_flags2=()):
 
     verilator_common_flags = [
         "--cc",
-        "--trace-threads",
-        "1",
         f"--trace-{fmt}",
         "--trace-underscore",  # Should not trace __Vhandle
         "--trace-max-width",

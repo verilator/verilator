@@ -69,7 +69,6 @@ string(
 
 getarg(TEST_VERILATOR_ARGS_NORM "-prefix" TEST_PREFIX)
 getarg(TEST_VERILATOR_ARGS_NORM "-threads" TEST_THREADS)
-getarg(TEST_VERILATOR_ARGS_NORM "-trace-threads" TEST_TRACE_THREADS)
 
 # Strip unwanted args with 1 parameter
 string(
@@ -110,9 +109,6 @@ if(TEST_OPT_GLOBAL)
 endif()
 if(TEST_THREADS)
     list(APPEND verilate_ARGS THREADS ${TEST_THREADS})
-endif()
-if(TEST_TRACE_THREADS)
-    list(APPEND verilate_ARGS TRACE_THREADS ${TEST_TRACE_THREADS})
 endif()
 if(TEST_SYSTEMC)
     list(APPEND verilate_ARGS SYSTEMC)
