@@ -1825,7 +1825,7 @@ Summary:
 .. option:: --trace-fst
 
    Enable FST waveform tracing in the model. This overrides
-   :vlopt:`--trace`. See also :vlopt:`--trace-threads` option.
+   :vlopt:`--trace`.
 
 .. option:: --trace-max-array <depth>
 
@@ -1858,6 +1858,10 @@ Summary:
    and larger trace files.
 
 .. option:: --trace-threads <threads>
+
+   Deprecated and has no effect.
+
+   In versions before 5.048:
 
    Enable waveform tracing using separate threads. This is typically faster
    in simulation runtime but uses more total compute. This option only
