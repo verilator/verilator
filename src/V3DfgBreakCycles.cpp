@@ -22,8 +22,8 @@
 #include "V3Hash.h"
 
 #include <algorithm>
-#include <deque>
 #include <fstream>
+#include <queue>
 #include <unordered_map>
 #include <vector>
 
@@ -581,12 +581,19 @@ public:
 };
 
 class IndependentBits final : public DfgVisitor {
+    // TYPES
+    struct VertexState final {
+        size_t m_rpoNumber = 0;  // Reverse Postorder Number of vertex
+        bool m_isOnWorkList = false;  // Whether the vertex is on the work list
+    };
+
     // STATE
     const Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
     // Vertex to current bit mask map. The mask is set for the bits that are independent of the SCC
     std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
-    std::deque<DfgVertex*> m_workList;  // Work list for the traversal
-    std::unordered_map<DfgVertex*, bool> m_onWorkList;  // Marks vertices on the work list
+    // Work list for the traversal (min-queue of vertex RPO numbers)
+    std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> m_workQueue;
+    std::unordered_map<const DfgVertex*, VertexState> m_vtxp2State;  // State of each vertex
 
 #ifdef VL_DEBUG
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
@@ -891,14 +898,28 @@ class IndependentBits final : public DfgVisitor {
                 return false;
             }
             // Otherwise just enqueue it
-            bool& onWorkList = m_onWorkList[&sink];
-            if (!onWorkList) {
+            VertexState& state = m_vtxp2State.at(&sink);
+            if (!state.m_isOnWorkList) {
                 UINFO(9, "Enqueuing vertex " << &sink << " " << sink.typeName());
-                m_workList.emplace_back(&sink);
+                m_workQueue.push(state.m_rpoNumber);
             }
-            onWorkList = true;
+            state.m_isOnWorkList = true;
             return false;
         });
+    };
+
+    void dfsPostOrder(std::unordered_set<DfgVertex*>& visited,  //
+                      std::vector<DfgVertex*>& postOrderEnumeration,  //
+                      DfgVertex& vtx) {
+        // Mark visited, skip if already visited
+        if (!visited.insert(&vtx).second) return;
+        // Visit un-visited successors
+        vtx.foreachSink([&](DfgVertex& snk) {
+            dfsPostOrder(visited, postOrderEnumeration, snk);
+            return false;
+        });
+        // Add to post order enumeration
+        postOrderEnumeration.emplace_back(&vtx);
     };
 
     IndependentBits(DfgGraph& dfg, const Vtx2Scc& vtx2Scc)
@@ -913,31 +934,51 @@ class IndependentBits final : public DfgVisitor {
         }
 #endif
 
+        // Compute Reverse-Postorder enumeration of vertices
+        std::vector<DfgVertex*> rpoEnumeration;
+        std::unordered_set<DfgVertex*> visited;
+        dfg.forEachVertex([&](DfgVertex& vtx) {
+            if (!vtx.nInputs()) dfsPostOrder(visited, rpoEnumeration, vtx);
+        });
+        dfg.forEachVertex([&](DfgVertex& vtx) {  //
+            dfsPostOrder(visited, rpoEnumeration, vtx);
+        });
+        std::reverse(rpoEnumeration.begin(), rpoEnumeration.end());
+        UASSERT(rpoEnumeration.size() == dfg.size(), "Inconsistent vertex count");
+
+        // Initialzie VertexState for each vertex
+        for (size_t i = 0; i < rpoEnumeration.size(); ++i) {
+            VertexState& state = m_vtxp2State[rpoEnumeration[i]];
+            state.m_rpoNumber = i;
+            state.m_isOnWorkList = false;
+        }
+
         // Set up the initial conditions:
         // - For vertices not in an SCC, mark all bits as independent
         // - For vertices in an SCC, dispatch to analyse at least once, as some vertices
         //   always assign constants bits, which are always independent (eg Extend/Shift)
         // Enqueue sinks of all SCC vertices that have at least one independent bit
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (!handledDirectly(vtx)) return;
-            if (m_vtx2Scc.at(&vtx)) return;
-            mask(vtx).setAllBits1();
-        });
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (!handledDirectly(vtx)) return;
-            if (!m_vtx2Scc.at(&vtx)) return;
-            iterate(&vtx);
-            UINFO(9, "Initial independent bits of " << &vtx << " " << vtx.typeName() << " are: "
-                                                    << mask(vtx).displayed(vtx.fileline(), "%b"));
-            if (!mask(vtx).isEqZero()) enqueueSinks(vtx);
-        });
+        for (DfgVertex* const vtxp : rpoEnumeration) {
+            if (!handledDirectly(*vtxp)) continue;
+            if (m_vtx2Scc.at(vtxp)) continue;
+            mask(*vtxp).setAllBits1();
+        }
+        for (DfgVertex* const vtxp : rpoEnumeration) {
+            if (!handledDirectly(*vtxp)) continue;
+            if (!m_vtx2Scc.at(vtxp)) continue;
+            iterate(vtxp);
+            UINFO(9, "Initial independent bits of "
+                         << vtxp << " " << vtxp->typeName()
+                         << " are: " << mask(*vtxp).displayed(vtxp->fileline(), "%b"));
+            if (!mask(*vtxp).isEqZero()) enqueueSinks(*vtxp);
+        }
 
         // Propagate independent bits until no more changes are made
-        while (!m_workList.empty()) {
+        while (!m_workQueue.empty()) {
             // Grab next item
-            DfgVertex* const currp = m_workList.front();
-            m_workList.pop_front();
-            m_onWorkList[currp] = false;
+            DfgVertex* const currp = rpoEnumeration[m_workQueue.top()];
+            m_workQueue.pop();
+            m_vtxp2State.at(currp).m_isOnWorkList = false;
             // Should not enqueue vertices that are not in an SCC
             UASSERT_OBJ(m_vtx2Scc.at(currp), currp, "Vertex should be in an SCC");
             // Should only enqueue packed vertices
