@@ -290,9 +290,19 @@ public:
         UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
         UASSERT(varInfo.m_varVscp, "No base var scope for forced variable");
         FileLine* const flp = varInfo.m_varVscp->fileline();
-        AstNodeExpr* const readExprp = createForceReadCall(
-            varInfo, flp, VCMethod::FORCE_READ,
-            new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ}, varInfo.m_varVscp, nullptr);
+        AstNodeExpr* readExprp = nullptr;
+        AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
+        markNonReplaceable(baseRefp);
+        AstNodeExpr* const enRefp = new AstVarRef{flp, varInfo.m_forceEnVscp, VAccess::READ};
+        AstNodeExpr* const valRefp = new AstVarRef{flp, varInfo.m_forceValVscp, VAccess::READ};
+        if (isBitwiseDType(varInfo.m_varVscp->varp())) {
+            readExprp = new AstOr{
+                flp, new AstAnd{flp, enRefp, valRefp},
+                new AstAnd{flp, new AstNot{flp, enRefp->cloneTreePure(false)}, baseRefp}};
+        } else {
+            readExprp = new AstCond{flp, enRefp, valRefp, baseRefp};
+        }
+
         return new AstAssign{flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
                              readExprp};
     }
