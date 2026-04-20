@@ -60,8 +60,6 @@ private:
     char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
     uint64_t m_timeui = 0;  // Time to emit, 0 = not needed
 
-    bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
-
     // Prefixes to add to signal names/scope types
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
