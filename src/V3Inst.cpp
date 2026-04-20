@@ -178,13 +178,10 @@ class InstDeVisitor final : public VNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    // Range for arrayed instantiations, nullptr for normal instantiations.
-    // For multi-dim cells, m_cellRangep is the outermost range and
-    // m_cellRangesp holds the full chain (outermost-first).
-    const AstRange* m_cellRangep = nullptr;
-    std::vector<const AstRange*> m_cellRangesp;
-    std::vector<int> m_instIdx;  // Current cartesian index per dim, outermost-first
-    int m_instSelNum = 0;  // Row-major flat index for 1D-compat uses
+    const AstRange* m_cellRangep = nullptr;  // Outer range; nullptr for non-arrayed cells
+    std::vector<const AstRange*> m_cellRangesp;  // Full range chain, outer dim first
+    std::vector<int> m_instIdx;  // Current cartesian index per dim, outer dim first
+    int m_instSelNum = 0;  // Row-major flat index for 1D-compat pin expansion
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
     // Build "__BRA__i__KET__" suffix joining all cartesian indices for the current clone.
@@ -199,25 +196,20 @@ private:
 
     // VISITORS
     void visit(AstVar* nodep) override {
-        // Check if this is a (possibly multi-dim) unpacked array of interface refs.
-        // Collect the nested array layers; skip non-iface or virtual-iface cases.
+        // Collect nested unpacked-array layers around an IfaceRefDType, if any.
         std::vector<AstUnpackArrayDType*> arrLayers;
         AstIfaceRefDType* innerIfaceRefp = nullptr;
-        {
-            AstNode* d = nodep->dtypep()->skipRefp();
-            while (d) {
-                if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
-                    arrLayers.push_back(arrp);
-                    d = arrp->subDTypep()->skipRefp();
-                } else {
-                    innerIfaceRefp = VN_CAST(d, IfaceRefDType);
-                    break;
-                }
+        for (AstNode* d = nodep->dtypep()->skipRefp(); d;) {
+            if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                arrLayers.push_back(arrp);
+                d = arrp->subDTypep()->skipRefp();
+            } else {
+                innerIfaceRefp = VN_CAST(d, IfaceRefDType);
+                break;
             }
         }
         if (!arrLayers.empty() && innerIfaceRefp && !innerIfaceRefp->isVirtual()) {
             UINFO(8, "   dv-vec-VAR    " << nodep);
-            AstUnpackArrayDType* const outerArrp = arrLayers.front();
             AstUnpackArrayDType* const innermostArrp = arrLayers.back();
             const int ndim = static_cast<int>(arrLayers.size());
             std::vector<int> sizes(ndim);
@@ -258,7 +250,6 @@ private:
                 }
             }
             if (prevp) nodep->addNextHere(prevp);
-            (void)outerArrp;
             if (prevp && debug() == 9) {
                 prevp->dumpTree("-  newintf: ");
                 cout << '\n';
@@ -290,34 +281,31 @@ private:
 
             AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
             // cppcheck-suppress constVariablePointer
-            AstNodeDType* ifaceVarDtp = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
-            // Peel all UnpackArrayDType layers to find the bottom IfaceRefDType.
+            AstNodeDType* d = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
+            // Peel all UnpackArrayDType layers to reach the bottom IfaceRefDType.
             AstIfaceRefDType* origIfaceRefp = nullptr;
             AstUnpackArrayDType* innermostArrp = nullptr;
-            {
-                AstNodeDType* d = ifaceVarDtp;
-                while (d) {
-                    if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
-                        innermostArrp = arrp;
-                        d = arrp->subDTypep()->skipRefp();
-                    } else {
-                        origIfaceRefp = VN_CAST(d, IfaceRefDType);
-                        break;
-                    }
+            while (d) {
+                if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                    innermostArrp = arrp;
+                    d = arrp->subDTypep()->skipRefp();
+                } else {
+                    origIfaceRefp = VN_CAST(d, IfaceRefDType);
+                    break;
                 }
             }
             const bool isIface = origIfaceRefp && !origIfaceRefp->isVirtual();
 
             m_instIdx.assign(ndim, 0);
             for (int n = 0; n < totalElems; ++n) {
-                // Compute cartesian index (row-major, outermost = most significant)
+                // Unflatten n into a row-major cartesian index; outer dim is most significant.
                 int rem = n;
                 for (int d = ndim - 1; d >= 0; --d) {
                     m_instIdx[d] = rem % sizes[d];
                     rem /= sizes[d];
                 }
-                // Row-major flat select number for 1D-compat pin expansion.
-                // Ascending ranges invert each per-dim contribution.
+                // Build the flat select number for 1D-compat pin expansion; each ascending
+                // dim inverts its contribution.
                 int flatSel = 0;
                 for (int d = 0; d < ndim; ++d) {
                     const int i = m_instIdx[d];
@@ -329,14 +317,12 @@ private:
 
                 AstCell* const newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
-                // Strip all ranges from the clone.
                 while (newp->rangep()) newp->rangep()->unlinkFrBack()->deleteTree();
                 newp->name(newp->name() + suffix);
                 newp->origName(newp->origName() + suffix);
                 UINFO(8, "    CELL loop  " << newp);
 
-                // If this AstCell is actually an interface instantiation, also clone the IfaceRef
-                // within the same parent module as the cell
+                // Interface instantiation: also clone the IfaceRef in the parent module.
                 if (isIface) {
                     origIfaceRefp->cellp(nullptr);
                     AstVar* const varNewp = ifaceVarp->cloneTree(false);
@@ -543,45 +529,41 @@ private:
     void visit(AstArraySel* nodep) override {
         // If a parent is also an ArraySel into the same iface array, let it handle the chain.
         if (VN_IS(nodep->backp(), ArraySel) && nodep->backp()->op1p() == nodep) return;
-        // Find the base VarRef under any number of nested ArraySels.
+        // Collect nested ArraySels top-down (nodep is outermost in AST, innermost dim index).
+        std::vector<AstArraySel*> sels;
         AstNode* curp = nodep;
-        while (AstArraySel* const asp = VN_CAST(curp, ArraySel)) curp = asp->fromp();
+        while (AstArraySel* const asp = VN_CAST(curp, ArraySel)) {
+            sels.push_back(asp);
+            curp = asp->fromp();
+        }
         const AstVarRef* const varrefp = VN_CAST(curp, VarRef);
         if (!varrefp) return;
         // Confirm base is a (possibly nested) UnpackArray wrapping an IfaceRefDType.
+        std::vector<AstUnpackArrayDType*> arrs;  // outer dim first
         AstNodeDType* dtp = varrefp->dtypep()->skipRefp();
-        std::vector<AstUnpackArrayDType*> arrs;  // outer-first
         while (AstUnpackArrayDType* const ap = VN_CAST(dtp, UnpackArrayDType)) {
             arrs.push_back(ap);
             dtp = ap->subDTypep()->skipRefp();
         }
-        if (arrs.empty()) return;
+        if (arrs.empty() || sels.size() != arrs.size()) return;
         AstIfaceRefDType* const irp = VN_CAST(dtp, IfaceRefDType);
         if (!irp || irp->isVirtual()) return;
-        // Count ArraySel levels; require a full selection.
-        int nLevels = 0;
-        for (AstNode* p = nodep; VN_IS(p, ArraySel); p = VN_AS(p, ArraySel)->fromp()) ++nLevels;
-        if (static_cast<size_t>(nLevels) != arrs.size()) return;
-        // Constify all bitps.
-        for (AstNode* p = nodep; AstArraySel* const asp = VN_CAST(p, ArraySel); p = asp->fromp()) {
+        // Constify bitps and collect indices in outer-dim-first order (sels is inner-first).
+        std::vector<int> indices(sels.size());
+        for (size_t i = 0; i < sels.size(); ++i) {
+            AstArraySel* const asp = sels[i];
             V3Const::constifyParamsEdit(asp->bitp());
-        }
-        // Collect indices inner-first (as we walk outer-to-inner), then reverse.
-        std::vector<int> indices;
-        for (AstNode* p = nodep; AstArraySel* const asp = VN_CAST(p, ArraySel); p = asp->fromp()) {
             const AstConst* const constp = VN_CAST(asp->bitp(), Const);
             if (!constp) {
                 asp->bitp()->v3warn(E_UNSUPPORTED,
                                     "Non-constant index in RHS interface array selection");
                 return;
             }
-            indices.push_back(constp->toSInt());
+            indices[sels.size() - 1 - i] = constp->toSInt();
         }
-        std::reverse(indices.begin(), indices.end());  // outer-first
         string indexStr;
         for (size_t i = 0; i < indices.size(); ++i) {
-            indexStr
-                += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
+            indexStr += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
         }
         AstVarXRef* const newp = new AstVarXRef{nodep->fileline(),
                                                 varrefp->name() + indexStr, "", VAccess::READ};

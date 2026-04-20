@@ -106,8 +106,8 @@ AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& n
     return assignp;
 }
 
-AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
-    // Remove any UnsizedRange's from list
+AstRange* V3ParseGrammar::scrubRangeMulti(AstNodeRange* nrangep) {
+    // Remove any UnsizedRange's from list; preserves multi-dim chain via nextp().
     for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
         nextp = VN_AS(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
@@ -116,27 +116,17 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
             nodep->unlinkFrBack();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
-    }
-    if (nrangep && nrangep->nextp()) {
-        // Gate primitives only support a single dimension
-        nrangep->nextp()->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: Multidimensional gate instances.");
-        nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);
 }
-AstRange* V3ParseGrammar::scrubRangeMulti(AstNodeRange* nrangep) {
-    // Same as scrubRange() but preserves a multi-dim range chain via nextp()
-    for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeRange);
-        if (!VN_IS(nodep, Range)) {
-            nodep->v3error(
-                "Unsupported or syntax error: Unsized range in instance or other declaration");
-            nodep->unlinkFrBack();
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        }
+AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
+    AstRange* const rangep = scrubRangeMulti(nrangep);
+    if (rangep && rangep->nextp()) {
+        // Gate primitives only support a single dimension
+        rangep->nextp()->v3warn(E_UNSUPPORTED, "Unsupported: Multidimensional gate instances.");
+        rangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
-    return VN_CAST(nrangep, Range);
+    return rangep;
 }
 
 AstNodePreSel* V3ParseGrammar::scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED {

@@ -775,11 +775,7 @@ public:
                 // Likewise cell foo__[array] before we've expanded arrays is just foo.
                 // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them all.
                 altIdent = ident;
-                const string ketTail = "__KET__";
-                while (altIdent.size() > ketTail.size()
-                       && altIdent.compare(altIdent.size() - ketTail.size(), ketTail.size(),
-                                           ketTail)
-                              == 0) {
+                while (VString::endsWith(altIdent, "__KET__")) {
                     const auto braPos = altIdent.rfind("__BRA__");
                     if (braPos == string::npos) break;
                     altIdent = altIdent.substr(0, braPos);
