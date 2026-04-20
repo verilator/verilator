@@ -1667,20 +1667,25 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog Implication Operator
-    // Nonoverlapped "|=>"
-    // Overlapped "|->"
+    // Verilog Implication and Followed-By Operators
+    // Implication: overlapped "|->", non-overlapped "|=>" (IEEE 1800-2023 16.12.6)
+    // Followed-by: overlapped "#-#", non-overlapped "#=#" (IEEE 1800-2023 16.12.9)
+    // Antecedent-miss polarity differs: implication vacuously passes, followed-by
+    // non-vacuously fails.
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
 private:
-    const bool m_isOverlapped;  // True if overlapped
+    const bool m_isOverlapped;  // True if overlapped (|-> / #-#)
+    const bool m_isFollowedBy;  // True if followed-by (#-# / #=#)
 
 public:
-    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped)
+    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped,
+                   bool isFollowedBy = false)
         : ASTGEN_SUPER_Implication(fl)
-        , m_isOverlapped{isOverlapped} {
+        , m_isOverlapped{isOverlapped}
+        , m_isFollowedBy{isFollowedBy} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -1690,8 +1695,16 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstImplication* const asamep = VN_DBG_AS(samep, Implication);
+        return m_isOverlapped == asamep->m_isOverlapped
+               && m_isFollowedBy == asamep->m_isFollowedBy;
+    }
+    // Followed-by requires multi-cycle NFA lowering for non-vacuous-fail semantics.
+    // Plain implication stays on the V3AssertPre boolean path.
+    bool isMultiCycleSva() const override { return m_isFollowedBy; }
     bool isOverlapped() const { return m_isOverlapped; }
+    bool isFollowedBy() const { return m_isFollowedBy; }
 };
 class AstInitArray final : public AstNodeExpr {
     // This is also used as an array value in V3Simulate/const prop.
