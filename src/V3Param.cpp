@@ -1406,13 +1406,16 @@ class ParamProcessor final {
                     }
                     cloneVarp->valuep(exprp->cloneTree(false));
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
-                        AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
-                        // Inline every param ref so widthing doesn't reach back into the template
-                        // (#7411). Cycle detector for dependent parameters in the same module.
+                        // Attach clone under cloneVarp so the root has a back pointer.
+                        if (cloneVarp->childDTypep())
+                            cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
+                        cloneVarp->childDTypep(origDTypep->cloneTree(false));
+                        cloneVarp->dtypep(nullptr);
+                        // Inline param refs so widthing doesn't touch the template (#7411).
                         constexpr int maxSubstIters = 1000;
                         for (int it = 0; it < maxSubstIters; ++it) {
                             bool any = false;
-                            dtypeClonep->foreach([&](AstVarRef* varrefp) {
+                            cloneVarp->foreach([&](AstVarRef* varrefp) {
                                 AstVar* const targetp = varrefp->varp();
                                 AstNode* replacep = nullptr;
                                 for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
@@ -1432,19 +1435,40 @@ class ParamProcessor final {
                                     any = true;
                                 }
                             });
+                            // Substitute RefDType to an overridden paramtype.  RefDType is
+                            // not a foreach leaf, so collect matches and replace after the
+                            // walk.  Reverse order so descendants are replaced before
+                            // ancestors -- replacing an ancestor would free its descendants.
+                            std::vector<std::pair<AstRefDType*, AstNodeDType*>> toReplace;
+                            cloneVarp->foreach([&](AstRefDType* refp) {
+                                AstParamTypeDType* const ptdp
+                                    = VN_CAST(refp->refDTypep(), ParamTypeDType);
+                                if (!ptdp) return;
+                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                                    if (pp->modPTypep() == ptdp) {
+                                        if (AstNodeDType* const overDtp
+                                            = VN_CAST(pp->exprp(), NodeDType)) {
+                                            toReplace.emplace_back(refp, overDtp);
+                                        }
+                                        break;
+                                    }
+                                }
+                            });
+                            for (auto it = toReplace.rbegin(); it != toReplace.rend(); ++it) {
+                                AstRefDType* const refp = it->first;
+                                refp->replaceWith(it->second->cloneTree(false));
+                                VL_DO_DANGLING(refp->deleteTree(), refp);
+                                any = true;
+                            }
                             if (!any) break;
                         }
                         // Bail if anything still points at the template.
-                        dtypeClonep->foreach([&](AstVarRef* varrefp) {
+                        cloneVarp->foreach([&](AstVarRef* varrefp) {
                             varrefp->v3fatalSrc(
                                 "Unresolved VarRef '"
                                 << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
                                 << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                         });
-                        if (cloneVarp->childDTypep())
-                            cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
-                        cloneVarp->childDTypep(dtypeClonep);
-                        cloneVarp->dtypep(nullptr);
                     }
                     V3Const::constifyParamsEdit(cloneVarp);
                     if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
