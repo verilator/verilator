@@ -1354,6 +1354,28 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
+    void resolveGenericIfaceForwardingPins(AstPin* paramsp) {
+        for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (!pinp->exprp()) continue;
+            if (!VString::startsWith(pinp->name(), "__VGIfaceParam")) continue;
+            const AstNodeVarRef* const fwdRefp = VN_CAST(pinp->exprp(), NodeVarRef);
+            if (!fwdRefp) continue;
+            const AstIfaceRefDType* const resolvedp
+                = VN_CAST(fwdRefp->varp()->childDTypep()->skipRefp(), IfaceRefDType);
+            UASSERT_OBJ(resolvedp, pinp,
+                        "Generic interface forwarding pin not specialized before use");
+            AstIfaceRefDType* const newIrefp = new AstIfaceRefDType{
+                resolvedp->fileline(), resolvedp->modportFileline(), resolvedp->cellName(),
+                resolvedp->ifaceName(), resolvedp->modportName()};
+            newIrefp->ifacep(resolvedp->ifacep());
+            if (resolvedp->paramsp()) {
+                newIrefp->addParamsp(resolvedp->paramsp()->cloneTree(true));
+            }
+            pinp->exprp()->unlinkFrBack()->deleteTree();
+            pinp->exprp(newIrefp);
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -2076,6 +2098,12 @@ public:
                 }
                 pinp = nextp;
             }
+            // Generic interface forwarding (issue #7454): V3LinkDot leaves a VarRef
+            // placeholder on __VGIfaceParam pins when the enclosing module also has a
+            // generic interface port. By this point the enclosing module has been
+            // specialized, so substitute the VarRef with the resolved IfaceRefDType
+            // before constifyParamsEdit evaluates the cell tree.
+            resolveGenericIfaceForwardingPins(cellp->paramsp());
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");

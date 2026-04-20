@@ -3601,7 +3601,37 @@ class LinkDotResolveVisitor final : public VNVisitor {
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
             }
-            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+            // exprp may still be an AstParseRef at primary LinkDot; try to resolve by name
+            // against the enclosing module's symbol table so we can detect forwarding of a
+            // generic interface port (issue #7454).
+            AstVar* enclosingVarp = nullptr;
+            const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
+            if (varRefp) {
+                enclosingVarp = varRefp->varp();
+            } else if (const AstParseRef* const parseRefp = VN_CAST(exprp, ParseRef)) {
+                if (m_modp) {
+                    if (VSymEnt* const symp = m_statep->getNodeSym(m_modp)
+                                                  ->findIdFlat(parseRefp->name())) {
+                        enclosingVarp = VN_CAST(symp->nodep(), Var);
+                    }
+                }
+            }
+            if (enclosingVarp && enclosingVarp->varType() == VVarType::IFACEREF
+                && VN_IS(enclosingVarp->childDTypep()->skipRefp(), IfaceGenericDType)) {
+                // Forwarding: the enclosing module itself has a generic interface port and
+                // passes it to this sub-instance (issue #7454). Defer resolution to V3Param,
+                // which will specialize the enclosing module first; at that point the
+                // VarRef's varp->childDTypep() is an IfaceRefDType and V3Param rewrites
+                // the pin before cellPinCleanup.
+                AstVarRef* const fwdRefp = new AstVarRef{exprp->fileline(), enclosingVarp,
+                                                         VAccess::READ};
+                AstPin* const newPinp
+                    = new AstPin{pinp->fileline(), paramNum,
+                                 "__VGIfaceParam" + modIfaceVarp->name(), fwdRefp};
+                newPinp->param(true);
+                visit(newPinp);
+                nodep->addParamsp(newPinp);
+            } else if (varRefp) {
                 const AstVar* const varp = varRefp->varp();
                 if (const AstIfaceRefDType* const refp
                     = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
