@@ -253,6 +253,22 @@ class SvaNfaBuilder final {
         if (AstSThroughout* const throughp = VN_CAST(nodep, SThroughout)) {
             return fixedLength(throughp->rhsp());
         }
+        if (AstSOr* const orp = VN_CAST(nodep, SOr)) {
+            // Fixed-length OR: all alternatives must have the same length so
+            // the combined match collapses to a single end cycle (needed by
+            // SIntersect / buildSWithin).
+            const int lhsLen = fixedLength(orp->lhsp());
+            const int rhsLen = fixedLength(orp->rhsp());
+            if (lhsLen < 0 || rhsLen < 0 || lhsLen != rhsLen) return -1;
+            return lhsLen;
+        }
+        if (AstSWithin* const withinp = VN_CAST(nodep, SWithin)) {
+            // `seq1 within seq2` ends at seq2's end cycle (IEEE 16.9.10).
+            const int lhsLen = fixedLength(withinp->lhsp());
+            const int rhsLen = fixedLength(withinp->rhsp());
+            if (lhsLen < 0 || rhsLen < 0 || lhsLen > rhsLen) return -1;
+            return rhsLen;
+        }
         // LCOV_EXCL_START -- defensive: V3AssertPre rejects composite SVA ops
         // nested in an intersect arm before fixedLength runs (clock-context
         // resolution fails). Kept as a guard in case future parser relaxations
@@ -630,6 +646,61 @@ class SvaNfaBuilder final {
         return {combVtxp, nullptr, {}};
     }
 
+    // Lower `seq1 within seq2` (IEEE 1800-2023 16.9.10) by desugaring to a
+    // single intersect with an OR of offset-shifted inner variants:
+    //   seq1 within seq2 == (OR_{i in 0..slack} pad(i) seq1 pad(slack-i))
+    //                         intersect seq2
+    // Both operands must have fixed length (no ranged cycle delays).
+    // Placing the OR *inside* a single SIntersect yields one AndCombiner
+    // done-latch pair, so the assertion fires once per match attempt even
+    // when several offsets accept together.
+    BuildResult buildSWithin(AstSWithin* nodep, SvaStateVertex* entryVtxp,
+                             bool isTopLevelStep = false) {
+        const int innerLen = fixedLength(nodep->lhsp());
+        const int outerLen = fixedLength(nodep->rhsp());
+        if (innerLen < 0 || outerLen < 0) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: within with ranged cycle-delay operand");
+            return BuildResult::failWithError();
+        }
+        if (innerLen > outerLen) {
+            nodep->v3error("Within: inner sequence " + std::to_string(innerLen)
+                           + " cycles exceeds outer sequence " + std::to_string(outerLen)
+                           + " cycles (IEEE 1800-2023 16.9.10)");
+            return BuildResult::failWithError();
+        }
+        FileLine* const flp = nodep->fileline();
+        const int slack = outerLen - innerLen;
+        AstNodeExpr* innerOrp = nullptr;
+        for (int i = 0; i <= slack; ++i) {
+            const int postPad = slack - i;
+            AstNodeExpr* branchp = nodep->lhsp()->cloneTreePure(false);
+            if (i > 0) {
+                AstConst* const prePadp = new AstConst{flp, AstConst::BitTrue{}};
+                AstDelay* const delayp
+                    = new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(i)}, true};
+                AstSExpr* const wrapped = new AstSExpr{flp, prePadp, delayp, branchp};
+                wrapped->dtypeSetBit();
+                branchp = wrapped;
+            }
+            if (postPad > 0) {
+                AstConst* const postTruep = new AstConst{flp, AstConst::BitTrue{}};
+                AstDelay* const delayp
+                    = new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(postPad)}, true};
+                AstSExpr* const wrapped = new AstSExpr{flp, branchp, delayp, postTruep};
+                wrapped->dtypeSetBit();
+                branchp = wrapped;
+            }
+            innerOrp = innerOrp ? static_cast<AstNodeExpr*>(new AstSOr{flp, innerOrp, branchp})
+                                : branchp;
+        }
+        AstNodeExpr* const outerClonep = nodep->rhsp()->cloneTreePure(false);
+        AstNodeExpr* const combinedp = new AstSIntersect{flp, innerOrp, outerClonep};
+        const BuildResult result = buildExpr(combinedp, entryVtxp, isTopLevelStep);
+        VL_DO_DANGLING(combinedp->deleteTree(), combinedp);
+        return result;
+    }
+
     BuildResult buildThroughout(AstSThroughout* nodep, SvaStateVertex* entryVtxp,
                                 bool isTopLevelStep = false) {
         // Mark entryVtxp so "cond false at tick 0" is detected as throughout-drop.
@@ -686,6 +757,9 @@ public:
                 return BuildResult::failWithError();
             }
             return buildAndCombiner(intp->lhsp(), intp->rhsp(), entryVtxp, intp->fileline());
+        }
+        if (AstSWithin* const withinp = VN_CAST(nodep, SWithin)) {
+            return buildSWithin(withinp, entryVtxp, isTopLevelStep);
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
         // Boolean leaf (including LogAnd): return as finalCond

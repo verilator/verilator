@@ -762,9 +762,11 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     case VDfgType::SAnd:
     case VDfgType::SIntersect:
     case VDfgType::SOr:
-    case VDfgType::SThroughout: {
+    case VDfgType::SThroughout:
+    case VDfgType::SWithin: {
         // LCOV_EXCL_START  // Lowered before DFG
-        UASSERT_OBJ(false, this, "SAnd/SIntersect/SOr/SThroughout should be removed before DFG");
+        UASSERT_OBJ(false, this,
+                    "SAnd/SIntersect/SOr/SThroughout/SWithin should be removed before DFG");
         return;
         // LCOV_EXCL_STOP
     }
