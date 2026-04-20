@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt')
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--assert --timing --binary'])
+
+test.execute()
 
 test.passes()

@@ -67,6 +67,10 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       (a or 1'b0) |-> a);
 
+  // Logical '||' (AstLogOr) in a MULTI-CYCLE sequence: must trigger NFA
+  // (single-cycle booleans skip NFA via hasMultiCycleExpr filter).
+  cover property (@(posedge clk) (a || b) ##1 (a | b));
+
   // =========================================================================
   // Multi-cycle sequence and (IEEE 1800-2023 16.9.5)
   // CRC-driven: antecedent gates when sequence starts, consequent guaranteed
@@ -100,5 +104,73 @@ module t (
   // Sequence 'or': standalone (constant, always passes)
   assert property (@(posedge clk)
       (1'b1 ##1 1'b1) or (1'b1 ##2 1'b1));
+
+  // Sequence 'or' where both branches end in registered state (no finalCondp).
+  // Exercises guardedLink(termVertexp,...) in buildOrCombiner for both sides.
+  cover property (@(posedge clk) (a[*2]) or (b[*2]));
+
+  // Sequence 'and' with unbounded range on one side -- marks combiner unbounded.
+  cover property (@(posedge clk) (a ##[1:$] b) and (c ##1 d));
+
+  // =========================================================================
+  // SAnd edge cases (NFA builder coverage)
+  // =========================================================================
+
+  // SAnd where only one side has finalCondp: a[*2] has no finalCond (consumed
+  // by ConsRep); b ##1 c has finalCond=c. Exercises single-cond path in
+  // buildAndCombiner.
+  cover property (@(posedge clk) (a[*2]) and (b ##1 c));
+
+  // SAnd where both sides lack finalCondp (both end with registered state).
+  // Exercises buildMatchNow(!condp) path.
+  cover property (@(posedge clk) (a[*2]) and (b[*2]));
+
+  // =========================================================================
+  // Negated cover property (NFA assembleResult negated+cover branches)
+  // Different shapes to cover the matchCondp/rejectBasep/throughoutRejectp
+  // combinations in the negated+cover code path.
+  // =========================================================================
+
+  // Shape A: finalCondp=b, required-step reject (the canonical case).
+  cover property (@(posedge clk) not (a ##1 b));
+
+  // Shape B: seq ends in state machine -> finalCondp is null.
+  cover property (@(posedge clk) not (a ##1 (b[*2])));
+
+  // Shape C: throughout in the seq -> throughoutRejectp non-null.
+  cover property (@(posedge clk) not (a throughout (b ##1 c)));
+
+  // Shape D: throughout with state-ending RHS (no finalCondp) -> matchCondp null,
+  // throughoutRejectp non-null. Exercises the `if (throughoutRejectp) notPMatchp =
+  // orExprs(...)` branch in assembleResult.
+  cover property (@(posedge clk) not (a throughout (b[*2])));
+
+  // Assert variants for the negated-assert code path (needAccept branches).
+  assert property (@(posedge clk) not (a ##1 (b[*2])))
+    else $display("negated multi-cycle fail");
+  assert property (@(posedge clk) not (a throughout (b ##1 c)))
+    else $display("negated throughout fail");
+
+  // Negated assert with an explicit pass-action block -- exercises the
+  // `VL_DO_DANGLING(pushDeletep(passsp), passsp)` branch in the needAccept path.
+  assert property (@(posedge clk) not (a ##1 b))
+    $display("negated with pass action");
+
+  // Negated assert ending in state machine (matchCondp null, rejectBasep only):
+  // exercises the `else if (rejectBasep)` branch of notPMatchp assembly.
+  assert property (@(posedge clk) not (a ##1 (b[*2])))
+    $display("negated state-end with pass");
+
+  // Negated assert throughout with state-ending RHS (matchCondp null,
+  // throughoutRejectp non-null): exercises the `if (throughoutRejectp)` branch.
+  assert property (@(posedge clk) not (a throughout (b[*2])))
+    else $display("negated throughout state-end");
+
+  // Negated assert with throughout AND an explicit pass-action: needAccept is
+  // true (pass block set), so assembleResult runs with outMatchpp!=null and
+  // throughoutRejectp non-null, exercising the needAccept-path throughout
+  // branch of notPMatchp assembly.
+  assert property (@(posedge clk) not (a throughout (b ##1 c)))
+    $display("negated throughout with pass action");
 
 endmodule

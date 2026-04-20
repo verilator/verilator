@@ -31,6 +31,17 @@ module t (
   assert property (@(posedge clk) seq_check(a, b) |-> c);
   assert property (@(posedge clk) seq_check(b, c) |-> a);
 
+  // Multi-cycle sequence refs: two distinct named sequences chained with ##1.
+  // Exercises inlineAllSequenceRefs re-iteration after the first sequence is
+  // inlined (early-return branch on the second visit).
+  sequence seq_cycle_ab;
+    a ##1 b;
+  endsequence
+  sequence seq_cycle_bc;
+    b ##1 c;
+  endsequence
+  cover property (@(posedge clk) seq_cycle_ab ##1 seq_cycle_bc);
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     case (cyc)

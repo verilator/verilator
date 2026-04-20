@@ -422,8 +422,10 @@ private:
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
         if (!constp) {
-            nodep->v3error(
-                "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
+            // V3AssertNfa handles non-const delays before this pass and
+            // replaces the property; this branch should never be reached.
+            nodep->v3fatalSrc("Non-constant cycle delay in assertion: "
+                              "should have been caught by V3AssertNfa");
         } else if (constp->isZero()) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             if (m_inSynchDrive) {
@@ -704,9 +706,11 @@ private:
     }
     void visit(AstSConsRep* nodep) override {
         // IEEE 1800-2023 16.9.2 -- Lower standalone exact [*N] (N >= 2) via saturating counter.
-        // Range/unbounded forms and SExpr-contained forms are lowered by V3AssertProp.
+        // Range/unbounded forms and SExpr-contained forms are lowered by V3AssertNfa.
         iterateChildren(nodep);
-        if (nodep->unbounded() || nodep->maxCountp()) return;  // Handled by V3AssertProp
+        // V3AssertNfa handles unbounded/ranged forms upstream, so this fast-path
+        // is effectively unreachable when NFA is enabled.
+        if (nodep->unbounded() || nodep->maxCountp()) return;  // LCOV_EXCL_LINE
         const AstConst* const constp = VN_CAST(nodep->countp(), Const);
         if (VL_UNLIKELY(!constp || constp->toSInt() < 1)) {
             nodep->v3fatalSrc("Consecutive repetition count must be a positive constant"
@@ -1095,7 +1099,7 @@ private:
 
         if (AstPExpr* const pexprp = VN_CAST(rhsp, PExpr)) {
             // Implication with sequence expression on RHS (IEEE 1800-2023 16.11, 16.12.7).
-            // The PExpr was already lowered from the property expression by V3AssertProp.
+            // The PExpr was lowered from the property expression earlier in this pass.
             // Wrap the PExpr body with the antecedent check so the sequence only
             // starts when the antecedent holds.
             AstNodeExpr* condp;
@@ -1212,13 +1216,15 @@ private:
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
-        if (m_pexprp && m_pexprp->user1()) {
+        // V3AssertNfa handles multi-cycle property expressions before this pass,
+        // so the following unsupported paths are defensive and typically unreached.
+        if (m_pexprp && m_pexprp->user1()) {  // LCOV_EXCL_START
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Complex property expression inside 'until''");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
-        }
+        }  // LCOV_EXCL_STOP
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(notp), notp);
@@ -1227,30 +1233,19 @@ private:
         }
         // Sequence expression as antecedent of implication is not yet supported
         if (AstImplication* const implp = VN_CAST(nodep->backp(), Implication)) {
-            if (implp->lhsp() == nodep) {
+            if (implp->lhsp() == nodep) {  // LCOV_EXCL_START
                 implp->v3warn(E_UNSUPPORTED,
                               "Unsupported: Implication with sequence expression as antecedent");
                 nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
-            }
+            }  // LCOV_EXCL_STOP
         }
         VL_RESTORER(m_pexprp);
         VL_RESTORER(m_disableSeqIfp);
         m_pexprp = nodep;
 
         if (m_disablep) {
-            const AstSampled* sampledp;
-            if (m_disablep->exists([&sampledp](const AstSampled* const sp) {
-                    sampledp = sp;
-                    return true;
-                })) {
-                sampledp->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: $sampled inside disabled condition of a sequence");
-                m_disablep = new AstConst{m_disablep->fileline(), AstConst::BitFalse{}};
-                // always a copy is used, so remove it now
-                pushDeletep(m_disablep);
-            }
             FileLine* const flp = nodep->fileline();
             // Add counter which counts times the condition turned true
             AstVar* const disableCntp

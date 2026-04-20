@@ -1,9 +1,12 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Antmicro
+// SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+/* verilator lint_off SIDEEFFECT */
+// verilog_format: on
 `define STRINGIFY(x) `"x`"
 `define TRIGGER(e) ->e; $display("[cyc=%0d, val=%0d] triggered %s", cyc, val, `STRINGIFY(e))
 

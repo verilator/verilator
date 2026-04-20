@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Implementation of assertion properties
+// DESCRIPTION: Verilator: NFA-based multi-cycle SVA assertion evaluation
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3ASSERTPROP_H_
-#define VERILATOR_V3ASSERTPROP_H_
+#ifndef VERILATOR_V3ASSERTNFA_H_
+#define VERILATOR_V3ASSERTNFA_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,9 +24,9 @@ class AstNetlist;
 
 //============================================================================
 
-class V3AssertProp final {
+class V3AssertNfa final {
 public:
-    static void assertPropAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void assertNfaAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
