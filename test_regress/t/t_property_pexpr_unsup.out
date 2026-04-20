@@ -23,21 +23,12 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:63:5: Unsupported: s_nexttime[] (in property expression)
    63 |     s_nexttime [2] a;
       |     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:67:14: Unsupported: always (in property expression)
-   67 |     nexttime always a;
-      |              ^~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:67:5: Unsupported: nexttime (in property expression)
    67 |     nexttime always a;
       |     ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:71:18: Unsupported: always (in property expression)
-   71 |     nexttime [2] always a;
-      |                  ^~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:71:5: Unsupported: nexttime[] (in property expression)
    71 |     nexttime [2] always a;
       |     ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:75:18: Unsupported: always (in property expression)
-   75 |     nexttime [2] always a;
-      |                  ^~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:75:5: Unsupported: nexttime[] (in property expression)
    75 |     nexttime [2] always a;
       |     ^~~~~~~~
@@ -47,9 +38,6 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:79:5: Unsupported: nexttime (in property expression)
    79 |     nexttime s_eventually a;
       |     ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:83:33: Unsupported: always (in property expression)
-   83 |     nexttime s_eventually [2:$] always a;
-      |                                 ^~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:83:14: Unsupported: s_eventually[] (in property expression)
    83 |     nexttime s_eventually [2:$] always a;
       |              ^~~~~~~~~~~~

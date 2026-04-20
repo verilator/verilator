@@ -513,6 +513,49 @@ class SvaNfaBuilder final {
         return {currentp, nullptr, {}};
     }
 
+    // Bounded `always [lo:hi] P` / `s_always [lo:hi] P` (IEEE 1800-2023 16.12.11).
+    // P must hold at every cycle k in [t+lo, t+hi]. Lowered as:
+    //   entry -->lo clocked edges--> vertex A
+    //   at A, and at each of the next (hi-lo) cycles, require P via a rejectOnFail Link.
+    //   Fail any cycle => reject. All cycles pass => match.
+    BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
+                                bool isTopLevelStep = false) {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const propp = nodep->propp();
+        if (propp->isMultiCycleSva()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: multi-cycle property inside bounded"
+                                         " always (IEEE 1800-2023 16.12.11)");
+            return BuildResult::failWithError();
+        }
+        const int lo = getConstInt(nodep->loBoundp());
+        const int hi = getConstInt(nodep->hiBoundp());
+        UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        constexpr int kAlwaysUnrollLimit = 256;
+        if (hi - lo > kAlwaysUnrollLimit) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: always range span > 256 cycles"
+                                         " (IEEE 1800-2023 16.12.11)");
+            return BuildResult::failWithError();
+        }
+        // Strong/weak end-of-simulation semantics are identical for in-window
+        // reject; differ only at sim-end liveness. Bounded always always
+        // rejects on in-window failure, so both forms share this lowering.
+        // TODO: attach sim-end rejectOnFail sink for s_always.
+        SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
+        for (int k = 0; k <= hi - lo; ++k) {
+            if (k > 0) {
+                SvaStateVertex* const nextp = scopedCreateVertex();
+                guardedEdge(currentp, nextp, flp);
+                currentp = nextp;
+            }
+            SvaStateVertex* const checkp = scopedCreateVertex();
+            SvaTransEdge* const linkp
+                = guardedLink(currentp, checkp, sampled(propp->cloneTreePure(false)), flp);
+            if (isTopLevelStep && !m_inUnboundedScope) linkp->m_rejectOnFail = true;
+            currentp = checkp;
+        }
+        return {currentp, nullptr, {}};
+    }
+
     BuildResult buildGotoRep(AstSGotoRep* repp, SvaStateVertex* entryVtxp) {
         FileLine* const flp = repp->fileline();
         AstNodeExpr* const exprp = repp->exprp();
@@ -657,6 +700,9 @@ public:
         }
         if (AstSConsRep* const repp = VN_CAST(nodep, SConsRep)) {
             return buildConsRep(repp, entryVtxp, isTopLevelStep);
+        }
+        if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
+            return buildPropAlways(alwaysp, entryVtxp, isTopLevelStep);
         }
         if (AstSGotoRep* const repp = VN_CAST(nodep, SGotoRep)) {
             return buildGotoRep(repp, entryVtxp);

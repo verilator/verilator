@@ -1580,13 +1580,6 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("always range high bound must be >= low bound"
                                " (IEEE 1800-2023 16.12.11)");
             }
-            // TODO: remove this stub once V3AssertNfa buildPropAlways lands.
-            // Keeps compile halting cleanly for legal bounded forms pending NFA lowering.
-            if (loConstp && hiConstp && loConstp->toSInt() >= 0
-                && hiConstp->toSInt() >= loConstp->toSInt()) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: bounded always lowering pending V3AssertNfa integration");
-            }
             nodep->dtypeSetBit();
         }
     }
