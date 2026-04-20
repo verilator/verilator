@@ -666,8 +666,7 @@ class TraceVisitor final : public VNVisitor {
         // Add it to top scope
         m_topScopep->addBlocksp(funcp);
         const std::string bufArg
-            = v3Global.opt.traceClassBase()
-              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp"
+            = v3Global.opt.traceClassBase() + "::Buffer* bufp"
               + (declp ? (", uint32_t offset, const " + declp->dtypep()->cType("", true, true)
                           + " __VdtypeVar")
                        : "");
@@ -710,21 +709,11 @@ class TraceVisitor final : public VNVisitor {
                                                   + (declp ? " + offset" : "") + ");\n"});
             } else {
                 // Change dump sub function
-                if (v3Global.opt.useTraceOffload()) {
-                    funcp->addStmtsp(new AstCStmt{flp,  //
-                                                  "const uint32_t base VL_ATTR_UNUSED = "
-                                                  "vlSymsp->__Vm_baseCode + "
-                                                      + (declp ? " offset" : cvtToStr(baseCode))
-                                                      + ";\n"});
-                    funcp->addStmtsp(
-                        new AstCStmt{flp, "(void)bufp;  // Prevent unused variable warning\n"});
-                } else {
-                    funcp->addStmtsp(new AstCStmt{flp,  //
-                                                  "uint32_t* const oldp VL_ATTR_UNUSED = "
-                                                  "bufp->oldp(vlSymsp->__Vm_baseCode + "
-                                                      + (declp ? " offset" : cvtToStr(baseCode))
-                                                      + ");\n"});
-                }
+                funcp->addStmtsp(new AstCStmt{flp,  //
+                                              "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                              "bufp->oldp(vlSymsp->__Vm_baseCode + "
+                                                  + (declp ? " offset" : cvtToStr(baseCode))
+                                                  + ");\n"});
             }
             if (!declp) {
                 // Add call to top function

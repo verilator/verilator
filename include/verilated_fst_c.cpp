@@ -353,29 +353,9 @@ void VerilatedFst::declDoubleArray(uint32_t code, const char* name, int dtypenum
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t /*fidx*/) {
-    if (offload()) return new OffloadBuffer{*this};
-    return new Buffer{*this};
-}
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t /*fidx*/) { return new Buffer{*this}; }
 
-void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
-    if (offload()) {
-        const OffloadBuffer* const offloadBufferp = static_cast<const OffloadBuffer*>(bufp);
-        if (offloadBufferp->m_offloadBufferWritep) {
-            m_offloadBufferWritep = offloadBufferp->m_offloadBufferWritep;
-            return;  // Buffer will be deleted by the offload thread
-        }
-    }
-    delete bufp;
-}
-
-//=============================================================================
-// Configure
-
-void VerilatedFst::configure(const VerilatedTraceConfig& config) {
-    // If at least one model requests the FST writer thread, then use it
-    m_useFstWriterThread |= config.m_useFstWriterThread;
-}
+void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) { delete bufp; }
 
 //=============================================================================
 // VerilatedFstBuffer implementation

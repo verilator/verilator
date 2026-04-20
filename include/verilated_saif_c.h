@@ -224,7 +224,6 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     friend VerilatedSaif;
     friend VerilatedSaif::Super;
     friend VerilatedSaif::Buffer;
-    friend VerilatedSaif::OffloadBuffer;
 
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
     uint32_t m_fidx;  // Index of target activity accumulator

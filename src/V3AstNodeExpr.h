@@ -64,6 +64,8 @@ public:
     // Someday we will generically support data types on every expr node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
+    // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
+    virtual bool isMultiCycleSva() const { return false; }
     bool isLValue() const;
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
@@ -2197,6 +2199,7 @@ public:
         return m_unbounded == VN_DBG_AS(samep, SConsRep)->m_unbounded;  // LCOV_EXCL_LINE
     }
     bool unbounded() const { return m_unbounded; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
@@ -2221,6 +2224,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,
@@ -2339,6 +2343,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSNonConsRep final : public AstNodeExpr {
     // Nonconsecutive repetition: expr [= count]
@@ -2355,6 +2360,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSScanF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNodeExpr] // VarRefs for results
@@ -3800,6 +3806,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSIntersect final : public AstNodeBiop {
     // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.
@@ -3824,6 +3831,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSOr final : public AstNodeBiop {
     // Sequence 'or' (IEEE 1800-2023 16.9.7): at least one operand sequence must match.
@@ -3846,6 +3854,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSThroughout final : public AstNodeBiop {
     // expr throughout seq (IEEE 1800-2023 16.9.9)
@@ -3868,6 +3877,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width

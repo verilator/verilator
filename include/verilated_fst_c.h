@@ -87,7 +87,7 @@ protected:
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
-    void configure(const VerilatedTraceConfig&) override;
+    void configure(const VerilatedTraceConfig&) override {}
 
 public:
     //=========================================================================
@@ -206,7 +206,6 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     friend VerilatedFst;
     friend VerilatedFst::Super;
     friend VerilatedFst::Buffer;
-    friend VerilatedFst::OffloadBuffer;
 
     VerilatedFst& m_owner;  // Trace file owning this buffer. Required by subclasses.
 

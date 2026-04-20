@@ -1,50 +1,47 @@
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:51:51: Unsupported: Implication with sequence expression as antecedent
-                                                          : ... note: In instance 'main'
+%Error: t/t_sequence_first_match_unsup.v:51:34: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
    51 |   initial p0 : assert property ((##1 1) or(##2 1) |-> x == 1);
-      |                                                   ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+      |                                  ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sequence_first_match_unsup.v:51:44: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
+   51 |   initial p0 : assert property ((##1 1) or(##2 1) |-> x == 1);
+      |                                            ^~
 %Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:51:16: Unsupported: Unclocked assertion
                                                           : ... note: In instance 'main'
    51 |   initial p0 : assert property ((##1 1) or(##2 1) |-> x == 1);
       |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:54:65: Unsupported: Implication with sequence expression as antecedent
-                                                          : ... note: In instance 'main'
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_sequence_first_match_unsup.v:54:47: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
    54 |   initial p1 : assert property (first_match ((##1 1) or(##2 1)) |-> x == 1);
-      |                                                                 ^~~
+      |                                               ^~
+%Error: t/t_sequence_first_match_unsup.v:54:57: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
+   54 |   initial p1 : assert property (first_match ((##1 1) or(##2 1)) |-> x == 1);
+      |                                                         ^~
 %Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:54:16: Unsupported: Unclocked assertion
                                                           : ... note: In instance 'main'
    54 |   initial p1 : assert property (first_match ((##1 1) or(##2 1)) |-> x == 1);
       |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:57:44: Unsupported: Implication with sequence expression as antecedent
-                                                          : ... note: In instance 'main'
+%Error: t/t_sequence_first_match_unsup.v:57:38: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
    57 |   initial p2 : assert property (1 or ##1 1 |-> x == 0);
-      |                                            ^~~
+      |                                      ^~
 %Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:57:16: Unsupported: Unclocked assertion
                                                           : ... note: In instance 'main'
    57 |   initial p2 : assert property (1 or ##1 1 |-> x == 0);
       |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:60:58: Unsupported: Implication with sequence expression as antecedent
-                                                          : ... note: In instance 'main'
+%Error: t/t_sequence_first_match_unsup.v:60:51: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
+                                              : ... note: In instance 'main'
    60 |   initial p3 : assert property (first_match (1 or ##1 1) |-> x == 0);
-      |                                                          ^~~
+      |                                                   ^~
 %Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:60:16: Unsupported: Unclocked assertion
                                                           : ... note: In instance 'main'
    60 |   initial p3 : assert property (first_match (1 or ##1 1) |-> x == 0);
       |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:51:16: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                          : ... note: In instance 'main'
+%Error: Internal Error: t/t_sequence_first_match_unsup.v:51:34: ../V3Ast.cpp:#: AstSExpr must have non-nullptr delayp()
+                                                              : ... note: In instance 'main'
    51 |   initial p0 : assert property ((##1 1) or(##2 1) |-> x == 1);
-      |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:54:16: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                          : ... note: In instance 'main'
-   54 |   initial p1 : assert property (first_match ((##1 1) or(##2 1)) |-> x == 1);
-      |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:57:16: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                          : ... note: In instance 'main'
-   57 |   initial p2 : assert property (1 or ##1 1 |-> x == 0);
-      |                ^~~~~~
-%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:60:16: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                          : ... note: In instance 'main'
-   60 |   initial p3 : assert property (first_match (1 or ##1 1) |-> x == 0);
-      |                ^~~~~~
-%Error: Exiting due to
+      |                                  ^~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

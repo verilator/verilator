@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')  # UNOPTTHREADS in vltmt due to many small assertion states
 
-test.compile(verilator_flags2=['--timing'])
+test.compile(verilator_flags2=['--assert', '--timing'])
 
 test.execute()
 

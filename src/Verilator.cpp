@@ -19,8 +19,8 @@
 #include "V3Active.h"
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
+#include "V3AssertNfa.h"
 #include "V3AssertPre.h"
-#include "V3AssertProp.h"
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
@@ -253,8 +253,9 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
-        V3AssertProp::assertPropAll(v3Global.rootp());
-        //
+        V3AssertNfa::assertNfaAll(v3Global.rootp());
+        // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
+        // Unsupported constructs fall through to V3AssertPre.
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());

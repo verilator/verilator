@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_property_clock_collision_unsup.v:21:20: Unsupported: Clock event before property call and in its body
+                                                              : ... note: In instance 't'
+   21 |   assert property (@(posedge clk) p);
+      |                    ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

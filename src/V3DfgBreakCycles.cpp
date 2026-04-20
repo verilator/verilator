@@ -22,8 +22,8 @@
 #include "V3Hash.h"
 
 #include <algorithm>
-#include <deque>
 #include <fstream>
+#include <queue>
 #include <unordered_map>
 #include <vector>
 
@@ -471,6 +471,44 @@ class TraceDriver final : public DfgVisitor {
     void visit(DfgGt* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
     void visit(DfgGte* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
 
+    void visit(DfgShiftRS* vtxp) override {
+        DfgVertex* const lhsp = vtxp->lhsp();
+        if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            const uint32_t shiftAmnt = rConstp->toU32();
+            // Width of lower half of result
+            const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
+            // If the traced bits are wholly in the input
+            if (lowerWidth > m_msb) {
+                SET_RESULT(trace(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt));
+                return;
+            }
+            // If the traced bits are wholly in the extension
+            if (m_lsb >= lowerWidth) {
+                DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+                resp->srcp(trace(lhsp, lhsp->width() - 1, lhsp->width() - 1));
+                SET_RESULT(resp);
+                return;
+            }
+            // The traced bits span both sides
+            DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+            resp->srcp(trace(lhsp, lowerWidth - 1 + shiftAmnt, m_lsb + shiftAmnt));
+            SET_RESULT(resp);
+            return;
+        }
+
+        DfgShiftRS* const shiftrsp = make<DfgShiftRS>(vtxp, vtxp->lhsp()->width() - m_lsb);
+        shiftrsp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
+        shiftrsp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, m_lsb));
+        if (m_msb == vtxp->lhsp()->width() - 1) {
+            SET_RESULT(shiftrsp);
+            return;
+        }
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(shiftrsp);
+        selp->lsb(0);
+        SET_RESULT(selp);
+    }
+
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const lhsp = vtxp->lhsp();
         if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
@@ -581,12 +619,19 @@ public:
 };
 
 class IndependentBits final : public DfgVisitor {
+    // TYPES
+    struct VertexState final {
+        size_t m_rpoNumber = 0;  // Reverse Postorder Number of vertex
+        bool m_isOnWorkList = false;  // Whether the vertex is on the work list
+    };
+
     // STATE
     const Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
     // Vertex to current bit mask map. The mask is set for the bits that are independent of the SCC
     std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
-    std::deque<DfgVertex*> m_workList;  // Work list for the traversal
-    std::unordered_map<DfgVertex*, bool> m_onWorkList;  // Marks vertices on the work list
+    // Work list for the traversal (min-queue of vertex RPO numbers)
+    std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> m_workQueue;
+    std::unordered_map<const DfgVertex*, VertexState> m_vtxp2State;  // State of each vertex
 
 #ifdef VL_DEBUG
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
@@ -816,6 +861,38 @@ class IndependentBits final : public DfgVisitor {
         MASK(vtxp).setBit(0, independent ? '1' : '0');
     }
 
+    void visit(DfgShiftRS* vtxp) override {
+        DfgVertex* const rhsp = vtxp->rhsp();
+        DfgVertex* const lhsp = vtxp->lhsp();
+        const uint32_t width = vtxp->width();
+
+        // Constant shift can be computed precisely
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            const uint32_t shiftAmount = rConstp->toU32();
+            if (shiftAmount >= width) {
+                if (MASK(lhsp).bitIs0(width - 1)) {
+                    MASK(vtxp).setAllBits0();
+                } else {
+                    MASK(vtxp).setAllBits1();
+                }
+            } else {
+                V3Number& m = MASK(vtxp);
+                m.opShiftRS(MASK(lhsp), rConstp->num(), width);
+                m.opSetRange(width - shiftAmount, shiftAmount, '1');
+            }
+            return;
+        }
+
+        // Otherwise, as the shift amount is non-negative, all independent
+        // and consecutive top bits in the lhs yield an independent result
+        // if the shift amount is independent.
+        if (MASK(rhsp).isEqAllOnes()) {
+            V3Number& m = MASK(vtxp);
+            m = MASK(lhsp);
+            floodTowardsLsb(m);
+        }
+    }
+
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const rhsp = vtxp->rhsp();
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -824,10 +901,10 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            V3Number& m = MASK(vtxp);
             if (shiftAmount >= width) {
-                m.setAllBits1();
+                MASK(vtxp).setAllBits1();
             } else {
+                V3Number& m = MASK(vtxp);
                 m.opShiftR(MASK(lhsp), rConstp->num());
                 m.opSetRange(width - shiftAmount, shiftAmount, '1');
             }
@@ -852,10 +929,10 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            V3Number& m = MASK(vtxp);
             if (shiftAmount >= width) {
-                m.setAllBits1();
+                MASK(vtxp).setAllBits1();
             } else {
+                V3Number& m = MASK(vtxp);
                 m.opShiftL(MASK(lhsp), rConstp->num());
                 m.opSetRange(0, shiftAmount, '1');
             }
@@ -891,14 +968,28 @@ class IndependentBits final : public DfgVisitor {
                 return false;
             }
             // Otherwise just enqueue it
-            bool& onWorkList = m_onWorkList[&sink];
-            if (!onWorkList) {
+            VertexState& state = m_vtxp2State.at(&sink);
+            if (!state.m_isOnWorkList) {
                 UINFO(9, "Enqueuing vertex " << &sink << " " << sink.typeName());
-                m_workList.emplace_back(&sink);
+                m_workQueue.push(state.m_rpoNumber);
             }
-            onWorkList = true;
+            state.m_isOnWorkList = true;
             return false;
         });
+    };
+
+    void dfsPostOrder(std::unordered_set<DfgVertex*>& visited,  //
+                      std::vector<DfgVertex*>& postOrderEnumeration,  //
+                      DfgVertex& vtx) {
+        // Mark visited, skip if already visited
+        if (!visited.insert(&vtx).second) return;
+        // Visit un-visited successors
+        vtx.foreachSink([&](DfgVertex& snk) {
+            dfsPostOrder(visited, postOrderEnumeration, snk);
+            return false;
+        });
+        // Add to post order enumeration
+        postOrderEnumeration.emplace_back(&vtx);
     };
 
     IndependentBits(DfgGraph& dfg, const Vtx2Scc& vtx2Scc)
@@ -913,31 +1004,51 @@ class IndependentBits final : public DfgVisitor {
         }
 #endif
 
+        // Compute Reverse-Postorder enumeration of vertices
+        std::vector<DfgVertex*> rpoEnumeration;
+        std::unordered_set<DfgVertex*> visited;
+        dfg.forEachVertex([&](DfgVertex& vtx) {
+            if (!vtx.nInputs()) dfsPostOrder(visited, rpoEnumeration, vtx);
+        });
+        dfg.forEachVertex([&](DfgVertex& vtx) {  //
+            dfsPostOrder(visited, rpoEnumeration, vtx);
+        });
+        std::reverse(rpoEnumeration.begin(), rpoEnumeration.end());
+        UASSERT(rpoEnumeration.size() == dfg.size(), "Inconsistent vertex count");
+
+        // Initialzie VertexState for each vertex
+        for (size_t i = 0; i < rpoEnumeration.size(); ++i) {
+            VertexState& state = m_vtxp2State[rpoEnumeration[i]];
+            state.m_rpoNumber = i;
+            state.m_isOnWorkList = false;
+        }
+
         // Set up the initial conditions:
         // - For vertices not in an SCC, mark all bits as independent
         // - For vertices in an SCC, dispatch to analyse at least once, as some vertices
         //   always assign constants bits, which are always independent (eg Extend/Shift)
         // Enqueue sinks of all SCC vertices that have at least one independent bit
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (!handledDirectly(vtx)) return;
-            if (m_vtx2Scc.at(&vtx)) return;
-            mask(vtx).setAllBits1();
-        });
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (!handledDirectly(vtx)) return;
-            if (!m_vtx2Scc.at(&vtx)) return;
-            iterate(&vtx);
-            UINFO(9, "Initial independent bits of " << &vtx << " " << vtx.typeName() << " are: "
-                                                    << mask(vtx).displayed(vtx.fileline(), "%b"));
-            if (!mask(vtx).isEqZero()) enqueueSinks(vtx);
-        });
+        for (DfgVertex* const vtxp : rpoEnumeration) {
+            if (!handledDirectly(*vtxp)) continue;
+            if (m_vtx2Scc.at(vtxp)) continue;
+            mask(*vtxp).setAllBits1();
+        }
+        for (DfgVertex* const vtxp : rpoEnumeration) {
+            if (!handledDirectly(*vtxp)) continue;
+            if (!m_vtx2Scc.at(vtxp)) continue;
+            iterate(vtxp);
+            UINFO(9, "Initial independent bits of "
+                         << vtxp << " " << vtxp->typeName()
+                         << " are: " << mask(*vtxp).displayed(vtxp->fileline(), "%b"));
+            if (!mask(*vtxp).isEqZero()) enqueueSinks(*vtxp);
+        }
 
         // Propagate independent bits until no more changes are made
-        while (!m_workList.empty()) {
+        while (!m_workQueue.empty()) {
             // Grab next item
-            DfgVertex* const currp = m_workList.front();
-            m_workList.pop_front();
-            m_onWorkList[currp] = false;
+            DfgVertex* const currp = rpoEnumeration[m_workQueue.top()];
+            m_workQueue.pop();
+            m_vtxp2State.at(currp).m_isOnWorkList = false;
             // Should not enqueue vertices that are not in an SCC
             UASSERT_OBJ(m_vtx2Scc.at(currp), currp, "Vertex should be in an SCC");
             // Should only enqueue packed vertices

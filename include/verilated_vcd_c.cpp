@@ -278,7 +278,6 @@ void VerilatedVcd::bufferResize(size_t minsize) {
 }
 
 void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
-    // This function can be called from the trace offload thread
     // This function is on the flush() call path
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()

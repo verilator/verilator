@@ -3402,7 +3402,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 vpi_put_value(object, const_cast<p_vpi_value>(&forcedValue), nullptr, vpiNoDelay);
             }
 
-            return nullptr;
+            return object;
         }
 
         if (valuep->format == vpiVectorVal) {
