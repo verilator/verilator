@@ -1584,8 +1584,9 @@ class WidthVisitor final : public VNVisitor {
             // Keeps compile halting cleanly for legal bounded forms pending NFA lowering.
             if (loConstp && hiConstp && loConstp->toSInt() >= 0
                 && hiConstp->toSInt() >= loConstp->toSInt()) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: bounded always lowering pending V3AssertNfa integration");
+                nodep->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: bounded always lowering pending V3AssertNfa integration");
             }
             nodep->dtypeSetBit();
         }
