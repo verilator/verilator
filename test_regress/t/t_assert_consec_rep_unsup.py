@@ -9,10 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
 
 test.lint(expect_filename=test.golden_filename,
-          verilator_flags2=['--assert', '--timing', '--error-limit 1000'],
+          verilator_flags2=['--assert --timing --error-limit 1000'],
           fails=True)
 
 test.passes()
