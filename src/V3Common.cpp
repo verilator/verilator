@@ -159,6 +159,9 @@ void V3Common::commonAll() {
     // Entire netlist:
     //  AstClass::user1()     -> bool.  True if class needs to_string dumper
     const VNUser1InUse m_inuser1;
+    VDouble0 m_statClassToString;
+    VDouble0 m_statInterfaceToString;
+    VDouble0 m_statStructUnionToString;
     // Create common contents for each module
     for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
@@ -166,16 +169,26 @@ void V3Common::commonAll() {
                 // Create ToString methods
                 makeToString(classp);
                 makeToStringMiddle(classp);
+                m_statClassToString++;
             }
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
-            if (ifacep->emitToString()) { makeVlToString(ifacep); }
+            if (ifacep->emitToString()) {
+                makeVlToString(ifacep);
+                m_statInterfaceToString++;
+            }
         }
     }
     for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
          nodep = nodep->nextp()) {
         if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
-            if (!dtypep->packed() && dtypep->emitToString()) makeVlToString(dtypep);
+            if (!dtypep->packed() && dtypep->emitToString()) {
+                makeVlToString(dtypep);
+                m_statStructUnionToString++;
+            }
         }
     }
     V3Global::dumpCheckGlobalTree("common", 0, dumpTreeEitherLevel() >= 3);
+    V3Stats::addStat("Optimizations, Class ToString emitted", m_statClassToString);
+    V3Stats::addStat("Optimizations, Interface ToString emitted", m_statInterfaceToString);
+    V3Stats::addStat("Optimizations, Struct/union ToString emitted", m_statStructUnionToString);
 }
