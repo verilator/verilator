@@ -2149,10 +2149,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         // are rewritten by extractConditionalDisableSofts() before this
         // visitor runs, so anything we see here is unconditional.
         if (nodep->isDisableSoft()) {
-            if (AstNode* const stmtp = buildDisableSoftCallStmt(nodep)) {
-                nodep->replaceWith(stmtp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            }
+            nodep->replaceWith(buildDisableSoftCallStmt(nodep));
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
         // IEEE 1800-2023 18.5.1: A bare expression used as a constraint is
@@ -2551,7 +2549,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             varName = mselp->name();
         } else {
             nodep->v3fatalSrc("Unexpected expression type in disable soft");
-            return nullptr;
         }
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
@@ -2608,20 +2605,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (AstConstraintExpr* const exprp = VN_CAST(stmtp, ConstraintExpr)) {
                 if (exprp->isDisableSoft() && outerCondp) {
                     FileLine* const fl = exprp->fileline();
-                    AstNode* const callStmtp = buildDisableSoftCallStmt(exprp);
-                    if (callStmtp) {
-                        AstIf* const hoistIfp
-                            = new AstIf{fl, outerCondp->cloneTreePure(false), callStmtp, nullptr};
-                        hoistListp = hoistListp ? AstNode::addNext(hoistListp,
-                                                                   static_cast<AstNode*>(hoistIfp))
-                                                : static_cast<AstNode*>(hoistIfp);
-                        // Replace in-tree disable-soft with a no-op boolean
-                        // constraint so editSingle() folds cleanly.
-                        AstConstraintExpr* const truep
-                            = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
-                        exprp->replaceWith(truep);
-                        VL_DO_DANGLING(exprp->deleteTree(), exprp);
-                    }
+                    AstIf* const hoistIfp = new AstIf{fl, outerCondp->cloneTreePure(false),
+                                                      buildDisableSoftCallStmt(exprp), nullptr};
+                    hoistListp = hoistListp ? AstNode::addNext(hoistListp,
+                                                               static_cast<AstNode*>(hoistIfp))
+                                            : static_cast<AstNode*>(hoistIfp);
+                    // Replace in-tree disable-soft with a no-op boolean
+                    // constraint so editSingle() folds cleanly.
+                    AstConstraintExpr* const truep
+                        = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+                    exprp->replaceWith(truep);
+                    VL_DO_DANGLING(exprp->deleteTree(), exprp);
                 }
             }
             // foreach/unique bodies are left untouched: disable-soft inside

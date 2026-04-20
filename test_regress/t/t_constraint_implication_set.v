@@ -94,6 +94,42 @@ class DisSoft;
   }
 endclass
 
+// MemberSel target for `disable soft`.  Cross-object reference (inner.y)
+// parses as AstMemberSel; disable-soft must extract the variable name from
+// that node shape too.
+class Inner;
+  rand bit [3:0] y;
+endclass
+class DisSoftMember;
+  bit override_flag;
+  rand Inner inner;
+  constraint c_soft_y { soft inner.y == 4'h5; }
+  constraint c_override {
+    (override_flag == 1'b1) -> disable soft inner.y ;
+    (override_flag == 1'b1) -> inner.y == 4'hc ;
+  }
+  function new(); inner = new(); endfunction
+endclass
+
+// `disable soft` in BOTH then and else arms of a single if.  Exercises the
+// hoist-list concat path in the else branch (a then-arm hoist already
+// exists when the else-arm hoist is appended).  We only check that the
+// hard constraint in each arm fires correctly under its `pick` condition;
+// soft enforcement priority is not asserted (Verilator's soft solver is
+// best-effort).  The condition variable `pick` is non-rand so the setup
+// task sees its current value before the solver runs.
+class DisSoftBothArms;
+  bit [1:0] pick;
+  rand bit [3:0] a;
+  rand bit [3:0] b;
+  constraint c_soft_a { soft a == 4'h7; }
+  constraint c_soft_b { soft b == 4'h8; }
+  constraint c_split {
+    if (pick == 2'd0) { disable soft a; a == 4'h1; }
+    else              { disable soft b; b == 4'h2; }
+  }
+endclass
+
 module t;
   Forms   obj;
   DisSoft ds;
@@ -176,6 +212,40 @@ module t;
       ok = ds.randomize();
       `checkd(ok, 1);
       `checkh(ds.x, 4'hc);
+    end
+
+    begin
+      automatic DisSoftMember dsm = new();
+      dsm.override_flag = 1'b0;
+      repeat (10) begin
+        ok = dsm.randomize();
+        `checkd(ok, 1);
+        `checkh(dsm.inner.y, 4'h5);
+      end
+      dsm.override_flag = 1'b1;
+      repeat (10) begin
+        ok = dsm.randomize();
+        `checkd(ok, 1);
+        `checkh(dsm.inner.y, 4'hc);
+      end
+    end
+
+    begin
+      automatic DisSoftBothArms dba = new();
+      // pick==0: hard a==1 fires (then arm); hoisted disable_soft(a) runs
+      dba.pick = 2'd0;
+      repeat (10) begin
+        ok = dba.randomize();
+        `checkd(ok, 1);
+        `checkh(dba.a, 4'h1);
+      end
+      // pick==1: hard b==2 fires (else arm); hoisted disable_soft(b) runs
+      dba.pick = 2'd1;
+      repeat (10) begin
+        ok = dba.randomize();
+        `checkd(ok, 1);
+        `checkh(dba.b, 4'h2);
+      end
     end
 
     $write("*-* All Finished *-*\n");
