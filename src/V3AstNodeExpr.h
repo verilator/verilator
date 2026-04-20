@@ -2036,8 +2036,8 @@ class AstPropAlways final : public AstNodeExpr {
     // @astgen op3 := hiBoundp : AstNodeExpr
     const bool m_isStrong = false;  // true for s_always (strong form)
 public:
-    AstPropAlways(FileLine* fl, AstNodeExpr* propp, AstNodeExpr* loBoundp,
-                  AstNodeExpr* hiBoundp, bool isStrong)
+    AstPropAlways(FileLine* fl, AstNodeExpr* propp, AstNodeExpr* loBoundp, AstNodeExpr* hiBoundp,
+                  bool isStrong)
         : ASTGEN_SUPER_PropAlways(fl)
         , m_isStrong{isStrong} {
         this->propp(propp);

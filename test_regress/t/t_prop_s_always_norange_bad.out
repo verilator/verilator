@@ -1,0 +1,5 @@
+%Error: t/t_prop_s_always_norange_bad.v:10:35: s_always range must be bounded (IEEE 1800-2023 16.12.11)
+   10 |   assert property (@(posedge clk) s_always a);
+      |                                   ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

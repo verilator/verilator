@@ -63,6 +63,10 @@ module t (/*AUTOARG*/);
     $display("bounded_pass=%0d fail=%0d", bounded_pass, bounded_fail);
     $display("sbounded_pass=%0d fail=%0d", sbounded_pass, sbounded_fail);
     $display("degenerate_pass=%0d fail=%0d", degenerate_pass, degenerate_fail);
+    if (unbounded_pass != 100 || unbounded_fail != 0) $fatal(1, "unbounded counts wrong");
+    if (bounded_pass != 3 || bounded_fail != 97) $fatal(1, "bounded counts wrong");
+    if (sbounded_pass != 23 || sbounded_fail != 76) $fatal(1, "sbounded counts wrong");
+    if (degenerate_pass + degenerate_fail != 100) $fatal(1, "degenerate total wrong");
   end
 
 endmodule

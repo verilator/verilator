@@ -527,6 +527,22 @@ class SvaNfaBuilder final {
                                          " always (IEEE 1800-2023 16.12.11)");
             return BuildResult::failWithError();
         }
+        // propp is checked each cycle as a boolean Link condition; reject any
+        // shape that is a property operator (not a boolean expression). This
+        // covers AstImplication (|-> / |=>), AstUntil, AstPropAlways, and any
+        // AstPropSpec left behind.
+        bool propHasProperty = false;
+        propp->foreach([&](const AstNode* np) {
+            if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropAlways)
+                || VN_IS(np, PropSpec)) {
+                propHasProperty = true;
+            }
+        });
+        if (propHasProperty) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property operator inside bounded"
+                                         " always (IEEE 1800-2023 16.12.11)");
+            return BuildResult::failWithError();
+        }
         const int lo = getConstInt(nodep->loBoundp());
         const int hi = getConstInt(nodep->hiBoundp());
         UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
@@ -550,6 +566,10 @@ class SvaNfaBuilder final {
             SvaStateVertex* const checkp = scopedCreateVertex();
             SvaTransEdge* const linkp
                 = guardedLink(currentp, checkp, sampled(propp->cloneTreePure(false)), flp);
+            // `always[m:n]` is universal over the window -- every cycle must
+            // hold, unlike SConsRep/range-delay which is existential (any
+            // match accepts). Mark rejectOnFail on ALL checks, not just
+            // first/last.
             if (isTopLevelStep && !m_inUnboundedScope) linkp->m_rejectOnFail = true;
             currentp = checkp;
         }
