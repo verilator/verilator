@@ -1,0 +1,5 @@
+%Error: t/t_cover_fsm_enum_bad.v:24:19: FSM coverage: enum state transition assigns a constant not present in the declared enum
+   24 |         S0: state <= 2'd3;
+      |                   ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to 1 error(s)

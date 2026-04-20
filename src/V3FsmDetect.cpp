@@ -163,6 +163,10 @@ static AstSenTree* buildSenTree(
 
 // Detection runs while the original clocked/case structure is still intact and
 // populates graph-backed FSM models without mutating the tree mid-traversal.
+// This pass is intentionally conservative: for this PR we only lock down the
+// small set of transition/selector forms that are already stable in the
+// normalized AST we see here. The remaining reject branches are therefore
+// mostly future-feature boundaries, not accidental dead code.
 class FsmDetectVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
@@ -195,7 +199,9 @@ class FsmDetectVisitor final : public VNVisitor {
     static bool isIgnorableStmt(AstNode* nodep) { return VN_IS(nodep, CoverInc); }
 
     // Conservative extractor: only treat a branch as simple when exactly one
-    // non-coverage statement remains after unwrapping.
+    // non-coverage statement remains after unwrapping. Richer multi-statement
+    // or control-flow forms are intentionally left for follow-on FSM-detection
+    // work instead of being partially inferred here.
     static AstNode* singleMeaningfulStmt(AstNode* stmtp) {
         AstNode* resultp = nullptr;
         for (AstNode* nodep = unwrapSingleBlock(stmtp); nodep; nodep = nodep->nextp()) {
@@ -207,7 +213,9 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     // Recognize the direct "state <= X" form that gives us an unambiguous arc
-    // target without needing deeper control-flow reasoning.
+    // target without needing deeper control-flow reasoning. Branches that fall
+    // out here represent currently unsupported next-state shapes rather than
+    // bugs in the implemented subset.
     static AstNodeAssign* directStateAssign(AstNode* stmtp, AstVarScope* stateVscp) {
         AstNode* const nodep = singleMeaningfulStmt(stmtp);
         if (!nodep) return nullptr;
@@ -236,6 +244,17 @@ class FsmDetectVisitor final : public VNVisitor {
         return false;
     }
 
+    // Enum-backed FSMs should only transition to values that were interned as
+    // known states. If a constant transition targets some other encoding, make
+    // that explicit as an error rather than silently dropping the edge.
+    static bool validateKnownStateValue(AstNode* nodep,
+                                        const std::unordered_map<int, string>& labels, int value) {
+        if (labels.find(value) != labels.end()) return true;
+        nodep->v3error("FSM coverage: enum state transition assigns a constant not present in "
+                       "the declared enum");
+        return false;
+    }
+
     // Centralize arc creation so every supported transition shape becomes the
     // same graph edge form before lowering and debug dumping.
     static void addArc(FsmGraph& graph, int fromValue, int toValue, bool isReset, bool isCond,
@@ -244,7 +263,9 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     // Extract supported case-item transitions in one place so the conservative
-    // policy for direct and ternary forms stays consistent.
+    // policy for direct and ternary forms stays consistent. The false exits in
+    // this helper are deliberate subset boundaries: they document shapes we do
+    // not yet model in this PR and that future FSM-detection work may widen.
     static bool emitCaseItemArcs(FsmGraph& graph, AstCaseItem* itemp, AstVarScope* stateVscp,
                                  const std::unordered_map<int, string>& labels, bool inclCond) {
         std::vector<std::pair<string, int>> froms;
@@ -264,6 +285,7 @@ class FsmDetectVisitor final : public VNVisitor {
         if (AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp)) {
             int toValue = 0;
             if (exprConstValue(assp->rhsp(), toValue)) {
+                if (!validateKnownStateValue(assp, labels, toValue)) return true;
                 for (const auto& from : froms) {
                     addArc(graph, from.second, toValue, false, false, itemp->isDefault(),
                            assp->fileline());
@@ -277,6 +299,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 const bool simpleCond = exprConstValue(condp->thenp(), thenValue)
                                         && exprConstValue(condp->elsep(), elseValue);
                 if (simpleCond || inclCond) {
+                    if (!validateKnownStateValue(condp->thenp(), labels, thenValue)) return true;
+                    if (!validateKnownStateValue(condp->elsep(), labels, elseValue)) return true;
                     for (const int branchValue : {thenValue, elseValue}) {
                         for (const auto& from : froms) {
                             addArc(graph, from.second, branchValue, false, true,
@@ -300,6 +324,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 AstVarRef* const vrefp = VN_CAST(assp->lhsp(), VarRef);
                 int toValue = 0;
                 if (vrefp && vrefp->varScopep() == stateVscp && exprConstValue(assp->rhsp(), toValue)) {
+                    if (!validateKnownStateValue(assp, labels, toValue)) continue;
                     addArc(graph, 0, toValue, true, false, false, assp->fileline());
                 }
             }
@@ -365,7 +390,10 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     // Find the first supported FSM candidate in a clocked always block, warn on
-    // additional candidates, and attach reset arcs when present.
+    // additional candidates, and attach reset arcs when present. Candidate
+    // filtering stays narrow on purpose: we prefer to skip ambiguous shapes now
+    // and expand detection in a later PR rather than over-infer coverage from
+    // forms we do not yet model confidently.
     void processAlways(AstAlways* alwaysp) {
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return;
         std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
@@ -396,7 +424,9 @@ class FsmDetectVisitor final : public VNVisitor {
                                    "the same always block. Only the first candidate will be "
                                    "instrumented.");
             } else {
-                processCase(cand.first, cand.second, alwaysp);
+                cand.first->v3error(
+                    "FSM coverage: multiple supported case statements found in the same always "
+                    "block are not supported");
             }
         }
 

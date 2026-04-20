@@ -47,7 +47,6 @@ FsmPseudoVertex* FsmGraph::defaultAnyVertex() {
 FsmArcEdge* FsmGraph::addArc(int fromValue, int toValue, bool isReset, bool isCond, bool isDefault,
                              FileLine* flp) {
     FsmStateVertex* const top = findStateVertex(toValue);
-    if (!top) return nullptr;
     FsmVertex* fromp = nullptr;
     if (isReset) {
         fromp = resetAnyVertex();
@@ -55,7 +54,6 @@ FsmArcEdge* FsmGraph::addArc(int fromValue, int toValue, bool isReset, bool isCo
         fromp = defaultAnyVertex();
     } else {
         fromp = findStateVertex(fromValue);
-        if (!fromp) return nullptr;
     }
     return new FsmArcEdge{this, fromp, top, isReset, isCond, isDefault, flp};
 }

@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: same-state multi-candidate FSM error test
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+test.scenarios('vlt')
+
+# Multiple supported case candidates on the same state variable in one
+# always_ff are rejected. Different-state multi-candidate cases still use the
+# existing FSMMULTI warning path; this test locks down only the same-state
+# unsupported form.
+test.lint(
+    verilator_flags2=["--coverage-fsm"],
+    fails=True)
+
+test.file_grep(
+    test.compile_log_filename,
+    r'%Error: t/t_fsmmulti_same_bad.v:30:5: FSM coverage: multiple supported case '
+    r'statements found in the same always block are not supported')
+
+test.passes()

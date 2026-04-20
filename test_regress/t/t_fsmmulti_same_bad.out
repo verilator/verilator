@@ -1,0 +1,5 @@
+%Error: t/t_fsmmulti_same_bad.v:30:5: FSM coverage: multiple supported case statements found in the same always block are not supported
+   30 |     case (state)
+      |     ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to 1 error(s)
