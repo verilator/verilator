@@ -1544,6 +1544,52 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstPropAlways* nodep) override {
+        // IEEE 1800-2023 16.12.11 -- always[m:n] / s_always[m:n] property operator
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->propp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyParamsEdit(nodep->loBoundp());
+            V3Const::constifyParamsEdit(nodep->hiBoundp());
+            if (VN_IS(nodep->hiBoundp(), Unbounded)) {
+                if (nodep->isStrong()) {
+                    nodep->v3error("s_always range must be bounded"
+                                   " (IEEE 1800-2023 16.12.11)");
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: unbounded always range (always [m:$])");
+                }
+            }
+            const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
+            const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
+            if (!loConstp && !VN_IS(nodep->loBoundp(), Unbounded)) {
+                nodep->v3error("always range low bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (!hiConstp && !VN_IS(nodep->hiBoundp(), Unbounded)) {
+                nodep->v3error("always range high bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && loConstp->toSInt() < 0) {
+                nodep->v3error("always range low bound must be non-negative"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
+                nodep->v3error("always range high bound must be >= low bound"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            // TODO: remove this stub once V3AssertNfa buildPropAlways lands.
+            // Keeps compile halting cleanly for legal bounded forms pending NFA lowering.
+            if (loConstp && hiConstp && loConstp->toSInt() >= 0
+                && hiConstp->toSInt() >= loConstp->toSInt()) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: bounded always lowering pending V3AssertNfa integration");
+            }
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

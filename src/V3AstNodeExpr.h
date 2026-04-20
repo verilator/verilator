@@ -2027,6 +2027,37 @@ public:
     }
     string name() const override VL_MT_STABLE { return m_name; }
 };
+class AstPropAlways final : public AstNodeExpr {
+    // always / always[m:n] / s_always[m:n] property operator (IEEE 1800-2023 16.12.11)
+    // Bare `always P` is collapsed to P in the parser (redundant in concurrent assertions).
+    // Only bounded forms survive to the AST.
+    // @astgen op1 := propp : AstNodeExpr
+    // @astgen op2 := loBoundp : AstNodeExpr
+    // @astgen op3 := hiBoundp : AstNodeExpr
+    const bool m_isStrong = false;  // true for s_always (strong form)
+public:
+    AstPropAlways(FileLine* fl, AstNodeExpr* propp, AstNodeExpr* loBoundp,
+                  AstNodeExpr* hiBoundp, bool isStrong)
+        : ASTGEN_SUPER_PropAlways(fl)
+        , m_isStrong{isStrong} {
+        this->propp(propp);
+        this->loBoundp(loBoundp);
+        this->hiBoundp(hiBoundp);
+    }
+    ASTGEN_MEMBERS_AstPropAlways;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { V3ERROR_NA_RETURN(0); }
+    bool sameNode(const AstNode* samep) const override {
+        return m_isStrong == VN_DBG_AS(samep, PropAlways)->m_isStrong;
+    }
+    bool isStrong() const { return m_isStrong; }
+    bool isMultiCycleSva() const override { return true; }
+};
 class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)
     // Return a random number, based upon width()
