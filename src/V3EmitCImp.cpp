@@ -764,9 +764,7 @@ class EmitCTrace final : public EmitCFunc {
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        puts(v3Global.opt.useTraceOffload() && nodep->traceType() == VTraceType::CHANGE
-                 ? "(base+"
-                 : "(oldp+");
+        puts("(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
         const VNumRange& arrayRange = nodep->declp()->arrayRange();

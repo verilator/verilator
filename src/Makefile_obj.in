@@ -232,8 +232,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Active.o \
   V3ActiveTop.o \
   V3Assert.o \
+  V3AssertNfa.o \
   V3AssertPre.o \
-  V3AssertProp.o \
   V3Begin.o \
   V3Branch.o \
   V3CCtors.o \

@@ -1039,14 +1039,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
         v3Global.opt.m_timing.setTrueOrFalse(true);
 
-    if (trace()) {
-        // With --trace-vcd, --trace-threads is ignored
-        if (traceEnabledVcd()) m_traceThreads = 1;
-    }
-
-    UASSERT(!(useTraceParallel() && useTraceOffload()),
-            "Cannot use both parallel and offloaded tracing");
-
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
     if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
@@ -1826,22 +1818,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_traceEnabledFst = true;
         addLdLibs("-lz");
     });
-    DECL_OPTION("-trace-fst-thread", CbCall, [this, fl]() {
-        m_traceEnabledFst = true;
-        addLdLibs("-lz");
-        fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
-                               "Use --trace-fst with --trace-threads > 0.");
-        if (m_traceThreads == 0) m_traceThreads = 1;
+    DECL_OPTION("-trace-fst-thread", CbCall, [fl]() {
+        fl->v3warn(DEPRECATED, "Option '--trace-fst-thread' is deprecated and has no effect.");
     }).undocumented();
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
     DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
-    DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
-        m_trace = true;
-        m_traceThreads = std::atoi(valp);
-        if (m_traceThreads < 1) fl->v3fatal("--trace-threads must be >= 1: " << valp);
-    });
+    DECL_OPTION("-trace-threads", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--trace-threads' is deprecated and has no effect.");
+    }).undocumented();
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
     DECL_OPTION("-trace-vcd", CbCall, [this]() { m_traceEnabledVcd = true; });
