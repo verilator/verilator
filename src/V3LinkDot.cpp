@@ -3610,8 +3610,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 enclosingVarp = varRefp->varp();
             } else if (const AstParseRef* const parseRefp = VN_CAST(exprp, ParseRef)) {
                 if (m_modp) {
-                    if (VSymEnt* const symp = m_statep->getNodeSym(m_modp)
-                                                  ->findIdFlat(parseRefp->name())) {
+                    if (VSymEnt* const symp
+                        = m_statep->getNodeSym(m_modp)->findIdFlat(parseRefp->name())) {
                         enclosingVarp = VN_CAST(symp->nodep(), Var);
                     }
                 }
@@ -3623,11 +3623,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which will specialize the enclosing module first; at that point the
                 // VarRef's varp->childDTypep() is an IfaceRefDType and V3Param rewrites
                 // the pin before cellPinCleanup.
-                AstVarRef* const fwdRefp = new AstVarRef{exprp->fileline(), enclosingVarp,
-                                                         VAccess::READ};
-                AstPin* const newPinp
-                    = new AstPin{pinp->fileline(), paramNum,
-                                 "__VGIfaceParam" + modIfaceVarp->name(), fwdRefp};
+                AstVarRef* const fwdRefp
+                    = new AstVarRef{exprp->fileline(), enclosingVarp, VAccess::READ};
+                AstPin* const newPinp = new AstPin{
+                    pinp->fileline(), paramNum, "__VGIfaceParam" + modIfaceVarp->name(), fwdRefp};
                 newPinp->param(true);
                 visit(newPinp);
                 nodep->addParamsp(newPinp);
