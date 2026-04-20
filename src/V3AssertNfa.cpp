@@ -659,8 +659,7 @@ class SvaNfaBuilder final {
         const int innerLen = fixedLength(nodep->lhsp());
         const int outerLen = fixedLength(nodep->rhsp());
         if (innerLen < 0 || outerLen < 0) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: within with ranged cycle-delay operand");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: within with ranged cycle-delay operand");
             return BuildResult::failWithError();
         }
         if (innerLen > outerLen) {
