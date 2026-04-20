@@ -26,7 +26,6 @@ FsmStateVertex* FsmGraph::findStateVertex(int value) const {
 }
 
 FsmStateVertex* FsmGraph::addStateVertex(string label, int value) {
-    if (FsmStateVertex* const existingp = findStateVertex(value)) return existingp;
     FsmStateVertex* const vertexp = new FsmStateVertex{this, label, value};
     m_stateVertices.emplace(value, vertexp);
     return vertexp;

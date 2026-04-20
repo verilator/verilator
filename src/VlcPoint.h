@@ -72,11 +72,13 @@ public:
     string linescov() const { return keyExtract(VL_CIK_LINESCOV, m_name.c_str()); }
     bool isFsmState() const { return type() == "fsm_state"; }
     bool isFsmArc() const { return type() == "fsm_arc"; }
+    // Arc-specific helpers are used after callers have already filtered to
+    // FSM arc points, so they do not repeat the type check here.
     bool isFsmResetInclude() const {
-        return isFsmArc() && comment().find("[reset_include]") != string::npos;
+        return comment().find("[reset_include]") != string::npos;
     }
     bool isFsmResetArc() const {
-        return isFsmArc() && !isFsmResetInclude() && comment().find("[reset]") != string::npos;
+        return !isFsmResetInclude() && comment().find("[reset]") != string::npos;
     }
     string fsmVarName() const {
         const string cmt = comment();
@@ -99,7 +101,7 @@ public:
         if (tag != string::npos) to.erase(tag);
         return to;
     }
-    bool isFsmDefaultArc() const { return isFsmArc() && fsmFromState() == "default"; }
+    bool isFsmDefaultArc() const { return fsmFromState() == "default"; }
     bool fsmIsReset() const { return isFsmResetArc() || isFsmResetInclude(); }
     int lineno() const {
         const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
