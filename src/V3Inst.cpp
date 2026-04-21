@@ -446,6 +446,111 @@ private:
             }
         } else {
             AstVar* const pinVarp = nodep->modVarp();
+            // Multi-dim whole-array iface pin fanout: cartesian-product the port's
+            // nested UnpackArrayDType layers and emit one pin + per-element var per cell.
+            // For 1-dim falls through to the original code below.
+            std::vector<const AstUnpackArrayDType*> portArrs;
+            for (AstNodeDType* d = pinVarp->dtypep()->skipRefp(); d;) {
+                if (const AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                    portArrs.push_back(arrp);
+                    d = arrp->subDTypep()->skipRefp();
+                } else {
+                    break;
+                }
+            }
+            if (portArrs.size() >= 2) {
+                AstIfaceRefDType* const portIrp
+                    = VN_CAST(portArrs.back()->subDTypep()->skipRefp(), IfaceRefDType);
+                if (!portIrp || portIrp->isVirtual()) return;
+                const int ndim = static_cast<int>(portArrs.size());
+                std::vector<int> sizes(ndim);
+                int totalElems = 1;
+                for (int d = 0; d < ndim; ++d) {
+                    sizes[d] = portArrs[d]->elementsConst();
+                    totalElems *= sizes[d];
+                }
+                const AstVarRef* const varrefp = VN_CAST(nodep->exprp(), VarRef);
+                if (!varrefp) {
+                    nodep->exprp()->v3error("Unexpected connection to multi-dim arrayed port");
+                    return;
+                }
+                std::vector<const AstUnpackArrayDType*> exprArrs;
+                for (AstNodeDType* d = varrefp->dtypep()->skipRefp(); d;) {
+                    if (const AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                        exprArrs.push_back(arrp);
+                        d = arrp->subDTypep()->skipRefp();
+                    } else {
+                        break;
+                    }
+                }
+                if (exprArrs.size() != static_cast<size_t>(ndim)) {
+                    nodep->exprp()->v3error(
+                        "Multi-dim iface pin expression rank does not match port");
+                    return;
+                }
+                AstNode* prevp = nullptr;
+                AstNode* prevPinp = nullptr;
+                std::vector<int> idx(ndim, 0);
+                for (int n = 0; n < totalElems; ++n) {
+                    int rem = n;
+                    for (int d = ndim - 1; d >= 0; --d) {
+                        idx[d] = rem % sizes[d];
+                        rem /= sizes[d];
+                    }
+                    string portSuffix;
+                    string exprSuffix;
+                    for (int d = 0; d < ndim; ++d) {
+                        portSuffix += "__BRA__"
+                                      + AstNode::encodeNumber(portArrs[d]->lo() + idx[d])
+                                      + "__KET__";
+                        exprSuffix += "__BRA__"
+                                      + AstNode::encodeNumber(exprArrs[d]->lo() + idx[d])
+                                      + "__KET__";
+                    }
+                    const string varNewName = pinVarp->name() + portSuffix;
+                    AstVar* varNewp = nullptr;
+                    if (!pinVarp->backp()) {
+                        varNewp = m_deModVars.find(varNewName);
+                    } else {
+                        portIrp->cellp(nullptr);
+                        varNewp = pinVarp->cloneTree(false);
+                        varNewp->name(varNewName);
+                        varNewp->origName(varNewp->origName() + portSuffix);
+                        varNewp->dtypep(portIrp);
+                        m_deModVars.insert(varNewp);
+                        if (!prevp) {
+                            prevp = varNewp;
+                        } else {
+                            prevp->addNextHere(varNewp);
+                        }
+                    }
+                    if (!varNewp) {
+                        if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
+                        nodep->v3fatalSrc("Module dearray failed for "
+                                          << AstNode::prettyNameQ(varNewName));
+                    }
+                    AstPin* const newp = nodep->cloneTree(false);
+                    newp->modVarp(varNewp);
+                    newp->name(newp->name() + portSuffix);
+                    AstVarXRef* const newVarXRefp = new AstVarXRef{
+                        nodep->fileline(), varrefp->name() + exprSuffix, "", VAccess::WRITE};
+                    newVarXRefp->varp(newp->modVarp());
+                    newp->exprp()->unlinkFrBack()->deleteTree();
+                    newp->exprp(newVarXRefp);
+                    if (!prevPinp) {
+                        prevPinp = newp;
+                    } else {
+                        prevPinp->addNextHere(newp);
+                    }
+                }
+                if (prevp) {
+                    pinVarp->replaceWith(prevp);
+                    pushDeletep(pinVarp);
+                }
+                nodep->replaceWith(prevPinp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             const AstUnpackArrayDType* const pinArrp
                 = VN_CAST(pinVarp->dtypep()->skipRefp(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
