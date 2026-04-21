@@ -516,46 +516,38 @@ class SvaNfaBuilder final {
     // Bounded `always [lo:hi] P` / `s_always [lo:hi] P` (IEEE 1800-2023 16.12.11).
     // P must hold at every cycle k in [t+lo, t+hi]. Lowered as:
     //   entry -->lo clocked edges--> vertex A
-    //   at A, and at each of the next (hi-lo) cycles, require P via a rejectOnFail Link.
-    //   Fail any cycle => reject. All cycles pass => match.
+    //   at A, and at each of the next (hi-lo) cycles, require P via a
+    //   rejectOnFail Link. Fail any cycle => reject. All cycles pass => match.
+    //
+    // Strong/weak distinction: in-window reject is identical; the difference
+    // is only at sim-end liveness (strong s_always must fail if the window is
+    // incomplete, weak always vacuously passes). Sim-end sink is an engine
+    // feature not yet present in V3AssertNfa -- tracked as a separate item.
     BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
                                 bool isTopLevelStep = false) {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const propp = nodep->propp();
-        if (propp->isMultiCycleSva()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: multi-cycle property inside bounded"
-                                         " always (IEEE 1800-2023 16.12.11)");
-            return BuildResult::failWithError();
+        // propp is evaluated each cycle as a boolean Link condition. Reject
+        // any multi-cycle sequence operator (SConsRep, SExpr, SGotoRep,
+        // SNonConsRep, SAnd, SIntersect, SOr, SThroughout, PropAlways -- all
+        // report isMultiCycleSva()) and any property operator (Implication
+        // |-> / |=>, Until, PropSpec). One message covers both classes.
+        bool hasPropertyOp = propp->isMultiCycleSva();
+        if (!hasPropertyOp) {
+            propp->foreach([&](const AstNode* np) {
+                if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
+                    hasPropertyOp = true;
+                }
+            });
         }
-        // propp is checked each cycle as a boolean Link condition; reject any
-        // shape that is a property operator (not a boolean expression). This
-        // covers AstImplication (|-> / |=>), AstUntil, AstPropAlways, and any
-        // AstPropSpec left behind.
-        bool propHasProperty = false;
-        propp->foreach([&](const AstNode* np) {
-            if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropAlways)
-                || VN_IS(np, PropSpec)) {
-                propHasProperty = true;
-            }
-        });
-        if (propHasProperty) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property operator inside bounded"
+        if (hasPropertyOp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property/sequence operator inside bounded"
                                          " always (IEEE 1800-2023 16.12.11)");
             return BuildResult::failWithError();
         }
         const int lo = getConstInt(nodep->loBoundp());
         const int hi = getConstInt(nodep->hiBoundp());
         UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
-        constexpr int kAlwaysUnrollLimit = 256;
-        if (hi - lo > kAlwaysUnrollLimit) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: always range span > 256 cycles"
-                                         " (IEEE 1800-2023 16.12.11)");
-            return BuildResult::failWithError();
-        }
-        // Strong/weak end-of-simulation semantics are identical for in-window
-        // reject; differ only at sim-end liveness. Bounded always always
-        // rejects on in-window failure, so both forms share this lowering.
-        // TODO: attach sim-end rejectOnFail sink for s_always.
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
         for (int k = 0; k <= hi - lo; ++k) {
             if (k > 0) {
@@ -566,10 +558,9 @@ class SvaNfaBuilder final {
             SvaStateVertex* const checkp = scopedCreateVertex();
             SvaTransEdge* const linkp
                 = guardedLink(currentp, checkp, sampled(propp->cloneTreePure(false)), flp);
-            // `always[m:n]` is universal over the window -- every cycle must
-            // hold, unlike SConsRep/range-delay which is existential (any
-            // match accepts). Mark rejectOnFail on ALL checks, not just
-            // first/last.
+            // Universal: every cycle must hold. Unlike SConsRep/range-delay
+            // (existential, any match accepts), mark rejectOnFail on ALL
+            // checks, not just first/last.
             if (isTopLevelStep && !m_inUnboundedScope) linkp->m_rejectOnFail = true;
             currentp = checkp;
         }
