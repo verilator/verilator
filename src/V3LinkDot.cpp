@@ -3601,9 +3601,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
             }
-            // exprp may still be an AstParseRef at primary LinkDot; try to resolve by name
-            // against the enclosing module's symbol table so we can detect forwarding of a
-            // generic interface port (issue #7454).
+            // Resolve pin expression to the enclosing module's port Var. At primary
+            // LinkDot the expression may still be an AstParseRef, so also look up by name.
             AstVar* enclosingVarp = nullptr;
             const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
             if (varRefp) {
@@ -3618,11 +3617,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             if (enclosingVarp && enclosingVarp->varType() == VVarType::IFACEREF
                 && VN_IS(enclosingVarp->childDTypep()->skipRefp(), IfaceGenericDType)) {
-                // Forwarding: the enclosing module itself has a generic interface port and
-                // passes it to this sub-instance (issue #7454). Defer resolution to V3Param,
-                // which will specialize the enclosing module first; at that point the
-                // VarRef's varp->childDTypep() is an IfaceRefDType and V3Param rewrites
-                // the pin before cellPinCleanup.
+                // Nested generic-iface forwarding (#7454): enclosing port is itself still
+                // generic, so emit a placeholder __VGIfaceParam pin carrying a VarRef to
+                // the outer port. V3Param rewrites it to the concrete IfaceRefDType once
+                // the enclosing module is specialized.
                 AstVarRef* const fwdRefp
                     = new AstVarRef{exprp->fileline(), enclosingVarp, VAccess::READ};
                 AstPin* const newPinp = new AstPin{

@@ -2098,11 +2098,9 @@ public:
                 }
                 pinp = nextp;
             }
-            // Generic interface forwarding (issue #7454): V3LinkDot leaves a VarRef
-            // placeholder on __VGIfaceParam pins when the enclosing module also has a
-            // generic interface port. By this point the enclosing module has been
-            // specialized, so substitute the VarRef with the resolved IfaceRefDType
-            // before constifyParamsEdit evaluates the cell tree.
+            // Nested generic-iface forwarding (#7454): rewrite VarRef placeholders
+            // left by V3LinkDot to concrete IfaceRefDTypes now that the enclosing
+            // module has been specialized.
             resolveGenericIfaceForwardingPins(cellp->paramsp());
         }
         // Create new module name with _'s between the constants
