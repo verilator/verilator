@@ -40,7 +40,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Changes user() and weight()
 
 class GraphRemoveRedundant final : GraphAlg<> {
-    const bool m_sumWeights;  ///< Sum, rather then maximize weights
+    const bool m_sumWeights;  // Sum, rather then maximize weights
 private:
     void main() {
         for (V3GraphVertex& vertex : m_graphp->vertices()) vertexIterate(&vertex);
