@@ -185,11 +185,12 @@ private:
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
     // Build "__BRA__i__KET__" suffix joining all cartesian indices for the current clone.
+    // Uses encodeNumber so negative indices match what lookup sites generate.
     string instSuffix() const {
         string s;
         for (size_t d = 0; d < m_cellRangesp.size(); ++d) {
             const int instNum = m_cellRangesp[d]->loConst() + m_instIdx[d];
-            s += "__BRA__" + cvtToStr(instNum) + "__KET__";
+            s += "__BRA__" + AstNode::encodeNumber(instNum) + "__KET__";
         }
         return s;
     }
@@ -228,7 +229,8 @@ private:
                 }
                 string suffix;
                 for (int d = 0; d < ndim; ++d) {
-                    suffix += "__BRA__" + cvtToStr(arrLayers[d]->lo() + idx[d]) + "__KET__";
+                    suffix += "__BRA__" + AstNode::encodeNumber(arrLayers[d]->lo() + idx[d])
+                              + "__KET__";
                 }
                 const string varNewName = nodep->name() + suffix;
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep);
