@@ -738,9 +738,12 @@ public:
                     = m_graph.addLink(antResult.termVertexp, sinkVtxp, rejSampp);
                 ep->m_rejectOnFail = true;
             }
-            // Note: dangling-condp cleanup (formerly in top-level path) is
-            // skipped here -- finalCondp is cloned for the Sampled nodes, and
-            // the original node stays parented in typical build paths.
+            // finalCondp is cloned into the Sampled nodes; if the original is
+            // not parented anywhere in the AST anymore it must be freed here
+            // or ASan flags it as a leak (e.g. t_sequence_bool_ops).
+            if (!antResult.finalCondp->backp()) {
+                VL_DO_DANGLING(antResult.finalCondp->deleteTree(), antResult.finalCondp);
+            }
         } else {
             m_graph.addLink(antResult.termVertexp, trigVtxp);
         }
