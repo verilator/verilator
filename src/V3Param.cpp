@@ -1470,7 +1470,6 @@ class ParamProcessor final {
                                 << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                         });
                     }
-                    V3Const::constifyParamsEdit(cloneVarp);
                     if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
                         // Stamp the port's type on the const so equal values hash the same.
                         if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
