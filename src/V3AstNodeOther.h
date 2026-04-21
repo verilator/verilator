@@ -656,7 +656,8 @@ class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
-    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains via nextp()
+    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
+    // via nextp()
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced

@@ -1608,8 +1608,8 @@ class ParamProcessor final {
                 // Pin is a VarRef to a var of (possibly arrayed) iface type.
                 if (const AstNodeVarRef* const vrp = VN_CAST(exprp, NodeVarRef)) {
                     if (vrp->varp()) {
-                        pinIrefp = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()),
-                                           IfaceRefDType);
+                        pinIrefp
+                            = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()), IfaceRefDType);
                     }
                 }
                 // Pin's op1p is a VarRef (e.g. SelBit/ArraySel into an iface array).

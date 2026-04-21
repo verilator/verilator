@@ -779,14 +779,13 @@ class LinkCellsVisitor final : public VNVisitor {
                     // For arrayed interfaces, we replace cellp when de-arraying in V3Inst.
                     // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
                     std::vector<AstRange*> rangesp;
-                    for (AstRange* rp = nodep->rangep(); rp;
-                         rp = VN_CAST(rp->nextp(), Range)) {
+                    for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
                         rangesp.push_back(rp);
                     }
                     AstNodeDType* dtp = idtypep;
                     for (auto it = rangesp.rbegin(); it != rangesp.rend(); ++it) {
                         dtp = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, dtp,
-                                                     (*it)->cloneTree(false)};
+                                                      (*it)->cloneTree(false)};
                     }
                     varp = new AstVar{nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType{}, dtp};

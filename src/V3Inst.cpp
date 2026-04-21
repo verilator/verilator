@@ -500,11 +500,9 @@ private:
                     string portSuffix;
                     string exprSuffix;
                     for (int d = 0; d < ndim; ++d) {
-                        portSuffix += "__BRA__"
-                                      + AstNode::encodeNumber(portArrs[d]->lo() + idx[d])
+                        portSuffix += "__BRA__" + AstNode::encodeNumber(portArrs[d]->lo() + idx[d])
                                       + "__KET__";
-                        exprSuffix += "__BRA__"
-                                      + AstNode::encodeNumber(exprArrs[d]->lo() + idx[d])
+                        exprSuffix += "__BRA__" + AstNode::encodeNumber(exprArrs[d]->lo() + idx[d])
                                       + "__KET__";
                     }
                     const string varNewName = pinVarp->name() + portSuffix;
@@ -672,8 +670,8 @@ private:
         for (size_t i = 0; i < indices.size(); ++i) {
             indexStr += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
         }
-        AstVarXRef* const newp = new AstVarXRef{nodep->fileline(),
-                                                varrefp->name() + indexStr, "", VAccess::READ};
+        AstVarXRef* const newp
+            = new AstVarXRef{nodep->fileline(), varrefp->name() + indexStr, "", VAccess::READ};
         newp->dtypep(irp);
         newp->classOrPackagep(varrefp->classOrPackagep());
         nodep->addNextHere(newp);

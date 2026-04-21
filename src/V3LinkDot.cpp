@@ -773,7 +773,8 @@ public:
                 // GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
                 // but presently should be just "foo".
                 // Likewise cell foo__[array] before we've expanded arrays is just foo.
-                // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them all.
+                // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them
+                // all.
                 altIdent = ident;
                 while (VString::endsWith(altIdent, "__KET__")) {
                     const auto braPos = altIdent.rfind("__BRA__");
