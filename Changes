@@ -65,9 +65,11 @@ Verilator 5.047 devel
 * Improve assignment-compatibility type check (#2843) (#5666) (#7052). [Pawel Kojma, Antmicro Ltd.]
 * Improve error message when variable used as data type (#7318). [Ryszard Rozak, Antmicro Ltd.]
 * Improve E_UNSUPPORTED warning messages (#7329). [Eunseo Song]
+* Improve NFA-based multi-cycle SVA evaluation engine (#7430). [Yilou Wang]
 * Change array tracing to dump left index to right index (#7205). [Geza Lore, Testorrent USA, Inc.]
 * Change `--converge-limit` default to 10000 (#7209).
 * Remove DFG extract optimization pass (#7394). [Geza Lore, Testorrent USA, Inc.]
+* Remove multi-threaded FST tracing (#7443). [Geza Lore, Testorrent USA, Inc.]
 * Optimize trace code for faster compiles on repeated types (#6707) (#6832). [Todd Strader]
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
@@ -80,11 +82,15 @@ Verilator 5.047 devel
 * Optimize more patterns in DfgPeephole (#7332). [Geza Lore, Testorrent USA, Inc.]
 * Optimize read references in DFG (#7354). [Geza Lore, Testorrent USA, Inc.]
 * Optimize DFG only once, after scoping (#7362). [Geza Lore, Testorrent USA, Inc.]
-* Optimize more DFG peephole patterns (#7423). [Geza Lore, Testorrent USA, Inc.]
+* Optimize more DFG peephole patterns (#7423) (#7452). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DfgBreakCycles IndependentBits analysis ordering (#7446). [Geza Lore, Testorrent USA, Inc.]
+* Optimize select patterns in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
+* Optimize temporary insertion in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
+* Optimize arithmetic right shift (>>>) in DfgBreakCycles (#7447). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
 * Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
-* Fix returning wrong type from static function in parameterized class (#5479) (#7387) (#7411) (#7418). [em2machine]
+* Fix returning wrong type from static function in parameterized class (#5479) (#7387) (#7411) (#7418) (#7445) (#7450). [em2machine]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix null assignment to virtual interfaces (#5974) (#5990). [Maxim Fonarev]
 * Fix typedef scope resolution for parameterized class aliases (#5977) (#7319). [Nick Brereton]
@@ -151,8 +157,10 @@ Verilator 5.047 devel
 * Fix delete inside foreach skipping elements (#7407) (#7410)
 * Fix std::randomize in parameterized-derived class (#7409) (#7416). [Yilou Wang]
 * Fix virtual interface implied comparison with null (#7421). [Alex Solomatnikov]
+* Fix uvm_hdl_release_and_read to release value and check success (#7425). [Christian Hecken, Heidelberg University]
 * Fix inline constraint on array-indexed randomize target (#7431) (#7434). [Yilou Wang]
 * Fix modification of members of object with const handle (#7433). [Kamil Danecki, Antmicro Ltd.]
+* Fix `dist` under implication in constraints (#7440) (#7442). [Alex Solomatnikov] [Yilou Wang]
 
 
 Verilator 5.046 2026-02-28
