@@ -366,7 +366,8 @@ void VlcTop::printTypeSummary() {
         printed.insert(type);
         const uint64_t hit = it->second.first;
         const uint64_t total = it->second.second;
-        const double pct = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        const double pct
+            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
         std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
                   << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
                   << hit << "/" << std::setw(countWidth) << total << ")\n";
@@ -375,7 +376,8 @@ void VlcTop::printTypeSummary() {
         if (printed.count(it.first)) continue;
         const uint64_t hit = it.second.first;
         const uint64_t total = it.second.second;
-        const double pct = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        const double pct
+            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
         std::cout << "  " << std::left << std::setw(typeWidth) << it.first << " : " << std::right
                   << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
                   << hit << "/" << std::setw(countWidth) << total << ")\n";
