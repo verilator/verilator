@@ -254,9 +254,8 @@ class SvaNfaBuilder final {
             return fixedLength(throughp->rhsp());
         }
         if (AstSOr* const orp = VN_CAST(nodep, SOr)) {
-            // Fixed-length OR: all alternatives must have the same length so
-            // the combined match collapses to a single end cycle (needed by
-            // SIntersect / buildSWithin).
+            // Alternatives must share one end cycle; buildSWithin relies on
+            // this to pair the OR with an SIntersect.
             const int lhsLen = fixedLength(orp->lhsp());
             const int rhsLen = fixedLength(orp->rhsp());
             if (lhsLen < 0 || rhsLen < 0 || lhsLen != rhsLen) return -1;
@@ -646,14 +645,12 @@ class SvaNfaBuilder final {
         return {combVtxp, nullptr, {}};
     }
 
-    // Lower `seq1 within seq2` (IEEE 1800-2023 16.9.10) by desugaring to a
-    // single intersect with an OR of offset-shifted inner variants:
-    //   seq1 within seq2 == (OR_{i in 0..slack} pad(i) seq1 pad(slack-i))
-    //                         intersect seq2
+    // Lower `seq1 within seq2` (IEEE 1800-2023 16.9.10) as:
+    //   (OR_{i in 0..slack} 1 ##i seq1 ##(slack-i) 1) intersect seq2
     // Both operands must have fixed length (no ranged cycle delays).
-    // Placing the OR *inside* a single SIntersect yields one AndCombiner
-    // done-latch pair, so the assertion fires once per match attempt even
-    // when several offsets accept together.
+    // The OR lives inside a single SIntersect so one AndCombiner done-latch
+    // serves all offsets; lifting it out would double-count matches where
+    // multiple offsets accept on the same seq2 end cycle.
     BuildResult buildSWithin(AstSWithin* nodep, SvaStateVertex* entryVtxp,
                              bool isTopLevelStep = false) {
         const int innerLen = fixedLength(nodep->lhsp());
@@ -697,11 +694,10 @@ class SvaNfaBuilder final {
         AstNodeExpr* const combinedp = new AstSIntersect{flp, innerOrp, outerClonep};
         BuildResult result = buildExpr(combinedp, entryVtxp, isTopLevelStep);
         VL_DO_DANGLING(combinedp->deleteTree(), combinedp);
-        // When both operands degenerate to plain booleans, buildAndCombiner's
-        // single-cycle path returns a freshly-allocated AstAnd as finalCondp
-        // (not part of the synthetic tree we just deleted). Intermediate
-        // callers clone-and-discard finalCondp, so the orphan would leak.
-        // Promote it into the NFA graph here so our result carries no orphan.
+        // When both operands are plain booleans, buildAndCombiner returns a
+        // freshly-allocated AstAnd as finalCondp with no parent. Callers up
+        // the chain clone-and-discard finalCondp, so leave it parent-less and
+        // it leaks; anchor it in the graph now via an edge.
         if (result.valid() && result.finalCondp && !result.finalCondp->backp()) {
             SvaStateVertex* const wrapVtxp = scopedCreateVertex();
             guardedLink(result.termVertexp, wrapVtxp, sampled(result.finalCondp), flp);
