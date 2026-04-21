@@ -276,8 +276,7 @@ private:
                 for (int d = 0; d < ndim; ++d) {
                     const int sel = rangesp[d]->ascending() ? (sizes[d] - 1 - idx[d]) : idx[d];
                     flatSel = flatSel * sizes[d] + sel;
-                    suffix += "__BRA__"
-                              + AstNode::encodeNumber(rangesp[d]->loConst() + idx[d])
+                    suffix += "__BRA__" + AstNode::encodeNumber(rangesp[d]->loConst() + idx[d])
                               + "__KET__";
                 }
                 m_instSelNum = flatSel;
