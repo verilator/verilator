@@ -11,13 +11,16 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(verilator_flags2=[test.pli_filename])
 
 test.execute()
 
 # bug2227, Verilator unsupported, class dead
 # This is what we really want:
-#   test.file_grep_not(test.obj_dir + "/V"+test.name+"__Syms.h", r'dead')
-test.file_grep(test.obj_dir + "/V" + test.name + "__Syms.h", r'dead')
+#   test.file_grep_not(test.obj_dir + "/V"+test.name+"__Syms.h", r'Dead')
+#   test.file_grep_not(test.obj_dir + "/V" + test.name + "_classes.mk", r'Dead');
+test.file_grep(test.obj_dir + "/V" + test.name + "__Dpi.h", r'dpii_Keep')
+test.file_grep(test.obj_dir + "/V" + test.name + "__Dpi.h", r'dpix_Keep')
+test.file_grep(test.obj_dir + "/V" + test.name + "_Pkg_public_kpt.h", r'public_int_Keep')
 
 test.passes()
