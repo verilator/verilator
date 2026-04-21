@@ -1260,6 +1260,7 @@ vpm
 vpp
 warmup
 wavealloca
+wavediff
 waveforms
 whitespace
 widthed
