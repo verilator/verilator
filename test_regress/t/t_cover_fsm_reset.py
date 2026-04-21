@@ -22,7 +22,17 @@ test.run(cmd=[
     "--include-reset-arcs",
     test.obj_dir + "/coverage.dat",
 ],
+         logfile=test.obj_dir + "/summary.log",
+         tee=False,
          verilator_run=True)
+
+test.file_grep(test.obj_dir + "/summary.log", r"Coverage Summary:")
+test.file_grep(test.obj_dir + "/summary.log", r"line")
+test.file_grep(test.obj_dir + "/summary.log", r"toggle")
+test.file_grep(test.obj_dir + "/summary.log", r"branch")
+test.file_grep(test.obj_dir + "/summary.log", r"expr")
+test.file_grep(test.obj_dir + "/summary.log", r"fsm_state")
+test.file_grep(test.obj_dir + "/summary.log", r"fsm_arc")
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
