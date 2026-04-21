@@ -179,69 +179,34 @@ class InstDeVisitor final : public VNVisitor {
 private:
     // STATE
     const AstRange* m_cellRangep = nullptr;  // Outer range; nullptr for non-arrayed cells
-    std::vector<const AstRange*> m_cellRangesp;  // Full range chain, outer dim first
-    std::vector<int> m_instIdx;  // Current cartesian index per dim, outer dim first
     int m_instSelNum = 0;  // Row-major flat index for 1D-compat pin expansion
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
-    // Build "__BRA__i__KET__" suffix joining all cartesian indices for the current clone.
-    // Uses encodeNumber so negative indices match what lookup sites generate.
-    string instSuffix() const {
-        string s;
-        for (size_t d = 0; d < m_cellRangesp.size(); ++d) {
-            const int instNum = m_cellRangesp[d]->loConst() + m_instIdx[d];
-            s += "__BRA__" + AstNode::encodeNumber(instNum) + "__KET__";
-        }
-        return s;
-    }
-
     // VISITORS
     void visit(AstVar* nodep) override {
-        // Collect nested unpacked-array layers around an IfaceRefDType, if any.
-        std::vector<AstUnpackArrayDType*> arrLayers;
-        AstIfaceRefDType* innerIfaceRefp = nullptr;
-        for (AstNode* d = nodep->dtypep()->skipRefp(); d;) {
-            if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
-                arrLayers.push_back(arrp);
-                d = arrp->subDTypep()->skipRefp();
-            } else {
-                innerIfaceRefp = VN_CAST(d, IfaceRefDType);
-                break;
-            }
-        }
-        if (!arrLayers.empty() && innerIfaceRefp && !innerIfaceRefp->isVirtual()) {
+        // cppcheck-suppress constVariablePointer
+        AstNode* const dtp = nodep->dtypep()->skipRefp();
+        if (VN_IS(dtp, UnpackArrayDType)
+            && VN_IS(VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp(), IfaceRefDType)) {
+            if (VN_AS(VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp(), IfaceRefDType)
+                    ->isVirtual())
+                return;
             UINFO(8, "   dv-vec-VAR    " << nodep);
-            AstUnpackArrayDType* const innermostArrp = arrLayers.back();
-            const int ndim = static_cast<int>(arrLayers.size());
-            std::vector<int> sizes(ndim);
-            int totalElems = 1;
-            for (int d = 0; d < ndim; ++d) {
-                sizes[d] = arrLayers[d]->elementsConst();
-                totalElems *= sizes[d];
-            }
+            AstUnpackArrayDType* const arrdtype = VN_AS(dtp, UnpackArrayDType);
             AstNode* prevp = nullptr;
-            std::vector<int> idx(ndim, 0);
-            for (int n = 0; n < totalElems; ++n) {
-                int rem = n;
-                for (int d = ndim - 1; d >= 0; --d) {
-                    idx[d] = rem % sizes[d];
-                    rem /= sizes[d];
-                }
-                string suffix;
-                for (int d = 0; d < ndim; ++d) {
-                    suffix += "__BRA__" + AstNode::encodeNumber(arrLayers[d]->lo() + idx[d])
-                              + "__KET__";
-                }
-                const string varNewName = nodep->name() + suffix;
+            for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
+                const string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep);
                 if (!m_deModVars.find(varNewName)) {
-                    AstIfaceRefDType* const ifaceRefp = innerIfaceRefp->cloneTree(false);
-                    innermostArrp->addNextHere(ifaceRefp);
+                    AstIfaceRefDType* const ifaceRefp
+                        = VN_AS(arrdtype->subDTypep()->skipRefp(), IfaceRefDType)
+                              ->cloneTree(false);
+                    arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(nullptr);
 
                     AstVar* const varNewp = nodep->cloneTree(false);
                     varNewp->name(varNewName);
-                    varNewp->origName(varNewp->origName() + suffix);
+                    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
                     varNewp->dtypep(ifaceRefp);
                     m_deModVars.insert(varNewp);
                     if (!prevp) {
@@ -267,55 +232,55 @@ private:
         m_deModVars.main(nodep->modp());
         //
         if (nodep->rangep()) {
-            // Collect the full range chain (outer first)
-            m_cellRangesp.clear();
+            // Collect the full range chain (outer first).
+            std::vector<const AstRange*> rangesp;
             for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
-                m_cellRangesp.push_back(rp);
+                rangesp.push_back(rp);
             }
-            m_cellRangep = m_cellRangesp.front();
-            const int ndim = static_cast<int>(m_cellRangesp.size());
+            m_cellRangep = rangesp.front();
+            const int ndim = static_cast<int>(rangesp.size());
             std::vector<int> sizes(ndim);
             int totalElems = 1;
             for (int d = 0; d < ndim; ++d) {
-                sizes[d] = m_cellRangesp[d]->elementsConst();
+                sizes[d] = rangesp[d]->elementsConst();
                 totalElems *= sizes[d];
             }
 
             AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
-            // cppcheck-suppress constVariablePointer
-            AstNodeDType* d = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
             // Peel all UnpackArrayDType layers to reach the bottom IfaceRefDType.
             AstIfaceRefDType* origIfaceRefp = nullptr;
             AstUnpackArrayDType* innermostArrp = nullptr;
-            while (d) {
-                if (AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+            for (AstNodeDType* dp = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr; dp;) {
+                if (AstUnpackArrayDType* const arrp = VN_CAST(dp, UnpackArrayDType)) {
                     innermostArrp = arrp;
-                    d = arrp->subDTypep()->skipRefp();
+                    dp = arrp->subDTypep()->skipRefp();
                 } else {
-                    origIfaceRefp = VN_CAST(d, IfaceRefDType);
+                    origIfaceRefp = VN_CAST(dp, IfaceRefDType);
                     break;
                 }
             }
             const bool isIface = origIfaceRefp && !origIfaceRefp->isVirtual();
 
-            m_instIdx.assign(ndim, 0);
+            std::vector<int> idx(ndim, 0);
             for (int n = 0; n < totalElems; ++n) {
-                // Unflatten n into a row-major cartesian index; outer dim is most significant.
+                // Unflatten n into a row-major cartesian index; outer dim most significant.
                 int rem = n;
                 for (int d = ndim - 1; d >= 0; --d) {
-                    m_instIdx[d] = rem % sizes[d];
+                    idx[d] = rem % sizes[d];
                     rem /= sizes[d];
                 }
-                // Build the flat select number for 1D-compat pin expansion; each ascending
-                // dim inverts its contribution.
+                // Flat select number for 1D-compat pin expansion; ascending dims invert.
+                // Also build the "__BRA__i__KET__..." suffix (encodeNumber for negative idx).
                 int flatSel = 0;
+                string suffix;
                 for (int d = 0; d < ndim; ++d) {
-                    const int i = m_instIdx[d];
-                    const int sel = m_cellRangesp[d]->ascending() ? (sizes[d] - 1 - i) : i;
+                    const int sel = rangesp[d]->ascending() ? (sizes[d] - 1 - idx[d]) : idx[d];
                     flatSel = flatSel * sizes[d] + sel;
+                    suffix += "__BRA__"
+                              + AstNode::encodeNumber(rangesp[d]->loConst() + idx[d])
+                              + "__KET__";
                 }
                 m_instSelNum = flatSel;
-                const string suffix = instSuffix();
 
                 AstCell* const newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
@@ -351,8 +316,6 @@ private:
 
             // Done.  Delete original
             m_cellRangep = nullptr;
-            m_cellRangesp.clear();
-            m_instIdx.clear();
             if (isIface) {
                 ifaceVarp->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(ifaceVarp), ifaceVarp);
