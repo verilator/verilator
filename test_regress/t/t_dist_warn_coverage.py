@@ -93,6 +93,7 @@ for s in [
         'Invalid reference: Process might outlive variable',
         'Modport item is not a function/task:',
         'Modport item is not a variable:',
+        'Multi-dim iface pin expression rank does not match port',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface:',
         'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',

@@ -471,7 +471,7 @@ private:
                 }
                 const AstVarRef* const varrefp = VN_CAST(nodep->exprp(), VarRef);
                 if (!varrefp) {
-                    nodep->exprp()->v3error("Unexpected connection to multi-dim arrayed port");
+                    nodep->exprp()->v3error("Unexpected connection to arrayed port");
                     return;
                 }
                 std::vector<const AstUnpackArrayDType*> exprArrs;
