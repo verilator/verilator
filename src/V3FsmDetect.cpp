@@ -236,7 +236,6 @@ class FsmDetectVisitor final : public VNVisitor {
     // The extractor only models constant-valued state transitions, and by the
     // time detect runs those values have already been constant-folded.
     static bool exprConstValue(AstNodeExpr* exprp, int& value) {
-        if (!exprp) return false;
         if (AstConst* const constp = VN_CAST(exprp, Const)) {
             value = constp->toSInt();
             return true;
@@ -348,8 +347,8 @@ class FsmDetectVisitor final : public VNVisitor {
         std::unordered_map<int, string> labels;
         if (enump) {
             for (AstEnumItem* itemp = enump->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
-                int value = 0;
-                if (!exprConstValue(itemp->valuep(), value)) continue;
+                const AstConst* const constp = VN_AS(itemp->valuep(), Const);
+                const int value = constp->toSInt();
                 states.emplace_back(itemp->name(), value);
                 labels.emplace(value, itemp->name());
             }
@@ -431,18 +430,15 @@ class FsmDetectVisitor final : public VNVisitor {
         }
 
         if (firstIfp && firstVscp) {
-            const auto it = m_state.byVar.find(firstVscp->name());
-            if (it != m_state.byVar.end()) {
-                FsmGraph* const graphp = it->second.graphp.get();
-                if (graphp->hasResetCond()) {
-                    std::unordered_map<int, string> labels;
-                    for (const V3GraphVertex& vtx : graphp->vertices()) {
-                        const FsmVertex* const vertexp = vtx.as<FsmVertex>();
-                        if (!vertexp->isState()) continue;
-                        labels.emplace(vertexp->value(), vertexp->label());
-                    }
-                    addResetArcs(*graphp, firstIfp->thensp(), firstVscp, labels);
+            FsmGraph* const graphp = m_state.byVar.at(firstVscp->name()).graphp.get();
+            if (graphp->hasResetCond()) {
+                std::unordered_map<int, string> labels;
+                for (const V3GraphVertex& vtx : graphp->vertices()) {
+                    const FsmVertex* const vertexp = vtx.as<FsmVertex>();
+                    if (!vertexp->isState()) continue;
+                    labels.emplace(vertexp->value(), vertexp->label());
                 }
+                addResetArcs(*graphp, firstIfp->thensp(), firstVscp, labels);
             }
         }
     }
@@ -488,7 +484,7 @@ class FsmLowerVisitor final {
         AstAlways* const alwaysp = entry.alwaysp;
         AstScope* const scopep = m_resolver.findScope(graph.scopeName());
         AstVarScope* const stateVscp = m_resolver.findVarScope(graph.stateVarScopeName());
-        FileLine* const flp = graph.fileline() ? graph.fileline() : stateVscp->fileline();
+        FileLine* const flp = graph.fileline();
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep
             = scopep->findLogicDType(stateVscp->width(), stateVscp->width(),
@@ -517,10 +513,10 @@ class FsmLowerVisitor final {
         // the original always_ff body, then evaluate coverage in post logic
         // after the delayed state update commits. This avoids a scheduler race
         // between a separate AstAlwaysPre task and the real state commit.
-        AstNode* const bodysp = alwaysp->stmtsp() ? alwaysp->stmtsp()->unlinkFrBackWithNext() : nullptr;
+        AstNode* const bodysp = alwaysp->stmtsp()->unlinkFrBackWithNext();
         alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
                                          new AstVarRef{flp, stateVscp, VAccess::READ}});
-        if (bodysp) alwaysp->addStmtsp(bodysp);
+        alwaysp->addStmtsp(bodysp);
 
         std::vector<std::pair<FsmSenDesc, AstVarScope*>> senses;
         senses.reserve(graph.senses().size());
@@ -572,7 +568,6 @@ class FsmLowerVisitor final {
                     // Reset arcs are modeled as pseudo-source edges in the
                     // graph, then reconstructed here into the original simple
                     // reset predicate combined with the destination state.
-                    if (!graph.hasResetCond()) continue;
                     AstVarScope* const resetVscp
                         = m_resolver.findVarScope(graph.resetCond().varScopeName);
                     guardp = buildResetCond(flp, resetVscp, graph.resetCond());
