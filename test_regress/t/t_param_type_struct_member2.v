@@ -10,15 +10,13 @@
 // verilog_format: on
 
 package pkg;
-  typedef struct packed {
-    logic [1:0][31:0] bar;
-  } T;
+  typedef struct packed {logic [1:0][31:0] bar;} T;
   localparam T t = 64'h87654321_deadbeef;
 endpackage
 
 module foo #(
-  parameter type T  = int,
-  parameter T t     =   0
+    parameter type T = int,
+    parameter T t = 0
 ) ();
   initial begin
     `checkh(t.bar[0], 32'hdeadbeef);
@@ -30,7 +28,7 @@ endmodule
 
 module top;
   foo #(
-    .T(pkg::T),
-    .t(pkg::t)
+      .T(pkg::T),
+      .t(pkg::t)
   ) u_foo ();
 endmodule

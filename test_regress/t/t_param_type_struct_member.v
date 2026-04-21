@@ -25,13 +25,19 @@ module mid #(
     parameter type interrupts_t = logic,
     parameter interrupts_t INTERRUPTS = '0
 ) ();
-  leaf #(.interrupts_t(interrupts_t), .INTERRUPTS(INTERRUPTS)) l();
+  leaf #(
+      .interrupts_t(interrupts_t),
+      .INTERRUPTS(INTERRUPTS)
+  ) l ();
 endmodule
 
 module t;
   localparam type irq_t = my_irq_t;
   localparam irq_t IRQ = '{S_TIMER: 8'hAA, M_TIMER: 8'h55, M_EXT: 8'hCC};
-  mid #(.interrupts_t(irq_t), .INTERRUPTS(IRQ)) m();
+  mid #(
+      .interrupts_t(irq_t),
+      .INTERRUPTS(IRQ)
+  ) m ();
   initial begin
     #1;
     if (m.l.observed !== 8'h55) begin

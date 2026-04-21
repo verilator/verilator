@@ -333,6 +333,7 @@ Muhlestein
 Multithreaded
 Multithreading
 Mykyta
+NFA
 NOUNOPTFLAT
 NaN
 Nalbantis
@@ -837,6 +838,7 @@ gotFinish
 goto
 gprof
 gtkwave
+hdl
 hdr
 hdzhangdoc
 hh
@@ -1211,6 +1213,7 @@ upcasting
 urandom
 uselib
 utimes
+uvm
 uwire
 uwires
 valgrind

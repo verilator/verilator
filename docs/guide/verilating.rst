@@ -505,7 +505,7 @@ include directories and link to the SystemC libraries.
 
    Deprecated and has no effect.
 
-   Before Verialtor 5.048: Optional. Enable multithreaded FST trace; see
+   In versions before 5.048: Optional. Enable multithreaded FST trace; see
    :vlopt:`--trace-threads`.
 
 .. describe:: TRACE_VCD
