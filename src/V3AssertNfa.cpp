@@ -695,8 +695,18 @@ class SvaNfaBuilder final {
         }
         AstNodeExpr* const outerClonep = nodep->rhsp()->cloneTreePure(false);
         AstNodeExpr* const combinedp = new AstSIntersect{flp, innerOrp, outerClonep};
-        const BuildResult result = buildExpr(combinedp, entryVtxp, isTopLevelStep);
+        BuildResult result = buildExpr(combinedp, entryVtxp, isTopLevelStep);
         VL_DO_DANGLING(combinedp->deleteTree(), combinedp);
+        // When both operands degenerate to plain booleans, buildAndCombiner's
+        // single-cycle path returns a freshly-allocated AstAnd as finalCondp
+        // (not part of the synthetic tree we just deleted). Intermediate
+        // callers clone-and-discard finalCondp, so the orphan would leak.
+        // Promote it into the NFA graph here so our result carries no orphan.
+        if (result.valid() && result.finalCondp && !result.finalCondp->backp()) {
+            SvaStateVertex* const wrapVtxp = scopedCreateVertex();
+            guardedLink(result.termVertexp, wrapVtxp, sampled(result.finalCondp), flp);
+            result = {wrapVtxp, nullptr, result.midSources};
+        }
         return result;
     }
 
