@@ -689,35 +689,46 @@ public:
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
-            return buildImplication(implp, entryVtxp);
+            return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
+                                         implp->isOverlapped(), implp->isFollowedBy(),
+                                         implp->lhsp(), implp->fileline());
         }
         // Boolean leaf (including LogAnd): return as finalCond
         return {entryVtxp, nodep, {}};
     }
 
-    // Build NFA for a nested AstImplication (including followed-by #-# / #=#).
-    // Mirrors SvaNfaLowering::buildAssertionGraph but uses caller-supplied entry.
-    BuildResult buildImplication(AstImplication* implp, SvaStateVertex* entryVtxp) {
-        FileLine* const flp = implp->fileline();
-        const BuildResult antResult = buildExpr(implp->lhsp(), entryVtxp);
+    // Wire an implication / followed-by from `entryVtxp`: builds the antecedent,
+    // emits the match-link (and for followed-by the reject-sink edge), inserts a
+    // delay vertex for non-overlapped forms, and builds the body. Used both for
+    // nested AstImplication in pexpr position and for the top-level assertion
+    // antecedent -- `errorNodep` anchors the "unsupported sequence antecedent"
+    // error, which differs between the two call sites.
+    BuildResult buildImplicationEdges(AstNodeExpr* antExprp, AstNodeExpr* bodyExprp,
+                                      SvaStateVertex* entryVtxp, bool isOverlapped,
+                                      bool isFollowedBy, AstNode* errorNodep, FileLine* flp) {
+        const BuildResult antResult = buildExpr(antExprp, entryVtxp);
         if (!antResult.valid()) return antResult;
 
-        // Followed-by requires pure-boolean antecedent (non-vacuous-fail at attempt start).
-        if (implp->isFollowedBy()
-            && (antResult.termVertexp != entryVtxp || !antResult.finalCondp)) {
-            implp->lhsp()->v3error(
+        // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
+        // the attempt-start cycle; true multi-cycle sequence LHS is unsupported.
+        if (isFollowedBy && (antResult.termVertexp != entryVtxp || !antResult.finalCondp)) {
+            errorNodep->v3error(
                 "Unsupported: sequence expression as antecedent of followed-by (#-# / #=#)"
                 " (IEEE 1800-2023 16.12.9)");
             return BuildResult::failWithError();
         }
 
+        // Use raw createStateVertex() so trigVtxp starts without liveness --
+        // reaching the antecedent terminal is a definitive event.
         SvaStateVertex* const trigVtxp = m_graph.createStateVertex();
         if (antResult.finalCondp) {
             AstSampled* const sampp
                 = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
             sampp->dtypeFrom(antResult.finalCondp);
             m_graph.addLink(antResult.termVertexp, trigVtxp, sampp);
-            if (implp->isFollowedBy()) {
+            // Followed-by: non-vacuous fail when antecedent holds but evaluates
+            // false. rejectOnFail edge fires when srcSig(termVtx) && !$sampled(cond).
+            if (isFollowedBy) {
                 SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
                 sinkVtxp->m_isRejectSink = true;
                 AstSampled* const rejSampp
@@ -727,18 +738,21 @@ public:
                     = m_graph.addLink(antResult.termVertexp, sinkVtxp, rejSampp);
                 ep->m_rejectOnFail = true;
             }
+            // Note: dangling-condp cleanup (formerly in top-level path) is
+            // skipped here -- finalCondp is cloned for the Sampled nodes, and
+            // the original node stays parented in typical build paths.
         } else {
             m_graph.addLink(antResult.termVertexp, trigVtxp);
         }
         resetScope();
 
         SvaStateVertex* bodyEntryp = trigVtxp;
-        if (!implp->isOverlapped()) {
+        if (!isOverlapped) {
             SvaStateVertex* const delayVtxp = m_graph.createStateVertex();
             m_graph.addClockedEdge(trigVtxp, delayVtxp);
             bodyEntryp = delayVtxp;
         }
-        return buildExpr(implp->rhsp(), bodyEntryp, /*isTopLevelStep=*/true);
+        return buildExpr(bodyExprp, bodyEntryp, /*isTopLevelStep=*/true);
     }
 
     BuildResult build(AstNodeExpr* exprp) {
@@ -1656,50 +1670,9 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!parts.hasImplication) return builder.build(seqBodyp);
 
         graph.m_startVertexp = graph.createStateVertex();
-        const BuildResult antResult = builder.buildExpr(parts.triggerExprp, graph.m_startVertexp);
-        if (!antResult.valid()) return antResult;
-
-        // Followed-by (#-# / #=#) requires a pure-boolean antecedent for non-vacuous-fail
-        // at the attempt-start cycle. True multi-cycle sequence LHS is not yet supported.
-        if (parts.isFollowedBy
-            && (antResult.termVertexp != graph.m_startVertexp || !antResult.finalCondp)) {
-            parts.triggerExprp->v3error(
-                "Unsupported: sequence expression as antecedent of followed-by (#-# / #=#)"
-                " (IEEE 1800-2023 16.12.9)");
-            return BuildResult::failWithError();
-        }
-
-        // Use raw createStateVertex() (not scopedCreateVertex) so trigVtxp starts
-        // without liveness. Reaching the antecedent terminal is a definitive event.
-        SvaStateVertex* const trigVtxp = graph.createStateVertex();
-        if (antResult.finalCondp) {
-            AstSampled* const sampp
-                = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
-            sampp->dtypeFrom(antResult.finalCondp);
-            graph.addLink(antResult.termVertexp, trigVtxp, sampp);
-            // Followed-by: emit non-vacuous-fail when antecedent holds but evaluates false.
-            // rejectOnFail Link fires when srcSig(termVtx) && !$sampled(finalCond).
-            if (parts.isFollowedBy) {
-                SvaStateVertex* const sinkVtxp = graph.createStateVertex();
-                sinkVtxp->m_isRejectSink = true;
-                AstSampled* const rejSampp
-                    = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
-                rejSampp->dtypeFrom(antResult.finalCondp);
-                SvaTransEdge* const ep = graph.addLink(antResult.termVertexp, sinkVtxp, rejSampp);
-                ep->m_rejectOnFail = true;
-            }
-            if (!antResult.finalCondp->backp()) pushDeletep(antResult.finalCondp);
-        } else {
-            graph.addLink(antResult.termVertexp, trigVtxp);
-        }
-        builder.resetScope();
-
-        if (parts.isOverlapped) {
-            return builder.buildExpr(seqBodyp, trigVtxp, /*isTopLevelStep=*/true);
-        }
-        SvaStateVertex* const delayVtxp = graph.createStateVertex();
-        graph.addClockedEdge(trigVtxp, delayVtxp);
-        return builder.buildExpr(seqBodyp, delayVtxp, /*isTopLevelStep=*/true);
+        return builder.buildImplicationEdges(parts.triggerExprp, seqBodyp, graph.m_startVertexp,
+                                             parts.isOverlapped, parts.isFollowedBy,
+                                             parts.triggerExprp, flp);
     }
 
     // Install the pass-action handler and per-thread fail-handlers generated by

@@ -51,4 +51,36 @@ module t (  /*AUTOARG*/
   // exercises both match and (guarded) fail branches across the CRC walk.
   assert property (@(posedge clk) (cyc > 2 && a) |-> (wide_ok #-# (wide_ok | b)));
 
+  // --- Non-vacuous-fail coverage (IEEE 1800-2023 16.12.9) ---
+  // Exercises the m_rejectOnFail edge of the NFA. Antecedent `cyc > 100`
+  // never holds in the 21-cycle window, so for #-# / #=# every attempt is a
+  // non-vacuous fail; for the sibling |-> / |=> attempts are all vacuous
+  // passes. Different observed failure counts prove the reject path is only
+  // walked by followed-by and not by plain implication.
+  integer n_ovl_fails = 0;
+  integer n_novl_fails = 0;
+  integer n_impl_fails = 0;  // Must stay 0: |-> vacuously passes every attempt.
+  integer n_nimp_fails = 0;  // Must stay 0: |=> vacuously passes every attempt.
+
+  assert property (@(posedge clk) (cyc > 100) #-# 1'b1)
+      else n_ovl_fails = n_ovl_fails + 1;
+
+  assert property (@(posedge clk) (cyc > 100) #=# 1'b1)
+      else n_novl_fails = n_novl_fails + 1;
+
+  assert property (@(posedge clk) (cyc > 100) |-> 1'b1)
+      else n_impl_fails = n_impl_fails + 1;
+
+  assert property (@(posedge clk) (cyc > 100) |=> 1'b1)
+      else n_nimp_fails = n_nimp_fails + 1;
+
+  // Final check: reject-sink fires on #-# / #=# but never on |-> / |=>.
+  // Exact counts match Verilator's per-attempt cadence over 21 posedges.
+  final begin
+    if (n_ovl_fails != 21) $stop;
+    if (n_novl_fails != 21) $stop;
+    if (n_impl_fails != 0) $stop;
+    if (n_nimp_fails != 0) $stop;
+  end
+
 endmodule
