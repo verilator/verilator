@@ -269,8 +269,10 @@ void VlcTop::annotateCalcNeeded() {
         }
     }
     const float pct = totCases ? (100 * totOk / totCases) : 0;
-    std::cout << "Total coverage (" << totOk << "/" << totCases << ") ";
-    std::cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
+    std::cout << "Annotation Summary:\n";
+    std::cout << "  lines with all attached points covered : ";
+    std::cout << std::fixed << std::setw(5) << std::setprecision(2) << pct << "%  (" << totOk
+              << "/" << totCases << ")\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 
@@ -336,4 +338,46 @@ void VlcTop::annotate(const string& dirname) {
     annotateCalc();
     annotateCalcNeeded();
     annotateOutputFiles(dirname);
+}
+
+void VlcTop::printTypeSummary() {
+    static const std::vector<std::string> orderedTypes = {"line", "toggle", "branch", "expr"};
+    std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
+    for (const auto& i : m_points) {
+        const VlcPoint& pt = m_points.pointNumber(i.second);
+        const string type = pt.type().empty() ? "point" : pt.type();
+        auto& entry = tally[type];
+        if (pt.count() > 0) ++entry.first;
+        ++entry.second;
+    }
+    if (tally.empty()) return;
+    std::set<std::string> printed;
+    size_t typeWidth = 0;
+    size_t countWidth = 0;
+    for (const auto& it : tally) {
+        typeWidth = std::max(typeWidth, it.first.size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.second).size());
+    }
+    std::cout << "Coverage Summary:\n";
+    for (const string& type : orderedTypes) {
+        const auto it = tally.find(type);
+        if (it == tally.end()) continue;
+        printed.insert(type);
+        const uint64_t hit = it->second.first;
+        const uint64_t total = it->second.second;
+        const double pct = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
+    for (const auto& it : tally) {
+        if (printed.count(it.first)) continue;
+        const uint64_t hit = it.second.first;
+        const uint64_t total = it.second.second;
+        const double pct = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        std::cout << "  " << std::left << std::setw(typeWidth) << it.first << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
 }

@@ -140,6 +140,10 @@ int main(int argc, char** argv) {
         top.points().dump();
     }
 
+    if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()) {
+        top.printTypeSummary();
+    }
+
     V3Error::abortIfWarnings();
     if (!top.opt.annotateOut().empty()) top.annotate(top.opt.annotateOut());
 
