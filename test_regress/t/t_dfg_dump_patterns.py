@@ -10,11 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_dfg_stats_patterns.v"
 
-test.compile(verilator_flags2=["--stats --no-skip-identical"])
+test.compile(verilator_flags2=["--dump-dfg-patterns --no-skip-identical"])
 
-test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__stats_dfg_patterns.txt",
+test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__dfg_patterns.txt",
                      test.golden_filename)
 
 test.passes()

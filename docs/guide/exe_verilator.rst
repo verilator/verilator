@@ -478,6 +478,10 @@ Summary:
    Rarely needed. Enable dumping DfgGraph .dot debug files with dumping
    level 3.
 
+.. option:: --dump-dfg-patterns
+
+   Rarely needed. Enable dumping DfgGraph pattern statistics.
+
 .. option:: --dump-graph
 
    Rarely needed. Enable dumping V3Graph .dot debug files with dumping

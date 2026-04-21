@@ -936,6 +936,160 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     delete this;
 }
 
+class DfgPatternString final {
+    std::ostream& m_os;
+
+    std::map<std::string, std::string> m_internedConsts;  // Interned constants
+    std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects
+    std::map<uint32_t, std::string> m_internedWordWidths;  // Interned widths
+    std::map<uint32_t, std::string> m_internedWideWidths;  // Interned widths
+    std::map<const DfgVertex*, std::string> m_internedVertices;  // Interned vertices
+    // Multiplicity and depth of vertices
+    std::map<const DfgVertex*, std::pair<uint32_t, uint32_t>> m_multiplicityAndDepth;
+
+    static std::string toLetters(size_t value, bool lowerCase = false) {
+        const char base = lowerCase ? 'a' : 'A';
+        std::string s;
+        do { s += static_cast<char>(base + value % 26); } while (value /= 26);
+        return s;
+    }
+
+    const std::string& internConst(const DfgConst& vtx) {
+        const auto pair = m_internedConsts.emplace(vtx.num().ascii(false), "");
+        if (pair.second) pair.first->second += toLetters(m_internedConsts.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internSelLsb(uint32_t value) {
+        const auto pair = m_internedSelLsbs.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedSelLsbs.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internWordWidth(uint32_t value) {
+        const auto pair = m_internedWordWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWordWidths.size() - 1, true);
+        return pair.first->second;
+    }
+
+    const std::string& internWideWidth(uint32_t value) {
+        const auto pair = m_internedWideWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWideWidths.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internVertex(const DfgVertex& vtx) {
+        const auto pair = m_internedVertices.emplace(&vtx, "");
+        if (pair.second) pair.first->second += toLetters(m_internedVertices.size() - 1);
+        return pair.first->second;
+    }
+
+    void recordMultiplicityAndDepth(const DfgVertex& vtx, uint32_t depth) {
+        std::pair<uint32_t, uint32_t>& value = m_multiplicityAndDepth
+                                                   .emplace(std::piecewise_construct,  //
+                                                            std::forward_as_tuple(&vtx),  //
+                                                            std::forward_as_tuple(0, depth))
+                                                   .first->second;
+        value.first += 1;
+        value.second = std::max(value.second, depth);
+        if (!depth) return;
+        vtx.foreachSource([&](const DfgVertex& src) {
+            recordMultiplicityAndDepth(src, depth - 1);
+            return false;
+        });
+    }
+
+    // Render the vertx into ss, and return true if the recursion reached the given depth,
+    // meaning an S-expression with that nesting level has been rendered.
+    void render(const DfgVertex& vtx, uint32_t depth, bool isRoot = true) {
+        if (const DfgConst* const constp = vtx.cast<DfgConst>()) {
+            // Base case 1: constant
+            if (constp->isZero()) {
+                m_os << "(CONST ZERO)";
+            } else if (constp->isOnes()) {
+                m_os << "(CONST ONES)";
+            } else {
+                m_os << "(CONST #" << internConst(*constp) << ')';
+            }
+        } else if (!isRoot && m_multiplicityAndDepth.at(&vtx).first > 1) {
+            // Base case 2: vertex appearing multiple times
+            m_os << internVertex(vtx);
+        } else if (!vtx.foreachSource([&](const DfgVertex&) { return true; })) {
+            // Base case 3: vertex with no inputs (input variable)
+            m_os << '(' << vtx.typeName() << ')';
+        } else if (depth == 0) {
+            // Base case 4: deep vertex (apperaing only once)
+            m_os << "_";
+        } else {
+            // Recursively print an S-expression for the vertex
+            m_os << '(';
+            // Name
+            m_os << vtx.typeName();
+            // Specials
+            if (const DfgSel* const selp = vtx.cast<DfgSel>()) {
+                m_os << '@';
+                if (selp->lsb() == 0) {
+                    m_os << '0';
+                } else {
+                    m_os << internSelLsb(selp->lsb());
+                }
+            }
+            // Operands
+            vtx.foreachSource([&](const DfgVertex& src) {
+                m_os << ' ';
+                render(src, depth - 1, false);
+                return false;
+            });
+            // S-expression end
+            m_os << ')';
+        }
+
+        // Annotate type
+        m_os << ':';
+        if (!vtx.dtype().isPacked()) {
+            vtx.dtype().astDtypep()->dumpSmall(m_os);
+        } else {
+            const uint32_t width = vtx.size();
+            if (width == 1) {
+                m_os << '1';
+            } else if (width <= VL_QUADSIZE) {
+                m_os << internWordWidth(width);
+            } else {
+                m_os << internWideWidth(width);
+            }
+        }
+
+        // Mark it if it has multiple sinks
+        if (vtx.hasMultipleSinks()) m_os << '*';
+    }
+
+public:
+    DfgPatternString(std::ostream& os, const DfgVertex& vtx, uint32_t depth)
+        : m_os{os} {
+        recordMultiplicityAndDepth(vtx, depth);
+        render(vtx, depth, false);
+        using Pair = std::pair<std::string, const DfgVertex*>;
+        std::vector<Pair> vertices;
+        for (const auto& pair : m_multiplicityAndDepth) {
+            if (pair.second.first == 1) continue;
+            vertices.emplace_back(internVertex(*pair.first), pair.first);
+        }
+        std::sort(vertices.begin(), vertices.end(), [](const Pair& a, const Pair& b) {  //
+            return a.first < b.first;
+        });
+        for (const Pair& pair : vertices) {
+            m_os << " | " << pair.first << " is ";
+            render(*pair.second, m_multiplicityAndDepth.at(pair.second).second);
+        }
+    }
+};
+
+std::string DfgVertex::patternString(uint32_t depth) const {
+    std::ostringstream oss;
+    DfgPatternString{oss, *this, depth};
+    return oss.str();
+}
+
 //------------------------------------------------------------------------------
 // DfgVisitor
 
