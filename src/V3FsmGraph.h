@@ -112,6 +112,9 @@ class FsmGraph final : public V3Graph {
     FsmPseudoVertex* m_defaultVertexp = nullptr;
 
 public:
+    // CONSTRUCTORS
+    FsmGraph() VL_MT_DISABLED;
+
     // ACCESSORS
     // Graph-level metadata identifies where this FSM came from and what extra
     // policy is needed when lowering it back into coverage instrumentation.
@@ -137,7 +140,6 @@ public:
     void fileline(FileLine* flp) { m_flp = flp; }
     // Detection interns state vertices by encoded value so both extraction and
     // lowering can treat the graph as the canonical FSM representation.
-    FsmStateVertex* findStateVertex(int value) const;
     FsmStateVertex* addStateVertex(string label, int value) VL_MT_DISABLED;
     // Synthetic vertices keep reset/default arcs inside the graph model rather
     // than forcing special transitions back into side tables.

@@ -89,7 +89,6 @@ public:
         const string cmt = comment();
         const string::size_type start = cmt.find("::");
         const string::size_type arrow = cmt.find("->");
-        if (start == string::npos || arrow == string::npos || arrow < start + 2) return "";
         return cmt.substr(start + 2, arrow - (start + 2));
     }
     string fsmToState() const {

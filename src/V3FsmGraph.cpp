@@ -20,9 +20,9 @@
 
 #include "V3FsmGraph.h"
 
-FsmStateVertex* FsmGraph::findStateVertex(int value) const {
-    const auto it = m_stateVertices.find(value);
-    return it == m_stateVertices.end() ? nullptr : it->second;
+FsmGraph::FsmGraph() {
+    m_resetVertexp = new FsmPseudoVertex{this, FsmVertex::Kind::RESET_ANY, "ANY"};
+    m_defaultVertexp = new FsmPseudoVertex{this, FsmVertex::Kind::DEFAULT_ANY, "default"};
 }
 
 FsmStateVertex* FsmGraph::addStateVertex(string label, int value) {
@@ -31,28 +31,20 @@ FsmStateVertex* FsmGraph::addStateVertex(string label, int value) {
     return vertexp;
 }
 
-FsmPseudoVertex* FsmGraph::resetAnyVertex() {
-    if (!m_resetVertexp) m_resetVertexp = new FsmPseudoVertex{this, FsmVertex::Kind::RESET_ANY, "ANY"};
-    return m_resetVertexp;
-}
+FsmPseudoVertex* FsmGraph::resetAnyVertex() { return m_resetVertexp; }
 
-FsmPseudoVertex* FsmGraph::defaultAnyVertex() {
-    if (!m_defaultVertexp) {
-        m_defaultVertexp = new FsmPseudoVertex{this, FsmVertex::Kind::DEFAULT_ANY, "default"};
-    }
-    return m_defaultVertexp;
-}
+FsmPseudoVertex* FsmGraph::defaultAnyVertex() { return m_defaultVertexp; }
 
 FsmArcEdge* FsmGraph::addArc(int fromValue, int toValue, bool isReset, bool isCond, bool isDefault,
                              FileLine* flp) {
-    FsmStateVertex* const top = findStateVertex(toValue);
+    FsmStateVertex* const top = m_stateVertices.at(toValue);
     FsmVertex* fromp = nullptr;
     if (isReset) {
         fromp = resetAnyVertex();
     } else if (isDefault) {
         fromp = defaultAnyVertex();
     } else {
-        fromp = findStateVertex(fromValue);
+        fromp = m_stateVertices.at(fromValue);
     }
     return new FsmArcEdge{this, fromp, top, isReset, isCond, isDefault, flp};
 }
