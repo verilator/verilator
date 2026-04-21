@@ -2760,11 +2760,8 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
             = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
-        // Preserve the original random-dependence marking instead of unconditionally
-        // setting user1=true for std::randomize captures (m_targetp==nullptr). Marking
-        // non-random members (e.g. the queue on the rhs of 'x inside {q}') as
-        // random-dependent would incorrectly route them through the solver write_var
-        // and SMT select paths, corrupting state-only operands (issue #7449).
+        // Propagate random-dependence marking; forcing it on read-only operands
+        // would route them through the solver write path.
         if (!m_targetp && nodep->user1()) memberSelp->user1(true);
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
