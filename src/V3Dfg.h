@@ -352,6 +352,9 @@ public:
 
     // Human-readable name for source operand with given index for debugging
     virtual std::string srcName(size_t idx) const = 0;
+
+    // S-expression inspired dump of vertex and operands for debugging
+    std::string patternString(uint32_t depth = 0) const;
 };
 
 // DfgVertex visitor

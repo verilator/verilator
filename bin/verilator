@@ -379,6 +379,7 @@ detailed descriptions of these arguments.
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
+    --dump-dfg-patterns         Enable dumping Dfg pattern statistics
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files

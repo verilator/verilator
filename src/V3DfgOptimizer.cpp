@@ -154,9 +154,9 @@ class DataflowOptimize final {
         for (auto& cp : acyclicComps) V3DfgPasses::peephole(*cp, m_ctx.m_peepholeContext);
         endOfStage("peephole", dfg, acyclicComps);
         // Accumulate patterns for reporting
-        if (v3Global.opt.stats()) {
+        if (v3Global.opt.dumpDfgPatterns()) {
             V3DfgPasses::dumpPatterns(acyclicComps);
-            endOfStage("patterns");
+            endOfStage("dumpPatterns");
         }
         for (auto& cp : acyclicComps) V3DfgPasses::pushDownSels(*cp, m_ctx.m_pushDownSelsContext);
         endOfStage("pushDownSels", dfg, acyclicComps);
