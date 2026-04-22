@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter2')
 test.top_filename = "t/t_lint_similarname.v"
 
 test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],

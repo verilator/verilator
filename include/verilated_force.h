@@ -182,7 +182,7 @@ private:
         }
 
         WDataInP rhswp = WDataInP::external(static_cast<const EData*>(entry.m_rhsDatap));
-        return VL_SEL_QWII(rhsWidth, rhswp, rhsLsb, width) & mask;
+        return VL_SEL_QWII_TTTT(rhsWidth, rhswp, rhsLsb, width) & mask;
     }
 
     template <typename T>
@@ -260,7 +260,7 @@ private:
     }
 
     void readSel(int lbits, WDataInP valp, WDataOutP reswp, int lsb, int width) const {
-        VL_SEL_WWII(width, lbits, reswp, valp, lsb, width);
+        VL_SEL_WWII_TTTT(width, lbits, reswp, valp, lsb, width);
         const int msb = lsb + width - 1;
         auto it = std::lower_bound(m_entries.begin(), m_entries.end(), lsb,
                                    [](const Entry& e, int bit) { return e.m_msb < bit; });

@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_enum_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_enum_common.run(test)

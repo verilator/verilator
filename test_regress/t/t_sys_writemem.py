@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_sys_readmem.v"
 
 # Use random reset to ensure we're fully initializing arrays before

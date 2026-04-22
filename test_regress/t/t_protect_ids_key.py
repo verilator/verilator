@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_protect_ids.v"
 
 test.compile(verilator_flags2=["--protect-ids --protect-key SECRET_KEY", "t/t_protect_ids_c.cpp"])

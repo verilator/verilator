@@ -13,6 +13,7 @@ import vltest_bootstrap
 # consume the AstIntfRef nodes that describe interface references, so check
 # they do not interfere.
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_vpi_interface_ref.v"
 test.pli_filename = "t/t_vpi_interface_ref.cpp"
 

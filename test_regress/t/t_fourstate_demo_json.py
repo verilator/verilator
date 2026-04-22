@@ -9,14 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt4')
 test.top_filename = "t/t_fourstate_demo.v"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(verilator_flags2=[
-    '--fourstate', '-Wno-FUTURE', '--no-std', '--json-only', '--no-json-edit-nums'
-],
+test.compile(verilator_flags2=['--no-std', '--json-only', '--no-json-edit-nums'],
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False)

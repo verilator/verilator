@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all', 'ms')
+test.fourstate_capable = False
 
 # The exclusion checks intentionally reference ignore/default bins.
 test.ms_run_flags += ['-suppress', '13196']

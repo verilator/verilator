@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 # Sampling what a non-blocking assignment writes is a data race if left unordered, but whether
 # it changes the histogram in any one run is timing dependent, so use ThreadSanitizer to detect

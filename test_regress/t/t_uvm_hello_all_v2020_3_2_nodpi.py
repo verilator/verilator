@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.priority(50)
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = 't/t_uvm_hello.v'
 
 if test.have_dev_gcov:

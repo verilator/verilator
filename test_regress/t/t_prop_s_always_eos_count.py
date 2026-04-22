@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')  # UNOPTTHREADS in vltmt due to many small assertion states
+test.fourstate_capable = False
 
 # Keep running after an assertion failure so all unfinished strong-property
 # attempts can execute their action block at end of simulation.

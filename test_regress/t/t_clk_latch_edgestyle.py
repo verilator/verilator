@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_clk_latch.v"
 
 test.compile(v_flags2=['+define+EDGE_DETECT_STYLE'])

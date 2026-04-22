@@ -41,6 +41,19 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
 
 protected:
+    void emitTVX(const AstNode* const nodep) {
+        if (VN_IS(nodep, ABits) || VN_IS(nodep->firstAbovep(), ABits)) {
+            UASSERT_OBJ(v3Global.opt.fourstate(), nodep,
+                        "Tried to use four-state function in two state mode");
+            puts("V");
+        } else if (VN_IS(nodep, BBits) || VN_IS(nodep->firstAbovep(), BBits)) {
+            UASSERT_OBJ(v3Global.opt.fourstate(), nodep,
+                        "Tried to use four-state function in two state mode");
+            puts("X");
+        } else {
+            puts("T");
+        }
+    }
     // VISITORS
     void visit(AstInitArray* nodep) override {
         VL_RESTORER(m_unpackedWord);
@@ -96,7 +109,6 @@ protected:
 
     void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();
-        UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
         putns(nodep, num.emitC());
     }
     void visit(AstUnbounded* nodep) override {

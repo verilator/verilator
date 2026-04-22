@@ -12,6 +12,7 @@ import vltest_bootstrap
 test.top_filename = "t/t_tri_inout.v"
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.pli_filename = "t/t_tri_inout.cpp"
 
 test.compile(make_top_shell=False,

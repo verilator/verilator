@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 threads = 2 if test.vltmt else 1
 coverage_covergroup_common.run(test, threads=threads)

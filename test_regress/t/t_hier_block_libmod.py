@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=[
     '--hierarchical', '-y', test.t_dir + '/t_flag_relinc_dir/chip', '+incdir+' + test.t_dir +

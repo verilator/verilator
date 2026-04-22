@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios("vlt")
+test.fourstate_capable = False
 
 test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
