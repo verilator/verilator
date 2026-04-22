@@ -36,6 +36,7 @@ module t (
   int count_p7 = 0;
   int count_p8 = 0;
   int count_p9 = 0;
+  int count_p10 = 0;
 
   // Boolean within boolean: equivalent to `a && b`.
   assert property (@(posedge clk) disable iff (cyc < 10)
@@ -83,6 +84,13 @@ module t (
       a within (a throughout (b ##1 c)))
     count_p9 <= count_p9 + 1;
 
+  // within on the RHS of intersect: forces the parser into the direct
+  // `sexpr yWITHIN sexpr` grammar rule (IEEE 1800-2023 17.7.1) rather
+  // than the pexpr-copied variant used at property top level.
+  cover property (@(posedge clk) disable iff (cyc < 10)
+      (a ##3 b) intersect ((c ##1 d) within (a ##3 b)))
+    count_p10 <= count_p10 + 1;
+
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -103,6 +111,7 @@ module t (
       `checkd(count_p7, 15);   // Questa: 9
       `checkd(count_p8, 15);   // Questa: 4
       `checkd(count_p9, 17);   // Questa: 10
+      `checkd(count_p10, 24);  // Questa: 15
       $write("*-* All Finished *-*\n");
       $finish;
     end
