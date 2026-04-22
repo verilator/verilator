@@ -477,6 +477,14 @@ void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WDataInP newval
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WDataInP newval, int) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
+    m_owner.emitTimeChangeMaybe();
+    // call emitValueChange(handle, uint32_t*)
+    m_fst->emitValueChange(m_symbolp[code], newval);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();

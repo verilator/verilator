@@ -665,15 +665,11 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WDataInP ne
 
 template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateWData(uint32_t* oldp, const WDataInP newval,
-                                                        const WDataInP newvalXZp, int bits) {
+                                                        int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    for (int i = 0; i < VL_WORDS_I(bits); ++i) {
-        const int oldIdx = i << 1;
-        oldp[oldIdx] = newval[i];
-        oldp[oldIdx | 1] = newvalXZp[i];
-    }
+    for (int i = 0; i < VL_WORDS_I(bits) * 2; ++i) oldp[i] = newval[i];
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    emitFourstateWData(code, newval, newvalXZp, bits);
+    emitFourstateWData(code, newval, bits);
 }
 
 template <>

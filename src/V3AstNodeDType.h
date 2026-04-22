@@ -151,7 +151,9 @@ public:
     bool isSigned() const VL_MT_STABLE { return m_numeric.isSigned(); }
     bool isNosign() const VL_MT_SAFE { return m_numeric.isNosign(); }
     VSigning numeric() const VL_MT_STABLE { return m_numeric; }
-    int widthWords() const VL_MT_STABLE { return VL_WORDS_I(width()); }
+    int widthWords() const VL_MT_STABLE {
+        return VL_WORDS_I(width()) * (isShuffledFourstate() ? 2 : 1);
+    }
     int widthMin() const VL_MT_STABLE {  // If sized, the size,
                                          // if unsized the min digits to represent it
         return m_widthMin ? m_widthMin : m_width;
@@ -171,6 +173,7 @@ public:
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
     virtual bool isDynamicallySized() const { return false; }
+    virtual bool isShuffledFourstate() const VL_MT_STABLE { return false; }
 
 private:
     class CTypeRecursed;
@@ -395,37 +398,47 @@ class AstBasicDType final : public AstNodeDType {
     struct Members final {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
+        bool m_isShuffledFourstate;  // (also in VBasicTypeKey) whether it is a shuffled four-state
+                                     // value (forty shuffled bits will be represented as 80bits in
+                                     // 128 bits VlWide) - shuffled implies wide that stores values
+                                     // as described in:
+                                     // IEEE 1800-2023 38. VPI routine definitions
+                                     // Figure 38-8 - s_vpi_vecval structure definition
         bool operator==(const Members& rhs) const {
-            return rhs.m_keyword == m_keyword && rhs.m_nrange == m_nrange;
+            return rhs.m_keyword == m_keyword && rhs.m_nrange == m_nrange
+                   && rhs.m_isShuffledFourstate == m_isShuffledFourstate;
         }
     } m;
     // See also in AstNodeDType: m_width, m_widthMin, m_numeric(issigned)
 public:
-    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN,
+                  bool isShuffledFourstate = false)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(kwd, signst, 0, -1, nullptr);
+        init(kwd, signst, 0, -1, nullptr, isShuffledFourstate);
     }
-    AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
+    AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth, bool isShuffledFourstate = false)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
+        init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr, isShuffledFourstate);
     }
-    AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
+    AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth, bool isShuffledFourstate = false)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
+        init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr, isShuffledFourstate);
     }
-    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin,
+                  bool isShuffledFourstate = false)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(kwd, numer, wantwidth, widthmin, nullptr);
+        init(kwd, numer, wantwidth, widthmin, nullptr, isShuffledFourstate);
     }
-    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, VNumRange range, int widthmin)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, VNumRange range, int widthmin,
+                  bool isShuffledFourstate = false)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(kwd, numer, range.elements(), widthmin, nullptr);
+        init(kwd, numer, range.elements(), widthmin, nullptr, isShuffledFourstate);
         m.m_nrange = range;  // as init() presumes lsb==0, but range.lsb() might not be
     }
     // See also addRange in verilog.y
 private:
     void init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
-              AstRange* rangep);
+              AstRange* rangep, bool isShuffledFourstate);
 
 public:
     ASTGEN_MEMBERS_AstBasicDType;
@@ -509,6 +522,7 @@ public:
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }
     bool isIntegralOrPacked() const override { return keyword().isIntNumeric(); }
+    bool isShuffledFourstate() const VL_MT_STABLE override { return m.m_isShuffledFourstate; }
 };
 class AstBracketArrayDType final : public AstNodeDType {
     // Associative/Queue/Normal array data type, ie "[dtype_or_expr]"

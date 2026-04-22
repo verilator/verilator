@@ -28,6 +28,7 @@
 
 #include "V3Premit.h"
 
+#include "V3Fourstate.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -250,6 +251,42 @@ class PremitVisitor final : public VNVisitor {
     void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
+    }
+    void visit(AstFourstateExpr* nodep) override {
+        iterateChildren(nodep);
+        // Consider adding a temp for this expression.
+        if (!m_stmtp) return;  // Not under a statement
+        if (nodep->user1SetOnce()) return;  // Already processed
+        if (!nodep->valuep()->isWide()) return;  // Not wide
+        if (m_assignLhs) return;  // This is an lvalue!
+        UASSERT_OBJ(!VN_IS(nodep->firstAbovep(), ArraySel), nodep, "Should have been ignored");
+        // Keep as local temporary.
+        std::string name = "__Vtemp_" + std::to_string(m_tmpVarCnt);
+        std::string nameXz = "__Vtemp_" + std::to_string(++m_tmpVarCnt) + XZ_SUFFIX;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const valueVarp
+            = new AstVar{flp, VVarType::STMTTEMP, std::move(name), nodep->valuep()->dtypep()};
+        AstVar* xzVarp
+            = new AstVar{flp, VVarType::STMTTEMP, std::move(nameXz), nodep->xzp()->dtypep()};
+        valueVarp->fourstateComplementp(xzVarp);
+        valueVarp->funcLocal(true);
+        xzVarp->funcLocal(true);
+        valueVarp->noReset(true);
+        xzVarp->noReset(true);
+        m_cfuncp->addVarsp(valueVarp);
+        m_cfuncp->addVarsp(xzVarp);
+        ++m_temporaryVarsCreated;
+
+        // Assignment to put before the referencing statement
+        AstAssign* const assignValuep = new AstAssign{
+            flp, new AstVarRef{flp, valueVarp, VAccess::WRITE}, nodep->valuep()->unlinkFrBack()};
+        AstAssign* const assignXZp = new AstAssign{flp, new AstVarRef{flp, xzVarp, VAccess::WRITE},
+                                                   nodep->xzp()->unlinkFrBack()};
+        // Insert before the statement
+        m_stmtp->addHereThisAsNext(assignValuep);
+        m_stmtp->addHereThisAsNext(assignXZp);
+        nodep->valuep(new AstVarRef{flp, valueVarp, VAccess::READ});
+        nodep->xzp(new AstVarRef{flp, xzVarp, VAccess::READ});
     }
     void visit(AstRand* nodep) override {
         iterateChildren(nodep);

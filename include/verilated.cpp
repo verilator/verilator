@@ -570,9 +570,29 @@ WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
     return outwp;
 }
-WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
+WDataOutP VL_ZERO_RESET_W_T(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
-    return VL_ZERO_W(obits, outwp);
+    return VL_ZERO_W_T(obits, outwp);
+}
+WDataOutP VL_ZERO_RESET_W_V(int obits, WDataOutP outwp) VL_MT_SAFE {
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ZERO_W_V(obits, outwp);
+}
+WDataOutP VL_ZERO_RESET_W_X(int obits, WDataOutP outwp) VL_MT_SAFE {
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ZERO_W_X(obits, outwp);
+}
+WDataOutP VL_ALLONES_RESET_W_T(int obits, WDataOutP outwp) VL_MT_SAFE {
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ALLONES_W_T(obits, outwp);
+}
+WDataOutP VL_ALLONES_RESET_W_V(int obits, WDataOutP outwp) VL_MT_SAFE {
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ALLONES_W_V(obits, outwp);
+}
+WDataOutP VL_ALLONES_RESET_W_X(int obits, WDataOutP outwp) VL_MT_SAFE {
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ALLONES_W_X(obits, outwp);
 }
 
 //===========================================================================
@@ -587,20 +607,39 @@ void _vl_debug_print_w(int lbits, const WDataInP iwp) VL_MT_SAFE {
 //===========================================================================
 // Slow expressions
 
-WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WDataInP rwp,
-                       bool is_modulus) VL_MT_SAFE {
+WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus,
+                       const int outputOffset, int outputJump, const int lhsOffset, int lhsJump,
+                       const int rhsOffset, int rhsJump) VL_MT_SAFE {
     // See Knuth Algorithm D.  Computes u/v = q.r
     // This isn't massively tuned, as wide division is rare
     // for debug see V3Number version
     // Requires clean input
+    VL_DEBUG_IFDEF(assert((outputOffset == 0 && (outputJump == 1 || outputJump == 2))
+                          || (outputOffset == 1 && outputJump == 2)););
+    VL_DEBUG_IFDEF(assert((lhsOffset == 0 && (lhsJump == 1 || lhsJump == 2))
+                          || (lhsOffset == 1 && lhsJump == 2)););
+    VL_DEBUG_IFDEF(assert((rhsOffset == 0 && (rhsJump == 1 || rhsJump == 2))
+                          || (rhsOffset == 1 && rhsJump == 2)););
     const int words = VL_WORDS_I(lbits);
-    for (int i = 0; i < words; ++i) owp[i] = 0;
     // Find MSB and check for zero.
-    const int umsbp1 = VL_MOSTSETBITP1_W(words, lwp);  // dividend
-    const int vmsbp1 = VL_MOSTSETBITP1_W(words, rwp);  // divisor
+    const int umsbp1 = (lhsJump == 2) ? (lhsOffset ? VL_MOSTSETBITP1_W_X(words, lwp)
+                                                   : VL_MOSTSETBITP1_W_V(words, lwp))
+                                      : VL_MOSTSETBITP1_W_T(words, lwp);  // dividend
+    const int vmsbp1 = (rhsJump == 2) ? (rhsOffset ? VL_MOSTSETBITP1_W_X(words, rwp)
+                                                   : VL_MOSTSETBITP1_W_V(words, rwp))
+                                      : VL_MOSTSETBITP1_W_T(words, rwp);  // divisor
+    const WDataOutP resultp = owp;
+    owp += outputOffset;
+    lwp += lhsOffset;
+    rwp += rhsOffset;
+    // Since jump may be 1 or 2 we substract one to just use bit-shift left
+    --outputJump;
+    --lhsJump;
+    --rhsJump;
+    for (int i = 0; i < words; ++i) owp[i << outputJump] = 0;
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
         || VL_UNLIKELY(umsbp1 == 0)) {  // 0/x so short circuit and return 0
-        return owp;
+        return resultp;
     }
 
     const int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
@@ -611,15 +650,16 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         uint64_t k = 0;
         for (int j = uw - 1; j >= 0; --j) {
-            const uint64_t unw64 = ((k << 32ULL) + static_cast<uint64_t>(lwp[j]));
-            owp[j] = unw64 / static_cast<uint64_t>(rwp[0]);
-            k = unw64 - static_cast<uint64_t>(owp[j]) * static_cast<uint64_t>(rwp[0]);
+            const uint64_t unw64 = ((k << 32ULL) + static_cast<uint64_t>(lwp[j << lhsJump]));
+            owp[j << outputJump] = unw64 / static_cast<uint64_t>(rwp[0]);
+            k = unw64
+                - static_cast<uint64_t>(owp[j << outputJump]) * static_cast<uint64_t>(rwp[0]);
         }
         if (is_modulus) {
             owp[0] = k;
-            for (int i = 1; i < words; ++i) owp[i] = 0;
+            for (int i = 1; i < words; ++i) owp[i << outputJump] = 0;
         }
-        return owp;
+        return resultp;
     }
 
     // +1 word as we may shift during normalization
@@ -635,16 +675,20 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
     const int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
     // Copy and shift dividend by same amount; may set new upper word
     if (s) {
-        for (int i = vw - 1; i > 0; --i) vn[i] = (rwp[i] << s) | (rwp[i - 1] >> (32 - s));
+        for (int i = vw - 1; i > 0; --i) {
+            vn[i] = (rwp[i << rhsJump] << s) | (rwp[(i - 1) << rhsJump] >> (32 - s));
+        }
         vn[0] = rwp[0] << s;
-        un[uw] = lwp[uw - 1] >> (32 - s);
-        for (int i = uw - 1; i > 0; --i) un[i] = (lwp[i] << s) | (lwp[i - 1] >> (32 - s));
+        un[uw] = lwp[(uw - 1) << lhsJump] >> (32 - s);
+        for (int i = uw - 1; i > 0; --i) {
+            un[i] = (lwp[i << lhsJump] << s) | (lwp[(i - 1) << lhsJump] >> (32 - s));
+        }
         un[0] = lwp[0] << s;
     } else {
-        for (int i = vw - 1; i > 0; --i) vn[i] = rwp[i];
+        for (int i = vw - 1; i > 0; --i) vn[i] = rwp[i << rhsJump];
         vn[0] = rwp[0];
         un[uw] = 0;
-        for (int i = uw - 1; i > 0; --i) un[i] = lwp[i];
+        for (int i = uw - 1; i > 0; --i) un[i] = lwp[i << lhsJump];
         un[0] = lwp[0];
     }
 
@@ -673,11 +717,11 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
         }
         t = un[j + vw] - k;
         un[j + vw] = t;
-        owp[j] = qhat;  // Save quotient digit
+        owp[j << outputJump] = qhat;  // Save quotient digit
 
         if (t < 0) {
             // Over subtracted; correct by adding back
-            owp[j]--;
+            owp[j << outputJump]--;
             k = 0;
             for (int i = 0; i < vw; ++i) {
                 t = static_cast<uint64_t>(un[i + j]) + static_cast<uint64_t>(vn[i]) + k;
@@ -691,15 +735,17 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
     if (is_modulus) {  // modulus
         // Need to reverse normalization on copy to output
         if (s) {
-            for (int i = 0; i < vw; ++i) owp[i] = (un[i] >> s) | (un[i + 1] << (32 - s));
+            for (int i = 0; i < vw; ++i) {
+                owp[i << outputJump] = (un[i] >> s) | (un[i + 1] << (32 - s));
+            }
         } else {
-            for (int i = 0; i < vw; ++i) owp[i] = un[i];
+            for (int i = 0; i < vw; ++i) owp[i << outputJump] = un[i];
         }
-        for (int i = vw; i < words; ++i) owp[i] = 0;
-        return owp;
+        for (int i = vw; i < words; ++i) owp[i << outputJump] = 0;
+        return resultp;
     }
     // division
-    return owp;
+    return resultp;
 }
 
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
@@ -712,15 +758,15 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
-    VL_ASSIGN_W(obits, powstore, lwp);
+    VL_ASSIGN_W_TT(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
-            VL_ASSIGN_W(obits, lastpowstore, powstore);
-            VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
+            VL_ASSIGN_W_TT(obits, lastpowstore, powstore);
+            VL_MUL_W_TTT(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
-            VL_ASSIGN_W(obits, lastoutstore, owp);
-            VL_MUL_W(owords, owp, lastoutstore, powstore);
+            VL_ASSIGN_W_TT(obits, lastoutstore, owp);
+            VL_MUL_W_TTT(owords, owp, lastoutstore, powstore);
         }
     }
     return owp;
@@ -728,7 +774,7 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
 WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WDataInP lwp,
                      QData rhs) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> rhsw;
-    VL_SET_WQ(rhsw, rhs);
+    VL_SET_WQ_T(rhsw, rhs);
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
 QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE {
@@ -749,9 +795,9 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE 
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
                        const WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // obits==lbits, rbits can be different
-    if (rsign && VL_SIGN_W(rbits, rwp)) {
+    if (rsign && VL_SIGN_W_T(rbits, rwp)) {
         const int words = VL_WORDS_I(obits);
-        VL_ZERO_W(obits, owp);
+        VL_ZERO_W_T(obits, owp);
         EData lor = 0;  // 0=all zeros, ~0=all ones, else mix
         for (int i = 1; i < (words - 1); ++i) lor |= lwp[i];
         lor |= ((lwp[words - 1] == VL_MASK_E(rbits)) ? ~VL_EUL(0) : 0);
@@ -764,7 +810,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP 
         }
         if (lsign && lor == ~VL_EUL(0) && lwp[0] == ~VL_EUL(0)) {  // -1
             if (rwp[0] & 1) {  // -1^odd=-1
-                return VL_ALLONES_W(obits, owp);
+                return VL_ALLONES_W_T(obits, owp);
             }
             // -1^even=1
             owp[0] = 1;
@@ -777,13 +823,13 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP 
 WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WDataInP lwp,
                        QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> rhsw;
-    VL_SET_WQ(rhsw, rhs);
+    VL_SET_WQ_T(rhsw, rhs);
     return VL_POWSS_WWW(obits, lbits, rbits, owp, lwp, rhsw, lsign, rsign);
 }
 QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, const WDataInP rwp, bool lsign,
                    bool rsign) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
-    if (rsign && VL_SIGN_W(rbits, rwp)) {
+    if (rsign && VL_SIGN_W_T(rbits, rwp)) {
         if (lhs == 0) return 0;  // "X"
         if (lhs == 1) return 1;
         if (lsign && lhs == VL_MASK_Q(obits)) {  // -1
@@ -812,12 +858,12 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     return d;
 }
 double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
-    if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
+    if (!VL_SIGN_W_T(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     const int words = VL_WORDS_I(lbits);
     VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
     VlWide<VL_MULS_MAX_WORDS + 1> pos;
-    VL_NEGATE_W(words, pos, lwp);
-    _vl_clean_inplace_w(lbits, pos);
+    VL_NEGATE_W_TT(words, pos, lwp);
+    _vl_clean_inplace_w_T(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
 
@@ -830,7 +876,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
     std::vector<EData> bcd(VL_WORDS_I(maxdecwidth));
     WDataOutP bcdp = WDataOutP::external(bcd.data());
-    VL_ZERO_W(maxdecwidth, bcdp);
+    VL_ZERO_W_T(maxdecwidth, bcdp);
     std::vector<EData> tmp(VL_WORDS_I(maxdecwidth));
     std::vector<EData> tmp2(VL_WORDS_I(maxdecwidth));
     WDataOutP tmpp = WDataOutP::external(tmp.data());
@@ -843,15 +889,15 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
         // Any digits >= 5 need an add 3 (via tmp)
         for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
             if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
-                VL_ZERO_W(maxdecwidth, tmp2p);
+                VL_ZERO_W_T(maxdecwidth, tmp2p);
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
-                VL_ASSIGN_W(maxdecwidth, tmpp, bcdp);
-                VL_ADD_W(VL_WORDS_I(maxdecwidth), bcdp, tmpp, tmp2p);
+                VL_ASSIGN_W_TT(maxdecwidth, tmpp, bcdp);
+                VL_ADD_W_TTT(VL_WORDS_I(maxdecwidth), bcdp, tmpp, tmp2p);
             }
         }
         // Shift; bcd = bcd << 1
-        VL_ASSIGN_W(maxdecwidth, tmpp, bcdp);
-        VL_SHIFTL_WWI(maxdecwidth, maxdecwidth, 32, bcdp, tmpp, 1);
+        VL_ASSIGN_W_TT(maxdecwidth, tmpp, bcdp);
+        VL_SHIFTL_WWI_TTT(maxdecwidth, maxdecwidth, 32, bcdp, tmpp, 1);
         // bcd[0] = lwp[from_bit]
         if (VL_BITISSET_W(lwp, from_bit)) bcd[0] |= 1;
     }
@@ -883,36 +929,36 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
         VlWide<w> tmp2;
         VlWide<w> tmp3;
 
-        WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, static_cast<QData>(ld));
+        WDataInP shifted = VL_EXTEND_WQ_TT(b, 0, tmp0, static_cast<QData>(ld));
         if (shift < 0) {
-            const WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
-            shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
+            const WDataInP pow10 = VL_EXTEND_WQ_TT(b, 0, tmp1, vl_time_pow10(-shift));
+            shifted = VL_DIV_WWW_TTT(b, tmp2, shifted, pow10);
         } else {
-            const WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
-            shifted = VL_MUL_W(w, tmp2, shifted, pow10);
+            const WDataInP pow10 = VL_EXTEND_WQ_TT(b, 0, tmp1, vl_time_pow10(shift));
+            shifted = VL_MUL_W_TTT(w, tmp2, shifted, pow10);
         }
 
-        const WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
-        const WDataInP integer = VL_DIV_WWW(b, tmp0, shifted, fracDigitsPow10);
-        const WDataInP frac = VL_MODDIV_WWW(b, tmp1, shifted, fracDigitsPow10);
+        const WDataInP fracDigitsPow10 = VL_EXTEND_WQ_TT(b, 0, tmp3, vl_time_pow10(fracDigits));
+        const WDataInP integer = VL_DIV_WWW_TTT(b, tmp0, shifted, fracDigitsPow10);
+        const WDataInP frac = VL_MODDIV_WWW_TTT(b, tmp1, shifted, fracDigitsPow10);
         const WDataInP max64Bit
-            = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<uint64_t>::max());  // breaks shifted
-        if (VL_GT_W(w, integer, max64Bit)) {
-            WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
+            = VL_EXTEND_WQ_TT(b, 0, tmp2, std::numeric_limits<uint64_t>::max());  // breaks shifted
+        if (VL_GT_W_TT(w, integer, max64Bit)) {
+            WDataOutP v = VL_ASSIGN_W_TT(b, tmp3, integer);  // breaks fracDigitsPow10
             VlWide<w> zero;
             VlWide<w> ten;
-            VL_ZERO_W(b, zero);
-            VL_EXTEND_WI(b, 0, ten, 10);
+            VL_ZERO_W_T(b, zero);
+            VL_EXTEND_WI_TT(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
             char* ptr = buf + sizeof(buf) - 1;
             *ptr = '\0';
-            while (VL_GT_W(w, v, zero)) {
+            while (VL_GT_W_TT(w, v, zero)) {
                 --ptr;
-                const WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
+                const WDataInP mod = VL_MODDIV_WWW_TTT(b, tmp2, v, ten);  // breaks max64Bit
                 *ptr = "0123456789"[VL_SET_QW(mod)];
                 VlWide<w> divided;
-                VL_DIV_WWW(b, divided, v, ten);
-                VL_ASSIGN_W(b, v, divided);
+                VL_DIV_WWW_TTT(b, divided, v, ten);
+                VL_ASSIGN_W_TT(b, v, divided);
             }
             if (!fracDigits) {
                 digits = _vl_snprintf_string(tmp, "%s%s", ptr, suffix.c_str());
@@ -1097,7 +1143,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 ld = VL_RTOIROUND_Q_D(real);
                 strwide.resize(2);
                 WDataOutP strwidep = WDataOutP::external(strwide.data());
-                VL_SET_WQ(strwidep, ld);
+                VL_SET_WQ_T(strwidep, ld);
                 lwp = strwidep;
                 lbits = 64;
                 // Not changint fmt == 'p' to fmt = 'g', as need fmts correct
@@ -1110,7 +1156,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     ld = VL_VA_ARG_Q_(ap, lbits);
                     strwide.resize(2);
                     WDataOutP strwidep = WDataOutP::external(strwide.data());
-                    VL_SET_WQ(strwidep, ld);
+                    VL_SET_WQ_T(strwidep, ld);
                     lwp = strwidep;
                 } else {
                     lwp = WDataInP::external(va_arg(ap, EData*));
@@ -1194,13 +1240,13 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     if (lbits <= VL_QUADSIZE) {
                         digits = _vl_snprintf_string(
                             t_tmp, "%" PRId64,
-                            static_cast<int64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
+                            static_cast<int64_t>(VL_EXTENDS_QQ_TT(lbits, lbits, ld)));
                         append = t_tmp;
                     } else {
-                        if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
+                        if (VL_SIGN_E_T(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
                             std::vector<EData> neg(VL_WORDS_I(lbits));
                             WDataOutP negp = WDataOutP::external(neg.data());
-                            VL_NEGATE_W(VL_WORDS_I(lbits), negp, lwp);
+                            VL_NEGATE_W_TT(VL_WORDS_I(lbits), negp, lwp);
                             append = "-"s + VL_DECIMAL_NW(lbits, negp);
                         } else {
                             append = VL_DECIMAL_NW(lbits, lwp);
@@ -1275,7 +1321,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 }
 
                 if (widthSet || left) {
-                    lsb = VL_MOSTSETBITP1_W(VL_WORDS_I(lbits), lwp);
+                    lsb = VL_MOSTSETBITP1_W_T(VL_WORDS_I(lbits), lwp);
                     lsb = (lsb < 1) ? 0 : (lsb - 1);
                 }
 
@@ -1431,7 +1477,7 @@ static void _vl_vsss_setbit(WDataOutP iowp, int obits, int lsb, int nbits, IData
 void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, size_t posstart,
                     size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
-    VL_ZERO_W(obits, owp);
+    VL_ZERO_W_T(obits, owp);
     int lsb = 0;
     for (int i = 0, pos = static_cast<int>(posend) - 1;
          i < obits && pos >= static_cast<int>(posstart); --pos, ++i) {
@@ -1552,7 +1598,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 double real = 0;
 
                 VlWide<VL_WQ_WORDS_E> qowp;
-                VL_SET_WQ(qowp, 0ULL);
+                VL_SET_WQ_T(qowp, 0ULL);
                 WDataOutP owp = WDataOutP::external((obits <= 64) ? qowp.data()
                                                                   : static_cast<EData*>(thingp));
 
@@ -1588,11 +1634,11 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     if (formatAttr == VL_VFORMATATTR_SIGNED) {
                         QData ld = 0;
                         std::sscanf(t_tmp.c_str(), "%30" PRIu64, &ld);
-                        VL_SET_WQ(owp, ld);
+                        VL_SET_WQ_T(owp, ld);
                     } else if (formatAttr == VL_VFORMATATTR_UNSIGNED) {
                         int64_t ld = 0;
                         std::sscanf(t_tmp.c_str(), "%30" PRId64, &ld);
-                        VL_SET_WQ(owp, ld);
+                        VL_SET_WQ_T(owp, ld);
                     }
                     break;
                 }
@@ -1610,7 +1656,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     } u;
                     real = std::strtod(t_tmp.c_str(), nullptr);
                     u.r = real;
-                    VL_SET_WQ(owp, u.ld);
+                    VL_SET_WQ_T(owp, u.ld);
                     break;
                 }
                 case 't': {  // Time
@@ -1624,7 +1670,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     // 0..-15
                     const int shift = -userUnits + timeunit;  // 0..-15
                     real = std::strtod(t_tmp.c_str(), nullptr) * vl_time_multiplier(-shift);
-                    VL_SET_WQ(owp, static_cast<uint64_t>(real));
+                    VL_SET_WQ_T(owp, static_cast<uint64_t>(real));
                     break;
                 }
                 case 'b': {
@@ -1711,7 +1757,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     QData* const p = static_cast<QData*>(thingp);
                     *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
                 } else {
-                    _vl_clean_inplace_w(obits, owp);
+                    _vl_clean_inplace_w_T(obits, owp);
                 }
             }
             }  // switch
@@ -1956,7 +2002,7 @@ IData VL_SSCANF_IINX(int lbits, IData ld, const std::string& format, int argc, .
 }
 IData VL_SSCANF_IQNX(int lbits, QData ld, const std::string& format, int argc, ...) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> fnw;
-    VL_SET_WQ(fnw, ld);
+    VL_SET_WQ_T(fnw, ld);
 
     va_list ap;
     va_start(ap, argc);
@@ -2064,7 +2110,7 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
         } else {
             const WDataOutP datap = WDataOutP::external(
                 &(reinterpret_cast<EData*>(memp))[entry * VL_WORDS_I(width)]);
-            if (shift == start_shift) VL_ZERO_W(width, datap);
+            if (shift == start_shift) VL_ZERO_W_T(width, datap);
             datap[VL_BITWORD_E(shift)] |= (static_cast<EData>(c) << VL_BITBIT_E(shift));
         }
         // Prep for next
@@ -2150,7 +2196,7 @@ void VL_STACKTRACE() VL_MT_SAFE {
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> lhsw;
-    VL_SET_WQ(lhsw, lhs);
+    VL_SET_WQ_T(lhsw, lhs);
     return VL_SYSTEM_IW(VL_WQ_WORDS_E, lhsw);
 }
 IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
@@ -2196,12 +2242,12 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     const char* const dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match.empty()) return 0;
 
-    VL_ZERO_W(rbits, rwp);
+    VL_ZERO_W_T(rbits, rwp);
     switch (std::tolower(fmt)) {
     case 'd': {
         int64_t lld = 0;
         std::sscanf(dp, "%30" PRId64, &lld);
-        VL_SET_WQ(rwp, lld);
+        VL_SET_WQ_T(rwp, lld);
         break;
     }
     case 'b': _vl_vsss_based(rwp, rbits, 1, dp, 0, std::strlen(dp)); break;
@@ -2219,25 +2265,25 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     case 'e': {
         double temp = 0.F;
         std::sscanf(dp, "%le", &temp);
-        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        VL_SET_WQ_T(rwp, VL_CVT_Q_D(temp));
         break;
     }
     case 'f': {
         double temp = 0.F;
         std::sscanf(dp, "%lf", &temp);
-        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        VL_SET_WQ_T(rwp, VL_CVT_Q_D(temp));
         break;
     }
     case 'g': {
         double temp = 0.F;
         std::sscanf(dp, "%lg", &temp);
-        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        VL_SET_WQ_T(rwp, VL_CVT_Q_D(temp));
         break;
     }
     default:  // Other simulators return 0 in these cases and don't error out
         return 0;
     }
-    _vl_clean_inplace_w(rbits, rwp);
+    _vl_clean_inplace_w_T(rbits, rwp);
     return 1;
 }
 IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE {
@@ -2557,7 +2603,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
                      & VL_MASK_Q(m_bits);
         } else {
             const WDataOutP datap = WDataOutP::external(reinterpret_cast<EData*>(valuep));
-            if (!innum) VL_ZERO_W(m_bits, datap);
+            if (!innum) VL_ZERO_W_T(m_bits, datap);
             _vl_shiftl_inplace_w(m_bits, datap, static_cast<IData>(shift));
             datap[0] |= value;
         }

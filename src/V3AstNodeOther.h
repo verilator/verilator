@@ -1780,11 +1780,12 @@ public:
     ASTGEN_MEMBERS_AstTypeTable;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
-    AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
+    AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd,
+                                  bool isShuffledFourstate = false);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
-                                     VSigning numeric);
+                                     VSigning numeric, bool isShuffledFourstate);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, const VNumRange& range,
-                                     int widthMin, VSigning numeric);
+                                     int widthMin, VSigning numeric, bool isShuffledFourstate);
     AstBasicDType* findCreateSameDType(AstBasicDType& node);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     AstConstraintRefDType* findConstraintRefDType(FileLine* fl);
@@ -2013,6 +2014,7 @@ class AstVar final : public AstNode {
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
     bool m_isFourstateComplement : 1;  // Set in four-state xz part
+    bool m_isTopLevelPort : 1;  // Whether this variable used to be a top level input
     void init() {
         m_fourstateOriginalDTypeKwd = VBasicDTypeKwd::UNKNOWN;
         m_ansi = false;
@@ -2077,6 +2079,7 @@ class AstVar final : public AstNode {
         m_isStdRandomizeArg = false;
         m_processQueue = false;
         m_isFourstateComplement = false;
+        m_isTopLevelPort = false;
     }
 
 public:
@@ -2192,6 +2195,9 @@ public:
         m_fourstateOriginalDTypeKwd = dtypeKwd;
     }
     bool isFourstateComplement() const { return m_isFourstateComplement; }
+    void unsetIsFourstateComplement() { m_isFourstateComplement = false; }
+    bool isTopLevelPort() const { return m_isTopLevelPort; }
+    void setIsTopLevelPort() { m_isTopLevelPort = true; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }

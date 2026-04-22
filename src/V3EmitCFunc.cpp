@@ -44,6 +44,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     // and write out appropriate text.
     //  %n*     node
     //   %nq      emitIQW on the [node]
+    //   %nf      data format T/V/X
     //   %nw      width in bits
     //   %nW      width in words
     //   %ni      iterate
@@ -52,6 +53,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     //  %t*     thsp - if appropriate, then second char as above
     //  %k      Potential line break
     //  %P      Wide temporary name
+    //  %p*     Wide temporary - if appropriate, then second char as above
     //  ,       Commas suppressed if the previous field is suppressed
     string out;
     putnbs(nodep, "");
@@ -131,6 +133,16 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 }
 
                 break;
+            case 'p':
+                if (nodep->isWide()) {
+                    UASSERT_OBJ(m_wideTempRefp, nodep,
+                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                    detail = true;
+                    detailp = m_wideTempRefp;
+                } else {
+                    ++pos;
+                }
+                break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
             if (detail) {
@@ -151,15 +163,22 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                         emitIQW(detailp);
                     }
                     break;
+                case 'f':
+                    putOut();
+                    emitTVX(detailp);
+                    break;
                 case 'w':
                     commaOut();
                     out += cvtToStr(detailp->widthMin());
                     needComma = true;
                     break;
                 case 'W':
-                    if (lhsp->isWide()) {
+                    if (detailp->isWide()) {
                         commaOut();
-                        out += cvtToStr(lhsp->widthWords());
+                        out += cvtToStr(VL_WORDS_I(
+                            detailp->width()));  // Even if signal is shuffled we want to emit
+                                                 // width that does not take into account the fact
+                                                 // that 4-states takes 2 bits
                         needComma = true;
                     } else if (VN_IS(lhsp, StreamR)) {
                         commaOut();
@@ -521,6 +540,15 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     }
 }
 
+bool isModulePort(const AstVar* const varp) {
+    if (varp->varType() == VVarType::PORT) {
+        const AstNode* iter = varp;
+        while (!iter->firstAbovep()) iter = iter->backp();
+        if (VN_IS(iter->firstAbovep(), Module)) return true;
+    }
+    return false;
+}
+
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix, const AstNode* valuep) {
@@ -617,8 +645,47 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
+            } else if (v3Global.opt.fourstate() && dtypep->isShuffledFourstate()) {
+                const std::string& reset = slow ? "RESET" : "";
+                if (varp->isTopLevelPort()) {
+                    // Instead of using VL_ZERO_RESET_W V and X we just use T and pretend the
+                    // signal is twice as wide. this way we resets whole thing and sets to zero at
+                    // once. We can do that because of the four-state internal representation
+                    out += "VL_ZERO_" + reset + "_W_T(";
+                    out += cvtToStr(dtypep->widthMin() * 2);
+                    out += ", " + varNameProtected + suffix;
+                    out += ");\n";
+                } else if (varp->varType().isNet() || isModulePort(varp)) {
+                    out += "VL_ZERO_" + reset + "_W_V(";
+                    out += cvtToStr(dtypep->widthMin());
+                    out += ", " + varNameProtected + suffix;
+                    out += ");\n";
+                    out += "VL_ALLONES_" + reset + "_W_X(";
+                    out += cvtToStr(dtypep->widthMin());
+                    out += ", " + varNameProtected + suffix;
+                    out += ");\n";
+                } else {
+                    // The same as above we can do a trick and use the internal representation to
+                    // set everything up in one go but this time it is important to clear the
+                    // result
+                    out += "VL_ALLONES_" + reset + "_W_T(";
+                    out += cvtToStr(dtypep->widthWords() * VL_EDATASIZE);
+                    out += ", " + varNameProtected + suffix;
+                    out += ");\n";
+                    if ((dtypep->widthMin() & VL_SIZEBITS_E) != 0) {
+                        // Need cleaning
+                        out += "_vl_clean_inplace_w_V(";
+                        out += cvtToStr(dtypep->widthMin());
+                        out += ", " + varNameProtected + suffix;
+                        out += ");\n";
+                        out += "_vl_clean_inplace_w_X(";
+                        out += cvtToStr(dtypep->widthMin());
+                        out += ", " + varNameProtected + suffix;
+                        out += ");\n";
+                    }
+                }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W_T(" : "VL_ZERO_W_T(")
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
                                                  : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
@@ -648,15 +715,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             } else if (v3Global.opt.fourstate()
                        && (varp->fourstateComplementp() || varp->isFourstateComplement())) {
                 V3Number xNum{varp->fileline(), varp->width(), 0};
-                bool setTozero = false;
-                if (varp->varType() == VVarType::PORT) {
-                    const AstNode* iter = varp;
-                    while (!iter->firstAbovep()) iter = iter->backp();
-                    if (AstModule* const modep = VN_CAST(iter->firstAbovep(), Module)) {
-                        setTozero = modep->isTop();
-                    }
-                }
-                if (!setTozero && (varp->isFourstateComplement() || !varp->varType().isNet())) {
+                if (!varp->isTopLevelPort()
+                    && (varp->isFourstateComplement()
+                        || !(varp->varType().isNet() || isModulePort(varp)))) {
                     xNum.setAllBits1();
                 }
                 out += " = ";

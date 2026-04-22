@@ -187,6 +187,13 @@ class InlineMarkVisitor final : public VNVisitor {
         iterateChildren(nodep);
         m_modp->user4(oldcnt);
     }
+    void visit(AstVar* const nodep) override {
+        if (m_modp && m_modp->isTop() && nodep->varType() == VVarType::PORT) {
+            nodep->setIsTopLevelPort();
+        }
+        if (m_modp) m_modp->user4Inc();  // Inc statement count
+        iterateChildren(nodep);
+    }
     void visit(AstNetlist* nodep) override {
         // Build ModuleState, user2, and user4 for all modules.
         // Also build m_allMods and m_instances.

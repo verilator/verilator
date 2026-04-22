@@ -2026,9 +2026,11 @@ public:
     const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     const VSigning m_numeric;  // From AstNodeDType: Node is signed
     const VBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
+    const bool m_isShuffledFourstate;  // Whether it is a shuffled fourstate
     bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
-               && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
+               && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange
+               && m_isShuffledFourstate == rhs.m_isShuffledFourstate;
     }
     bool operator<(const VBasicTypeKey& rhs) const {
         if ((m_width < rhs.m_width)) return true;
@@ -2041,15 +2043,17 @@ public:
         if (!(m_keyword == rhs.m_keyword)) return false;  // lhs > rhs
         if ((m_nrange < rhs.m_nrange)) return true;
         if (!(m_nrange == rhs.m_nrange)) return false;  // lhs > rhs
+        if (!m_isShuffledFourstate && rhs.m_isShuffledFourstate) return true;
         return false;
     }
     VBasicTypeKey(int width, int widthMin, VSigning numeric, VBasicDTypeKwd kwd,
-                  const VNumRange& nrange)
+                  const VNumRange& nrange, bool isShuffledFourstate)
         : m_width{width}
         , m_widthMin{widthMin}
         , m_nrange{nrange}
         , m_numeric{numeric}
-        , m_keyword{kwd} {}
+        , m_keyword{kwd}
+        , m_isShuffledFourstate{isShuffledFourstate} {}
     ~VBasicTypeKey() = default;
 };
 

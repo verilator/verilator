@@ -522,6 +522,13 @@ V3Number& V3Number::setValue1() {
     return *this;
 }
 
+V3Number& V3Number::setXZFromXZComplement(const V3Number& other) {
+    UASSERT(words() == other.words(), "Width mismatch");
+    UASSERT(!other.isAnyXZ(), "XZ in xz part");
+    for (int i = 1; i < words(); ++i) m_data.num()[i].m_valueX = other.m_data.num()[i].m_value;
+    return *this;
+}
+
 void V3Number::setBitX0(int bit) {
     // Selection beyond bounds after V3Premit needs to have 0s
     // in upper bits.  Contrast to setAllBitsXRemoved which honors xAssign
@@ -1164,6 +1171,20 @@ bool V3Number::isAllX() const VL_MT_SAFE {
         const ValueAndX v = m_data.num()[i];
         if ((v.m_value & v.m_valueX) ^ mask) return false;
         mask = ~0U;
+    }
+    return true;
+}
+bool V3Number::isAll0() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs0(i)) return false;
+    }
+    return true;
+}
+bool V3Number::isAll1() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs1(i)) return false;
     }
     return true;
 }

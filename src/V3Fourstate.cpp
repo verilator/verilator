@@ -23,6 +23,8 @@
 
 #include "V3Fourstate.h"
 
+#include "V3Const.h"
+#include "V3Stats.h"
 #include "V3UniqueNames.h"
 
 #include <map>
@@ -38,10 +40,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
  *  - split asswignw into multiple statements
  *  - four-states printing
  */
-
-#define VALUE_SUFFIX ""  // Needs to be empty so C++ api won't change
-#define XZ_SUFFIX "__Vxz"
-
 namespace {
 struct FourstatePair final {
     AstNodeExpr* valuep;
@@ -51,16 +49,17 @@ struct FourstatePair final {
 enum LogicType : char {
     UNINITIALIZED = 0,  // Logic type has not been evaluated
     TWO_STATE,  // Two-state expression
-    TWO_STATE_HARD,  // Expression is guaranteed by user that it won't be a four-state (propagator
-                     // may not change it)
-    TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE,  // Two-state expression with four-state expression in
-                                           // its subtree - this is necessary since some AstNodes
-                                           // (e.g.: AstCastWrap or AstSel) may contain four-state
-                                           // expression as a child but itself be a two-state. When
-                                           // this occurs we need to know that for the sake of
-                                           // short-circuiting (because we use precalculation
-                                           // statements we need to know that we cannot put them
-                                           // before current expression unconditionally)
+    TWO_STATE_HARD,  // Expression is guaranteed by user that it won't be a four-state
+                     // (propagator may not change it)
+    TWO_STATE_WITH_FOUR_STATE_IN_SUBTREE,  // Two-state expression with four-state expression
+                                           // in its subtree - this is necessary since some
+                                           // AstNodes (e.g.: AstCastWrap or AstSel) may
+                                           // contain four-state expression as a child but
+                                           // itself be a two-state. When this occurs we need
+                                           // to know that for the sake of short-circuiting
+                                           // (because we use precalculation statements we need
+                                           // to know that we cannot put them before current
+                                           // expression unconditionally)
     FOUR_STATE,  // Four-state expression
 };
 
@@ -2404,9 +2403,120 @@ public:
     ~FourstateVisitor() override = default;
 };
 
-void V3Fourstate::fourstateAll(AstNetlist* netlistp) {
+// Creates one wide shuffled variable from two wide signals that together create a four-state
+// From:
+//      VlWide<128> a_value;
+//      VlWide<128> a_xz;
+// creates a:
+//      VlWide<256> a;  // keeps [value1, xz1, value2, xz2,...]
+class FourstateShuffleVisitor final : public VNVisitor {
+    const VNUser1InUse m_user1InUse;
+
+    // Node status
+    // AstVar*::user1p  ->  AstVar*.    Four-state wide complemetary (xz part) variable keeps here
+    //                                  a pointer to a newly created wide four-state shuffled
+    //                                  signal
+
+    VDouble0 m_shuffledVars;
+
+    static bool needsShuffle(const AstVar* const varp) {
+        return varp->isWide() && (varp->fourstateComplementp() || varp->isFourstateComplement());
+    }
+
+    AstVar* getCreateShuffledVariantp(AstVar* varp) {
+        UASSERT_OBJ(
+            varp->fourstateComplementp() || varp->isFourstateComplement(), varp,
+            "This function is ment to be called on variables which create a four-state value");
+        UASSERT_OBJ(varp->isWide(), varp,
+                    "This function is only ment to be called on wide wariables");
+        if (AstVar* newp = varp->fourstateComplementp()) varp = newp;
+        UASSERT_OBJ(
+            VString::endsWith(varp->name(), "__Vxz"), varp,
+            "Four-state complementary value (xz part) shall have '__Vxz' suffix, but it is named: "
+                << varp->name());
+        if (AstVar* resultp = VN_AS(varp->user1p(), Var)) return resultp;
+        UINFO(4, "SHUFFLED4STATE: " << varp);
+        ++m_shuffledVars;
+        AstVar* const resultp = varp->cloneTree(false);
+        resultp->unsetIsFourstateComplement();
+        resultp->name(resultp->name().erase(resultp->name().size() + 1 - sizeof("__Vxz")));
+        resultp->dtypep(resultp->findBitDType(resultp->width(), resultp->dtypep()->widthMin(),
+                                              varp->dtypep()->numeric(), true));
+        varp->addNextHere(resultp);
+        varp->user1p(resultp);
+        return resultp;
+    }
+
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        AstNodeExpr* exprp = nodep->argsp();
+        for (AstVar* varp = nodep->funcp()->argsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            UASSERT_OBJ(exprp, varp, "Too little arguments");
+            if (needsShuffle(varp)) {
+                UASSERT_OBJ(!varp->isFourstateComplement(), varp,
+                            "This loop shall never reach four-state complement");
+                if (AstVar* const complement = varp->fourstateComplementp()) {
+                    getCreateShuffledVariantp(complement);
+                    UASSERT_OBJ(
+                        VN_IS(exprp, NodeVarRef) && VN_IS(exprp->nextp(), NodeVarRef), exprp,
+                        "Wide four-state signals shall be passed only as lvalue references");
+                    exprp->nextp()->unlinkFrBack()->deleteTree();
+                    varp = VN_AS(varp->nextp()->nextp(), Var);
+                }
+            }
+            exprp = VN_AS(exprp->nextp(), NodeExpr);
+        }
+        UASSERT_OBJ(!exprp, exprp, "Too many arguments");
+    }
+
+    void visit(AstVar* const nodep) override {
+        iterateChildren(nodep);
+        if (needsShuffle(nodep)) {
+            getCreateShuffledVariantp(nodep);
+            pushDeletep(nodep->unlinkFrBack());
+        }
+    }
+
+    void visit(AstNodeVarRef* const nodep) override {
+        iterateChildren(nodep);
+        if (!needsShuffle(nodep->varp())) return;
+        AstVar* const varp = getCreateShuffledVariantp(nodep->varp());
+        FileLine* const flp = nodep->fileline();
+        if (AstVarScope* const oldVscp = nodep->varScopep()) {
+            AstVarScope* const vscp = new AstVarScope{flp, oldVscp->scopep(), varp};
+            vscp->trace(oldVscp->isTrace());
+            vscp->optimizeLifePost(oldVscp->optimizeLifePost());
+            nodep->varScopep(vscp);
+        }
+        nodep->fourstateXZPart(nodep->varp()->isFourstateComplement());
+        nodep->varp(varp);
+        if (AstWordSel* const wselp = VN_CAST(nodep->firstAbovep(), WordSel)) {
+            AstNodeExpr* idxp
+                = new AstMul{flp, wselp->bitp()->unlinkFrBack(), new AstConst{flp, 2}};
+            if (nodep->fourstateXZPart()) idxp = new AstAdd{flp, idxp, new AstConst{flp, 1}};
+            idxp = V3Const::constifyEdit(idxp);
+            wselp->bitp(idxp);
+        }
+    }
+
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit FourstateShuffleVisitor(AstNetlist* const netlistp) { iterate(netlistp); }
+    ~FourstateShuffleVisitor() override {
+        V3Stats::addStat("Shuffled fourstate variables", m_shuffledVars);
+    }
+};
+
+void V3Fourstate::fourstateAll(AstNetlist* const netlistp) {
     UINFO(2, __FUNCTION__ << ":");
     { FourstateVisitor{netlistp}; }
     v3Global.setFourstateHandled();
     V3Global::dumpCheckGlobalTree("fourstate", 0, dumpTreeEitherLevel() >= 6);
+}
+
+void V3Fourstate::fourstateShuffleAll(AstNetlist* const netlistp) {
+    UINFO(2, __FUNCTION__ << ":");
+    { FourstateShuffleVisitor{netlistp}; }
+    V3Global::dumpCheckGlobalTree("fourstateShuffle", 0, dumpTreeEitherLevel() >= 6);
 }

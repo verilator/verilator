@@ -475,6 +475,8 @@ private:
     VSelfPointerText m_selfPointer
         = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
                                                         // pointer (e.g.: 'this')
+    bool m_fourstateXZPart : 1;  // If references four-state shuffled var true for XZ part and
+                                 // false for value part
 protected:
     AstNodeVarRef(VNType t, FileLine* fl, AstVar* varp, const VAccess& access)
         : AstNodeExpr{t, fl}
@@ -504,6 +506,8 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
+    void fourstateXZPart(bool xz) { m_fourstateXZPart = xz; }
+    bool fourstateXZPart() const { return m_fourstateXZPart; }
 };
 
 // === Concrete node types =====================================================
@@ -3071,7 +3075,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opConcat(lhs, rhs);
     }
-    string emitC() override { return "VL_CONCAT_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_CONCAT_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(concat %l %r)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -3113,7 +3117,7 @@ public:
         out.opDiv(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f/ %r)"; }
-    string emitC() override { return "VL_DIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_DIV_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvudiv %l %r)"; }
     bool emitCheckMaxWords() override { return true; }
     bool cleanOut() const override { return false; }
@@ -3156,7 +3160,7 @@ public:
         out.opDivS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f/ %r)"; }
-    string emitC() override { return "VL_DIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_DIVS_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvsdiv %l %r)"; }
     bool emitCheckMaxWords() override { return true; }
     bool cleanOut() const override { return false; }
@@ -3191,7 +3195,7 @@ public:
         if (v3Global.opt.fourstate()) {
             V3ERROR_NA_RETURN("");
         } else {
-            return "VL_EQ_%lq(%lW, %P, %li, %ri)";
+            return "VL_EQ_%lq_%lf%rf(%lW, %P, %li, %ri)";
         }
     }
     string emitSMT() const override { return "(__Vbv (= %l %r))"; }
@@ -3304,7 +3308,7 @@ public:
         out.opGt(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f> %r)"; }
-    string emitC() override { return "VL_GT_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_GT_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvugt %l %r))"; }
     string emitSimpleOperator() override { return ">"; }
     bool cleanOut() const override { return true; }
@@ -3367,7 +3371,7 @@ public:
         out.opGtS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f> %r)"; }
-    string emitC() override { return "VL_GTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_GTS_%nq%lq%rq_%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvsgt %l %r))"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
@@ -3389,7 +3393,7 @@ public:
         out.opGte(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f>= %r)"; }
-    string emitC() override { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_GTE_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvuge %l %r))"; }
     string emitSimpleOperator() override { return ">="; }
     bool cleanOut() const override { return true; }
@@ -3452,7 +3456,7 @@ public:
         out.opGteS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f>= %r)"; }
-    string emitC() override { return "VL_GTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_GTES_%nq%lq%rq_%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvsge %l %r))"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
@@ -3474,7 +3478,7 @@ public:
         out.opLogAnd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f&& %r)"; }
-    string emitC() override { return "VL_LOGAND_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(bvand %l %r)"; }
     string emitSimpleOperator() override { return "&&"; }
     bool cleanOut() const override { return true; }
@@ -3496,7 +3500,7 @@ public:
         out.opLogIf(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f-> %r)"; }
-    string emitC() override { return "VL_LOGIF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(__Vbv (=> (__Vbool %l) (__Vbool %r)))"; }
     string emitSimpleOperator() override { return "->"; }
     bool cleanOut() const override { return true; }
@@ -3518,7 +3522,7 @@ public:
         out.opLogOr(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f|| %r)"; }
-    string emitC() override { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(bvor %l %r)"; }
     string emitSimpleOperator() override { return "||"; }
     bool cleanOut() const override { return true; }
@@ -3540,7 +3544,7 @@ public:
         out.opLt(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f< %r)"; }
-    string emitC() override { return "VL_LT_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_LT_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvult %l %r))"; }
     string emitSimpleOperator() override { return "<"; }
     bool cleanOut() const override { return true; }
@@ -3603,7 +3607,7 @@ public:
         out.opLtS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f< %r)"; }
-    string emitC() override { return "VL_LTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_LTS_%nq%lq%rq_%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvslt %l %r))"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
@@ -3625,7 +3629,7 @@ public:
         out.opLte(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<= %r)"; }
-    string emitC() override { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_LTE_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvule %l %r))"; }
     string emitSimpleOperator() override { return "<="; }
     bool cleanOut() const override { return true; }
@@ -3688,7 +3692,7 @@ public:
         out.opLteS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<= %r)"; }
-    string emitC() override { return "VL_LTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_LTES_%nq%lq%rq_%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (bvsle %l %r))"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
@@ -3710,7 +3714,7 @@ public:
         out.opModDiv(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f%% %r)"; }
-    string emitC() override { return "VL_MODDIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_MODDIV_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvurem %l %r)"; }
     bool emitCheckMaxWords() override { return true; }
     bool cleanOut() const override { return false; }
@@ -3732,7 +3736,7 @@ public:
         out.opModDivS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f%% %r)"; }
-    string emitC() override { return "VL_MODDIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_MODDIVS_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvsmod %l %r)"; }
     bool emitCheckMaxWords() override { return true; }
     bool cleanOut() const override { return false; }
@@ -3764,7 +3768,7 @@ public:
         if (v3Global.opt.fourstate()) {
             V3ERROR_NA_RETURN("");
         } else {
-            return "VL_NEQ_%lq(%lW, %P, %li, %ri)";
+            return "VL_NEQ_%lq_%lf%rf(%lW, %P, %li, %ri)";
         }
     }
     string emitSimpleOperator() override {
@@ -3913,7 +3917,7 @@ public:
         out.opRepl(lhs, rhs);
     }
     string emitVerilog() override { return "%f{%r{%k%l}}"; }
-    string emitC() override { return "VL_REPLICATE_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_REPLICATE_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override {
         return "((_ repeat " + cvtToStr(width() / lhsp()->width()) + ") %l)";
     }
@@ -4092,9 +4096,9 @@ public:
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override {
-        return widthConst() == 1 ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
-               : isWide()        ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
-                                 : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
+        return widthConst() == 1 ? "VL_BITSEL_%nq%lq%rqI_%nf%lf%rfT(%lw, %P, %li, %ri)"
+               : isWide()        ? "VL_SEL_%nq%lq%rqI_%nf%lf%rfT(%nw, %lw, %P, %li, %ri, %nw)"
+                                 : "VL_SEL_%nq%lq%rqI_%nf%lf%rfT(%lw, %P, %li, %ri, %nw)";
     }
     string emitSMT() const override { return "((_ extract %t %r) %l)"; }
     bool cleanOut() const override { return false; }
@@ -4141,7 +4145,7 @@ public:
         out.opShiftL(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<< %r)"; }
-    string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTL_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvshl %l %r)"; }
     string emitSimpleOperator() override {
         return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : "<<";
@@ -4165,7 +4169,7 @@ public:
         out.opShiftL(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<< %r)"; }
-    string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTL_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
@@ -4196,7 +4200,7 @@ public:
         out.opShiftR(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f>> %r)"; }
-    string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTR_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvlshr %l %r)"; }
     string emitSimpleOperator() override {
         return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : ">>";
@@ -4221,7 +4225,7 @@ public:
         out.opShiftR(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f>> %r)"; }
-    string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTR_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -4246,7 +4250,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f>>> %r)"; }
     string emitSMT() const override { return "(bvashr %l %r)"; }
-    string emitC() override { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTRS_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
@@ -4270,7 +4274,7 @@ public:
         out.opShiftRS(lhs, rhs, lhsp()->widthMinV());
     }
     string emitVerilog() override { return "%k(%l %f>>> %r)"; }
-    string emitC() override { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SHIFTRS_%nq%lq%rq_%nf%lf%rf(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
@@ -4291,7 +4295,7 @@ public:
         out.opSub(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f- %r)"; }
-    string emitC() override { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_SUB_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvsub %l %r)"; }
     string emitSimpleOperator() override { return "-"; }
     bool cleanOut() const override { return false; }
@@ -4364,7 +4368,7 @@ public:
         out.opEq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f== %r)"; }
-    string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_EQ_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(__Vbv (= %l %r))"; }
     string emitSimpleOperator() override { return "=="; }
     bool cleanOut() const override { return true; }
@@ -4385,7 +4389,7 @@ public:
         out.opCaseEq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f=== %r)"; }
-    string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_EQ_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "=="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -4466,7 +4470,7 @@ public:
         out.opLogEq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<-> %r)"; }
-    string emitC() override { return "VL_LOGEQ_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(bvxnor %l %r)"; }
     string emitSimpleOperator() override { return "<->"; }
     bool cleanOut() const override { return true; }
@@ -4494,7 +4498,7 @@ public:
         out.opNeq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f!= %r)"; }
-    string emitC() override { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_NEQ_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "!="; }
     string emitSMT() const override { return "(__Vbv (not (= %l %r)))"; }
     bool cleanOut() const override { return true; }
@@ -4515,7 +4519,7 @@ public:
         out.opCaseNeq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f!== %r)"; }
-    string emitC() override { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_NEQ_%lq_%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "!="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -4598,7 +4602,7 @@ public:
         out.opAdd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f+ %r)"; }
-    string emitC() override { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_ADD_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvadd %l %r)"; }
     string emitSimpleOperator() override { return "+"; }
     bool cleanOut() const override { return false; }
@@ -4640,7 +4644,7 @@ public:
         out.opAnd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f& %r)"; }
-    string emitC() override { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_AND_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvand %l %r)"; }
     string emitSimpleOperator() override { return "&"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
@@ -4662,7 +4666,7 @@ public:
         out.opMul(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f* %r)"; }
-    string emitC() override { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_MUL_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvmul %l %r)"; }
     string emitSimpleOperator() override { return "*"; }
     bool cleanOut() const override { return false; }
@@ -4705,7 +4709,7 @@ public:
         out.opMulS(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f* %r)"; }
-    string emitC() override { return "VL_MULS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override { return "VL_MULS_%nq%lq%rq_%nf%lf%rf(%lw, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvmul %l %r)"; }
     string emitSimpleOperator() override { return ""; }
     bool emitCheckMaxWords() override { return true; }
@@ -4729,7 +4733,7 @@ public:
         out.opOr(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f| %r)"; }
-    string emitC() override { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_OR_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvor %l %r)"; }
     string emitSimpleOperator() override { return "|"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
@@ -4751,7 +4755,7 @@ public:
         out.opXor(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f^ %r)"; }
-    string emitC() override { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override { return "VL_XOR_%lq_%nf%lf%rf(%lW, %P, %li, %ri)"; }
     string emitSMT() const override { return "(bvxor %l %r)"; }
     string emitSimpleOperator() override { return "^"; }
     bool cleanOut() const override { return false; }  // Lclean && Rclean
@@ -4939,7 +4943,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opAssign(lhs);
     }
-    string emitC() override { return isWide() ? "VL_ASSIGN_W(%nw, %P, %li)" : "%li"; }
+    string emitC() override { return isWide() ? "VL_ASSIGN_W_%lf%rf(%nw, %P, %li)" : "%li"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -5228,7 +5232,7 @@ public:
         out.opAssign(lhs.isNeqZero() ? rhs : ths);
     }
     string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
-    string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
+    string emitC() override { return "VL_COND_%nq%lq%rq%tq_%nf%lf%rf%tf(%nw, %P, %li, %ri, %ti)"; }
     string emitSMT() const override { return "(ite (__Vbool %l) %r %t)"; }
     bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
     bool cleanLhs() const override { return true; }
@@ -5516,7 +5520,7 @@ public:
     ASTGEN_MEMBERS_AstExtend;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     string emitVerilog() override { return "%l"; }
-    string emitC() override { return "VL_EXTEND_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitC() override { return "VL_EXTEND_%nq%lq_%nf%lf(%nw,%lw, %P, %li)"; }
     string emitSMT() const override {
         return "((_ zero_extend " + cvtToStr(width() - lhsp()->width()) + ") %l)";
     }
@@ -5543,7 +5547,7 @@ public:
         out.opExtendS(lhs, lhsp()->widthMinV());
     }
     string emitVerilog() override { return "%l"; }
-    string emitC() override { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitC() override { return "VL_EXTENDS_%nq%lq_%nf%lf(%nw,%lw, %P, %li)"; }
     string emitSMT() const override {
         return "((_ sign_extend " + cvtToStr(width() - lhsp()->width()) + ") %l)";
     }
@@ -5689,7 +5693,7 @@ public:
     ASTGEN_MEMBERS_AstLogNot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLogNot(lhs); }
     string emitVerilog() override { return "%f(! %l)"; }
-    string emitC() override { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(__Vbv (not (__Vbool %l)))"; }
     string emitSimpleOperator() override { return "!"; }
     bool cleanOut() const override { return true; }
@@ -5724,7 +5728,7 @@ public:
     ASTGEN_MEMBERS_AstNegate;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegate(lhs); }
     string emitVerilog() override { return "%f(- %l)"; }
-    string emitC() override { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
+    string emitC() override { return "VL_NEGATE_%lq_%nf%lf(%lW, %P, %li)"; }
     string emitSMT() const override { return "(bvneg %l)"; }
     string emitSimpleOperator() override { return "-"; }
     bool cleanOut() const override { return false; }
@@ -5758,7 +5762,7 @@ public:
     ASTGEN_MEMBERS_AstNot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
     string emitVerilog() override { return "%f(~ %l)"; }
-    string emitC() override { return "VL_NOT_%lq(%lW, %P, %li)"; }
+    string emitC() override { return "VL_NOT_%lq_%nf%lf(%lW, %P, %li)"; }
     string emitSMT() const override { return "(bvnot %l)"; }
     string emitSimpleOperator() override { return "~"; }
     bool cleanOut() const override { return false; }
@@ -5948,7 +5952,7 @@ public:
     ASTGEN_MEMBERS_AstRedAnd;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedAnd(lhs); }
     string emitVerilog() override { return "%f(& %l)"; }
-    string emitC() override { return "VL_REDAND_%nq%lq(%lw, %P, %li)"; }
+    string emitC() override { return "VL_REDAND_%lq_%lf(%lw, %P, %li)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
@@ -5963,7 +5967,7 @@ public:
     ASTGEN_MEMBERS_AstRedOr;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedOr(lhs); }
     string emitVerilog() override { return "%f(| %l)"; }
-    string emitC() override { return "VL_REDOR_%lq(%lW, %P, %li)"; }
+    string emitC() override { return "VL_REDOR_%lq_%lf(%lW, %P, %li)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
@@ -5978,7 +5982,7 @@ public:
     ASTGEN_MEMBERS_AstRedXor;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXor(lhs); }
     string emitVerilog() override { return "%f(^ %l)"; }
-    string emitC() override { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
+    string emitC() override { return "VL_REDXOR_%lq_%lf(%lW, %P, %li)"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override {
         const int w = lhsp()->width();

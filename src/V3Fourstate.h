@@ -24,9 +24,13 @@ class AstNetlist;
 
 //============================================================================
 
+#define VALUE_SUFFIX ""  // Needs to be empty so C++ api won't change
+#define XZ_SUFFIX "__Vxz"
+
 class V3Fourstate final {
 public:
     static void fourstateAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void fourstateShuffleAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
