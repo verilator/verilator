@@ -573,6 +573,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConst(nodep->exprp());
         puts(";\n");
     }
+    void visit(AstFourstateExpr* const nodep) override {
+        puts("Four-state expression: (Value part: ");
+        iterateConst(nodep->valuep());
+        puts(", XZ part:");
+        iterateConst(nodep->xzp());
+        puts(")");
+    }
 
     // Nodes involing AstText
     void visit(AstText* nodep) override {

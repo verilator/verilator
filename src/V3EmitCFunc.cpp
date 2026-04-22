@@ -632,6 +632,23 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
                 out += ";\n";
+            } else if (v3Global.opt.fourstate()
+                       && (varp->fourstateComplementp() || varp->isFourstateComplement())) {
+                V3Number xNum{varp->fileline(), varp->width(), 0};
+                bool setTozero = false;
+                if (varp->varType() == VVarType::PORT) {
+                    const AstNode* iter = varp;
+                    while (!iter->firstAbovep()) iter = iter->backp();
+                    if (AstModule* const modep = VN_CAST(iter->firstAbovep(), Module)) {
+                        setTozero = modep->isTop();
+                    }
+                }
+                if (!setTozero && (varp->isFourstateComplement() || !varp->varType().isNet())) {
+                    xNum.setAllBits1();
+                }
+                out += " = ";
+                out += xNum.emitC();
+                out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";
             } else {

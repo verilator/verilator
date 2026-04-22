@@ -3586,8 +3586,9 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
                 nodep->addThensp(elsesp);
-            } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
-                        || VN_IS(nodep->condp(), LogNot))
+            } else if (v3Global.fourstateHandled()
+                       && ((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
+                           || VN_IS(nodep->condp(), LogNot))
                        && nodep->thensp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp
@@ -3599,7 +3600,7 @@ class ConstVisitor final : public VNVisitor {
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (ifSameAssign(nodep)) {
+            } else if (v3Global.fourstateHandled() && ifSameAssign(nodep)) {
                 UINFO(4,
                       "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})");
                 AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
