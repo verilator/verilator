@@ -41,6 +41,16 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
 
 protected:
+    void emitTVX(const AstNode* const nodep) {
+        const AstVarRef* const varRefp = VN_CAST(nodep, VarRef);
+        if (varRefp && varRefp->varp()->dtypep()->isShuffledFourstate()) {
+            UASSERT_OBJ(v3Global.opt.fourstate(), nodep,
+                        "Tried to use four-state function in two state mode");
+            puts(varRefp->fourstateXZPart() ? "X" : "V");
+        } else {
+            puts("T");
+        }
+    }
     // VISITORS
     void visit(AstInitArray* nodep) override {
         VL_RESTORER(m_unpackedWord);

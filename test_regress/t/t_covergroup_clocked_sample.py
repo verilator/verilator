@@ -12,5 +12,6 @@ import coverage_covergroup_common
 
 # Issue #7779 unstable with --vltmt
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 coverage_covergroup_common.run(test)

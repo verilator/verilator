@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st4')
 
-test.compile(verilator_flags2=['--fourstate', '-Wno-FUTURE', '-Wno-CASTFOURSTATE'])
+test.compile()
 
 test.execute()
 

@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st4')
 
-test.compile(verilator_flags2=['--binary', '--fourstate', '-Wno-FUTURE', '-Wno-NORETURN'])
+test.compile(verilator_flags2=['--binary', '-Wno-NORETURN'])
 
 test.execute()
 

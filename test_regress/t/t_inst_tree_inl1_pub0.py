@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_inst_tree.v"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"

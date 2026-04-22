@@ -9,10 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter4')
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

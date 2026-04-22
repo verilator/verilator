@@ -2380,3 +2380,12 @@ Summary:
    user-specified directories. This allows '-y "$(pwd)"' to be used if
    absolute filenames are desired for error messages instead of relative
    filenames.
+
+.. option:: --zero-top-ports
+
+.. option:: --no-zero-top-ports
+
+   Options used with :vlopt:`--fourstate` to enable/disable
+   initialization of top module ports with zeros instead of `x`.
+   This is useful to keep the backward compatibility with existing C++.
+   Enabled by default with :vlopt:`--fourstate`.

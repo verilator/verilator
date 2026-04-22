@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.out"
 waiver_filename = test.obj_dir + "/" + test.name + "_waiver.vlt"

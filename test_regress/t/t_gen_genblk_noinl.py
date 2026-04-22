@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t_gen_genblk.v"
 test.golden_filename = "t/t_gen_genblk.out"
 test.sim_time = 11000

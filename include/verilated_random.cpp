@@ -386,11 +386,11 @@ static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
 }
 bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
-    VL_SET_WQ(qowp, 0ULL);
+    VL_SET_WQ_T(qowp, 0ULL);
     WDataOutP owp = qowp;
     const int obits = width();
     VlWide<VL_WQ_WORDS_E> qiwp;
-    VL_SET_WQ(qiwp, 0ULL);
+    VL_SET_WQ_T(qiwp, 0ULL);
     if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
     const int nidx = qiwp[0];
     if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
@@ -407,9 +407,9 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_QUADSIZE) {
         QData* const p = static_cast<QData*>(datap(nidx));
-        *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
+        *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW_T(owp));
     } else {
-        _vl_clean_inplace_w(obits, owp);
+        _vl_clean_inplace_w_T(obits, owp);
     }
     return true;
 }

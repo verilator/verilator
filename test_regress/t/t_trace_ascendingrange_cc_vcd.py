@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_ascendingrange_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_ascendingrange_common.run(test)

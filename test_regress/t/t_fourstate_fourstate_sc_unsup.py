@@ -9,12 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter4')
 
-test.top_filename = 't/t_mod_interface_array5.v'
+test.top_filename = "t_fourstate_fourstate_unsup.v"
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE', '-Wno-CASTFOURSTATE'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['--sc'], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

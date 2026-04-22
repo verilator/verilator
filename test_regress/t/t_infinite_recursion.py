@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.lint(verilator_flags2=["--no-unlimited-stack"])
 
