@@ -10,6 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
+# TODO: DFG does not detect one hot pattern created by V3Fourstate
 
 test.compile(verilator_flags2=["--stats", "-fno-table", "-fno-inline"])
 

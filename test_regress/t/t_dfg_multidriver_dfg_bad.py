@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 test.lint(verilator_flags2=["-fdfg-synthesize-all", "-fno-const-before-dfg"],
           fails=True,

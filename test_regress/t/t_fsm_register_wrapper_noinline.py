@@ -12,6 +12,7 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(
     verilator_flags2=['--cc --coverage-fsm -fno-inline t/t_fsm_register_wrapper_noinline.vlt'])

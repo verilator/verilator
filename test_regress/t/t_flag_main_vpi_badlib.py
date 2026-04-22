@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # +verilator+vpi+ pointing at a non-existent library must fail with a clear
 # error (the dlopen-failure branch of the runtime loader).

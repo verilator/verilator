@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 
 test.compile(fails=True,
              verilator_flags2=["--binary -Wno-UNOPTFLAT"],

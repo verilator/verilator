@@ -66,8 +66,7 @@ class ReloopVisitor final : public VNVisitor {
     static AstVar* createVarTemp(FileLine* fl, AstCFunc* cfuncp) {
         UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
         const string newvarname{"__Vilp" + std::to_string(cfuncp->user1Inc() + 1)};
-        AstVar* const varp
-            = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
+        AstVar* const varp = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagBitPacked{}, 32};
         cfuncp->addVarsp(varp);
         return varp;
     }

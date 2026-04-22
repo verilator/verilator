@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # A library loaded with no :<bootstrap> entry that lacks vlog_startup_routines
 # must fail with a clear error (the missing-array branch of the loader).

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.pli_filename = "t/t_var_pinsizes.cpp"
 test.top_filename = "t/t_var_pinsizes.v"
 

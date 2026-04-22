@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 
 # MULTIDRIVENPROC is off by default; enable it explicitly.
 test.lint(fails=True,

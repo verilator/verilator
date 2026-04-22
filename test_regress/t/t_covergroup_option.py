@@ -11,5 +11,6 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 coverage_covergroup_common.run(test, verilator_flags2=['--Wno-COVERIGN'])

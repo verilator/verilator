@@ -137,8 +137,7 @@ public:
     }
 
     VL_ATTR_ALWINLINE void emitWData(uint64_t time, WDataInP newval, uint32_t bits);
-    VL_ATTR_ALWINLINE void emitFourstateWData(uint64_t time, WDataInP newval, WDataInP newvalXZ,
-                                              uint32_t bits);
+    VL_ATTR_ALWINLINE void emitFourstateWData(uint64_t time, WDataInP newval, uint32_t bits);
     VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
 
     // ACCESSORS
@@ -272,13 +271,13 @@ void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WDataInP new
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifActivityVar::emitFourstateWData(const uint64_t time, const WDataInP newval,
-                                                  const WDataInP newvalXZ, const uint32_t bits) {
+                                                  const uint32_t bits) {
     assert(m_lastTime <= time);
     const uint64_t dt = time - m_lastTime;
     for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
-        const size_t wordIndex = i / VL_EDATASIZE;
+        const size_t wordIndex = (i / VL_EDATASIZE) << 1;
         m_bits[i].aggregateVal(dt, VL_BITISSET_E(newval[wordIndex], i),
-                               VL_BITISSET_E(newvalXZ[wordIndex], i));
+                               VL_BITISSET_E(newval[wordIndex | 1], i));
     }
 
     updateLastTime(time);
@@ -772,12 +771,12 @@ void VerilatedSaifBuffer::emitWData(const uint32_t code, const WDataInP newval, 
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitFourstateWData(const uint32_t code, const WDataInP newval,
-                                             const WDataInP newvalXZ, const int bits) {
+                                             const int bits) {
     assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
            && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity
         = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
-    activity.emitFourstateWData(m_owner.currentTime(), newval, newvalXZ, bits);
+    activity.emitFourstateWData(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE

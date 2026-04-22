@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_gate_basic.v"
 
 test.compile(verilator_flags2=["--binary --timescale 10ns/1ns -Wno-RISEFALLDLY -Wno-SPECIFYIGN"])

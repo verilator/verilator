@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.verilated_randReset = 1  # allow checking if we initialize vars to zero only when needed
 
 test.compile(verilator_flags2=["--x-assign 1"])

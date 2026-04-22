@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=["-Wno-WIDTHTRUNC"],
              v_flags2=["+define+T_FUNC_WIDE_OUT t/t_func_wide_out_c.cpp"])

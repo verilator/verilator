@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator_st')
+test.fourstate_capable = False
 
 test.compile(fails=test.vlt_all, expect_filename=test.golden_filename)
 

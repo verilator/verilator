@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Reuse the same design; only the optimization switch differs.
 test.top_filename = "t/t_bit_scan_loops.v"

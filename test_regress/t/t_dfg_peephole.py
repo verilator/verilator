@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.sim_time = 2000000
 test.top_filename = "t/t_dfg_peephole.v"
 

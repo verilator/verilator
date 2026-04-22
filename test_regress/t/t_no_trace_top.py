@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t_trace_cat.v"
 
 test.compile(make_top_shell=False,

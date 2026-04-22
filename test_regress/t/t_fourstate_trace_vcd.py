@@ -9,11 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator4')
 
 test.top_filename = 't/t_fourstate_trace.v'
 
-test.compile(verilator_flags2=['--binary', '--fourstate', '-Wno-FUTURE', '--trace-vcd'])
+test.compile(verilator_flags2=['--binary', '--trace-vcd'])
 
 test.execute()
 

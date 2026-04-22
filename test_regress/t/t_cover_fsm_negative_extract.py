@@ -12,6 +12,7 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # This test is intentionally "half supported": one case item is a simple
 # direct state assignment, while the others use shapes the extractor should

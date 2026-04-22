@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_lint_didnotconverge_bad.v"
 
 if not os.path.exists(test.root + "/.git"):

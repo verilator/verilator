@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False  # It loops infinitely
 
 test.compile(v_flags2=["--binary"], verilator_make_gmake=False)
 

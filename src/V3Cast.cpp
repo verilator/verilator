@@ -81,9 +81,18 @@ class CastVisitor final : public VNVisitor {
         }
     }
     void ensureCast(AstNodeExpr* nodep) {
-        if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
+        AstNode* backp = nodep->backp();
+        AstNodeExpr* abbitsp = nullptr;
+        if (AstABits* const abitsp = VN_CAST(backp, ABits)) {
+            backp = abitsp->backp();
+            abbitsp = abitsp;
+        } else if (AstBBits* const bbitsp = VN_CAST(backp, BBits)) {
+            backp = bbitsp->backp();
+            abbitsp = bbitsp;
+        }
+        if (castSize(backp) != castSize(nodep) || !nodep->user1()) {
             if (!nodep->isNull() && !nodep->isString() && !nodep->isDouble())
-                insertCast(nodep, castSize(nodep->backp()));
+                insertCast(abbitsp ? abbitsp : nodep, castSize(backp));
         }
     }
     // cppcheck-suppress constParameterPointer // lhsp might be changed
@@ -185,7 +194,12 @@ class CastVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarRef* nodep) override {
-        const AstNode* const backp = nodep->backp();
+        const AstNode* backp = nodep->backp();
+        if (const AstABits* const abitsp = VN_CAST(backp, ABits)) {
+            backp = abitsp->backp();
+        } else if (const AstBBits* const bbitsp = VN_CAST(backp, BBits)) {
+            backp = bbitsp->backp();
+        }
         if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)
             && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)

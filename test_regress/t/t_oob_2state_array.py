@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # x-assign shouldn't affect 2-state oob read
 test.compile(verilator_flags2=["--binary --x-assign 1"])

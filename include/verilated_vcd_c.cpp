@@ -741,22 +741,21 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, const WDataInP newval, int bit
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WDataInP newval,
-                                            const WDataInP newvalXZ, int bits) {
+void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WDataInP newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    const int lastIdx = (bits - 1) / VL_EDATASIZE;
+    const int lastIdx = ((bits - 1) / VL_EDATASIZE) << 1;
     {
         const EData value = newval[lastIdx];
-        const EData xz = newvalXZ[lastIdx];
+        const EData xz = newval[lastIdx | 1];
         for (int i = (bits - 1) % VL_EDATASIZE; i >= 0; --i) {
             const CData index = (((xz >> i) & 1) << 1) | ((value >> i) & 1);
             *wp++ = "01zx"[index];
         }
     }
-    for (int w = lastIdx - 1; w >= 0; --w) {
+    for (int w = lastIdx - 2; w >= 0; w -= 2) {
         const EData value = newval[w];
-        const EData xz = newvalXZ[w];
+        const EData xz = newval[w | 1];
         for (int i = VL_EDATASIZE - 1; i >= 0; --i) {
             const CData index = (((xz >> i) & 1) << 1) | ((value >> i) & 1);
             *wp++ = "01zx"[index];

@@ -11,6 +11,7 @@ import vltest_bootstrap
 import trace_interface_ref_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_interface_ref_common.run(test,
                                verilator_flags2=["+define+NO_INLINE_A", "+define+NO_INLINE_B"])

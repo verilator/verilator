@@ -9,12 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator4')
 test.top_filename = "t/t_fourstate_cond.v"
 
-test.compile(verilator_flags2=[
-    '--binary', '--fourstate', '-Wno-FUTURE', '--coverage-line', '--coverage-expr'
-])
+test.compile(verilator_flags2=['--binary', '--coverage-line', '--coverage-expr'])
 
 test.execute(all_run_flags=["+verilator+coverage+file+" + test.coverage_filename])
 

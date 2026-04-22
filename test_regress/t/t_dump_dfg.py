@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # For code coverage of graph dumping, so does not matter much what the input is
 test.top_filename = "t/t_benchmark_mux4k.v"

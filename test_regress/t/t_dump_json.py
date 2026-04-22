@@ -11,6 +11,7 @@ import json
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_dump.v"
 
 out_filename = test.obj_dir + "/V" + test.name + "_002_cellsort.tree.json"

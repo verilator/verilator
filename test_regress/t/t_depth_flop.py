@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')  # Note issue shows up with --threads
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=['--compiler clang -Wno-UNOPTTHREADS'], threads=2)
 

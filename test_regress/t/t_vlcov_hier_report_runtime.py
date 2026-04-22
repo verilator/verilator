@@ -12,6 +12,7 @@ import vltest_bootstrap
 from coverage_common import init_log, run_vlcov, vlcov_run_context
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 if not test.have_coroutines:
     test.skip("Test requires Coroutines; ignore error since not available")

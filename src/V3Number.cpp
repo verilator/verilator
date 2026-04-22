@@ -522,6 +522,13 @@ V3Number& V3Number::setValue1() {
     return *this;
 }
 
+V3Number& V3Number::setXZFromXZComplement(const V3Number& other) {
+    UASSERT(words() == other.words(), "Width mismatch");
+    UASSERT(!other.isAnyXZ(), "XZ in xz part");
+    for (int i = 1; i < words(); ++i) m_data.num()[i].m_valueX = other.m_data.num()[i].m_value;
+    return *this;
+}
+
 void V3Number::setBitX0(int bit) {
     // Selection beyond bounds after V3Premit needs to have 0s
     // in upper bits.  Contrast to setAllBitsXRemoved which honors xAssign
@@ -966,11 +973,15 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
-        result = "VlWide<" + std::to_string(words()) + ">{{";
+        const bool isFourstate = isFourState();
+        UASSERT(!isFourstate || v3Global.opt.fourstate(),
+                "This should only happen when four-state mode is enabled");
+        result = "VlWide<" + std::to_string(words() * (isFourstate ? 2 : 1)) + ">{{";
         if (words() > 4) result += '\n';
         for (int n = 0; n < words(); ++n) {
             if (n) result += ((n % 4) ? ", " : ",\n");
-            (void)VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWord(n));
+            (void)VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWordABits(n));
+            if (isFourstate) (void)VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWordBBits(n));
             result += sbuf;
         }
         if (words() > 4) result += '\n';
@@ -1146,6 +1157,10 @@ uint32_t V3Number::edataWord(int eword) const {
     return m_data.num()[eword].m_value;
 }
 
+uint32_t V3Number::edataWordABits(int eword) const { return m_data.num()[eword].m_value; }
+
+uint32_t V3Number::edataWordBBits(int eword) const { return m_data.num()[eword].m_valueX; }
+
 uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
@@ -1164,6 +1179,20 @@ bool V3Number::isAllX() const VL_MT_SAFE {
         const ValueAndX v = m_data.num()[i];
         if ((v.m_value & v.m_valueX) ^ mask) return false;
         mask = ~0U;
+    }
+    return true;
+}
+bool V3Number::isAll0() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs0(i)) return false;
+    }
+    return true;
+}
+bool V3Number::isAll1() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs1(i)) return false;
     }
     return true;
 }
@@ -1318,6 +1347,22 @@ uint32_t V3Number::leastSetBitP1() const {
 
 //======================================================================
 
+V3Number& V3Number::opExtractABits(const V3Number& lhs) {
+    for (int i = 0; i < width(); ++i) {
+        V3NumberData::ValueAndX& num = m_data.num()[i];
+        num.m_value = lhs.edataWordABits(i);
+        num.m_valueX = 0;
+    }
+    return *this;
+}
+V3Number& V3Number::opExtractBBits(const V3Number& lhs) {
+    for (int i = 0; i < width(); ++i) {
+        V3NumberData::ValueAndX& num = m_data.num()[i];
+        num.m_value = 0;
+        num.m_valueX = lhs.edataWordBBits(i);
+    }
+    return *this;
+}
 V3Number& V3Number::opBitsNonXZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     // Correct number of zero bits/width matters
     // op i, L(lhs) bit return

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t_force_immediate_release_port_net.v"
 
 test.compile(verilator_flags2=["--binary -fno-inline"])

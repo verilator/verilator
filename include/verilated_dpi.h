@@ -63,7 +63,7 @@ inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, const WDataInP lwp) VL_MT
 }
 inline void VL_SET_SVBV_I(int, svBitVecVal* owp, const IData ld) VL_MT_SAFE { owp[0] = ld; }
 inline void VL_SET_SVBV_Q(int, svBitVecVal* owp, const QData ld) VL_MT_SAFE {
-    VL_SET_WQ(WDataOutP::external(owp), ld);
+    VL_SET_WQ_T(WDataOutP::external(owp), ld);
 }
 
 // Convert svLogicVecVal to Verilator internal data
@@ -100,7 +100,7 @@ inline void VL_SET_SVLV_I(int, svLogicVecVal* owp, const IData ld) VL_MT_SAFE {
 }
 inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     VlWide<2> lwp;
-    VL_SET_WQ(lwp, ld);
+    VL_SET_WQ_T(lwp, ld);
     owp[0].aval = lwp[0];
     owp[0].bval = 0;
     owp[1].aval = lwp[1];

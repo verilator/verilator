@@ -12,6 +12,7 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # This regression targets the reporting side of FSM coverage rather than the
 # detector itself. The generated coverage.dat contains state points, ordinary

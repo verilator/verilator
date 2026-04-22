@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Multiple reset assignments to the same FSM state variable are legal RTL but
 # not a realistic reset style to model as distinct reset arcs. Warn and ignore

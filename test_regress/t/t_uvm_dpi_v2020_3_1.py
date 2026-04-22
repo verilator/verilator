@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_uvm_dpi.v"
 test.pli_filename = "t/uvm/v2020_3_1/dpi/uvm_dpi.cc"
 

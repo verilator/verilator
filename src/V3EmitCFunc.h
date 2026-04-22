@@ -30,9 +30,6 @@
 #include <unordered_set>
 #include <vector>
 
-// Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
-constexpr int EMITC_NUM_CONSTW = 8;
-
 //######################################################################
 // Emit lazy forward declarations
 
@@ -294,63 +291,34 @@ public:
         // For tradition and compilation speed, assign each word directly into
         // output variable instead of using '='
         putns(nodep, "");
-        if (nodep->num().isFourState()) {
+        const bool isShuffled = nodep->dtypep()->isShuffledFourstate();
+        if (!isShuffled && nodep->num().isFourState()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
             return;
         }
 
-        int upWidth = nodep->num().widthToFit();
-        int chunks = 0;
-        if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
-            // Output e.g. 8 words in groups of e.g. 8
-            chunks = (upWidth - 1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
-            upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
-            if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
+        const int width = nodep->num().widthToFit() * (isShuffled ? 2 : 1);
+        putnbs(nodep, "VL_CONST_W_");
+        emitTVX(assigntop);
+        puts("(");
+        puts(cvtToStr(assigntop->width()));
+        puts(",");
+        if (!assigntop->selfPointer().isEmpty()) {
+            emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
         }
-        {  // Upper e.g. 8 words
-            if (chunks) {
-                putnbs(nodep, "VL_CONSTHI_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth)));
-                puts("X(");
-                puts(cvtToStr(nodep->widthMin()));
-                puts(",");
-                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            } else {
-                putnbs(nodep, "VL_CONST_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth)));
-                puts("X(");
-                puts(cvtToStr(nodep->widthMin()));
+        puts(assigntop->varp()->nameProtect());
+        puts(", {");
+        for (int word = 0; word < VL_WORDS_I(width); ++word) {
+            // Only 32 bits - llx + long long here just to appease CPP format warning
+            if (word) puts(",");
+            ofp()->printf("0x%08" PRIx64,
+                          static_cast<uint64_t>(nodep->num().edataWordABits(word)));
+            if (isShuffled) {
+                ofp()->printf("0x%08" PRIx64,
+                              static_cast<uint64_t>(nodep->num().edataWordBBits(word)));
             }
-            puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(assigntop->varp()->nameProtect());
-            for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                   word + chunks * EMITC_NUM_CONSTW)));
-            }
-            puts(")");
         }
-        for (chunks--; chunks >= 0; chunks--) {
-            puts(";\n");
-            putbs("VL_CONSTLO_W_");
-            puts(cvtToStr(EMITC_NUM_CONSTW));
-            puts("X(");
-            puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(assigntop->varp()->nameProtect());
-            for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                   word + chunks * EMITC_NUM_CONSTW)));
-            }
-            puts(")");
-        }
+        puts("})");
     }
 
     void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
@@ -552,17 +520,28 @@ public:
     }
 
     void visit(AstNodeAssign* nodep) override {
-        if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
+        AstNodeExpr* lhsp = nodep->lhsp();
+        AstNodeExpr* rhsp = nodep->rhsp();
+        if (AstABits* const abitsp = VN_CAST(lhsp, ABits)) {
+            lhsp = abitsp->lhsp();
+        } else if (AstBBits* const bbitsp = VN_CAST(lhsp, BBits)) {
+            lhsp = bbitsp->lhsp();
+        }
+        if (AstABits* const abitsp = VN_CAST(rhsp, ABits)) {
+            rhsp = abitsp->lhsp();
+        } else if (AstBBits* const bbitsp = VN_CAST(rhsp, BBits)) {
+            rhsp = bbitsp->lhsp();
+        }
+        if (AstCReset* const resetp = VN_CAST(rhsp, CReset)) {
             // TODO get rid of emitVarReset and instead let AstNodeAssign understand how to init
             // anything
-            AstNode* fromp = nodep->lhsp();
             // Fork needs to use a member select.  Nothing else should be possible before VarRef.
-            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+            if (AstMemberSel* const sfromp = VN_CAST(lhsp, MemberSel)) {
                 // Fork-DynScope generated pointer to previously automatic variable
                 AstVar* const memberVarp = sfromp->varp();
-                fromp = sfromp->fromp();
-                if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
-                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                lhsp = sfromp->fromp();
+                if (AstNullCheck* const sfromp = VN_CAST(lhsp, NullCheck)) lhsp = sfromp->lhsp();
+                AstNodeVarRef* const fromVarRefp = VN_AS(lhsp, NodeVarRef);
                 emitVarReset(
                     ("VL_NULL_CHECK("s
                      + (fromVarRefp->selfPointer().isEmpty()
@@ -573,13 +552,12 @@ public:
                      + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
                     memberVarp, resetp->constructing());
             } else {
-                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                AstNodeVarRef* const fromVarRefp = VN_AS(lhsp, NodeVarRef);
                 AstVar* const varp = fromVarRefp->varp();
                 const string prefix
                     = fromVarRefp->selfPointer().isEmpty()
                           ? ""
-                          : dereferenceString(
-                                VN_AS(fromp, NodeVarRef)->selfPointerProtect(m_useSelfForThis));
+                          : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis));
                 emitVarReset(prefix, varp, resetp->constructing());
             }
             return;
@@ -590,12 +568,12 @@ public:
         bool reverseUnpack = false;  // Set for descending CvtPackedToArray
         const AstUnpackArrayDType* const unpackDtp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
-        if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+        if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
             UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
                 putnbs(nodep, "VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
-                if (nodep->rhsp()->isAllOnesV()) {
+                if (rhsp->isAllOnesV()) {
                     puts("O(");
                     rhs = false;
                 } else {
@@ -608,7 +586,10 @@ public:
             } else {
                 putnbs(nodep, "VL_ASSIGNSEL_");
                 emitIQW(selp->fromp());
-                emitIQW(nodep->rhsp());
+                emitIQW(rhsp);
+                puts("_");
+                emitTVX(selp->fromp());
+                emitTVX(nodep->rhsp());
                 puts("(");
                 putns(selp->fromp(), cvtToStr(selp->fromp()->widthMin()) + ", ");
                 puts(cvtToStr(nodep->widthMin()) + ", ");
@@ -617,7 +598,7 @@ public:
                 iterateAndNextConstNull(selp->fromp());
                 puts(", ");
             }
-        } else if (const AstGetcRefN* const selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
+        } else if (const AstGetcRefN* const selp = VN_CAST(lhsp, GetcRefN)) {
             iterateAndNextConstNull(selp->lhsp());
             puts(" = ");
             putnbs(selp, "VL_PUTC_N(");
@@ -625,7 +606,7 @@ public:
             puts(", ");
             iterateAndNextConstNull(selp->rhsp());
             puts(", ");
-        } else if (AstVar* const varp = AstVar::scVarRecurse(nodep->lhsp())) {
+        } else if (AstVar* const varp = AstVar::scVarRecurse(lhsp)) {
             putnbs(varp, "VL_ASSIGN_");  // Set a systemC variable
             emitScIQW(varp);
             emitIQW(nodep);
@@ -633,7 +614,7 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else if (AstVar* const varp = AstVar::scVarRecurse(nodep->rhsp())) {
+        } else if (AstVar* const varp = AstVar::scVarRecurse(rhsp)) {
             putnbs(varp, "VL_ASSIGN_");  // Get a systemC variable
             emitIQW(nodep);
             emitScIQW(varp);
@@ -641,8 +622,7 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else if (const AstCvtPackedToArray* const castp
-                   = VN_CAST(nodep->rhsp(), CvtPackedToArray)) {
+        } else if (const AstCvtPackedToArray* const castp = VN_CAST(rhsp, CvtPackedToArray)) {
             putns(castp, "VL_UNPACK_");
             emitRU(nodep);
             emitIQW(nodep->dtypep()->subDTypep());
@@ -660,8 +640,7 @@ public:
             iterateAndNextConstNull(castp->fromp());
             // Descending unpacked dest: reverse after unpack
             if (unpackDtp && !unpackDtp->declRange().ascending()) reverseUnpack = true;
-        } else if (const AstCvtArrayToArray* const castp
-                   = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
+        } else if (const AstCvtArrayToArray* const castp = VN_CAST(rhsp, CvtArrayToArray)) {
             if (castp->reverse()) {
                 putns(castp, "VL_REVCOPY_Q(");
             } else {
@@ -677,31 +656,34 @@ public:
             puts(cvtToStr(castp->srcElementBits()));
             puts(", ");
             puts(cvtToStr(castp->dstElementBits()));
-        } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
-                   && !VN_IS(nodep->rhsp(), CExpr)  //
-                   && !VN_IS(nodep->rhsp(), CMethodHard)  //
+        } else if (nodep->isWide() && VN_IS(lhsp, VarRef)  //
+                   && !VN_IS(rhsp, CExpr)  //
+                   && !VN_IS(rhsp, CMethodHard)  //
                    // Although not here currently, note putting !VN_IS(Const) works,
                    // and means using '=' and bypasses using emitConstantW.
                    // Whuch we don't want to do as slows compiler down.
-                   && !VN_IS(nodep->rhsp(), VarRef)  //
-                   && !VN_IS(nodep->rhsp(), InitArray)  //
-                   && !VN_IS(nodep->rhsp(), AssocSel)  //
-                   && !VN_IS(nodep->rhsp(), MemberSel)  //
-                   && !VN_IS(nodep->rhsp(), StructSel)  //
-                   && !VN_IS(nodep->rhsp(), ArraySel)  //
-                   && !VN_IS(nodep->rhsp(), ExprStmt)) {
-            // Wide functions assign into the array directly, don't need separate assign statement
-            m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
+                   && !VN_IS(rhsp, VarRef)  //
+                   && !VN_IS(rhsp, InitArray)  //
+                   && !VN_IS(rhsp, AssocSel)  //
+                   && !VN_IS(rhsp, MemberSel)  //
+                   && !VN_IS(rhsp, StructSel)  //
+                   && !VN_IS(rhsp, ArraySel)  //
+                   && !VN_IS(rhsp, ExprStmt)) {
+            // Wide functions assign into the array directly, don't need separate assign
+            // statement
+            m_wideTempRefp = VN_AS(lhsp, VarRef);
             paren = false;
-        } else if (nodep->isWide() && !unpackDtp && !VN_IS(nodep->rhsp(), Const)) {
-            putnbs(nodep, "VL_ASSIGN_W(");
-            puts(cvtToStr(nodep->widthMin()) + ", ");
+        } else if (nodep->isWide() && !unpackDtp && !VN_IS(rhsp, Const)) {
+            putnbs(nodep, "VL_ASSIGN_W_");
+            emitTVX(nodep->lhsp());
+            emitTVX(nodep->rhsp());
+            puts("(" + cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)
-                   && (VN_IS(nodep->rhsp(), StreamL) || VN_IS(nodep->lhsp(), StreamL)
-                       || VN_IS(nodep->rhsp(), StreamR) || VN_IS(nodep->lhsp(), StreamR)
-                       || VN_IS(nodep->rhsp(), StreamR))) {
+                   && (VN_IS(rhsp, StreamL) || VN_IS(nodep->lhsp(), StreamL)
+                       || VN_IS(rhsp, StreamR) || VN_IS(nodep->lhsp(), StreamR)
+                       || VN_IS(rhsp, StreamR))) {
             //if either side is streamL or streamR don't emit lhsp everything will be passed by
             //reference
 
@@ -713,14 +695,14 @@ public:
             puts(" ");
             ofp()->blockInc();
             decind = true;
-            if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
+            if (!VN_IS(rhsp, Const)) ofp()->putBreak();
             putns(nodep, "= ");
-            if (unpackDtp && VN_IS(nodep->rhsp(), InitArray)) {
+            if (unpackDtp && VN_IS(rhsp, InitArray)) {
                 // Emit "VlUnpacked<type, depth>{{...InitArray...}}"
                 puts(unpackDtp->cType("", false, false, false));
             }
         }
-        if (rhs) iterateAndNextConstNull(nodep->rhsp());
+        if (rhs) iterateAndNextConstNull(rhsp);
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
         puts(";\n");
@@ -1803,7 +1785,6 @@ public:
     }
     void visit(AstConst* nodep) override {  //
         if (m_wideTempRefp && nodep->isWide()) {
-            UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstantW(nodep, m_wideTempRefp);
             m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
@@ -1927,6 +1908,9 @@ public:
         // invoke the graph and wait for it to complete. Emitting the children does just that.
         iterateChildrenConst(nodep);
     }
+
+    void visit(AstABits* const nodep) override { iterateConst(nodep->lhsp()); }
+    void visit(AstBBits* const nodep) override { iterateConst(nodep->lhsp()); }
 
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
