@@ -2,7 +2,7 @@
  "modulesp": [
   {"type":"MODULE","name":"m","addr":"(E)","loc":"d,7:8,7:9","origName":"m","verilogName":"m","level":1,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"clk","addr":"(F)","loc":"d,8:10,8:13","dtypep":"(G)","origName":"clk","verilogName":"clk","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
+    {"type":"VAR","name":"clk","addr":"(F)","loc":"d,8:10,8:13","dtypep":"(G)","origName":"clk","verilogName":"clk","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","fourstateComplementp":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
   ]}
 ],"filesp": [],
  "miscsp": [

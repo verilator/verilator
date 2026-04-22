@@ -44,6 +44,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     // and write out appropriate text.
     //  %n*     node
     //   %nq      emitIQW on the [node]
+    //   %nf      data format T/V/X
     //   %nw      width in bits
     //   %nW      width in words
     //   %ni      iterate
@@ -52,6 +53,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     //  %t*     thsp - if appropriate, then second char as above
     //  %k      Potential line break
     //  %P      Wide temporary name
+    //  %p*     Wide temporary - if appropriate, then second char as above
     //  ,       Commas suppressed if the previous field is suppressed
     string out;
     putnbs(nodep, "");
@@ -123,6 +125,16 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     needComma = true;
                 }
                 break;
+            case 'p':
+                if (nodep->isWide()) {
+                    UASSERT_OBJ(m_wideTempRefp, nodep,
+                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                    detail = true;
+                    detailp = m_wideTempRefp;
+                } else {
+                    ++pos;
+                }
+                break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
             if (detail) {
@@ -133,15 +145,22 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     putOut();
                     emitIQW(detailp);
                     break;
+                case 'f':
+                    putOut();
+                    emitTVX(detailp);
+                    break;
                 case 'w':
                     commaOut();
                     out += cvtToStr(detailp->widthMin());
                     needComma = true;
                     break;
                 case 'W':
-                    if (lhsp->isWide()) {
+                    if (detailp->isWide()) {
                         commaOut();
-                        out += cvtToStr(lhsp->widthWords());
+                        const AstVarRef* const varRefp = VN_CAST(detailp, VarRef);
+                        out += cvtToStr(
+                            detailp->widthWords()
+                            / (varRefp && varRefp->varp()->isFourstateShuffle() ? 2 : 1));
                         needComma = true;
                     }
                     break;
@@ -631,6 +650,23 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                out += ";\n";
+            } else if (v3Global.opt.fourstate()
+                       && (varp->fourstateComplementp() || varp->isFourstateComplement())) {
+                V3Number xNum{varp->fileline(), varp->width(), 0};
+                bool setTozero = false;
+                if (varp->varType() == VVarType::PORT) {
+                    const AstNode* iter = varp;
+                    while (!iter->firstAbovep()) iter = iter->backp();
+                    if (AstModule* const modep = VN_CAST(iter->firstAbovep(), Module)) {
+                        setTozero = modep->isTop();
+                    }
+                }
+                if (!setTozero && (varp->isFourstateComplement() || !varp->varType().isNet())) {
+                    xNum.setAllBits1();
+                }
+                out += " = ";
+                out += xNum.emitC();
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";

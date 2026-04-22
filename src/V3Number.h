@@ -632,6 +632,7 @@ public:
     V3Number& setAllBits0();
     V3Number& setAllBits1();
     V3Number& setValue1();
+    V3Number& setXZFromXZComplement(const V3Number&);
     // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
     V3Number& setMask(int nbits, int lsb = 0);
 
@@ -687,6 +688,8 @@ public:
     }
     bool isAllZ() const VL_MT_SAFE;
     bool isAllX() const VL_MT_SAFE;
+    bool isAll0() const VL_MT_SAFE;
+    bool isAll1() const VL_MT_SAFE;
     bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
@@ -733,6 +736,7 @@ public:
     // "this" is the output, as we need the output width before some computations
     V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
+    V3Number& opBitsOneX(const V3Number& lhs);  // 1/X->1, 0/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0
     //

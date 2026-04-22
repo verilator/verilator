@@ -522,6 +522,13 @@ V3Number& V3Number::setValue1() {
     return *this;
 }
 
+V3Number& V3Number::setXZFromXZComplement(const V3Number& other) {
+    UASSERT(words() == other.words(), "Width mismatch");
+    UASSERT(!other.isAnyXZ(), "XZ in xz part");
+    for (int i = 1; i < words(); ++i) m_data.num()[i].m_valueX = other.m_data.num()[i].m_value;
+    return *this;
+}
+
 void V3Number::setBitX0(int bit) {
     // Selection beyond bounds after V3Premit needs to have 0s
     // in upper bits.  Contrast to setAllBitsXRemoved which honors xAssign
@@ -1167,6 +1174,20 @@ bool V3Number::isAllX() const VL_MT_SAFE {
     }
     return true;
 }
+bool V3Number::isAll0() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs0(i)) return false;
+    }
+    return true;
+}
+bool V3Number::isAll1() const VL_MT_SAFE {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < width(); ++i) {
+        if (!bitIs1(i)) return false;
+    }
+    return true;
+}
 bool V3Number::isEqZero() const VL_MT_SAFE {
     if (isString()) return m_data.str().empty();
     for (int i = 0; i < words(); ++i) {
@@ -1328,6 +1349,16 @@ V3Number& V3Number::opBitsOne(const V3Number& lhs) {  // 1->1, 0/X/Z->0
     setZero();
     for (int bit = 0; bit < width(); ++bit) {
         if (lhs.bitIs1(bit)) setBit(bit, 1);
+    }
+    return *this;
+}
+V3Number& V3Number::opBitsOneX(const V3Number& lhs) {
+    // op i, L(lhs) bit return
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_LOGIC_ARGS1(lhs);
+    setZero();
+    for (int bit = 0; bit < width(); ++bit) {
+        if (lhs.bitIs1(bit) || lhs.bitIsX(bit)) setBit(bit, 1);
     }
     return *this;
 }
@@ -1848,11 +1879,14 @@ V3Number& V3Number::opWildEq(const V3Number& lhs, const V3Number& rhs) {
     char outc = 1;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIsXZ(bit)) {
+                outc = 'x';
+                goto last;
+            }
             if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
                 outc = 0;
                 goto last;
             }
-            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
     }
 last:
@@ -1865,11 +1899,14 @@ V3Number& V3Number::opWildNeq(const V3Number& lhs, const V3Number& rhs) {
     char outc = 0;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIsXZ(bit)) {
+                outc = 'x';
+                goto last;
+            }
             if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
                 outc = 1;
                 goto last;
             }
-            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
     }
 last:

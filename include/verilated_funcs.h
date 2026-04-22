@@ -28,6 +28,7 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <initializer_list>
 #include <string>
 
 //=========================================================================
@@ -418,9 +419,40 @@ static inline WDataOutP VL_ALLONES_W(int obits, WDataOutP owp) VL_MT_SAFE {
 // EMIT_RULE: VL_ASSIGN:  oclean=rclean; obits==lbits;
 // For now, we always have a clean rhs.
 // Note: If a ASSIGN isn't clean, use VL_ASSIGNCLEAN instead to do the same thing.
-static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
+static inline WDataOutP VL_ASSIGN_W_TT(int obits, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
     return VL_MEMCPY_W(owp, lwp, VL_WORDS_I(obits));
 }
+
+// clang-format off
+
+#define VL_ASSIGN_W_GEN(suffix, outputOffset, outputJump, inputOffset, inputJump) \
+static inline  WDataOutP VL_ASSIGN_W_##suffix(int obits, WDataOutP owp, WDataInP lwp) \
+        VL_MT_SAFE { \
+        const WDataOutP result = owp; \
+        owp += outputOffset; \
+        lwp += inputOffset; \
+        for (int i = 0; i < VL_WORDS_I(obits); ++i) { \
+            *owp = *lwp; \
+            owp += outputJump; \
+            lwp += inputJump; \
+        } \
+        return result; \
+    }
+
+// clang-format on
+
+// T - two state value
+// V - value part
+// X - xz part
+VL_ASSIGN_W_GEN(VV, 0, 2, 0, 2)
+VL_ASSIGN_W_GEN(VX, 0, 2, 1, 2)
+VL_ASSIGN_W_GEN(VT, 0, 2, 0, 1)
+VL_ASSIGN_W_GEN(XV, 1, 2, 0, 2)
+VL_ASSIGN_W_GEN(XX, 1, 2, 1, 2)
+VL_ASSIGN_W_GEN(XT, 1, 2, 0, 1)
+VL_ASSIGN_W_GEN(TV, 0, 1, 0, 2)
+VL_ASSIGN_W_GEN(TX, 0, 1, 1, 2)
+#undef VL_ASSIGN_W_GEN
 
 // EMIT_RULE: VL_ASSIGNBIT:  rclean=clean;
 static inline void VL_ASSIGNBIT_II(int bit, CData& lhsr, IData rhs) VL_PURE {
@@ -864,35 +896,110 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
 //===================================================================
 // SIMPLE LOGICAL OPERATORS
 
+// clang-format off
+#define VL_BIOP_GEN_HELPER(macro) \
+    macro(TTT, 0, 1, 0, 1, 0, 1) \
+    macro(TTV, 0, 1, 0, 1, 0, 2) \
+    macro(TTX, 0, 1, 0, 1, 1, 2) \
+    macro(TVT, 0, 1, 0, 2, 0, 1) \
+    macro(TVV, 0, 1, 0, 2, 0, 2) \
+    macro(TVX, 0, 1, 0, 2, 1, 2) \
+    macro(TXT, 0, 1, 1, 2, 0, 1) \
+    macro(TXV, 0, 1, 1, 2, 0, 2) \
+    macro(TXX, 0, 1, 1, 2, 1, 2) \
+    macro(VTT, 0, 2, 0, 1, 0, 1) \
+    macro(VTV, 0, 2, 0, 1, 0, 2) \
+    macro(VTX, 0, 2, 0, 1, 1, 2) \
+    macro(VVT, 0, 2, 0, 2, 0, 1) \
+    macro(VVV, 0, 2, 0, 2, 0, 2) \
+    macro(VVX, 0, 2, 0, 2, 1, 2) \
+    macro(VXT, 0, 2, 1, 2, 0, 1) \
+    macro(VXV, 0, 2, 1, 2, 0, 2) \
+    macro(VXX, 0, 2, 1, 2, 1, 2) \
+    macro(XTT, 1, 2, 0, 1, 0, 1) \
+    macro(XTV, 1, 2, 0, 1, 0, 2) \
+    macro(XTX, 1, 2, 0, 1, 1, 2) \
+    macro(XVT, 1, 2, 0, 2, 0, 1) \
+    macro(XVV, 1, 2, 0, 2, 0, 2) \
+    macro(XVX, 1, 2, 0, 2, 1, 2) \
+    macro(XXT, 1, 2, 1, 2, 0, 1) \
+    macro(XXV, 1, 2, 1, 2, 0, 2) \
+    macro(XXX, 1, 2, 1, 2, 1, 2)
+// clang-format on
+
+// clang-format off
+#define VL_BIOP_GEN(name, op, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, \
+                    rhsJump) \
+static inline WDataOutP VL_##name##_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                               WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    for (int i = 0; (i < words); ++i) { \
+        *owp = (*lwp op * rwp); \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    return result; \
+}
+// clang-format on
+
 // EMIT_RULE: VL_AND:  oclean=lclean||rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_AND_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] & rwp[i]);
-    return owp;
-}
+#define VL_AND_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(AND, &, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
+VL_BIOP_GEN_HELPER(VL_AND_GEN)
+#undef VL_AND_GEN
 // EMIT_RULE: VL_OR:   oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_OR_W(int words, WDataOutP owp, WDataInP const lwp,
-                                WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] | rwp[i]);
-    return owp;
-}
+#define VL_OR_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(OR, |, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
+VL_BIOP_GEN_HELPER(VL_OR_GEN)
+#undef VL_OR_GEN
+// EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
+#define VL_XOR_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+    VL_BIOP_GEN(XOR, ^, suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump)
+VL_BIOP_GEN_HELPER(VL_XOR_GEN)
+#undef VL_XOR_GEN
+
+#undef VL_BIOP_GEN
+
 // EMIT_RULE: VL_CHANGEXOR:  oclean=1; obits=32; lbits==rbits;
 static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     IData od = 0;
     for (int i = 0; (i < words); ++i) od |= (lwp[i] ^ rwp[i]);
     return od;
 }
-// EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_XOR_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ rwp[i]);
-    return owp;
-}
 // EMIT_RULE: VL_NOT:  oclean=dirty; obits=lbits;
-static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
-    for (int i = 0; i < words; ++i) owp[i] = ~(lwp[i]);
-    return owp;
-}
+
+// clang-format off
+
+#define VL_NOT_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump) \
+static inline WDataOutP VL_NOT_W_##suffix(int words, WDataOutP owp, WDataInP lwp) \
+        VL_MT_SAFE { \
+        const WDataOutP result = owp; \
+        owp += outputOffset; \
+        lwp += lhsOffset; \
+        for (int i = 0; i < words; ++i) { \
+            *owp = ~(*lwp); \
+            owp += outputJump; \
+            lwp += lhsJump; \
+        } \
+        return result; \
+    }
+
+// clang-format on
+
+VL_NOT_GEN(TT, 0, 1, 0, 1)
+VL_NOT_GEN(TV, 0, 1, 0, 2)
+VL_NOT_GEN(TX, 0, 1, 1, 2)
+VL_NOT_GEN(VT, 0, 2, 0, 1)
+VL_NOT_GEN(VV, 0, 2, 0, 2)
+VL_NOT_GEN(VX, 0, 2, 1, 2)
+VL_NOT_GEN(XT, 1, 2, 0, 1)
+VL_NOT_GEN(XV, 1, 2, 0, 2)
+VL_NOT_GEN(XX, 1, 2, 1, 2)
+#undef VL_NOT_GEN
 
 //=========================================================================
 // Logical comparisons
@@ -1030,48 +1137,91 @@ static inline QData VL_MODDIV_QQQ(int /*lbits*/, QData lhs, QData rhs) {
 }
 #define VL_MODDIV_WWW(lbits, owp, lwp, rwp) (_vl_moddiv_w(lbits, owp, lwp, rwp, 1))
 
-static inline WDataOutP VL_ADD_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    QData carry = 0;
-    for (int i = 0; i < words; ++i) {
-        carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(rwp[i]);
-        owp[i] = (carry & 0xffffffffULL);
-        carry = (carry >> 32ULL) & 0xffffffffULL;
-    }
-    // Last output word is dirty
-    return owp;
+// clang-format off
+#define VL_ADD_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_ADD_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                            WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    QData carry = 0; \
+    for (int i = 0; i < words; ++i) { \
+        carry = carry + static_cast<QData>(*lwp) + static_cast<QData>(*rwp); \
+        *owp = (carry & 0xffffffffULL); \
+        carry = (carry >> 32ULL) & 0xffffffffULL; \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
+VL_BIOP_GEN_HELPER(VL_ADD_GEN)
+#undef VL_ADD_GEN
 
-static inline WDataOutP VL_SUB_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    QData carry = 0;
-    for (int i = 0; i < words; ++i) {
-        carry = (carry + static_cast<QData>(lwp[i])
-                 + static_cast<QData>(static_cast<IData>(~rwp[i])));
-        if (i == 0) ++carry;  // Negation of rwp
-        owp[i] = (carry & 0xffffffffULL);
-        carry = (carry >> 32ULL) & 0xffffffffULL;
-    }
-    // Last output word is dirty
-    return owp;
+// clang-format off
+#define VL_SUB_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_SUB_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                            WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    QData carry = 0; \
+    for (int i = 0; i < words; ++i) { \
+        carry = (carry + static_cast<QData>(*lwp) \
+                    + static_cast<QData>(static_cast<IData>(~*rwp))); \
+        if (i == 0) ++carry; /* Negation of rwp */ \
+        *owp = (carry & 0xffffffffULL); \
+        carry = (carry >> 32ULL) & 0xffffffffULL; \
+        owp += (outputJump); \
+        lwp += (lhsJump); \
+        rwp += (rhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
+VL_BIOP_GEN_HELPER(VL_SUB_GEN)
+#undef VL_SUB_GEN
 
-static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
-                                 WDataInP const rwp) VL_MT_SAFE {
-    for (int i = 0; i < words; ++i) owp[i] = 0;
-    for (int lword = 0; lword < words; ++lword) {
-        for (int rword = 0; rword < words; ++rword) {
-            QData mul = static_cast<QData>(lwp[lword]) * static_cast<QData>(rwp[rword]);
-            for (int qword = lword + rword; qword < words; ++qword) {
-                mul += static_cast<QData>(owp[qword]);
-                owp[qword] = (mul & 0xffffffffULL);
-                mul = (mul >> 32ULL) & 0xffffffffULL;
-            }
-        }
-    }
-    // Last output word is dirty
-    return owp;
+// clang-format off
+#define VL_MUL_GEN(suffix, outputOffset, outputJump, lhsOffset, lhsJump, rhsOffset, rhsJump) \
+static inline WDataOutP VL_MUL_W_##suffix(int words, WDataOutP owp, WDataInP lwp, \
+                                 WDataInP rwp) VL_MT_SAFE { \
+    const WDataOutP result = owp; \
+    owp += (outputOffset); \
+    lwp += (lhsOffset); \
+    rwp += (rhsOffset); \
+    for (int i = 0; i < words; ++i) { \
+        *owp = 0; \
+        owp += (outputJump); \
+    } \
+    for (int lword = 0; lword < words; ++lword) { \
+        WDataInP currentRwp = rwp; \
+        for (int rword = 0; rword < words; ++rword) { \
+            QData mul = static_cast<QData>(*lwp) * static_cast<QData>(*currentRwp); \
+            int qword = lword + rword; \
+            owp = result + (outputOffset) + qword * (outputJump); \
+            for (; qword < words; ++qword) { \
+                mul += static_cast<QData>(*owp); \
+                *owp = (mul & 0xffffffffULL); \
+                mul = (mul >> 32ULL) & 0xffffffffULL; \
+                owp += (outputJump); \
+            } \
+            currentRwp += (rhsJump); \
+        } \
+        lwp += (lhsJump); \
+    } \
+    /* Last output word is dirty */ \
+    return result; \
 }
+// clang-format on
+VL_BIOP_GEN_HELPER(VL_MUL_GEN)
+#undef VL_MUL_GEN
+#undef VL_BIOP_GEN_HELPER
 
 static inline IData VL_MULS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const int32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
@@ -1106,7 +1256,7 @@ static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp
         VL_NEGATE_W(words, rwstore, rwp);
         rwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
-    VL_MUL_W(words, owp, lwusp, rwusp);
+    VL_MUL_W_TTT(words, owp, lwusp, rwusp);
     owp[words - 1] &= VL_MASK_E(
         lbits);  // Clean.  Note it's ok for the multiply to overflow into the sign bit
     if ((lneg ^ rneg) & 1) {  // Negate output (not using NEGATE, as owp==lwp)
@@ -2825,131 +2975,40 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
 //======================================================================
 // Constification
 
-// VL_CONST_W_#X(int obits, WDataOutP owp, IData data0, .... IData data(#-1))
+// VL_CONST_W_#T/V/X(int obits, WDataOutP owp, {IData data0, .... IData data(#-1)})
 // Sets wide vector words to specified constant words.
 // These macros are used when o might represent more words then are given as constants,
 // hence all upper words must be zeroed.
-// If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
 #define VL_C_END_(obits, wordsSet) \
     VL_MEMSET_ZERO_W(o + (wordsSet), VL_WORDS_I(obits) - (wordsSet)); \
     return o
 
-// clang-format off
-static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o, EData d0) VL_MT_SAFE {
-    o[0] = d0;
-    VL_C_END_(obits, 1);
+static inline WDataOutP VL_CONST_W_T(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    VL_MEMCPY_W(o, values.begin(), values.size());
+    VL_C_END_(obits, values.size());
 }
-static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;
-    VL_C_END_(obits, 2);
+static inline WDataOutP VL_CONST_W_V(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    std::size_t i = 0;
+    for (EData v : values) {
+        o[i] = v;
+        i += 2;
+    }
+    for (const int size = VL_WORDS_I(obits); i < size; i += 2) o[i] = 0;
+    return o;
 }
-static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o, EData d2, EData d1,
-                                      EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;
-    VL_C_END_(obits, 3);
+static inline WDataOutP VL_CONST_W_X(const int obits, WDataOutP const o,
+                                     std::initializer_list<EData> values) VL_MT_SAFE {
+    std::size_t i = 1;
+    for (EData v : values) {
+        o[i] = v;
+        i += 2;
+    }
+    for (const int size = VL_WORDS_I(obits); i < size; i += 2) o[i] = 0;
+    return o;
 }
-static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    VL_C_END_(obits, 4);
-}
-static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
-                                      EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;
-    VL_C_END_(obits, 5);
-}
-static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
-                                      EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;
-    VL_C_END_(obits, 6);
-}
-static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
-                                      EData d6, EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;
-    VL_C_END_(obits, 7);
-}
-static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
-                                      EData d7, EData d6, EData d5, EData d4,
-                                      EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    VL_C_END_(obits, 8);
-}
-//
-static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP o,
-                                        EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 1);
-}
-static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP o,
-                                        EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 2);
-}
-static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP o,
-                                        EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 3);
-}
-static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP o,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 4);
-}
-static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP o,
-                                        EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 5);
-}
-static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP o,
-                                        EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 6);
-}
-static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP o,
-                                        EData d6, EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 7);
-}
-static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP o,
-                                        EData d7, EData d6, EData d5, EData d4,
-                                        EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP ohi = o + VL_WORDS_I(lsb);
-    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
-    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;  ohi[7] = d7;
-    VL_C_END_(obits, VL_WORDS_I(lsb) + 8);
-}
-
-#undef VL_C_END_
-
-// Partial constant, lower words of vector wider than 8*32, starting at bit number lsb
-static inline void VL_CONSTLO_W_8X(int lsb, WDataOutP obase,
-                                   EData d7, EData d6, EData d5, EData d4,
-                                   EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0; o[1] = d1; o[2] = d2; o[3] = d3; o[4] = d4; o[5] = d5; o[6] = d6; o[7] = d7;
-}
-// clang-format on
 
 //======================================================================
 // Strings

@@ -419,6 +419,7 @@ private:
     bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
+    bool m_fShuffle = true;  // main switch: -fno-shuffle: four-state shuffled wide signals
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
     int  m_fSliceElementLimit = 256;  // main switch: --fslice-element-limit
     bool m_fSplit;       // main switch: -fno-split: always assignment splitting
@@ -742,6 +743,7 @@ public:
     bool fMergeConstPool() const { return m_fMergeConstPool; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
+    bool fshuffle() const { return m_fShuffle; }
     bool fSlice() const { return m_fSlice; }
     int fSliceElementLimit() const { return m_fSliceElementLimit; }
     bool fSplit() const { return m_fSplit; }

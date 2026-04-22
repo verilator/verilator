@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_inst_sv.v:14:17: supply0/tri0 and supply1/tri1 are not supported with --fourstate
+                                       : ... note: In instance 't'
+   14 |   supply0 [1:0] low;
+      |                 ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_inst_sv.v:15:17: supply0/tri0 and supply1/tri1 are not supported with --fourstate
+                                       : ... note: In instance 't'
+   15 |   supply1 [1:0] high;
+      |                 ^~~~
+%Error: Exiting due to

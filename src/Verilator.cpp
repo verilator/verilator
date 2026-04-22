@@ -55,6 +55,7 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3Fork.h"
+#include "V3Fourstate.h"
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
 #include "V3Global.h"
@@ -292,6 +293,8 @@ static void process() {
             // No more AstGenBlocks after this
             V3Begin::debeginAll(v3Global.rootp());  // Flatten cell names, before inliner
 
+            if (v3Global.opt.fourstate()) V3Fourstate::fourstateAll(v3Global.rootp());
+            V3WidthCommit::widthCommitClean(v3Global.rootp());
             // Expand inouts, stage 2
             // Also simplify pin connections to always be AssignWs in prep for V3Unknown
             V3Tristate::tristateAll(v3Global.rootp());
@@ -538,6 +541,11 @@ static void process() {
         // Expand macros and wide operators into C++ primitives
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && v3Global.opt.fExpand()) {
             V3Expand::expandAll(v3Global.rootp());
+        }
+
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && v3Global.opt.fourstate()
+            && v3Global.opt.fshuffle()) {
+            V3Fourstate::fourstateShuffleAll(v3Global.rootp());
         }
 
         // Propagate constants across WORDSEL arrayed temporaries

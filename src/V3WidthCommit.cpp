@@ -278,9 +278,6 @@ private:
     void visit(AstCastWrap* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
-        UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp());
-        nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstConstraint* nodep) override {
         iterateChildren(nodep);
@@ -561,4 +558,20 @@ void V3WidthCommit::widthCommit(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { WidthCommitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, dumpTreeEitherLevel() >= 6);
+}
+
+void V3WidthCommit::widthCommitClean(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    {
+        std::vector<AstCastWrap*> castWrapsToDelete;
+        v3Global.rootp()->foreach([&castWrapsToDelete](AstCastWrap* nodep) {
+            UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp());
+            castWrapsToDelete.push_back(nodep);
+        });
+        for (AstCastWrap* const nodep : castWrapsToDelete) {
+            nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+            nodep->deleteTree();
+        }
+    }
+    V3Global::dumpCheckGlobalTree("widthcommit_clean", 0, dumpTreeEitherLevel() >= 6);
 }

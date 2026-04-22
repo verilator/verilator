@@ -733,6 +733,8 @@ Summary:
 
 .. option:: -fno-reorder
 
+.. option:: -fno-shuffle
+
 .. option:: -fno-slice
 
 .. option:: -fno-split
@@ -752,6 +754,14 @@ Summary:
    Rarely needed. Do not attempt to split variables
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
+
+.. option:: --fourstate
+
+   Enables four-state logic support. Experimental, for developer use only.
+
+.. option:: --no-fourstate
+
+   Disables four-state logic support which is the default. Exists for forward compatibility.
 
 .. option:: --fslice-element-limit
 
