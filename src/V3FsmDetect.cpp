@@ -539,20 +539,19 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
 
-        if (firstIfp && firstVscp) {
-            const DetectedFsmMap::const_iterator it = m_state.fsms().find(firstVscp->name());
-            if (it == m_state.fsms().end()) return;
-            FsmGraph* const graphp = it->second.graphp.get();
-            if (graphp->hasResetCond()) {
-                std::unordered_map<int, string> labels;
-                for (const V3GraphVertex& vtx : graphp->vertices()) {
-                    const FsmVertex* const vertexp = vtx.as<FsmVertex>();
-                    if (!vertexp->isState()) continue;
-                    labels.emplace(vertexp->value(), vertexp->label());
-                }
-                addResetArcs(*graphp, firstIfp->thensp(), firstVscp, labels);
-            }
+        if (!(firstIfp && firstVscp)) return;
+        const DetectedFsmMap& fsms = m_state.fsms();
+        const DetectedFsmMap::const_iterator it = fsms.find(firstVscp->name());
+        if (it == fsms.end()) return;
+        FsmGraph* const graphp = it->second.graphp.get();
+        if (!graphp->hasResetCond()) return;
+        std::unordered_map<int, string> labels;
+        for (const V3GraphVertex& vtx : graphp->vertices()) {
+            const FsmVertex* const vertexp = vtx.as<FsmVertex>();
+            if (!vertexp->isState()) continue;
+            labels.emplace(vertexp->value(), vertexp->label());
         }
+        addResetArcs(*graphp, firstIfp->thensp(), firstVscp, labels);
     }
 
     // Track the current scope so each detected FSM records the module/scope
