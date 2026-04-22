@@ -311,6 +311,9 @@ public:
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
+        VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
+        VAR_FSM_RESET_ARC,              // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
@@ -336,10 +339,10 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
-            "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT",
-            "VAR_SPLIT_VAR"
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
+            "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW", "VAR_ISOLATE_ASSIGNMENTS",
+            "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];

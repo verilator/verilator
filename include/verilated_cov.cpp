@@ -499,6 +499,26 @@ void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7
              C(13), C(14), C(15), C(16), C(17), C(18), C(19), N(20), N(21), N(22), N(23), N(24),
              N(25), N(26), N(27), N(28), N(29));
 }
+// Backward compatibility for mixed inserts with integer-valued
+// lineno/column pairs and C-string-valued metadata pairs.
+void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, A(4), A(5), A(6),
+                                   A(7)) VL_MT_SAFE {
+    const std::string val2str = std::to_string(val2);
+    const std::string val3str = std::to_string(val3);
+    _insertp(C(0), C(1), key2, val2str.c_str(), key3, val3str.c_str(), C(4), C(5), C(6), C(7),
+             N(8), N(9), N(10), N(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18), N(19),
+             N(20), N(21), N(22), N(23), N(24), N(25), N(26), N(27), N(28), N(29));
+}
+// Backward compatibility for mixed inserts with integer-valued
+// lineno/column pairs and additional FSM metadata pairs.
+void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, A(4), A(5), A(6),
+                                   A(7), A(8), A(9), A(10), A(11)) VL_MT_SAFE {
+    const std::string val2str = std::to_string(val2);
+    const std::string val3str = std::to_string(val3);
+    _insertp(C(0), C(1), key2, val2str.c_str(), key3, val3str.c_str(), C(4), C(5), C(6), C(7),
+             C(8), C(9), C(10), C(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18), N(19),
+             N(20), N(21), N(22), N(23), N(24), N(25), N(26), N(27), N(28), N(29));
+}
 // Backward compatibility for Verilator
 void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
                                    const std::string& val4, A(5), A(6), A(7)) VL_MT_SAFE {

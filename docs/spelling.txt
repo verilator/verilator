@@ -2,6 +2,7 @@ ABCp
 Aadi
 Accellera
 Aditya
+allocator
 Affe
 Aleksander
 Alexandre
@@ -362,6 +363,7 @@ Olofsson
 Ondrej
 Oron
 Oyvind
+output
 PLI
 Pakanati
 Palaniappan
@@ -402,8 +404,10 @@ Ranjan
 Rapp
 Redhat
 Reitan
+reentrant
 Renga
 Requin
+reusability
 Riaz
 Rodas
 Rodionov

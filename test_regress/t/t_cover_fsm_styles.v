@@ -1,0 +1,52 @@
+// DESCRIPTION: Verilator: FSM coverage style coverage test
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+module t (
+    input clk
+);
+
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2,
+    S3 = 2'd3
+  } state_t;
+
+  integer cyc;
+  logic rst;
+  logic start;
+  state_t state /*verilator fsm_arc_include_cond*/;
+
+  initial begin
+    rst = 1'b1;
+    start = 1'b0;
+    cyc = 0;
+  end
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) rst <= 1'b0;
+    if (cyc == 2) start <= 1'b1;
+    if (cyc == 3) start <= 1'b0;
+    if (cyc == 6) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state <= S0;
+    end else begin
+      case (state)
+        S0: if (start) state <= S1; else state <= S2;
+        S1: state <= S3;
+        default: state <= S0;
+      endcase
+    end
+  end
+
+endmodule

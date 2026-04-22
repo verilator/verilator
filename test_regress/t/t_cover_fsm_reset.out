@@ -1,0 +1,63 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage reset policy test
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t (
+%000006     input clk
+        );
+        
+          typedef enum logic [0:0] {
+            S0 = 1'b0,
+            S1 = 1'b1
+          } state_t;
+        
+%000001   logic rst;
+          integer cyc;
+%000001   state_t state_incl /*verilator fsm_reset_arc*/;
+%000001   state_t state_excl;
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     cyc = 0;
+          end
+        
+%000006   always @(posedge clk) begin
+%000006     cyc <= cyc + 1;
+%000005     if (cyc == 1) rst <= 1'b0;
+%000005     if (cyc == 5) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+%000006   always_ff @(posedge clk) begin
+%000004     if (rst) state_incl <= S0;
+%000004     else case (state_incl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_incl::S0->S1]
+%000000        // [fsm_state t.state_incl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_incl::S1]
+%000001       S0: state_incl <= S1;
+%000003       default: state_incl <= S1;
+            endcase
+          end
+        
+%000006   always_ff @(posedge clk) begin
+%000004     if (rst) state_excl <= S0;
+%000004     else case (state_excl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_excl::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_excl::S0->S1]
+%000000        // [fsm_state t.state_excl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_excl::S1]
+%000001       S0: state_excl <= S1;
+%000003       default: state_excl <= S1;
+            endcase
+          end
+        
+        endmodule
+        

@@ -1,0 +1,6 @@
+%Warning-COVERIGN: t/t_fsmmulti_same_bad.v:30:5: Ignoring unsupported: FSM coverage on multiple supported case statements found in the same always block. Only the first candidate will be instrumented.
+   30 |     case (state)
+      |     ^~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
