@@ -20,7 +20,7 @@ endpackage
 
 module t;
   initial begin
-    $write("*-* All Coverage Tests Passed *-*\n");
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule
