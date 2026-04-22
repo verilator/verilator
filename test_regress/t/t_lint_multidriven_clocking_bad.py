@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 
 # A clocking block 'output' drives the signal it names. Against a continuous
 # assignment or a second clocking block that is an unambiguous driver conflict

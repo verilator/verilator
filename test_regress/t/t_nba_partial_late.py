@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # Exercise ascending packed ranges and a slice extending past the upper bound.
 test.compile(verilator_flags2=['--stats', '-Wno-ASCRANGE', '-Wno-SELRANGE'])

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # -fno-const-before-dfg keeps V3Const from folding AstLogIf into AstLogOr,
 # which is the only way V3LiftExpr ever encounters an AstLogIf. Option

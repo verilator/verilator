@@ -9,11 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st4')
 
-test.top_filename = "t/t_mod_interface_array4.v"
-
-test.compile(v_flags2=["--fourstate", "--Wno-FUTURE", "-Wno-CASTFOURSTATE"])
+test.compile(verilator_flags2=['--binary', '--zero-top-ports', '-DINPUT_VAL=0'])
 
 test.execute()
 

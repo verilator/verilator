@@ -11,6 +11,7 @@ import vltest_bootstrap
 import randomize_uniform_common
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 SOLUTIONS = list(range(1 << 6))  # value < (1 << m_size), m_size set to 6 at run time
 

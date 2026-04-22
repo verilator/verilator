@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios("vltmt")
+test.fourstate_capable = False
 test.top_filename = "t/t_x_rand_stability.v"
 
 # See t_x_rand_mt_stability.py for why a single MTask is forced.

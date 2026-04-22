@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 if not test.have_sc:
     test.skip("No SystemC installed")

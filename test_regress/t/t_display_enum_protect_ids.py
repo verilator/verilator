@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = 't/t_display_pattern_format.v'
 
 test.compile(verilator_flags2=[

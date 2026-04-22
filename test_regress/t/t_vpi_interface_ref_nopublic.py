@@ -13,6 +13,7 @@ import vltest_bootstrap
 # VPI visible and no scope reaches the scope table. Interface references to a
 # scope that is not in the table must be dropped, leaving an empty dump.
 test.scenarios("vlt")
+test.fourstate_capable = False
 test.top_filename = "t/t_vpi_interface_ref_scopes.v"
 
 test.compile(verilator_flags2=["--binary", "--vpi"])

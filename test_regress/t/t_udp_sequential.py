@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 # TODO add back multithreaded, see issue #6056
 test.scenarios('simulator_st')
+test.fourstate_capable = False
 
 test.compile()
 

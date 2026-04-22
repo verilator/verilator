@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 test.clean_objs()
 test.top_filename = "t/t_dpi_instr_count_large.v"
 

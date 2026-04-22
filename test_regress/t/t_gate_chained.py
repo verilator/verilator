@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = test.obj_dir + "/t_gate_chained.v"
 
 

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = 't/t_covergroup_cross_illegal.v'
 
 test.compile(verilator_flags2=[

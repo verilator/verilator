@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.priority(30)
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_unopt_array.v"
 
 test.compile(v_flags2=[

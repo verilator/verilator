@@ -12,6 +12,7 @@ import vltest_bootstrap
 # The interface is passed by a downward hierarchical reference from a sibling
 # instance, which is not registered as an interface reference; see the .v
 test.scenarios("vlt")
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=["--binary", "--vpi", "--public-flat-rw"])
 

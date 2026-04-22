@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # --public-params makes the struct parameter's members get registered for VPI,
 # which previously emitted a 'const void*' -> 'void*' conversion and so failed

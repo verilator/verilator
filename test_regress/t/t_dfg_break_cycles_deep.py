@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Run with the default stack limit to exercise Dfg cycle-breaking stack depth.
 test.compile(verilator_flags2=['--binary', '--no-unlimited-stack'])

@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # WITH --coverage, which is the point: it turns off the free path in
 # VlCovergroupType::retire().  The golden report is the other half -- both

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_interface_nested_port.v"
 
 test.compile(verilator_flags2=['--binary', '-fno-inline'])

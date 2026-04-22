@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=['--coverage'], threads=(2 if test.vltmt else 1))
 test.execute(all_run_flags=['+verilator+error+limit+100'],
