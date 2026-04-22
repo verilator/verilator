@@ -1354,6 +1354,18 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
+    // Rewrite placeholder __VGIfaceParam pins emitted by
+    // LinkDotResolveVisitor::addImplicitParametersOfGenericIface for a nested
+    // generic-interface forwarding chain (#7454). Must run here (not in
+    // V3LinkDot's Param/Resolve visitor at LDS_PARAMED) because:
+    //   * linkDotParamed runs AFTER V3Param, at which point cellDeparam has
+    //     already consumed the pin via moduleFindOrClone (variant naming off
+    //     pinp->exprp()'s IfaceRefDType) and genericInterfaceVarSetup (hard
+    //     VN_AS cast to IfaceRefDType); and
+    //   * the enclosing module's port only becomes a concrete IfaceRefDType
+    //     after its own nodeDeparam has specialized it. That specialization
+    //     happens in V3Param's top-down walk, so the window between "outer
+    //     port resolved" and "inner cellDeparam starts" exists only here.
     void resolveGenericIfaceForwardingPins(AstPin* paramsp) {
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (!pinp->exprp()) continue;

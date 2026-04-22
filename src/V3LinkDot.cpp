@@ -3620,7 +3620,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // Nested generic-iface forwarding (#7454): enclosing port is itself still
                 // generic, so emit a placeholder __VGIfaceParam pin carrying a VarRef to
                 // the outer port. V3Param rewrites it to the concrete IfaceRefDType once
-                // the enclosing module is specialized.
+                // the enclosing module is specialized (see
+                // ParamProcessor::resolveGenericIfaceForwardingPins for the ordering
+                // constraint that keeps the rewrite inside V3Param).
                 AstVarRef* const fwdRefp
                     = new AstVarRef{exprp->fileline(), enclosingVarp, VAccess::READ};
                 AstPin* const newPinp = new AstPin{
