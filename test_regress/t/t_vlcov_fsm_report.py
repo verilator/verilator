@@ -51,9 +51,11 @@ test.file_grep(annotated, r"FSM coverage")
 test.file_grep(annotated, r"SYNTHETIC DEFAULT ARC")
 test.file_grep(annotated, r"default->S0")
 test.file_grep(annotated, r"\[reset arc, excluded from %\]")
+test.file_grep(annotated, r"%000000.*fsm_state .*::S3.*UNCOVERED")
 
 test.file_grep(annotated_incl, r"FSM coverage")
 test.file_grep(annotated_incl, r"\[reset_include\]")
 test.file_grep_not(annotated_incl, r"\[reset arc, excluded from %\]")
+test.file_grep(annotated_incl, r"%000000.*fsm_state .*::S3.*UNCOVERED")
 
 test.passes()

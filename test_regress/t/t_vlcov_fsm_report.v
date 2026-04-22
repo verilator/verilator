@@ -11,7 +11,8 @@ module t (
   typedef enum logic [1:0] {
     S0 = 2'd0,
     S1 = 2'd1,
-    S2 = 2'd2
+    S2 = 2'd2,
+    S3 = 2'd3
   } state_t;
 
   integer cyc;

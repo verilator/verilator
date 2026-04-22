@@ -2424,9 +2424,7 @@ public:
     const string& fsmTag() const { return m_fsmTag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
-        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov()
-               && fsmVar() == asamep->fsmVar() && fsmFrom() == asamep->fsmFrom()
-               && fsmTo() == asamep->fsmTo() && fsmTag() == asamep->fsmTag();
+        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
     }
 };
 class AstCoverToggleDecl final : public AstNodeCoverDecl {
