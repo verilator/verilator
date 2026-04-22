@@ -4325,8 +4325,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (allowScope && VN_IS(foundp->nodep(), NodeFTask)) {
                 // Function/task used as scope for static variable access (IEEE std 1800-2017 6.21)
-                // Don't set m_dotText so the static variable resolves as a VarRef rather than VarXRef.
-                // This is so that V3Begin won't move it out of the function/task's scope.
+                // Don't set m_dotText so the static variable resolves as a VarRef rather than
+                // VarXRef. This is so that V3Begin won't move it out of the function/task's scope.
                 ok = true;
                 m_ds.m_dotSymp = foundp;
                 m_ds.m_dotPos = DP_SCOPE;
