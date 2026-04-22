@@ -25,6 +25,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -122,12 +124,18 @@ void VlcTop::writeInfo(const string& filename) {
         int branchesHit = 0;
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
-            os << "DA:" << sc.lineno() << "," << sc.maxCount() << "\n";
-            const int num_branches = sc.points().size();
-            if (num_branches == 1) continue;
-            branchesFound += num_branches;
-            int point_num = 0;
+            uint64_t daCount = 0;
+            std::vector<const VlcPoint*> infoPoints;
             for (const auto& point : sc.points()) {
+                if (point->isFsmArc()) continue;
+                daCount = std::max(daCount, point->count());
+                if (!point->isFsmState()) infoPoints.push_back(point);
+            }
+            os << "DA:" << sc.lineno() << "," << daCount << "\n";
+            if (infoPoints.size() <= 1) continue;
+            branchesFound += static_cast<int>(infoPoints.size());
+            int point_num = 0;
+            for (const VlcPoint* point : infoPoints) {
                 os << "BRDA:" << sc.lineno() << ",";
                 os << "0,";
                 os << point_num << ",";
@@ -327,6 +335,29 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
                 if (opt.annotatePoints()) {
                     for (const auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
+                }
+                bool printedFsmHeader = false;
+                for (const auto& pit : sc.points()) {
+                    if (!pit->isFsmState() && !pit->isFsmArc()) continue;
+                    if (!printedFsmHeader) {
+                        os << "        // [FSM coverage]\n";
+                        printedFsmHeader = true;
+                    }
+                    os << (opt.countOk(pit->count()) ? " " : "%");
+                    os << std::setfill('0') << std::setw(6) << pit->count() << "        ";
+                    if (pit->isFsmState()) {
+                        os << "// [fsm_state " << pit->comment() << "]";
+                        if (pit->count() == 0) os << " *** UNCOVERED ***";
+                        os << "\n";
+                    } else if (pit->isFsmDefaultArc()) {
+                        os << "// [SYNTHETIC DEFAULT ARC: " << pit->comment() << "]\n";
+                    } else {
+                        os << "// [fsm_arc " << pit->comment() << "]";
+                        if (pit->fsmIsReset() && !opt.includeResetArcs()) {
+                            os << " [reset arc, excluded from %]";
+                        }
+                        os << "\n";
+                    }
                 }
             }
         }

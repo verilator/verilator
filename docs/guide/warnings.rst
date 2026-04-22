@@ -306,7 +306,7 @@ List Of Warnings
         else
           array[address] <= data;
 
-   While this is supported in typical synthesizeable code (including the
+   While this is supported in typical synthesizable code (including the
    example above), some complicated cases are not supported. Namely:
 
    1. If the above loop is inside a suspendable process or fork statement.
@@ -835,6 +835,18 @@ List Of Warnings
 
    Other tools with similar warnings: Verible's posix-eof, "File must end
    with a newline."
+
+
+.. option:: FSMMULTI
+
+   Warns that the same always block contains multiple enum-typed case
+   statements that look like FSM candidates for native FSM coverage when
+   :vlopt:`--coverage-fsm` or :vlopt:`--coverage` is enabled.
+
+   Verilator's FSM coverage instruments only the first such candidate in
+   source order. Split the FSMs into separate always blocks, or explicitly
+   annotate the intended state variables and restructure the RTL for full
+   coverage of such multiple state machines.
 
 
 .. option:: FUNCTIMECTL

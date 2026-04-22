@@ -69,6 +69,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
+    DECL_OPTION("-include-reset-arcs", OnOff, &m_includeResetArcs);
     DECL_OPTION("-rank", OnOff, &m_rank);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
