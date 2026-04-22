@@ -1693,6 +1693,27 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
 };
+class AstFourstateExpr final : public AstNodeExpr {
+    // When AstNode wants a value as an child and that value is a splitted four-state value (so, it
+    // has value and xz part) this node shall be used to put them both there
+    // @astgen op1 := valuep : AstNodeExpr // value part of a four-state expression
+    // @astgen op2 := xzp : AstNodeExpr // xz part of a four-state expression
+public:
+    AstFourstateExpr(FileLine* fl, AstNodeExpr* const valuePartp, AstNodeExpr* const xzPartp)
+        : ASTGEN_SUPER_FourstateExpr(fl) {
+        UASSERT_OBJ(valuePartp->width() == xzPartp->width(), this,
+                    "Value and XZ part shall have same width but they have: "
+                        << valuePartp->width() << " and " << xzPartp->width());
+        valuep(valuePartp);
+        xzp(xzPartp);
+        dtypeSetLogicUnsized(valuePartp->width(), valuePartp->dtypep()->widthMin(),
+                             valuePartp->dtypep()->numeric());
+    }
+    ASTGEN_MEMBERS_AstFourstateExpr;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstFuture final : public AstNodeExpr {
     // Verilog $future_gclk
     // @astgen op1 := exprp : AstNodeExpr
@@ -4548,9 +4569,9 @@ public:
         out.opLogEq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<-> %r)"; }
-    string emitC() override { return "VL_LOGEQ_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSMT() const override { return "(bvxnor %l %r)"; }
-    string emitSimpleOperator() override { return "<->"; }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }

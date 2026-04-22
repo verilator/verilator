@@ -3020,6 +3020,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->v3fatalSrc(
             "Visit function missing? Constraint function missing for math node: " << nodep);
     }
+
+    // Silently omit this node as should not be considered here
+    void visit(AstCastWrap* nodep) override { iterateChildren(nodep); }
+
     void visit(AstNode* nodep) override {
         nodep->v3fatalSrc(
             "Visit function missing? Constraint function missing for node: " << nodep);
