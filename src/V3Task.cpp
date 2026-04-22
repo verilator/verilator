@@ -1241,7 +1241,7 @@ class TaskVisitor final : public VNVisitor {
             }
 
             // Set DPI import trigger flag to track invoking from function context
-            if (nodep->isFunction()) {
+            if (nodep->verilogFunction()) {
                 FileLine* const flp = cfuncp->fileline();
                 AstVarScope* const dpiImportTriggerp = getDpiImportTrigger();
                 AstVarRef* const varRefp
