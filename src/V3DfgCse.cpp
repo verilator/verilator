@@ -78,7 +78,6 @@ class V3DfgCse final {
         case VDfgType::Add:
         case VDfgType::And:
         case VDfgType::ArraySel:
-        case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
         case VDfgType::CountOnes:
@@ -125,10 +124,6 @@ class V3DfgCse final {
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
         case VDfgType::StreamR:
-        case VDfgType::SAnd:
-        case VDfgType::SIntersect:
-        case VDfgType::SOr:
-        case VDfgType::SThroughout:
         case VDfgType::Sub:
         case VDfgType::Xor: return V3Hash{};
         }
@@ -205,7 +200,6 @@ class V3DfgCse final {
         case VDfgType::Add:
         case VDfgType::And:
         case VDfgType::ArraySel:
-        case VDfgType::BufIf1:
         case VDfgType::Concat:
         case VDfgType::Cond:
         case VDfgType::CountOnes:
@@ -251,10 +245,6 @@ class V3DfgCse final {
         case VDfgType::ShiftR:
         case VDfgType::ShiftRS:
         case VDfgType::StreamL:
-        case VDfgType::SAnd:
-        case VDfgType::SIntersect:
-        case VDfgType::SOr:
-        case VDfgType::SThroughout:
         case VDfgType::StreamR:
         case VDfgType::Sub:
         case VDfgType::Xor: return true;
