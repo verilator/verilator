@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_fourstate_pull_unsup.v:10:10: Pullups and pulldowns are unsupported with --fourstate
+                                                    : ... note: In instance 't'
+   10 |   pullup d_0_pup (iolines[0]);
+      |          ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_fourstate_pull_unsup.v:11:10: Pullups and pulldowns are unsupported with --fourstate
+                                                    : ... note: In instance 't'
+   11 |   pullup d_1_pup (iolines[1]);
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_pull_unsup.v:12:12: Pullups and pulldowns are unsupported with --fourstate
+                                                    : ... note: In instance 't'
+   12 |   pulldown d_2_pdown (iolines[2]);
+      |            ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_pull_unsup.v:13:12: Pullups and pulldowns are unsupported with --fourstate
+                                                    : ... note: In instance 't'
+   13 |   pulldown d_3_pdown (iolines[3]);
+      |            ^~~~~~~~~
+%Error: Exiting due to
