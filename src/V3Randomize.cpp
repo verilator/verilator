@@ -2760,7 +2760,9 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
             = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
-        if (!m_targetp) memberSelp->user1(true);
+        // Propagate random-dependence marking; forcing it on read-only operands
+        // would route them through the solver write path.
+        if (!m_targetp && nodep->user1()) memberSelp->user1(true);
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

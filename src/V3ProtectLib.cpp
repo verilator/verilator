@@ -221,7 +221,7 @@ class ProtectVisitor final : public VNVisitor {
                   + "_protectlib_final(chandle handle__V);\n\n");
 
         // Local variables
-        // Avoid tracing handle, as it is not a stable value, so breaks vcddiff
+        // Avoid tracing handle, as it is not a stable value, so breaks wavediff
         // Likewise other internals aren't interesting to the user
         txtp->add("// verilator tracing_off\n");
 
