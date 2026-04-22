@@ -395,7 +395,7 @@
         ],"timingControlp": []},
         {"type":"DUMPCTL","name":"","addr":"(XG)","loc":"d,65:5,65:14","ctlType":"$dumpfile",
          "exprp": [
-          {"type":"CONST","name":"\\\"obj_vlt/t_fourstate_demo_json/simx.vcd\\\"","addr":"(YG)","loc":"d,65:15,65:55","dtypep":"(VD)"}
+          {"type":"CONST","name":"\\\"obj_vlt4/t_fourstate_demo_json/simx.vcd\\\"","addr":"(YG)","loc":"d,65:15,65:56","dtypep":"(VD)"}
         ]},
         {"type":"DUMPCTL","name":"","addr":"(ZG)","loc":"d,66:5,66:14","ctlType":"$dumpvars",
          "exprp": [

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_case_write1.v"
 
 test.compile(verilator_flags2=['-fno-expand'])

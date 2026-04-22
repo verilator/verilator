@@ -174,8 +174,15 @@ class WidthSelVisitor final : public VNVisitor {
         } else {
             extendp = new AstExtend{fl, indexp};
         }
-        extendp->dtypeSetLogicUnsized(
-            32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()), VSigning::UNSIGNED);
+        if (indexp->dtypep()->isFourstate()) {
+            extendp->dtypeSetLogicUnsized(
+                32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()),
+                VSigning::UNSIGNED);
+        } else {
+            extendp->dtypeSetBitUnsized(32,
+                                        std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()),
+                                        VSigning::UNSIGNED);
+        }
         AstNodeExpr* const mulp
             = new AstMul{fl, new AstConst{fl, AstConst::Unsized32{}, elwidth},
                          // Extend needed as index might be e.g. 3 bits but constant e.g. 5 bits

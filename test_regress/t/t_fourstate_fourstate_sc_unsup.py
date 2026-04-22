@@ -9,17 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter4')
 
-test.top_filename = 't/t_dfg_bin_to_one_hot.v'
+test.top_filename = "t_fourstate_fourstate_unsup.v"
 
-test.skip("TODO: DFG does not detect one hot pattern created by V3Fourstate")
-
-test.compile(
-    verilator_flags2=["--fourstate", "-Wno-FUTURE", "--stats", "-fno-table", "-fno-inline"])
-
-test.execute()
-
-test.file_grep(test.stats, r'Optimizations, DFG, BinToOneHot, decoders created\s+(\d+)', 5)
+test.lint(verilator_flags2=['--sc'], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

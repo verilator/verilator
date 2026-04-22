@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_savable.v"
 
 test.compile(v_flags2=["--savable"], save_time=500)

@@ -489,6 +489,76 @@ class DelayedVisitor final : public VNVisitor {
         return varscp;
     }
 
+    AstVarScope* getFourstateComplementScope(const AstVarScope* const vscp) {
+        const AstVar* const varp = vscp->varp()->fourstateComplementp();
+        UASSERT_OBJ(varp, vscp, "Non four-state won't have a complement");
+        AstVarScope* resultp = VN_AS(vscp->nextp(), VarScope);
+        do {
+            // In most (if not in all) cases the complement VarScope is right after main part
+            if (resultp->varp() == varp) return resultp;
+            resultp = VN_AS(resultp->nextp(), VarScope);
+        } while (resultp);
+        // Fallback to looking elsewhere
+        resultp = vscp->scopep()->varsp();
+        while (resultp != vscp) {
+            // In most (if not in all) cases the complement VarScope is right after main part
+            if (resultp->varp() == varp) return resultp;
+            resultp = VN_AS(resultp->nextp(), VarScope);
+        }
+        return nullptr;
+    }
+
+    AstVarScope* createTemp(const std::string& prefix, AstVarScope* vscp, AstNodeDType* dtypep,
+                            VarScopeInfo* vscpInfo = nullptr) {
+        const AstVar* const varp = vscp->varp();
+        AstScope* const scopep = vscp->scopep();
+        auto getName
+            = [this, &prefix, scopep](const AstVarScope* const vscp, VarScopeInfo* vscpInfo) {
+                  return prefix
+                         + (vscpInfo ? uniqueTmpName(scopep, vscp, *vscpInfo)
+                                     : vscp->varp()->shortName());
+              };
+        FileLine* const flp = vscp->fileline();
+
+        AstNodeModule* const modp = scopep->modp();
+        // Get/create the corresponding AstVar
+        AstVar*& newVarp = m_varMap(modp)[getName(vscp, vscpInfo)];
+        bool newlyCreated = false;
+        if (!newVarp) {
+            newVarp = new AstVar{flp, VVarType::BLOCKTEMP, getName(vscp, vscpInfo), dtypep};
+            modp->addStmtsp(newVarp);
+            newlyCreated = true;
+        }
+
+        if (varp->fourstateComplementp()) {
+            if (AstVarScope* const complementVscp = getFourstateComplementScope(vscp)) {
+                std::string name
+                    = getName(complementVscp, vscpInfo ? &m_vscpInfo(complementVscp) : nullptr);
+                AstVar*& newComplementVarp = m_varMap(modp)[name];
+                if (!newComplementVarp) {
+                    newComplementVarp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
+                    modp->addStmtsp(newComplementVarp);
+                }
+                if (newlyCreated) newVarp->fourstateComplementp(newComplementVarp);
+            }
+        }
+
+        // We should be able to assert this here, but unfortuantely
+        // 'isAssignmentCompatible' does not exist as of right now.
+        // UASSERT_OBJ(isAssignmentCompatible(varp->dtypep(), dtypep), flp, "Invalid temporary");
+
+        // Create the AstVarScope
+        AstVarScope* const varscp = new AstVarScope{flp, scopep, newVarp};
+        scopep->addVarsp(varscp);
+        return varscp;
+    }
+
+    AstVarScope* createTemp(const std::string& prefix, AstVarScope* vscp, int width,
+                            VarScopeInfo* vscpInfo = nullptr) {
+        return createTemp(prefix, vscp, vscp->findBitDType(width, width, VSigning::UNSIGNED),
+                          vscpInfo);
+    }
+
     // Same as above but create a 2-state scalar of the given 'width'
     AstVarScope* createTemp(FileLine* flp, AstScope* scopep, const std::string& name, int width) {
         AstNodeDType* const dtypep = scopep->findBitDType(width, width, VSigning::UNSIGNED);
@@ -591,8 +661,7 @@ class DelayedVisitor final : public VNVisitor {
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
         // Create the shadow variable
-        const std::string name = "__Vdly__" + vscp->varp()->shortName();
-        AstVarScope* const shadowVscp = createTemp(flp, scopep, name, vscp->dtypep());
+        AstVarScope* const shadowVscp = createTemp("__Vdly__", vscp, vscp->dtypep());
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
         // Mark both for V3LifePsot
         vscp->optimizeLifePost(true);
@@ -631,12 +700,10 @@ class DelayedVisitor final : public VNVisitor {
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
         // Create the shadow variable
-        const std::string shadowName = "__Vdly__" + vscp->varp()->shortName();
-        AstVarScope* const shadowVscp = createTemp(flp, scopep, shadowName, vscp->dtypep());
+        AstVarScope* const shadowVscp = createTemp("__Vdly__", vscp, vscp->dtypep());
         vscpInfo.shadowVarMaskedKit().vscp = shadowVscp;
         // Create the makk variable
-        const std::string maskName = "__VdlyMask__" + vscp->varp()->shortName();
-        AstVarScope* const maskVscp = createTemp(flp, scopep, maskName, vscp->dtypep());
+        AstVarScope* const maskVscp = createTemp("__VdlyMask__", vscp, vscp->dtypep());
         maskVscp->varp()->setIgnorePostWrite();
         vscpInfo.shadowVarMaskedKit().maskp = maskVscp;
         // Create the AstActive for the Post logic
@@ -742,7 +809,7 @@ class DelayedVisitor final : public VNVisitor {
 
         if (!reuseTheFlag) {
             // Create new flag
-            AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+            AstVarScope* const flagVscp = createTemp("__VdlySet", vscp, 1, &vscpInfo);
             // Set the flag at the original NBA
             nodep->addHereThisAsNext(  //
                 new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
@@ -818,7 +885,7 @@ class DelayedVisitor final : public VNVisitor {
             = captureLhs(scopep, nodep, nodep->lhsp()->unlinkFrBack(), baseName);
 
         // Create new flag
-        AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+        AstVarScope* const flagVscp = createTemp("__VdlySet", vscp, 1, &vscpInfo);
         flagVscp->varp()->setIgnorePostWrite();
         // Set the flag at the original NBA
         nodep->addHereThisAsNext(  //
@@ -850,8 +917,7 @@ class DelayedVisitor final : public VNVisitor {
         auto* const cqDTypep
             = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), N_Partial};
         v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
-        const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
-        AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);
+        AstVarScope* const queueVscp = createTemp("__VdlyCommitQueue", vscp, cqDTypep);
         queueVscp->varp()->noReset(true);
         queueVscp->varp()->setIgnorePostWrite();
         vscpInfo.valueQueueKit().vscp = queueVscp;
@@ -1198,9 +1264,7 @@ class DelayedVisitor final : public VNVisitor {
         AstNode* newp = cstmtp;
         if (nodep->isDelayed()) {
             const AstVarRef* const vrefp = VN_AS(eventp, VarRef);
-            const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
-            AstVarScope* const dlyvscp
-                = createTemp(flp, vrefp->varScopep()->scopep(), newvarname, 1);
+            AstVarScope* const dlyvscp = createTemp("__Vdly__", vrefp->varScopep(), 1);
 
             const auto dlyRef = [=](VAccess access) {  //
                 return new AstVarRef{flp, dlyvscp, access};
