@@ -111,16 +111,30 @@ class LocalizeVisitor final : public VNVisitor {
             AstVar* const oldVarp = nodep->varp();
             for (AstCFunc* const funcp : funcps) {
                 // Create the new local variable.
-                const string newName
+                string newName
                     = nodep->scopep() == funcp->scopep()
                           ? oldVarp->name()
                           : nodep->scopep()->nameDotless() + "__DOT__" + oldVarp->name();
-                AstVar* const newVarp
-                    = new AstVar{oldVarp->fileline(), oldVarp->varType(), newName, oldVarp};
+                AstVar* const newVarp = new AstVar{oldVarp->fileline(), oldVarp->varType(),
+                                                   std::move(newName), oldVarp};
                 newVarp->funcLocal(true);
                 newVarp->noReset(oldVarp->noReset());
                 newVarp->noSubst(oldVarp->noSubst());
                 funcp->addVarsp(newVarp);
+                if (AstVar* complementp = oldVarp->fourstateComplementp()) {
+                    string newName
+                        = nodep->scopep() == funcp->scopep()
+                              ? complementp->name()
+                              : nodep->scopep()->nameDotless() + "__DOT__" + complementp->name();
+                    AstVar* const newVarXZp
+                        = new AstVar{complementp->fileline(), complementp->varType(),
+                                     std::move(newName), complementp};
+                    newVarXZp->funcLocal(true);
+                    newVarXZp->noReset(complementp->noReset());
+                    newVarXZp->noSubst(complementp->noSubst());
+                    funcp->addVarsp(newVarXZp);
+                    newVarp->fourstateComplementp(newVarXZp);
+                }
 
                 // Fix up all the references within this function
                 const auto er = m_references(funcp).equal_range(nodep);
@@ -192,6 +206,8 @@ class LocalizeVisitor final : public VNVisitor {
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
             && !nodep->varp()->isVirtIface()  // Not interface pointer
             && !nodep->varp()->valuep()  // Does not have an initializer
+            && !nodep->varp()->isFourstateComplement()  // Don't optimize complements just optimize
+                                                        // a value part
         ) {
             UINFO(4, "Consider for localization: " << nodep);
             m_varScopeps.push_back(nodep);

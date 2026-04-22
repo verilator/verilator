@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=['--fno-slice'])  # TODO remove -fno-slice, issue #5632/#5644
 

@@ -54,7 +54,7 @@ template <>
 AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
     const DfgCountOnes* vtxp, AstNodeExpr* op1) {
     AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
-    nodep->dtypeSetLogicSized(vtxp->width(), VSigning::UNSIGNED);
+    nodep->dtypeSetBitSized(vtxp->width(), VSigning::UNSIGNED);
     return nodep;
 }
 

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 
 test.lint(
     # Should fail, Verilator unsupported, bug1623

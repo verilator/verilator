@@ -9,13 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
+
+test.twostate_capable = False
+test.fourstate_nowarn = False
 
 test.top_filename = "t/t_fourstate_format.v"
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['-Wno-FUTURE'], fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_CASTFOURSTATE_faulty.rst",

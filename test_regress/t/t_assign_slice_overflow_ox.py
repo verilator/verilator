@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t_assign_slice_overflow.v"
 
 test.compile(verilator_flags2=["-fno-expand"])

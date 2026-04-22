@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_split_var_0.v"
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.

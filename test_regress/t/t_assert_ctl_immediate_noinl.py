@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t_assert_ctl_immediate.v"
 test.golden_filename = "t/t_assert_ctl_immediate.out"
 

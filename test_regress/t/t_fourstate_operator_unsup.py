@@ -10,9 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.twostate_capable = False
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

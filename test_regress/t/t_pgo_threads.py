@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 test.top_filename = "t/t_gen_alw.v"  # It doesn't really matter what test
 
 test.compile(v_flags2=["--prof-pgo"], threads=2)

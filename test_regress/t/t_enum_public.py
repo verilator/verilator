@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 if test.vlt_all:
     test.compile(verilator_flags2=["--exe", test.pli_filename],

@@ -131,6 +131,19 @@ AstNode::AstNode(VNType t, FileLine* fl)
     editCountInc();
 }
 
+int AstNode::widthWords() const {
+    UASSERT_OBJ(m_dtypep, this, "DType is not set");
+    return VL_WORDS_I(width()) * (m_dtypep->isShuffledFourstate() ? 2 : 1);
+}
+bool AstNode::isQuad() const VL_MT_STABLE {
+    UASSERT_OBJ(m_dtypep, this, "DType is not set");
+    return !m_dtypep->isShuffledFourstate() && (width() > VL_IDATASIZE && width() <= VL_QUADSIZE);
+}
+bool AstNode::isWide() const VL_MT_STABLE {
+    UASSERT_OBJ(m_dtypep, this, "DType is not set");
+    return m_dtypep->isShuffledFourstate() || (width() > VL_QUADSIZE);
+}
+
 AstNode* AstNode::abovep() const {
     // m_headtailp only valid at beginning or end of list
     // Avoid supporting at other locations as would require walking
@@ -1601,28 +1614,30 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     }
 }
 
-AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
+AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd, bool isShuffledFourstate) const {
     // For 'simple' types we use the global directory.  These are all unsized.
     // More advanced types land under the module/task/etc
-    return v3Global.rootp()->typeTablep()->findBasicDType(fileline(), kwd);
+    return v3Global.rootp()->typeTablep()->findBasicDType(fileline(), kwd, isShuffledFourstate);
 }
-AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
-                                                             width, widthMin, numeric);
+AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric,
+                                    bool isShuffledFourstate) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::BIT, width, widthMin, numeric, isShuffledFourstate);
 }
-AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
-                                                             width, widthMin, numeric);
+AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric,
+                                      bool isShuffledFourstate) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC, width, widthMin, numeric, isShuffledFourstate);
 }
-AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
-                                           VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
-                                                             range, widthMin, numeric);
+AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin, VSigning numeric,
+                                           bool isShuffledFourstate) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC, range, widthMin, numeric, isShuffledFourstate);
 }
-AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
-                                         VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
-                                                             range, widthMin, numeric);
+AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric,
+                                         bool isShuffledFourstate) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::BIT, range, widthMin, numeric, isShuffledFourstate);
 }
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()->findInsertSameDType(nodep);

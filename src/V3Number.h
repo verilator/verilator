@@ -640,6 +640,7 @@ public:
     V3Number& setAllBits0();
     V3Number& setAllBits1();
     V3Number& setValue1();
+    V3Number& setXZFromXZComplement(const V3Number&);
     // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
     V3Number& setMask(int nbits, int lsb = 0);
 
@@ -697,6 +698,8 @@ public:
     }
     bool isAllZ() const VL_MT_SAFE;
     bool isAllX() const VL_MT_SAFE;
+    bool isAll0() const VL_MT_SAFE;
+    bool isAll1() const VL_MT_SAFE;
     bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;

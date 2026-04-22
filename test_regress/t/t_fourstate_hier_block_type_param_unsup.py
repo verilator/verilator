@@ -10,11 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.twostate_capable = False
 
 test.top_filename = 't/t_hier_block_type_param.v'
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE', '--hierarchical'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['--hierarchical'], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

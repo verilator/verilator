@@ -11,12 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+test.twostate_capable = False
+
 test.top_filename = 't/t_dfg_bin_to_one_hot.v'
 
 test.skip("TODO: DFG does not detect one hot pattern created by V3Fourstate")
 
-test.compile(
-    verilator_flags2=["--fourstate", "-Wno-FUTURE", "--stats", "-fno-table", "-fno-inline"])
+test.compile(verilator_flags2=["--stats", "-fno-table", "-fno-inline"])
 
 test.execute()
 

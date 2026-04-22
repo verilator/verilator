@@ -9,9 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
+test.twostate_capable = False
 
-test.compile(verilator_flags2=['--binary', '--fourstate', '--trace-vcd', '-Wno-FUTURE'])
+test.compile(verilator_flags2=['--binary', '--trace-vcd'])
 
 test.execute(expect_filename=test.golden_filename)
 

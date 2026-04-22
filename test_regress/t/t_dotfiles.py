@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 
 # Use a top file which we are sure to be parallelizable
 test.top_filename = "t/t_gen_alw.v"

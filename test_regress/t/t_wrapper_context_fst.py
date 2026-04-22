@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.pli_filename = "t/t_wrapper_context.cpp"
 test.top_filename = "t/t_wrapper_context.v"
 
