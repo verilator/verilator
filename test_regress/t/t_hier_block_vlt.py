@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_hier_block.v"
 
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.

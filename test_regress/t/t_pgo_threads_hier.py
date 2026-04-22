@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 test.top_filename = "t/t_hier_block_perf.v"
 cycles = 100
 test.sim_time = cycles * 10 + 1000

@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_array_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_array_common.run(test, verilator_flags2=["-CFLAGS", "-DVL_PORTABLE_ONLY"])

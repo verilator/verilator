@@ -9,11 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.top_filename = 't_fourstate_zero_top_ports.v'
 
-test.top_filename = 't/t_mod_interface_array5.v'
+test.scenarios('linter')
 
-test.lint(verilator_flags2=['--fourstate', '-Wno-FUTURE', '-Wno-CASTFOURSTATE'],
+test.lint(verilator_flags2=['--no-fourstate', '--no-zero-top-ports', '-DINPUT_VAL=0'],
           fails=True,
           expect_filename=test.golden_filename)
 

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.twostate_capable = False
 
 test.top_filename = "t/t_fourstate_demo.v"
 

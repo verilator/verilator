@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 test.top_filename = "t/t_inst_overwide.v"
 
 test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)

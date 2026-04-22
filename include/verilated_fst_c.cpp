@@ -461,22 +461,11 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WDataInP newval, int) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WDataInP newval,
-                                            const WDataInP newvalXZ, int bits) {
+void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WDataInP newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
-    // TODO: When four-states will be shuffled remove it since copying will be no longer necessary
-    thread_local std::vector<uint32_t> newvals;
-    newvals.clear();
-    const size_t wordCount = static_cast<size_t>(VL_WORDS_I(bits));
-    newvals.reserve(wordCount * 2);
-    for (size_t i = 0; i < wordCount; ++i) {
-        newvals.push_back(newval[i]);
-        newvals.push_back(newvalXZ[i]);
-    }
-
     m_owner.emitTimeChangeMaybe();
     // call emitValueChange(handle, uint32_t*)
-    m_fst->emitValueChange(m_symbolp[code], newvals.data(), fst::EncodingType::VERILOG);
+    m_fst->emitValueChange(m_symbolp[code], newval.datap(), fst::EncodingType::VERILOG);
 }
 
 VL_ATTR_ALWINLINE

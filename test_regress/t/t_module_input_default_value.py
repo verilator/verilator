@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # Coverage for Issue #5920
 test.compile(verilator_flags2=['--coverage-line'])

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.top_filename = "t/t_iface_param_class_type.v"
 

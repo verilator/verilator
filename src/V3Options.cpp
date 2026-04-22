@@ -1054,6 +1054,12 @@ void V3Options::notify() VL_MT_DISABLED {
             cmdfl->v3warn(E_UNSUPPORTED,
                           "--fourstate is not supported with hierarchical Verilation");
         }
+        if (systemC()) cmdfl->v3warn(E_UNSUPPORTED, "--fourstate is not supported with --sc");
+        if (!m_xInitialDefault) cmdfl->v3error("--x-initial has no sense with --fourstate");
+        if (!m_xAssignDefault) cmdfl->v3error("--x-assign has no sense with --fourstate");
+    } else if (!m_zero_top_ports.isDefault()) {
+        cmdfl->v3error(
+            "--zero-top-ports and --no-zero-top-ports shall be used only with --fourstate");
     }
 
     if (coverage() && savable()) {
@@ -1942,6 +1948,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
+        m_xAssignDefault = false;
         if (!std::strcmp(valp, "0")) {
             m_xAssign = "0";
         } else if (!std::strcmp(valp, "1")) {
@@ -1957,6 +1964,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial", CbVal, [this, fl](const char* valp) {
+        m_xInitialDefault = false;
         if (!std::strcmp(valp, "0")) {
             m_xInitial = "0";
         } else if (!std::strcmp(valp, "fast")) {
@@ -1974,6 +1982,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
     }).notForRerun();
+
+    DECL_OPTION("-zero-top-ports", OnOff, &m_zero_top_ports).undocumented();
 
     parser.finalize();
 

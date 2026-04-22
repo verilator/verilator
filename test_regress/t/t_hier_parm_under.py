@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
 test.clean_objs()

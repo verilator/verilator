@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_process.v"
 
 test.compile(v_flags2=["--binary", "+define+T_PROCESS+std::process"])

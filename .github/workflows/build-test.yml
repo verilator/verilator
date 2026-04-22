@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2, dist-vlt4-0, dist-vlt4-1, dist-vlt4-2, dist-vlt4-3, vltmt4-0, vltmt4-1, vltmt4-2]
 
   test-2604-clang:
     name: Test | 26.04 | clang | ${{ matrix.suite }}
@@ -121,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2, dist-vlt4-0, dist-vlt4-1, dist-vlt4-2, dist-vlt4-3, vltmt4-0, vltmt4-1, vltmt4-2]
 
   test-2404-gcc:
     name: Test | 24.04 | gcc | ${{ matrix.suite }}
@@ -135,7 +135,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2, dist-vlt4-0, dist-vlt4-1, dist-vlt4-2, dist-vlt4-3, vltmt4-0, vltmt4-1, vltmt4-2]
 
   test-2404-clang:
     name: Test | 24.04 | clang | ${{ matrix.suite }}
@@ -150,7 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2, dist-vlt4-0, dist-vlt4-1, dist-vlt4-2, dist-vlt4-3, vltmt4-0, vltmt4-1, vltmt4-2]
 
   test-2204-gcc:
     name: Test | 22.04 | gcc | ${{ matrix.suite }}
@@ -164,7 +164,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2, dist-vlt4-0, dist-vlt4-1, dist-vlt4-2, dist-vlt4-3, vltmt4-0, vltmt4-1, vltmt4-2]
 
   lint-py:
     name: Lint Python
