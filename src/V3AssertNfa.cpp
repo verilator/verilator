@@ -660,7 +660,7 @@ class SvaNfaBuilder final {
             return BuildResult::failWithError();
         }
         if (innerLen > outerLen) {
-            nodep->v3error("Within: inner sequence " + std::to_string(innerLen)
+            nodep->v3error("'within' inner sequence " + std::to_string(innerLen)
                            + " cycles exceeds outer sequence " + std::to_string(outerLen)
                            + " cycles (IEEE 1800-2023 16.9.10)");
             return BuildResult::failWithError();
