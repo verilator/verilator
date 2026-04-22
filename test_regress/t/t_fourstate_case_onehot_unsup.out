@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_case_onehot.v:88:15: Four-state case items values are unsupported with --fourstate
+                                           : ... note: In instance 't.test'
+   88 |       in[ST_0]: out <= 32'h1234;
+      |               ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_case_onehot.v:89:15: Four-state case items values are unsupported with --fourstate
+                                           : ... note: In instance 't.test'
+   89 |       in[ST_1]: out <= 32'h4356;
+      |               ^
+%Error-UNSUPPORTED: t/t_case_onehot.v:90:15: Four-state case items values are unsupported with --fourstate
+                                           : ... note: In instance 't.test'
+   90 |       in[ST_2]: out <= 32'h9874;
+      |               ^
+%Error-UNSUPPORTED: t/t_case_onehot.v:87:5: Unsupported: Operator ONEHOT not supported in the four-state mode
+   87 |     case (1'b1)  /*verilator parallel_case*/
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_case_onehot.v:87:5: Unsupported: Operator LOGNOT not supported in the four-state mode
+   87 |     case (1'b1)  /*verilator parallel_case*/
+      |     ^~~~
+%Error: Exiting due to

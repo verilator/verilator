@@ -1054,6 +1054,9 @@ void V3Options::notify() VL_MT_DISABLED {
             cmdfl->v3warn(E_UNSUPPORTED,
                           "--fourstate is not supported with hierarchical Verilation");
         }
+        if (traceEnabledFst()) {
+            cmdfl->v3warn(E_UNSUPPORTED, "--fourstate is not supported with fst trace");
+        }
     }
 
     if (coverage() && savable()) {
