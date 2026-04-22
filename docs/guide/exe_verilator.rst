@@ -753,6 +753,14 @@ Summary:
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
 
+.. option:: --fourstate
+
+   Enables four-state logic support. Experimental, for developer use only.
+
+.. option:: --no-fourstate
+
+   Disables four-state logic support which is the default. Exists for forward compatibility.
+
 .. option:: --fslice-element-limit
 
    Rarely needed. Set the maximum array size (number of elements) for slice

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_fourstate_assign_complex_lhs_unsup.v:10:10: Fourstate LHS other than a simple variable reference is not supported
+                                                                  : ... note: In instance 't'
+   10 |     x[1] = 1;
+      |          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

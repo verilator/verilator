@@ -689,7 +689,14 @@ class EmitCTrace final : public EmitCFunc {
 
         // Type
         puts(", VerilatedTraceSigType::");
-        puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+        {
+            const VBasicDTypeKwd dtypeKwd = nodep->dtypeKwd();
+            if (dtypeKwd != VBasicDTypeKwd::UNKNOWN) {
+                puts(dtypeKwd.traceSigType());
+            } else {
+                puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+            }
+        }
 
         // Array range
         if (nodep->arrayRange().ranged()) {
@@ -724,8 +731,9 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
+        std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
+        const bool isFourstate = VN_IS(nodep->valuep(), FourstateExpr);
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
@@ -743,10 +751,14 @@ class EmitCTrace final : public EmitCFunc {
         } else if (nodep->dtypep()->basicp()->isEvent()) {
             stype = "Event";
             emitWidth = false;
+        } else if (isFourstate) {
+            stype = "Logic";
+            emitWidth = false;
         } else {
             stype = "Bit";
             emitWidth = false;
         }
+        if (isFourstate && stype != "Logic") func += "Fourstate";
         putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
@@ -765,8 +777,8 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceValue(const AstTraceInc* nodep, int arrayindex) {
-        if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            const AstVar* const varp = varrefp->varp();
+        auto putVarRef = [this, nodep, arrayindex](AstVarRef* const varrefp) {
+            AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
@@ -785,12 +797,29 @@ class EmitCTrace final : public EmitCFunc {
                 puts(")");
             }
             puts(")");
+        };
+        puts("(");
+        if (AstFourstateExpr* const exprp = VN_CAST(nodep->valuep(), FourstateExpr)) {
+            if (AstVarRef* const varrefp = VN_CAST(exprp->valuep(), VarRef)) {
+                putVarRef(varrefp);
+            } else {
+                iterateConst(exprp->valuep());
+            }
+            puts("), (");
+            if (AstVarRef* const varrefp = VN_CAST(exprp->xzp(), VarRef)) {
+                putVarRef(varrefp);
+            } else {
+                iterateConst(exprp->xzp());
+            }
+        } else if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
+            putVarRef(varrefp);
         } else {
             puts("(");
             iterateConst(nodep->valuep());
             emitTraceIndex(nodep, arrayindex);
             puts(")");
         }
+        puts(")");
     }
 
     void emitTraceIndex(const AstTraceInc* const nodep, int arrayindex) {

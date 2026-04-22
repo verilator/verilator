@@ -1050,6 +1050,10 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (fourstate()) {
         cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
+        if (hierarchical()) {
+            cmdfl->v3warn(E_UNSUPPORTED,
+                          "--fourstate is not supported with hierarchical Verilation");
+        }
     }
 
     if (coverage() && savable()) {
