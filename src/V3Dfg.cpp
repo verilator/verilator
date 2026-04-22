@@ -672,7 +672,6 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
 
     case VDfgType::Add:
     case VDfgType::And:
-    case VDfgType::BufIf1:
     case VDfgType::Div:
     case VDfgType::DivS:
     case VDfgType::ModDiv:
@@ -757,16 +756,6 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(inputp(0)->isPacked(), "Operand should be same type");
         CHECK(inputp(0)->size() < size(), "Operand should be narrower");
         return;
-    }
-
-    case VDfgType::SAnd:
-    case VDfgType::SIntersect:
-    case VDfgType::SOr:
-    case VDfgType::SThroughout: {
-        // LCOV_EXCL_START  // Lowered before DFG
-        UASSERT_OBJ(false, this, "SAnd/SIntersect/SOr/SThroughout should be removed before DFG");
-        return;
-        // LCOV_EXCL_STOP
     }
 
     case VDfgType::LogAnd:
