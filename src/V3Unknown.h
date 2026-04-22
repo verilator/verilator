@@ -21,12 +21,15 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class AstNodeExpr;
+class V3Number;
 
 //============================================================================
 
 class V3Unknown final {
 public:
     static void unknownAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static bool isStaticlyGte(const V3Number& msb, const AstNodeExpr* const exprp);
 };
 
 #endif  // Guard

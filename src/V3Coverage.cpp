@@ -65,6 +65,9 @@ class ExprCoverageEligibleVisitor final : public VNVisitorConst {
         }
     }
 
+    // Silently omit this node as should not be considered here
+    void visit(AstCastWrap* nodep) override { iterateChildrenConst(nodep); }
+
     void visit(AstNode* nodep) override {
         if (!nodep->isExprCoverageEligible()) {
             m_eligible = false;
@@ -1112,6 +1115,9 @@ class CoverageVisitor final : public VNVisitor {
         }
         lineTrack(nodep);
     }
+
+    // Silently omit this node as should not be considered here
+    void visit(AstCastWrap* nodep) override { iterateChildren(nodep); }
 
     // VISITORS - BOTH
     void visit(AstNode* nodep) override {

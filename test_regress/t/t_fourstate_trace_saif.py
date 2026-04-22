@@ -11,10 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.top_filename = "t_fourstate_fourstate_unsup.v"
+test.top_filename = 't/t_fourstate_trace.v'
 
-test.lint(verilator_flags2=['--fourstate', '--hierarchical'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--fourstate', '-Wno-FUTURE', '--trace-saif'])
+
+test.execute()
 
 test.passes()
+
+test.saif_identical(test.trace_filename, test.golden_filename)
