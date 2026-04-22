@@ -47,15 +47,7 @@ test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
 annotated = test.obj_dir + "/annotated/t_vlcov_fsm_report.v"
 annotated_incl = test.obj_dir + "/annotated-incl/t_vlcov_fsm_report.v"
 
-test.file_grep(annotated, r"FSM coverage")
-test.file_grep(annotated, r"SYNTHETIC DEFAULT ARC")
-test.file_grep(annotated, r"default->S0")
-test.file_grep(annotated, r"\[reset arc, excluded from %\]")
-test.file_grep(annotated, r"%000000.*fsm_state .*::S3.*UNCOVERED")
-
-test.file_grep(annotated_incl, r"FSM coverage")
-test.file_grep(annotated_incl, r"\[reset_include\]")
-test.file_grep_not(annotated_incl, r"\[reset arc, excluded from %\]")
-test.file_grep(annotated_incl, r"%000000.*fsm_state .*::S3.*UNCOVERED")
+test.files_identical(annotated, "t/t_vlcov_fsm_report.out")
+test.files_identical(annotated_incl, "t/t_vlcov_fsm_report_incl.out")
 
 test.passes()
