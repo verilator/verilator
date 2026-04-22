@@ -15,9 +15,7 @@ test.scenarios('vlt')
 # always_ff now warn and keep only the first candidate instrumented. Different-
 # state multi-candidate cases still use the existing FSMMULTI warning path; this
 # test locks down only the same-state unsupported form.
-test.lint(
-    verilator_flags2=["--coverage-fsm"],
-    fails=True)
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
 
 test.file_grep(
     test.compile_log_filename,

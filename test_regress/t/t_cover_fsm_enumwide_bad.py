@@ -13,9 +13,7 @@ test.scenarios('vlt')
 
 # FSM coverage currently stores recovered enum state values in the detector's
 # 32-bit internal representation, so wider enum-backed FSMs are rejected.
-test.lint(
-    verilator_flags2=["--coverage-fsm"],
-    fails=True)
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
 
 test.file_grep(
     test.compile_log_filename,

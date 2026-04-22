@@ -448,8 +448,7 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
-        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser
-            = flag;
+        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser = flag;
     }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);

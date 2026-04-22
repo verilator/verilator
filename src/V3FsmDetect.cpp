@@ -65,16 +65,16 @@ public:
     enum class Kind : uint8_t { STATE, RESET_ANY, DEFAULT_ANY };
 
 private:
-    Kind m_kind;     // State vs synthetic ANY/default vertex role.
+    Kind m_kind;  // State vs synthetic ANY/default vertex role.
     string m_label;  // User-facing state or pseudo-state label.
     int m_value = 0;  // Encoded state value for real state vertices.
 
 protected:
     FsmVertex(V3Graph* graphp, Kind kind, string label, int value) VL_MT_DISABLED
-        : V3GraphVertex{graphp}
-        , m_kind{kind}
-        , m_label{label}
-        , m_value{value} {}
+        : V3GraphVertex{graphp},
+          m_kind{kind},
+          m_label{label},
+          m_value{value} {}
     ~FsmVertex() override = default;
 
 public:
@@ -116,18 +116,17 @@ public:
 class FsmArcEdge final : public V3GraphEdge {
     VL_RTTI_IMPL(FsmArcEdge, V3GraphEdge)
     bool m_isReset = false;  // Arc originates from the synthetic reset source.
-    bool m_isCond = false;   // Arc came from a conditional next-state split.
+    bool m_isCond = false;  // Arc came from a conditional next-state split.
     bool m_isDefault = false;  // Arc represents a case default source.
     FileLine* m_flp = nullptr;  // Source location for emitted coverage metadata.
 
 public:
-    FsmArcEdge(V3Graph* graphp, FsmVertex* fromp, FsmStateVertex* top, bool isReset,
-               bool isCond, bool isDefault, FileLine* flp) VL_MT_DISABLED
-        : V3GraphEdge{graphp, fromp, top, 1}
-        , m_isReset{isReset}
-        , m_isCond{isCond}
-        , m_isDefault{isDefault}
-        , m_flp{flp} {}
+    FsmArcEdge(V3Graph* graphp, FsmVertex* fromp, FsmStateVertex* top, bool isReset, bool isCond,
+               bool isDefault, FileLine* flp) VL_MT_DISABLED : V3GraphEdge{graphp, fromp, top, 1},
+                                                               m_isReset{isReset},
+                                                               m_isCond{isCond},
+                                                               m_isDefault{isDefault},
+                                                               m_flp{flp} {}
     ~FsmArcEdge() override = default;
 
     bool isReset() const { return m_isReset; }
@@ -159,18 +158,18 @@ class FsmGraph final : public V3Graph {
     AstVarScope* m_stateVarScopep = nullptr;  // Scoped state variable being tracked.
     std::vector<FsmSenDesc> m_senses;  // Saved event controls for recreated active blocks.
     FsmResetCondDesc m_resetCond;  // Saved reset predicate shape, if one exists.
-    bool m_hasResetCond = false;   // Whether the detected FSM had a reset branch.
+    bool m_hasResetCond = false;  // Whether the detected FSM had a reset branch.
     bool m_resetInclude = false;  // Whether reset arcs count toward coverage totals.
-    bool m_inclCond = false;      // Whether conditional arcs should be kept explicitly.
-    FileLine* m_flp = nullptr;    // Representative source location for declarations/arcs.
+    bool m_inclCond = false;  // Whether conditional arcs should be kept explicitly.
+    FileLine* m_flp = nullptr;  // Representative source location for declarations/arcs.
     std::unordered_map<int, FsmStateVertex*> m_stateVertices;  // Value to state-vertex map.
     FsmPseudoVertex* m_resetVertexp = nullptr;  // Synthetic ANY source for reset arcs.
     FsmPseudoVertex* m_defaultVertexp = nullptr;  // Synthetic default source for case defaults.
 
 public:
     FsmGraph() VL_MT_DISABLED
-        : m_resetVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::RESET_ANY, "ANY"}}
-        , m_defaultVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::DEFAULT_ANY, "default"}} {}
+        : m_resetVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::RESET_ANY, "ANY"}},
+          m_defaultVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::DEFAULT_ANY, "default"}} {}
 
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* scopep) { m_scopep = scopep; }
@@ -269,9 +268,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     // Reset arcs are only modeled for the simple signal form that survives to
     // this pass after earlier normalization.
-    static bool isSimpleResetCond(AstNodeExpr* condp) {
-        return VN_IS(condp, VarRef);
-    }
+    static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
 
     // Normalize the reset condition into a compact description so the lowering
     // phase can regenerate the same predicate after detection. By the time
@@ -358,9 +355,8 @@ class FsmDetectVisitor final : public VNVisitor {
     static bool validateKnownStateValue(AstNode* nodep,
                                         const std::unordered_map<int, string>& labels, int value) {
         if (labels.find(value) != labels.end()) return true;
-        nodep->v3warn(COVERIGN,
-                      "Ignoring unsupported: FSM coverage on enum state transitions "
-                      "that assign a constant not present in the declared enum");
+        nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on enum state transitions "
+                                "that assign a constant not present in the declared enum");
         return false;
     }
 
@@ -405,8 +401,8 @@ class FsmDetectVisitor final : public VNVisitor {
                     if (!validateKnownStateValue(condp->elsep(), labels, elseValue)) return true;
                     for (const int branchValue : {thenValue, elseValue}) {
                         for (const std::pair<string, int>& from : froms) {
-                            graph.addArc(from.second, branchValue, false, true,
-                                         itemp->isDefault(), assp->fileline());
+                            graph.addArc(from.second, branchValue, false, true, itemp->isDefault(),
+                                         assp->fileline());
                         }
                     }
                     return true;
@@ -425,7 +421,8 @@ class FsmDetectVisitor final : public VNVisitor {
             if (AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign)) {
                 AstVarRef* const vrefp = VN_CAST(assp->lhsp(), VarRef);
                 int toValue = 0;
-                if (vrefp && vrefp->varScopep() == stateVscp && exprConstValue(assp->rhsp(), toValue)) {
+                if (vrefp && vrefp->varScopep() == stateVscp
+                    && exprConstValue(assp->rhsp(), toValue)) {
                     if (!validateKnownStateValue(assp, labels, toValue)) continue;
                     graph.addArc(0, toValue, true, false, false, assp->fileline());
                 }
@@ -450,12 +447,12 @@ class FsmDetectVisitor final : public VNVisitor {
         std::unordered_map<int, string> labels;
         if (enump) {
             if (stateVscp->width() < 1 || stateVscp->width() > 32) {
-                casep->v3warn(COVERIGN,
-                              "Ignoring unsupported: FSM coverage on enum-typed state "
-                              "variables wider than 32 bits");
+                casep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on enum-typed state "
+                                        "variables wider than 32 bits");
                 return;
             }
-            for (AstEnumItem* itemp = enump->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* itemp = enump->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const int value = constp->toSInt();
                 states.emplace_back(itemp->name(), value);
@@ -491,7 +488,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 entry.graphp->addStateVertex(state.first, state.second);
             }
         }
-        for (AstCaseItem* itemp = casep->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* itemp = casep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             emitCaseItemArcs(*entry.graphp, itemp, stateVscp, labels, entry.graphp->inclCond());
         }
     }
@@ -508,12 +506,13 @@ class FsmDetectVisitor final : public VNVisitor {
         AstIf* const firstIfp = VN_CAST(stmtsp, If);
         if (firstIfp) {
             if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
-                candidates.emplace_back(casep, isSimpleResetCond(firstIfp->condp()) ? firstIfp->condp()
-                                                                                     : nullptr);
+                candidates.emplace_back(
+                    casep, isSimpleResetCond(firstIfp->condp()) ? firstIfp->condp() : nullptr);
             }
         }
         for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
-            if (AstCase* const casep = VN_CAST(nodep, Case)) candidates.emplace_back(casep, nullptr);
+            if (AstCase* const casep = VN_CAST(nodep, Case))
+                candidates.emplace_back(casep, nullptr);
         }
         if (candidates.empty()) return;
 
@@ -531,11 +530,10 @@ class FsmDetectVisitor final : public VNVisitor {
                                    "the same always block. Only the first candidate will be "
                                    "instrumented.");
             } else {
-                cand.first->v3warn(
-                    COVERIGN,
-                    "Ignoring unsupported: FSM coverage on multiple supported case "
-                    "statements found in the same always block. Only the first "
-                    "candidate will be instrumented.");
+                cand.first->v3warn(COVERIGN,
+                                   "Ignoring unsupported: FSM coverage on multiple supported case "
+                                   "statements found in the same always block. Only the first "
+                                   "candidate will be instrumented.");
             }
         }
 
@@ -608,13 +606,12 @@ class FsmLowerVisitor final {
 
     // Rebuild the original event control from the saved sense description so
     // post-state coverage sampling runs on the same triggering edges.
-    static AstSenTree* buildSenTree(
-        FileLine* flp, const std::vector<FsmSenDesc>& senses) {
+    static AstSenTree* buildSenTree(FileLine* flp, const std::vector<FsmSenDesc>& senses) {
         AstSenTree* const sentreep = new AstSenTree{flp, nullptr};
         for (const FsmSenDesc& sense : senses) {
-            AstSenItem* const senItemp = new AstSenItem{
-                flp, VEdgeType{sense.edgeType},
-                new AstVarRef{flp, sense.varScopep, VAccess::READ}};
+            AstSenItem* const senItemp
+                = new AstSenItem{flp, VEdgeType{sense.edgeType},
+                                 new AstVarRef{flp, sense.varScopep, VAccess::READ}};
             sentreep->addSensesp(senItemp);
         }
         return sentreep;
@@ -629,9 +626,8 @@ class FsmLowerVisitor final {
         AstVarScope* const stateVscp = graph.stateVarScopep();
         FileLine* const flp = graph.fileline();
         AstNodeModule* const modp = scopep->modp();
-        AstNodeDType* const prevDTypep
-            = scopep->findLogicDType(stateVscp->width(), stateVscp->width(),
-                                     stateVscp->dtypep()->numeric());
+        AstNodeDType* const prevDTypep = scopep->findLogicDType(
+            stateVscp->width(), stateVscp->width(), stateVscp->dtypep()->numeric());
         AstVarScope* const prevVscp
             = scopep->createTemp("__Vfsmcov_prev__" + stateVscp->varp()->shortName(), prevDTypep);
         // The saved previous-state temp crosses the scheduler's pre/post split
@@ -667,10 +663,15 @@ class FsmLowerVisitor final {
             const FsmStateVertex* const statep = vtx.as<FsmStateVertex>();
             // State coverage fires when the FSM enters a state from any other
             // value, so repeated self-holds do not count as new entries.
-            AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
-                flp, "v_fsm_state/" + modp->prettyName(),
-                graph.stateVarName() + "::" + statep->label(), "", 0, graph.stateVarName(), "",
-                statep->label()};
+            AstCoverOtherDecl* const declp
+                = new AstCoverOtherDecl{flp,
+                                        "v_fsm_state/" + modp->prettyName(),
+                                        graph.stateVarName() + "::" + statep->label(),
+                                        "",
+                                        0,
+                                        graph.stateVarName(),
+                                        "",
+                                        statep->label()};
             declp->hier(scopep->prettyName());
             modp->addStmtsp(declp);
             AstNodeExpr* const guardp
@@ -691,21 +692,23 @@ class FsmLowerVisitor final {
                 // reset and synthetic-default sources, so reports match the
                 // reviewer-visible graph dump and the user-visible annotation.
                 const string resetTag
-                    = arcp->isReset() ? (graph.resetInclude() ? "[reset_include]" : "[reset]") : "";
-                const string fsmTag = arcp->isReset()   ? (graph.resetInclude() ? "reset_include"
-                                                        : "reset")
-                                     : arcp->isDefault() ? "default"
-                                                         : "";
-                AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
-                    flp, "v_fsm_arc/" + modp->prettyName(),
-                    graph.stateVarName() + "::" + fromVertexp->label() + "->" + toStatep->label()
-                        + resetTag,
-                    "",
-                    0,
-                    graph.stateVarName(),
-                    fromVertexp->label(),
-                    toStatep->label(),
-                    fsmTag};
+                    = arcp->isReset() ? (graph.resetInclude() ? "[reset_include]" : "[reset]")
+                                      : "";
+                const string fsmTag = arcp->isReset()
+                                          ? (graph.resetInclude() ? "reset_include" : "reset")
+                                      : arcp->isDefault() ? "default"
+                                                          : "";
+                AstCoverOtherDecl* const declp
+                    = new AstCoverOtherDecl{flp,
+                                            "v_fsm_arc/" + modp->prettyName(),
+                                            graph.stateVarName() + "::" + fromVertexp->label()
+                                                + "->" + toStatep->label() + resetTag,
+                                            "",
+                                            0,
+                                            graph.stateVarName(),
+                                            fromVertexp->label(),
+                                            toStatep->label(),
+                                            fsmTag};
                 declp->hier(scopep->prettyName());
                 modp->addStmtsp(declp);
                 AstNodeExpr* guardp = nullptr;
@@ -733,12 +736,12 @@ class FsmLowerVisitor final {
                                      new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
                                                makeStateConst(flp, stateVscp, toStatep->value())});
                 } else {
-                    guardp = andExpr(
-                        flp,
-                        new AstEq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
-                                  makeStateConst(flp, prevVscp, fromVertexp->value())},
-                        new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
-                                  makeStateConst(flp, stateVscp, toStatep->value())});
+                    guardp
+                        = andExpr(flp,
+                                  new AstEq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
+                                            makeStateConst(flp, prevVscp, fromVertexp->value())},
+                                  new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
+                                            makeStateConst(flp, stateVscp, toStatep->value())});
                 }
                 covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
             }
