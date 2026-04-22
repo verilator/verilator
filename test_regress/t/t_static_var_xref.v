@@ -10,12 +10,12 @@ package test_pkg;
     virtual function void visit();
       static int compiled_regex;
       compiled_regex = 1;
-      endfunction
+    endfunction
 
-      function void end_v();
-        visit.compiled_regex = 0;
-      endfunction
-    endclass
+    function void end_v();
+      visit.compiled_regex = 0;
+    endfunction
+  endclass
 endpackage
 
 module t;
@@ -24,4 +24,3 @@ module t;
     $finish;
   end
 endmodule
-
