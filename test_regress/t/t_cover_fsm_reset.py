@@ -26,13 +26,7 @@ test.run(cmd=[
          tee=False,
          verilator_run=True)
 
-test.file_grep(test.obj_dir + "/summary.log", r"Coverage Summary:")
-test.file_grep(test.obj_dir + "/summary.log", r"line")
-test.file_grep(test.obj_dir + "/summary.log", r"toggle")
-test.file_grep(test.obj_dir + "/summary.log", r"branch")
-test.file_grep(test.obj_dir + "/summary.log", r"expr")
-test.file_grep(test.obj_dir + "/summary.log", r"fsm_state")
-test.file_grep(test.obj_dir + "/summary.log", r"fsm_arc")
+test.files_identical(test.obj_dir + "/summary.log", "t/" + test.name + "_summary.out")
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
