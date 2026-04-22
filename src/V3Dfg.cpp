@@ -97,6 +97,11 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
+        case VDfgType::Rep: {
+            DfgRep* const cp = new DfgRep{*clonep, vtx.fileline(), vtx.dtype()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
         case VDfgType::UnitArray: {
             DfgUnitArray* const cp = new DfgUnitArray{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
@@ -712,12 +717,10 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         return;
     }
 
-    case VDfgType::Replicate: {
-        // TODO: model DfgReplicate without an explicit 'countp' which is always constant
-        const DfgReplicate& v = *as<DfgReplicate>();
+    case VDfgType::Rep: {
+        const DfgRep& v = *as<DfgRep>();
         CHECK(v.isPacked(), "Should be Packed type");
         CHECK(v.srcp()->isPacked(), "'srcp' should be same type");
-        CHECK(v.countp()->isPacked(), "'countp' should be Packed type");
         CHECK(v.size() % v.srcp()->size() == 0, "Not a replicate");
         return;
     }

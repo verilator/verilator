@@ -3695,7 +3695,6 @@ class AstReplicate final : public AstNodeBiop {
     // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
     // @astgen alias op1 := srcp
     // @astgen alias op2 := countp
-    // @astgen makeDfgVertex
 public:
     AstReplicate(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Replicate(fl, lhsp, rhsp) {
