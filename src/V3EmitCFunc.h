@@ -826,6 +826,14 @@ public:
         putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(", ");
         putsQuoted(nodep->linescov());
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
         puts(");\n");
     }
     void visit(AstCoverToggleDecl* nodep) override {

@@ -2,6 +2,7 @@ ABCp
 Aadi
 Accellera
 Aditya
+allocator
 Affe
 Aleksander
 Alexandre
@@ -333,6 +334,7 @@ Muhlestein
 Multithreaded
 Multithreading
 Mykyta
+NFA
 NOUNOPTFLAT
 NaN
 Nalbantis
@@ -361,6 +363,7 @@ Olofsson
 Ondrej
 Oron
 Oyvind
+output
 PLI
 Pakanati
 Palaniappan
@@ -401,8 +404,10 @@ Ranjan
 Rapp
 Redhat
 Reitan
+reentrant
 Renga
 Requin
+reusability
 Riaz
 Rodas
 Rodionov
@@ -837,6 +842,7 @@ gotFinish
 goto
 gprof
 gtkwave
+hdl
 hdr
 hdzhangdoc
 hh
@@ -1211,6 +1217,7 @@ upcasting
 urandom
 uselib
 utimes
+uvm
 uwire
 uwires
 valgrind
@@ -1257,6 +1264,7 @@ vpm
 vpp
 warmup
 wavealloca
+wavediff
 waveforms
 whitespace
 widthed

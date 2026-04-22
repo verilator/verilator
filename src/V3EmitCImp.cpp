@@ -180,7 +180,9 @@ class EmitCImp final : public EmitCFunc {
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp) {\n");
+                 "linescovp,\n");
+            puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
+                 "fsmTagp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -198,10 +200,14 @@ class EmitCImp final : public EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            puts("\"hier\",fullhier,");
+            puts("\"hier\",fullhier.c_str(),");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
-            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
+            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp,");
+            puts("  (fsmVarp[0] ? \"fsm_var\" : \"\"), fsmVarp,");
+            puts("  (fsmFromp[0] ? \"fsm_from\" : \"\"), fsmFromp,");
+            puts("  (fsmTop[0] ? \"fsm_to\" : \"\"), fsmTop,");
+            puts("  (fsmTagp[0] ? \"fsm_tag\" : \"\"), fsmTagp);\n");
             puts("}\n");
         }
         if (v3Global.opt.coverageToggle()) {
@@ -237,7 +243,7 @@ class EmitCImp final : public EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            puts("\"hier\",fullhier,");
+            puts("\"hier\",fullhier.c_str(),");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentWithIndex.c_str(),");
             puts("  \"\", \"\");\n");  //  linescov argument, but in toggle coverage it is always

@@ -74,10 +74,8 @@ def run(test):
 
     test.trace_identical(test.trace_filename, test.golden_filename)
 
-    if fmt == "fst":
-        _check_empty_scopes_vcd(test, test.trace_filename + ".vcd")
-    elif fmt == "vcd":
-        _check_empty_scopes_vcd(test, test.trace_filename)
+    if fmt in ("fst", "vcd"):
+        _check_empty_scopes_vcd(test, test.golden_filename)
     elif fmt == "saif":
         _check_empty_scopes_saif(test, test.trace_filename)
 

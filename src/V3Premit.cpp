@@ -263,6 +263,10 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    void visit(AstCMethodHard* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstCvtArrayToPacked* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);

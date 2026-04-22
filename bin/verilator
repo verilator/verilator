@@ -358,6 +358,7 @@ detailed descriptions of these arguments.
     --coverage                  Enable all coverage
     --coverage-expr             Enable expression coverage
     --coverage-expr-max <value>     Maximum permutations allowed for an expression
+    --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
@@ -379,6 +380,7 @@ detailed descriptions of these arguments.
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
+    --dump-dfg-patterns         Enable dumping Dfg pattern statistics
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files

@@ -329,8 +329,12 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
+        if (nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()) {
+            if (m_modp && !m_modp->dead() && !m_modp->verilatorLib())
+                m_modp->user1Inc();  // Keep container
+        } else {
             m_tasksp.push(nodep);
+        }
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
