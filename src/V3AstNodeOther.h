@@ -656,7 +656,8 @@ class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
-    // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
+    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
+    // via nextp()
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
@@ -680,7 +681,7 @@ public:
         , m_trace{true} {
         addPinsp(pinsp);
         addParamsp(paramsp);
-        this->rangep(rangep);
+        addRangep(rangep);
     }
     ASTGEN_MEMBERS_AstCell;
     // No cloneRelink, we presume cloneee's want the same module linkages

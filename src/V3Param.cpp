@@ -475,6 +475,12 @@ class ParamProcessor final {
         }
         return nullptr;
     }
+    // Peel all unpacked-array layers to reach the innermost subDTypep.
+    // Used for multi-dim iface arrays where port dtype is nested UnpackArrayDType.
+    static AstNodeDType* arraySubDTypeDeepp(AstNodeDType* nodep) {
+        while (AstNodeDType* const subp = arraySubDTypep(nodep)) nodep = subp;
+        return nodep;
+    }
     static bool isString(AstNodeDType* nodep) {
         if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToNonRefp(), BasicDType))
             return basicp->isString();
@@ -1613,37 +1619,31 @@ class ParamProcessor final {
             const AstVar* const modvarp = pinp->modVarp();
             if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
             if (modvarp->isIfaceRef()) {
-                AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
-                if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
-                    portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
-                }
-                AstIfaceRefDType* pinIrefp = nullptr;
+                // arraySubDTypeDeepp returns input unchanged if not an array.
+                AstIfaceRefDType* const portIrefp
+                    = VN_CAST(arraySubDTypeDeepp(modvarp->subDTypep()), IfaceRefDType);
                 const AstNode* const exprp = pinp->exprp();
-                const AstVar* const varp = (exprp && VN_IS(exprp, NodeVarRef))
-                                               ? VN_AS(exprp, NodeVarRef)->varp()
-                                               : nullptr;
-                if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
-                    pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
-                           && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
-                } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                           && arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
-                           && VN_CAST(
-                               arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                               IfaceRefDType)) {
-                    pinIrefp
-                        = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                                IfaceRefDType);
-                } else if (VN_IS(exprp, CellArrayRef)) {
-                    // Interface array element selection (e.g., l1(l2.l1[0]) for nested iface
-                    // array) The CellArrayRef is not yet fully linked to an interface type. Skip
-                    // interface cleanup for this pin - V3LinkDot will resolve this later. Just
-                    // continue to the next pin without error.
+                if (VN_IS(exprp, CellArrayRef)) {
+                    // CellArrayRef not yet linked; V3LinkDot resolves this pin later.
                     UINFO(9, "Skipping interface cleanup for CellArrayRef pin: " << pinp);
                     continue;
+                }
+                AstIfaceRefDType* pinIrefp = nullptr;
+                // Pin is a VarRef to a var of (possibly arrayed) iface type.
+                if (const AstNodeVarRef* const vrp = VN_CAST(exprp, NodeVarRef)) {
+                    if (vrp->varp()) {
+                        pinIrefp
+                            = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()), IfaceRefDType);
+                    }
+                }
+                // Pin's op1p is a VarRef (e.g. SelBit/ArraySel into an iface array).
+                if (!pinIrefp && exprp) {
+                    if (const AstVarRef* const vrp = VN_CAST(exprp->op1p(), VarRef)) {
+                        if (vrp->varp()) {
+                            pinIrefp = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()),
+                                               IfaceRefDType);
+                        }
+                    }
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp);
@@ -2837,32 +2837,45 @@ class ParamVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCellArrayRef* nodep) override {
-        V3Const::constifyParamsEdit(nodep->selp());
-        if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
-            const string index = AstNode::encodeNumber(constp->toSInt());
-            // For nested interface array ports, the node name may have a __Viftop suffix
-            // that doesn't exist in the original unlinked text. Try without the suffix.
-            const string viftopSuffix = "__Viftop";
-            const string baseName
-                = VString::endsWith(nodep->name(), viftopSuffix)
-                      ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
-                      : nodep->name();
-            const string replacestr = baseName + "__BRA__??__KET__";
-            const size_t pos = m_unlinkedTxt.find(replacestr);
-            // For interface port array element selections (e.g., l1(l2.l1[0])),
-            // the AstCellArrayRef may be visited outside of an AstUnlinkedRef context.
-            // In such cases, m_unlinkedTxt won't contain the expected pattern.
-            // Simply skip the replacement - the cell array ref will be resolved later.
-            if (pos == string::npos) {
-                UINFO(9, "Skipping unlinked text replacement for " << nodep);
+        // Multi-dim iface arrays chain multiple selps via nextp(); constify each in place.
+        for (AstNode *s = nodep->selp(), *nxt; s; s = nxt) {
+            nxt = s->nextp();  // cache before constifyParamsEdit replaces s
+            V3Const::constifyParamsEdit(s);
+        }
+        std::vector<int> indices;
+        for (AstNode* s = nodep->selp(); s; s = s->nextp()) {
+            const AstConst* const constp = VN_CAST(s, Const);
+            if (!constp) {
+                nodep->v3error("Could not expand constant selection inside dotted reference: "
+                               << s->prettyNameQ());
                 return;
             }
-            m_unlinkedTxt.replace(pos, replacestr.length(),
-                                  baseName + "__BRA__" + index + "__KET__");
-        } else {
-            nodep->v3error("Could not expand constant selection inside dotted reference: "
-                           << nodep->selp()->prettyNameQ());
+            indices.push_back(constp->toSInt());
+        }
+        // Nested iface-array ports may carry a __Viftop suffix that's not in m_unlinkedTxt.
+        const string viftopSuffix = "__Viftop";
+        const string baseName
+            = VString::endsWith(nodep->name(), viftopSuffix)
+                  ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
+                  : nodep->name();
+        const string placeholder = "__BRA__??__KET__";
+        size_t pos = m_unlinkedTxt.find(baseName + placeholder);
+        // An AstCellArrayRef for an iface-array pin expr (e.g. l1(l2.l1[0])) is visited
+        // outside AstUnlinkedRef, so m_unlinkedTxt has no placeholder; V3LinkDot resolves later.
+        if (pos == string::npos) {
+            UINFO(9, "Skipping unlinked text replacement for " << nodep);
             return;
+        }
+        pos += baseName.length();
+        for (int idx : indices) {
+            const string replacement = "__BRA__" + AstNode::encodeNumber(idx) + "__KET__";
+            if (m_unlinkedTxt.compare(pos, placeholder.length(), placeholder) != 0) {
+                nodep->v3fatalSrc(  // LCOV_EXCL_LINE
+                    "Expected placeholder at position in multi-dim iface dotted reference");
+                return;
+            }
+            m_unlinkedTxt.replace(pos, placeholder.length(), replacement);
+            pos += replacement.length();
         }
     }
 

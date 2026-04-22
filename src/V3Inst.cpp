@@ -178,9 +178,8 @@ class InstDeVisitor final : public VNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    // Range for arrayed instantiations, nullptr for normal instantiations
-    const AstRange* m_cellRangep = nullptr;
-    int m_instSelNum = 0;  // Current instantiation count 0..N-1
+    const AstRange* m_cellRangep = nullptr;  // Outer range; nullptr for non-arrayed cells
+    int m_instSelNum = 0;  // Row-major flat index for 1D-compat pin expansion
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
     // VISITORS
@@ -233,52 +232,72 @@ private:
         m_deModVars.main(nodep->modp());
         //
         if (nodep->rangep()) {
-            m_cellRangep = nodep->rangep();
+            // Collect the full range chain (outer first).
+            std::vector<const AstRange*> rangesp;
+            for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
+                rangesp.push_back(rp);
+            }
+            m_cellRangep = rangesp.front();
+            const int ndim = static_cast<int>(rangesp.size());
+            std::vector<int> sizes(ndim);
+            int totalElems = 1;
+            for (int d = 0; d < ndim; ++d) {
+                sizes[d] = rangesp[d]->elementsConst();
+                totalElems *= sizes[d];
+            }
 
             AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
-            // cppcheck-suppress constVariablePointer
-            AstNodeDType* const ifaceVarDtp
-                = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
-            const bool isIface
-                = ifaceVarp && VN_IS(ifaceVarDtp, UnpackArrayDType)
-                  && VN_IS(VN_AS(ifaceVarDtp, UnpackArrayDType)->subDTypep()->skipRefp(),
-                           IfaceRefDType)
-                  && !VN_AS(VN_AS(ifaceVarDtp, UnpackArrayDType)->subDTypep()->skipRefp(),
-                            IfaceRefDType)
-                          ->isVirtual();
+            // Peel all UnpackArrayDType layers to reach the bottom IfaceRefDType.
+            AstIfaceRefDType* origIfaceRefp = nullptr;
+            AstUnpackArrayDType* innermostArrp = nullptr;
+            for (AstNodeDType* dp = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr; dp;) {
+                if (AstUnpackArrayDType* const arrp = VN_CAST(dp, UnpackArrayDType)) {
+                    innermostArrp = arrp;
+                    dp = arrp->subDTypep()->skipRefp();
+                } else {
+                    origIfaceRefp = VN_CAST(dp, IfaceRefDType);
+                    break;
+                }
+            }
+            const bool isIface = origIfaceRefp && !origIfaceRefp->isVirtual();
 
-            // Make all of the required clones
-            for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
-                m_instSelNum
-                    = m_cellRangep->ascending() ? (m_cellRangep->elementsConst() - 1 - i) : i;
-                const int instNum = m_cellRangep->loConst() + i;
+            std::vector<int> idx(ndim, 0);
+            for (int n = 0; n < totalElems; ++n) {
+                // Unflatten n into a row-major cartesian index; outer dim most significant.
+                int rem = n;
+                for (int d = ndim - 1; d >= 0; --d) {
+                    idx[d] = rem % sizes[d];
+                    rem /= sizes[d];
+                }
+                // Flat select number for 1D-compat pin expansion; ascending dims invert.
+                // Also build the "__BRA__i__KET__..." suffix (encodeNumber for negative idx).
+                int flatSel = 0;
+                string suffix;
+                for (int d = 0; d < ndim; ++d) {
+                    const int sel = rangesp[d]->ascending() ? (sizes[d] - 1 - idx[d]) : idx[d];
+                    flatSel = flatSel * sizes[d] + sel;
+                    suffix += "__BRA__" + AstNode::encodeNumber(rangesp[d]->loConst() + idx[d])
+                              + "__KET__";
+                }
+                m_instSelNum = flatSel;
 
                 AstCell* const newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
-                // Remove ranging and fix name
-                newp->rangep()->unlinkFrBack()->deleteTree();
-                // Somewhat illogically, we need to rename the original name of the cell too.
-                // as that is the name users expect for dotting
-                // The spec says we add [x], but that won't work in C...
-                newp->name(newp->name() + "__BRA__" + cvtToStr(instNum) + "__KET__");
-                newp->origName(newp->origName() + "__BRA__" + cvtToStr(instNum) + "__KET__");
+                while (newp->rangep()) newp->rangep()->unlinkFrBack()->deleteTree();
+                newp->name(newp->name() + suffix);
+                newp->origName(newp->origName() + suffix);
                 UINFO(8, "    CELL loop  " << newp);
 
-                // If this AstCell is actually an interface instantiation, also clone the IfaceRef
-                // within the same parent module as the cell
+                // Interface instantiation: also clone the IfaceRef in the parent module.
                 if (isIface) {
-                    AstUnpackArrayDType* const arrdtype = VN_AS(ifaceVarDtp, UnpackArrayDType);
-                    AstIfaceRefDType* const origIfaceRefp
-                        = VN_AS(arrdtype->subDTypep()->skipRefp(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
                     AstVar* const varNewp = ifaceVarp->cloneTree(false);
                     AstIfaceRefDType* const ifaceRefp = origIfaceRefp->cloneTree(false);
-                    arrdtype->addNextHere(ifaceRefp);
+                    innermostArrp->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(newp);
                     ifaceRefp->cellName(newp->name());
-                    varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(instNum) + "__KET__");
-                    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(instNum)
-                                      + "__KET__");
+                    varNewp->name(varNewp->name() + suffix);
+                    varNewp->origName(varNewp->origName() + suffix);
                     varNewp->dtypep(ifaceRefp);
                     newp->addNextHere(varNewp);
                     if (debug() == 9) {
@@ -389,6 +408,105 @@ private:
             }
         } else {
             AstVar* const pinVarp = nodep->modVarp();
+            // Multi-dim whole-array iface pin fanout: cartesian-product the port's
+            // nested UnpackArrayDType layers and emit one pin + per-element var per cell.
+            // For 1-dim falls through to the original code below.
+            std::vector<const AstUnpackArrayDType*> portArrs;
+            for (AstNodeDType* d = pinVarp->dtypep()->skipRefp(); d;) {
+                if (const AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                    portArrs.push_back(arrp);
+                    d = arrp->subDTypep()->skipRefp();
+                } else {
+                    break;
+                }
+            }
+            if (portArrs.size() >= 2) {
+                AstIfaceRefDType* const portIrp
+                    = VN_CAST(portArrs.back()->subDTypep()->skipRefp(), IfaceRefDType);
+                if (!portIrp || portIrp->isVirtual()) return;
+                const int ndim = static_cast<int>(portArrs.size());
+                std::vector<int> sizes(ndim);
+                int totalElems = 1;
+                for (int d = 0; d < ndim; ++d) {
+                    sizes[d] = portArrs[d]->elementsConst();
+                    totalElems *= sizes[d];
+                }
+                // V3Width should have already rejected non-VarRef and rank-mismatch pins;
+                // these are defensive internal-invariant guards.
+                const AstVarRef* const varrefp = VN_CAST(nodep->exprp(), VarRef);
+                UASSERT_OBJ(varrefp, nodep->exprp(), "Unexpected connection to arrayed port");
+                std::vector<const AstUnpackArrayDType*> exprArrs;
+                for (AstNodeDType* d = varrefp->dtypep()->skipRefp(); d;) {
+                    if (const AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
+                        exprArrs.push_back(arrp);
+                        d = arrp->subDTypep()->skipRefp();
+                    } else {
+                        break;
+                    }
+                }
+                UASSERT_OBJ(exprArrs.size() == static_cast<size_t>(ndim), nodep->exprp(),
+                            "Multi-dim iface pin expression rank does not match port");
+                AstNode* prevp = nullptr;
+                AstNode* prevPinp = nullptr;
+                std::vector<int> idx(ndim, 0);
+                for (int n = 0; n < totalElems; ++n) {
+                    int rem = n;
+                    for (int d = ndim - 1; d >= 0; --d) {
+                        idx[d] = rem % sizes[d];
+                        rem /= sizes[d];
+                    }
+                    string portSuffix;
+                    string exprSuffix;
+                    for (int d = 0; d < ndim; ++d) {
+                        portSuffix += "__BRA__" + AstNode::encodeNumber(portArrs[d]->lo() + idx[d])
+                                      + "__KET__";
+                        exprSuffix += "__BRA__" + AstNode::encodeNumber(exprArrs[d]->lo() + idx[d])
+                                      + "__KET__";
+                    }
+                    const string varNewName = pinVarp->name() + portSuffix;
+                    AstVar* varNewp = nullptr;
+                    if (!pinVarp->backp()) {
+                        varNewp = m_deModVars.find(varNewName);
+                    } else {
+                        portIrp->cellp(nullptr);
+                        varNewp = pinVarp->cloneTree(false);
+                        varNewp->name(varNewName);
+                        varNewp->origName(varNewp->origName() + portSuffix);
+                        varNewp->dtypep(portIrp);
+                        m_deModVars.insert(varNewp);
+                        if (!prevp) {
+                            prevp = varNewp;
+                        } else {
+                            prevp->addNextHere(varNewp);
+                        }
+                    }
+                    if (!varNewp) {
+                        if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
+                        nodep->v3fatalSrc("Module dearray failed for "
+                                          << AstNode::prettyNameQ(varNewName));
+                    }
+                    AstPin* const newp = nodep->cloneTree(false);
+                    newp->modVarp(varNewp);
+                    newp->name(newp->name() + portSuffix);
+                    AstVarXRef* const newVarXRefp = new AstVarXRef{
+                        nodep->fileline(), varrefp->name() + exprSuffix, "", VAccess::WRITE};
+                    newVarXRefp->varp(newp->modVarp());
+                    newp->exprp()->unlinkFrBack()->deleteTree();
+                    newp->exprp(newVarXRefp);
+                    if (!prevPinp) {
+                        prevPinp = newp;
+                    } else {
+                        prevPinp->addNextHere(newp);
+                    }
+                }
+                if (prevp) {
+                    pinVarp->replaceWith(prevp);
+                    pushDeletep(pinVarp);
+                }
+                nodep->replaceWith(prevPinp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             const AstUnpackArrayDType* const pinArrp
                 = VN_CAST(pinVarp->dtypep()->skipRefp(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
@@ -472,28 +590,50 @@ private:
         }
     }
     void visit(AstArraySel* nodep) override {
-        if (const AstUnpackArrayDType* const arrp
-            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
-            if (!VN_IS(arrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
-            if (VN_AS(arrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual()) return;
-            V3Const::constifyParamsEdit(nodep->bitp());
-            const AstConst* const constp = VN_CAST(nodep->bitp(), Const);
+        // If a parent is also an ArraySel into the same iface array, let it handle the chain.
+        if (VN_IS(nodep->backp(), ArraySel) && nodep->backp()->op1p() == nodep) return;
+        // Collect nested ArraySels top-down (nodep is outermost in AST, innermost dim index).
+        std::vector<AstArraySel*> sels;
+        AstNode* curp = nodep;
+        while (AstArraySel* const asp = VN_CAST(curp, ArraySel)) {
+            sels.push_back(asp);
+            curp = asp->fromp();
+        }
+        const AstVarRef* const varrefp = VN_CAST(curp, VarRef);
+        if (!varrefp) return;
+        // Confirm base is a (possibly nested) UnpackArray wrapping an IfaceRefDType.
+        std::vector<AstUnpackArrayDType*> arrs;  // outer dim first
+        AstNodeDType* dtp = varrefp->dtypep()->skipRefp();
+        while (AstUnpackArrayDType* const ap = VN_CAST(dtp, UnpackArrayDType)) {
+            arrs.push_back(ap);
+            dtp = ap->subDTypep()->skipRefp();
+        }
+        if (arrs.empty() || sels.size() != arrs.size()) return;
+        AstIfaceRefDType* const irp = VN_CAST(dtp, IfaceRefDType);
+        if (!irp || irp->isVirtual()) return;
+        // Constify bitps and collect indices in outer-dim-first order (sels is inner-first).
+        std::vector<int> indices(sels.size());
+        for (size_t i = 0; i < sels.size(); ++i) {
+            AstArraySel* const asp = sels[i];
+            V3Const::constifyParamsEdit(asp->bitp());
+            const AstConst* const constp = VN_CAST(asp->bitp(), Const);
             if (!constp) {
-                nodep->bitp()->v3warn(E_UNSUPPORTED,
-                                      "Non-constant index in RHS interface array selection");
+                asp->bitp()->v3warn(E_UNSUPPORTED,
+                                    "Non-constant index in RHS interface array selection");
                 return;
             }
-            const string index = AstNode::encodeNumber(constp->toSInt() + arrp->lo());
-            const AstVarRef* const varrefp = VN_CAST(nodep->fromp(), VarRef);
-            UASSERT_OBJ(varrefp, nodep, "No interface varref under array");
-            AstVarXRef* const newp = new AstVarXRef{
-                nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
-                VAccess::READ};
-            newp->dtypep(arrp->subDTypep());
-            newp->classOrPackagep(varrefp->classOrPackagep());
-            nodep->addNextHere(newp);
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            indices[sels.size() - 1 - i] = constp->toSInt();
         }
+        string indexStr;
+        for (size_t i = 0; i < indices.size(); ++i) {
+            indexStr += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
+        }
+        AstVarXRef* const newp
+            = new AstVarXRef{nodep->fileline(), varrefp->name() + indexStr, "", VAccess::READ};
+        newp->dtypep(irp);
+        newp->classOrPackagep(varrefp->classOrPackagep());
+        nodep->addNextHere(newp);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstNodeAssign* nodep) override {
         if (AstSliceSel* const arrslicep = VN_CAST(nodep->rhsp(), SliceSel)) {
