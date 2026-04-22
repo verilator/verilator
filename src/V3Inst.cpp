@@ -431,11 +431,10 @@ private:
                     sizes[d] = portArrs[d]->elementsConst();
                     totalElems *= sizes[d];
                 }
+                // V3Width should have already rejected non-VarRef and rank-mismatch pins;
+                // these are defensive internal-invariant guards.
                 const AstVarRef* const varrefp = VN_CAST(nodep->exprp(), VarRef);
-                if (!varrefp) {
-                    nodep->exprp()->v3error("Unexpected connection to arrayed port");
-                    return;
-                }
+                UASSERT_OBJ(varrefp, nodep->exprp(), "Unexpected connection to arrayed port");
                 std::vector<const AstUnpackArrayDType*> exprArrs;
                 for (AstNodeDType* d = varrefp->dtypep()->skipRefp(); d;) {
                     if (const AstUnpackArrayDType* const arrp = VN_CAST(d, UnpackArrayDType)) {
@@ -445,11 +444,8 @@ private:
                         break;
                     }
                 }
-                if (exprArrs.size() != static_cast<size_t>(ndim)) {
-                    nodep->exprp()->v3error(
-                        "Multi-dim iface pin expression rank does not match port");
-                    return;
-                }
+                UASSERT_OBJ(exprArrs.size() == static_cast<size_t>(ndim), nodep->exprp(),
+                            "Multi-dim iface pin expression rank does not match port");
                 AstNode* prevp = nullptr;
                 AstNode* prevPinp = nullptr;
                 std::vector<int> idx(ndim, 0);
