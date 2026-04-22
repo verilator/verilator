@@ -553,8 +553,9 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
-                     bool inlineTask) {
+    AstVarScope* connectPort(AstVar* portp, AstArg* argp, const string& namePrefix,
+                             AstNode* beginp, bool inlineTask) {
+        AstVarScope* newvscp = nullptr;
         AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
             portp->unlinkFrBack();
@@ -575,7 +576,7 @@ class TaskVisitor final : public VNVisitor {
                                                     + std::to_string(m_unconVarNum++),
                                                 portp->dtypep()};
                 m_modp->addStmtsp(varp);
-                AstVarScope* const newvscp = new AstVarScope{pinp->fileline(), m_scopep, varp};
+                newvscp = new AstVarScope{pinp->fileline(), m_scopep, varp};
                 m_scopep->addVarsp(newvscp);
                 AstVarRef* const repp = new AstVarRef{pinp->fileline(), newvscp, VAccess::WRITE};
                 pinp->replaceWith(repp);
@@ -620,8 +621,7 @@ class TaskVisitor final : public VNVisitor {
             } else if (portp->isInout()) {
                 // UINFOTREE(9, pinp, "", "pinrsize-");
 
-                AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                newvscp = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(
@@ -642,8 +642,7 @@ class TaskVisitor final : public VNVisitor {
             } else if (portp->isWritable()) {
                 // Even if it's referencing a varref, we still make a temporary
                 // Else task(x,x,x) might produce incorrect results
-                AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                newvscp = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
@@ -654,8 +653,7 @@ class TaskVisitor final : public VNVisitor {
                 beginp->addNext(postassp);
             } else if (inlineTask && portp->isNonOutput()) {
                 // Make input variable
-                AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                newvscp = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
@@ -666,6 +664,7 @@ class TaskVisitor final : public VNVisitor {
                 beginp->addNext(preassp);
             }
         }
+        return newvscp;
     }
 
     bool hasRefArgument(AstNodeFTask* nodep) {
@@ -692,10 +691,25 @@ class TaskVisitor final : public VNVisitor {
         AstNode::user2ClearTree();
         {
             const V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
+            AstVar* prevFourstateVarp = nullptr;
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, true);
+                AstVar* varp = nullptr;
+                if (const AstVarScope* const vscp
+                    = connectPort(portp, argp, namePrefix, beginp, true)) {
+                    varp = vscp->varp();
+                }
+                UASSERT_OBJ(
+                    itr.first->isFourstateComplement() == (prevFourstateVarp != nullptr), varp,
+                    "Fourstate complements shall be predecessed with fourstate value part");
+                if (itr.first->fourstateComplementp()) {
+                    UASSERT_OBJ(varp, itr.first, "Port not needed?");
+                    prevFourstateVarp = varp;
+                } else if (prevFourstateVarp) {
+                    prevFourstateVarp->fourstateComplementp(varp);
+                    prevFourstateVarp = nullptr;
+                }
             }
         }
         UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");

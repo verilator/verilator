@@ -12,6 +12,7 @@ import vltest_bootstrap
 test.sim_time = 100000
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=["--stats"])
 

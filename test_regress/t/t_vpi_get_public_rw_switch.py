@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.vm_prefix = "Vt_vpi_get"
 test.top_filename = "t/t_vpi_get.v"
 test.pli_filename = "t/t_vpi_get.cpp"

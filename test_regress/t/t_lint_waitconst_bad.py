@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_timing_wait1.v"
 
 test.lint(expect_filename=test.golden_filename, fails=True)

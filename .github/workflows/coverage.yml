@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [coverage-vlt-, coverage-vltmt-]
+        test: [coverage-vlt-, coverage-vltmt-, coverage-vlt4-, coverage-vltmt4-]
         num: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
           - {test: coverage-dist, num: ''}

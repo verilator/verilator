@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_opt_inline_cfuncs.v"
 
 test.compile(verilator_flags2=["--stats", "--binary", "-fno-inline-cfuncs"])

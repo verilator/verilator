@@ -395,7 +395,7 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullFourstateQData(uint32_t* oldp, QData newval, QData newvalXZ, int bits);
     void fullWData(uint32_t* oldp, WDataInP newval, int bits);
-    void fullFourstateWData(uint32_t* oldp, WDataInP newval, WDataInP newvalXZ, int bits);
+    void fullFourstateWData(uint32_t* oldp, WDataInP newval, int bits);
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
@@ -460,12 +460,10 @@ public:
             }
         }
     }
-    VL_ATTR_ALWINLINE void chgFourstateWData(uint32_t* oldp, const WDataInP newval,
-                                             const WDataInP newvalXZ, int bits) {
+    VL_ATTR_ALWINLINE void chgFourstateWData(uint32_t* oldp, const WDataInP newval, int bits) {
         for (int i = 0; i < VL_WORDS_I(bits); ++i) {
-            const int oldIdx = i << 1;
-            if (VL_UNLIKELY((oldp[oldIdx] ^ newval[i]) | (oldp[oldIdx | 1] ^ newvalXZ[i]))) {
-                fullFourstateWData(oldp, newval, newvalXZ, bits);
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullFourstateWData(oldp, newval, bits);
                 return;
             }
         }

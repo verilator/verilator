@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Keep this paired with t_cover_hier_noinline.py: both tests use the same
 # source and golden so inline and no-inline coverage are checked for parity.

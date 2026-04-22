@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 
 test.lint(expect_filename=test.golden_filename, verilator_flags2=['--assert'], fails=True)
 

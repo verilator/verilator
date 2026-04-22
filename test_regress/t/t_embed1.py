@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 child_dir = test.obj_dir + "_child"
 test.mkdir_ok(child_dir)

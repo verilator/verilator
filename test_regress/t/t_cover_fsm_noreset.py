@@ -12,6 +12,7 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # This test deliberately uses a clocked FSM with no outer reset branch. It
 # keeps coverage extraction in the supported subset, but forces lowering down

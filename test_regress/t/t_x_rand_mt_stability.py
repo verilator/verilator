@@ -11,6 +11,7 @@ import vltest_bootstrap
 import glob
 
 test.scenarios("vltmt")
+test.fourstate_capable = False
 test.top_filename = "t/t_x_rand_stability.v"
 
 test.compile(verilator_flags2=["--x-initial unique"])

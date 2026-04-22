@@ -1911,13 +1911,15 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCExprUser* nodep) override {
         // Give it the size the user wants.
         if (m_vup && m_vup->prelim()) {
-            nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
+            nodep->dtypeSetBitUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
             // All arguments seek their natural sizes
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
-            nodep->dtypep(expDTypep);  // Assume user knows the rules; go with the flow
+            nodep->dtypeSetBitUnsized(
+                expDTypep->width(), expDTypep->widthMin(),
+                expDTypep->numeric());  // Assume user knows the rules; go with the flow
             if (nodep->width() > 64) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: $c can't generate wider than 64 bits");
             }
@@ -2049,7 +2051,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "FHS", nodep->fhsp(), SELF, BOTH);
             // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
             const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
+            nodep->dtypeSetBitUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCountOnes* nodep) override {
@@ -2057,7 +2059,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
             const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
+            nodep->dtypeSetBitUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCvtPackString* nodep) override {

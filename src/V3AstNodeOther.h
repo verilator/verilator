@@ -1960,11 +1960,12 @@ public:
     ASTGEN_MEMBERS_AstTypeTable;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
-    AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
+    AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd,
+                                  bool isShuffledFourstate = false);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
-                                     VSigning numeric);
+                                     VSigning numeric, bool isShuffledFourstate);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, const VNumRange& range,
-                                     int widthMin, VSigning numeric);
+                                     int widthMin, VSigning numeric, bool isShuffledFourstate);
     AstBasicDType* findCreateSameDType(AstBasicDType& node);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     AstConstraintRefDType* findConstraintRefDType(FileLine* fl);
@@ -2195,6 +2196,7 @@ class AstVar final : public AstNode {
     bool m_processQueue : 1;  // Process queue variable
     bool m_mtaskCacheLineAlign : 1;  // Start MTask affinity group on a cache line
     bool m_isFourstateComplement : 1;  // Set in four-state xz part
+    bool m_isTopLevelPort : 1;  // Whether this variable used to be a top level input
     void init() {
         m_fourstateOriginalDTypeKwd = VBasicDTypeKwd::UNKNOWN;
         m_ansi = false;
@@ -2261,6 +2263,7 @@ class AstVar final : public AstNode {
         m_processQueue = false;
         m_mtaskCacheLineAlign = false;
         m_isFourstateComplement = false;
+        m_isTopLevelPort = false;
     }
 
 public:
@@ -2364,11 +2367,21 @@ public:
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
     void fourstateComplementp(AstVar* const varp) {
-        UASSERT_OBJ(!isFourstateComplement(), this, "Varp is four-state complement i");
-        UASSERT_OBJ(!m_fourstateComplementp, this, "Varp already has a complement");
-        UASSERT_OBJ(!varp->isFourstateComplement(), varp, "It is already a four-state complement");
+        UASSERT_OBJ(!isFourstateComplement(), this,
+                    "The variable is a four-state complement itself");
+        UASSERT_OBJ(!m_fourstateComplementp, this, "Four-state complement is already added");
+        UASSERT_OBJ(!varp->isFourstateComplement(), varp,
+                    "Varp is already a four-state complement");
+        UASSERT_OBJ(!varp->fourstateComplementp(), varp,
+                    "Varp has a complement - it can't can be a complement at the same time");
         varp->m_isFourstateComplement = true;
         m_fourstateComplementp = varp;
+    }
+    AstVar* cloneWithFourstateComplementp() {
+        UASSERT_OBJ(fourstateComplementp(), this, "Variable has no complement");
+        AstVar* const newp = cloneTree(false);
+        newp->m_fourstateComplementp = fourstateComplementp()->cloneTree(false);
+        return newp;
     }
     AstVar* fourstateComplementp() const { return m_fourstateComplementp; }
     VBasicDTypeKwd fourstateOriginalDTypeKwd() const { return m_fourstateOriginalDTypeKwd; }
@@ -2376,6 +2389,13 @@ public:
         m_fourstateOriginalDTypeKwd = dtypeKwd;
     }
     bool isFourstateComplement() const { return m_isFourstateComplement; }
+    void unsetIsFourstateComplement() { m_isFourstateComplement = false; }
+    bool isFourstateConstruct() const {
+        return m_isFourstateComplement || dtypep()->isShuffledFourstate()
+               || fourstateComplementp();
+    }
+    bool isTopLevelPort() const { return m_isTopLevelPort; }
+    void setIsTopLevelPort() { m_isTopLevelPort = true; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
@@ -2585,6 +2605,7 @@ public:
                && !noCReset() && !(basicp() && basicp()->isEvent());
     }
     static AstVar* scVarRecurse(AstNode* nodep);
+    const char* broken() const override;
 };
 class AstVarScope final : public AstNode {
     // A particular scoped usage of a variable

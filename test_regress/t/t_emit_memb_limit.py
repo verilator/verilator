@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 # Very slow on vltmt, and doesn't test much of value there, so disabled
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = test.obj_dir + "/t_emit_memb_limit.v"
 
 

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_preproc.v"
 
 stdout_filename = os.path.join(test.obj_dir, test.name + "__test.vpp")

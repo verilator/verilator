@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 test.top_filename = "t/t_sched_ico_change_detect_input_assigned.v"
 

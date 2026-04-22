@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_type_dupes_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_type_dupes_common.run(test)

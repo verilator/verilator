@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_gen_missing.v"
 
 test.lint(v_flags2=['+define+T_GEN_MISSING_BAD'], fails=True, expect_filename=test.golden_filename)

@@ -136,6 +136,7 @@ class V3Global final {
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
     bool m_fourstateHandled = false;  // There should be no more fourstate values
+    bool m_fourstateShuffled = false;  // There should be no more fourstate values
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
 
     // Memory address to short string mapping (for debug)
@@ -226,7 +227,9 @@ public:
     void useCovergroup(bool flag) { m_useCovergroup = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     void setFourstateHandled() { m_fourstateHandled = true; }
-    bool fourstateHandled() const { return !opt.fourstate() || m_fourstateHandled; }
+    bool fourstateHandled() const { return m_fourstateHandled; }
+    void setFourstateShuffled() { m_fourstateShuffled = true; }
+    bool fourstateShuffled() const { return m_fourstateShuffled; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     bool hasPrintedObjects() const { return m_hasPrintedObjects; }
     void hasPrintedObjects(bool flag) { m_hasPrintedObjects = flag; }

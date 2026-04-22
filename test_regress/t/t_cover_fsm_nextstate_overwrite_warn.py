@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # A canonical `state_d = state_q` default followed by another top-level write
 # to `state_d` before `case (state_d)` is legal RTL, but it is not the narrow

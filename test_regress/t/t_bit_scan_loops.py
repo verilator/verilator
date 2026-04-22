@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # --unroll-count 0 so the loops are recognized without relying on unrolling.
 test.compile(verilator_flags2=['--stats', '--unroll-count', '0'])

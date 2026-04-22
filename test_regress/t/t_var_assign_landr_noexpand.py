@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_var_assign_landr.v"
 
 test.compile(verilator_flags2=['-fno-expand'])

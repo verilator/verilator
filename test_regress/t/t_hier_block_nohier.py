@@ -16,6 +16,7 @@ import vltest_bootstrap
 test.clean_objs()
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_hier_block.v"
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
