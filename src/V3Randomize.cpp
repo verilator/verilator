@@ -2538,9 +2538,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     // Build the runtime statement that calls RANDOMIZER_DISABLE_SOFT on the
-    // variable referenced by the given AstConstraintExpr (must be a VarRef
-    // or MemberSel).  Shared by visit(AstConstraintExpr) and the
-    // conditional-hoisting pre-pass.
+    // variable referenced by the given AstConstraintExpr.  Parser enforces
+    // constraint_primary operand (verilog.y, IEEE 1800-2023 18.5.13).
     AstNode* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
         std::string varName;
         if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
@@ -2646,9 +2645,7 @@ public:
         // visitor skips these via visit(AstIf) above.
         if (AstNode* const hoistListp
             = nodep ? extractConditionalDisableSofts(nodep, nullptr) : nullptr) {
-            AstNode* tailp = nodep;
-            while (tailp->nextp()) tailp = tailp->nextp();
-            tailp->addNext(hoistListp);
+            nodep->addNext(hoistListp);
         }
         iterateAndNextNull(nodep);
     }

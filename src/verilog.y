@@ -7931,7 +7931,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                         { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $4};
                           innerp->isSoft(true);
                           $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
-        |       expr yP_MINUSGT yDISABLE ySOFT expr/*constraint_primary*/ ';'
+        |       expr yP_MINUSGT yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $5};
                           innerp->isDisableSoft(true);
                           $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
@@ -7943,7 +7943,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yFOREACH '(' idClassSelForeach ')' constraint_set
                         { $$ = new AstConstraintForeach{$1, $3, $5}; }
         //                      // soft is 1800-2012
-        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'
+        |       yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }
