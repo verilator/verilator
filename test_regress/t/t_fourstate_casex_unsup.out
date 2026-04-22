@@ -1,0 +1,82 @@
+%Error-UNSUPPORTED: t/t_case_x.v:21:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   21 |     case (value)
+      |     ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_case_x.v:22:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   22 |       4'b1xxx: $stop;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:23:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   23 |       4'b1???: $stop;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:27:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   27 |     case (valuex)
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_case_x.v:28:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   28 |       4'b1???: $stop;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:29:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   29 |       4'b1xxx: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:35:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   35 |     casex (value)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:36:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   36 |       4'b100x: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:39:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   39 |     casex (value)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:40:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   40 |       4'b100?: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:43:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   43 |     casex (valuex)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:44:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   44 |       4'b100x: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:47:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   47 |     casex (valuex)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:48:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   48 |       4'b100?: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:52:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   52 |     casez (value)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:53:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   53 |       4'bxxxx: $stop;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:54:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   54 |       4'b100?: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:57:5: All case statements with four-state value as an expression are unsupported with --fourstate
+                                     : ... note: In instance 't'
+   57 |     casez (valuex)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_case_x.v:58:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   58 |       4'b1xx?: ;
+      |              ^
+%Error-UNSUPPORTED: t/t_case_x.v:59:14: Four-state case items values are unsupported with --fourstate
+                                      : ... note: In instance 't'
+   59 |       4'b100?: ;   
+      |              ^
+%Error: Exiting due to

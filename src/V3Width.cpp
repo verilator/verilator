@@ -1113,7 +1113,8 @@ class WidthVisitor final : public VNVisitor {
             const bool inParameterizedTemplate
                 = m_modep && (m_modep->dead() || m_modep->parameterizedTemplate());
 
-            if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
+            if (!v3Global.opt.fourstate() && VN_IS(nodep->lsbp(), Const)
+                && nodep->msbConst() < nodep->lsbConst()) {
                 // Likely impossible given above width check
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: left < right of bit extract: "  // LCOV_EXCL_LINE
@@ -1204,7 +1205,7 @@ class WidthVisitor final : public VNVisitor {
                 if (lrefp) UINFO(9, "    Select extend lrefp " << lrefp);
                 // Extend unless it's a lvalue,
                 // because extending lvalue would lose write access.
-                if (!isWriteSelect) {
+                if (!v3Global.opt.fourstate() && !isWriteSelect) {
                     // Extend it
                     const int extendTo = nodep->msbConst() + 1;
                     AstNodeDType* const subDTypep = nodep->findLogicDType(
@@ -1218,7 +1219,7 @@ class WidthVisitor final : public VNVisitor {
             // If we have a width problem with GENERATE etc, this will reduce
             // it down and mask it, so we have no chance of finding a real
             // error in the future. So don't do this for them.
-            if (!m_doGenerate) {
+            if (!v3Global.opt.fourstate() && !m_doGenerate) {
                 // lsbp() must be self-determined, however for performance
                 // we want the select to be truncated to fit within the
                 // maximum select range, e.g. turn Xs outside of the select

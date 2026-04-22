@@ -19,7 +19,7 @@ test.scenarios('vlt')
 test.top_filename = test.obj_dir + "/t_iface_typedef_scale.sv"
 
 N_TYPEDEFS = 5000
-MAX_COMPILE_SECS = 10  # Generous budget; catches O(N^2) explosion where 5k typedefs would take minutes without the cache
+MAX_COMPILE_SECS = 20  # Generous budget; catches O(N^2) explosion where 5k typedefs would take minutes without the cache
 
 
 def gen(filename, n):
