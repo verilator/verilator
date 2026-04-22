@@ -425,6 +425,8 @@ class BeginVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    // Silently omit this node as should not be considered here
+    void visit(AstCastWrap* nodep) override { iterateChildren(nodep); }
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_keepBegins);
         m_keepBegins = false;
