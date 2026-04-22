@@ -1,4 +1,4 @@
-%Error: t/t_sequence_within_bad.v:14:17: Within: inner sequence 3 cycles exceeds outer sequence 1 cycles (IEEE 1800-2023 16.9.10)
+%Error: t/t_sequence_within_bad.v:14:17: 'within' inner sequence 3 cycles exceeds outer sequence 1 cycles (IEEE 1800-2023 16.9.10)
                                        : ... note: In instance 't'
    14 |       (a ##3 b) within (c ##1 d));
       |                 ^~~~~~
