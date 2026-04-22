@@ -57,4 +57,5 @@ for line in sys.stdin:
                     line = re.sub(r'int ', r'size_t ', line)
         except IndexError as e:
             print(f"Unexpected index error {e}")
+
     print(line, end='')

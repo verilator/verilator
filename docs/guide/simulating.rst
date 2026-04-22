@@ -209,9 +209,6 @@ point under the coverage name "DefaultClock":
 
    DefaultClock: cover property (@(posedge clk) cyc==3);
 
-
-.. _line coverage:
-
 .. _fsm coverage:
 
 FSM Coverage
@@ -235,18 +232,18 @@ recovery.
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
 
-- :option:`/*verilator&32;fsm_state*/` forces the variable to be treated as
+- ``/*verilator fsm_state*/`` forces the variable to be treated as
   FSM state.
-- :option:`/*verilator&32;fsm_reset_arc*/` marks reset transitions as
+- ``/*verilator fsm_reset_arc*/`` marks reset transitions as
   user-visible reset arcs instead of defaulting to a hidden reset-only
   summary.
-- :option:`/*verilator&32;fsm_arc_include_cond*/` keeps conditional branch
+- ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
   arcs that would otherwise be skipped by the conservative extractor.
 
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather
 than printing them alongside non-reset arcs. Use
-:vlopt:`--include-reset-arcs` on :command:`verilator_coverage` to include
+:option:`verilator_coverage --include-reset-arcs` to include
 those arcs in the printed summary and annotated output.
 
 Annotated output produced by :command:`verilator_coverage --annotate` will

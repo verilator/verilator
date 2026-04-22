@@ -32,6 +32,7 @@
 #include "V3UniqueNames.h"
 
 #include <list>
+#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

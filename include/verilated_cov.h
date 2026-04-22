@@ -191,6 +191,13 @@ public:
     void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), A(11), A(12),
                   A(13), A(14), A(15), A(16), A(17), A(18), A(19), A(20), D(21), D(22), D(23),
                   D(24), D(25), D(26), D(27), D(28), D(29)) VL_MT_SAFE;
+    // Backward compatibility for mixed inserts with integer-valued
+    // lineno/column pairs and C-string-valued metadata pairs.
+    void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, A(4), A(5), A(6), A(7)) VL_MT_SAFE;
+    // Backward compatibility for mixed inserts with integer-valued
+    // lineno/column pairs and additional FSM metadata pairs.
+    void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, A(4), A(5), A(6), A(7), A(8), A(9),
+                  A(10), A(11)) VL_MT_SAFE;
     // Backward compatibility for Verilator
     void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4, A(5),
                   A(6), A(7)) VL_MT_SAFE;

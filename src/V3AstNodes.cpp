@@ -3289,10 +3289,18 @@ void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
 void AstCoverOtherDecl::dump(std::ostream& str) const {
     this->AstNodeCoverDecl::dump(str);
     if (!linescov().empty()) str << " lc=" << linescov();
+    if (!fsmVar().empty()) str << " fv=" << fsmVar();
+    if (!fsmFrom().empty()) str << " ff=" << fsmFrom();
+    if (!fsmTo().empty()) str << " ft=" << fsmTo();
+    if (!fsmTag().empty()) str << " fg=" << fsmTag();
 }
 void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
     this->AstNodeCoverDecl::dumpJson(str);
     dumpJsonStrFunc(str, linescov);
+    dumpJsonStrFunc(str, fsmVar);
+    dumpJsonStrFunc(str, fsmFrom);
+    dumpJsonStrFunc(str, fsmTo);
+    dumpJsonStrFunc(str, fsmTag);
 }
 void AstCoverToggleDecl::dump(std::ostream& str) const {
     this->AstNodeCoverDecl::dump(str);

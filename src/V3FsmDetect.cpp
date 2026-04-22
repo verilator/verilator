@@ -28,7 +28,7 @@
 #include "V3FsmDetect.h"
 
 #include "V3Ast.h"
-#include "V3FsmGraph.h"
+#include "V3Graph.h"
 
 #include <cctype>
 #include <map>
@@ -39,127 +39,215 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
+// Captures one sensitivity-list entry so the lowering phase can later rebuild
+// an active block with the same triggering event control.
+struct FsmSenDesc final {
+    // Encoded edge kind copied from AstSenItem::edgeType() so lowering can
+    // rebuild the same trigger semantics on the synthesized coverage block.
+    VEdgeType::en edgeType = static_cast<VEdgeType::en>(0);
+    // Triggering signal in the saved scoped AST.
+    AstVarScope* varScopep = nullptr;
+};
+
+// Captures the simple reset predicate shape that survives to this pass after
+// earlier normalization so reset arcs can be reconstructed during lowering.
+struct FsmResetCondDesc final {
+    // Reset signal used by the FSM in the saved scoped AST.
+    AstVarScope* varScopep = nullptr;
+};
+
+class FsmGraph;
+
+class FsmVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(FsmVertex, V3GraphVertex)
+
+public:
+    enum class Kind : uint8_t { STATE, RESET_ANY, DEFAULT_ANY };
+
+private:
+    Kind m_kind;     // State vs synthetic ANY/default vertex role.
+    string m_label;  // User-facing state or pseudo-state label.
+    int m_value = 0;  // Encoded state value for real state vertices.
+
+protected:
+    FsmVertex(V3Graph* graphp, Kind kind, string label, int value) VL_MT_DISABLED
+        : V3GraphVertex{graphp}
+        , m_kind{kind}
+        , m_label{label}
+        , m_value{value} {}
+    ~FsmVertex() override = default;
+
+public:
+    Kind kind() const { return m_kind; }
+    bool isState() const { return m_kind == Kind::STATE; }
+    bool isResetAny() const { return m_kind == Kind::RESET_ANY; }
+    bool isDefaultAny() const { return m_kind == Kind::DEFAULT_ANY; }
+    const string& label() const { return m_label; }
+    int value() const { return m_value; }
+
+    string name() const override VL_MT_SAFE { return m_label + "=" + cvtToStr(m_value); }
+};
+
+class FsmStateVertex final : public FsmVertex {
+    VL_RTTI_IMPL(FsmStateVertex, FsmVertex)
+
+public:
+    FsmStateVertex(V3Graph* graphp, string label, int value) VL_MT_DISABLED
+        : FsmVertex{graphp, Kind::STATE, label, value} {}
+    ~FsmStateVertex() override = default;
+
+    string dotColor() const override { return "lightblue"; }
+    string dotShape() const override { return "ellipse"; }
+};
+
+class FsmPseudoVertex final : public FsmVertex {
+    VL_RTTI_IMPL(FsmPseudoVertex, FsmVertex)
+
+public:
+    FsmPseudoVertex(V3Graph* graphp, Kind kind, string label) VL_MT_DISABLED
+        : FsmVertex{graphp, kind, label, 0} {}
+    ~FsmPseudoVertex() override = default;
+
+    string name() const override VL_MT_SAFE { return label(); }
+    string dotColor() const override { return isResetAny() ? "darkgreen" : "orange"; }
+    string dotShape() const override { return "diamond"; }
+};
+
+class FsmArcEdge final : public V3GraphEdge {
+    VL_RTTI_IMPL(FsmArcEdge, V3GraphEdge)
+    bool m_isReset = false;  // Arc originates from the synthetic reset source.
+    bool m_isCond = false;   // Arc came from a conditional next-state split.
+    bool m_isDefault = false;  // Arc represents a case default source.
+    FileLine* m_flp = nullptr;  // Source location for emitted coverage metadata.
+
+public:
+    FsmArcEdge(V3Graph* graphp, FsmVertex* fromp, FsmStateVertex* top, bool isReset,
+               bool isCond, bool isDefault, FileLine* flp) VL_MT_DISABLED
+        : V3GraphEdge{graphp, fromp, top, 1}
+        , m_isReset{isReset}
+        , m_isCond{isCond}
+        , m_isDefault{isDefault}
+        , m_flp{flp} {}
+    ~FsmArcEdge() override = default;
+
+    bool isReset() const { return m_isReset; }
+    bool isCond() const { return m_isCond; }
+    bool isDefault() const { return m_isDefault; }
+    FileLine* fileline() const { return m_flp; }
+
+    string dotLabel() const override {
+        if (m_isReset) return "reset";
+        if (m_isDefault) return "default";
+        if (m_isCond) return "cond";
+        return "";
+    }
+    string dotColor() const override {
+        if (m_isReset) return "darkgreen";
+        if (m_isDefault) return "orange";
+        if (m_isCond) return "blue";
+        return "black";
+    }
+};
+
+// One graph per detected FSM. Graph-level metadata captures the non-graph
+// context needed to lower states/arcs back into the AST after detection.
+class FsmGraph final : public V3Graph {
+    AstScope* m_scopep = nullptr;  // Owning scoped block for the detected FSM.
+    AstAlways* m_alwaysp = nullptr;  // Original always block being instrumented.
+    string m_stateVarName;  // Pretty state variable name for user-visible output.
+    string m_stateVarInternalName;  // Internal state symbol name for dump tags.
+    AstVarScope* m_stateVarScopep = nullptr;  // Scoped state variable being tracked.
+    std::vector<FsmSenDesc> m_senses;  // Saved event controls for recreated active blocks.
+    FsmResetCondDesc m_resetCond;  // Saved reset predicate shape, if one exists.
+    bool m_hasResetCond = false;   // Whether the detected FSM had a reset branch.
+    bool m_resetInclude = false;  // Whether reset arcs count toward coverage totals.
+    bool m_inclCond = false;      // Whether conditional arcs should be kept explicitly.
+    FileLine* m_flp = nullptr;    // Representative source location for declarations/arcs.
+    std::unordered_map<int, FsmStateVertex*> m_stateVertices;  // Value to state-vertex map.
+    FsmPseudoVertex* m_resetVertexp = nullptr;  // Synthetic ANY source for reset arcs.
+    FsmPseudoVertex* m_defaultVertexp = nullptr;  // Synthetic default source for case defaults.
+
+public:
+    FsmGraph() VL_MT_DISABLED
+        : m_resetVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::RESET_ANY, "ANY"}}
+        , m_defaultVertexp{new FsmPseudoVertex{this, FsmVertex::Kind::DEFAULT_ANY, "default"}} {}
+
+    AstScope* scopep() const { return m_scopep; }
+    void scopep(AstScope* scopep) { m_scopep = scopep; }
+    AstAlways* alwaysp() const { return m_alwaysp; }
+    void alwaysp(AstAlways* alwaysp) { m_alwaysp = alwaysp; }
+    const string& stateVarName() const { return m_stateVarName; }
+    void stateVarName(const string& name) { m_stateVarName = name; }
+    const string& stateVarInternalName() const { return m_stateVarInternalName; }
+    void stateVarInternalName(const string& name) { m_stateVarInternalName = name; }
+    AstVarScope* stateVarScopep() const { return m_stateVarScopep; }
+    void stateVarScopep(AstVarScope* vscp) { m_stateVarScopep = vscp; }
+    const std::vector<FsmSenDesc>& senses() const { return m_senses; }
+    std::vector<FsmSenDesc>& senses() { return m_senses; }
+    const FsmResetCondDesc& resetCond() const { return m_resetCond; }
+    FsmResetCondDesc& resetCond() { return m_resetCond; }
+    bool hasResetCond() const { return m_hasResetCond; }
+    void hasResetCond(bool flag) { m_hasResetCond = flag; }
+    bool resetInclude() const { return m_resetInclude; }
+    void resetInclude(bool flag) { m_resetInclude = flag; }
+    bool inclCond() const { return m_inclCond; }
+    void inclCond(bool flag) { m_inclCond = flag; }
+    FileLine* fileline() const { return m_flp; }
+    void fileline(FileLine* flp) { m_flp = flp; }
+
+    FsmStateVertex* addStateVertex(string label, int value) VL_MT_DISABLED {
+        FsmStateVertex* const vertexp = new FsmStateVertex{this, label, value};
+        m_stateVertices.emplace(value, vertexp);
+        return vertexp;
+    }
+    FsmPseudoVertex* resetAnyVertex() VL_MT_DISABLED { return m_resetVertexp; }
+    FsmPseudoVertex* defaultAnyVertex() VL_MT_DISABLED { return m_defaultVertexp; }
+    FsmArcEdge* addArc(int fromValue, int toValue, bool isReset, bool isCond, bool isDefault,
+                       FileLine* flp) VL_MT_DISABLED {
+        FsmStateVertex* const top = m_stateVertices.at(toValue);
+        FsmVertex* fromp = nullptr;
+        if (isReset) {
+            fromp = resetAnyVertex();
+        } else if (isDefault) {
+            fromp = defaultAnyVertex();
+        } else {
+            fromp = m_stateVertices.at(fromValue);
+        }
+        return new FsmArcEdge{this, fromp, top, isReset, isCond, isDefault, flp};
+    }
+
+    string name() const VL_MT_SAFE {
+        return "FSM "
+               + (m_stateVarName.empty() ? (m_stateVarScopep ? m_stateVarScopep->name() : "")
+                                         : m_stateVarName);
+    }
+    string dumpTag(size_t index) const {
+        string tag = stateVarInternalName();
+        for (char& ch : tag) {
+            if (!std::isalnum(static_cast<unsigned char>(ch))) ch = '_';
+        }
+        return "fsm_" + cvtToStr(index) + "_" + tag;
+    }
+};
+
 struct DetectedFsm final {
-    std::unique_ptr<FsmGraph> graphp;
-    AstNodeModule* modp = nullptr;
-    AstAlways* alwaysp = nullptr;
+    std::unique_ptr<FsmGraph> graphp;  // Extracted graph for one detected FSM candidate.
 };
 using DetectedFsmMap = std::map<string, DetectedFsm>;
 
 // Local shared state between the two adjacent FSM coverage phases. Detection
 // fills this with recovered FSM graphs; lowering consumes the completed graphs
 // immediately afterward without needing any AST serialization bridge.
-struct FsmState final {
+class FsmState final {
     // All detected FSMs keyed by state varscope name. This is the only bridge
     // between the adjacent detect and lower phases, so the second phase never
     // needs to rediscover or serialize the extracted machine.
-    DetectedFsmMap byVar;
-};
-
-// Normalize the reset condition into a compact description so the lowering
-// phase can regenerate the same predicate after detection. By the time this
-// pass runs, active-low source forms such as "!rst_n" have already been
-// canonicalized to a positive-condition if/else shape, so only a plain VarRef
-// survives here.
-static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
-    FsmResetCondDesc desc;
-    if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
-        AstVarScope* const vscp = vrefp->varScopep();
-        desc.varScopeName = vscp->name();
-        desc.varName = vrefp->varp()->name();
-    }
-    return desc;
-}
-
-// Snapshot the original event control so the lowering phase can rebuild an
-// active block with the same edge semantics.
-static std::vector<FsmSenDesc> describeSenTree(AstSenTree* sentreep) {
-    std::vector<FsmSenDesc> senses;
-    for (AstSenItem* itemp = sentreep->sensesp(); itemp; itemp = VN_AS(itemp->nextp(), SenItem)) {
-        AstNodeVarRef* const vrefp = itemp->varrefp();
-        if (!vrefp) continue;
-        FsmSenDesc desc;
-        desc.edgeType = static_cast<uint8_t>(itemp->edgeType());
-        AstVarScope* const vscp = vrefp->varScopep();
-        desc.varScopeName = vscp->name();
-        desc.varName = vrefp->varp()->name();
-        senses.push_back(desc);
-    }
-    return senses;
-}
-
-// Align FSM graph debugging with the existing V3Graph dump flow so review and
-// bring-up can inspect extracted state/transition structure using the same
-// --dumpi-graph machinery as other graph-based passes.
-static string dumpTagForGraph(const FsmGraph& graph, size_t index) {
-    string tag = graph.stateVarInternalName();
-    for (char& ch : tag) {
-        if (!std::isalnum(static_cast<unsigned char>(ch))) ch = '_';
-    }
-    return "fsm_" + cvtToStr(index) + "_" + tag;
-}
-
-// Rebuild a state-typed constant using the tracked state variable width/sign so
-// emitted comparisons match the original state representation.
-static AstConst* makeStateConst(FileLine* flp, AstVarScope* vscp, int value) {
-    V3Number num{flp, vscp->width(), static_cast<uint32_t>(value)};
-    num.isSigned(vscp->dtypep()->isSigned());
-    return new AstConst{flp, num};
-}
-
-// Build guards incrementally without forcing callers to special-case the first
-// predicate; this keeps the emitted state/arc conditions readable.
-static AstNodeExpr* andExpr(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
-    if (!lhsp) return rhsp;
-    return new AstLogAnd{flp, lhsp, rhsp};
-}
-
-// Resolve saved names from the detected FSM graphs back onto the current AST
-// before lowering them into concrete coverage declarations and increments.
-class ScopeVarResolver final : public VNVisitor {
-    // STATE - across all visitors
-    std::unordered_map<string, AstScope*> m_scopeps;
-    std::unordered_map<string, AstVarScope*> m_varScopeps;
-
-    // METHODS
-    void visit(AstScope* nodep) override {
-        m_scopeps.emplace(nodep->name(), nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstVarScope* nodep) override {
-        m_varScopeps.emplace(nodep->name(), nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    DetectedFsmMap m_fsms;
 
 public:
-    explicit ScopeVarResolver(AstNetlist* rootp) { iterate(rootp); }
-
-    AstScope* findScope(const string& name) const { return m_scopeps.at(name); }
-    AstVarScope* findVarScope(const string& name) const { return m_varScopeps.at(name); }
+    DetectedFsmMap& fsms() { return m_fsms; }
+    const DetectedFsmMap& fsms() const { return m_fsms; }
 };
-
-static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
-                                   const FsmResetCondDesc&) {
-    return new AstVarRef{flp, resetVscp, VAccess::READ};
-}
-
-// Rebuild the original event control from the saved sense description so the
-// post-state coverage sampling runs on the same triggering edges as the FSM
-// process being instrumented.
-static AstSenTree* buildSenTree(
-    FileLine* flp, const std::vector<std::pair<FsmSenDesc, AstVarScope*>>& senses) {
-    AstSenTree* const sentreep = new AstSenTree{flp, nullptr};
-    for (const auto& entry : senses) {
-        const FsmSenDesc& sense = entry.first;
-        AstVarScope* const vscp = entry.second;
-        auto* const senItemp = new AstSenItem{
-            flp, VEdgeType{static_cast<int>(sense.edgeType)},
-            new AstVarRef{flp, vscp, VAccess::READ}};
-        sentreep->addSensesp(senItemp);
-    }
-    return sentreep;
-}
 
 // Detection runs while the original clocked/case structure is still intact and
 // populates graph-backed FSM models without mutating the tree mid-traversal.
@@ -185,14 +273,34 @@ class FsmDetectVisitor final : public VNVisitor {
         return VN_IS(condp, VarRef);
     }
 
-    // V3Begin has already normalized away trivial begin/end wrappers before
-    // this pass runs, so only a direct case survives to detection here.
-    static AstCase* caseFromStmt(AstNode* stmtp) { return VN_CAST(stmtp, Case); }
+    // Normalize the reset condition into a compact description so the lowering
+    // phase can regenerate the same predicate after detection. By the time
+    // this pass runs, active-low source forms such as "!rst_n" have already
+    // been canonicalized to a positive-condition if/else shape, so only a
+    // plain VarRef survives here.
+    static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
+        FsmResetCondDesc desc;
+        if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
+            desc.varScopep = vrefp->varScopep();
+        }
+        return desc;
+    }
 
-    // By detect time, begin/end wrappers relevant to FSM extraction have
-    // already been normalized away, so helpers can examine the statement list
-    // directly.
-    static AstNode* unwrapSingleBlock(AstNode* stmtp) { return stmtp; }
+    // Snapshot the original event control so the lowering phase can rebuild an
+    // active block with the same edge semantics.
+    static std::vector<FsmSenDesc> describeSenTree(AstSenTree* sentreep) {
+        std::vector<FsmSenDesc> senses;
+        for (AstSenItem* itemp = sentreep->sensesp(); itemp;
+             itemp = VN_AS(itemp->nextp(), SenItem)) {
+            AstNodeVarRef* const vrefp = itemp->varrefp();
+            if (!vrefp) continue;
+            FsmSenDesc desc;
+            desc.edgeType = itemp->edgeType().m_e;
+            desc.varScopep = vrefp->varScopep();
+            senses.push_back(desc);
+        }
+        return senses;
+    }
 
     // Ignore existing coverage increments so FSM detection sees the user logic
     // rather than other instrumentation already attached to the block.
@@ -204,7 +312,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // work instead of being partially inferred here.
     static AstNode* singleMeaningfulStmt(AstNode* stmtp) {
         AstNode* resultp = nullptr;
-        for (AstNode* nodep = unwrapSingleBlock(stmtp); nodep; nodep = nodep->nextp()) {
+        for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) {
             if (isIgnorableStmt(nodep)) continue;
             if (resultp) return nullptr;
             resultp = nodep;
@@ -229,7 +337,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // Prefer enum labels in reports; fall back to synthetic labels for forced
     // non-enum FSMs so coverage points remain human-readable.
     static string labelForValue(const std::unordered_map<int, string>& labels, int value) {
-        const auto it = labels.find(value);
+        const std::unordered_map<int, string>::const_iterator it = labels.find(value);
         return it == labels.end() ? ("S" + cvtToStr(value)) : it->second;
     }
 
@@ -244,21 +352,16 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     // Enum-backed FSMs should only transition to values that were interned as
-    // known states. If a constant transition targets some other encoding, make
-    // that explicit as an error rather than silently dropping the edge.
+    // known states. If a constant transition targets some other encoding, warn
+    // and skip FSM instrumentation for that edge rather than silently dropping
+    // it or turning optional coverage into a hard compile failure.
     static bool validateKnownStateValue(AstNode* nodep,
                                         const std::unordered_map<int, string>& labels, int value) {
         if (labels.find(value) != labels.end()) return true;
-        nodep->v3error("FSM coverage: enum state transition assigns a constant not present in "
-                       "the declared enum");
+        nodep->v3warn(COVERIGN,
+                      "Ignoring unsupported: FSM coverage on enum state transitions "
+                      "that assign a constant not present in the declared enum");
         return false;
-    }
-
-    // Centralize arc creation so every supported transition shape becomes the
-    // same graph edge form before lowering and debug dumping.
-    static void addArc(FsmGraph& graph, int fromValue, int toValue, bool isReset, bool isCond,
-                       bool isDefault, FileLine* flp) {
-        graph.addArc(fromValue, toValue, isReset, isCond, isDefault, flp);
     }
 
     // Extract supported case-item transitions in one place so the conservative
@@ -285,9 +388,9 @@ class FsmDetectVisitor final : public VNVisitor {
             int toValue = 0;
             if (exprConstValue(assp->rhsp(), toValue)) {
                 if (!validateKnownStateValue(assp, labels, toValue)) return true;
-                for (const auto& from : froms) {
-                    addArc(graph, from.second, toValue, false, false, itemp->isDefault(),
-                           assp->fileline());
+                for (const std::pair<string, int>& from : froms) {
+                    graph.addArc(from.second, toValue, false, false, itemp->isDefault(),
+                                 assp->fileline());
                 }
                 return true;
             }
@@ -301,9 +404,9 @@ class FsmDetectVisitor final : public VNVisitor {
                     if (!validateKnownStateValue(condp->thenp(), labels, thenValue)) return true;
                     if (!validateKnownStateValue(condp->elsep(), labels, elseValue)) return true;
                     for (const int branchValue : {thenValue, elseValue}) {
-                        for (const auto& from : froms) {
-                            addArc(graph, from.second, branchValue, false, true,
-                                   itemp->isDefault(), assp->fileline());
+                        for (const std::pair<string, int>& from : froms) {
+                            graph.addArc(from.second, branchValue, false, true,
+                                         itemp->isDefault(), assp->fileline());
                         }
                     }
                     return true;
@@ -318,13 +421,13 @@ class FsmDetectVisitor final : public VNVisitor {
     // branch outside the steady-state case statement.
     static void addResetArcs(FsmGraph& graph, AstNode* stmtsp, AstVarScope* stateVscp,
                              const std::unordered_map<int, string>& labels) {
-        for (AstNode* nodep = unwrapSingleBlock(stmtsp); nodep; nodep = nodep->nextp()) {
+        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
             if (AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign)) {
                 AstVarRef* const vrefp = VN_CAST(assp->lhsp(), VarRef);
                 int toValue = 0;
                 if (vrefp && vrefp->varScopep() == stateVscp && exprConstValue(assp->rhsp(), toValue)) {
                     if (!validateKnownStateValue(assp, labels, toValue)) continue;
-                    addArc(graph, 0, toValue, true, false, false, assp->fileline());
+                    graph.addArc(0, toValue, true, false, false, assp->fileline());
                 }
             }
         }
@@ -346,6 +449,12 @@ class FsmDetectVisitor final : public VNVisitor {
         std::vector<std::pair<string, int>> states;
         std::unordered_map<int, string> labels;
         if (enump) {
+            if (stateVscp->width() < 1 || stateVscp->width() > 32) {
+                casep->v3warn(COVERIGN,
+                              "Ignoring unsupported: FSM coverage on enum-typed state "
+                              "variables wider than 32 bits");
+                return;
+            }
             for (AstEnumItem* itemp = enump->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const int value = constp->toSInt();
@@ -364,22 +473,21 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
 
-        DetectedFsm& entry = m_state.byVar[stateVscp->name()];
+        DetectedFsm& entry = m_state.fsms()[stateVscp->name()];
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
-            entry.modp = m_scopep->modp();
-            entry.alwaysp = alwaysp;
-            entry.graphp->scopeName(m_scopep->name());
+            entry.graphp->scopep(m_scopep);
+            entry.graphp->alwaysp(alwaysp);
             entry.graphp->stateVarName(stateVscp->prettyName());
             entry.graphp->stateVarInternalName(stateVarp->name());
-            entry.graphp->stateVarScopeName(stateVscp->name());
+            entry.graphp->stateVarScopep(stateVscp);
             entry.graphp->senses() = describeSenTree(alwaysp->sentreep());
             entry.graphp->resetCond() = describeResetCond(resetCondp);
-            entry.graphp->hasResetCond(!entry.graphp->resetCond().varScopeName.empty());
+            entry.graphp->hasResetCond(entry.graphp->resetCond().varScopep != nullptr);
             entry.graphp->resetInclude(stateVarp->attrFsmResetArc());
             entry.graphp->inclCond(stateVarp->attrFsmArcInclCond());
             entry.graphp->fileline(casep->fileline());
-            for (const auto& state : states) {
+            for (const std::pair<string, int>& state : states) {
                 entry.graphp->addStateVertex(state.first, state.second);
             }
         }
@@ -396,10 +504,10 @@ class FsmDetectVisitor final : public VNVisitor {
     void processAlways(AstAlways* alwaysp) {
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return;
         std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
-        AstNode* stmtsp = unwrapSingleBlock(alwaysp->stmtsp());
+        AstNode* stmtsp = alwaysp->stmtsp();
         AstIf* const firstIfp = VN_CAST(stmtsp, If);
         if (firstIfp) {
-            if (AstCase* const casep = caseFromStmt(firstIfp->elsesp())) {
+            if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
                 candidates.emplace_back(casep, isSimpleResetCond(firstIfp->condp()) ? firstIfp->condp()
                                                                                      : nullptr);
             }
@@ -410,7 +518,7 @@ class FsmDetectVisitor final : public VNVisitor {
         if (candidates.empty()) return;
 
         AstVarScope* firstVscp = nullptr;
-        for (const auto& cand : candidates) {
+        for (const std::pair<AstCase*, AstNodeExpr*>& cand : candidates) {
             AstVarRef* const selp = VN_CAST(cand.first->exprp(), VarRef);
             AstVarScope* const vscp = selp ? selp->varScopep() : nullptr;
             if (!vscp) continue;
@@ -423,14 +531,18 @@ class FsmDetectVisitor final : public VNVisitor {
                                    "the same always block. Only the first candidate will be "
                                    "instrumented.");
             } else {
-                cand.first->v3error(
-                    "FSM coverage: multiple supported case statements found in the same always "
-                    "block are not supported");
+                cand.first->v3warn(
+                    COVERIGN,
+                    "Ignoring unsupported: FSM coverage on multiple supported case "
+                    "statements found in the same always block. Only the first "
+                    "candidate will be instrumented.");
             }
         }
 
         if (firstIfp && firstVscp) {
-            FsmGraph* const graphp = m_state.byVar.at(firstVscp->name()).graphp.get();
+            const DetectedFsmMap::const_iterator it = m_state.fsms().find(firstVscp->name());
+            if (it == m_state.fsms().end()) return;
+            FsmGraph* const graphp = it->second.graphp.get();
             if (graphp->hasResetCond()) {
                 std::unordered_map<int, string> labels;
                 for (const V3GraphVertex& vtx : graphp->vertices()) {
@@ -472,18 +584,50 @@ public:
 // runtime uses to record state and transition coverage.
 class FsmLowerVisitor final {
     // STATE - across all visitors
-    ScopeVarResolver m_resolver;
     const FsmState& m_state;
 
     // METHODS
+    // Rebuild a state-typed constant using the tracked state variable
+    // width/sign so emitted comparisons match the original representation.
+    static AstConst* makeStateConst(FileLine* flp, AstVarScope* vscp, int value) {
+        V3Number num{flp, vscp->width(), static_cast<uint32_t>(value)};
+        num.isSigned(vscp->dtypep()->isSigned());
+        return new AstConst{flp, num};
+    }
+
+    // Build guards incrementally without forcing callers to special-case the
+    // first predicate; this keeps emitted state/arc conditions readable.
+    static AstNodeExpr* andExpr(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        if (!lhsp) return rhsp;
+        return new AstLogAnd{flp, lhsp, rhsp};
+    }
+
+    static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
+                                       const FsmResetCondDesc&) {
+        return new AstVarRef{flp, resetVscp, VAccess::READ};
+    }
+
+    // Rebuild the original event control from the saved sense description so
+    // post-state coverage sampling runs on the same triggering edges.
+    static AstSenTree* buildSenTree(
+        FileLine* flp, const std::vector<FsmSenDesc>& senses) {
+        AstSenTree* const sentreep = new AstSenTree{flp, nullptr};
+        for (const FsmSenDesc& sense : senses) {
+            AstSenItem* const senItemp = new AstSenItem{
+                flp, VEdgeType{sense.edgeType},
+                new AstVarRef{flp, sense.varScopep, VAccess::READ}};
+            sentreep->addSensesp(senItemp);
+        }
+        return sentreep;
+    }
+
     // Lower one fully detected FSM graph into the concrete coverage machinery
     // used by generated models: declarations, previous-state tracking, and the
     // pre/post-triggered increment logic for states and arcs.
     void buildOne(const FsmGraph& graph) {
-        const DetectedFsm& entry = m_state.byVar.at(graph.stateVarScopeName());
-        AstAlways* const alwaysp = entry.alwaysp;
-        AstScope* const scopep = m_resolver.findScope(graph.scopeName());
-        AstVarScope* const stateVscp = m_resolver.findVarScope(graph.stateVarScopeName());
+        AstAlways* const alwaysp = graph.alwaysp();
+        AstScope* const scopep = graph.scopep();
+        AstVarScope* const stateVscp = graph.stateVarScopep();
         FileLine* const flp = graph.fileline();
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep
@@ -518,13 +662,6 @@ class FsmLowerVisitor final {
                                          new AstVarRef{flp, stateVscp, VAccess::READ}});
         alwaysp->addStmtsp(bodysp);
 
-        std::vector<std::pair<FsmSenDesc, AstVarScope*>> senses;
-        senses.reserve(graph.senses().size());
-        for (const FsmSenDesc& sense : graph.senses()) {
-            AstVarScope* const senseVscp = m_resolver.findVarScope(sense.varScopeName);
-            senses.emplace_back(sense, senseVscp);
-        }
-
         for (const V3GraphVertex& vtx : graph.vertices()) {
             const FsmVertex* const vertexp = vtx.as<FsmVertex>();
             if (!vertexp->isState()) continue;
@@ -533,10 +670,11 @@ class FsmLowerVisitor final {
             // value, so repeated self-holds do not count as new entries.
             AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
                 flp, "v_fsm_state/" + modp->prettyName(),
-                graph.stateVarName() + "::" + statep->label(), "", 0};
+                graph.stateVarName() + "::" + statep->label(), "", 0, graph.stateVarName(), "",
+                statep->label()};
             declp->hier(scopep->prettyName());
             modp->addStmtsp(declp);
-            AstNodeExpr* guardp
+            AstNodeExpr* const guardp
                 = andExpr(flp,
                           new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
                                      makeStateConst(flp, prevVscp, statep->value())},
@@ -555,12 +693,20 @@ class FsmLowerVisitor final {
                 // reviewer-visible graph dump and the user-visible annotation.
                 const string resetTag
                     = arcp->isReset() ? (graph.resetInclude() ? "[reset_include]" : "[reset]") : "";
+                const string fsmTag = arcp->isReset()   ? (graph.resetInclude() ? "reset_include"
+                                                        : "reset")
+                                     : arcp->isDefault() ? "default"
+                                                         : "";
                 AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
                     flp, "v_fsm_arc/" + modp->prettyName(),
                     graph.stateVarName() + "::" + fromVertexp->label() + "->" + toStatep->label()
                         + resetTag,
                     "",
-                    0};
+                    0,
+                    graph.stateVarName(),
+                    fromVertexp->label(),
+                    toStatep->label(),
+                    fsmTag};
                 declp->hier(scopep->prettyName());
                 modp->addStmtsp(declp);
                 AstNodeExpr* guardp = nullptr;
@@ -568,9 +714,7 @@ class FsmLowerVisitor final {
                     // Reset arcs are modeled as pseudo-source edges in the
                     // graph, then reconstructed here into the original simple
                     // reset predicate combined with the destination state.
-                    AstVarScope* const resetVscp
-                        = m_resolver.findVarScope(graph.resetCond().varScopeName);
-                    guardp = buildResetCond(flp, resetVscp, graph.resetCond());
+                    guardp = buildResetCond(flp, graph.resetCond().varScopep, graph.resetCond());
                     guardp = andExpr(flp, guardp,
                                      new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
                                                makeStateConst(flp, stateVscp, toStatep->value())});
@@ -601,7 +745,7 @@ class FsmLowerVisitor final {
             }
         }
 
-        AstSenTree* const sentreep = buildSenTree(flp, senses);
+        AstSenTree* const sentreep = buildSenTree(flp, graph.senses());
         AstActive* const activep = new AstActive{flp, "fsm-coverage", sentreep};
         activep->senTreeStorep(sentreep);
         scopep->addBlocksp(activep);
@@ -610,12 +754,14 @@ class FsmLowerVisitor final {
 
 public:
     // CONSTRUCTORS
-    // Resolve the current scoped AST once, then lower every detected FSM graph
-    // from the shared local state into concrete coverage instrumentation.
-    FsmLowerVisitor(const FsmState& state, AstNetlist* rootp)
-        : m_resolver{rootp}
-        , m_state{state} {
-        for (const auto& it : m_state.byVar) buildOne(*it.second.graphp);
+    // Lower every detected FSM graph from the shared local state into
+    // concrete coverage instrumentation while the saved scoped pointers are
+    // still valid in the same pass.
+    explicit FsmLowerVisitor(const FsmState& state)
+        : m_state{state} {
+        for (const std::pair<const string, DetectedFsm>& it : m_state.fsms()) {
+            buildOne(*it.second.graphp);
+        }
     }
 };
 
@@ -629,12 +775,12 @@ void V3FsmDetect::detect(AstNetlist* rootp) {
     FsmDetectVisitor detect{state, rootp};
     if (dumpGraphLevel() >= 6) {
         size_t index = 0;
-        for (const auto& it : state.byVar) {
-            it.second.graphp->dumpDotFilePrefixed(dumpTagForGraph(*it.second.graphp, index++));
+        for (const std::pair<const string, DetectedFsm>& it : state.fsms()) {
+            it.second.graphp->dumpDotFilePrefixed(it.second.graphp->dumpTag(index++));
         }
     }
     // Phase 2: lower the completed in-memory graph state immediately, without
     // crossing into another pass owner or serializing through AST placeholders.
-    { FsmLowerVisitor lower{state, rootp}; }
+    { FsmLowerVisitor lower{state}; }
     V3Global::dumpCheckGlobalTree("fsm-detect", 0, dumpTreeEitherLevel() >= 3);
 }

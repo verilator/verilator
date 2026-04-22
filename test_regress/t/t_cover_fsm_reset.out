@@ -37,10 +37,10 @@
 %000004     if (rst) state_incl <= S0;
 %000004     else case (state_incl)
         // [FSM coverage]
-        // [fsm_arc t.state_incl::ANY->S0[reset_include]: 1 hits] [reset arc, excluded from %]
-        // [fsm_arc t.state_incl::S0->S1: 1 hits]
-        // [fsm_state t.state_incl::S0: 0 entries] *** UNCOVERED ***
-        // [fsm_state t.state_incl::S1: 1 entries]
+%000001        // [fsm_arc t.state_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_incl::S0->S1]
+%000000        // [fsm_state t.state_incl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_incl::S1]
 %000001       S0: state_incl <= S1;
 %000003       default: state_incl <= S1;
             endcase
@@ -50,10 +50,10 @@
 %000004     if (rst) state_excl <= S0;
 %000004     else case (state_excl)
         // [FSM coverage]
-        // [fsm_arc t.state_excl::ANY->S0[reset]: 1 hits] [reset arc, excluded from %]
-        // [fsm_arc t.state_excl::S0->S1: 1 hits]
-        // [fsm_state t.state_excl::S0: 0 entries] *** UNCOVERED ***
-        // [fsm_state t.state_excl::S1: 1 entries]
+%000001        // [fsm_arc t.state_excl::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_excl::S0->S1]
+%000000        // [fsm_state t.state_excl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_excl::S1]
 %000001       S0: state_excl <= S1;
 %000003       default: state_excl <= S1;
             endcase

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM enum transition bad-value test
+# DESCRIPTION: Verilator: FSM enum width limit test
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,16 +11,15 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# When an enum-backed FSM assigns a constant that is not one of the declared
-# enum items, FSM coverage should warn and skip the unsupported edge rather
-# than turning optional coverage into a hard compile failure.
+# FSM coverage currently stores recovered enum state values in the detector's
+# 32-bit internal representation, so wider enum-backed FSMs are rejected.
 test.lint(
     verilator_flags2=["--coverage-fsm"],
     fails=True)
 
 test.file_grep(
     test.compile_log_filename,
-    r'%Warning-COVERIGN: t/t_cover_fsm_enum_bad.v:27:19: Ignoring unsupported: FSM coverage '
-    r'on enum state transitions that assign a constant not present in the declared enum')
+    r'%Warning-COVERIGN: t/t_cover_fsm_enumwide_bad.v:25:7: Ignoring unsupported: '
+    r'FSM coverage on enum-typed state variables wider than 32 bits')
 
 test.passes()

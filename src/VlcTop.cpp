@@ -343,17 +343,16 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                         os << "        // [FSM coverage]\n";
                         printedFsmHeader = true;
                     }
+                    os << (opt.countOk(pit->count()) ? " " : "%");
+                    os << std::setfill('0') << std::setw(6) << pit->count() << "        ";
                     if (pit->isFsmState()) {
-                        os << "        // [fsm_state " << pit->comment() << ": " << pit->count()
-                           << " entries]";
+                        os << "// [fsm_state " << pit->comment() << "]";
                         if (pit->count() == 0) os << " *** UNCOVERED ***";
                         os << "\n";
                     } else if (pit->isFsmDefaultArc()) {
-                        os << "        // [SYNTHETIC DEFAULT ARC: " << pit->comment() << ": "
-                           << pit->count() << "]\n";
+                        os << "// [SYNTHETIC DEFAULT ARC: " << pit->comment() << "]\n";
                     } else {
-                        os << "        // [fsm_arc " << pit->comment() << ": " << pit->count()
-                           << " hits]";
+                        os << "// [fsm_arc " << pit->comment() << "]";
                         if (pit->fsmIsReset() && !opt.includeResetArcs()) {
                             os << " [reset arc, excluded from %]";
                         }

@@ -233,10 +233,10 @@ static void process() {
             v3Global.vlExit(0);
         }
 
-        // Generic non-FSM coverage insertion
-        //    Before we do dead code elimination and inlining, or we'll lose it.
-        //    FSM coverage is still detected later once scopes exist, then
-        //    lowered under the generic coverage umbrella at that later point.
+        // Insert generic non-FSM coverage before dead code elimination and
+        // inlining, or those opportunities may be optimized away. FSM
+        // coverage is handled later in V3FsmDetect, after scoping has created
+        // the AST context needed to recover and lower FSMs reliably.
         if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design

@@ -17,9 +17,6 @@ test.compile(verilator_flags2=['--cc --coverage'])
 
 test.execute()
 
-test.file_grep(test.obj_dir + "/coverage.dat", r"\[reset_include\]")
-test.file_grep(test.obj_dir + "/coverage.dat", r"\[reset\]")
-
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--include-reset-arcs",

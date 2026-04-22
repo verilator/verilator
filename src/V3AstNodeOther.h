@@ -2395,12 +2395,22 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for other than toggle types of coverage
     string m_linescov;
+    string m_fsmVar;
+    string m_fsmFrom;
+    string m_fsmTo;
+    string m_fsmTag;
     int m_offset;  // Offset column numbers to uniq-ify IFs
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,
-                      const string& linescov, int offset)
+                      const string& linescov, int offset, const string& fsmVar = "",
+                      const string& fsmFrom = "", const string& fsmTo = "",
+                      const string& fsmTag = "")
         : ASTGEN_SUPER_CoverOtherDecl(fl, page, comment)
         , m_linescov{linescov}
+        , m_fsmVar{fsmVar}
+        , m_fsmFrom{fsmFrom}
+        , m_fsmTo{fsmTo}
+        , m_fsmTag{fsmTag}
         , m_offset{offset} {}
     ASTGEN_MEMBERS_AstCoverOtherDecl;
     void dump(std::ostream& str) const override;
@@ -2408,9 +2418,15 @@ public:
     int offset() const { return m_offset; }
     int size() const override { return 1; }
     const string& linescov() const { return m_linescov; }
+    const string& fsmVar() const { return m_fsmVar; }
+    const string& fsmFrom() const { return m_fsmFrom; }
+    const string& fsmTo() const { return m_fsmTo; }
+    const string& fsmTag() const { return m_fsmTag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
-        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
+        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov()
+               && fsmVar() == asamep->fsmVar() && fsmFrom() == asamep->fsmFrom()
+               && fsmTo() == asamep->fsmTo() && fsmTag() == asamep->fsmTag();
     }
 };
 class AstCoverToggleDecl final : public AstNodeCoverDecl {
