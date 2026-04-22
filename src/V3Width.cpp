@@ -3016,7 +3016,7 @@ class WidthVisitor final : public VNVisitor {
                 << badDtp->warnOther() << "... Location of failing data type "
                 << badDtp->prettyDTypeNameQ() << '\n'
                 << badDtp->warnContextSecondary());
-            basicp = nodep->findSigned32DType()->basicp();
+            basicp = nodep->findIntDType()->basicp();
             nodep->refDTypep(basicp);
         }
         nodep->widthFromSub(nodep->subDTypep());
@@ -8629,7 +8629,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void iterateCheckSigned32(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed32 if not already. Child is self-determined
-        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findSigned32DType(), stage);
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findIntDType(), stage);
     }
     void iterateCheckUInt32(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to unsigned32 if not already. Child is self-determined
@@ -9398,7 +9398,7 @@ class WidthVisitor final : public VNVisitor {
                                              std::forward_as_tuple(nullptr));
         if (pair.second) {
             AstNodeArrayDType* const vardtypep
-                = new AstUnpackArrayDType{nodep->fileline(), nodep->findSigned32DType(),
+                = new AstUnpackArrayDType{nodep->fileline(), nodep->findIntDType(),
                                           new AstRange(nodep->fileline(), msbdim, 0)};
             AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
             v3Global.rootp()->typeTablep()->addTypesp(vardtypep);

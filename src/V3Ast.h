@@ -756,9 +756,10 @@ public:
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
     void dtypeSetBit() { dtypep(findBitDType()); }
+    void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
-    void dtypeSetSigned32() { dtypep(findSigned32DType()); }
+    void dtypeSetSigned32() { dtypep(findIntegerDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
@@ -767,11 +768,12 @@ public:
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
+    AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
+    AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
-    AstNodeDType* findSigned32DType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }

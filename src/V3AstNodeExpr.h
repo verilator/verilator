@@ -3060,7 +3060,12 @@ class AstEqWild final : public AstNodeBiop {
 public:
     AstEqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqWild(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstEqWild;
     // Return AstEqWild/AstEqD
@@ -3069,9 +3074,21 @@ public:
         out.opWildEq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f==? %r)"; }
-    string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        if (v3Global.opt.fourstate()) {
+            V3ERROR_NA_RETURN("");
+        } else {
+            return "VL_EQ_%lq(%lW, %P, %li, %ri)";
+        }
+    }
     string emitSMT() const override { return "(__Vbv (= %l %r))"; }
-    string emitSimpleOperator() override { return "=="; }
+    string emitSimpleOperator() override {
+        if (v3Global.opt.fourstate()) {
+            V3ERROR_NA_RETURN("");
+        } else {
+            return "==";
+        }
+    }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -3618,15 +3635,32 @@ class AstNeqWild final : public AstNodeBiop {
 public:
     AstNeqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqWild(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstNeqWild;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opWildNeq(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f!=? %r)"; }
-    string emitC() override { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
-    string emitSimpleOperator() override { return "!="; }
+    string emitC() override {
+        if (v3Global.opt.fourstate()) {
+            V3ERROR_NA_RETURN("");
+        } else {
+            return "VL_NEQ_%lq(%lW, %P, %li, %ri)";
+        }
+    }
+    string emitSimpleOperator() override {
+        if (v3Global.opt.fourstate()) {
+            V3ERROR_NA_RETURN("");
+        } else {
+            return "!=";
+        }
+    }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -3976,7 +4010,18 @@ class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftL(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBitUnsized(setwidth ? setwidth : lhsp->width(),
+                               setwidth ? 0 : lhsp->dtypep()->widthMin(),
+                               lhsp->dtypep()->numeric());
+        } else if (lhsp->dtypep()) {
+            dtypeSetLogicUnsized(setwidth ? setwidth : lhsp->width(),
+                                 setwidth ? 0 : lhsp->dtypep()->widthMin(),
+                                 lhsp->dtypep()->numeric());
+        } else {
+            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        }
     }
     ASTGEN_MEMBERS_AstShiftL;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4020,7 +4065,18 @@ class AstShiftR final : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftR(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBitUnsized(setwidth ? setwidth : lhsp->width(),
+                               setwidth ? 0 : lhsp->dtypep()->widthMin(),
+                               lhsp->dtypep()->numeric());
+        } else if (lhsp->dtypep()) {
+            dtypeSetLogicUnsized(setwidth ? setwidth : lhsp->width(),
+                                 setwidth ? 0 : lhsp->dtypep()->widthMin(),
+                                 lhsp->dtypep()->numeric());
+        } else {
+            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        }
     }
     ASTGEN_MEMBERS_AstShiftR;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4181,7 +4237,12 @@ class AstEq final : public AstNodeBiCom {
 public:
     AstEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Eq(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstEq;
     // Return AstEq/AstEqD
@@ -4307,7 +4368,12 @@ class AstNeq final : public AstNodeBiCom {
 public:
     AstNeq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Neq(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
+            && !rhsp->dtypep()->isFourstate()) {
+            dtypeSetBit();
+        } else {
+            dtypeSetLogic();
+        }
     }
     ASTGEN_MEMBERS_AstNeq;
     static AstNodeBiop* newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp);
