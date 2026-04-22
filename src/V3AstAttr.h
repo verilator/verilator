@@ -1903,8 +1903,10 @@ public:
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
     class VlSymsDpi {};
-    VSelfPointerText(VlSymsDpi, const string &symClassName, const string& field)
-        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)" + "(Verilated::dpiScope()->symsp()))" + "->" + field + ")")} {}
+    VSelfPointerText(VlSymsDpi, const string& symClassName, const string& field)
+        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)"
+                                                + "(Verilated::dpiScope()->symsp()))" + "->"
+                                                + field + ")")} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }

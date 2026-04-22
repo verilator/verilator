@@ -13,7 +13,8 @@ test.scenarios("simulator")
 test.top_filename = "t/t_timing_dpi_func_bad.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_func_bad.cpp"], verilator_flags2=["--binary", "--trace-fst"]
+    v_flags2=["t/t_timing_dpi_func_bad.cpp"],
+    verilator_flags2=["--binary", "--trace-fst"],
 )
 
 if test.vlt_all:

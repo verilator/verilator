@@ -155,9 +155,8 @@ void VlFiber::addWaiter(std::coroutine_handle<> waiter) {
 void VlFiber::start(VlFiber* fiberp) {
     // Calculate stack top: align down to 16-byte boundary (x86_64 ABI requirement)
     // Stack grows downward, so we start from the end of usable stack space
-    // Subtract 8 bytes for alignment to be in mapping range 
-    std::uint8_t* const stackTop
-        = alignDown16(fiberp->m_stackBasep + fiberp->m_stackSize - 8u);
+    // Subtract 8 bytes for alignment to be in mapping range
+    std::uint8_t* const stackTop = alignDown16(fiberp->m_stackBasep + fiberp->m_stackSize - 8u);
 
 #if defined(__x86_64__)
     // Switch to fiber stack and call entry point

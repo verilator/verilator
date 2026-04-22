@@ -13,7 +13,8 @@ test.scenarios("simulator")
 test.top_filename = "t/t_timing_dpi_counter.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_counter.cpp"], verilator_flags2=["--binary", "--trace-fst"]
+    v_flags2=["t/t_timing_dpi_counter.cpp"],
+    verilator_flags2=["--binary", "--trace-fst"],
 )
 
 test.execute(expect_filename=test.golden_filename)

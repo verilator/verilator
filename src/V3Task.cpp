@@ -1244,8 +1244,7 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->verilogFunction()) {
                 FileLine* const flp = cfuncp->fileline();
                 AstVarScope* const dpiImportTriggerp = getDpiImportTrigger();
-                AstVarRef* const varRefp
-                    = new AstVarRef{flp, dpiImportTriggerp, VAccess::WRITE};
+                AstVarRef* const varRefp = new AstVarRef{flp, dpiImportTriggerp, VAccess::WRITE};
                 AstAssign* const assignp
                     = new AstAssign{flp, varRefp, new AstConst{flp, AstConst::BitTrue{}}};
                 cfuncp->addStmtsp(assignp);
