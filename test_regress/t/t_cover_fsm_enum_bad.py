@@ -14,9 +14,7 @@ test.scenarios('vlt')
 # When an enum-backed FSM assigns a constant that is not one of the declared
 # enum items, FSM coverage should warn and skip the unsupported edge rather
 # than turning optional coverage into a hard compile failure.
-test.lint(
-    verilator_flags2=["--coverage-fsm"],
-    fails=True)
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
 
 test.file_grep(
     test.compile_log_filename,

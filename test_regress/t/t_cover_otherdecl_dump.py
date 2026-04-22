@@ -24,9 +24,8 @@ tree_texts = [filename.read_text(encoding="utf8") for filename in tree_files]
 
 generic_lines = []
 for text in tree_texts:
-    generic_lines.extend(
-        line for line in text.splitlines() if "COVEROTHERDECL" in line and " page=v_line/" in line
-    )
+    generic_lines.extend(line for line in text.splitlines()
+                         if "COVEROTHERDECL" in line and " page=v_line/" in line)
 
 assert generic_lines
 assert any(" fv=" not in line and " ff=" not in line and " ft=" not in line and " fg=" not in line
