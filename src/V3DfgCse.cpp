@@ -118,7 +118,7 @@ class V3DfgCse final {
         case VDfgType::RedAnd:
         case VDfgType::RedOr:
         case VDfgType::RedXor:
-        case VDfgType::Replicate:
+        case VDfgType::Rep:
         case VDfgType::ShiftL:
         case VDfgType::ShiftR:
         case VDfgType::ShiftRS:
@@ -240,7 +240,7 @@ class V3DfgCse final {
         case VDfgType::RedAnd:
         case VDfgType::RedOr:
         case VDfgType::RedXor:
-        case VDfgType::Replicate:
+        case VDfgType::Rep:
         case VDfgType::ShiftL:
         case VDfgType::ShiftR:
         case VDfgType::ShiftRS:

@@ -374,14 +374,13 @@ class TraceDriver final : public DfgVisitor {
         SET_RESULT(resp);
     }
 
-    void visit(DfgReplicate* vtxp) override {
+    void visit(DfgRep* vtxp) override {
         DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
         // If we need more bits than the source, then we need the whole source
         if (m_msb - m_lsb + 1 > sWidth) {
-            DfgReplicate* const repp = make<DfgReplicate>(vtxp, vtxp->width());
+            DfgRep* const repp = make<DfgRep>(vtxp, vtxp->width());
             repp->srcp(trace(srcp, sWidth - 1, 0));
-            repp->countp(vtxp->countp());  // Always a DfgConst
             DfgSel* const resp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
             resp->fromp(repp);
             resp->lsb(m_lsb);
@@ -757,8 +756,8 @@ class IndependentBits final : public DfgVisitor {
         m.opSelInto(MASK(lhsp), rhsp->width(), lhsp->width());
     }
 
-    void visit(DfgReplicate* vtxp) override {
-        const uint32_t count = vtxp->countp()->as<DfgConst>()->toU32();
+    void visit(DfgRep* vtxp) override {
+        const uint32_t count = vtxp->count();
         const DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
         V3Number& vMask = MASK(vtxp);

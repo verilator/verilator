@@ -1,10 +1,10 @@
 DFG patterns with depth 1
             8 (CONCAT _:1 _:a):b
-            5 (CONST #A):a
-            5 (REDXOR _:a*):1
-            5 (VARPACKED _:a*):a
+            5 (REDXOR _:a):1
             3 (NOT (VARPACKED):a):a*
-            3 (REDXOR _:a):1
+            3 (REDXOR _:a*):1
+            3 (REP _:1*):a
+            3 (VARPACKED _:a*):a
             3 (VARPACKED):a
             2 (AND _:a* _:a*):a
             1 (AND _:a* _:a*):a*
@@ -12,112 +12,94 @@ DFG patterns with depth 1
             1 (CONCAT _:1* _:a):b
             1 (NOT _:a*):a
             1 (REDXOR _:a):1*
-            1 (REPLICATE _:1 (CONST #A):a):b*
-            1 (REPLICATE _:a (CONST #A):a):b*
-            1 (REPLICATE _:a* (CONST #A):a):b
-            1 (REPLICATE _:a* (CONST #A):b):b*
-            1 (REPLICATE _:a* (CONST #A):b):c*
+            1 (REP _:1*):a*
+            1 (REP _:a):b*
             1 (SEL@0 _:a*):1
             1 (SEL@0 _:a*):b
-            1 (SEL@A _:a*):1
+            1 (SEL@A _:a*):1*
             1 (VARPACKED _:a):a
 
 DFG patterns with depth 2
-            3 (CONCAT (REDXOR _:a*):1 (CONCAT _:1 _:b):c):d
+            4 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d
+            3 (REP (SEL@A _:a*):1*):b
             2 (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a
-            2 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d
             2 (REDXOR (AND _:a* _:a*):a):1
+            2 (REDXOR (REP _:1*):a):1
             1 (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*
             1 (CONCAT (REDXOR _:a):1 (REDXOR _:b):1*):c
             1 (CONCAT (REDXOR _:a):1* (CONCAT _:1 _:b):c):d
             1 (CONCAT (REDXOR _:a*):1 (CONCAT _:1 _:1*):b):c
+            1 (CONCAT (REDXOR _:a*):1 (CONCAT _:1 _:b):c):d
             1 (CONCAT (REDXOR _:a*):1 (CONCAT _:1* _:b):c):d
             1 (CONCAT (SEL@0 _:a*):1 (CONCAT _:1 _:b):c):d
-            1 (NOT (REPLICATE _:a* (CONST #A):b):b*):b
+            1 (NOT (REP _:1*):a*):a
             1 (REDXOR (AND _:a* _:a*):a*):1
-            1 (REDXOR (REPLICATE _:1 (CONST #A):a):b*):1
-            1 (REDXOR (REPLICATE _:a (CONST #A):a):b*):1
-            1 (REDXOR (REPLICATE _:a* (CONST #A):a):b):1*
-            1 (REDXOR (REPLICATE _:a* (CONST #A):b):b*):1
-            1 (REDXOR (REPLICATE _:a* (CONST #A):b):c*):1
+            1 (REDXOR (REP _:1*):a):1*
+            1 (REDXOR (REP _:1*):a*):1
+            1 (REDXOR (REP _:a):b*):1
             1 (REDXOR (SEL@0 _:a*):b):1
-            1 (REPLICATE (NOT _:a*):a (CONST #A):a):b*
-            1 (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c*
-            1 (REPLICATE (REPLICATE _:a* (CONST #A):b):b* (CONST #A):b):c
-            1 (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b*
-            1 (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c*
+            1 (REP (NOT _:a*):a):b*
+            1 (REP (SEL@A _:a*):1*):b*
             1 (SEL@0 (AND _:a* _:a*):a*):1
-            1 (SEL@0 (REPLICATE _:a (CONST #A):a):b*):c
-            1 (SEL@A (AND _:a* _:a*):a*):1
+            1 (SEL@0 (REP _:a):b*):c
+            1 (SEL@A (AND _:a* _:a*):a*):1*
             1 (VARPACKED (AND _:a* _:a*):a*):a
             1 (VARPACKED (CONCAT _:1 _:a):b):b
-            1 (VARPACKED (REPLICATE _:1 (CONST #A):a):b*):b
-            1 (VARPACKED (REPLICATE _:a (CONST #A):a):b*):b
-            1 (VARPACKED (REPLICATE _:a* (CONST #A):b):b*):b
-            1 (VARPACKED (REPLICATE _:a* (CONST #A):b):c*):c
+            1 (VARPACKED (REP _:1*):a*):a
+            1 (VARPACKED (REP _:a):b*):b
 
 DFG patterns with depth 3
+            3 (REP (SEL@A (AND _:a* _:a*):a*):1*):b
             2 (REDXOR (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a):1
+            2 (REDXOR (REP (SEL@A _:a*):1*):b):1
             1 (CONCAT (REDXOR (AND _:a* _:a*):a):1 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d):e
             1 (CONCAT (REDXOR (AND _:a* _:a*):a):1 (CONCAT (SEL@0 _:a*):1 (CONCAT _:1 _:b):c):d):e
             1 (CONCAT (REDXOR (AND _:a* _:a*):a*):1 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d):e
-            1 (CONCAT (REDXOR (REPLICATE _:1 (CONST #A):a):b*):1 (CONCAT (REDXOR _:c*):1 (CONCAT _:1 _:d):e):f):g
-            1 (CONCAT (REDXOR (REPLICATE _:a (CONST #A):a):b*):1 (CONCAT (REDXOR _:c):1 (REDXOR _:b):1*):d):e
-            1 (CONCAT (REDXOR (REPLICATE _:a* (CONST #A):b):b*):1 (CONCAT (REDXOR _:c):1* (CONCAT _:1 _:d):e):f):g
-            1 (CONCAT (REDXOR (REPLICATE _:a* (CONST #A):b):c*):1 (CONCAT (REDXOR _:b*):1 (CONCAT _:1* _:d):e):f):g
-            1 (CONCAT (REDXOR (SEL@0 _:a*):b):1 (REDXOR (REPLICATE _:c* (CONST #A):c):a):1*):d
-            1 (CONCAT (SEL@0 (AND _:a* _:a*):a*):1 (CONCAT (REDXOR _:b*):1 (CONCAT _:1 _:c):d):e):b
-            1 (CONCAT A:1* (CONCAT (REDXOR _:a*):1 (CONCAT _:1 A:1*):b):c):d | A is (REDXOR (REPLICATE _:e* (CONST #A):e):a):1*
-            1 (NOT (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b*):b
+            1 (CONCAT (REDXOR (REP _:1*):a):1 (CONCAT (REDXOR _:b):1 (CONCAT _:1 _:c):d):e):f
+            1 (CONCAT (REDXOR (REP _:1*):a):1 (CONCAT (REDXOR _:b*):1 (CONCAT _:1* _:c):d):e):f
+            1 (CONCAT (REDXOR (REP _:1*):a*):1 (CONCAT (REDXOR _:b):1* (CONCAT _:1 _:c):d):e):f
+            1 (CONCAT (REDXOR (REP _:a):b*):1 (CONCAT (REDXOR _:c):1 (REDXOR _:b):1*):d):e
+            1 (CONCAT (REDXOR (SEL@0 _:a*):b):1 (REDXOR (REP _:1*):a):1*):c
+            1 (CONCAT (SEL@0 (AND _:a* _:a*):a*):1 (CONCAT (REDXOR _:b):1 (CONCAT _:1 _:c):d):e):b
+            1 (CONCAT A:1* (CONCAT (REDXOR _:a*):1 (CONCAT _:1 A:1*):b):c):d | A is (REDXOR (REP _:1*):a):1*
+            1 (NOT (REP (SEL@A _:a*):1*):b*):b
             1 (REDXOR (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1
-            1 (REDXOR (REPLICATE (NOT _:a*):a (CONST #A):a):b*):1
-            1 (REDXOR (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c*):1
-            1 (REDXOR (REPLICATE (REPLICATE _:a* (CONST #A):b):b* (CONST #A):b):c):1*
-            1 (REDXOR (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b*):1
-            1 (REDXOR (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c*):1
-            1 (REDXOR (SEL@0 (REPLICATE _:a (CONST #A):a):b*):c):1
-            1 (REPLICATE (NOT (REPLICATE _:a* (CONST #A):b):b*):b (CONST #A):b):c*
-            1 (REPLICATE (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c* (CONST #B):a):a*
-            1 (REPLICATE (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b* (CONST #A):b):d
-            1 (REPLICATE (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c* (CONST #B):b):d*
-            1 (REPLICATE (SEL@A (AND _:a* _:a*):a*):1 (CONST #A):b):c*
+            1 (REDXOR (REP (NOT _:a*):a):b*):1
+            1 (REDXOR (REP (SEL@A _:a*):1*):b):1*
+            1 (REDXOR (REP (SEL@A _:a*):1*):b*):1
+            1 (REDXOR (SEL@0 (REP _:a):b*):c):1
+            1 (REP (NOT (REP _:1*):a*):a):b*
+            1 (REP (SEL@A (AND _:a* _:a*):a*):1*):b*
             1 (SEL@0 (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1
-            1 (SEL@0 (REPLICATE (NOT _:a*):a (CONST #A):a):b*):c
-            1 (SEL@A (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1
+            1 (SEL@0 (REP (NOT _:a*):a):b*):c
+            1 (SEL@A (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1*
             1 (VARPACKED (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):a
             1 (VARPACKED (CONCAT (REDXOR _:a*):1 (CONCAT _:1 _:b):c):d):d
-            1 (VARPACKED (REPLICATE (NOT _:a*):a (CONST #A):a):b*):b
-            1 (VARPACKED (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c*):c
-            1 (VARPACKED (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b*):b
-            1 (VARPACKED (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c*):c
+            1 (VARPACKED (REP (NOT _:a*):a):b*):b
+            1 (VARPACKED (REP (SEL@A _:a*):1*):b*):b
 
 DFG patterns with depth 4
+            3 (REP (SEL@A (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1*):b
+            2 (REDXOR (REP (SEL@A (AND _:a* _:a*):a*):1*):b):1
             1 (CONCAT (REDXOR (AND (NOT (VARPACKED):a):a* A:a*):a):1 (CONCAT (REDXOR (AND A:a* _:a*):a):1 (CONCAT (SEL@0 _:a*):1 (CONCAT _:1 _:b):c):d):e):f | A is (NOT (VARPACKED):a):a*
-            1 (CONCAT (REDXOR (AND (NOT (VARPACKED):a):a* A:a*):a):1 (CONCAT (SEL@0 (AND A:a* _:a*):a*):1 (CONCAT (REDXOR _:b*):1 (CONCAT _:1 _:c):d):e):b):f | A is (NOT (VARPACKED):a):a*
+            1 (CONCAT (REDXOR (AND (NOT (VARPACKED):a):a* A:a*):a):1 (CONCAT (SEL@0 (AND A:a* _:a*):a*):1 (CONCAT (REDXOR _:b):1 (CONCAT _:1 _:c):d):e):b):f | A is (NOT (VARPACKED):a):a*
             1 (CONCAT (REDXOR (AND (NOT (VARPACKED):a):a* A:a*):a*):1 (CONCAT (REDXOR (AND A:a* _:a*):a):1 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d):e):f | A is (NOT (VARPACKED):a):a*
-            1 (CONCAT (REDXOR (SEL@0 (REPLICATE _:a (CONST #A):a):b*):c):1 (REDXOR (REPLICATE (REPLICATE _:d* (CONST #A):a):a* (CONST #A):a):b):1*):e
-            1 (CONCAT (REDXOR A:a*):1 (CONCAT (REDXOR (REPLICATE A:a* (CONST #A):b):b*):1 (CONCAT (REDXOR _:c):1* (CONCAT _:1 _:d):e):f):g):h | A is (REPLICATE (REPLICATE _:1 (CONST #B):b):i* (CONST #A):b):a*
-            1 (CONCAT (REDXOR A:a*):1 (CONCAT (REDXOR (REPLICATE A:a* (CONST #A):b):c*):1 (CONCAT (REDXOR _:b*):1 (CONCAT _:1* _:d):e):f):g):h | A is (REPLICATE (SEL@A _:e*):1 (CONST #B):b):a*
-            1 (CONCAT (REDXOR A:a*):1 (CONCAT (REDXOR (SEL@0 A:a*):b):1 (REDXOR (REPLICATE B:c* (CONST #A):c):a):1*):d):e | A is (REPLICATE (NOT B:c*):c (CONST #A):c):a* | B is _:c*
-            1 (CONCAT (REDXOR A:a*):1 (CONCAT B:1* (CONCAT (REDXOR _:b*):1 (CONCAT _:1 B:1*):c):d):e):f | A is (REPLICATE (REPLICATE _:g* (CONST #A):a):h* (CONST #A):a):a* | B is (REDXOR (REPLICATE A:a* (CONST #A):a):b):1*
-            1 (CONCAT (SEL@0 (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1 (CONCAT (REDXOR (REPLICATE _:1 (CONST #A):b):c*):1 (CONCAT (REDXOR _:d*):1 (CONCAT _:1 _:a):e):f):g):c
-            1 (CONCAT A:1* (CONCAT (REDXOR (REPLICATE _:a (CONST #A):a):b*):1 (CONCAT (REDXOR _:c):1 A:1*):d):e):f | A is (REDXOR B:b):1* | B is (REPLICATE (REPLICATE _:g* (CONST #A):a):a* (CONST #A):a):b
-            1 (NOT (REPLICATE (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c* (CONST #B):a):a*):a
-            1 (REDXOR (REPLICATE (NOT (REPLICATE _:a* (CONST #A):b):b*):b (CONST #A):b):c*):1
-            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c* (CONST #B):a):a*):1
-            1 (REDXOR (REPLICATE (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b* (CONST #A):b):d):1*
-            1 (REDXOR (REPLICATE (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c* (CONST #B):b):d*):1
-            1 (REDXOR (REPLICATE (SEL@A (AND _:a* _:a*):a*):1 (CONST #A):b):c*):1
-            1 (REDXOR (SEL@0 (REPLICATE (NOT _:a*):a (CONST #A):a):b*):c):1
-            1 (REPLICATE (NOT (REPLICATE (REPLICATE _:a* (CONST #A):b):c* (CONST #A):b):b*):b (CONST #A):b):d*
-            1 (REPLICATE (REPLICATE (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c* (CONST #B):a):a* (CONST #B):a):d
-            1 (REPLICATE (REPLICATE (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c* (CONST #B):b):d* (CONST #B):b):b*
-            1 (REPLICATE (REPLICATE (SEL@A (AND _:a* _:a*):a*):1 (CONST #A):b):c* (CONST #B):b):d*
-            1 (REPLICATE (SEL@A (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1 (CONST #A):b):c*
-            1 (SEL@0 (REPLICATE (NOT (REPLICATE _:a* (CONST #A):b):b*):b (CONST #A):b):c*):d
+            1 (CONCAT (REDXOR (REP A:1*):a):1 (CONCAT (REDXOR (REP A:1*):b):1 (CONCAT (REDXOR _:c*):1 (CONCAT _:1* _:d):e):f):g):h | A is (SEL@A _:e*):1*
+            1 (CONCAT (REDXOR (REP A:1*):a):1 (CONCAT (REDXOR (REP A:1*):b*):1 (CONCAT (REDXOR _:c):1* (CONCAT _:1 _:d):e):f):g):h | A is (SEL@A _:f*):1*
+            1 (CONCAT (REDXOR (REP A:1*):a*):1 (CONCAT B:1* (CONCAT (REDXOR _:b*):1 (CONCAT _:1 B:1*):c):d):e):f | A is (SEL@A _:e*):1* | B is (REDXOR (REP A:1*):b):1*
+            1 (CONCAT (REDXOR (SEL@0 (REP _:a):b*):c):1 (REDXOR (REP (SEL@A _:d*):1*):b):1*):e
+            1 (CONCAT (REDXOR A:a*):1 (CONCAT (REDXOR (SEL@0 A:a*):b):1 (REDXOR (REP _:1*):a):1*):c):d | A is (REP (NOT _:e*):e):a*
+            1 (CONCAT (SEL@0 (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1 (CONCAT (REDXOR (REP _:1*):b):1 (CONCAT (REDXOR _:c):1 (CONCAT _:1 _:a):d):e):f):b
+            1 (CONCAT A:1* (CONCAT (REDXOR (REP _:a):b*):1 (CONCAT (REDXOR _:c):1 A:1*):d):e):f | A is (REDXOR B:b):1* | B is (REP (SEL@A _:f*):1*):b
+            1 (NOT (REP (SEL@A (AND _:a* _:a*):a*):1*):b*):b
+            1 (REDXOR (REP (NOT (REP _:1*):a*):a):b*):1
+            1 (REDXOR (REP (SEL@A (AND _:a* _:a*):a*):1*):b):1*
+            1 (REDXOR (REP (SEL@A (AND _:a* _:a*):a*):1*):b*):1
+            1 (REDXOR (SEL@0 (REP (NOT _:a*):a):b*):c):1
+            1 (REP (NOT (REP (SEL@A _:a*):1*):b*):b):c*
+            1 (REP (SEL@A (AND (NOT (VARPACKED):a):a* (NOT (VARPACKED):a):a*):a*):1*):b*
+            1 (SEL@0 (REP (NOT (REP _:1*):a*):a):b*):c
             1 (VARPACKED (CONCAT (REDXOR (AND _:a* _:a*):a*):1 (CONCAT (REDXOR _:a):1 (CONCAT _:1 _:b):c):d):e):e
-            1 (VARPACKED (REPLICATE (NOT (REPLICATE _:a* (CONST #A):b):b*):b (CONST #A):b):c*):c
-            1 (VARPACKED (REPLICATE (REPLICATE (REPLICATE _:1 (CONST #A):a):b* (CONST #B):a):c* (CONST #B):a):a*):a
-            1 (VARPACKED (REPLICATE (REPLICATE (SEL@A _:a*):1 (CONST #A):b):c* (CONST #B):b):d*):d
-            1 (VARPACKED (REPLICATE (SEL@A (AND _:a* _:a*):a*):1 (CONST #A):b):c*):c
+            1 (VARPACKED (REP (NOT (REP _:1*):a*):a):b*):b
+            1 (VARPACKED (REP (SEL@A (AND _:a* _:a*):a*):1*):b*):b
 
