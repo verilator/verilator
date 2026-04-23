@@ -406,9 +406,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), illegalErrMsg));
         }
 
-        AstIf* const ifp = new AstIf{binp->fileline(),
-                                     applyCoverpointIffCondition(coverpointp, binp->fileline(), condp),
-                                     stmtp, nullptr};
+        AstIf* const ifp = new AstIf{
+            binp->fileline(), applyCoverpointIffCondition(coverpointp, binp->fileline(), condp),
+            stmtp, nullptr};
         UASSERT_OBJ(m_sampleFuncp, binp, assertMsg);
         m_sampleFuncp->addStmtsp(ifp);
     }
@@ -506,10 +506,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Create a member variable to track hits for this bin
             // Sanitize bin name to make it a valid C++ identifier
             const string binName = sanitizeGeneratedName(cbinp->name());
-            AstVar* const varp
-                = createTrackedCoverpointBinCounter(coverpointp, cbinp, binName, atLeastValue,
-                                                    "Created member variable",
-                                                    " type=" + string{cbinp->binsType().ascii()});
+            AstVar* const varp = createTrackedCoverpointBinCounter(
+                coverpointp, cbinp, binName, atLeastValue, "Created member variable",
+                " type=" + string{cbinp->binsType().ascii()});
 
             // Note: Coverage database registration happens later via VL_COVER_INSERT
             // (see generateCoverageDeclarations() method around line 1164)
