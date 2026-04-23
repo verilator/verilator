@@ -19,6 +19,16 @@ test.execute()
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    test.obj_dir + "/coverage.dat",
+],
+         logfile=test.obj_dir + "/summary.log",
+         tee=False,
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/summary.log", "t/" + test.name + "_summary.out")
+
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate",
     test.obj_dir + "/annotated",
     test.obj_dir + "/coverage.dat",
