@@ -2229,7 +2229,9 @@ class ConstVisitor final : public VNVisitor {
             && !VN_IS(nodep, AssignDly)) {
             // X = X.  Quite pointless, though X <= X may override another earlier assignment
             if (VN_IS(nodep, AssignW)) {
-                nodep->v3error("Wire inputs its own output, creating circular logic (wire x=x)");
+                if (!v3Global.opt.pedantic())
+                    nodep->v3error(
+                        "Wire inputs its own output, creating circular logic (wire x=x)");
                 return false;  // Don't delete the assign, or V3Gate will freak out
             } else {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
