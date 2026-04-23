@@ -1430,6 +1430,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UINFO(9, "Visiting class: " << nodep->name() << " isCovergroup=" << nodep->isCovergroup());
         if (nodep->isCovergroup()) {
             VL_RESTORER(m_covergroupp);
+            VL_RESTORER(m_sampleFuncp);
+            VL_RESTORER(m_constructorp);
+            VL_RESTORER(m_coverpoints);
+            VL_RESTORER(m_coverpointMap);
+            VL_RESTORER(m_coverCrosses);
             m_covergroupp = nodep;
             m_sampleFuncp = nullptr;
             m_constructorp = nullptr;
