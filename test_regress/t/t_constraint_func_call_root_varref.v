@@ -52,9 +52,9 @@ endclass
 
 module t;
   FassignBody o1;
-  Freturn    o2;
-  Fmultiarg  o3;
-  Fnonrand   o4;
+  Freturn o2;
+  Fmultiarg o3;
+  Fnonrand o4;
   int rand_ok;
 
   initial begin

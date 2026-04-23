@@ -16,19 +16,19 @@ package pkg;
   typedef int_q alias_q;
 
   class Bundle;
-    int_q  q;
+    int_q q;
     int_da d;
     int_up u;
   endclass
 endpackage
 
-module t(/*AUTOARG*/);
+module t;
   import pkg::*;
 
   initial begin
     automatic Bundle b = new();
-    automatic int    t_l = 0;
-    automatic int    rv;
+    automatic int t_l = 0;
+    automatic int rv;
     automatic alias_q a = '{32'd1, 32'd2, 32'd3};
 
     b.q = '{32'd10, 32'd20, 32'd30};
