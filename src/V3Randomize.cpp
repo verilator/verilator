@@ -2560,12 +2560,23 @@ class ConstraintExprVisitor final : public VNVisitor {
         const V3TaskConnects tconnects
             = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
 
-        // Clone return expression, substitute params with args
-        AstNodeExpr* const inlinedp = retExprp->cloneTreePure(false);
+        // Clone return expression, substitute params with args.
+        // Track the root via a local pointer: when the root itself is a VarRef to a port
+        // (e.g. body `F = d;`), the cloned root has no back pointer, so foreach's
+        // replaceWith would trip the "no back" assertion -- substitute the root pointer
+        // directly instead.
+        AstNodeExpr* inlinedp = retExprp->cloneTreePure(false);
         for (const auto& tconnect : tconnects) {
             const AstVar* const portp = tconnect.first;
             AstArg* const argp = tconnect.second;
             if (!argp || !argp->exprp()) continue;
+            if (AstVarRef* const rootRefp = VN_CAST(inlinedp, VarRef)) {
+                if (rootRefp->varp() == portp) {
+                    inlinedp = argp->exprp()->cloneTreePure(false);
+                    VL_DO_DANGLING(rootRefp->deleteTree(), rootRefp);
+                    continue;
+                }
+            }
             inlinedp->foreach([&](AstVarRef* refp) {
                 if (refp->varp() == portp) {
                     refp->replaceWith(argp->exprp()->cloneTreePure(false));
