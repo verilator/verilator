@@ -9,19 +9,24 @@
 // this test exercises the ascending() branch in V3Inst and negative lo() in
 // name mangling.
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 interface simple_if;
   logic [7:0] data;
 endinterface
 
 module t;
   // Both dims ascending, zero-based.
-  simple_if asc [0:1][0:2] ();
+  simple_if asc[0:1][0:2] ();
 
   // Outer descending, inner ascending (mixed endianness).
-  simple_if mix [1:0][0:2] ();
+  simple_if mix[1:0][0:2] ();
 
   // Negative indices: outer descending (1..-1), inner ascending (-2..0).
-  simple_if neg [1:-1][-2:0] ();
+  simple_if neg[1:-1][-2:0] ();
 
   initial begin
     asc[0][0].data = 8'd10;
@@ -51,29 +56,29 @@ module t;
 
   initial begin
     #1;
-    if (asc[0][0].data !== 8'd10) begin $write("%%Error: asc[0][0]=%0d\n", asc[0][0].data); $stop; end
-    if (asc[0][1].data !== 8'd11) begin $write("%%Error: asc[0][1]=%0d\n", asc[0][1].data); $stop; end
-    if (asc[0][2].data !== 8'd12) begin $write("%%Error: asc[0][2]=%0d\n", asc[0][2].data); $stop; end
-    if (asc[1][0].data !== 8'd13) begin $write("%%Error: asc[1][0]=%0d\n", asc[1][0].data); $stop; end
-    if (asc[1][1].data !== 8'd14) begin $write("%%Error: asc[1][1]=%0d\n", asc[1][1].data); $stop; end
-    if (asc[1][2].data !== 8'd15) begin $write("%%Error: asc[1][2]=%0d\n", asc[1][2].data); $stop; end
+    `checkd(asc[0][0].data, 8'd10);
+    `checkd(asc[0][1].data, 8'd11);
+    `checkd(asc[0][2].data, 8'd12);
+    `checkd(asc[1][0].data, 8'd13);
+    `checkd(asc[1][1].data, 8'd14);
+    `checkd(asc[1][2].data, 8'd15);
 
-    if (mix[0][0].data !== 8'd20) begin $write("%%Error: mix[0][0]=%0d\n", mix[0][0].data); $stop; end
-    if (mix[0][1].data !== 8'd21) begin $write("%%Error: mix[0][1]=%0d\n", mix[0][1].data); $stop; end
-    if (mix[0][2].data !== 8'd22) begin $write("%%Error: mix[0][2]=%0d\n", mix[0][2].data); $stop; end
-    if (mix[1][0].data !== 8'd23) begin $write("%%Error: mix[1][0]=%0d\n", mix[1][0].data); $stop; end
-    if (mix[1][1].data !== 8'd24) begin $write("%%Error: mix[1][1]=%0d\n", mix[1][1].data); $stop; end
-    if (mix[1][2].data !== 8'd25) begin $write("%%Error: mix[1][2]=%0d\n", mix[1][2].data); $stop; end
+    `checkd(mix[0][0].data, 8'd20);
+    `checkd(mix[0][1].data, 8'd21);
+    `checkd(mix[0][2].data, 8'd22);
+    `checkd(mix[1][0].data, 8'd23);
+    `checkd(mix[1][1].data, 8'd24);
+    `checkd(mix[1][2].data, 8'd25);
 
-    if (neg[-1][-2].data !== 8'd50) begin $write("%%Error: neg[-1][-2]=%0d\n", neg[-1][-2].data); $stop; end
-    if (neg[-1][-1].data !== 8'd51) begin $write("%%Error: neg[-1][-1]=%0d\n", neg[-1][-1].data); $stop; end
-    if (neg[-1][0].data !== 8'd52) begin $write("%%Error: neg[-1][0]=%0d\n", neg[-1][0].data); $stop; end
-    if (neg[0][-2].data !== 8'd53) begin $write("%%Error: neg[0][-2]=%0d\n", neg[0][-2].data); $stop; end
-    if (neg[0][-1].data !== 8'd54) begin $write("%%Error: neg[0][-1]=%0d\n", neg[0][-1].data); $stop; end
-    if (neg[0][0].data !== 8'd55) begin $write("%%Error: neg[0][0]=%0d\n", neg[0][0].data); $stop; end
-    if (neg[1][-2].data !== 8'd56) begin $write("%%Error: neg[1][-2]=%0d\n", neg[1][-2].data); $stop; end
-    if (neg[1][-1].data !== 8'd57) begin $write("%%Error: neg[1][-1]=%0d\n", neg[1][-1].data); $stop; end
-    if (neg[1][0].data !== 8'd58) begin $write("%%Error: neg[1][0]=%0d\n", neg[1][0].data); $stop; end
+    `checkd(neg[-1][-2].data, 8'd50);
+    `checkd(neg[-1][-1].data, 8'd51);
+    `checkd(neg[-1][0].data, 8'd52);
+    `checkd(neg[0][-2].data, 8'd53);
+    `checkd(neg[0][-1].data, 8'd54);
+    `checkd(neg[0][0].data, 8'd55);
+    `checkd(neg[1][-2].data, 8'd56);
+    `checkd(neg[1][-1].data, 8'd57);
+    `checkd(neg[1][0].data, 8'd58);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -9,11 +9,13 @@ module t (
 );
 
   typedef enum logic [1:0] {
-    A0, A1
+    A0,
+    A1
   } a_state_t;
 
   typedef enum logic [1:0] {
-    B0, B1
+    B0,
+    B1
   } b_state_t;
 
   a_state_t state_a;

@@ -18,7 +18,7 @@ module t (
   integer cyc;
   logic rst;
   logic start;
-  state_t state /*verilator fsm_arc_include_cond*/;
+  state_t state  /*verilator fsm_arc_include_cond*/;
 
   initial begin
     rst = 1'b1;
@@ -40,9 +40,12 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
-        S0: if (start) state <= S1; else state <= S2;
+        S0:
+        if (start) state <= S1;
+        else state <= S2;
         S1: state <= S3;
         default: state <= S0;
       endcase

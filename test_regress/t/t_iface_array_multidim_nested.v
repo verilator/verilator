@@ -13,7 +13,7 @@ interface inner_if;
 endinterface
 
 interface outer_if;
-  inner_if inner();
+  inner_if inner ();
   logic [7:0] tag;
 endinterface
 
@@ -21,7 +21,7 @@ module t;
   localparam int A = 2;
   localparam int B = 2;
 
-  outer_if oarr [A-1:0][B-1:0] ();
+  outer_if oarr[A-1:0][B-1:0] ();
 
   genvar gi, gj;
   generate
@@ -35,8 +35,8 @@ module t;
     end
   endgenerate
 
-  logic [7:0] chk_tag [A-1:0][B-1:0];
-  logic [7:0] chk_inner [A-1:0][B-1:0];
+  logic [7:0] chk_tag[A-1:0][B-1:0];
+  logic [7:0] chk_inner[A-1:0][B-1:0];
   generate
     for (gi = 0; gi < A; gi++) begin : g_a_chk
       for (gj = 0; gj < B; gj++) begin : g_b_chk

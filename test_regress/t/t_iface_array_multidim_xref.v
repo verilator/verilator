@@ -8,7 +8,9 @@
 // parameterized interface.  Exercises IfaceCapture plus the multi-dim
 // dotted-access resolver together.
 
-interface bus_if #(parameter int W = 8);
+interface bus_if #(
+    parameter int W = 8
+);
   logic [W-1:0] data;
 endinterface
 
@@ -17,7 +19,7 @@ module holder;
   localparam int A = 2;
   localparam int B = 3;
 
-  bus_if #(.W(8)) bus [A-1:0][B-1:0] ();
+  bus_if #(.W(8)) bus[A-1:0][B-1:0] ();
 
   genvar gi, gj;
   generate
@@ -30,7 +32,7 @@ module holder;
 endmodule
 
 module t;
-  holder h();
+  holder h ();
 
   initial begin
     #1;

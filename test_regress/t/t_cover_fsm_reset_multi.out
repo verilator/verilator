@@ -17,7 +17,7 @@
         
           logic rst;
           integer cyc;
-          state_t state /*verilator fsm_reset_arc*/;
+          state_t state  /*verilator fsm_reset_arc*/;
         
           initial begin
             rst = 1'b1;
@@ -41,7 +41,8 @@
             if (rst) begin
               state <= S0;
               state <= S1;
-            end else begin
+            end
+            else begin
 %000001       case (state)
         // [FSM coverage]
 %000000        // [fsm_arc t.state::ANY->S0[reset_include]] [reset arc, excluded from %]

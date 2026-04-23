@@ -10,13 +10,9 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-typedef struct packed {
-  logic [31:0] value;
-} Entry;
+typedef struct packed {logic [31:0] value;} Entry;
 
-typedef struct packed {
-  Entry [1:0][1:0] entries;
-} DataBlock;
+typedef struct packed {Entry [1:0][1:0] entries;} DataBlock;
 
 module sub;
   DataBlock data_block;

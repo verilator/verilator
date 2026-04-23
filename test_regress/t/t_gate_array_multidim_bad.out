@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_gate_array_multidim_bad.v:12:14: Unsupported: Multidimensional gate instances.
-   12 |   and g [1:0][1:0] (y, a, b);
-      |              ^
+%Error-UNSUPPORTED: t/t_gate_array_multidim_bad.v:12:13: Unsupported: Multidimensional gate instances.
+   12 |   and g[1:0][1:0] (y, a, b);
+      |             ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

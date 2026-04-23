@@ -19,8 +19,8 @@
           integer cyc;
 %000001   logic rst;
 %000001   logic start;
-%000003   state_t state_default /*verilator fsm_arc_include_cond*/;
-%000001   state_t state_reset_incl /*verilator fsm_reset_arc*/;
+%000003   state_t state_default  /*verilator fsm_arc_include_cond*/;
+%000001   state_t state_reset_incl  /*verilator fsm_reset_arc*/;
 %000001   state_t state_reset_excl;
         
 %000001   initial begin
@@ -45,7 +45,8 @@
 %000007   always_ff @(posedge clk) begin
 %000005     if (rst) begin
 %000002       state_default <= S0;
-%000005     end else begin
+            end
+%000005     else begin
 %000005       case (state_default)
         // [FSM coverage]
 %000001        // [fsm_arc t.state_default::ANY->S0[reset]]
@@ -54,7 +55,9 @@
 %000000        // [fsm_state t.state_default::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.state_default::S2]
 %000000        // [fsm_state t.state_default::S3] *** UNCOVERED ***
-%000003         S0: if (start) state_default <= S1; else state_default <= S2;
+%000003         S0:
+%000003         if (start) state_default <= S1;
+%000003         else state_default <= S2;
 %000002         default: state_default <= S0;
               endcase
             end
@@ -65,7 +68,8 @@
 %000007   always_ff @(posedge clk) begin
 %000005     if (rst) begin
 %000002       state_reset_incl <= S0;
-%000005     end else begin
+            end
+%000005     else begin
 %000005       case (state_reset_incl)
         // [FSM coverage]
 %000001        // [fsm_arc t.state_reset_incl::ANY->S0[reset_include]]
@@ -83,7 +87,8 @@
 %000007   always_ff @(posedge clk) begin
 %000005     if (rst) begin
 %000002       state_reset_excl <= S0;
-%000005     end else begin
+            end
+%000005     else begin
 %000005       case (state_reset_excl)
         // [FSM coverage]
 %000001        // [fsm_arc t.state_reset_excl::ANY->S0[reset]]
