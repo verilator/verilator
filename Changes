@@ -22,7 +22,7 @@ Verilator 5.047 devel
 * Add `--func-recursion-depth` option (#7175) (#7179).
 * Add `+verilator+solver+file` for debugging constraint solver (#7242).
 * Add `--coverage-fsm` for experimental FSM state and arc coverage (#7412). [Yogish Sekhar]
-* Add printed summary to verilator_coverage (#7438). [Yogish Sekhar]
+* Add printed summary to verilator_coverage (#7438) (#7462). [Yogish Sekhar]
 * Deprecate `--structs-packed` (#7222).
 * Remove DFG extract optimization pass (#7394). [Geza Lore, Testorrent USA, Inc.]
 * Remove multi-threaded FST tracing (#7443). [Geza Lore, Testorrent USA, Inc.]
@@ -58,6 +58,7 @@ Verilator 5.047 devel
 * Support boolean and/or in sequence expressions (#7285). [Yilou Wang]
 * Support property-local variables and sequence match items (#7286). [Yilou Wang]
 * Support 'until' and `until_with` property (#7290 partial) (#7399) (#7436). [Ryszard Rozak, Antmicro Ltd.]
+* Support implication operator with constraint_set (#7300) (#7448). [Yilou Wang]
 * Support array map() method (#7307) (#7316) (#7344). [Wei-Lun Chiu]
 * Support MacOS address sanitizer memory limit (#7308). [Marco Bartoli]
 * Support SVA goto repetition `[->N]` in concurrent assertions (#7310). [Yilou Wang]
@@ -91,6 +92,7 @@ Verilator 5.047 devel
 * Optimize temporary insertion in DfgPeephole. [Geza Lore, Testorrent USA, Inc.]
 * Optimize arithmetic right shift (>>>) in DfgBreakCycles (#7447). [Geza Lore, Testorrent USA, Inc.]
 * Optimize temporary insertion in DFG (#7459). [Geza Lore, Testorrent USA, Inc.]
+* Optimize mix of Concat/Extend assignments (#7479). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
 * Fix tracing virtual interface member written from classes (#5044) (#7465). [Nikolay Puzanov]
 * Fix virtual interface member trigger convergence (#5116) (#7323). [Yilou Wang]
@@ -167,6 +169,10 @@ Verilator 5.047 devel
 * Fix modification of members of object with const handle (#7433). [Kamil Danecki, Antmicro Ltd.]
 * Fix `dist` under implication in constraints (#7440) (#7442). [Alex Solomatnikov] [Yilou Wang]
 * Fix std::randomize `inside` corrupting class-member queue operand (#7449) (#7456). [Yilou Wang]
+* Fix function-in-constraint internal error on bare port return (#7473) (#7480). [Yilou Wang]
+* Fix access to static variable inside function (#7474) (#7475). [Alex Zhou]
+* Fix std::randomize inside {typedef array} internal error (#7481). [Yilou Wang]
+* Fix module parameters not re-evaluated upon instantiation (#7463) (#7477). [em2machine]
 
 
 Verilator 5.046 2026-02-28

@@ -16,14 +16,14 @@ typedef enum bit [1:0] { TXN_READ, TXN_WRITE } txn_e;
 // (constraint_set on the right of the implication operator -> ).  `mode`
 // selects which constraint contributes; the others are vacuous.
 class Forms;
-  rand bit [3:0]  mode;
-  rand bit [3:0]  a;
-  rand bit [3:0]  b;
-  rand bit [3:0]  c;
+  rand bit [3:0] mode;
+  rand bit [3:0] a;
+  rand bit [3:0] b;
+  rand bit [3:0] c;
   rand bit [31:0] address;
-  rand txn_e      txn_type;
-  rand bit [7:0]  arr [4];
-  rand bit [3:0]  uarr [3];
+  rand txn_e txn_type;
+  rand bit [7:0] arr [4];
+  rand bit [3:0] uarr [3];
 
   // Bare expression (legacy form, supported pre-PR via expr->expr).
   constraint c_expr {
@@ -131,9 +131,9 @@ class DisSoftBothArms;
 endclass
 
 module t;
-  Forms   obj;
+  Forms obj;
   DisSoft ds;
-  int     ok;
+  int ok;
 
   initial begin
     obj = new();

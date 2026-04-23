@@ -9,7 +9,7 @@ module t(
   i0, o0,
   i1, o1
 );
-  localparam N = 2000; // Deliberately not multiple of 32
+  localparam N = 2000;  // Deliberately not multiple of 32
 
   input clk;
   wire clk;
@@ -22,7 +22,7 @@ module t(
   output o0;
   wire [N-1:0] o0;
 
-  for (genvar n = 0 ; n + 31 < N ; n += 32) begin
+  for (genvar n = 0; n + 31 < N; n += 32) begin
     assign o0[n+ 0 +: 1] = i0[(N-1-n)- 0 -: 1];
     assign o0[n+ 1 +: 1] = i0[(N-1-n)- 1 -: 1];
     assign o0[n+ 2 +: 2] = i0[(N-1-n)- 2 -: 2];
@@ -35,7 +35,7 @@ module t(
     assign o0[n+31 +: 1] = i0[(N-1-n)-31 -: 1];
   end
 
-  for (genvar n = N / 32 * 32; n < N ; ++n) begin
+  for (genvar n = N / 32 * 32; n < N; ++n) begin
     assign o0[n] = i0[N-1-n];
   end
 
