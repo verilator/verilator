@@ -2050,9 +2050,6 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { V3ERROR_NA_RETURN(0); }
-    bool sameNode(const AstNode* samep) const override {
-        return m_isStrong == VN_DBG_AS(samep, PropAlways)->m_isStrong;
-    }
     bool isStrong() const { return m_isStrong; }
     bool isMultiCycleSva() const override { return true; }
 };
