@@ -47,8 +47,8 @@ public:
     // This allows the C code to call DPI exports with timing controls
     template <typename Callable>
     static VlCoroutine callImport(Callable&& fn) {
-        auto fiberp
-            = VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); });
+        auto fiberp{
+            VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); })};
         while (!fiberp->isDone()) {
             fiberp->resume();
             co_await FiberAwaitable{*fiberp};
@@ -67,10 +67,10 @@ public:
         }
         if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                             VlCoroutine>::value) {
+            // Call will return on first delay/event encountered
             VlCoroutine local{call(std::forward<Args>(args)...)};
-            if (local.await_ready()) return;
             local.setFiberContinuation(fiberp);
-            do { VlFiber::yield(); } while (!local.await_ready());
+            while (!local.await_ready()) { VlFiber::yield(); }
         } else {
             call(std::forward<Args>(args)...);
         }

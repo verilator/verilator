@@ -1024,9 +1024,6 @@ class TaskVisitor final : public VNVisitor {
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
 
-        // Add a runtime check for task to prevent calling exported tasks from function context
-        if (!nodep->isFunction()) funcp->addStmtsp(createFuncImportCheck(flp));
-
         // used
         if (v3Global.opt.timing().isTrue()) {
             AstCStmt* const awaitExportp
@@ -1253,7 +1250,7 @@ class TaskVisitor final : public VNVisitor {
             // If timings are used, the DPI function has to be executed inside a fiber.
             // Functions do not need to be executed inside a fiber, because they are
             // indistinguishable from SV functions. (IEEE 35.2.1 Tasks and functions)
-            if (v3Global.opt.timing().isTrue() && !nodep->isFunction()) {
+            if (v3Global.opt.timing().isTrue() && !nodep->verilogFunction()) {
                 AstCExpr* const callImportp
                     = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
                 AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
@@ -1264,6 +1261,16 @@ class TaskVisitor final : public VNVisitor {
                 cfuncp->rtnType("VlCoroutine");
             } else {
                 cfuncp->addStmtsp(cstmtp);
+            }
+
+            // Set DPI import trigger flag to track invoking from function context
+            if (nodep->verilogFunction()) {
+                FileLine* const flp = cfuncp->fileline();
+                AstVarScope* const dpiImportTriggerp = getDpiImportTrigger();
+                AstVarRef* const varRefp = new AstVarRef{flp, dpiImportTriggerp, VAccess::WRITE};
+                AstAssign* const assignp
+                    = new AstAssign{flp, varRefp, new AstConst{flp, AstConst::BitFalse{}}};
+                cfuncp->addStmtsp(assignp);
             }
         }
 
