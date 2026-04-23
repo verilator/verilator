@@ -1558,6 +1558,39 @@ static inline QData VL_STREAML_FAST_QQI(int lbits, QData ld, IData rd_log2) VL_P
     return ret >> (VL_QUADSIZE - lbits);
 }
 
+static inline QData VL_STREAML_FAST_QQI(int lbits, const VlQueue<CData>& q,
+                                        IData rd_log2) VL_PURE {
+    // Pre-shift bits in most-significant slice (see comment in VL_STREAML_FAST_III)
+    QData ld = q.getFirst64Bits();
+    QData ret = ld;
+    if (rd_log2) {
+        const uint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
+        const uint32_t lbitsRem = lbits - lbitsFloor;
+        const QData msbMask = lbitsFloor == 64 ? 0ULL : VL_MASK_Q(lbitsRem) << lbitsFloor;
+        ret = (ret & ~msbMask) | ((ret & msbMask) << ((1ULL << rd_log2) - lbitsRem));
+    }
+    switch (rd_log2) {
+    case 0:
+        ret = (((ret >> 1) & 0x5555555555555555ULL)
+               | ((ret & 0x5555555555555555ULL) << 1));  // FALLTHRU
+    case 1:
+        ret = (((ret >> 2) & 0x3333333333333333ULL)
+               | ((ret & 0x3333333333333333ULL) << 2));  // FALLTHRU
+    case 2:
+        ret = (((ret >> 4) & 0x0f0f0f0f0f0f0f0fULL)
+               | ((ret & 0x0f0f0f0f0f0f0f0fULL) << 4));  // FALLTHRU
+    case 3:
+        ret = (((ret >> 8) & 0x00ff00ff00ff00ffULL)
+               | ((ret & 0x00ff00ff00ff00ffULL) << 8));  // FALLTHRU
+    case 4:
+        ret = (((ret >> 16) & 0x0000ffff0000ffffULL)
+               | ((ret & 0x0000ffff0000ffffULL) << 16));  // FALLTHRU
+    case 5: ret = ((ret >> 32) | (ret << 32));  // FALLTHRU
+    default:;
+    }
+    return ret >> (VL_QUADSIZE - lbits);
+}
+
 // Regular "slow" streaming operators
 static inline IData VL_STREAML_III(int lbits, IData ld, IData rd) VL_PURE {
     IData ret = 0;
@@ -1566,6 +1599,21 @@ static inline IData VL_STREAML_III(int lbits, IData ld, IData rd) VL_PURE {
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;
         ostart = ostart > 0 ? ostart : 0;
+        ret |= ((ld >> istart) & mask) << ostart;
+    }
+    return ret;
+}
+
+// Regular "slow" streaming operators for queues
+static inline IData VL_STREAML_III(int lbits, const VlQueue<CData>& q, IData rd) VL_PURE {
+    IData ret = 0;
+    IData ld = q.getFirst32Bits();
+    // Slice size should never exceed the lhs width
+    const IData mask = VL_MASK_I(rd);
+    for (int istart = 0; istart < lbits; istart += rd) {
+        int ostart = lbits - rd - istart;
+        ostart = ostart > 0 ? ostart : 0;
+
         ret |= ((ld >> istart) & mask) << ostart;
     }
     return ret;
@@ -1600,6 +1648,42 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
         }
     }
     return owp;
+}
+
+static inline VlQueue<unsigned char> VL_STREAML_RWI(int lbits, WDataInP const lwp,
+                                                    IData rd) VL_MT_SAFE {
+    //dynamicly make our "temp variable"
+    std::vector<uint32_t> my_buffer(lbits / 32, 0);
+    WDataOutP owp = my_buffer.data();
+    VL_ZERO_W(lbits, owp);
+    const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
+    for (int istart = 0; istart < lbits; istart += rd) {
+        int ostart = lbits - rd - istart;
+        ostart = ostart > 0 ? ostart : 0;
+        for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
+            const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
+                              << VL_BITBIT_E(ostart + sbit);
+            owp[VL_BITWORD_E(ostart + sbit)] |= bit;
+        }
+    }
+
+    // 2. NEW LOGIC: Convert the 'owp' buffer into a VlQueue
+    VlQueue<unsigned char> out_queue;
+
+    // Figure out how many bytes we actually processed
+    int total_bytes = (lbits + 7) / 8;
+
+    // Read the owp buffer backwards to preserve Big-Endian byte order
+    for (int i = total_bytes - 1; i >= 0; --i) {
+        int word_idx = i / 4;  // Which 32-bit chunk is this byte in?
+        int byte_in_word = i % 4;  // Which of the 4 bytes is it?
+
+        // Extract the byte and push it
+        unsigned char byte_val = (owp[word_idx] >> (byte_in_word * 8)) & 0xFF;
+        out_queue.push_back(byte_val);
+    }
+
+    return out_queue;
 }
 
 static inline IData VL_PACK_I_RI(int /*obits*/, int lbits, const VlQueue<CData>& q) {
