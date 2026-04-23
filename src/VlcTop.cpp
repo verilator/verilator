@@ -372,8 +372,8 @@ void VlcTop::annotate(const string& dirname) {
 }
 
 void VlcTop::printTypeSummary() {
-    static const std::vector<std::string> orderedTypes = {"line", "toggle", "branch", "expr",
-                                                          "fsm_state", "fsm_arc"};
+    static const std::vector<std::string> orderedTypes
+        = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
     std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
     for (const auto& i : m_points) {
         const VlcPoint& pt = m_points.pointNumber(i.second);
