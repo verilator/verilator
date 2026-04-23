@@ -2007,6 +2007,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
     void visit(AstCStmt* nodep) override {}
+    void visit(AstIf* nodep) override {
+        // Hoisted runtime-conditional disable_soft statements parked in the
+        // constraint-items list by the pre-pass; already fully lowered.
+    }
     void visit(AstConstraintIf* nodep) override {
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
@@ -2192,28 +2196,13 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
-        // IEEE 1800-2023 18.5.13: "disable soft" removes all soft constraints
-        // referencing the specified variable. Pass the variable name directly
-        // instead of going through SMT lowering.
+        // IEEE 1800-2023 18.5.13: 'disable soft' is a meta-level directive on
+        // the constraint graph, lowered to a void RANDOMIZER_DISABLE_SOFT
+        // call.  Conditional occurrences (if / foreach / implication body)
+        // are rewritten by extractConditionalDisableSofts() before this
+        // visitor runs, so anything we see here is unconditional.
         if (nodep->isDisableSoft()) {
-            // Extract variable name from expression (VarRef or MemberSel)
-            std::string varName;
-            if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
-                varName = vrefp->name();
-            } else if (const AstMemberSel* const mselp = VN_CAST(nodep->exprp(), MemberSel)) {
-                varName = mselp->name();
-            } else {
-                nodep->v3fatalSrc("Unexpected expression type in disable soft");
-                return;
-            }
-            AstCMethodHard* const callp = new AstCMethodHard{
-                nodep->fileline(),
-                new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                              VAccess::READWRITE},
-                VCMethod::RANDOMIZER_DISABLE_SOFT,
-                new AstConst{nodep->fileline(), AstConst::String{}, varName}};
-            callp->dtypeSetVoid();
-            nodep->replaceWith(callp->makeStmt());
+            nodep->replaceWith(buildDisableSoftCallStmt(nodep));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -2603,6 +2592,93 @@ class ConstraintExprVisitor final : public VNVisitor {
             "Visit function missing? Constraint function missing for node: " << nodep);
     }
 
+    // Build the runtime statement that calls RANDOMIZER_DISABLE_SOFT on the
+    // variable referenced by the given AstConstraintExpr.  Parser enforces
+    // constraint_primary operand (verilog.y, IEEE 1800-2023 18.5.13).
+    AstNode* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
+        std::string varName;
+        if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
+            varName = vrefp->name();
+        } else if (const AstMemberSel* const mselp = VN_CAST(nodep->exprp(), MemberSel)) {
+            varName = mselp->name();
+        } else {
+            nodep->v3fatalSrc("Unexpected expression type in disable soft");
+        }
+        AstCMethodHard* const callp = new AstCMethodHard{
+            nodep->fileline(),
+            new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                          VAccess::READWRITE},
+            VCMethod::RANDOMIZER_DISABLE_SOFT,
+            new AstConst{nodep->fileline(), AstConst::String{}, varName}};
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
+    }
+
+    // Pre-pass: for every AstConstraintExpr(isDisableSoft) nested inside an
+    // AstConstraintIf subtree (any depth), return a list of runtime AstIf
+    // statements `if (accumulated_cond) randomizer.disable_soft(var);` where
+    // accumulated_cond AND-folds the enclosing then/else branch conditions.
+    // The original ConstraintExpr is replaced with `1'b1` so editSingle()
+    // folds the surrounding boolean cleanly.  Caller appends the returned
+    // list to the constraint-items chain; that chain becomes the setup task
+    // body, which runs before the solver on every randomize() call -- giving
+    // disable-soft real conditional semantics per IEEE 1800-2023 18.5.13.
+    AstNode* extractConditionalDisableSofts(AstNode* itemsp, AstNodeExpr* outerCondp) {
+        AstNode* hoistListp = nullptr;
+        for (AstNode *stmtp = itemsp, *nextp; stmtp; stmtp = nextp) {
+            nextp = stmtp->nextp();
+            if (AstConstraintIf* const ifp = VN_CAST(stmtp, ConstraintIf)) {
+                FileLine* const fl = ifp->fileline();
+                // then branch: accumulated = outer && this.cond
+                AstNodeExpr* const thenCondp
+                    = outerCondp ? static_cast<AstNodeExpr*>(
+                                       new AstLogAnd{fl, outerCondp->cloneTreePure(false),
+                                                     ifp->condp()->cloneTreePure(false)})
+                                 : ifp->condp()->cloneTreePure(false);
+                if (AstNode* const thenHoistp
+                    = extractConditionalDisableSofts(ifp->thensp(), thenCondp)) {
+                    hoistListp
+                        = hoistListp ? AstNode::addNext(hoistListp, thenHoistp) : thenHoistp;
+                }
+                VL_DO_DANGLING(thenCondp->deleteTree(), thenCondp);
+                if (ifp->elsesp()) {
+                    // else branch: accumulated = outer && !this.cond
+                    AstNodeExpr* const notInnerp
+                        = new AstLogNot{fl, ifp->condp()->cloneTreePure(false)};
+                    AstNodeExpr* const elseCondp
+                        = outerCondp ? static_cast<AstNodeExpr*>(new AstLogAnd{
+                                           fl, outerCondp->cloneTreePure(false), notInnerp})
+                                     : notInnerp;
+                    if (AstNode* const elseHoistp
+                        = extractConditionalDisableSofts(ifp->elsesp(), elseCondp)) {
+                        hoistListp
+                            = hoistListp ? AstNode::addNext(hoistListp, elseHoistp) : elseHoistp;
+                    }
+                    VL_DO_DANGLING(elseCondp->deleteTree(), elseCondp);
+                }
+            } else if (AstConstraintExpr* const exprp = VN_CAST(stmtp, ConstraintExpr)) {
+                if (exprp->isDisableSoft() && outerCondp) {
+                    FileLine* const fl = exprp->fileline();
+                    AstIf* const hoistIfp = new AstIf{fl, outerCondp->cloneTreePure(false),
+                                                      buildDisableSoftCallStmt(exprp), nullptr};
+                    hoistListp = hoistListp ? AstNode::addNext(hoistListp,
+                                                               static_cast<AstNode*>(hoistIfp))
+                                            : static_cast<AstNode*>(hoistIfp);
+                    // Replace in-tree disable-soft with a no-op boolean
+                    // constraint so editSingle() folds cleanly.
+                    AstConstraintExpr* const truep
+                        = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+                    exprp->replaceWith(truep);
+                    VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                }
+            }
+            // foreach/unique bodies are left untouched: disable-soft inside
+            // a foreach would need per-iteration condition support, and
+            // unique cannot legally contain disable-soft.
+        }
+        return hoistListp;
+    }
+
 public:
     // CONSTRUCTORS
     explicit ConstraintExprVisitor(AstClass* classp, VMemberMap& memberMap, AstNode* nodep,
@@ -2618,6 +2694,14 @@ public:
         , m_memberMap{memberMap}
         , m_writtenVars{writtenVars}
         , m_sizeConstrainedArraysp{sizeConstrainedArraysp} {
+        // Pre-pass before SMT lowering: extract conditional disable-soft
+        // directives as runtime AstIf statements and append them to the
+        // constraint-items chain so they reach the setup task body.  The SMT
+        // visitor skips these via visit(AstIf) above.
+        if (AstNode* const hoistListp
+            = nodep ? extractConditionalDisableSofts(nodep, nullptr) : nullptr) {
+            nodep->addNext(hoistListp);
+        }
         iterateAndNextNull(nodep);
     }
 };

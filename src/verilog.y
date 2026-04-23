@@ -5085,11 +5085,11 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       type_referenceEq yP_EQUAL type_referenceBoth         { $$ = new AstEqT{$2, $1, $3}; }
         |       type_referenceEq yP_NOTEQUAL type_referenceBoth      { $$ = new AstNeqT{$2, $1, $3}; }
         //                      // IEEE: expr yP_MINUSGT expr  (1800-2009)
-        //                      // Conflicts with constraint_expression:"expr yP_MINUSGT constraint_set"
-        //                      // To duplicating expr for constraints, just allow the more general form
-        //                      // Later Ast processing must ignore constraint terms where inappropriate
-        //UNSUP ~l~expr yP_MINUSGT constraint_set               { $<fl>$ = $<fl>1; $$ = $1 + $2 + $3; }
-        //UNSUP remove line below
+        //                      // Full IEEE 1800-2023 18.7.2 "expr ->
+        //                      // constraint_set" is split: this rule handles
+        //                      // the bare-expression RHS as a boolean
+        //                      // (AstLogIf), constraint_expression has one
+        //                      // production per non-expression RHS shape.
         |       ~l~expr yP_MINUSGT ~r~expr              { $$ = new AstLogIf{$2, $1, $3}; }
         //
         //                      // <= is special, as we need to disambiguate it with <= assignment
@@ -7910,8 +7910,37 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yUNIQUE '{' range_list '}' ';'
                         { $$ = new AstConstraintUnique{$1, $3}; }
         //                      // IEEE: expr yP_MINUSGT constraint_set
-        //                      // Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
-        //
+        //                      // The bare-expression case "expr -> expr ;"
+        //                      // arrives via the general expr rule above
+        //                      // (AstLogIf) and matches "expr ';'".  Each
+        //                      // production below covers one constraint_set
+        //                      // shape that is not a plain expression and
+        //                      // builds an outer AstConstraintIf wrapping the
+        //                      // statement V3Randomize already knows how to
+        //                      // lower (with disable-soft hoisted by the
+        //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT '{' constraint_expressionList '}'
+                        { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, nullptr}, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set yELSE constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, $9}, nullptr}; }
+        |       expr yP_MINUSGT yFOREACH '(' idClassSelForeach ')' constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintForeach{$3, $5, $7}, nullptr}; }
+        |       expr yP_MINUSGT yUNIQUE '{' range_list '}' ';'
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintUnique{$3, $5}, nullptr}; }
+        |       expr yP_MINUSGT ySOFT expr ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $4};
+                          innerp->isSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
+        |       expr yP_MINUSGT yDISABLE ySOFT constraint_primary ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $5};
+                          innerp->isDisableSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
         |       yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
                         { $$ = new AstConstraintIf{$1, $3, $5, nullptr}; }
         |       yIF '(' expr ')' constraint_set yELSE constraint_set
@@ -7920,7 +7949,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yFOREACH '(' idClassSelForeach ')' constraint_set
                         { $$ = new AstConstraintForeach{$1, $3, $5}; }
         //                      // soft is 1800-2012
-        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'
+        |       yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }
