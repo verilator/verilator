@@ -299,6 +299,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSWithin* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
