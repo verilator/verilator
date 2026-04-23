@@ -964,7 +964,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     AstNodeExpr* newSel(FileLine* fl, AstNodeExpr* arrayp, AstNodeExpr* idxp) {
         // similar to V3WidthSel.cpp
-        AstNodeDType* const arrDtp = arrayp->unlinkFrBack()->dtypep();
+        // skipRefp() unwraps typedef wrappers (AstRefDType) so the dtype kind
+        // checks below recognize types spelled as `typedef <scalar> <name>[$]`.
+        AstNodeDType* const arrDtp = arrayp->unlinkFrBack()->dtypep()->skipRefp();
         AstNodeExpr* selp = nullptr;
         if (VN_IS(arrDtp, QueueDType) || VN_IS(arrDtp, DynArrayDType))
             selp = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, idxp};
