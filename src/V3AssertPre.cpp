@@ -993,15 +993,12 @@ private:
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        // Followed-by (#-# / #=#) is only supported at top-level of a clocked property
-        // via V3AssertNfa. Anything reaching V3AssertPre here was not claimed by NFA
-        // (e.g., nested inside AstLogOr via `implies`, inside AstLogEq via `iff`, or
-        // inside other boolean containers). Reject loudly rather than silently lower
-        // as plain implication (which would lose the non-vacuous-fail semantics).
+        // Only top-level followed-by is NFA-claimed; nested inside iff/implies/or
+        // falls through here. Silent lowering would drop non-vacuous-fail semantics.
         if (nodep->isFollowedBy()) {
             nodep->v3error(
-                "Unsupported: followed-by (#-# / #=#) outside top-level property context"
-                " (IEEE 1800-2023 16.12.9)");
+                "Unsupported: followed-by (#-# / #=#) nested inside property operator"
+                " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;

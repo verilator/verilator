@@ -726,8 +726,8 @@ public:
                 = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
             sampp->dtypeFrom(antResult.finalCondp);
             m_graph.addLink(antResult.termVertexp, trigVtxp, sampp);
-            // Followed-by: non-vacuous fail when antecedent holds but evaluates
-            // false. rejectOnFail edge fires when srcSig(termVtx) && !$sampled(cond).
+            // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
+            // is live (termVtx reachable) and sampled(antecedent) is false.
             if (isFollowedBy) {
                 SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
                 sinkVtxp->m_isRejectSink = true;
