@@ -996,9 +996,8 @@ private:
         // Only top-level followed-by is NFA-claimed; nested inside iff/implies/or
         // falls through here. Silent lowering would drop non-vacuous-fail semantics.
         if (nodep->isFollowedBy()) {
-            nodep->v3error(
-                "Unsupported: followed-by (#-# / #=#) nested inside property operator"
-                " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
+            nodep->v3error("Unsupported: followed-by (#-# / #=#) nested inside property operator"
+                           " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
