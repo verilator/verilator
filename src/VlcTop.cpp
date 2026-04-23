@@ -372,7 +372,8 @@ void VlcTop::annotate(const string& dirname) {
 }
 
 void VlcTop::printTypeSummary() {
-    static const std::vector<std::string> orderedTypes = {"line", "toggle", "branch", "expr"};
+    static const std::vector<std::string> orderedTypes = {"line", "toggle", "branch", "expr",
+                                                          "fsm_state", "fsm_arc"};
     std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
     for (const auto& i : m_points) {
         const VlcPoint& pt = m_points.pointNumber(i.second);
@@ -385,6 +386,8 @@ void VlcTop::printTypeSummary() {
     std::set<std::string> printed;
     size_t typeWidth = 0;
     size_t countWidth = 0;
+    for (const string& type : orderedTypes) typeWidth = std::max(typeWidth, type.size());
+    countWidth = std::max(countWidth, cvtToStr(0).size());
     for (const auto& it : tally) {
         typeWidth = std::max(typeWidth, it.first.size());
         countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
@@ -393,10 +396,9 @@ void VlcTop::printTypeSummary() {
     std::cout << "Coverage Summary:\n";
     for (const string& type : orderedTypes) {
         const auto it = tally.find(type);
-        if (it == tally.end()) continue;
         printed.insert(type);
-        const uint64_t hit = it->second.first;
-        const uint64_t total = it->second.second;
+        const uint64_t hit = (it == tally.end()) ? 0 : it->second.first;
+        const uint64_t total = (it == tally.end()) ? 0 : it->second.second;
         const double pct
             = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
         std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
