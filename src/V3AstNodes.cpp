@@ -456,14 +456,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
-void AstPropAlways::dump(std::ostream& str) const {  // LCOV_EXCL_START
+void AstPropAlways::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isStrong()) str << " [strong]";
 }
 void AstPropAlways::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isStrong);
     dumpJsonGen(str);
-}  // LCOV_EXCL_STOP
+}
 void AstConsQueue::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";

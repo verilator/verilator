@@ -12,11 +12,11 @@ module t (/*AUTOARG*/
   input clk;
 
   bit [63:0] crc = 64'h5aef0c8d_d70a4497;
-  int        cyc = 0;
-  logic      a_high = 1'b1;
-  logic      a_low = 1'b0;
-  wire       a_rand = crc[0];
-  wire       rst_rand = crc[5];
+  int cyc = 0;
+  logic a_high = 1'b1;
+  logic a_low = 1'b0;
+  wire a_rand = crc[0];
+  wire rst_rand = crc[5];
 
   int high_bounded_fail = 0;
   int high_sbounded_fail = 0;
