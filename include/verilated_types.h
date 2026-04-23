@@ -517,6 +517,101 @@ public:
         if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
         return *this;
     }
+    VlQueue& operator=(QData rhs) {
+        m_deque.clear();  // Empty the queue first
+
+        // If this is a queue of bytes (unsigned char)
+        if constexpr (sizeof(T_Value) == 1) {
+            // Push all 8 bytes of the 64-bit integer, MSB first (Big-Endian)
+            m_deque.push_back(static_cast<T_Value>((rhs >> 56) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 48) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 40) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 32) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 24) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 16) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 8) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>(rhs & 0xFF));
+        } else {
+            // If it is a queue of larger types (like ints), just push the whole number
+            m_deque.push_back(static_cast<T_Value>(rhs));
+        }
+        return *this;
+    }
+
+    bool operator!=(QData rhs) { return getFirst64Bits() == rhs; }
+
+    bool operator!=(IData rhs) { return getFirst32Bits() == rhs; }
+
+    VlQueue& operator=(IData rhs) {
+        m_deque.clear();  // Empty the queue first
+        // If this is a queue of bytes (unsigned char)
+        if constexpr (sizeof(T_Value) == 1) {
+            // Push all 4 bytes of the 32-bit integer, MSB first (Big-Endian)
+            m_deque.push_back(static_cast<T_Value>((rhs >> 24) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 16) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>((rhs >> 8) & 0xFF));
+            m_deque.push_back(static_cast<T_Value>(rhs & 0xFF));
+        } else {
+            // If it is a queue of larger types (like ints), just push the whole number
+            m_deque.push_back(static_cast<T_Value>(rhs));
+        }
+        return *this;
+    }
+
+    friend IData operator|(IData lhs, const VlQueue& rhs) {
+        // Because OR is commutative, we just flip the arguments
+        // and call the (Queue | IData) operator we already wrote!
+        return rhs.getFirst32Bits() | lhs;
+    }
+
+    friend QData operator|(QData lhs, const VlQueue& rhs) {
+        // Because OR is commutative, we just flip the arguments
+        // and call the (Queue | IData) operator we already wrote!
+        return rhs.getFirst64Bits() | lhs;
+    }
+
+    operator WDataInP() const {
+        thread_local std::vector<uint32_t> s_wide_buffer;
+
+        s_wide_buffer.clear();
+
+        if constexpr (sizeof(T_Value) == 1) {
+            int num_words = (m_deque.size() + 3) / 4;
+            s_wide_buffer.resize(num_words, 0);
+
+            for (size_t i = 0; i < m_deque.size(); ++i) {
+                int word_idx = (m_deque.size() - 1 - i) / 4;
+                int byte_in_word = (m_deque.size() - 1 - i) % 4;
+
+                s_wide_buffer[word_idx]
+                    |= (static_cast<uint32_t>(m_deque[i]) << (byte_in_word * 8));
+            }
+        } else {
+            s_wide_buffer.assign(m_deque.begin(), m_deque.end());
+        }
+
+        return s_wide_buffer.data();
+    }
+
+    template <size_t N_Words>
+    VlQueue& operator=(const VlWide<N_Words>& rhs) {
+        m_deque.clear();
+
+        if constexpr (sizeof(T_Value) == 1) {
+            for (int i = N_Words - 1; i >= 0; --i) {
+                uint32_t word = rhs[i];
+                m_deque.push_back(static_cast<T_Value>((word >> 24) & 0xFF));
+                m_deque.push_back(static_cast<T_Value>((word >> 16) & 0xFF));
+                m_deque.push_back(static_cast<T_Value>((word >> 8) & 0xFF));
+                m_deque.push_back(static_cast<T_Value>(word & 0xFF));
+            }
+        } else {
+            for (int i = N_Words - 1; i >= 0; --i) {
+                m_deque.push_back(static_cast<T_Value>(rhs[i]));
+            }
+        }
+        return *this;
+    }
 
     // Construct new object from _V_alue and/or _C_ontainer child objects
     static VlQueue consV(const T_Value& lhs) {
@@ -615,6 +710,45 @@ public:
         }
         return m_deque[index];
     }
+
+    IData getFirst32Bits() const {
+        IData value = 0;  // Starts at 0. Out-of-range bits will remain 0.
+        size_t len = m_deque.size();
+
+        if constexpr (sizeof(T_Value) == 1) {  // If it is a queue of bytes
+            if (len > 0) value |= static_cast<IData>(m_deque[0]) << 24;
+            if (len > 1) value |= static_cast<IData>(m_deque[1]) << 16;
+            if (len > 2) value |= static_cast<IData>(m_deque[2]) << 8;
+            if (len > 3) value |= static_cast<IData>(m_deque[3]);
+        } else {  // If it is a queue of larger types (e.g. ints)
+            if (len > 0) value = static_cast<IData>(m_deque[0]);
+        }
+
+        return value;
+    }
+
+    QData getFirst64Bits() const {
+        QData value = 0;
+        size_t len = m_deque.size();
+
+        if constexpr (sizeof(T_Value) == 1) {
+            // Must cast to QData BEFORE shifting to prevent 32-bit overflow!
+            if (len > 0) value |= static_cast<QData>(m_deque[0]) << 56;
+            if (len > 1) value |= static_cast<QData>(m_deque[1]) << 48;
+            if (len > 2) value |= static_cast<QData>(m_deque[2]) << 40;
+            if (len > 3) value |= static_cast<QData>(m_deque[3]) << 32;
+            if (len > 4) value |= static_cast<QData>(m_deque[4]) << 24;
+            if (len > 5) value |= static_cast<QData>(m_deque[5]) << 16;
+            if (len > 6) value |= static_cast<QData>(m_deque[6]) << 8;
+            if (len > 7) value |= static_cast<QData>(m_deque[7]);
+        } else {
+            // If it is a queue of larger types (e.g. ints/longs)
+            if (len > 0) value = static_cast<QData>(m_deque[0]);
+        }
+
+        return value;
+    }
+
     // Setting. Verilog: assoc[index] = v (should only be used by queues)
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
@@ -2010,7 +2144,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {

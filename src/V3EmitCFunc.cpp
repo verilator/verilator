@@ -57,6 +57,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     putnbs(nodep, "");
 
     bool needComma = false;
+    bool usesQueue = false;
     string nextComma;
     auto commaOut = [&out, &nextComma]() {
         if (!nextComma.empty()) {
@@ -109,7 +110,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 detailp = thsp;
                 break;
             case 'P':
-                if (nodep->isWide()) {
+                if (nodep->isWide() && !usesQueue) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
                                 "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
@@ -131,7 +132,22 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 switch (pos[0]) {
                 case 'q':
                     putOut();
-                    emitIQW(detailp);
+                    if (nodep->isWide() && detailp->dtypep()) {
+                        AstNodeDType* base_type = detailp->backp()->dtypep()->skipRefp();
+                        if (AstQueueDType* q_dtype = VN_CAST(base_type, QueueDType)) {
+                            puts("R"); // R for queue
+                            usesQueue = true;
+                        }
+                        else {
+                            emitIQW(detailp);
+                        }
+                    } else {
+                        emitIQW(detailp);
+                    }
+                    // if (nodep->isWide())
+                    //     emitRU(detailp);
+                    // else
+                    //     emitIQW(detailp);
                     break;
                 case 'w':
                     commaOut();
