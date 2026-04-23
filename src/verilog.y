@@ -6753,7 +6753,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_ALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yS_ALWAYS
                         { $$ = new AstPropAlways{$1, $7, $3, $5, true}; }
         |       yS_ALWAYS pexpr
-                        { $$ = $2; $1->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)"); }
+                        { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
         |       yS_EVENTUALLY pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY

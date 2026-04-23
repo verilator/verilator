@@ -2028,13 +2028,11 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstPropAlways final : public AstNodeExpr {
-    // always / always[m:n] / s_always[m:n] property operator (IEEE 1800-2023 16.12.11)
-    // Bare `always P` is collapsed to P in the parser (redundant in concurrent assertions).
-    // Only bounded forms survive to the AST.
+    // always[m:n] / s_always[m:n] (IEEE 1800-2023 16.12.11)
     // @astgen op1 := propp : AstNodeExpr
     // @astgen op2 := loBoundp : AstNodeExpr
     // @astgen op3 := hiBoundp : AstNodeExpr
-    const bool m_isStrong = false;  // true for s_always (strong form)
+    const bool m_isStrong = false;  // s_always
 public:
     AstPropAlways(FileLine* fl, AstNodeExpr* propp, AstNodeExpr* loBoundp, AstNodeExpr* hiBoundp,
                   bool isStrong)

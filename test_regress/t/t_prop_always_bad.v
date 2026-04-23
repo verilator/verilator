@@ -12,8 +12,9 @@ module t (input clk);
 
   assert property (always [-1:3] a);
   assert property (always [5:2] a);
-  assert property (s_always [1:$] a);
   assert property (always [x:3] a);
   assert property (always [1:x] a);
+  assert property (s_always a);
+  assert property (s_always [1:$] a);
 
 endmodule

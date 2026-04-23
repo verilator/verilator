@@ -8,12 +8,12 @@ module t (input clk);
   logic a;
   logic b;
 
-  // Property operators nested inside bounded always: all rejected with one
-  // unified message (IEEE 1800-2023 16.12.11).
+  // IEEE-legal but engine has no sim-end liveness.
+  assert property (@(posedge clk) always [2:$] a);
+
+  // Nested sequence/property operators inside bounded always.
   assert property (@(posedge clk) always [0:3] (a |-> b));
   assert property (@(posedge clk) always [0:3] (a |=> b));
-
-  // Sequence operator nested inside bounded always: same rejection path.
   assert property (@(posedge clk) always [0:3] (a ##1 b));
 
 endmodule
