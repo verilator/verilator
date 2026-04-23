@@ -169,10 +169,11 @@ Verilator 5.047 devel
 * Fix modification of members of object with const handle (#7433). [Kamil Danecki, Antmicro Ltd.]
 * Fix `dist` under implication in constraints (#7440) (#7442). [Alex Solomatnikov] [Yilou Wang]
 * Fix std::randomize `inside` corrupting class-member queue operand (#7449) (#7456). [Yilou Wang]
+* Fix module parameters not re-evaluated upon instantiation (#7463) (#7477). [em2machine]
 * Fix function-in-constraint internal error on bare port return (#7473) (#7480). [Yilou Wang]
 * Fix access to static variable inside function (#7474) (#7475). [Alex Zhou]
+* Fix multiple inclusion of verilated_std.sv (#7478). [Larry Doolittle]
 * Fix std::randomize inside {typedef array} internal error (#7481). [Yilou Wang]
-* Fix module parameters not re-evaluated upon instantiation (#7463) (#7477). [em2machine]
 
 
 Verilator 5.046 2026-02-28
