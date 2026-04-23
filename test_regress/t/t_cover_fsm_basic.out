@@ -11,15 +11,15 @@
         
           typedef enum logic [1:0] {
             S_IDLE = 2'd0,
-            S_RUN  = 2'd1,
+            S_RUN = 2'd1,
             S_DONE = 2'd2,
-            S_ERR  = 2'd3
+            S_ERR = 2'd3
           } state_t;
         
           logic rst;
           logic start;
           integer cyc;
-          state_t state /*verilator fsm_reset_arc*/;
+          state_t state  /*verilator fsm_reset_arc*/;
         
           initial begin
             rst = 1'b1;
@@ -41,7 +41,8 @@
           always_ff @(posedge clk) begin
             if (rst) begin
               state <= S_IDLE;
-            end else begin
+            end
+            else begin
 %000004       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S_IDLE[reset_include]] [reset arc, excluded from %]
@@ -53,7 +54,9 @@
 %000000        // [fsm_state t.state::S_ERR] *** UNCOVERED ***
 %000000        // [fsm_state t.state::S_IDLE] *** UNCOVERED ***
 %000001        // [fsm_state t.state::S_RUN]
-                S_IDLE: if (start) state <= S_RUN; else state <= S_IDLE;
+                S_IDLE:
+                if (start) state <= S_RUN;
+                else state <= S_IDLE;
                 S_RUN: state <= S_DONE;
                 S_DONE: state <= S_DONE;
                 default: state <= S_ERR;

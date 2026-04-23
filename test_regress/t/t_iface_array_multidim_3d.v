@@ -15,7 +15,7 @@ module t;
   localparam int B = 2;
   localparam int C = 3;
 
-  simple_if bus [A-1:0][B-1:0][C-1:0] ();
+  simple_if bus[A-1:0][B-1:0][C-1:0] ();
 
   genvar gi, gj, gk;
   generate
@@ -28,7 +28,7 @@ module t;
     end
   endgenerate
 
-  logic [15:0] chk [A-1:0][B-1:0][C-1:0];
+  logic [15:0] chk[A-1:0][B-1:0][C-1:0];
   generate
     for (gi = 0; gi < A; gi++) begin : g_a_chk
       for (gj = 0; gj < B; gj++) begin : g_b_chk

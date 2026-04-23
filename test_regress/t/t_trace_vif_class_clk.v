@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 1ns/1ns
+`timescale 1ns / 1ns
 `define STRINGIFY(x) `"x`"
 
 interface clk_iface;
@@ -24,7 +24,7 @@ class clk_driver;
 endclass
 
 module t;
-  clk_iface ci();
+  clk_iface ci ();
   clk_driver drv;
 
   int x = 0;

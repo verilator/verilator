@@ -14,16 +14,17 @@ module t (
     S1 = 1'b1
   } state_t;
 
-  state_t state_reset /*verilator fsm_reset_arc*/;
-  state_t state_cond /*verilator fsm_arc_include_cond*/;
-  logic forced_state /*verilator fsm_state*/;
+  state_t state_reset  /*verilator fsm_reset_arc*/;
+  state_t state_cond  /*verilator fsm_arc_include_cond*/;
+  logic forced_state  /*verilator fsm_state*/;
 
   always_ff @(posedge clk) begin
     if (rst) begin
       state_reset <= S0;
       state_cond <= S0;
       forced_state <= 1'b0;
-    end else begin
+    end
+    else begin
       state_reset <= S1;
       if (state_cond) state_cond <= S0;
       else state_cond <= S1;

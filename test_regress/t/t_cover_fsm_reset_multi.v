@@ -16,7 +16,7 @@ module t (
 
   logic rst;
   integer cyc;
-  state_t state /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_reset_arc*/;
 
   initial begin
     rst = 1'b1;
@@ -40,7 +40,8 @@ module t (
     if (rst) begin
       state <= S0;
       state <= S1;
-    end else begin
+    end
+    else begin
       case (state)
         S0: state <= S2;
         S1: state <= S2;

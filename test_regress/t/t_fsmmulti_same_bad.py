@@ -15,12 +15,6 @@ test.scenarios('vlt')
 # always_ff now warn and keep only the first candidate instrumented. Different-
 # state multi-candidate cases still use the existing FSMMULTI warning path; this
 # test locks down only the same-state unsupported form.
-test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
-
-test.file_grep(
-    test.compile_log_filename,
-    r'%Warning-COVERIGN: t/t_fsmmulti_same_bad.v:30:5: Ignoring unsupported: FSM coverage on '
-    r'multiple supported case statements found in the same always block. Only the first '
-    r'candidate will be instrumented.')
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

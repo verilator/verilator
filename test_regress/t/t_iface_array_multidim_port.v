@@ -13,8 +13,10 @@ interface simple_if;
   logic [7:0] data;
 endinterface
 
-module sink (simple_if b [1:0][2:0]);
-  logic [7:0] chk [1:0][2:0];
+module sink (
+    simple_if b[1:0][2:0]
+);
+  logic [7:0] chk[1:0][2:0];
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -26,7 +28,7 @@ module sink (simple_if b [1:0][2:0]);
 endmodule
 
 module t;
-  simple_if bus [1:0][2:0] ();
+  simple_if bus[1:0][2:0] ();
   sink inst (.b(bus));
 
   genvar gi, gj;

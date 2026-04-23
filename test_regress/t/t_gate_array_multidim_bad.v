@@ -9,5 +9,5 @@
 module t;
   wire a, b;
   wire [1:0][1:0] y;
-  and g [1:0][1:0] (y, a, b);
+  and g[1:0][1:0] (y, a, b);
 endmodule

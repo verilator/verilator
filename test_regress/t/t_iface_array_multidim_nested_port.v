@@ -13,13 +13,15 @@ interface inner_if;
 endinterface
 
 interface outer_if;
-  inner_if inner();
+  inner_if inner ();
   logic [7:0] tag;
 endinterface
 
-module sink (outer_if b [1:0][1:0]);
-  logic [7:0] chk_tag [1:0][1:0];
-  logic [7:0] chk_inner [1:0][1:0];
+module sink (
+    outer_if b[1:0][1:0]
+);
+  logic [7:0] chk_tag[1:0][1:0];
+  logic [7:0] chk_inner[1:0][1:0];
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -32,7 +34,7 @@ module sink (outer_if b [1:0][1:0]);
 endmodule
 
 module t;
-  outer_if oarr [1:0][1:0] ();
+  outer_if oarr[1:0][1:0] ();
   sink inst (.b(oarr));
 
   genvar gi, gj;

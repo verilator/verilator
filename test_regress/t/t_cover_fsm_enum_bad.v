@@ -10,7 +10,8 @@ module t (
 );
 
   typedef enum logic [1:0] {
-    S0, S1
+    S0,
+    S1
   } state_t;
 
   state_t state;
@@ -21,7 +22,8 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
         /* verilator lint_off ENUMVALUE */
         S0: state <= 2'd3;

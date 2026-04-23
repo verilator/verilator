@@ -19,7 +19,7 @@
           integer cyc;
           logic rst;
           logic start;
-          state_t state /*verilator fsm_arc_include_cond*/;
+          state_t state  /*verilator fsm_arc_include_cond*/;
         
           initial begin
             rst = 1'b1;
@@ -41,7 +41,8 @@
           always_ff @(posedge clk) begin
             if (rst) begin
               state <= S0;
-            end else begin
+            end
+            else begin
 %000003       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S0[reset]] [reset arc, excluded from %]
@@ -53,7 +54,9 @@
 %000000        // [fsm_state t.state::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.state::S2]
 %000000        // [fsm_state t.state::S3] *** UNCOVERED ***
-                S0: if (start) state <= S1; else state <= S2;
+                S0:
+                if (start) state <= S1;
+                else state <= S2;
                 S1: state <= S3;
                 default: state <= S0;
               endcase

@@ -10,7 +10,9 @@ module t (
 );
 
   typedef enum logic [1:0] {
-    S0, S1, S2
+    S0,
+    S1,
+    S2
   } state_t;
 
   state_t state;
@@ -21,7 +23,8 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
         S0: state <= S1;
         default: ;

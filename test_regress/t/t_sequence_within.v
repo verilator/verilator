@@ -16,7 +16,7 @@
 // value in a trailing comment for cross-simulator reference.
 
 module t (
-  input clk
+    input clk
 );
   integer cyc = 0;
   reg [63:0] crc = '0;
@@ -97,20 +97,21 @@ module t (
 
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       // p1/p2/p5 use |->; the NFA currently fires the pass action on
       // vacuous passes too, so counts are inflated vs. Questa. Pre-existing
       // engine-wide behavior, not within-specific.
-      `checkd(count_p1, 89);   // Questa: 23
-      `checkd(count_p2, 89);   // Questa: 44
-      `checkd(count_p3, 26);   // Questa: 20
-      `checkd(count_p4, 24);   // Questa: 22
-      `checkd(count_p5, 89);   // Questa: 26
-      `checkd(count_p6, 21);   // Questa: 16
-      `checkd(count_p7, 15);   // Questa: 9
-      `checkd(count_p8, 15);   // Questa: 4
-      `checkd(count_p9, 17);   // Questa: 10
+      `checkd(count_p1, 89);  // Questa: 23
+      `checkd(count_p2, 89);  // Questa: 44
+      `checkd(count_p3, 26);  // Questa: 20
+      `checkd(count_p4, 24);  // Questa: 22
+      `checkd(count_p5, 89);  // Questa: 26
+      `checkd(count_p6, 21);  // Questa: 16
+      `checkd(count_p7, 15);  // Questa: 9
+      `checkd(count_p8, 15);  // Questa: 4
+      `checkd(count_p9, 17);  // Questa: 10
       `checkd(count_p10, 24);  // Questa: 15
       $write("*-* All Finished *-*\n");
       $finish;
