@@ -3843,6 +3843,29 @@ public:
     // LCOV_EXCL_STOP
     bool isMultiCycleSva() const override { return true; }
 };
+class AstSWithin final : public AstNodeBiop {
+    // seq1 within seq2 (IEEE 1800-2023 16.9.10)
+public:
+    AstSWithin(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SWithin(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstSWithin;
+    // LCOV_EXCL_START  // Lowered in V3AssertNfa before these are called
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLogAnd(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %fwithin %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
+};
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width
     // @astgen alias op1 := fromp
