@@ -362,6 +362,57 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
+    // Sanitize generated names to be valid C++ identifiers
+    static string sanitizeGeneratedName(string name) {
+        std::replace(name.begin(), name.end(), '[', '_');
+        std::replace(name.begin(), name.end(), ']', '_');
+        return name;
+    }
+
+    AstVar* createCoverageCounterVar(FileLine* fl, const string& varName, AstNodeDType* dtypep) {
+        AstVar* const varp = new AstVar{fl, VVarType::MEMBER, varName, dtypep};
+        varp->isStatic(false);
+        varp->valuep(new AstConst{fl, AstConst::WidthedValue{}, 32, 0});
+        m_covergroupp->addMembersp(varp);
+        return varp;
+    }
+
+    AstVar* createTrackedCoverpointBinCounter(AstCoverpoint* coverpointp, AstCoverBin* binp,
+                                              const string& generatedBinName, int atLeastValue,
+                                              const string& logPrefix,
+                                              const string& logSuffix = "") {
+        const string varName = "__Vcov_" + coverpointp->name() + "_" + generatedBinName;
+        AstVar* const varp
+            = createCoverageCounterVar(binp->fileline(), varName, binp->findUInt32DType());
+        UINFO(4, "    " << logPrefix << ": " << varName << logSuffix);
+        m_binInfos.push_back(BinInfo(binp, varp, atLeastValue, coverpointp));
+        return varp;
+    }
+
+    AstNodeExpr* applyCoverpointIffCondition(AstCoverpoint* coverpointp, FileLine* fl,
+                                             AstNodeExpr* condp) {
+        if (AstNodeExpr* const iffp = coverpointp->iffp()) {
+            UINFO(6, "      Adding iff condition");
+            condp = new AstAnd{fl, iffp->cloneTree(false), condp};
+        }
+        return condp;
+    }
+
+    void addCoverpointBinHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* hitVarp,
+                               AstNodeExpr* condp, const string& illegalErrMsg,
+                               const char* assertMsg) {
+        AstNode* stmtp = makeBinHitIncrement(binp->fileline(), hitVarp);
+        if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
+            stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), illegalErrMsg));
+        }
+
+        AstIf* const ifp = new AstIf{binp->fileline(),
+                                     applyCoverpointIffCondition(coverpointp, binp->fileline(), condp),
+                                     stmtp, nullptr};
+        UASSERT_OBJ(m_sampleFuncp, binp, assertMsg);
+        m_sampleFuncp->addStmtsp(ifp);
+    }
+
     // Create previous value variable for transition tracking
     AstVar* createPrevValueVar(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Check if already created
@@ -454,20 +505,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Create a member variable to track hits for this bin
             // Sanitize bin name to make it a valid C++ identifier
-            string binName = cbinp->name();
-            std::replace(binName.begin(), binName.end(), '[', '_');
-            std::replace(binName.begin(), binName.end(), ']', '_');
-            const string varName = "__Vcov_" + coverpointp->name() + "_" + binName;
-            AstVar* const varp = new AstVar{cbinp->fileline(), VVarType::MEMBER, varName,
-                                            cbinp->findUInt32DType()};
-            varp->isStatic(false);
-            varp->valuep(new AstConst{cbinp->fileline(), AstConst::WidthedValue{}, 32, 0});
-            m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created member variable: " << varName
-                                                     << " type=" << cbinp->binsType().ascii());
-
-            // Track this bin for coverage computation with at_least value
-            m_binInfos.push_back(BinInfo(cbinp, varp, atLeastValue, coverpointp));
+            const string binName = sanitizeGeneratedName(cbinp->name());
+            AstVar* const varp
+                = createTrackedCoverpointBinCounter(coverpointp, cbinp, binName, atLeastValue,
+                                                    "Created member variable",
+                                                    " type=" + string{cbinp->binsType().ascii()});
 
             // Note: Coverage database registration happens later via VL_COVER_INSERT
             // (see generateCoverageDeclarations() method around line 1164)
@@ -487,19 +529,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Default bin matches when value doesn't match any other explicit bin
         for (AstCoverBin* defBinp : defaultBins) {
             // Create member variable for default bin
-            string binName = defBinp->name();
-            std::replace(binName.begin(), binName.end(), '[', '_');
-            std::replace(binName.begin(), binName.end(), ']', '_');
-            const string varName = "__Vcov_" + coverpointp->name() + "_" + binName;
-            AstVar* const varp = new AstVar{defBinp->fileline(), VVarType::MEMBER, varName,
-                                            defBinp->findUInt32DType()};
-            varp->isStatic(false);
-            varp->valuep(new AstConst{defBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
-            m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created default bin variable: " << varName);
-
-            // Track for coverage computation
-            m_binInfos.push_back(BinInfo(defBinp, varp, atLeastValue, coverpointp));
+            const string binName = sanitizeGeneratedName(defBinp->name());
+            AstVar* const varp = createTrackedCoverpointBinCounter(
+                coverpointp, defBinp, binName, atLeastValue, "Created default bin variable");
 
             // Generate matching code: if (NOT (bin1 OR bin2 OR ... OR binN))
             generateDefaultBinMatchCode(coverpointp, defBinp, exprp, varp);
@@ -531,28 +563,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return;
         }
 
-        // Apply iff condition if present - wraps the bin match condition
-        if (AstNodeExpr* iffp = coverpointp->iffp()) {
-            UINFO(6, "      Adding iff condition");
-            fullCondp = new AstAnd{binp->fileline(), iffp->cloneTree(false), fullCondp};
-        }
-
-        // Create the increment statement
-        AstNode* stmtp = makeBinHitIncrement(binp->fileline(), hitVarp);
-
-        // For illegal_bins, add an error message
-        if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-            const string errMsg = "Illegal bin '" + binp->name() + "' hit in coverpoint '"
-                                  + coverpointp->name() + "'";
-            stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), errMsg));
-        }
-
-        // Create: if (condition) { hitVar++; [error if illegal] }
-        AstIf* const ifp = new AstIf{binp->fileline(), fullCondp, stmtp, nullptr};
-
         UINFO(4, "      Adding bin match if statement to sample function");
-        UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set when generating bin match code");
-        m_sampleFuncp->addStmtsp(ifp);
+        addCoverpointBinHitIf(coverpointp, binp, hitVarp, fullCondp,
+                              "Illegal bin '" + binp->name() + "' hit in coverpoint '"
+                                  + coverpointp->name() + "'",
+                              "sample() CFunc not set when generating bin match code");
         UINFO(4, "      Successfully added if statement for bin: " << binp->name());
     }
 
@@ -882,21 +897,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Create a separate bin for each value
         int index = 0;
         for (AstNodeExpr* valuep : values) {
-            // Create bin name: originalName[index]
-            const string binName = arrayBinp->name() + "[" + std::to_string(index) + "]";
             const string sanitizedName = arrayBinp->name() + "_" + std::to_string(index);
-            const string varName = "__Vcov_" + coverpointp->name() + "_" + sanitizedName;
-
-            // Create member variable for this bin
-            AstVar* const varp = new AstVar{arrayBinp->fileline(), VVarType::MEMBER, varName,
-                                            arrayBinp->findUInt32DType()};
-            varp->isStatic(false);
-            varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
-            m_covergroupp->addMembersp(varp);
-            UINFO(4, "    Created array bin [" << index << "]: " << varName);
-
-            // Track for coverage computation
-            m_binInfos.push_back(BinInfo(arrayBinp, varp, atLeastValue, coverpointp));
+            AstVar* const varp = createTrackedCoverpointBinCounter(
+                coverpointp, arrayBinp, sanitizedName, atLeastValue,
+                "Created array bin [" + std::to_string(index) + "]");
 
             // Generate matching code for this specific value
             generateArrayBinMatchCode(coverpointp, arrayBinp, exprp, varp, valuep);
@@ -913,25 +917,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Create condition: expr == value
         AstNodeExpr* condp = new AstEq{binp->fileline(), exprp->cloneTree(false), valuep};
 
-        // Apply iff condition if present
-        if (AstNodeExpr* iffp = coverpointp->iffp()) {
-            condp = new AstAnd{binp->fileline(), iffp->cloneTree(false), condp};
-        }
-
-        // Create increment statement
-        AstNode* stmtp = makeBinHitIncrement(binp->fileline(), hitVarp);
-
-        // For illegal_bins, add error message
-        if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-            const string errMsg = "Illegal bin hit in coverpoint '" + coverpointp->name() + "'";
-            stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), errMsg));
-        }
-
-        // Create if statement
-        AstIf* const ifp = new AstIf{binp->fileline(), condp, stmtp, nullptr};
-
-        UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set when generating array bin code");
-        m_sampleFuncp->addStmtsp(ifp);
+        addCoverpointBinHitIf(coverpointp, binp, hitVarp, condp,
+                              "Illegal bin '" + binp->name() + "' hit in coverpoint '"
+                                  + coverpointp->name() + "'",
+                              "sample() CFunc not set when generating array bin code");
     }
 
     // Generate multiple bins for transition array bins
@@ -948,21 +937,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UINFO(4, "      Found " << transSets.size() << " transition sets");
         int index = 0;
         for (AstCoverTransSet* transSetp : transSets) {
-            // Create bin name: originalName[index]
-            const string binName = arrayBinp->name() + "[" + std::to_string(index) + "]";
             const string sanitizedName = arrayBinp->name() + "_" + std::to_string(index);
-            const string varName = "__Vcov_" + coverpointp->name() + "_" + sanitizedName;
-
-            // Create member variable for this bin
-            AstVar* const varp = new AstVar{arrayBinp->fileline(), VVarType::MEMBER, varName,
-                                            arrayBinp->findUInt32DType()};
-            varp->isStatic(false);
-            varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
-            m_covergroupp->addMembersp(varp);
-            UINFO(4, "      Created transition array bin [" << index << "]: " << varName);
-
-            // Track for coverage computation
-            m_binInfos.push_back(BinInfo(arrayBinp, varp, atLeastValue, coverpointp));
+            AstVar* const varp = createTrackedCoverpointBinCounter(
+                coverpointp, arrayBinp, sanitizedName, atLeastValue,
+                "Created transition array bin [" + std::to_string(index) + "]");
 
             // Generate matching code for this specific transition
             generateSingleTransitionCode(coverpointp, arrayBinp, exprp, varp, transSetp);
@@ -1009,24 +987,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Combine: prev matches val1 AND current matches val2
             AstNodeExpr* fullCondp = new AstAnd{binp->fileline(), cond1p, cond2p};
 
-            // Apply iff condition if present
-            if (AstNodeExpr* iffp = coverpointp->iffp()) {
-                fullCondp = new AstAnd{binp->fileline(), iffp->cloneTree(false), fullCondp};
-            }
-
-            // Create increment statement
-            AstNode* stmtp = makeBinHitIncrement(binp->fileline(), hitVarp);
-
-            // For illegal_bins, add an error message
-            if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                const string errMsg = "Illegal transition bin " + binp->prettyNameQ()
-                                      + " hit in coverpoint " + coverpointp->prettyNameQ();
-                stmtp = stmtp->addNext(makeIllegalBinAction(binp->fileline(), errMsg));
-            }
-
-            // Create if statement
-            AstIf* const ifp = new AstIf{binp->fileline(), fullCondp, stmtp, nullptr};
-            m_sampleFuncp->addStmtsp(ifp);
+            addCoverpointBinHitIf(coverpointp, binp, hitVarp, fullCondp,
+                                  "Illegal transition bin " + binp->prettyNameQ()
+                                      + " hit in coverpoint " + coverpointp->prettyNameQ(),
+                                  "sample() CFunc not set when generating transition bin code");
 
             UINFO(4, "        Successfully added 2-value transition if statement");
         } else {
@@ -1066,9 +1030,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         string varName = "__Vcov_" + crossp->name();
 
         for (size_t i = 0; i < bins.size(); ++i) {
-            string sanitized = bins[i]->name();
-            std::replace(sanitized.begin(), sanitized.end(), '[', '_');
-            std::replace(sanitized.begin(), sanitized.end(), ']', '_');
+            const string sanitized = sanitizeGeneratedName(bins[i]->name());
 
             if (i > 0) {
                 binName += "_x_";
@@ -1079,11 +1041,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
 
         // Create member variable for this cross bin
-        AstVar* const varp = new AstVar{crossp->fileline(), VVarType::MEMBER, varName,
-                                        bins[0]->findUInt32DType()};
-        varp->isStatic(false);
-        varp->valuep(new AstConst{crossp->fileline(), AstConst::WidthedValue{}, 32, 0});
-        m_covergroupp->addMembersp(varp);
+        AstVar* const varp
+            = createCoverageCounterVar(crossp->fileline(), varName, bins[0]->findUInt32DType());
 
         UINFO(4, "      Created cross bin variable: " << varName);
 
