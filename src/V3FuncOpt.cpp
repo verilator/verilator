@@ -14,7 +14,7 @@
 //
 //*************************************************************************
 //
-// - Split assignments to wide locations with Concat on the RHS
+// - Split assignments to wide locations with Concat/Extend on the RHS
 //   at word boundaries:
 //    foo = {l, r};
 //   becomes (recursively):
@@ -60,6 +60,12 @@ class BalanceConcatTree final {
             gatherTermsRecursive(catp->lhsp(), terms);
             return;
         }
+        if (AstExtend* const extp = VN_CAST(exprp, Extend)) {
+            // Recursive case: gather sub terms, right to left
+            gatherTermsRecursive(extp->lhsp(), terms);
+            terms.emplace_back(extp);
+            return;
+        }
 
         // Base case: different operation
         terms.emplace_back(exprp);
@@ -68,10 +74,18 @@ class BalanceConcatTree final {
     // Gather terms in the tree rooted at the given node.
     // Results are right to left, that is, index 0 in the returned vector
     // is the rightmost term, index size()-1 is the leftmost term.
-    static std::vector<AstNodeExpr*> gatherTerms(AstConcat* rootp) {
+    // If a term is an AstExtend, it represents the extension part only.
+    static std::vector<AstNodeExpr*> gatherTerms(AstNodeExpr* rootp) {
         std::vector<AstNodeExpr*> terms;
-        gatherTermsRecursive(rootp->rhsp(), terms);
-        gatherTermsRecursive(rootp->lhsp(), terms);
+        if (AstConcat* const catp = VN_CAST(rootp, Concat)) {
+            gatherTermsRecursive(catp->rhsp(), terms);
+            gatherTermsRecursive(catp->lhsp(), terms);
+        } else if (AstExtend* const extp = VN_CAST(rootp, Extend)) {
+            gatherTermsRecursive(extp->lhsp(), terms);
+            terms.emplace_back(extp);
+        } else {
+            rootp->v3fatalSrc("Unexpected node type");
+        }
         return terms;
     }
 
@@ -108,7 +122,7 @@ class BalanceConcatTree final {
     }
 
     // Returns replacement node, or nullptr if no change
-    static AstConcat* balance(AstConcat* const rootp) {
+    static AstConcat* balance(AstNodeExpr* const rootp) {
         UINFO(9, "balanceConcat " << rootp);
         // Gather all input vertices of the tree
         const std::vector<AstNodeExpr*> exprps = gatherTerms(rootp);
@@ -125,8 +139,15 @@ class BalanceConcatTree final {
         terms[0].offset = 0;
         terms[exprps.size()].exprp = nullptr;
         for (size_t i = 0; i < exprps.size(); ++i) {
-            terms[i].exprp = exprps[i]->unlinkFrBack();
-            terms[i + 1].offset = terms[i].offset + exprps[i]->width();
+            AstNodeExpr* const exprp = [&]() -> AstNodeExpr* {
+                if (AstExtend* const extp = VN_CAST(exprps[i], Extend)) {
+                    const int width = extp->width() - extp->lhsp()->width();
+                    return new AstConst{extp->fileline(), AstConst::WidthedValue{}, width, 0};
+                }
+                return exprps[i]->cloneTreePure(false);
+            }();
+            terms[i].exprp = exprp;
+            terms[i + 1].offset = terms[i].offset + exprp->width();
         }
 
         // Round 1: try to create terms ending on VL_EDATASIZE boundaries.
@@ -166,7 +187,15 @@ class BalanceConcatTree final {
     }
 
 public:
-    static AstConcat* apply(AstConcat* rootp) { return balance(rootp); }
+    static AstNodeExpr* apply(AstNodeExpr* nodep) {
+        if (!v3Global.opt.fFuncBalanceCat()) return nullptr;
+        if (nodep->user1()) return nullptr;  // Created by us, don't try to balance again
+        if (VN_IS(nodep->backp(), Concat)) return nullptr;  // Not root of tree
+        if (VN_IS(nodep->backp(), Extend)) return nullptr;  // Not root of tree
+        AstNodeExpr* const exprp = balance(nodep);
+        if (exprp) exprp->user1(true);  // Must not attempt again.
+        return exprp;
+    }
 };
 
 struct FuncOptStats final {
@@ -230,9 +259,9 @@ class FuncOptVisitor final : public VNVisitor {
     // Returns true if 'nodep' was deleted
     bool splitConcat(AstNodeAssign* nodep) {
         UINFO(9, "splitConcat " << nodep);
-        // Only care about concatenations on the right
-        AstConcat* const rhsp = VN_CAST(nodep->rhsp(), Concat);
-        if (!rhsp) return false;
+        AstNodeExpr* const rhsp = nodep->rhsp();
+        // Only care about concatenations an zero extend on the RHS
+        if (!VN_IS(rhsp, Concat) && !VN_IS(rhsp, Extend)) return false;
         // Will need the LHS
         AstNodeExpr* lhsp = nodep->lhsp();
         UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Inconsistent assignment");
@@ -268,8 +297,19 @@ class FuncOptVisitor final : public VNVisitor {
         UINFO(5, "splitConcat optimizing " << nodep);
         ++m_stats.m_concatSplits;
         // The 2 parts and their offsets
-        AstNodeExpr* const rrp = rhsp->rhsp()->unlinkFrBack();
-        AstNodeExpr* const rlp = rhsp->lhsp()->unlinkFrBack();
+        AstNodeExpr* const rrp = [rhsp]() -> AstNodeExpr* {
+            if (AstConcat* const catp = VN_CAST(rhsp, Concat)) {
+                return catp->rhsp()->unlinkFrBack();
+            }
+            return VN_AS(rhsp, Extend)->lhsp()->unlinkFrBack();
+        }();
+        AstNodeExpr* const rlp = [rhsp, rrp]() -> AstNodeExpr* {
+            if (AstConcat* const catp = VN_CAST(rhsp, Concat)) {
+                return catp->lhsp()->unlinkFrBack();
+            }
+            const int lWidth = rhsp->width() - rrp->width();
+            return new AstConst{rhsp->fileline(), AstConst::WidthedValue{}, lWidth, 0};
+        }();
         const int rLsb = lsb;
         const int lLsb = lsb + rrp->width();
         // Insert the 2 assignment right after the original. They will be visited next.
@@ -301,16 +341,23 @@ class FuncOptVisitor final : public VNVisitor {
     }
 
     void visit(AstConcat* nodep) override {
-        if (v3Global.opt.fFuncBalanceCat() && !nodep->user1() && !VN_IS(nodep->backp(), Concat)) {
-            if (AstConcat* const newp = BalanceConcatTree::apply(nodep)) {
-                UINFO(5, "balanceConcat optimizing " << nodep);
-                ++m_stats.m_balancedConcats;
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                newp->user1(true);  // Must not attempt again.
-                // Return here. The new node will be iterated next.
-                return;
-            }
+        if (AstNodeExpr* const newp = BalanceConcatTree::apply(nodep)) {
+            UINFO(5, "balanceConcat optimizing " << nodep);
+            ++m_stats.m_balancedConcats;
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;  // The new node will be iterated next
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstExtend* nodep) override {
+        if (AstNodeExpr* const newp = BalanceConcatTree::apply(nodep)) {
+            UINFO(5, "balanceConcat optimizing " << nodep);
+            ++m_stats.m_balancedConcats;
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;  // The new node will be iterated next
         }
         iterateChildren(nodep);
     }
