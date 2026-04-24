@@ -2642,6 +2642,7 @@ class AstClass final : public AstNodeModule {
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
+    bool m_emitToString = false;
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -2669,6 +2670,8 @@ public:
     void needRNG(bool flag) { m_needRNG = flag; }
     bool useVirtualPublic() const { return m_useVirtualPublic; }
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
+    bool emitToString() const { return m_emitToString; }
+    void emitToString(bool flag);
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
@@ -2736,6 +2739,8 @@ public:
 class AstIface final : public AstNodeModule {
     // An interface declaration
     bool m_hasVirtualRef = false;  // There exists a virtual interface reference for this interface
+    bool m_emitToString = false;
+
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
         : ASTGEN_SUPER_Iface(fl, name, libname) {}
@@ -2746,6 +2751,8 @@ public:
     bool timescaleMatters() const override { return false; }
     bool hasVirtualRef() const { return m_hasVirtualRef; }
     void setHasVirtualRef() { m_hasVirtualRef = true; }
+    bool emitToString() const { return m_emitToString; }
+    void emitToString(bool flag) { m_emitToString = flag; }
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
