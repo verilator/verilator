@@ -639,15 +639,6 @@ class TimingControlVisitor final : public VNVisitor {
             return !nodep->isPure();
         });
     }
-    // Returns true if the given trigger expression needs a destructive post update after trigger
-    // evaluation. Currently this only applies to named events.
-    bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNode* const nodep) {
-            const AstNodeDType* const dtypep = nodep->dtypep();
-            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
-            return basicp && basicp->isEvent();
-        });
-    }
     // Creates a trigger scheduler variable
     AstVarScope* getCreateTriggerSchedulerp(AstSenTree* const sentreep) {
         if (!sentreep->user1p()) {
@@ -1082,7 +1073,6 @@ class TimingControlVisitor final : public VNVisitor {
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
-            nodep->addHereThisAsNext(initp);
             // Await the eval step with the dynamic trigger scheduler. First, create the method
             // call
             auto* const evalMethodp = new AstCMethodHard{
@@ -1102,10 +1092,10 @@ class TimingControlVisitor final : public VNVisitor {
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
             localizeVars(m_procp, senResults.m_vars);
-            // Put all and inits before the trigger eval loop
-            for (AstNodeStmt* const stmtp : senResults.m_inits) {
-                nodep->addHereThisAsNext(stmtp);
-            }
+            // If post updates are destructive (e.g. clearFired on events), perform a
+            // conservative pre-clear once before entering the wait loop so stale state from a
+            // previous wait does not cause an immediate false-positive trigger.
+            const bool hasDestructivePostUpdates = !senResults.m_destructivePostUpdates.empty();
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
             AstNodeExpr* const condp
@@ -1126,7 +1116,7 @@ class TimingControlVisitor final : public VNVisitor {
             loopp->addStmtsp(anyTriggeredMethodp->makeStmt());
             // If the post update is destructive (e.g. event vars are cleared), create an await for
             // the post update step
-            if (destructivePostUpdate(sentreep)) {
+            if (hasDestructivePostUpdates) {
                 AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->method(VCMethod::SCHED_POST_UPDATE);
                 loopp->addStmtsp(awaitPostUpdatep);
@@ -1137,8 +1127,20 @@ class TimingControlVisitor final : public VNVisitor {
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
-            // Replace the event control with the loop
-            nodep->replaceWith(loopp);
+            // Replace the event control with one explicit stmt chain:
+            //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
+            AstNodeStmt* chainp = nullptr;
+            chainp = AstNode::addNextNull(chainp, initp);
+            for (AstNodeStmt* const stmtp : senResults.m_inits) {
+                chainp = AstNode::addNextNull(chainp, stmtp);
+            }
+            if (hasDestructivePostUpdates) {
+                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
+                    chainp = AstNode::addNextNull(chainp, stmtp->cloneTree(false));
+                }
+            }
+            chainp = AstNode::addNextNull(chainp, loopp);
+            nodep->replaceWith(chainp);
         } else {
             auto* const sentreep = m_finder.getSenTree(nodep->sentreep());
             nodep->sentreep()->unlinkFrBack()->deleteTree();
