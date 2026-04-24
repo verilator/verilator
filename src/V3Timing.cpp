@@ -1136,7 +1136,7 @@ class TimingControlVisitor final : public VNVisitor {
             }
             if (hasDestructivePostUpdates) {
                 for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
-                    chainp = AstNode::addNextNull(chainp, stmtp);
+                    chainp = AstNode::addNextNull(chainp, stmtp->cloneTree(false));
                 }
             }
             chainp = AstNode::addNextNull(chainp, loopp);
