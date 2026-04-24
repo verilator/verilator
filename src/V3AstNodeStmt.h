@@ -539,6 +539,16 @@ public:
     }
     // but isPure()  true
 };
+class AstDeassign final : public AstNodeStmt {
+    // Procedural 'deassign' statement
+    // @astgen op1 := lhsp : AstNodeExpr
+public:
+    AstDeassign(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_Deassign(fl) {
+        this->lhsp(lhsp);
+    }
+    ASTGEN_MEMBERS_AstDeassign;
+};
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
