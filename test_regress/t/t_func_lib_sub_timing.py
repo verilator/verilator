@@ -14,6 +14,6 @@ test.top_filename = "t/t_func_lib_sub.v"
 
 test.compile(verilator_flags2=["--binary"])
 
-#test.execute()
+test.execute()
 
 test.passes()
