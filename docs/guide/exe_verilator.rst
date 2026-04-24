@@ -281,7 +281,8 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm`
+   :vlopt:`--coverage-user`.
 
 .. option:: --coverage-expr
 
@@ -292,6 +293,10 @@ Summary:
    Rarely needed. Specifies the maximum number of permutations able to be
    covered for a given expression. Defaults to 32. Increasing may slow
    coverage simulations and make analyzing the results unwieldy.
+
+.. option:: --coverage-fsm
+
+   Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
 .. option:: --coverage-line
 
@@ -477,6 +482,10 @@ Summary:
 
    Rarely needed. Enable dumping DfgGraph .dot debug files with dumping
    level 3.
+
+.. option:: --dump-dfg-patterns
+
+   Rarely needed. Enable dumping DfgGraph pattern statistics.
 
 .. option:: --dump-graph
 
@@ -1825,7 +1834,7 @@ Summary:
 .. option:: --trace-fst
 
    Enable FST waveform tracing in the model. This overrides
-   :vlopt:`--trace`. See also :vlopt:`--trace-threads` option.
+   :vlopt:`--trace`.
 
 .. option:: --trace-max-array <depth>
 
@@ -1858,6 +1867,10 @@ Summary:
    and larger trace files.
 
 .. option:: --trace-threads <threads>
+
+   Deprecated and has no effect.
+
+   In versions before 5.048:
 
    Enable waveform tracing using separate threads. This is typically faster
    in simulation runtime but uses more total compute. This option only

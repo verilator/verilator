@@ -21,6 +21,7 @@ Doc_Waivers = [
     '-pp-comments',  # Deprecated
     '-prof-threads',  # Deprecated
     '-structs-packed',  # Deprecated
+    '-trace-threads',  # Deprecated
     '-xml-only',  # Removed
     '-xml-output',  # Removed
 ]

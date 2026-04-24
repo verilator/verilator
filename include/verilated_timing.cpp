@@ -36,9 +36,12 @@ void VlCoroutineHandle::resume() {
                 m_coro.destroy();
             } else {
                 m_process->state(VlProcess::RUNNING);
+                VlProcess::currentp(m_process.get());
                 m_coro();
+                VlProcess::currentp(nullptr);
             }
         } else {
+            VlProcess::currentp(nullptr);
             m_coro();
         }
         m_coro = nullptr;

@@ -105,8 +105,8 @@ class SliceVisitor final : public VNVisitor {
             newp = nullptr;
             int itemIdx = 0;
             int i = 0;
+            const AstInitArray::KeyItemMap& itemMap = initp->map();
             if (const int prevItemIdx = initp->user2()) {
-                const AstInitArray::KeyItemMap& itemMap = initp->map();
                 const auto it = itemMap.find(considerOrder(arrayp, prevItemIdx));
                 if (it != itemMap.end()) {
                     const AstInitItem* itemp = it->second;
@@ -119,8 +119,10 @@ class SliceVisitor final : public VNVisitor {
             }
             const AstNodeDType* const expectedItemDTypep = arrayp->subDTypep()->skipRefp();
             while (i <= elemIdx) {
+                const auto itemIt = itemMap.find(considerOrder(arrayp, itemIdx));
                 AstNodeExpr* const itemp
-                    = initp->getIndexDefaultedValuep(considerOrder(arrayp, itemIdx));
+                    = itemIt != itemMap.end() ? itemIt->second->valuep() : initp->defaultp();
+                const bool directItem = itemIt != itemMap.end();
                 if (!itemp && !m_assignError) {
                     nodep->v3error("Array initialization has too few elements, need element "
                                    << elemIdx);
@@ -132,7 +134,7 @@ class SliceVisitor final : public VNVisitor {
                     = AstNode::computeCastable(expectedItemDTypep, itemRawDTypep, itemp);
                 if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
                     if (i == elemIdx) {
-                        newp = itemp->cloneTreePure(false);
+                        newp = itemp->cloneTree(false, !directItem && needPure);
                         break;
                     } else {  // Check the next item
                         ++i;
@@ -184,7 +186,6 @@ class SliceVisitor final : public VNVisitor {
                 m_assignError = true;
             }
             if (newp) {
-                const AstInitArray::KeyItemMap& itemMap = initp->map();
                 const auto it = itemMap.find(considerOrder(arrayp, itemIdx));
                 if (it != itemMap.end()) {  // Remember current position for the next invocation.
                     initp->user2(itemIdx);
@@ -283,16 +284,6 @@ class SliceVisitor final : public VNVisitor {
             AstNodeAssign* const newp
                 = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
                                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0));
-            if (elemIdx == 0) {
-                nodep->foreach([this](AstExprStmt* const exprp) {
-                    // Result expression is always evaluated to the same value, so the statements
-                    // can be removed once they were included in the expression created for the 1st
-                    // element.
-                    AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
-                    exprp->replaceWith(resultp);
-                    VL_DO_DANGLING(pushDeletep(exprp), exprp);
-                });
-            }
             UINFOTREE(9, newp, "", "new");
             newlistp = AstNode::addNext(newlistp, newp);
         }
@@ -356,17 +347,6 @@ class SliceVisitor final : public VNVisitor {
                 T_NodeBiop* const clonep = new T_NodeBiop{
                     nodep->fileline(), cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
                     cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)};
-                if (elemIdx == 0) {
-                    nodep->foreach([this](AstExprStmt* const exprp) {
-                        // Result expression is always evaluated to the same value, so the
-                        // statements can be removed once they were included in the expression
-                        // created for the 1st element.
-                        AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
-                        exprp->replaceWith(resultp);
-                        VL_DO_DANGLING(pushDeletep(exprp), exprp);
-                    });
-                }
-
                 if (!logp) {
                     logp = clonep;
                 } else {

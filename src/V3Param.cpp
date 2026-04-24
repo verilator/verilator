@@ -475,6 +475,12 @@ class ParamProcessor final {
         }
         return nullptr;
     }
+    // Peel all unpacked-array layers to reach the innermost subDTypep.
+    // Used for multi-dim iface arrays where port dtype is nested UnpackArrayDType.
+    static AstNodeDType* arraySubDTypeDeepp(AstNodeDType* nodep) {
+        while (AstNodeDType* const subp = arraySubDTypep(nodep)) nodep = subp;
+        return nodep;
+    }
     static bool isString(AstNodeDType* nodep) {
         if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToNonRefp(), BasicDType))
             return basicp->isString();
@@ -1396,44 +1402,100 @@ class ParamProcessor final {
                 }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
-                // Width the pin value to match the port type so that the same
-                // logical value always produces the same specialization name.
+                // Width the pin to the port's type so equal values hash the same (#5479).
                 AstConst* normedNamep = nullptr;
                 if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
                     AstVar* cloneVarp = modvarp->cloneTree(false);
+                    bool cloneVarpUnresolved = false;
                     if (AstNode* const oldValuep = cloneVarp->valuep()) {
                         oldValuep->unlinkFrBack();
                         VL_DO_DANGLING(oldValuep->deleteTree(), oldValuep);
                     }
                     cloneVarp->valuep(exprp->cloneTree(false));
-                    // Clone the dtype and resolve VarRefs to other parameters
-                    // with their already-constified pin values (e.g., N-1 in
-                    // logic [N-1:0] becomes Const-1 which can be folded).
                     if (AstNodeDType* const origDTypep = modvarp->subDTypep()) {
-                        AstNodeDType* const dtypeClonep = origDTypep->cloneTree(false);
-                        dtypeClonep->foreach([&](AstVarRef* varrefp) {
-                            for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                                if (pp->modVarp() == varrefp->varp()) {
-                                    if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
-                                        varrefp->replaceWith(constp->cloneTree(false));
-                                        VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
-                                    }
-                                    break;
-                                }
-                            }
-                        });
+                        // Attach clone under cloneVarp so the root has a back pointer.
                         if (cloneVarp->childDTypep())
                             cloneVarp->childDTypep()->unlinkFrBack()->deleteTree();
-                        cloneVarp->childDTypep(dtypeClonep);
+                        cloneVarp->childDTypep(origDTypep->cloneTree(false));
                         cloneVarp->dtypep(nullptr);
+                        // Inline param refs so widthing doesn't touch the template (#7411).
+                        constexpr int maxSubstIters = 1000;
+                        for (int it = 0; it < maxSubstIters; ++it) {
+                            bool any = false;
+                            cloneVarp->foreach([&](AstVarRef* varrefp) {
+                                AstVar* const targetp = varrefp->varp();
+                                AstNode* replacep = nullptr;
+                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                                    if (pp->modVarp() == targetp) {
+                                        if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
+                                            replacep = constp->cloneTree(false);
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (!replacep && targetp->valuep()) {
+                                    replacep = targetp->valuep()->cloneTree(false);
+                                }
+                                if (replacep) {
+                                    varrefp->replaceWith(replacep);
+                                    VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
+                                    any = true;
+                                }
+                            });
+                            // Replace RefDType to a ParamTypeDType with pin override
+                            // or the paramtype's default so constify below does not
+                            // reach into the template.  Collect then replace in
+                            // reverse so descendants aren't freed early.
+                            std::vector<std::pair<AstRefDType*, AstNodeDType*>> toReplace;
+                            cloneVarp->foreach([&](AstRefDType* refp) {
+                                AstParamTypeDType* const ptdp
+                                    = VN_CAST(refp->refDTypep(), ParamTypeDType);
+                                if (!ptdp) return;
+                                AstPin* overridePinp = nullptr;
+                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                                    if (pp->modPTypep() == ptdp) {
+                                        overridePinp = pp;
+                                        break;
+                                    }
+                                }
+                                AstNodeDType* const substp
+                                    = overridePinp ? VN_CAST(overridePinp->exprp(), NodeDType)
+                                                   : ptdp->subDTypep();
+                                if (substp) toReplace.emplace_back(refp, substp);
+                            });
+                            for (auto it = toReplace.rbegin(); it != toReplace.rend(); ++it) {
+                                AstRefDType* const refp = it->first;
+                                refp->replaceWith(it->second->cloneTree(false));
+                                VL_DO_DANGLING(refp->deleteTree(), refp);
+                                any = true;
+                            }
+                            if (!any) break;
+                        }
+                        // Bail if anything still points at the template.
+                        cloneVarp->foreach([&](AstVarRef* varrefp) {
+                            varrefp->v3fatalSrc(
+                                "Unresolved VarRef '"
+                                << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
+                                << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+                        });
+                        // Skip the widthing constify if any RefDType is unresolved.
+                        cloneVarp->foreach([&](AstRefDType* refp) {
+                            if (VN_IS(refp->refDTypep(), ParamTypeDType)) {
+                                UINFO(5, "  cellPinCleanup: skip normedNamep "
+                                         "(unresolved RefDType->ParamTypeDType) pin="
+                                             << pinp->prettyNameQ());
+                                cloneVarpUnresolved = true;
+                            }
+                        });
                     }
-                    V3Const::constifyParamsEdit(cloneVarp);
-                    if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
-                        // Set the constant's dtype to the port's widthed type
-                        // so identical values hash the same in paramValueNumber.
-                        if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
-                        widthedp->unlinkFrBack();
-                        normedNamep = widthedp;
+                    if (!cloneVarpUnresolved) {
+                        V3Const::constifyParamsEdit(cloneVarp);
+                        if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
+                            // Stamp the port's type so equal values hash the same.
+                            if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
+                            widthedp->unlinkFrBack();
+                            normedNamep = widthedp;
+                        }
                     }
                     VL_DO_DANGLING(cloneVarp->deleteTree(), cloneVarp);
                 }
@@ -1571,37 +1633,31 @@ class ParamProcessor final {
             const AstVar* const modvarp = pinp->modVarp();
             if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
             if (modvarp->isIfaceRef()) {
-                AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
-                if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
-                    portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
-                }
-                AstIfaceRefDType* pinIrefp = nullptr;
+                // arraySubDTypeDeepp returns input unchanged if not an array.
+                AstIfaceRefDType* const portIrefp
+                    = VN_CAST(arraySubDTypeDeepp(modvarp->subDTypep()), IfaceRefDType);
                 const AstNode* const exprp = pinp->exprp();
-                const AstVar* const varp = (exprp && VN_IS(exprp, NodeVarRef))
-                                               ? VN_AS(exprp, NodeVarRef)->varp()
-                                               : nullptr;
-                if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
-                    pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
-                           && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
-                } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                           && arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
-                           && VN_CAST(
-                               arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                               IfaceRefDType)) {
-                    pinIrefp
-                        = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                                IfaceRefDType);
-                } else if (VN_IS(exprp, CellArrayRef)) {
-                    // Interface array element selection (e.g., l1(l2.l1[0]) for nested iface
-                    // array) The CellArrayRef is not yet fully linked to an interface type. Skip
-                    // interface cleanup for this pin - V3LinkDot will resolve this later. Just
-                    // continue to the next pin without error.
+                if (VN_IS(exprp, CellArrayRef)) {
+                    // CellArrayRef not yet linked; V3LinkDot resolves this pin later.
                     UINFO(9, "Skipping interface cleanup for CellArrayRef pin: " << pinp);
                     continue;
+                }
+                AstIfaceRefDType* pinIrefp = nullptr;
+                // Pin is a VarRef to a var of (possibly arrayed) iface type.
+                if (const AstNodeVarRef* const vrp = VN_CAST(exprp, NodeVarRef)) {
+                    if (vrp->varp()) {
+                        pinIrefp
+                            = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()), IfaceRefDType);
+                    }
+                }
+                // Pin's op1p is a VarRef (e.g. SelBit/ArraySel into an iface array).
+                if (!pinIrefp && exprp) {
+                    if (const AstVarRef* const vrp = VN_CAST(exprp->op1p(), VarRef)) {
+                        if (vrp->varp()) {
+                            pinIrefp = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()),
+                                               IfaceRefDType);
+                        }
+                    }
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp);
@@ -2795,32 +2851,45 @@ class ParamVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCellArrayRef* nodep) override {
-        V3Const::constifyParamsEdit(nodep->selp());
-        if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
-            const string index = AstNode::encodeNumber(constp->toSInt());
-            // For nested interface array ports, the node name may have a __Viftop suffix
-            // that doesn't exist in the original unlinked text. Try without the suffix.
-            const string viftopSuffix = "__Viftop";
-            const string baseName
-                = VString::endsWith(nodep->name(), viftopSuffix)
-                      ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
-                      : nodep->name();
-            const string replacestr = baseName + "__BRA__??__KET__";
-            const size_t pos = m_unlinkedTxt.find(replacestr);
-            // For interface port array element selections (e.g., l1(l2.l1[0])),
-            // the AstCellArrayRef may be visited outside of an AstUnlinkedRef context.
-            // In such cases, m_unlinkedTxt won't contain the expected pattern.
-            // Simply skip the replacement - the cell array ref will be resolved later.
-            if (pos == string::npos) {
-                UINFO(9, "Skipping unlinked text replacement for " << nodep);
+        // Multi-dim iface arrays chain multiple selps via nextp(); constify each in place.
+        for (AstNode *s = nodep->selp(), *nxt; s; s = nxt) {
+            nxt = s->nextp();  // cache before constifyParamsEdit replaces s
+            V3Const::constifyParamsEdit(s);
+        }
+        std::vector<int> indices;
+        for (AstNode* s = nodep->selp(); s; s = s->nextp()) {
+            const AstConst* const constp = VN_CAST(s, Const);
+            if (!constp) {
+                nodep->v3error("Could not expand constant selection inside dotted reference: "
+                               << s->prettyNameQ());
                 return;
             }
-            m_unlinkedTxt.replace(pos, replacestr.length(),
-                                  baseName + "__BRA__" + index + "__KET__");
-        } else {
-            nodep->v3error("Could not expand constant selection inside dotted reference: "
-                           << nodep->selp()->prettyNameQ());
+            indices.push_back(constp->toSInt());
+        }
+        // Nested iface-array ports may carry a __Viftop suffix that's not in m_unlinkedTxt.
+        const string viftopSuffix = "__Viftop";
+        const string baseName
+            = VString::endsWith(nodep->name(), viftopSuffix)
+                  ? nodep->name().substr(0, nodep->name().size() - viftopSuffix.size())
+                  : nodep->name();
+        const string placeholder = "__BRA__??__KET__";
+        size_t pos = m_unlinkedTxt.find(baseName + placeholder);
+        // An AstCellArrayRef for an iface-array pin expr (e.g. l1(l2.l1[0])) is visited
+        // outside AstUnlinkedRef, so m_unlinkedTxt has no placeholder; V3LinkDot resolves later.
+        if (pos == string::npos) {
+            UINFO(9, "Skipping unlinked text replacement for " << nodep);
             return;
+        }
+        pos += baseName.length();
+        for (int idx : indices) {
+            const string replacement = "__BRA__" + AstNode::encodeNumber(idx) + "__KET__";
+            if (m_unlinkedTxt.compare(pos, placeholder.length(), placeholder) != 0) {
+                nodep->v3fatalSrc(  // LCOV_EXCL_LINE
+                    "Expected placeholder at position in multi-dim iface dotted reference");
+                return;
+            }
+            m_unlinkedTxt.replace(pos, placeholder.length(), replacement);
+            pos += replacement.length();
         }
     }
 

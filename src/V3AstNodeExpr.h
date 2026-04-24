@@ -64,6 +64,8 @@ public:
     // Someday we will generically support data types on every expr node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
+    // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
+    virtual bool isMultiCycleSva() const { return false; }
     bool isLValue() const;
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
@@ -2172,6 +2174,7 @@ public:
         return m_unbounded == VN_DBG_AS(samep, SConsRep)->m_unbounded;  // LCOV_EXCL_LINE
     }
     bool unbounded() const { return m_unbounded; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
@@ -2196,6 +2199,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSFormatArg final : public AstNodeExpr {
     // Information for formatting each argument to AstSFormat,
@@ -2314,6 +2318,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSNonConsRep final : public AstNodeExpr {
     // Nonconsecutive repetition: expr [= count]
@@ -2330,6 +2335,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSScanF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNodeExpr] // VarRefs for results
@@ -2737,19 +2743,28 @@ class AstUntil final : public AstNodeExpr {
     // The until property expression
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
+
+    const bool m_strong;  // 's_' preffix
+    const bool m_overlapping;  // '_with` suffix
 public:
-    AstUntil(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_Until(fl) {
+    AstUntil(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool strong, bool overlapping)
+        : ASTGEN_SUPER_Until(fl)
+        , m_strong{strong}
+        , m_overlapping{overlapping} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstUntil;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isStrong() const { return m_strong; }
+    bool isOverlapping() const { return m_overlapping; }
 };
 class AstValuePlusArgs final : public AstNodeExpr {
     // Search expression. If nullptr then this is a $test$plusargs instead of $value$plusargs.
@@ -2874,6 +2889,7 @@ public:
 };
 class AstConcat final : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
+    // @astgen makeDfgVertex
 public:
     AstConcat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Concat(fl, lhsp, rhsp) {
@@ -2923,6 +2939,7 @@ public:
     bool stringFlavor() const override { return true; }
 };
 class AstDiv final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Div(fl, lhsp, rhsp) {
@@ -2965,6 +2982,7 @@ public:
     bool doubleFlavor() const override { return true; }
 };
 class AstDivS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstDivS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DivS(fl, lhsp, rhsp) {
@@ -2988,6 +3006,7 @@ public:
 };
 class AstEqWild final : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
+    // @astgen makeDfgVertex
 public:
     AstEqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqWild(fl, lhsp, rhsp) {
@@ -3094,6 +3113,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstGt final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstGt(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Gt(fl, lhsp, rhsp) {
@@ -3156,6 +3176,7 @@ public:
     bool stringFlavor() const override { return true; }
 };
 class AstGtS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstGtS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GtS(fl, lhsp, rhsp) {
@@ -3177,6 +3198,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstGte final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstGte(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Gte(fl, lhsp, rhsp) {
@@ -3239,6 +3261,7 @@ public:
     bool stringFlavor() const override { return true; }
 };
 class AstGteS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstGteS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GteS(fl, lhsp, rhsp) {
@@ -3260,6 +3283,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstLogAnd final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLogAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogAnd(fl, lhsp, rhsp) {
@@ -3281,6 +3305,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogIf final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLogIf(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogIf(fl, lhsp, rhsp) {
@@ -3302,6 +3327,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLogOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
@@ -3323,6 +3349,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLt final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLt(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Lt(fl, lhsp, rhsp) {
@@ -3385,6 +3412,7 @@ public:
     bool stringFlavor() const override { return true; }
 };
 class AstLtS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLtS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LtS(fl, lhsp, rhsp) {
@@ -3406,6 +3434,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstLte final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLte(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Lte(fl, lhsp, rhsp) {
@@ -3468,6 +3497,7 @@ public:
     bool stringFlavor() const override { return true; }
 };
 class AstLteS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstLteS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LteS(fl, lhsp, rhsp) {
@@ -3489,6 +3519,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstModDiv final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstModDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDiv(fl, lhsp, rhsp) {
@@ -3510,6 +3541,7 @@ public:
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
 };
 class AstModDivS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstModDivS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDivS(fl, lhsp, rhsp) {
@@ -3532,6 +3564,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstNeqWild final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstNeqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqWild(fl, lhsp, rhsp) {
@@ -3551,6 +3584,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstPow final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstPow(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Pow(fl, lhsp, rhsp) {
@@ -3591,6 +3625,7 @@ public:
     bool doubleFlavor() const override { return true; }
 };
 class AstPowSS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstPowSS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowSS(fl, lhsp, rhsp) {
@@ -3612,6 +3647,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstPowSU final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstPowSU(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowSU(fl, lhsp, rhsp) {
@@ -3633,6 +3669,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstPowUS final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstPowUS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowUS(fl, lhsp, rhsp) {
@@ -3732,6 +3769,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSIntersect final : public AstNodeBiop {
     // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.
@@ -3756,6 +3794,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSOr final : public AstNodeBiop {
     // Sequence 'or' (IEEE 1800-2023 16.9.7): at least one operand sequence must match.
@@ -3778,6 +3817,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSThroughout final : public AstNodeBiop {
     // expr throughout seq (IEEE 1800-2023 16.9.9)
@@ -3800,6 +3840,30 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
+};
+class AstSWithin final : public AstNodeBiop {
+    // seq1 within seq2 (IEEE 1800-2023 16.9.10)
+public:
+    AstSWithin(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SWithin(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstSWithin;
+    // LCOV_EXCL_START  // Lowered in V3AssertNfa before these are called
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLogAnd(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %fwithin %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width
@@ -3858,6 +3922,7 @@ public:
     void declElWidth(int flag) { m_declElWidth = flag; }
 };
 class AstShiftL final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftL(fl, lhsp, rhsp) {
@@ -3901,6 +3966,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstShiftR final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftR(fl, lhsp, rhsp) {
@@ -3948,6 +4014,7 @@ public:
 class AstShiftRS final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator
     // Output data type's width determines which bit is used for sign extension
+    // @astgen makeDfgVertex
 public:
     AstShiftRS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftRS(fl, lhsp, rhsp) {
@@ -3994,6 +4061,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstSub final : public AstNodeBiop {
+    // @astgen makeDfgVertex
 public:
     AstSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Sub(fl, lhsp, rhsp) {
@@ -4059,6 +4127,7 @@ public:
 
 // === AstNodeBiCom ===
 class AstEq final : public AstNodeBiCom {
+    // @astgen makeDfgVertex
 public:
     AstEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Eq(fl, lhsp, rhsp) {
@@ -4081,6 +4150,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstEqCase final : public AstNodeBiCom {
+    // @astgen makeDfgVertex
 public:
     AstEqCase(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqCase(fl, lhsp, rhsp) {
@@ -4161,6 +4231,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_STR; }
 };
 class AstLogEq final : public AstNodeBiCom {
+    // @astgen makeDfgVertex
 public:
     AstLogEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogEq(fl, lhsp, rhsp) {
@@ -4182,6 +4253,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstNeq final : public AstNodeBiCom {
+    // @astgen makeDfgVertex
 public:
     AstNeq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Neq(fl, lhsp, rhsp) {
@@ -4203,6 +4275,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstNeqCase final : public AstNodeBiCom {
+    // @astgen makeDfgVertex
 public:
     AstNeqCase(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqCase(fl, lhsp, rhsp) {
@@ -4285,6 +4358,7 @@ public:
 
 // === AstNodeBiComAsv ===
 class AstAdd final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Add(fl, lhsp, rhsp) {
@@ -4326,6 +4400,7 @@ public:
     bool doubleFlavor() const override { return true; }
 };
 class AstAnd final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_And(fl, lhsp, rhsp) {
@@ -4347,6 +4422,7 @@ public:
     const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstMul final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstMul(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Mul(fl, lhsp, rhsp) {
@@ -4389,6 +4465,7 @@ public:
     bool doubleFlavor() const override { return true; }
 };
 class AstMulS final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstMulS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_MulS(fl, lhsp, rhsp) {
@@ -4412,6 +4489,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstOr final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Or(fl, lhsp, rhsp) {
@@ -4433,6 +4511,7 @@ public:
     const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstXor final : public AstNodeBiComAsv {
+    // @astgen makeDfgVertex
 public:
     AstXor(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Xor(fl, lhsp, rhsp) {
@@ -4490,6 +4569,7 @@ public:
 
 // === AstNodeSel ===
 class AstArraySel final : public AstNodeSel {
+    // @astgen makeDfgVertex
     void init(const AstNode* fromp) {
         if (fromp && VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
             // Strip off array to find what array references
@@ -4602,6 +4682,7 @@ public:
 // === AstNodeStream ===
 class AstStreamL final : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+    // @astgen makeDfgVertex
 public:
     AstStreamL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_StreamL(fl, lhsp, rhsp) {}
@@ -4620,6 +4701,7 @@ public:
 };
 class AstStreamR final : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+    // @astgen makeDfgVertex
 public:
     AstStreamR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_StreamR(fl, lhsp, rhsp) {}
@@ -4679,6 +4761,7 @@ public:
     string selfPointerProtect(bool useSelfForThis) const {
         return selfPointer().protect(useSelfForThis, protect());
     }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
 };
 class AstCMethodCall final : public AstNodeCCall {
     // C++ method call
@@ -4907,6 +4990,7 @@ class AstCond final : public AstNodeTriop {
     // @astgen alias op1 := condp
     // @astgen alias op2 := thenp
     // @astgen alias op3 := elsep
+    // @astgen makeDfgVertex
 public:
     AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep);
     ASTGEN_MEMBERS_AstCond;
@@ -5255,6 +5339,7 @@ public:
 };
 class AstCountOnes final : public AstNodeUniop {
     // Number of bits set in vector
+    // @astgen makeDfgVertex
 public:
     AstCountOnes(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CountOnes(fl, lhsp) {}
@@ -5286,6 +5371,7 @@ public:
 };
 class AstExtend final : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
+    // @astgen makeDfgVertex
 public:
     AstExtend(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Extend(fl, lhsp) {}
@@ -5309,6 +5395,7 @@ public:
 };
 class AstExtendS final : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
+    // @astgen makeDfgVertex
 public:
     AstExtendS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ExtendS(fl, lhsp) {}
@@ -5455,6 +5542,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
 };
 class AstLogNot final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstLogNot(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_LogNot(fl, lhsp) {
@@ -5486,6 +5574,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
 };
 class AstNegate final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstNegate(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Negate(fl, lhsp) {
@@ -5519,6 +5608,7 @@ public:
     bool doubleFlavor() const override { return true; }
 };
 class AstNot final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstNot(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Not(fl, lhsp) {
@@ -5640,6 +5730,7 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstRedAnd final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstRedAnd(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedAnd(fl, lhsp) {
@@ -5654,6 +5745,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
 };
 class AstRedOr final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstRedOr(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedOr(fl, lhsp) {
@@ -5668,6 +5760,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
 };
 class AstRedXor final : public AstNodeUniop {
+    // @astgen makeDfgVertex
 public:
     AstRedXor(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedXor(fl, lhsp) {

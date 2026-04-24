@@ -388,8 +388,14 @@ public:
         });
         if (m_instantiatesOwnProcess) {
             AstCStmt* const vlprocp = new AstCStmt{nodep->fileline()};
-            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();");
+            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
+            vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
+        } else if (nodep->needProcess() && nodep->stmtsp()) {
+            // Set current process so VlRNG() constructors in this function seed from it
+            AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
+            setProcessp->add("VlProcess::currentp(vlProcess.get());");
+            nodep->stmtsp()->addHereThisAsNext(setProcessp);
         }
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -820,6 +826,14 @@ public:
         putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(", ");
         putsQuoted(nodep->linescov());
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
         puts(");\n");
     }
     void visit(AstCoverToggleDecl* nodep) override {

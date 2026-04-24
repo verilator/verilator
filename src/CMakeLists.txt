@@ -42,8 +42,8 @@ set(HEADERS
     V3Active.h
     V3ActiveTop.h
     V3Assert.h
+    V3AssertNfa.h
     V3AssertPre.h
-    V3AssertProp.h
     V3Ast.h
     V3AstAttr.h
     V3AstInlines.h
@@ -100,6 +100,7 @@ set(HEADERS
     V3File.h
     V3FileLine.h
     V3Force.h
+    V3FsmDetect.h
     V3Fork.h
     V3FuncOpt.h
     V3FunctionTraits.h
@@ -213,8 +214,8 @@ set(COMMON_SOURCES
     V3Active.cpp
     V3ActiveTop.cpp
     V3Assert.cpp
+    V3AssertNfa.cpp
     V3AssertPre.cpp
-    V3AssertProp.cpp
     V3Ast.cpp
     V3AstNodes.cpp
     V3Begin.cpp
@@ -277,6 +278,7 @@ set(COMMON_SOURCES
     V3File.cpp
     V3FileLine.cpp
     V3Force.cpp
+    V3FsmDetect.cpp
     V3Fork.cpp
     V3FuncOpt.cpp
     V3Gate.cpp

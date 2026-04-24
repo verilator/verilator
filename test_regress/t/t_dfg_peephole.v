@@ -125,7 +125,8 @@ module t (
   `signal(SWAP_VAR_IN_COMMUTATIVE_BINARY, rand_b + rand_a);
   `signal(PUSH_BITWISE_OP_THROUGH_CONCAT, 32'h12345678 ^ {8'h0, rand_a[23:0]});
   `signal(PUSH_BITWISE_OP_THROUGH_CONCAT_2, 32'h12345678 ^ {rand_b[7:0], rand_a[23:0]});
-  `signal(PUSH_COMPARE_OP_THROUGH_CONCAT, 4'b1011 == {2'b10, rand_a[1:0]});
+  `signal(PUSH_COMPARE_OP_THROUGH_CONCAT_EQ, 4'b1011 == {2'b10, rand_a[1:0]});
+  `signal(PUSH_COMPARE_OP_THROUGH_CONCAT_NE, 4'b1011 != {2'b10, rand_a[1:0]});
   `signal(PUSH_REDUCTION_THROUGH_COND_WITH_CONST_BRANCH, |(rand_a[32] ? rand_a[3:0] : 4'h0));
   `signal(REPLACE_REDUCTION_OF_CONST_AND, &const_a);
   `signal(REPLACE_REDUCTION_OF_CONST_OR,  |const_a);
@@ -249,8 +250,10 @@ module t (
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR_COMMON, rand_a[23:4] ^ rand_a[39:20]);
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR, rand_a[23:4] ^ (~rand_b[24:5] ^ rand_a[39:20]));
 
-  `signal(REPLACE_COND_CONST_ONE_ZERO, rand_a[0] ? 8'b1 : 8'b0);
-  `signal(REPLACE_COND_CONST_ZERO_ONE, rand_a[0] ? 8'b0 : 8'b1);
+  `signal(REPLACE_COND_CONST_ONE_ZERO, rand_a[0] ? 80'b1 : 80'b0);
+  `signal(REPLACE_COND_CONST_ZERO_ONE, rand_a[0] ? 80'b0 : 80'b1);
+  `signal(REPLACE_COND_CONST_ONES_ZERO, rand_a[0] ? -80'b1 : 80'b0);
+  `signal(REPLACE_COND_CONST_ZERO_ONAE, rand_a[0] ?  80'b0 : -80'b1);
   `signal(REPLACE_COND_CAT_LHS_CONST_ONE_ZERO, rand_a[0] ? {8'b1, rand_b[0]} : {8'b0, rand_b[1]});
   `signal(REPLACE_COND_CAT_LHS_CONST_ZERO_ONE, rand_a[0] ? {8'b0, rand_b[0]} : {8'b1, rand_b[1]});
   `signal(REPLACE_COND_SAME_CAT_LHS, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
@@ -310,6 +313,20 @@ module t (
   `signal(FOLD_MUX_FROM_ONES, ones[rand_a[5:0]]);
   `signal(FOLD_MUX_FROM_ZERO, zero[rand_a[5:0]]);
   `signal(REPLACE_MUX_WITH_SEL, rand_a[const_a[5:0]]);
+  `signal(REPLACE_COND_THEN_OR_LHS, rand_a[0] ? rand_a[1] | rand_b[1] : rand_a[1]);
+  `signal(REPLACE_COND_THEN_OR_RHS, rand_a[0] ? rand_a[1] | rand_b[1] : rand_b[1]);
+  `signal(REMOVE_ACI_BINARY_LHS, ~rand_a & (~rand_b & ~rand_a));
+  `signal(REMOVE_ACI_BINARY_RHS, (~rand_b & ~rand_a) & ~rand_a);
+  `signal(REPLACE_CONCAT_SAME, {rand_a, rand_a});
+  `signal(REPLACE_CONCAT_REP_ON_LHS, {{2{rand_a}}, rand_a});
+  `signal(REPLACE_CONCAT_REP_ON_RHS, {rand_a, {2{rand_a}}});
+  `signal(REPLACE_AND_REP_COND_ELSE_ZERO, {4{rand_a[0]}} & (rand_a[1] ? rand_b[3:0] : 4'd0));
+  `signal(REPLACE_EQ_BIT_0, 1'b0 == rand_a[0]);
+  `signal(REMOVE_EQ_BIT_1, 1'b1 == rand_a[0]);
+  `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
+  `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
+  `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
+  `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);

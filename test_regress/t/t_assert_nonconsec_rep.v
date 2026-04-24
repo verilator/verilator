@@ -17,7 +17,7 @@ module t (
   int cyc;
   reg [63:0] crc;
 
-  // Derive signals from non-adjacent CRC bits (lesson 17: avoid shift correlation)
+  // Derive signals from non-adjacent CRC bits to avoid LFSR shift correlation
   wire a = crc[0];
   wire b = crc[4];
   wire c = crc[8];
@@ -56,10 +56,10 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 34);
-      `checkd(count_fail2, 27);
-      `checkd(count_fail3, 25);
-      `checkd(count_fail4, 0);
+      `checkd(count_fail1, 34);  // Questa: 29
+      `checkd(count_fail2, 27);  // Questa: 32
+      `checkd(count_fail3, 25);  // Questa: 29
+      `checkd(count_fail4, 0);  // Questa: 0
       $write("*-* All Finished *-*\n");
       $finish;
     end

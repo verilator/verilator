@@ -211,7 +211,6 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     friend VerilatedVcd;
     friend VerilatedVcd::Super;
     friend VerilatedVcd::Buffer;
-    friend VerilatedVcd::OffloadBuffer;
 
     VerilatedVcd& m_owner;  // Trace file owning this buffer. Required by subclasses.
 

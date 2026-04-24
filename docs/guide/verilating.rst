@@ -262,23 +262,6 @@ construction is parallelized using the same number of threads as specified
 with :vlopt:`--threads`, and is executed on the same thread pool as the
 model.
 
-The :vlopt:`--trace-threads` options can be used with :vlopt:`--trace-fst`
-to offload FST tracing using multiple threads. If :vlopt:`--trace-threads`
-is given without :vlopt:`--threads`, then :vlopt:`--trace-threads` will
-imply :vlopt:`--threads 1 <--threads>`, i.e., the support libraries will be
-thread safe.
-
-With :vlopt:`--trace-threads 0 <--trace-threads>`, trace dumps are produced
-on the main thread. This again gives the highest single-thread performance.
-
-With :vlopt:`--trace-threads {N} <--trace-threads>`, where N is at least 1,
-up to N additional threads will be created and managed by the trace files
-(e.g., VerilatedFstC), to offload construction of the trace dump. The main
-thread will be released to proceed with execution as soon as possible,
-though some main thread blocking is still necessary while capturing the
-trace. FST tracing can utilize up to 2 offload threads, so there is no use
-of setting :vlopt:`--trace-threads` higher than 2 at the moment.
-
 When running a multithreaded model, the default Linux task scheduler often
 works against the model by assuming short-lived threads and thus it often
 schedules threads using multiple hyperthreads within the same physical
@@ -293,8 +276,7 @@ disable automatic thread affinity. For more information, refer to
 :ref:`Environment`.
 
 For best performance, use the :command:`numactl` program to (when the
-threading count fits) select unique physical cores on the same socket. The
-same applies for :vlopt:`--trace-threads` as well.
+threading count fits) select unique physical cores on the same socket.
 
 As an example, if a model was Verilated with :vlopt:`--threads 4
 <--threads>`, we consult:
@@ -521,7 +503,10 @@ include directories and link to the SystemC libraries.
 
 .. describe:: TRACE_THREADS
 
-   Optional. Enable multithreaded FST trace; see :vlopt:`--trace-threads`.
+   Deprecated and has no effect.
+
+   In versions before 5.048: Optional. Enable multithreaded FST trace; see
+   :vlopt:`--trace-threads`.
 
 .. describe:: TRACE_VCD
 

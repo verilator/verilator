@@ -38,6 +38,7 @@ module t (
   typedef strp_t arru_strp_t[4:3];
 
   strp_t v_strp;
+  strp_t v_strp2;
   strp_strp_t v_strp_strp;
   unip_strp_t v_unip_strp;
   arrp_t v_arrp;
@@ -98,6 +99,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     v_strp <= ~v_strp;
+    v_strp2 <= ~v_strp2;
     v_strp_strp <= ~v_strp_strp;
     v_unip_strp <= ~v_unip_strp;
     v_arrp_strp <= ~v_arrp_strp;

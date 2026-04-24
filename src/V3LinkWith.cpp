@@ -107,7 +107,7 @@ class LinkWithVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelectp)) {
+        if (m_inRandomizeWith && nodep->fromp()->sameTree(m_currentRandomizeSelectp)) {
             // Replace member selects to the element
             // on which the randomize() is called with LambdaArgRef
             // This allows V3Randomize to work properly when

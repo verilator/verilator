@@ -524,17 +524,19 @@ public:
     void insertIfaceVarSym(VSymEnt* symp) {  // Where sym is for a VAR of dtype IFACEREFDTYPE
         m_ifaceVarSyms.push_back(symp);
     }
-    // Iface for a raw or arrayed iface
+    // Iface for a raw or arrayed iface; peels nested array layers for multi-dim arrays.
     static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
-        AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
-        if (!ifacerefp) {
+        while (nodep) {
+            if (AstIfaceRefDType* const ifp = VN_CAST(nodep, IfaceRefDType)) return ifp;
             if (const AstBracketArrayDType* const arrp = VN_CAST(nodep, BracketArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
             } else if (const AstUnpackArrayDType* const arrp = VN_CAST(nodep, UnpackArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
+            } else {
+                return nullptr;
             }
         }
-        return ifacerefp;
+        return nullptr;
     }
     // Given a pin expression, resolve it to a live AstIface* (or nullptr).
     // Handles both simple VarRef and dotted VarXRef pin connections.
@@ -770,10 +772,16 @@ public:
             if (forPrearray()) {
                 // GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
                 // but presently should be just "foo".
-                // Likewise cell foo__[array] before we've expanded arrays is just foo
-                if ((pos = ident.rfind("__BRA__")) != string::npos) {
-                    altIdent = ident.substr(0, pos);
+                // Likewise cell foo__[array] before we've expanded arrays is just foo.
+                // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them
+                // all.
+                altIdent = ident;
+                while (VString::endsWith(altIdent, "__KET__")) {
+                    const auto braPos = altIdent.rfind("__BRA__");
+                    if (braPos == string::npos) break;
+                    altIdent = altIdent.substr(0, braPos);
                 }
+                if (altIdent == ident) altIdent.clear();
             }
             UINFO(8, "         id " << ident << " alt " << altIdent << " left " << leftname
                                     << " at se" << lookupSymp);
@@ -4323,6 +4331,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
+            } else if (allowScope && !allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+                // Function/task used as scope for static variable access (IEEE std 1800-2017 6.21)
+                // Don't set m_dotText so the static variable resolves as a VarRef rather than
+                // VarXRef. This is so that V3Begin won't move it out of the function/task's scope.
+                ok = true;
+                m_ds.m_dotSymp = foundp;
+                m_ds.m_dotPos = DP_SCOPE;
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
                 AstNodeFTaskRef* taskrefp;
                 if (VN_IS(foundp->nodep(), Task)) {
@@ -5148,8 +5163,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 }
             }
-            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)
+                && !VN_IS(nodep->classOrPackagep(), Package)) {
                 // need special handling to avoid falling back to std::randomize
+                // Skip if classOrPackagep is a Package (i.e. std::randomize resolved earlier)
                 VMemberMap memberMap;
                 AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
                     memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
@@ -5231,7 +5248,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
-                        nodep->classOrPackagep(classp);
+                        // Don't overwrite if already resolved to a package (e.g. std::randomize)
+                        if (!VN_IS(nodep->classOrPackagep(), Package))
+                            nodep->classOrPackagep(classp);
                     } else if (nodep->name() == "randomize") {
                         // A std::randomize resolved in V3Width
                         nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
@@ -5312,10 +5331,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         symIterateNull(nodep->attrp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
-            AstCellArrayRef* const newp
-                = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
+                // Multi-dim iface array access: append this select to the existing chain
+                fromArrRefp->addSelp(exprp);
+                AstCellArrayRef* const movedp = fromArrRefp->unlinkFrBack();
+                nodep->replaceWith(movedp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else {
+                AstCellArrayRef* const newp
+                    = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
     }
     void visit(AstNodePreSel* nodep) override {

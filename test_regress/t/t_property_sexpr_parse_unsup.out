@@ -1,19 +1,40 @@
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:66:14: Logical operator IMPLICATION expects 1 bit on the RHS, but RHS's CMETHODHARD 'at' generates 8 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:70:14: Logical operator IMPLICATION expects 1 bit on the RHS, but RHS's CMETHODHARD 'at' generates 8 bits.
                                                      : ... note: In instance 't.ieee'
-   66 |     $rose(a) |-> q[0];
+   70 |     $rose(a) |-> q[0];
       |              ^~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:71:29: Logical operator SEXPR expects 1 bit on the exprp, but exprp's CMETHODHARD 'at' generates 8 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:75:29: Logical operator SEXPR expects 1 bit on the exprp, but exprp's CMETHODHARD 'at' generates 8 bits.
                                                      : ... note: In instance 't.ieee'
-   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
+   75 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
       |                             ^~
-%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:92:31: Logical operator SEXPR expects 1 bit on the exprp, but exprp's VARREF 'b' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_property_sexpr_unsup.v:96:31: Logical operator SEXPR expects 1 bit on the exprp, but exprp's VARREF 'b' generates 32 bits.
                                                      : ... note: In instance 't.ieee'
-   92 |   assert property (@clk not a ##1 b);
+   96 |   assert property (@clk not a ##1 b);
       |                               ^~
-%Error: Internal Error: t/t_property_sexpr_unsup.v:71:29: ../V3AssertProp.cpp:#: Range delay SExpr without clocking event
-                                                        : ... note: In instance 't.ieee'
-   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
-      |                             ^~
-                        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:49: Unsupported: 'until' in complex property expression
+                                                    : ... note: In instance 't'
+   47 |   assert property (@(posedge clk) val until val until val) $display("[%0t] nested until, fileline:%d", $time, 47);
+      |                                                 ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:51:39: Unsupported: s_until (in property expresion)
+                                                    : ... note: In instance 't'
+   51 |   assert property (@(posedge clk) val s_until !val) $display("[%0t] s_until, fileline:%d", $time, 51);
+      |                                       ^~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:53:39: Unsupported: s_until_with (in property expresion)
+                                                    : ... note: In instance 't'
+   53 |   assert property (@(posedge clk) val s_until_with val) $display("[%0t] s_until_with, fileline:%d", $time, 53);
+      |                                       ^~~~~~~~~~~~
+%Error: t/t_property_sexpr_unsup.v:49:50: Duplicate declaration of block: '__VcycleDly_h########__2__block'
+                                        : ... note: In instance 't'
+   49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
+      |                                                  ^~
+        t/t_property_sexpr_unsup.v:49:50: ... Location of original declaration
+   49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
+      |                                                  ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Internal Error: t/t_property_sexpr_unsup.v:45:44: ../V3Ast.cpp:#: AstPExpr::bodyp() cannot have a non-nullptr nextp()
+                                                        : ... note: In instance 't'
+   45 |   assert property (@(posedge clk) ##1 (val until val)) $display("[%0t] until in sequence, fileline:%d", $time, 45);
+      |                                            ^~~~~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

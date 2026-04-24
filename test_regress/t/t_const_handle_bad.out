@@ -1,0 +1,14 @@
+%Error-CONSTWRITTEN: t/t_const_handle_bad.v:15:9: Writing to 'const' data-typed variable 'x' (IEEE 1800-2023 6.20.6)
+                                                : ... note: In instance 't'
+   15 |     cls.x = 1;
+      |         ^
+                     ... For error description see https://verilator.org/warn/CONSTWRITTEN?v=latest
+%Error-CONSTWRITTEN: t/t_const_handle_bad.v:16:10: Writing to 'const' data-typed variable 'x' (IEEE 1800-2023 6.20.6)
+                                                 : ... note: In instance 't'
+   16 |     cls2.x = 1;
+      |          ^
+%Error-CONSTWRITTEN: t/t_const_handle_bad.v:18:5: Writing to 'const' data-typed variable 'cls' (IEEE 1800-2023 6.20.6)
+                                                : ... note: In instance 't'
+   18 |     cls = cls2;
+      |     ^~~
+%Error: Exiting due to

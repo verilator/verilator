@@ -218,6 +218,7 @@ class WidthVisitor final : public VNVisitor {
     bool m_underFork = false;  // Visiting under a fork
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
+    bool m_underMemberSel = false;  // Viting under a MemberSel
     bool m_hasNamedType = false;  // Packed array is defined using named type
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
@@ -298,6 +299,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSWithin* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
@@ -2924,8 +2926,8 @@ class WidthVisitor final : public VNVisitor {
             }
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
-                   && !VN_IS(m_procedurep, InitialAutomatic)
-                   && !VN_IS(m_procedurep, InitialStatic)) {
+                   && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
+                   && !m_underMemberSel) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
@@ -3561,6 +3563,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep);
         if (nodep->didWidth()) return;
+        VL_RESTORER(m_underMemberSel);
+        m_underMemberSel = true;
         UINFOTREE(9, nodep, "", "mbs-in");
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         UINFOTREE(9, nodep, "", "mbs-ic");
@@ -3708,6 +3712,11 @@ class WidthVisitor final : public VNVisitor {
                         nodep->replaceWith(varRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         return true;
+                    }
+                    if (nodep->access().isWriteOrRW() && varp->isConst()) {
+                        nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
+                                                          << nodep->prettyNameQ()
+                                                          << " (IEEE 1800-2023 6.20.6)");
                     }
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
@@ -7147,7 +7156,9 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
-                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                    // Output args: at return caller = callee, reverse direction.
+                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
+                                     portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
@@ -8352,7 +8363,8 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNodeExpr* newp;
-            if (VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)) {
+            AstNodeDType* const dtypeSkipp = nodep->dtypep()->skipRefp();
+            if (VN_IS(dtypeSkipp, ClassRefDType) || VN_IS(dtypeSkipp, IfaceRefDType)) {
                 // Cannot use AstRedOr, as we may be redurcing a class handle
                 newp = new AstNeq{nodep->fileline(),
                                   new AstConst{nodep->fileline(), AstConst::Null{}},
@@ -8502,14 +8514,19 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
-                          AstNodeDType* const lhsDTypep) {
+                          AstNodeDType* const lhsDTypep, bool isOutputArg = false) {
         UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
         const AstNodeDType* const lhsRawDTypep = lhsDTypep->skipRefp();
         const AstNodeDType* const rhsRawDTypep = rhsp->dtypep()->skipRefp();
         if (const AstClassRefDType* const lhsClassRefp = VN_CAST(lhsRawDTypep, ClassRefDType)) {
             if (const AstClassRefDType* const rhsClassRefp
                 = VN_CAST(rhsRawDTypep, ClassRefDType)) {
-                if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
+                // Output arg swaps sides: caller actual = callee formal at return.
+                const AstClass* const dstp
+                    = isOutputArg ? rhsClassRefp->classp() : lhsClassRefp->classp();
+                const AstClass* const srcp
+                    = isOutputArg ? lhsClassRefp->classp() : rhsClassRefp->classp();
+                if (isBaseClassRecurse(dstp, srcp)) return;
             } else if (rhsp->isNull()) {
                 return;
             }
