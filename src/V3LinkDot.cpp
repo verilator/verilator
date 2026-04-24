@@ -2217,8 +2217,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(listp), listp);
                 }
             }
-            if (nodep->exprsp())
-                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->exprsp()) exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
             if (nodep->constraintsp())
                 exprOrConstraintsp = AstNode::addNext(
                     exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
@@ -5178,8 +5177,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
-                        nodep->fileline(),
-                        new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
                         VFlagChildDType{}, nodep->name(), argsp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
