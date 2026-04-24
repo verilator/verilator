@@ -1272,6 +1272,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
+    std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
 public:
@@ -1315,10 +1316,16 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
+    const std::string& resolvedTopModuleName() const { return m_resolvedTopModuleName; }
+    void resolvedTopModuleName(const std::string& value) { m_resolvedTopModuleName = value; }
     uint32_t nTraceCodes() const { return m_nTraceCodes; }
     void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
+    const std::string traceLibTopName() const {
+        const std::string& name = resolvedTopModuleName();
+        return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
+    }
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration
