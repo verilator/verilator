@@ -650,6 +650,24 @@ module Vt_debug_emitv_t;
             $display("pass");
         end
     end
+    begin : assert_prop_always
+        assert property (@(posedge clk) 
+            ???? // PROPALWAYS
+            in'sh0'sh3
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_s_always
+        assert property (@(posedge clk) 
+            ???? // PROPALWAYS
+            in'sh1'sh2
+        ) begin
+        end
+        else begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin
