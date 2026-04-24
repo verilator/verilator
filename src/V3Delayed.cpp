@@ -899,6 +899,44 @@ class DelayedVisitor final : public VNVisitor {
         postp->addStmtsp(callp->makeStmt());
     }
 
+    // Create a properly-sized 32-bit unsigned constant (post-WidthCommit, width==widthMin).
+    AstConst* makeU32Const(FileLine* flp, const AstNode* contextp, uint32_t value) {
+        AstConst* const cp = new AstConst{
+            flp, AstConst::DTyped{}, contextp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cp->num().setLong(value);
+        return cp;
+    }
+
+    // Split a whole-(sub-)array NBA ('arr <= rhs_arr') into per-element NBAs and convert each.
+    // The partial commit queue's enqueue() takes a scalar element, so we recurse through
+    // convertSchemeValueQueue - each per-element NBA then hits the normal ArraySel path.
+    void splitAndConvertWholeArrayNba(AstAssignDly* nodep, AstVarScope* vscp,
+                                      VarScopeInfo& vscpInfo,
+                                      const AstUnpackArrayDType* uaDTypep) {
+        FileLine* const flp = nodep->fileline();
+        AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
+        AstNodeExpr* const origLhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const origRhsp = nodep->rhsp()->unlinkFrBack();
+        const int loIdx = uaDTypep->rangep()->loConst();
+        const int hiIdx = loIdx + uaDTypep->elementsConst();
+        std::vector<AstAssignDly*> perElementNbas;
+        perElementNbas.reserve(hiIdx - loIdx);
+        for (int i = loIdx; i < hiIdx; ++i) {
+            AstAssignDly* const elemNbap = new AstAssignDly{
+                flp, new AstArraySel{flp, origLhsp->cloneTree(false), makeU32Const(flp, vscp, i)},
+                new AstArraySel{flp, origRhsp->cloneTree(false), makeU32Const(flp, vscp, i)}};
+            elemNbap->user2p(scopep);
+            nodep->addHereThisAsNext(elemNbap);
+            perElementNbas.push_back(elemNbap);
+        }
+        VL_DO_DANGLING(pushDeletep(origLhsp), origLhsp);
+        VL_DO_DANGLING(pushDeletep(origRhsp), origRhsp);
+        pushDeletep(nodep->unlinkFrBack());
+        for (AstAssignDly* const elemNbap : perElementNbas) {
+            convertSchemeValueQueue(elemNbap, vscp, vscpInfo, /* partial: */ true);
+        }
+    }
+
     void convertSchemeValueQueue(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo,
                                  bool partial) {
         UASSERT_OBJ(partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
@@ -906,6 +944,16 @@ class DelayedVisitor final : public VNVisitor {
                     vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
+
+        // A whole-(sub-)array NBA under the partial scheme needs splitting into per-element NBAs,
+        // as enqueue() takes a scalar element, not a whole VlUnpacked array.
+        if (partial) {
+            if (const AstUnpackArrayDType* const uaDTypep
+                = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                splitAndConvertWholeArrayNba(nodep, vscp, vscpInfo, uaDTypep);
+                return;
+            }
+        }
 
         // Base name suffix for signals constructed below
         const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
