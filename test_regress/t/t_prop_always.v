@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/
     // Inputs
     clk
@@ -73,15 +78,15 @@ module t (/*AUTOARG*/
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 99) begin
-      if (high_bounded_fail != 0) $stop;
-      if (high_sbounded_fail != 0) $stop;
-      if (high_degenerate_fail != 0) $stop;
-      if (low_bounded_pass != 0) $stop;
-      if (low_degenerate_pass != 0) $stop;
-      if (rand_bounded_pass != 3) $stop;
-      if (rand_bounded_fail != 97) $stop;
-      if (disable_bounded_pass != 2) $stop;
-      if (disable_bounded_fail != 70) $stop;
+      `checkd(high_bounded_fail, 0);
+      `checkd(high_sbounded_fail, 0);
+      `checkd(high_degenerate_fail, 0);
+      `checkd(low_bounded_pass, 0);
+      `checkd(low_degenerate_pass, 0);
+      `checkd(rand_bounded_pass, 3);
+      `checkd(rand_bounded_fail, 97);
+      `checkd(disable_bounded_pass, 2);
+      `checkd(disable_bounded_fail, 70);
       $write("*-* All Finished *-*\n");
       $finish;
     end
