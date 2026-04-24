@@ -901,8 +901,8 @@ class DelayedVisitor final : public VNVisitor {
 
     // Create a properly-sized 32-bit unsigned constant (post-WidthCommit, width==widthMin).
     AstConst* makeU32Const(FileLine* flp, const AstNode* contextp, uint32_t value) {
-        AstConst* const cp = new AstConst{
-            flp, AstConst::DTyped{}, contextp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        AstConst* const cp = new AstConst{flp, AstConst::DTyped{},
+                                          contextp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cp->num().setLong(value);
         return cp;
     }
