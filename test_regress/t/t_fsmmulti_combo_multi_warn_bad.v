@@ -1,13 +1,12 @@
-// DESCRIPTION: Verilator: FSMMULTI warning test for combinational transition blocks
+// DESCRIPTION: Verilator: combined FSMMULTI warning regression
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (
+module same_always_warn (
     input logic clk
 );
-
   typedef enum logic [1:0] {
     A0, A1
   } a_state_t;
@@ -41,5 +40,44 @@ module t (
   always_ff @(posedge clk) begin
     state_b_q <= state_b_d;
   end
+endmodule
 
+module split_always_warn (
+    input logic clk
+);
+  /* verilator lint_off MULTIDRIVEN */
+  typedef enum logic [1:0] {
+    S0, S1
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: state_d = S1;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: state_d = S1;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+  /* verilator lint_on MULTIDRIVEN */
+endmodule
+
+module t (
+    input logic clk
+);
+  same_always_warn same_u (.clk(clk));
+  split_always_warn split_u (.clk(clk));
 endmodule

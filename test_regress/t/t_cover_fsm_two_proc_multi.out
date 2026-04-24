@@ -1,0 +1,278 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage combined two-process/three-block regression
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module fsm_basic (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic start
+        );
+          typedef enum logic [1:0] {
+            S_IDLE = 2'd0,
+            S_RUN  = 2'd1,
+            S_DONE = 2'd2,
+            S_ERR  = 2'd3
+          } state_t;
+        
+%000002   state_t state_q /*verilator fsm_reset_arc*/;
+%000002   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+~000010     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.basic_u.state_q::ANY->S_IDLE[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.basic_u.state_q::S_RUN->S_DONE]
+%000001        // [fsm_state t.basic_u.state_q::S_DONE]
+%000001        // [fsm_state t.basic_u.state_q::S_ERR]
+%000000        // [fsm_state t.basic_u.state_q::S_IDLE] *** UNCOVERED ***
+%000001        // [fsm_state t.basic_u.state_q::S_RUN]
+%000004       S_IDLE: if (start) state_d = S_RUN;
+%000001       S_RUN: state_d = S_DONE;
+%000005       default: state_d = S_ERR;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S_IDLE;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_three_block (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic start
+        );
+          typedef enum logic [1:0] {
+            S_IDLE = 2'd0,
+            S_BUSY = 2'd1,
+            S_DONE = 2'd2
+          } state_t;
+        
+%000001   logic busy;
+%000001   logic done;
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+~000010     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.three_block_u.state_q::ANY->S_IDLE[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.three_block_u.state_q::S_BUSY->S_DONE]
+%000001        // [fsm_arc t.three_block_u.state_q::S_DONE->S_IDLE]
+%000001        // [fsm_state t.three_block_u.state_q::S_BUSY]
+%000001        // [fsm_state t.three_block_u.state_q::S_DONE]
+%000001        // [fsm_state t.three_block_u.state_q::S_IDLE]
+%000008       S_IDLE: if (start) state_d = S_BUSY;
+%000001       S_BUSY: state_d = S_DONE;
+%000001       S_DONE: state_d = S_IDLE;
+%000000       default: state_d = S_IDLE;
+            endcase
+          end
+        
+%000001   always_comb begin
+%000001     busy = (state_q == S_BUSY);
+%000001     done = (state_q == S_DONE);
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S_IDLE;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_mealy (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic start,
+%000001     input logic bit_done
+        );
+          typedef enum logic [1:0] {
+            S_IDLE = 2'd0,
+            S_SEND = 2'd1,
+            S_DONE = 2'd2
+          } state_t;
+        
+%000002   logic tx;
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+ 000010     tx = 1'b1;
+~000010     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.mealy_u.state_q::ANY->S_IDLE[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.mealy_u.state_q::S_DONE->S_IDLE]
+%000001        // [fsm_state t.mealy_u.state_q::S_DONE]
+%000001        // [fsm_state t.mealy_u.state_q::S_IDLE]
+%000001        // [fsm_state t.mealy_u.state_q::S_SEND]
+%000007       S_IDLE: begin
+%000006         if (start) begin
+%000001           state_d = S_SEND;
+%000001           tx = 1'b0;
+                end
+              end
+%000002       S_SEND: begin
+%000002         tx = bit_done;
+%000001         if (bit_done) state_d = S_DONE;
+              end
+%000001       S_DONE: state_d = S_IDLE;
+%000000       default: state_d = S_IDLE;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S_IDLE;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_reset_policy (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+          typedef enum logic [0:0] {
+            S0 = 1'b0,
+            S1 = 1'b1
+          } state_t;
+        
+%000001   state_t state_incl_q /*verilator fsm_reset_arc*/;
+%000001   state_t state_incl_d;
+%000001   state_t state_excl_q;
+%000001   state_t state_excl_d;
+        
+ 000010   always_comb begin
+ 000010     state_incl_d = state_incl_q;
+~000010     case (state_incl_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.reset_u.state_incl_q::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.reset_u.state_incl_q::S0->S1]
+%000000        // [fsm_state t.reset_u.state_incl_q::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.reset_u.state_incl_q::S1]
+%000003       S0: state_incl_d = S1;
+%000007       default: state_incl_d = S1;
+            endcase
+          end
+        
+ 000010   always_comb begin
+ 000010     state_excl_d = state_excl_q;
+~000010     case (state_excl_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.reset_u.state_excl_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.reset_u.state_excl_q::S0->S1]
+%000000        // [fsm_state t.reset_u.state_excl_q::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.reset_u.state_excl_q::S1]
+%000003       S0: state_excl_d = S1;
+%000007       default: state_excl_d = S1;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_incl_q <= S0;
+%000007     else state_incl_q <= state_incl_d;
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_excl_q <= S0;
+%000007     else state_excl_q <= state_excl_d;
+          end
+        endmodule
+        
+        module fsm_nextstate_sel_off (
+%000009     input logic clk
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1
+          } state_t;
+        
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+%000001   always_comb begin
+%000001     state_d = S0;
+%000001     case (state_d)
+%000001       S0: state_d = S1;
+%000000       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000009     state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_seqmix_off (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1
+          } state_t;
+        
+%000004   logic side;
+%000004   state_t state_q;
+%000004   state_t state_d;
+        
+%000001   initial side = 1'b0;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+ 000010     case (state_q)
+%000006       S0: state_d = S1;
+%000004       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else begin
+%000007       side <= ~side;
+%000007       state_q <= state_d;
+            end
+          end
+        endmodule
+        
+        module t (
+%000009     input clk
+        );
+          integer cyc;
+%000001   logic rst;
+%000001   logic start;
+%000001   logic bit_done;
+        
+          fsm_basic basic_u (.clk(clk), .rst(rst), .start(start));
+          fsm_three_block three_block_u (.clk(clk), .rst(rst), .start(start));
+          fsm_mealy mealy_u (.clk(clk), .rst(rst), .start(start), .bit_done(bit_done));
+          fsm_reset_policy reset_u (.clk(clk), .rst(rst));
+          fsm_nextstate_sel_off nextstate_sel_off_u (.clk(clk));
+          fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
+        
+%000001   initial begin
+%000001     cyc = 0;
+%000001     rst = 1'b1;
+%000001     start = 1'b0;
+%000001     bit_done = 1'b0;
+          end
+        
+%000009   always @(posedge clk) begin
+%000009     cyc <= cyc + 1;
+%000008     if (cyc == 1) rst <= 1'b0;
+%000008     if (cyc == 2) start <= 1'b1;
+%000008     if (cyc == 3) start <= 1'b0;
+%000008     if (cyc == 4) bit_done <= 1'b1;
+%000008     if (cyc == 5) bit_done <= 1'b0;
+%000008     if (cyc == 8) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        endmodule
+        

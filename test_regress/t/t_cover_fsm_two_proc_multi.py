@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage two-process reset policy test
+# DESCRIPTION: Verilator: FSM coverage combined two-process/three-block regression
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -26,5 +26,7 @@ test.run(cmd=[
          verilator_run=True)
 
 test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
+test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.nextstate_sel_off_u\.state_q.*fsm_")
+test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.seqmix_off_u\.state_q.*fsm_")
 
 test.passes()

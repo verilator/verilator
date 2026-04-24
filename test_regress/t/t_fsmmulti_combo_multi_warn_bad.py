@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSMMULTI warning test for duplicate split FSM transition blocks
+# DESCRIPTION: Verilator: combined FSMMULTI warning regression
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -15,8 +15,11 @@ test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
 
 test.file_grep(
     test.compile_log_filename,
-    r'%Warning-FSMMULTI: t/t_fsmmulti_combo_split_warn_bad.v:29:5: FSM coverage: multiple '
-    r'supported transition candidates found for the same FSM in combinational always blocks. '
-    r'Only the first candidate will be instrumented.')
+    r'FSM coverage: multiple supported transition candidates found in the same '
+    r'combinational always block')
+test.file_grep(
+    test.compile_log_filename,
+    r'FSM coverage: multiple supported transition candidates found for the same FSM '
+    r'in combinational always blocks')
 
 test.passes()
