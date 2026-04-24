@@ -1252,7 +1252,6 @@ class TaskVisitor final : public VNVisitor {
             } else {
                 cfuncp->addStmtsp(cstmtp);
             }
-
         }
 
         // Convert output/inout arguments back to internal type
