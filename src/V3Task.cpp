@@ -1237,16 +1237,6 @@ class TaskVisitor final : public VNVisitor {
                 cstmtp->add(";");
             }
 
-            // Set DPI import trigger flag to track invoking from function context
-            if (nodep->verilogFunction()) {
-                FileLine* const flp = cfuncp->fileline();
-                AstVarScope* const dpiImportTriggerp = getDpiImportTrigger();
-                AstVarRef* const varRefp = new AstVarRef{flp, dpiImportTriggerp, VAccess::WRITE};
-                AstAssign* const assignp
-                    = new AstAssign{flp, varRefp, new AstConst{flp, AstConst::BitTrue{}}};
-                cfuncp->addStmtsp(assignp);
-            }
-
             // If timings are used, the DPI function has to be executed inside a fiber.
             // Functions do not need to be executed inside a fiber, because they are
             // indistinguishable from SV functions. (IEEE 35.2.1 Tasks and functions)
@@ -1263,15 +1253,6 @@ class TaskVisitor final : public VNVisitor {
                 cfuncp->addStmtsp(cstmtp);
             }
 
-            // Set DPI import trigger flag to track invoking from function context
-            if (nodep->verilogFunction()) {
-                FileLine* const flp = cfuncp->fileline();
-                AstVarScope* const dpiImportTriggerp = getDpiImportTrigger();
-                AstVarRef* const varRefp = new AstVarRef{flp, dpiImportTriggerp, VAccess::WRITE};
-                AstAssign* const assignp
-                    = new AstAssign{flp, varRefp, new AstConst{flp, AstConst::BitFalse{}}};
-                cfuncp->addStmtsp(assignp);
-            }
         }
 
         // Convert output/inout arguments back to internal type
@@ -1300,8 +1281,6 @@ class TaskVisitor final : public VNVisitor {
             FileLine* const fl = m_topScopep->fileline();
             const string name{"__Vdpi_import_trigger"};
             AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
-            varp->setReadByDpi();
-            varp->setWrittenByDpi();
             m_topScopep->scopep()->modp()->addStmtsp(varp);
             dpiImportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
             m_topScopep->scopep()->addVarsp(dpiImportTriggerp);
