@@ -41,13 +41,20 @@ public:
     void await_suspend(std::coroutine_handle<> waiter) const { m_fiber.addWaiter(waiter); }
     void await_resume() const noexcept {}
 };
+
+static thread_local struct {
+    char* m_filename;
+    int m_lineno;
+    bool m_inFuncContext;
+} s_fileline;
+
 };  //namespace
 
 namespace VerilatedDpi {
 // Run user C code in a fiber, wrapping it in a coroutine for scheduler integration
 // This allows the C code to call DPI exports with timing controls
 template <typename Callable>
-VlCoroutine callImport(Callable&& fn) {
+VlCoroutine callImportInFiber(Callable&& fn) {
     auto fiberp{
         VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); })};
     while (!fiberp->isDone()) {
@@ -57,10 +64,27 @@ VlCoroutine callImport(Callable&& fn) {
     co_return;
 }
 
+template <bool isTask, typename Callable>
+constexpr void callImport(Callable&& fn, char* const filename, int lineno) {
+    if VL_CONSTEXPR_CXX17 (!isTask) {
+        s_fileline.m_filename = filename;
+        s_fileline.m_lineno = lineno;
+        s_fileline.m_inFuncContext = true;
+    }
+    fn();
+    if VL_CONSTEXPR_CXX17 (!isTask) { s_fileline.m_inFuncContext = false; }
+}
+
 // Suspend the current fiber until the DPI export coroutine completes
 // Must be called from within a fiber context (i.e., from C code called via DPI import)
-template <typename Callable, typename... Args>
+template <bool isTask, typename Callable, typename... Args>
 void awaitExport(Callable&& call, Args&&... args) {
+    if VL_CONSTEXPR_CXX17 (isTask) {
+        if (s_fileline.m_inFuncContext) {
+            VL_FATAL_MT(s_fileline.m_filename, s_fileline.m_lineno, "",
+                        "DPI exported task called from function context");
+        }
+    }
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
         VlFiber* const fiberp = VlFiber::current();
@@ -73,6 +97,7 @@ void awaitExport(Callable&& call, Args&&... args) {
         local.setFiberContinuation(fiberp);
         while (!local.await_ready()) { VlFiber::yield(); }
     } else {
+        // Might be a task without timings or a function
         call(std::forward<Args>(args)...);
     }
 }

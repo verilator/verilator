@@ -35,6 +35,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <string>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1026,8 +1027,10 @@ class TaskVisitor final : public VNVisitor {
 
         // used
         if (v3Global.opt.timing().isTrue()) {
-            AstCStmt* const awaitExportp
-                = new AstCStmt{nodep->fileline(), "VerilatedDpi::awaitExport"};
+            std::stringstream awaitExportFunc;
+            awaitExportFunc << "VerilatedDpi::awaitExport<" << std::to_string(nodep->verilogTask())
+                            << ">";
+            AstCStmt* const awaitExportp = new AstCStmt{nodep->fileline(), awaitExportFunc.str()};
             awaitExportp->add("(");
             awaitExportp->add(callp);
             awaitExportp->add(");");
@@ -1242,7 +1245,7 @@ class TaskVisitor final : public VNVisitor {
             // indistinguishable from SV functions. (IEEE 35.2.1 Tasks and functions)
             if (v3Global.opt.timing().isTrue() && !nodep->verilogFunction()) {
                 AstCExpr* const callImportp
-                    = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
+                    = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImportInFiber"};
                 AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
                 callImportp->add("([&]() {");
                 callImportp->add(cstmtp);
@@ -1250,7 +1253,19 @@ class TaskVisitor final : public VNVisitor {
                 cfuncp->addStmtsp(awaitp);
                 cfuncp->rtnType("VlCoroutine");
             } else {
-                cfuncp->addStmtsp(cstmtp);
+                std::stringstream callImportFunc;
+                callImportFunc << "VerilatedDpi::callImport<"
+                               << std::to_string(nodep->verilogTask()) << ">";
+                AstCExpr* const callImportp
+                    = new AstCExpr{nodep->fileline(), callImportFunc.str()};
+                callImportp->add("[&]() {");
+                callImportp->add(cstmtp);
+                callImportp->add("},");
+                callImportp->add("\n" + nodep->fileline()->source());
+                callImportp->add(",");
+                callImportp->add("\n" + std::to_string(nodep->fileline()->lineno()));
+                callImportp->add(")");
+                cfuncp->addStmtsp(callImportp);
             }
         }
 
