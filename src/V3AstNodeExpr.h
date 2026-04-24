@@ -537,6 +537,13 @@ class AstWith final : public AstNode {
     // @astgen op2 := valueArgRefp : AstLambdaArgRef
     // @astgen op3 := exprp : List[AstNode]  // Pins, expression and constraints
     // TODO: Separate expression and constraints
+private:
+    // IEEE 1800-2023 18.7: 'randomize() with (identifier_list) { ... }' marks the
+    // constraint block as restricted -- only names in the list resolve into the
+    // randomize() target class; all other names resolve in the calling scope.
+    bool m_restricted = false;  // True if parenthesized identifier_list was given
+    std::set<std::string> m_restrictedNames;  // Names permitted to bind into target class
+
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
             AstNode* exprp)
@@ -547,12 +554,28 @@ public:
     }
     ASTGEN_MEMBERS_AstWith;
     bool hasDType() const override { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstWith* const otherp = VN_DBG_AS(samep, With);
+        return m_restricted == otherp->m_restricted
+               && m_restrictedNames == otherp->m_restrictedNames;
+    }
     const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
         return nullptr;
     }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool restricted() const { return m_restricted; }
+    void restricted(bool flag) { m_restricted = flag; }
+    void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
+    // IEEE 1800-2023 18.7.1: true if 'name' should resolve into the randomize()
+    // target class. Unrestricted 'with' blocks resolve every name into the class
+    // first; restricted blocks only resolve names in the parenthesized list.
+    bool nameResolvesToTarget(const std::string& name) const {
+        return !m_restricted || m_restrictedNames.find(name) != m_restrictedNames.end();
+    }
+    const std::set<std::string>& restrictedNames() const { return m_restrictedNames; }
 };
 
 // === AstNodeExpr ===

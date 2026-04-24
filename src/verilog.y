@@ -4194,7 +4194,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdList ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4211,7 +4211,7 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdList ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -5405,6 +5405,15 @@ exprListE<nodeExprp>:
 exprList<nodeExprp>:
                 expr                                    { $$ = $1; }
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
+        ;
+
+// IEEE 1800-2023 18.7: identifier_list after 'with' in inline randomize constraints.
+// Only simple identifiers are permitted. Non-identifier expressions are rejected
+// at parse time, keeping the downstream AstWith consumer free of guards.
+inlineConstraintIdList<nodeExprp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       inlineConstraintIdList ',' id           { $$ = $1->addNext(
+                                                             new AstParseRef{$<fl>3, *$3, nullptr, nullptr}); }
         ;
 
 exprEListE<nodep>:  // expression list with empty commas allowed

@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randomize_with_idlist_unsup.v:13:21: Unsupported: 'with (...) {...}' outside randomize()
+   13 |     total = q.sum() with (item) { item > 0; };
+      |                     ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

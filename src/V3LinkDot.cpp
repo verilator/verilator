@@ -2197,12 +2197,27 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (nodep->exprsp()
             || nodep->constraintsp()) {  // Else empty expression and pretend no "with"
             AstNode* exprOrConstraintsp = nullptr;
+            // IEEE 1800-2023 18.7: 'randomize() with (identifier_list) {constraint_block}'
+            // restricts name resolution to the listed identifiers for the target class
+            // scope; unlisted names resolve in the caller. The inlineConstraintIdList
+            // grammar guarantees each exprsp item is a simple AstParseRef. Non-randomize
+            // funcrefs with a constraint block are still rejected below.
+            bool restricted = false;
+            std::set<std::string> restrictedNames;
             if (nodep->exprsp() && nodep->constraintsp()) {
-                // When support this probably should change AstWith to separate out
-                // the expr from the constraint equation using separate op2/op3 similar
-                // to AstWithParse
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize with (...) {...}'");
-            } else if (nodep->exprsp())
+                if (funcrefp->name() != "randomize") {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: 'with (...) {...}' outside randomize()");
+                } else {
+                    restricted = true;
+                    for (AstNode* itemp = nodep->exprsp(); itemp; itemp = itemp->nextp()) {
+                        restrictedNames.insert(VN_AS(itemp, ParseRef)->name());
+                    }
+                    AstNode* const listp = nodep->exprsp()->unlinkFrBackWithNext();
+                    VL_DO_DANGLING(pushDeletep(listp), listp);
+                }
+            }
+            if (nodep->exprsp())
                 exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
             if (nodep->constraintsp())
                 exprOrConstraintsp = AstNode::addNext(
@@ -2212,6 +2227,10 @@ class LinkDotFindVisitor final : public VNVisitor {
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
                 = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
+            if (restricted) {
+                newp->restricted(true);
+                for (const std::string& n : restrictedNames) newp->addRestrictedName(n);
+            }
             funcrefp->withp(newp);
         }
         funcrefp->addArgsp(argsp);
@@ -3082,7 +3101,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_modportNum = 0;  // Uniqueify modport numbers
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
-    bool m_inWith = false;  // True if in with
+    // Current enclosing AstWith (nullptr outside a with block). Non-null implies
+    // "in with"; also carries the identifier list for IEEE 1800-2023 18.7.1
+    // restricted name resolution.
+    const AstWith* m_currentWithp = nullptr;
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
@@ -3882,7 +3904,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
-                if (m_randSymp && m_inWith) classSymp = m_randSymp;
+                if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
                 if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
@@ -4195,11 +4217,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
-            if (m_randSymp) {
+            // IEEE 1800-2023 18.7.1: a restricted 'with (id_list) { ... }' only
+            // binds names in id_list into the target class; other names fall
+            // through to the caller scope.
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp) {
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
-                    if (!m_inWith) {
+                    if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
                         // This will start failing once complex expressions are allowed on the LHS
                         // of randomize() with args
@@ -5138,9 +5164,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
             }
-            if (m_randSymp) {
+            // IEEE 1800-2023 18.7.1: restricted 'with (id_list)' only binds names
+            // in id_list into the target class (same rule applied to method refs).
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
-                if (foundp && m_inWith) {
+                if (foundp && m_currentWithp) {
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstArg* argsp = nullptr;
                     if (nodep->argsp()) {
@@ -5149,7 +5178,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
-                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        nodep->fileline(),
+                        new AstLambdaArgRef{nodep->fileline(), "item", false},
                         VFlagChildDType{}, nodep->name(), argsp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5533,10 +5563,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
-        VL_RESTORER(m_inWith);
+        VL_RESTORER(m_currentWithp);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            m_inWith = true;
+            m_currentWithp = nodep;
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
