@@ -1360,6 +1360,40 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
+    // Rewrite placeholder __VGIfaceParam pins emitted by
+    // LinkDotResolveVisitor::addImplicitParametersOfGenericIface for a nested
+    // generic-interface forwarding chain (#7454). Must run here (not in
+    // V3LinkDot's Param/Resolve visitor at LDS_PARAMED) because:
+    //   * linkDotParamed runs AFTER V3Param, at which point cellDeparam has
+    //     already consumed the pin via moduleFindOrClone (variant naming off
+    //     pinp->exprp()'s IfaceRefDType) and genericInterfaceVarSetup (hard
+    //     VN_AS cast to IfaceRefDType); and
+    //   * the enclosing module's port only becomes a concrete IfaceRefDType
+    //     after its own nodeDeparam has specialized it. That specialization
+    //     happens in V3Param's top-down walk, so the window between "outer
+    //     port resolved" and "inner cellDeparam starts" exists only here.
+    void resolveGenericIfaceForwardingPins(AstPin* paramsp) {
+        for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (!pinp->exprp()) continue;
+            if (!VString::startsWith(pinp->name(), "__VGIfaceParam")) continue;
+            const AstNodeVarRef* const fwdRefp = VN_CAST(pinp->exprp(), NodeVarRef);
+            if (!fwdRefp) continue;
+            const AstIfaceRefDType* const resolvedp
+                = VN_CAST(fwdRefp->varp()->childDTypep()->skipRefp(), IfaceRefDType);
+            UASSERT_OBJ(resolvedp, pinp,
+                        "Generic interface forwarding pin not specialized before use");
+            AstIfaceRefDType* const newIrefp = new AstIfaceRefDType{
+                resolvedp->fileline(), resolvedp->modportFileline(), resolvedp->cellName(),
+                resolvedp->ifaceName(), resolvedp->modportName()};
+            newIrefp->ifacep(resolvedp->ifacep());
+            if (resolvedp->paramsp()) {
+                newIrefp->addParamsp(resolvedp->paramsp()->cloneTree(true));
+            }
+            pinp->exprp()->unlinkFrBack()->deleteTree();
+            pinp->exprp(newIrefp);
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -2114,6 +2148,10 @@ public:
                 }
                 pinp = nextp;
             }
+            // Nested generic-iface forwarding (#7454): rewrite VarRef placeholders
+            // left by V3LinkDot to concrete IfaceRefDTypes now that the enclosing
+            // module has been specialized.
+            resolveGenericIfaceForwardingPins(cellp->paramsp());
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
