@@ -51,7 +51,6 @@ module t (
     option.comment = "option_comment";  // cg, cp, cross
     option.at_least = 20;  // cg, cp, cross
     option.auto_bin_max = 10;  // cg, cp
-    type_option.auto_bin_max = 10;  // cg, cp: typeOption() == true
     option.cross_num_print_missing = 2;  // cg, cross
     option.detect_overlap = 1;  // cg, cp
     option.per_instance = 1;  // cg

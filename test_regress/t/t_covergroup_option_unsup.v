@@ -12,7 +12,7 @@ module t;
 
   covergroup cg;
     cp1: coverpoint cp_expr {
-      option.foobar = 1;
+      option.detect_overlap = 1;
     }
   endgroup
 
