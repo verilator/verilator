@@ -1,0 +1,6 @@
+%Warning-COVERIGN: t/t_cover_fsm_reset_multi.v:41:13: Ignoring unsupported: FSM coverage on reset branches with multiple assignments to the state variable
+   41 |       state <= S1;
+      |             ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
