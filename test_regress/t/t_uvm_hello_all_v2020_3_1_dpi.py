@@ -23,6 +23,7 @@ test.compile(v_flags2=[
     "--vpi",
     "--CFLAGS -O0",
     "-Wall",
+    '-Wno-IMPLICITSTATIC',
     "+incdir+t/uvm",  #
     "t/uvm/uvm_pkg_all_v2020_3_1_dpi.svh",
     test.pli_filename
