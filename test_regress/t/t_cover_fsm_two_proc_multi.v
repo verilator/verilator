@@ -177,6 +177,63 @@ module fsm_nextstate_sel_off (
   end
 endmodule
 
+module fsm_nextstate_sel_ok (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_d)
+      S0: if (start) state_d = S1;
+      S1: state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+module fsm_ternary (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: state_d = sel ? S1 : S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module fsm_seqmix_off (
     input logic clk,
     input logic rst
@@ -216,12 +273,15 @@ module t (
   logic rst;
   logic start;
   logic bit_done;
+  logic sel;
 
   fsm_basic basic_u (.clk(clk), .rst(rst), .start(start));
   fsm_three_block three_block_u (.clk(clk), .rst(rst), .start(start));
   fsm_mealy mealy_u (.clk(clk), .rst(rst), .start(start), .bit_done(bit_done));
   fsm_reset_policy reset_u (.clk(clk), .rst(rst));
   fsm_nextstate_sel_off nextstate_sel_off_u (.clk(clk));
+  fsm_nextstate_sel_ok nextstate_sel_ok_u (.clk(clk), .rst(rst), .start(start));
+  fsm_ternary ternary_u (.clk(clk), .rst(rst), .sel(sel));
   fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
 
   initial begin
@@ -229,6 +289,7 @@ module t (
     rst = 1'b1;
     start = 1'b0;
     bit_done = 1'b0;
+    sel = 1'b0;
   end
 
   always @(posedge clk) begin
@@ -237,7 +298,9 @@ module t (
     if (cyc == 2) start <= 1'b1;
     if (cyc == 3) start <= 1'b0;
     if (cyc == 4) bit_done <= 1'b1;
+    if (cyc == 4) sel <= 1'b1;
     if (cyc == 5) bit_done <= 1'b0;
+    if (cyc == 5) sel <= 1'b0;
     if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;

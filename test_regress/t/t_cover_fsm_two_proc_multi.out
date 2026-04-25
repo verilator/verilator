@@ -208,6 +208,69 @@
           end
         endmodule
         
+        module fsm_nextstate_sel_ok (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+~000010     case (state_d)
+        // [FSM coverage]
+%000001        // [fsm_arc t.nextstate_sel_ok_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.nextstate_sel_ok_u.state_q::S1->S2]
+%000001        // [fsm_state t.nextstate_sel_ok_u.state_q::S0]
+%000001        // [fsm_state t.nextstate_sel_ok_u.state_q::S1]
+%000001        // [fsm_state t.nextstate_sel_ok_u.state_q::S2]
+%000008       S0: if (start) state_d = S1;
+%000001       S1: state_d = S2;
+%000001       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_ternary (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic sel
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000004   state_t state_q;
+%000004   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+ 000010     case (state_q)
+%000009       S0: state_d = sel ? S1 : S2;
+%000004       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
         module fsm_seqmix_off (
 %000009     input logic clk,
 %000001     input logic rst
@@ -247,12 +310,15 @@
 %000001   logic rst;
 %000001   logic start;
 %000001   logic bit_done;
+%000001   logic sel;
         
           fsm_basic basic_u (.clk(clk), .rst(rst), .start(start));
           fsm_three_block three_block_u (.clk(clk), .rst(rst), .start(start));
           fsm_mealy mealy_u (.clk(clk), .rst(rst), .start(start), .bit_done(bit_done));
           fsm_reset_policy reset_u (.clk(clk), .rst(rst));
           fsm_nextstate_sel_off nextstate_sel_off_u (.clk(clk));
+          fsm_nextstate_sel_ok nextstate_sel_ok_u (.clk(clk), .rst(rst), .start(start));
+          fsm_ternary ternary_u (.clk(clk), .rst(rst), .sel(sel));
           fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
         
 %000001   initial begin
@@ -260,6 +326,7 @@
 %000001     rst = 1'b1;
 %000001     start = 1'b0;
 %000001     bit_done = 1'b0;
+%000001     sel = 1'b0;
           end
         
 %000009   always @(posedge clk) begin
@@ -268,7 +335,9 @@
 %000008     if (cyc == 2) start <= 1'b1;
 %000008     if (cyc == 3) start <= 1'b0;
 %000008     if (cyc == 4) bit_done <= 1'b1;
+%000008     if (cyc == 4) sel <= 1'b1;
 %000008     if (cyc == 5) bit_done <= 1'b0;
+%000008     if (cyc == 5) sel <= 1'b0;
 %000008     if (cyc == 8) begin
 %000001       $write("*-* All Finished *-*\n");
 %000001       $finish;

@@ -435,20 +435,6 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    static AstNodeAssign* branchConstStateAssign(AstNode* branchp, AstVarScope*& stateVscp,
-                                                 int& value) {
-        AstNode* const nodep = singleMeaningfulBranch(branchp);
-        if (!nodep) return nullptr;
-        return directConstStateAssignNode(nodep, stateVscp, value);
-    }
-
-    static AstNodeAssign* branchStateVarAssign(AstNode* branchp, AstVarScope*& stateVscp,
-                                               AstVarScope*& fromVscp) {
-        AstNode* const nodep = singleMeaningfulBranch(branchp);
-        if (!nodep) return nullptr;
-        return nodeStateVarAssign(nodep, stateVscp, fromVscp);
-    }
-
     static AstNodeAssign* directConstStateAssignNode(AstNode* nodep, AstVarScope*& stateVscp,
                                                      int& value) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
@@ -488,31 +474,6 @@ class FsmDetectVisitor final : public VNVisitor {
             resetArcs.emplace_back(value, assp);
         }
         return resetArcs.empty() ? ResetAssignStatus::NONE : ResetAssignStatus::SINGLE;
-    }
-
-    // Later normalization may collapse a reset-guarded state commit into a
-    // single conditional assignment: state_q <= (rst ? RESET : state_d).
-    static AstNodeAssign* directCondStateVarAssign(AstNode* stmtp, AstVarScope*& stateVscp,
-                                                   AstVarScope*& fromVscp,
-                                                   FsmResetCondDesc& resetCond,
-                                                   std::vector<FsmResetArcDesc>& resetArcs) {
-        AstNode* const nodep = singleMeaningfulStmt(stmtp);
-        if (!nodep) return nullptr;
-        AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
-        if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
-        AstCond* const condp = VN_CAST(assp->rhsp(), Cond);
-        AstVarRef* const rhsp = condp ? VN_CAST(condp->elsep(), VarRef) : nullptr;
-        int resetValue = 0;
-        if (!lhsp || !condp || !rhsp || !isSimpleResetCond(condp->condp())
-            || !exprConstValue(condp->thenp(), resetValue)) {
-            return nullptr;
-        }
-        stateVscp = lhsp->varScopep();
-        fromVscp = rhsp->varScopep();
-        resetCond = describeResetCond(condp->condp());
-        resetArcs.emplace_back(resetValue, condp->thenp());
-        return assp;
     }
 
     static bool hasCanonicalNextStateDefaultBeforeCase(AstNode* stmtsp, AstCase* casep,
@@ -609,17 +570,17 @@ class FsmDetectVisitor final : public VNVisitor {
             if (resetStatus == ResetAssignStatus::NONE) {
                 cand.resetArcs().clear();
                 int resetValue = 0;
-                if (!branchConstStateAssign(ifp->thensp(), resetStateVscp, resetValue)) return false;
+                AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
+                if (!thenNodep || !directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
+                    return false;
                 cand.resetArcs().emplace_back(resetValue, ifp->thensp());
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
-            if (!branchStateVarAssign(ifp->elsesp(), stateVscp, nextVscp)) return false;
+            AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
+            if (!elseNodep || !nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
             if (resetStateVscp != stateVscp) return false;
             cand.resetCond() = describeResetCond(ifp->condp());
-            cand.hasResetCond(cand.resetCond().varScopep != nullptr);
-        } else if (directCondStateVarAssign(stmtsp, stateVscp, nextVscp, cand.resetCond(),
-                                            cand.resetArcs())) {
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) return false;
@@ -818,7 +779,9 @@ class FsmDetectVisitor final : public VNVisitor {
                     if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
                         reg.resetArcs().clear();
                         int resetValue = 0;
-                        if (branchConstStateAssign(firstIfp->thensp(), resetStateVscp, resetValue)
+                        AstNode* const thenNodep = singleMeaningfulBranch(firstIfp->thensp());
+                        if (thenNodep
+                            && directConstStateAssignNode(thenNodep, resetStateVscp, resetValue)
                             && resetStateVscp == vscp) {
                             reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
                         }
