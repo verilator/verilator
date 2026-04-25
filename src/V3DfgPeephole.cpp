@@ -130,7 +130,6 @@ template <> const DfgDataType& resultDType<DfgPow>        (const DfgVertex* lhsp
 template <> const DfgDataType& resultDType<DfgPowSS>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
 template <> const DfgDataType& resultDType<DfgPowSU>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
 template <> const DfgDataType& resultDType<DfgPowUS>      (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
-// template <> const DfgDataType& resultDType<DfgReplicate>  (const DfgVertex* lhsp, const DfgVertex* rhsp) { return ; }
 template <> const DfgDataType& resultDType<DfgShiftL>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
 template <> const DfgDataType& resultDType<DfgShiftR>     (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
 template <> const DfgDataType& resultDType<DfgShiftRS>    (const DfgVertex* lhsp, const DfgVertex* rhsp) { return lhsp->dtype(); }
@@ -178,7 +177,6 @@ template <> void foldOp<DfgPow>        (V3Number& out, const V3Number& lhs, cons
 template <> void foldOp<DfgPowSS>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSS(lhs, rhs); }
 template <> void foldOp<DfgPowSU>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSU(lhs, rhs); }
 template <> void foldOp<DfgPowUS>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowUS(lhs, rhs); }
-template <> void foldOp<DfgReplicate>  (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs, rhs); }
 template <> void foldOp<DfgShiftL>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs, rhs); }
 template <> void foldOp<DfgShiftR>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs, rhs); }
 template <> void foldOp<DfgShiftRS>    (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs, rhs, lhs.width()); }
@@ -409,8 +407,9 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // Replicate 'bitp' to 'vtxp->width()' bits
     DfgVertex* replicate(DfgVertex* vtxp, DfgVertex* bitp) {
+        UASSERT_OBJ(bitp->dtype() == m_bitDType, vtxp, "Expected 1-bit vertex");
         if (vtxp->dtype() == m_bitDType) return bitp;
-        return make<DfgReplicate>(vtxp, bitp, makeI32(vtxp->fileline(), vtxp->width()));
+        return make<DfgRep>(vtxp, bitp);
     }
 
     // Check two vertex are the same, or the same constant value
@@ -1127,7 +1126,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
 
-            if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
+            if (DfgRep* const repp = fromp->cast<DfgRep>()) {
                 // If the Sel is wholly into the source of the Replicate, push the Sel through
                 // the Replicate and apply it directly to the source of the Replicate.
                 const uint32_t srcWidth = repp->srcp()->width();
@@ -1135,7 +1134,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     const uint32_t newLsb = lsb % srcWidth;
                     const uint32_t newMsb = newLsb + width - 1;
                     if (newMsb < srcWidth) {
-                        APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
+                        APPLYING(PUSH_SEL_THROUGH_REP) {
                             fromp = repp->srcp();
                             lsb = newLsb;
                             continue;
@@ -1488,10 +1487,10 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         {
-            DfgReplicate* repp = lhsp->cast<DfgReplicate>();
+            DfgRep* repp = lhsp->cast<DfgRep>();
             DfgCond* condp = rhsp->cast<DfgCond>();
             if (!repp && !condp) {
-                repp = rhsp->cast<DfgReplicate>();
+                repp = rhsp->cast<DfgRep>();
                 condp = lhsp->cast<DfgCond>();
             }
             if (repp && condp && repp->srcp()->size() == 1 && !condp->hasMultipleSinks()
@@ -1984,24 +1983,22 @@ class V3DfgPeephole final : public DfgVisitor {
         // Convert various forms to REPLICATE
         if (isSame(lhsp, rhsp)) {
             APPLYING(REPLACE_CONCAT_SAME) {
-                replace(make<DfgReplicate>(vtxp, lhsp, makeI32(flp, 2)));
+                replace(make<DfgRep>(vtxp, lhsp));
                 return;
             }
         }
-        if (DfgReplicate* const lRepp = lhsp->cast<DfgReplicate>()) {
+        if (DfgRep* const lRepp = lhsp->cast<DfgRep>()) {
             if (isSame(lRepp->srcp(), rhsp)) {
                 APPLYING(REPLACE_CONCAT_SAME_REP_ON_LHS) {
-                    const uint32_t count = lRepp->countp()->as<DfgConst>()->toU32() + 1;
-                    replace(make<DfgReplicate>(vtxp, rhsp, makeI32(flp, count)));
+                    replace(make<DfgRep>(vtxp, rhsp));
                     return;
                 }
             }
         }
-        if (DfgReplicate* const rRepp = rhsp->cast<DfgReplicate>()) {
+        if (DfgRep* const rRepp = rhsp->cast<DfgRep>()) {
             if (isSame(lhsp, rRepp->srcp())) {
                 APPLYING(REPLACE_CONCAT_SAME_REP_ON_RHS) {
-                    const uint32_t count = rRepp->countp()->as<DfgConst>()->toU32() + 1;
-                    replace(make<DfgReplicate>(vtxp, lhsp, makeI32(flp, count)));
+                    replace(make<DfgRep>(vtxp, lhsp));
                     return;
                 }
             }
@@ -2278,21 +2275,32 @@ class V3DfgPeephole final : public DfgVisitor {
         if (binary(vtxp)) return;
     }
 
-    void visit(DfgReplicate* const vtxp) override {
-        if (DfgConst* const sConstp = vtxp->srcp()->cast<DfgConst>()) {
-            DfgConst* const cConstp = vtxp->countp()->as<DfgConst>();
-            APPLYING(FOLD_REPLICATE) {
-                DfgConst* const resultp = makeZero(vtxp->fileline(), vtxp->width());
-                foldOp<DfgReplicate>(resultp->num(), sConstp->num(), cConstp->num());
+    void visit(DfgRep* const vtxp) override {
+        DfgVertex* const srcp = vtxp->srcp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const sConstp = srcp->cast<DfgConst>()) {
+            APPLYING(FOLD_REP) {
+                DfgConst* const resultp = makeZero(flp, vtxp->width());
+                resultp->num().opRepl(sConstp->num(), vtxp->count());
                 replace(resultp);
                 return;
             }
         }
 
-        if (vtxp->dtype() == vtxp->srcp()->dtype()) {
-            APPLYING(REMOVE_REPLICATE_ONCE) {
+        if (vtxp->dtype() == srcp->dtype()) {
+            APPLYING(REMOVE_REP_ONCE) {
                 replace(vtxp->srcp());
                 return;
+            }
+        }
+
+        if (DfgRep* const sRepp = srcp->cast<DfgRep>()) {
+            if (!sRepp->hasMultipleSinks() || vtxp->width() <= VL_QUADSIZE) {
+                APPLYING(REPLACE_REP_REP) {
+                    replace(make<DfgRep>(vtxp, sRepp->srcp()));
+                    return;
+                }
             }
         }
     }
@@ -2775,15 +2783,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         if (isOnes(thenp) && isZero(elsep)) {
             APPLYING(REPLACE_COND_CONST_ONES_ZERO) {
-                replace(make<DfgReplicate>(vtxp, condp, makeI32(flp, vtxp->width())));
+                replace(replicate(vtxp, condp));
                 return;
             }
         }
 
         if (isZero(thenp) && isOnes(elsep)) {
             APPLYING(REPLACE_COND_CONST_ZERO_ONES) {
-                replace(make<DfgReplicate>(vtxp, make<DfgNot>(condp, condp),
-                                           makeI32(flp, vtxp->width())));
+                replace(replicate(vtxp, make<DfgNot>(condp, condp)));
                 return;
             }
         }

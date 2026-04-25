@@ -14,7 +14,9 @@ interface simple_if;
   modport sink(input data);
 endinterface
 
-module src (simple_if.source b [1:0][2:0]);
+module src (
+    simple_if.source b[1:0][2:0]
+);
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -25,8 +27,10 @@ module src (simple_if.source b [1:0][2:0]);
   endgenerate
 endmodule
 
-module snk (simple_if.sink b [1:0][2:0]);
-  logic [7:0] chk [1:0][2:0];
+module snk (
+    simple_if.sink b[1:0][2:0]
+);
+  logic [7:0] chk[1:0][2:0];
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -38,7 +42,7 @@ module snk (simple_if.sink b [1:0][2:0]);
 endmodule
 
 module t;
-  simple_if bus [1:0][2:0] ();
+  simple_if bus[1:0][2:0] ();
   src src_inst (.b(bus));
   snk snk_inst (.b(bus));
 

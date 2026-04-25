@@ -16,7 +16,7 @@ module t;
   localparam int A = 2;
   localparam int B = 3;
 
-  simple_if bus [A-1:0][B-1:0] ();
+  simple_if bus[A-1:0][B-1:0] ();
 
   genvar gi, gj;
   generate
@@ -28,7 +28,7 @@ module t;
   endgenerate
 
   // Runtime check via a chk array populated by the same genvar generate block.
-  logic [7:0] chk [A-1:0][B-1:0];
+  logic [7:0] chk[A-1:0][B-1:0];
   generate
     for (gi = 0; gi < A; gi++) begin : g_a_chk
       for (gj = 0; gj < B; gj++) begin : g_b_chk
@@ -42,8 +42,7 @@ module t;
     for (int i = 0; i < A; i++) begin
       for (int j = 0; j < B; j++) begin
         if (chk[i][j] !== 8'(i * B + j + 1)) begin
-          $write("%%Error: bus[%0d][%0d].data=%0d expected %0d\n",
-                 i, j, chk[i][j], i * B + j + 1);
+          $write("%%Error: bus[%0d][%0d].data=%0d expected %0d\n", i, j, chk[i][j], i * B + j + 1);
           $stop;
         end
       end

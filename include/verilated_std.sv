@@ -26,6 +26,9 @@
 // The following keywords from this file are hardcoded for detection in the parser:
 // "mailbox", "process", "randomize", "semaphore", "std"
 
+`ifndef VERILATOR_STD_SV_
+`define VERILATOR_STD_SV_
+
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
@@ -292,3 +295,5 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_cross_type_options_t;
 
 endpackage
+
+`endif  // Guard

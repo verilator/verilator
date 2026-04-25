@@ -10,7 +10,7 @@ module t (
 
   integer cyc;
   logic rst;
-  logic [1:0] state /*verilator fsm_state*/;
+  logic [1:0] state  /*verilator fsm_state*/;
 
   initial begin
     cyc = 0;
@@ -29,7 +29,8 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= 2'd0;
-    end else begin
+    end
+    else begin
       case (state)
         2'd0: state <= 2'd1;
         2'd1: state <= 2'd2;

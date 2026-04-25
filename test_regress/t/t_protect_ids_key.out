@@ -11,9 +11,8 @@
   <map from="PSfqIT" to="__PVT__secret_cyc_r"/>
   <map from="PStVCQ" to="__PVT__secret_r"/>
   <map from="PSfqS0" to="__PVT__t__DOT__secret_inst"/>
-  <map from="PSS0mv" to="__VactContinue"/>
-  <map from="PSb9ZF" to="__VactExecute"/>
   <map from="PSF5NB" to="__VactIterCount"/>
+  <map from="PSkICD" to="__VactPhaseResult"/>
   <map from="PSScAO" to="__VactTriggered"/>
   <map from="PSx9Nt" to="__Vconfigure"/>
   <map from="PSrjMj" to="__Vdly__secret_cyc"/>
@@ -23,19 +22,17 @@
   <map from="PSxbIE" to="__Vdpiimwrap_dpii_a_func_TOP__t__DOT__secret_inst"/>
   <map from="PSIv2l" to="__Vdpiimwrap_dpii_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PS76My" to="__Vfunc_dpii_a_func__0__Vfuncout"/>
-  <map from="PSPVnC" to="__VnbaContinue"/>
+  <map from="PSZAsk" to="__Vinline__nba_sequent__TOP__0___Vdly__t__DOT__secret_inst2__DOT__secret_cyc"/>
   <map from="PSo9XV" to="__VnbaExecute"/>
   <map from="PSEtOH" to="__VnbaIterCount"/>
+  <map from="PSeNXP" to="__VnbaPhaseResult"/>
   <map from="PSmzsT" to="__VnbaTriggered"/>
-  <map from="PSHzgK" to="__VpreTriggered"/>
-  <map from="PSEGxK" to="__Vscope_t__secret_inst"/>
+  <map from="PSJZmm" to="__Vscopep_t__secret_inst"/>
   <map from="PS25fg" to="__Vtask_dpix_a_task__1__i"/>
   <map from="PSJN3f" to="__Vtrigprevexpr___TOP__clk__0"/>
   <map from="PSyTg5" to="_ctor_var_reset"/>
   <map from="PSvIGv" to="_dump_triggers__act"/>
-  <map from="PSYUIn" to="_dump_triggers__nba"/>
   <map from="PS8lsQ" to="_eval"/>
-  <map from="PSL96q" to="_eval_act"/>
   <map from="PSKZ7c" to="_eval_debug_assertions"/>
   <map from="PSEZzj" to="_eval_final"/>
   <map from="PSABAY" to="_eval_initial"/>
@@ -44,16 +41,24 @@
   <map from="PSfNDT" to="_eval_phase__nba"/>
   <map from="PSBUJ6" to="_eval_settle"/>
   <map from="PS0mmd" to="_eval_static"/>
-  <map from="PS9gCw" to="_eval_triggers__act"/>
+  <map from="PSf5GY" to="_eval_triggers_vec__act"/>
   <map from="PSgp53" to="_nba_sequent__TOP__0"/>
   <map from="PSoFVg" to="_nba_sequent__TOP__t__DOT__secret_inst__0"/>
+  <map from="PSMRXn" to="_trigger_anySet__act"/>
+  <map from="PSBKaZ" to="_trigger_clear__act"/>
+  <map from="PSB9K0" to="_trigger_orInto__act_vec_vec"/>
   <map from="PScyq8" to="clk"/>
+  <map from="PSawda" to="in"/>
+  <map from="PSMlYB" to="n"/>
+  <map from="PSmk5h" to="out"/>
   <map from="PSnRoO" to="secret_inst"/>
   <map from="PSS3Gk" to="secret_sub"/>
   <map from="PSxvlA" to="t"/>
   <map from="PSBSVV" to="t/t_protect_ids.v"/>
   <map from="PSB07q" to="t__DOT__secret_inst2__DOT__secret_cyc"/>
+  <map from="PSjTE4" to="tag"/>
   <map from="this" to="this"/>
+  <map from="PSCSr7" to="triggers"/>
   <map from="vlSelf" to="vlSelf"/>
   <map from="vlSymsp" to="vlSymsp"/>
 </verilator_id_map>

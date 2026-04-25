@@ -7,11 +7,18 @@
 // Multi-dim iface array port, sink WRITES into the iface signals, top reads.
 // Complements t_iface_array_multidim_port (which has sink reading).
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 interface simple_if;
   logic [7:0] data;
 endinterface
 
-module src (simple_if b [1:0][2:0]);
+module src (
+    simple_if b[1:0][2:0]
+);
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -23,17 +30,17 @@ module src (simple_if b [1:0][2:0]);
 endmodule
 
 module t;
-  simple_if bus [1:0][2:0] ();
+  simple_if bus[1:0][2:0] ();
   src inst (.b(bus));
 
   initial begin
     #1;
-    if (bus[0][0].data !== 8'd50) begin $write("%%Error: bus[0][0]=%0d\n", bus[0][0].data); $stop; end
-    if (bus[0][1].data !== 8'd51) begin $write("%%Error: bus[0][1]=%0d\n", bus[0][1].data); $stop; end
-    if (bus[0][2].data !== 8'd52) begin $write("%%Error: bus[0][2]=%0d\n", bus[0][2].data); $stop; end
-    if (bus[1][0].data !== 8'd53) begin $write("%%Error: bus[1][0]=%0d\n", bus[1][0].data); $stop; end
-    if (bus[1][1].data !== 8'd54) begin $write("%%Error: bus[1][1]=%0d\n", bus[1][1].data); $stop; end
-    if (bus[1][2].data !== 8'd55) begin $write("%%Error: bus[1][2]=%0d\n", bus[1][2].data); $stop; end
+    `checkd(bus[0][0].data, 8'd50);
+    `checkd(bus[0][1].data, 8'd51);
+    `checkd(bus[0][2].data, 8'd52);
+    `checkd(bus[1][0].data, 8'd53);
+    `checkd(bus[1][1].data, 8'd54);
+    `checkd(bus[1][2].data, 8'd55);
     $write("*-* All Finished *-*\n");
     $finish;
   end

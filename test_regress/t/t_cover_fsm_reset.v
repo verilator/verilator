@@ -15,7 +15,7 @@ module t (
 
   logic rst;
   integer cyc;
-  state_t state_incl /*verilator fsm_reset_arc*/;
+  state_t state_incl  /*verilator fsm_reset_arc*/;
   state_t state_excl;
 
   initial begin
@@ -34,18 +34,20 @@ module t (
 
   always_ff @(posedge clk) begin
     if (rst) state_incl <= S0;
-    else case (state_incl)
-      S0: state_incl <= S1;
-      default: state_incl <= S1;
-    endcase
+    else
+      case (state_incl)
+        S0: state_incl <= S1;
+        default: state_incl <= S1;
+      endcase
   end
 
   always_ff @(posedge clk) begin
     if (rst) state_excl <= S0;
-    else case (state_excl)
-      S0: state_excl <= S1;
-      default: state_excl <= S1;
-    endcase
+    else
+      case (state_excl)
+        S0: state_excl <= S1;
+        default: state_excl <= S1;
+      endcase
   end
 
 endmodule

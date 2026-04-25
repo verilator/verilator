@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t(
+module t (
     input logic clk
 );
 
@@ -19,7 +19,7 @@ module t(
   logic rst;
   logic sel;
   int cyc;
-  state_t state /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_reset_arc*/;
 
   initial begin
     rst = 1'b1;
@@ -41,9 +41,12 @@ module t(
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
-        S0: if (sel) state <= S1; else state <= S2;
+        S0:
+        if (sel) state <= S1;
+        else state <= S2;
         S1: state <= S0;
         default: state <= S0;
       endcase

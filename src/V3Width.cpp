@@ -299,6 +299,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSWithin* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
@@ -7155,7 +7156,9 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
-                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                    // Output args: at return caller = callee, reverse direction.
+                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
+                                     portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
@@ -8511,14 +8514,19 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
-                          AstNodeDType* const lhsDTypep) {
+                          AstNodeDType* const lhsDTypep, bool isOutputArg = false) {
         UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
         const AstNodeDType* const lhsRawDTypep = lhsDTypep->skipRefp();
         const AstNodeDType* const rhsRawDTypep = rhsp->dtypep()->skipRefp();
         if (const AstClassRefDType* const lhsClassRefp = VN_CAST(lhsRawDTypep, ClassRefDType)) {
             if (const AstClassRefDType* const rhsClassRefp
                 = VN_CAST(rhsRawDTypep, ClassRefDType)) {
-                if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
+                // Output arg swaps sides: caller actual = callee formal at return.
+                const AstClass* const dstp
+                    = isOutputArg ? rhsClassRefp->classp() : lhsClassRefp->classp();
+                const AstClass* const srcp
+                    = isOutputArg ? lhsClassRefp->classp() : rhsClassRefp->classp();
+                if (isBaseClassRecurse(dstp, srcp)) return;
             } else if (rhsp->isNull()) {
                 return;
             }

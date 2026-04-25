@@ -16,7 +16,7 @@ module t (
 
   int cyc;
   logic side;
-  state_t state /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_reset_arc*/;
 
   initial begin
     cyc = 0;
@@ -39,7 +39,8 @@ module t (
   always_ff @(posedge clk) begin
     if (cyc == 0) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
         S0: state <= S1;
         S1: begin

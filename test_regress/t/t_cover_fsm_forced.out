@@ -11,7 +11,7 @@
         
           integer cyc;
           logic rst;
-          logic [1:0] state /*verilator fsm_state*/;
+          logic [1:0] state  /*verilator fsm_state*/;
         
           initial begin
             cyc = 0;
@@ -30,7 +30,8 @@
           always_ff @(posedge clk) begin
             if (rst) begin
               state <= 2'd0;
-            end else begin
+            end
+            else begin
 %000002       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S0[reset]] [reset arc, excluded from %]

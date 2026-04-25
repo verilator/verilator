@@ -10,15 +10,15 @@ module t (
 
   typedef enum logic [1:0] {
     S_IDLE = 2'd0,
-    S_RUN  = 2'd1,
+    S_RUN = 2'd1,
     S_DONE = 2'd2,
-    S_ERR  = 2'd3
+    S_ERR = 2'd3
   } state_t;
 
   logic rst;
   logic start;
   integer cyc;
-  state_t state /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_reset_arc*/;
 
   initial begin
     rst = 1'b1;
@@ -40,9 +40,12 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S_IDLE;
-    end else begin
+    end
+    else begin
       case (state)
-        S_IDLE: if (start) state <= S_RUN; else state <= S_IDLE;
+        S_IDLE:
+        if (start) state <= S_RUN;
+        else state <= S_IDLE;
         S_RUN: state <= S_DONE;
         S_DONE: state <= S_DONE;
         default: state <= S_ERR;

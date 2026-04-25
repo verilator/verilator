@@ -21,7 +21,8 @@ module t (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
         S0: state <= S1;
         default: state <= S0;

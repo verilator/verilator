@@ -26,7 +26,8 @@ module t;
     if (rst) begin
       a_state <= A0;
       b_state <= B0;
-    end else begin
+    end
+    else begin
       case (a_state)
         A0: a_state <= A1;
         A1: a_state <= A2;

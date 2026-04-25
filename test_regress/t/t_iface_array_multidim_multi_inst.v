@@ -10,12 +10,19 @@
 // instance finds pinVarp already unlinked and reuses the per-element vars
 // cached in m_deModVars.
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 interface simple_if;
   logic [7:0] data;
 endinterface
 
-module sink (simple_if b [1:0][2:0]);
-  logic [7:0] chk [1:0][2:0];
+module sink (
+    simple_if b[1:0][2:0]
+);
+  logic [7:0] chk[1:0][2:0];
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -27,8 +34,8 @@ module sink (simple_if b [1:0][2:0]);
 endmodule
 
 module t;
-  simple_if bus1 [1:0][2:0] ();
-  simple_if bus2 [1:0][2:0] ();
+  simple_if bus1[1:0][2:0] ();
+  simple_if bus2[1:0][2:0] ();
   sink inst1 (.b(bus1));
   sink inst2 (.b(bus2));
 
@@ -46,18 +53,18 @@ module t;
 
   initial begin
     #1;
-    if (inst1.chk[0][0] !== 8'd1) begin $write("%%Error inst1[0][0]=%0d\n", inst1.chk[0][0]); $stop; end
-    if (inst1.chk[0][1] !== 8'd2) begin $write("%%Error inst1[0][1]=%0d\n", inst1.chk[0][1]); $stop; end
-    if (inst1.chk[0][2] !== 8'd3) begin $write("%%Error inst1[0][2]=%0d\n", inst1.chk[0][2]); $stop; end
-    if (inst1.chk[1][0] !== 8'd4) begin $write("%%Error inst1[1][0]=%0d\n", inst1.chk[1][0]); $stop; end
-    if (inst1.chk[1][1] !== 8'd5) begin $write("%%Error inst1[1][1]=%0d\n", inst1.chk[1][1]); $stop; end
-    if (inst1.chk[1][2] !== 8'd6) begin $write("%%Error inst1[1][2]=%0d\n", inst1.chk[1][2]); $stop; end
-    if (inst2.chk[0][0] !== 8'd100) begin $write("%%Error inst2[0][0]=%0d\n", inst2.chk[0][0]); $stop; end
-    if (inst2.chk[0][1] !== 8'd101) begin $write("%%Error inst2[0][1]=%0d\n", inst2.chk[0][1]); $stop; end
-    if (inst2.chk[0][2] !== 8'd102) begin $write("%%Error inst2[0][2]=%0d\n", inst2.chk[0][2]); $stop; end
-    if (inst2.chk[1][0] !== 8'd103) begin $write("%%Error inst2[1][0]=%0d\n", inst2.chk[1][0]); $stop; end
-    if (inst2.chk[1][1] !== 8'd104) begin $write("%%Error inst2[1][1]=%0d\n", inst2.chk[1][1]); $stop; end
-    if (inst2.chk[1][2] !== 8'd105) begin $write("%%Error inst2[1][2]=%0d\n", inst2.chk[1][2]); $stop; end
+    `checkd(inst1.chk[0][0], 8'd1);
+    `checkd(inst1.chk[0][1], 8'd2);
+    `checkd(inst1.chk[0][2], 8'd3);
+    `checkd(inst1.chk[1][0], 8'd4);
+    `checkd(inst1.chk[1][1], 8'd5);
+    `checkd(inst1.chk[1][2], 8'd6);
+    `checkd(inst2.chk[0][0], 8'd100);
+    `checkd(inst2.chk[0][1], 8'd101);
+    `checkd(inst2.chk[0][2], 8'd102);
+    `checkd(inst2.chk[1][0], 8'd103);
+    `checkd(inst2.chk[1][1], 8'd104);
+    `checkd(inst2.chk[1][2], 8'd105);
     $write("*-* All Finished *-*\n");
     $finish;
   end

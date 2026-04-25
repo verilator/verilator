@@ -1,5 +1,5 @@
-%Warning-COVERIGN: t/t_cover_fsm_enum_bad.v:27:19: Ignoring unsupported: FSM coverage on enum state transitions that assign a constant not present in the declared enum
-   27 |         S0: state <= 2'd3;
+%Warning-COVERIGN: t/t_cover_fsm_enum_bad.v:29:19: Ignoring unsupported: FSM coverage on enum state transitions that assign a constant not present in the declared enum
+   29 |         S0: state <= 2'd3;
       |                   ^~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.

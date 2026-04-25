@@ -897,11 +897,7 @@ class ForceConvertVisitor final : public VNVisitor {
             stmtListp = assignp;
         }
 
-        if (varInfo->m_forceRdVscp) {
-            AstNode* tailp = stmtListp;
-            while (tailp->nextp()) tailp = tailp->nextp();
-            tailp->addNextHere(m_state.createForceRdUpdateStmt(*varInfo));
-        }
+        if (varInfo->m_forceRdVscp) stmtListp->addNext(m_state.createForceRdUpdateStmt(*varInfo));
 
         nodep->replaceWith(stmtListp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

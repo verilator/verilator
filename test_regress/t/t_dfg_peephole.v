@@ -326,6 +326,7 @@ module t (
   `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
   `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
   `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
+  `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);

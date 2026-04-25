@@ -12,8 +12,10 @@ interface simple_if;
   logic [7:0] data;
 endinterface
 
-module leaf (simple_if b [1:0][2:0]);
-  logic [7:0] chk [1:0][2:0];
+module leaf (
+    simple_if b[1:0][2:0]
+);
+  logic [7:0] chk[1:0][2:0];
   genvar gi, gj;
   generate
     for (gi = 0; gi < 2; gi++) begin : g_a
@@ -24,12 +26,14 @@ module leaf (simple_if b [1:0][2:0]);
   endgenerate
 endmodule
 
-module mid (simple_if b [1:0][2:0]);
+module mid (
+    simple_if b[1:0][2:0]
+);
   leaf leaf_inst (.b(b));
 endmodule
 
 module t;
-  simple_if bus [1:0][2:0] ();
+  simple_if bus[1:0][2:0] ();
   mid mid_inst (.b(bus));
 
   genvar gi, gj;
