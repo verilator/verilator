@@ -427,11 +427,6 @@ private:
             iterateAndNextNull(nodep->rhsp());
         }
         editDType(nodep);
-        AstNode* const controlp
-            = nodep->timingControlp() ? nodep->timingControlp()->unlinkFrBack() : nullptr;
-        nodep->replaceWith(new AstAssign{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                         nodep->rhsp()->unlinkFrBack(), controlp});
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssignDly* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
