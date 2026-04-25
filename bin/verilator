@@ -27,6 +27,17 @@ use vars qw($Debug @Opt_Verilator_Sw);
 autoflush STDOUT 1;
 autoflush STDERR 1;
 
+# Guard against recursive re-entry. The wrapper shells out to its own
+# children (verilator_bin, gdb, valgrind, ...); if any of those are
+# misconfigured to invoke this wrapper again -- e.g. VERILATOR_BIN points
+# at this script, or PATH shadows verilator_bin -- we would fork-bomb.
+if ($ENV{VERILATOR_RUNNING}) {
+    die "%Error: verilator: re-entered via \$VERILATOR_RUNNING; check that"
+        . " VERILATOR_BIN, VERILATOR_GDB, VERILATOR_VALGRIND, and \$PATH do"
+        . " not resolve back to this wrapper script.\n";
+}
+$ENV{VERILATOR_RUNNING} = 1;
+
 $Debug = 0;
 my $opt_aslr;
 my $opt_gdb;
@@ -169,27 +180,14 @@ sub debug {
 #######################################################################
 # Builds
 
-my $_verilator_bin_warned;
 sub verilator_bin {
     my $basename = ($ENV{VERILATOR_BIN}
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
-    my $bin = (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe")
-              ? "$RealBin/$basename" : $basename;
-    # Guard: VERILATOR_BIN must not point back at this Perl wrapper,
-    # or the backtick call in ulimit_stack_unlimited() would fork-bomb.
-    if ($ENV{VERILATOR_BIN}) {
-        my $resolved = eval { realpath($bin) };
-        my $self     = eval { realpath("$RealBin/$RealScript") };
-        if ($resolved && $self && $resolved eq $self) {
-            warn "%Warning: VERILATOR_BIN ($ENV{VERILATOR_BIN}) resolves to the"
-                . " Perl wrapper itself; ignoring it to avoid infinite recursion."
-                . " Set VERILATOR_BIN to 'verilator_bin' instead.\n"
-                unless $_verilator_bin_warned++;
-            delete $ENV{VERILATOR_BIN};
-            return verilator_bin();
-        }
+    if (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe") {
+        return "$RealBin/$basename";
+    } else {
+        return $basename;  # Find in PATH
     }
-    return $bin;
 }
 
 #######################################################################

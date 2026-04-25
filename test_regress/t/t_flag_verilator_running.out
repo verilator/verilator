@@ -1,0 +1,1 @@
+%Error: verilator: re-entered via $VERILATOR_RUNNING; check that VERILATOR_BIN, VERILATOR_GDB, VERILATOR_VALGRIND, and $PATH do not resolve back to this wrapper script.
