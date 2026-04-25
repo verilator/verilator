@@ -23,12 +23,12 @@ module t;
   logic clk = 0;
 
   covergroup cg(int var1, int var2 = 42);
-    cp1: coverpoint i;
+    cp1: coverpoint i { bins lo = {[0:4]}; bins hi = {[5:9]}; }
   endgroup
 
   // Clocked covergroup with constructor arguments
   covergroup cg_clocked(int lim) @(posedge clk);
-    cp_clocked: coverpoint i;
+    cp_clocked: coverpoint i { bins lo = {[0:4]}; bins hi = {[5:9]}; }
   endgroup
 
   cg cov1 = new(69, 77);
@@ -52,5 +52,12 @@ module t;
     void'(cg::get_coverage());
     void'(cg::get_coverage(i, j));
   endfunction
+
+  initial begin
+    i = 3;
+    x();             // samples cov1 with i=3 -> lo bin hit
+    clk = 1;         // posedge: samples cov_clocked with i=3 -> lo bin hit
+    $finish;
+  end
 
 endmodule
