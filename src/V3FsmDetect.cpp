@@ -405,13 +405,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // top-level scans focused on the real statement list inside that wrapper.
     static AstNode* unwrapBeginStmtList(AstNode* stmtp) {
         while (isIgnorableStmt(stmtp)) stmtp = stmtp->nextp();
-        AstNode* resultp = nullptr;
-        for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) {
-            if (isIgnorableStmt(nodep)) continue;
-            if (resultp) return stmtp;
-            resultp = nodep;
-        }
-        if (AstBegin* const beginp = VN_CAST(resultp, Begin)) return beginp->stmtsp();
+        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) return beginp->stmtsp();
         return stmtp;
     }
 
@@ -465,22 +459,35 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    // Reset branches may intentionally contain multiple direct constant
-    // assignments to the same state register so they yield multiple reset arcs.
-    static bool collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
-                                         std::vector<FsmResetArcDesc>& resetArcs) {
-        bool found = false;
+    enum class ResetAssignStatus : uint8_t {
+        NONE,  // Reset branch was not the supported direct-constant shape.
+        SINGLE,  // Exactly one supported reset assignment was collected.
+        MULTI_SAME_STATE  // Multiple assignments to the same FSM state var; warn and ignore.
+    };
+
+    // Reset arcs are only extracted from the single direct-constant form. If
+    // user RTL assigns the same state register multiple times in the reset
+    // branch, warn and skip reset-arc modeling rather than inventing multiple
+    // reset transitions for an odd but legal coding style.
+    static ResetAssignStatus collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
+                                                      std::vector<FsmResetArcDesc>& resetArcs) {
         for (AstNode* nodep = unwrapBeginStmtList(stmtp); nodep; nodep = nodep->nextp()) {
             AstVarScope* assignStateVscp = nullptr;
             int value = 0;
             AstNodeAssign* const assp = directConstStateAssignNode(nodep, assignStateVscp, value);
-            if (!assp) return false;
+            if (!assp) return ResetAssignStatus::NONE;
             if (!stateVscp) stateVscp = assignStateVscp;
-            if (assignStateVscp != stateVscp) return false;
+            if (assignStateVscp != stateVscp) return ResetAssignStatus::NONE;
+            if (!resetArcs.empty()) {
+                assp->v3warn(COVERIGN,
+                             "Ignoring unsupported: FSM coverage on reset branches with "
+                             "multiple assignments to the state variable");
+                resetArcs.clear();
+                return ResetAssignStatus::MULTI_SAME_STATE;
+            }
             resetArcs.emplace_back(value, assp);
-            found = true;
         }
-        return found;
+        return resetArcs.empty() ? ResetAssignStatus::NONE : ResetAssignStatus::SINGLE;
     }
 
     // Later normalization may collapse a reset-guarded state commit into a
@@ -597,11 +604,15 @@ class FsmDetectVisitor final : public VNVisitor {
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             if (!ifp->elsesp() || !isSimpleResetCond(ifp->condp())) return false;
             AstVarScope* resetStateVscp = nullptr;
-            if (!collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs())) {
+            const ResetAssignStatus resetStatus
+                = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
+            if (resetStatus == ResetAssignStatus::NONE) {
                 cand.resetArcs().clear();
                 int resetValue = 0;
                 if (!branchConstStateAssign(ifp->thensp(), resetStateVscp, resetValue)) return false;
                 cand.resetArcs().emplace_back(resetValue, ifp->thensp());
+            } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
+                cand.resetArcs().clear();
             }
             if (!branchStateVarAssign(ifp->elsesp(), stateVscp, nextVscp)) return false;
             if (resetStateVscp != stateVscp) return false;
@@ -801,15 +812,18 @@ class FsmDetectVisitor final : public VNVisitor {
                 reg.inclCond(vscp->varp()->attrFsmArcInclCond());
                 if (firstIfp && reg.hasResetCond()) {
                     AstVarScope* resetStateVscp = nullptr;
-                    if (!collectConstStateAssigns(firstIfp->thensp(), resetStateVscp,
-                                                 reg.resetArcs())
-                        || resetStateVscp != vscp) {
+                    const ResetAssignStatus resetStatus
+                        = collectConstStateAssigns(firstIfp->thensp(), resetStateVscp,
+                                                   reg.resetArcs());
+                    if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
                         reg.resetArcs().clear();
                         int resetValue = 0;
                         if (branchConstStateAssign(firstIfp->thensp(), resetStateVscp, resetValue)
                             && resetStateVscp == vscp) {
                             reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
                         }
+                    } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
+                        reg.resetArcs().clear();
                     }
                 }
                 processCase(cand.first, vscp, reg);
