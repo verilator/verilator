@@ -15,29 +15,27 @@ module t (/*AUTOARG*/);
       bins low      = {[0:3]};
       bins high     = {[8:11]};
       ignore_bins reserved  = {[12:15]};
-      ignore_bins catch_all = default;  // null rangesp: exercises generateBinMatchCode !fullCondp
-      ignore_bins arr[]     = {4, 5};   // array form: exercises bins_orBraE $3 true branch
-      wildcard ignore_bins wib = {4'b1?00};  // wildcard ignore bins (L7084-7085)
-      illegal_bins bad[] = {6, 7};   // illegal array form: exercises bins_orBraE $3 true branch
+      ignore_bins catch_all = default;  // default ignore-bin: all values not in other bins are ignored
+      ignore_bins arr[]     = {4, 5};   // array form: one ignore-bin per value
+      wildcard ignore_bins wib = {4'b1?00};  // wildcard ignore-bin with don't-care bits
+      illegal_bins bad[] = {6, 7};   // illegal array form: one illegal-bin per value
     }
   endgroup
 
-  // Exercises:
-  //   extractValuesFromRange AstInsideRange branch (ignore_bins range, no regular bins)
-  //   createImplicitAutoBins with excluded range values
-  //   makeRangeCondition: skipUpperCheck=true (hi=maxVal) and both-skip (BitTrue)
-  //   ignore_bins with transition list (L7102-7104)
+  // cg2: ignore_bins using a range — auto-bins are created only for values not in the range.
+  // Also tests range-boundary conditions: when lo==0 or hi==maxVal, the range check simplifies.
+  // Also tests ignore_bins with a transition list.
   covergroup cg2;
     cp_auto: coverpoint data2 {
       ignore_bins ign = {[2:3]};  // range ignore, no regular bins -> auto-bins created
-      ignore_bins ign_trans = (0 => 1);  // ignore_bins with transition (L7102-7104)
+      ignore_bins ign_trans = (0 => 1);  // ignore the 0->1 transition
     }
     cp_bounds: coverpoint data2 {
-      bins lo  = {[0:1]};  // lo=0: skipLowerCheck -> AstLte
-      bins hi  = {[2:3]};  // hi=maxVal (2-bit): skipUpperCheck -> AstGte
+      bins lo  = {[0:1]};  // lower range (lo=0, no lower-bound check needed)
+      bins hi  = {[2:3]};  // upper range (hi=maxVal for 2-bit, no upper-bound check needed)
     }
     cp_full: coverpoint data2 {
-      bins all = {[0:3]};  // lo=0 and hi=maxVal: both skip -> AstConst(BitTrue)
+      bins all = {[0:3]};  // full range (lo=0 and hi=maxVal: matches all values)
     }
   endgroup
 

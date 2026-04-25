@@ -27,8 +27,7 @@ module t;
     cp: coverpoint data;
   endgroup
 
-  // Coverpoint-level options: exercises visit(AstCoverpoint*) option-type branches
-  // in V3LinkParse (weight/goal/per_instance/comment dispatch)
+  // Coverpoint-level options: weight, goal, per_instance, and comment
   covergroup cg3;
     cp: coverpoint data {
       option.weight      = 2;

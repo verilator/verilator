@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Matthew Ballance
 // SPDX-License-Identifier: CC0-1.0
 
-// Test array bins - separate bin per value, including InsideRange and AstRange
+// Test array bins - separate bin per value, including range expressions
 
 module t;
   bit [7:0] data;
@@ -19,17 +19,17 @@ module t;
     }
   endgroup
 
-  // cg2: exercises InsideRange in array bins (e.g., bins r[] = {[0:3]})
+  // cg2: array bins using a range expression — one bin per value in the range
   covergroup cg2;
     cp: coverpoint data {
-      bins range_arr[] = {[0:3]};   // InsideRange -> 4 separate bins
+      bins range_arr[] = {[0:3]};   // range expression: creates 4 separate bins
     }
   endgroup
 
-  // cg3: exercises AstRange in array bins (e.g., bins r[N] = {[lo:hi]})
+  // cg3: sized array bins — bins r[N] = {[lo:hi]} distributes range into N bins
   covergroup cg3;
     cp: coverpoint data {
-      bins range_sized[4] = {[4:7]};  // AstRange with explicit count
+      bins range_sized[4] = {[4:7]};  // explicit count: 4 bins covering [4:7]
     }
   endgroup
 
@@ -62,12 +62,12 @@ module t;
     data = 2;
     cg_inst.sample();
 
-    // Hit range_arr bins (InsideRange [0:3])
+    // Hit range_arr bins ([0:3])
     data = 0; cg2_inst.sample();
     data = 1; cg2_inst.sample();
     data = 2; cg2_inst.sample();
 
-    // Hit range_sized bins (AstRange [4:7])
+    // Hit range_sized bins ([4:7])
     data = 4; cg3_inst.sample();
     data = 5; cg3_inst.sample();
     data = 6; cg3_inst.sample();

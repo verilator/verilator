@@ -30,7 +30,7 @@ module t (/*AUTOARG*/);
     }
   endgroup
 
-  // cg_db: labeled coverpoint exercises cg.cp.low/high hierarchy in coverage.dat
+  // cg_db: labeled coverpoint — verifies the coverage database records the correct hierarchy path
   covergroup cg_db;
     cp: coverpoint data {
       bins low  = {[0:3]};

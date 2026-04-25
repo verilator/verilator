@@ -114,7 +114,6 @@ module t (
   endgroup
 
   covergroup cg_binsoroptions_bk1;
-    // bins_keyword id/*bin_identifier*/ bins_orBraE '=' '{' open_range_list '}' iffE
     { bins ba = {a}; }
     { bins bar = {a} iff (!rst); }
     { illegal_bins ila = {a}; }
@@ -148,21 +147,21 @@ module t (
 
   // Additional bins syntax for grammar coverage (all generate COVERIGN warnings)
   covergroup cg_bins_ext;
-    // Non-auto bins array without value: bins name[N] (no = {value})  -- L7049-7051
+    // Non-auto bins array without value: bins name[N] (no = {value})
     { bins nonAuto[4]; }
-    // ignore_bins/illegal_bins with 'with' filter on range list  -- L7067-7073
+    // ignore_bins/illegal_bins with 'with' filter on range list
     { ignore_bins ib_with = {1,2} with ( b ); }
     { illegal_bins lib_with = {1,2} with ( b ); }
-    // ignore_bins/illegal_bins with 'with' filter on coverpoint ref  -- L7077,L7079
+    // ignore_bins/illegal_bins with 'with' filter on coverpoint ref
     { ignore_bins ib_cp = a with ( b ); }
     { illegal_bins lib_cp = a with ( b ); }
-    // wildcard ignore/illegal bins with 'with' filter  -- L7092,L7094
+    // wildcard ignore/illegal bins with 'with' filter
     { wildcard ignore_bins wib_with = {1,2} with ( b ); }
     { wildcard illegal_bins wlib_with = {1,2} with ( b ); }
-    // wildcard ignore/illegal bins with transition list  -- L7113,L7114
+    // wildcard ignore/illegal bins with transition list
     { wildcard ignore_bins wib_trans = ( 1 => 2 ); }
     { wildcard illegal_bins wlib_trans = ( 1 => 2 ); }
-    // ignore/illegal bins = default sequence  -- L7128,L7130
+    // ignore/illegal bins = default sequence
     { ignore_bins ib_def_seq = default sequence; }
     { illegal_bins lib_def_seq = default sequence; }
   endgroup
@@ -194,7 +193,7 @@ module t (
       bins bin_or_with = binsof(a) || binsof(a) with (a);
       bins bin_and_with = binsof(a) && binsof(a) with (a);
       bins bin_multiple_fields = binsof(p.inner_packet.field);
-      // explicit cross ignore/illegal bins (unsupported)  -- L7253, L7255
+      // explicit cross ignore/illegal bins (unsupported)
       ignore_bins ib_cross = binsof(a);
       illegal_bins lib_cross = binsof(a);
     }
@@ -211,7 +210,7 @@ module t (
       cp_x: coverpoint m_x;
       cp_y: coverpoint m_y;
 `ifdef T_COVERGROUP_UNSUP_IGN
-      xy_cross: cross cp_x, cp_y;  // exercises cross cleanup in hasUnsupportedEvent path
+      xy_cross: cross cp_x, cp_y;  // cross is cleaned up when the covergroup has an unsupported event
 `endif
     endgroup
 `ifndef T_COVERGROUP_UNSUP_IGN
