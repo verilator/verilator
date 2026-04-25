@@ -637,6 +637,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
 
+    bool hasResolvedTriEnable(const AstVar* varp) const { return VN_IS(varp->user1p(), Var); }
+
     void setPullDirection(AstVar* varp, AstPull* pullp) {
         const AstPull* const oldpullp = m_varAux(varp).pullp;
         if (!oldpullp) {
@@ -695,13 +697,22 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Now go through the lhs driver map and generate the output
         // enable logic for any tristates.
         // Note there might not be any drivers.
-        for (AstVar* varp : vars) {  // Use vector instead of m_lhsmap iteration for stability
+        // Include vars that are tristate in this module's graph and vars that already
+        // have a resolved __en from lower-level/interface processing.
+        std::vector<AstVar*> varsToProcess = vars;
+        for (const auto& lhsEnt : m_lhsmap) {
+            AstVar* const varp = lhsEnt.first;
+            if (!m_tgraph.isTristate(varp) && hasResolvedTriEnable(varp))
+                varsToProcess.push_back(varp);
+        }
+        for (AstVar* varp :
+             varsToProcess) {  // Use vector instead of m_lhsmap iteration for stability
             const std::map<AstVar*, RefStrengthVec*>::iterator it = m_lhsmap.find(varp);
             if (it == m_lhsmap.end()) continue;
             AstVar* const invarp = it->first;
             RefStrengthVec* refsp = it->second;
             // Figure out if this var needs tristate expanded.
-            if (m_tgraph.isTristate(invarp)) {
+            if (m_tgraph.isTristate(invarp) || hasResolvedTriEnable(invarp)) {
                 // Check if the var is owned by a different module (cross-module reference).
                 // For interface vars this is expected; for regular modules it's unsupported.
                 AstNodeModule* const ownerModp = findParentModule(invarp);
@@ -945,6 +956,10 @@ class TristateVisitor final : public TristateBaseVisitor {
             // This net intentionally has multiple contributors; DFG should not emit
             // MULTIDRIVEN warnings for this lowered tristate pattern.
             invarp->setDfgAllowMultidriveTri();
+            // Create the canonical interface __en early so parent modules processed
+            // later in this pass can recognize this signal as tristate-resolved and
+            // lower their own cross-interface drivers as contributions too.
+            getCreateEnVarp(invarp, false)->setDfgTriLowered();
             AstNodeModule* const ifaceModp = findParentModule(invarp);
             UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
             const int contribIdx = static_cast<int>(m_ifaceContribs[invarp].size());
@@ -1971,7 +1986,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Detect all var lhs drivers and adds them to the
             // VarMap so that after the walk through the module we can expand
             // any tristate logic on the driver.
-            if (nodep->access().isWriteOrRW() && m_tgraph.isTristate(nodep->varp())) {
+            if (nodep->access().isWriteOrRW()
+                && (m_tgraph.isTristate(nodep->varp()) || hasResolvedTriEnable(nodep->varp()))) {
                 UINFO(9, "     Ref-to-lvalue " << nodep);
                 if (m_inAlias) {
                     if (nodep->varp()->direction().isAny()) {
@@ -1990,10 +2006,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             } else if (nodep->access().isReadOnly()
                        // Not already processed, nor varref from visit(AstPin) creation
                        && !nodep->user1p()
-                       // Reference to another tristate variable
-                       && m_tgraph.isTristate(nodep->varp())
-                       // and in a position where it feeds upstream to another tristate
-                       && m_tgraph.feedsTri(nodep)) {
+                       // Reference to another tristate variable in this module context
+                       && ((m_tgraph.isTristate(nodep->varp()) && m_tgraph.feedsTri(nodep))
+                           // Or a cross-module/interface reference whose target already has
+                           // a resolved tristate-enable signal from prior processing, and this
+                           // read actually feeds a tristate path in the current module.
+                           || (VN_IS(nodep, VarXRef) && VN_IS(nodep->varp()->user1p(), Var)
+                               && m_tgraph.feedsTri(nodep)))) {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep);
                 FileLine* const fl = nodep->fileline();
