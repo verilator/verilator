@@ -1,0 +1,64 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage ternary two-process test
+        //
+        // This program is free software; you can redistribute it and/or modify it
+        // under the terms of either the GNU Lesser General Public License Version 3
+        // or the Perl Artistic License Version 2.0.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+        
+        module t (
+%000007     input logic clk
+        );
+        
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   logic rst;
+%000001   logic sel;
+          int cyc;
+%000003   state_t state_q;
+%000003   state_t state_d;
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     sel = 1'b0;
+%000001     cyc = 0;
+          end
+        
+%000007   always @(posedge clk) begin
+%000007     cyc <= cyc + 1;
+%000006     if (cyc == 1) rst <= 1'b0;
+%000006     if (cyc == 2) sel <= 1'b1;
+%000006     if (cyc == 3) sel <= 1'b0;
+%000006     if (cyc == 6) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+%000008   always_comb begin
+%000008     state_d = state_q;
+%000008     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000000        // [fsm_arc t.state_q::S0->S1]
+%000003        // [fsm_arc t.state_q::S0->S2]
+%000002        // [fsm_state t.state_q::S0]
+%000000        // [fsm_state t.state_q::S1] *** UNCOVERED ***
+%000003        // [fsm_state t.state_q::S2]
+%000007       S0: state_d = sel ? S1 : S2;
+%000003       default: state_d = S0;
+            endcase
+          end
+        
+%000007   always_ff @(posedge clk) begin
+%000005     if (rst) state_q <= S0;
+%000005     else state_q <= state_d;
+          end
+        
+        endmodule
+        

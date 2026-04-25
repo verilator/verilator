@@ -370,6 +370,11 @@ class FsmDetectVisitor final : public VNVisitor {
     // rather than other instrumentation already attached to the block.
     static bool isIgnorableStmt(AstNode* nodep) { return VN_IS(nodep, CoverInc); }
 
+    static AstNode* skipLeadingIgnorableStmt(AstNode* nodep) {
+        while (nodep && isIgnorableStmt(nodep)) nodep = nodep->nextp();
+        return nodep;
+    }
+
     // Normal Verilog begin/end wrappers should not affect the conservative
     // single-statement matching used by the Phase 1 detector.
     static AstNode* unwrapMeaningfulStmt(AstNode* nodep) {
@@ -404,17 +409,16 @@ class FsmDetectVisitor final : public VNVisitor {
     // Some user code wraps the entire always body in a single begin/end; keep
     // top-level scans focused on the real statement list inside that wrapper.
     static AstNode* unwrapBeginStmtList(AstNode* stmtp) {
-        while (isIgnorableStmt(stmtp)) stmtp = stmtp->nextp();
+        stmtp = skipLeadingIgnorableStmt(stmtp);
         if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) return beginp->stmtsp();
         return stmtp;
     }
 
-    // Recognize the direct "state <= X" form that gives us an unambiguous arc
-    // target without needing deeper control-flow reasoning. Branches that fall
-    // out here represent currently unsupported next-state shapes rather than
-    // bugs in the implemented subset.
+    // Case-item bodies are single subtrees like if/else arms, not statement
+    // lists, so unwrap only local begin/end wrappers here rather than walking
+    // sibling case items via nextp().
     static AstNodeAssign* directStateAssign(AstNode* stmtp, AstVarScope* stateVscp) {
-        AstNode* const nodep = singleMeaningfulStmt(stmtp);
+        AstNode* const nodep = singleMeaningfulBranch(stmtp);
         if (!nodep) return nullptr;
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
@@ -497,9 +501,31 @@ class FsmDetectVisitor final : public VNVisitor {
         return false;
     }
 
+    static bool ifStateConstAssign(AstNode* stmtp, AstVarScope* stateVscp, int& thenValue,
+                                   int& elseValue) {
+        AstIf* const ifp = VN_CAST(singleMeaningfulBranch(stmtp), If);
+        if (!ifp || !ifp->elsesp()) return false;
+        AstVarScope* thenVscp = nullptr;
+        AstVarScope* elseVscp = nullptr;
+        AstNode* const thenNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->thensp()));
+        AstNode* const elseNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->elsesp()));
+        if (!thenNodep || !elseNodep) return false;
+        if (!directConstStateAssignNode(thenNodep, thenVscp, thenValue)) return false;
+        if (!directConstStateAssignNode(elseNodep, elseVscp, elseValue)) return false;
+        if (thenVscp == stateVscp && elseVscp == stateVscp) return true;
+        if (thenVscp != elseVscp) return false;
+        AstNode* const followp = skipLeadingIgnorableStmt(ifp->nextp());
+        AstVarScope* finalStateVscp = nullptr;
+        AstVarScope* finalFromVscp = nullptr;
+        AstNode* const finalNodep = singleMeaningfulBranch(followp);
+        return finalNodep && nodeStateVarAssign(finalNodep, finalStateVscp, finalFromVscp)
+               && finalStateVscp == stateVscp && finalFromVscp == thenVscp;
+    }
+
     static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp, bool inclCond) {
         if (itemp->isDefault() && !inclCond) return false;
-        if (AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp)) {
+        AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp);
+        if (assp) {
             int toValue = 0;
             if (exprConstValue(assp->rhsp(), toValue)) return true;
             if (AstCond* const condp = VN_CAST(assp->rhsp(), Cond)) {
@@ -510,7 +536,9 @@ class FsmDetectVisitor final : public VNVisitor {
                 if (simpleCond || inclCond) return true;
             }
         }
-        return false;
+        int thenValue = 0;
+        int elseValue = 0;
+        return ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue);
     }
 
     // Combinational transition blocks are paired only through supported case
@@ -532,6 +560,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // The extractor only models constant-valued state transitions, and by the
     // time detect runs those values have already been constant-folded.
     static bool exprConstValue(AstNodeExpr* exprp, int& value) {
+        if (AstExprStmt* const exprStmtp = VN_CAST(exprp, ExprStmt))
+            return exprConstValue(exprStmtp->resultp(), value);
         if (AstConst* const constp = VN_CAST(exprp, Const)) {
             value = constp->toSInt();
             return true;
@@ -684,6 +714,20 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
 
+        int thenValue = 0;
+        int elseValue = 0;
+        if (ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
+            if (!validateKnownStateValue(itemp->stmtsp(), labels, thenValue)) return true;
+            if (!validateKnownStateValue(itemp->stmtsp(), labels, elseValue)) return true;
+            for (const int branchValue : {thenValue, elseValue}) {
+                for (const std::pair<string, int>& from : froms) {
+                    graph.addArc(from.second, branchValue, false, true, itemp->isDefault(),
+                                 itemp->stmtsp()->fileline());
+                }
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -706,7 +750,6 @@ class FsmDetectVisitor final : public VNVisitor {
         std::vector<std::pair<string, int>> states;
         std::unordered_map<int, string> labels;
         if (!collectStateLabels(casep, stateVscp, states, labels)) return;
-
         DetectedFsm& entry = m_state.fsms()[stateVscp];
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
@@ -825,7 +868,6 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!selp) continue;
 
             const FsmRegisterCandidate* matchedp = nullptr;
-            bool ambiguous = false;
             for (const auto& it : m_registerCandidates) {
                 const FsmRegisterCandidate& reg = it.second;
                 if (reg.scopep() != combo.scopep()) continue;
@@ -838,19 +880,12 @@ class FsmDetectVisitor final : public VNVisitor {
                     continue;
                 }
                 if (!caseAssignsState(casep, reg.nextVscp(), reg.inclCond())) continue;
-                if (matchedp && matchedp->stateVscp() != reg.stateVscp()) {
-                    ambiguous = true;
-                    break;
-                }
                 matchedp = &reg;
             }
             if (!matchedp) continue;
-            if (ambiguous) {
-                warnComboSameAlways(casep);
-                continue;
-            }
             if (!firstVscp) {
-                if (!m_comboPaired.insert(matchedp->stateVscp()).second) {
+                const bool inserted = m_comboPaired.insert(matchedp->stateVscp()).second;
+                if (!inserted) {
                     casep->v3warn(FSMMULTI,
                                   "FSM coverage: multiple supported transition candidates found "
                                   "for the same FSM in combinational always blocks. Only the "
@@ -953,6 +988,8 @@ class FsmLowerVisitor final {
     // used by generated models: declarations, previous-state tracking, and the
     // pre/post-triggered increment logic for states and arcs.
     void buildOne(const FsmGraph& graph) {
+        UINFO(1, "buildOne lowering FSM " << graph.stateVarName() << " vertices="
+                                          << graph.vertices().size() << endl);
         AstAlways* const alwaysp = graph.stateAlwaysp();
         AstScope* const scopep = graph.scopep();
         AstVarScope* const stateVscp = graph.stateVarScopep();
