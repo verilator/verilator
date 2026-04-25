@@ -57,27 +57,67 @@ struct FsmResetCondDesc final {
     AstVarScope* varScopep = nullptr;
 };
 
-struct FsmResetArcDesc final {
-    int toValue = 0;  // Encoded reset target state.
-    AstNode* nodep = nullptr;  // Source node for warnings and emitted metadata.
+class FsmResetArcDesc final {
+    int m_toValue = 0;  // Encoded reset target state.
+    AstNode* m_nodep = nullptr;  // Source node for warnings and emitted metadata.
+
+public:
+    FsmResetArcDesc() = default;
+    FsmResetArcDesc(int toValue, AstNode* nodep)
+        : m_toValue{toValue}
+        , m_nodep{nodep} {}
+
+    int toValue() const { return m_toValue; }
+    AstNode* nodep() const { return m_nodep; }
 };
 
-struct FsmRegisterCandidate final {
-    AstScope* scopep = nullptr;  // Owning scope for the paired FSM.
-    AstAlways* alwaysp = nullptr;  // Register process that commits the state.
-    AstVarScope* stateVscp = nullptr;  // Registered FSM state variable.
-    AstVarScope* nextVscp = nullptr;  // Next-state variable or same state var for 1-block FSMs.
-    std::vector<FsmSenDesc> senses;  // Event controls for recreated coverage blocks.
-    FsmResetCondDesc resetCond;  // Saved reset predicate, if any.
-    std::vector<FsmResetArcDesc> resetArcs;  // Reset target arcs recovered during detect.
-    bool hasResetCond = false;  // Whether the FSM had a modeled reset predicate.
-    bool resetInclude = false;  // Whether reset arcs count toward summary totals.
-    bool inclCond = false;  // Whether conditional/default arcs are kept explicitly.
+class FsmRegisterCandidate final {
+    AstScope* m_scopep = nullptr;  // Owning scope for the paired FSM.
+    AstAlways* m_alwaysp = nullptr;  // Register process that commits the state.
+    AstVarScope* m_stateVscp = nullptr;  // Registered FSM state variable.
+    AstVarScope* m_nextVscp = nullptr;  // Next-state variable or same state var for 1-block FSMs.
+    std::vector<FsmSenDesc> m_senses;  // Event controls for recreated coverage blocks.
+    FsmResetCondDesc m_resetCond;  // Saved reset predicate, if any.
+    std::vector<FsmResetArcDesc> m_resetArcs;  // Reset target arcs recovered during detect.
+    bool m_hasResetCond = false;  // Whether the FSM had a modeled reset predicate.
+    bool m_resetInclude = false;  // Whether reset arcs count toward summary totals.
+    bool m_inclCond = false;  // Whether conditional/default arcs are kept explicitly.
+
+public:
+    AstScope* scopep() const { return m_scopep; }
+    void scopep(AstScope* scopep) { m_scopep = scopep; }
+    AstAlways* alwaysp() const { return m_alwaysp; }
+    void alwaysp(AstAlways* alwaysp) { m_alwaysp = alwaysp; }
+    AstVarScope* stateVscp() const { return m_stateVscp; }
+    void stateVscp(AstVarScope* vscp) { m_stateVscp = vscp; }
+    AstVarScope* nextVscp() const { return m_nextVscp; }
+    void nextVscp(AstVarScope* vscp) { m_nextVscp = vscp; }
+    const std::vector<FsmSenDesc>& senses() const { return m_senses; }
+    std::vector<FsmSenDesc>& senses() { return m_senses; }
+    const FsmResetCondDesc& resetCond() const { return m_resetCond; }
+    FsmResetCondDesc& resetCond() { return m_resetCond; }
+    const std::vector<FsmResetArcDesc>& resetArcs() const { return m_resetArcs; }
+    std::vector<FsmResetArcDesc>& resetArcs() { return m_resetArcs; }
+    bool hasResetCond() const { return m_hasResetCond; }
+    void hasResetCond(bool flag) { m_hasResetCond = flag; }
+    bool resetInclude() const { return m_resetInclude; }
+    void resetInclude(bool flag) { m_resetInclude = flag; }
+    bool inclCond() const { return m_inclCond; }
+    void inclCond(bool flag) { m_inclCond = flag; }
 };
 
-struct FsmComboAlways final {
-    AstScope* scopep = nullptr;  // Owning scope for the combinational process.
-    AstAlways* alwaysp = nullptr;  // Candidate transition process.
+class FsmComboAlways final {
+    AstScope* m_scopep = nullptr;  // Owning scope for the combinational process.
+    AstAlways* m_alwaysp = nullptr;  // Candidate transition process.
+
+public:
+    FsmComboAlways() = default;
+    FsmComboAlways(AstScope* scopep, AstAlways* alwaysp)
+        : m_scopep{scopep}
+        , m_alwaysp{alwaysp} {}
+
+    AstScope* scopep() const { return m_scopep; }
+    AstAlways* alwaysp() const { return m_alwaysp; }
 };
 
 class FsmGraph;
@@ -333,7 +373,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // Normal Verilog begin/end wrappers should not affect the conservative
     // single-statement matching used by the Phase 1 detector.
     static AstNode* unwrapMeaningfulStmt(AstNode* nodep) {
-        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) return singleMeaningfulStmt(beginp->stmtsp());
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin))
+            return singleMeaningfulStmt(beginp->stmtsp());
         return nodep;
     }
 
@@ -355,13 +396,15 @@ class FsmDetectVisitor final : public VNVisitor {
     // walk nextp() here or we may accidentally consume the sibling else-arm.
     static AstNode* singleMeaningfulBranch(AstNode* branchp) {
         if (!branchp || isIgnorableStmt(branchp)) return nullptr;
-        if (AstBegin* const beginp = VN_CAST(branchp, Begin)) return singleMeaningfulStmt(beginp->stmtsp());
+        if (AstBegin* const beginp = VN_CAST(branchp, Begin))
+            return singleMeaningfulStmt(beginp->stmtsp());
         return branchp;
     }
 
     // Some user code wraps the entire always body in a single begin/end; keep
     // top-level scans focused on the real statement list inside that wrapper.
     static AstNode* unwrapBeginStmtList(AstNode* stmtp) {
+        while (isIgnorableStmt(stmtp)) stmtp = stmtp->nextp();
         AstNode* resultp = nullptr;
         for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) {
             if (isIgnorableStmt(nodep)) continue;
@@ -434,7 +477,7 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!assp) return false;
             if (!stateVscp) stateVscp = assignStateVscp;
             if (assignStateVscp != stateVscp) return false;
-            resetArcs.emplace_back(FsmResetArcDesc{value, assp});
+            resetArcs.emplace_back(value, assp);
             found = true;
         }
         return found;
@@ -461,7 +504,7 @@ class FsmDetectVisitor final : public VNVisitor {
         stateVscp = lhsp->varScopep();
         fromVscp = rhsp->varScopep();
         resetCond = describeResetCond(condp->condp());
-        resetArcs.emplace_back(FsmResetArcDesc{resetValue, condp->thenp()});
+        resetArcs.emplace_back(resetValue, condp->thenp());
         return assp;
     }
 
@@ -473,14 +516,15 @@ class FsmDetectVisitor final : public VNVisitor {
         for (AstNode* nodep = bodyp; nodep; nodep = nodep->nextp()) {
             if (nodep == casep) return sawCanonicalDefault;
             if (isIgnorableStmt(nodep)) continue;
-            AstNodeAssign* const assp = VN_CAST(unwrapMeaningfulStmt(nodep), NodeAssign);
-            if (!assp) continue;
-            AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
-            AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
-            if (!lhsp || lhsp->varScopep() != nextVscp) continue;
-            if (sawCanonicalDefault) return false;
-            if (!rhsp || rhsp->varScopep() != stateVscp) return false;
-            sawCanonicalDefault = true;
+            AstNode* const simplep = unwrapMeaningfulStmt(nodep);
+            if (AstNodeAssign* const assp = VN_CAST(simplep, NodeAssign)) {
+                AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+                AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
+                if (!lhsp || lhsp->varScopep() != nextVscp) continue;
+                if (sawCanonicalDefault) return false;
+                if (!rhsp || rhsp->varScopep() != stateVscp) return false;
+                sawCanonicalDefault = true;
+            }
         }
         return false;
     }
@@ -553,31 +597,31 @@ class FsmDetectVisitor final : public VNVisitor {
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             if (!ifp->elsesp() || !isSimpleResetCond(ifp->condp())) return false;
             AstVarScope* resetStateVscp = nullptr;
-            if (!collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs)) {
-                cand.resetArcs.clear();
+            if (!collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs())) {
+                cand.resetArcs().clear();
                 int resetValue = 0;
                 if (!branchConstStateAssign(ifp->thensp(), resetStateVscp, resetValue)) return false;
-                cand.resetArcs.emplace_back(FsmResetArcDesc{resetValue, ifp->thensp()});
+                cand.resetArcs().emplace_back(resetValue, ifp->thensp());
             }
             if (!branchStateVarAssign(ifp->elsesp(), stateVscp, nextVscp)) return false;
             if (resetStateVscp != stateVscp) return false;
-            cand.resetCond = describeResetCond(ifp->condp());
-            cand.hasResetCond = (cand.resetCond.varScopep != nullptr);
-        } else if (directCondStateVarAssign(stmtsp, stateVscp, nextVscp, cand.resetCond,
-                                            cand.resetArcs)) {
-            cand.hasResetCond = (cand.resetCond.varScopep != nullptr);
+            cand.resetCond() = describeResetCond(ifp->condp());
+            cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+        } else if (directCondStateVarAssign(stmtsp, stateVscp, nextVscp, cand.resetCond(),
+                                            cand.resetArcs())) {
+            cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) return false;
         }
         if (!stateVscp || !nextVscp) return false;
 
-        cand.scopep = scopep;
-        cand.alwaysp = alwaysp;
-        cand.stateVscp = stateVscp;
-        cand.nextVscp = nextVscp;
-        cand.senses = describeSenTree(alwaysp->sentreep());
-        cand.resetInclude = stateVscp->varp()->attrFsmResetArc();
-        cand.inclCond = stateVscp->varp()->attrFsmArcInclCond();
+        cand.scopep(scopep);
+        cand.alwaysp(alwaysp);
+        cand.stateVscp(stateVscp);
+        cand.nextVscp(nextVscp);
+        cand.senses() = describeSenTree(alwaysp->sentreep());
+        cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
+        cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
         return true;
     }
 
@@ -676,8 +720,8 @@ class FsmDetectVisitor final : public VNVisitor {
     static void addResetArcs(FsmGraph& graph, const std::vector<FsmResetArcDesc>& resetArcs,
                              const std::unordered_map<int, string>& labels) {
         for (const FsmResetArcDesc& resetArc : resetArcs) {
-            if (!validateKnownStateValue(resetArc.nodep, labels, resetArc.toValue)) continue;
-            graph.addArc(0, resetArc.toValue, true, false, false, resetArc.nodep->fileline());
+            if (!validateKnownStateValue(resetArc.nodep(), labels, resetArc.toValue())) continue;
+            graph.addArc(0, resetArc.toValue(), true, false, false, resetArc.nodep()->fileline());
         }
     }
 
@@ -686,7 +730,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // inspect the extracted machine via DOT dumps.
     void processCase(AstCase* casep, AstVarScope* assignVscp, const FsmRegisterCandidate& reg) {
         if (!assignVscp) return;
-        AstVarScope* const stateVscp = reg.stateVscp;
+        AstVarScope* const stateVscp = reg.stateVscp();
         std::vector<std::pair<string, int>> states;
         std::unordered_map<int, string> labels;
         if (!collectStateLabels(casep, stateVscp, states, labels)) return;
@@ -694,21 +738,21 @@ class FsmDetectVisitor final : public VNVisitor {
         DetectedFsm& entry = m_state.fsms()[stateVscp];
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
-            entry.graphp->scopep(reg.scopep);
-            entry.graphp->stateAlwaysp(reg.alwaysp);
+            entry.graphp->scopep(reg.scopep());
+            entry.graphp->stateAlwaysp(reg.alwaysp());
             entry.graphp->stateVarName(stateVscp->prettyName());
             entry.graphp->stateVarInternalName(stateVscp->varp()->name());
             entry.graphp->stateVarScopep(stateVscp);
-            entry.graphp->senses() = reg.senses;
-            entry.graphp->resetCond() = reg.resetCond;
-            entry.graphp->hasResetCond(reg.hasResetCond);
-            entry.graphp->resetInclude(reg.resetInclude);
-            entry.graphp->inclCond(reg.inclCond);
+            entry.graphp->senses() = reg.senses();
+            entry.graphp->resetCond() = reg.resetCond();
+            entry.graphp->hasResetCond(reg.hasResetCond());
+            entry.graphp->resetInclude(reg.resetInclude());
+            entry.graphp->inclCond(reg.inclCond());
             entry.graphp->fileline(casep->fileline());
             for (const std::pair<string, int>& state : states) {
                 entry.graphp->addStateVertex(state.first, state.second);
             }
-            addResetArcs(*entry.graphp, reg.resetArcs, labels);
+            addResetArcs(*entry.graphp, reg.resetArcs(), labels);
         }
         for (AstCaseItem* itemp = casep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
@@ -746,24 +790,25 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!firstVscp) {
                 firstVscp = vscp;
                 FsmRegisterCandidate reg;
-                reg.scopep = m_scopep;
-                reg.alwaysp = alwaysp;
-                reg.stateVscp = vscp;
-                reg.nextVscp = vscp;
-                reg.senses = describeSenTree(alwaysp->sentreep());
-                reg.resetCond = describeResetCond(cand.second);
-                reg.hasResetCond = (reg.resetCond.varScopep != nullptr);
-                reg.resetInclude = vscp->varp()->attrFsmResetArc();
-                reg.inclCond = vscp->varp()->attrFsmArcInclCond();
-                if (firstIfp && reg.hasResetCond) {
+                reg.scopep(m_scopep);
+                reg.alwaysp(alwaysp);
+                reg.stateVscp(vscp);
+                reg.nextVscp(vscp);
+                reg.senses() = describeSenTree(alwaysp->sentreep());
+                reg.resetCond() = describeResetCond(cand.second);
+                reg.hasResetCond(reg.resetCond().varScopep != nullptr);
+                reg.resetInclude(vscp->varp()->attrFsmResetArc());
+                reg.inclCond(vscp->varp()->attrFsmArcInclCond());
+                if (firstIfp && reg.hasResetCond()) {
                     AstVarScope* resetStateVscp = nullptr;
-                    if (!collectConstStateAssigns(firstIfp->thensp(), resetStateVscp, reg.resetArcs)
+                    if (!collectConstStateAssigns(firstIfp->thensp(), resetStateVscp,
+                                                 reg.resetArcs())
                         || resetStateVscp != vscp) {
-                        reg.resetArcs.clear();
+                        reg.resetArcs().clear();
                         int resetValue = 0;
                         if (branchConstStateAssign(firstIfp->thensp(), resetStateVscp, resetValue)
                             && resetStateVscp == vscp) {
-                            reg.resetArcs.emplace_back(FsmResetArcDesc{resetValue, firstIfp->thensp()});
+                            reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
                         }
                     }
                 }
@@ -786,8 +831,15 @@ class FsmDetectVisitor final : public VNVisitor {
     // Phase 1 two-process pairing scans combinational always blocks only after
     // all strict register candidates have been collected, so source order does
     // not matter.
+    static void warnComboSameAlways(AstCase* casep) {
+        casep->v3warn(FSMMULTI,
+                      "FSM coverage: multiple supported transition candidates found in "
+                      "the same combinational always block. Only the first candidate "
+                      "will be instrumented.");
+    }
+
     void processComboAlways(const FsmComboAlways& combo) {
-        AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp->stmtsp());
+        AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp()->stmtsp());
         AstVarScope* firstVscp = nullptr;
         for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
             AstCase* const casep = VN_CAST(nodep, Case);
@@ -799,17 +851,17 @@ class FsmDetectVisitor final : public VNVisitor {
             bool ambiguous = false;
             for (const auto& it : m_registerCandidates) {
                 const FsmRegisterCandidate& reg = it.second;
-                if (reg.scopep != combo.scopep) continue;
-                if (selp->varScopep() == reg.nextVscp) {
-                    if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp,
-                                                                reg.nextVscp)) {
+                if (reg.scopep() != combo.scopep()) continue;
+                if (selp->varScopep() == reg.nextVscp()) {
+                    if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
+                                                                reg.nextVscp())) {
                         continue;
                     }
-                } else if (selp->varScopep() != reg.stateVscp) {
+                } else if (selp->varScopep() != reg.stateVscp()) {
                     continue;
                 }
-                if (!caseAssignsState(casep, reg.nextVscp, reg.inclCond)) continue;
-                if (matchedp && matchedp->stateVscp != reg.stateVscp) {
+                if (!caseAssignsState(casep, reg.nextVscp(), reg.inclCond())) continue;
+                if (matchedp && matchedp->stateVscp() != reg.stateVscp()) {
                     ambiguous = true;
                     break;
                 }
@@ -817,27 +869,21 @@ class FsmDetectVisitor final : public VNVisitor {
             }
             if (!matchedp) continue;
             if (ambiguous) {
-                casep->v3warn(FSMMULTI,
-                              "FSM coverage: multiple supported transition candidates found in "
-                              "the same combinational always block. Only the first candidate "
-                              "will be instrumented.");
+                warnComboSameAlways(casep);
                 continue;
             }
             if (!firstVscp) {
-                if (!m_comboPaired.insert(matchedp->stateVscp).second) {
+                if (!m_comboPaired.insert(matchedp->stateVscp()).second) {
                     casep->v3warn(FSMMULTI,
                                   "FSM coverage: multiple supported transition candidates found "
                                   "for the same FSM in combinational always blocks. Only the "
                                   "first candidate will be instrumented.");
                     continue;
                 }
-                firstVscp = matchedp->stateVscp;
-                processCase(casep, matchedp->nextVscp, *matchedp);
-            } else if (matchedp->stateVscp != firstVscp) {
-                casep->v3warn(FSMMULTI,
-                              "FSM coverage: multiple supported transition candidates found in "
-                              "the same combinational always block. Only the first candidate "
-                              "will be instrumented.");
+                firstVscp = matchedp->stateVscp();
+                processCase(casep, matchedp->nextVscp(), *matchedp);
+            } else if (matchedp->stateVscp() != firstVscp) {
+                warnComboSameAlways(casep);
             } else {
                 casep->v3warn(COVERIGN,
                               "Ignoring unsupported: FSM coverage on multiple supported case "
@@ -861,11 +907,13 @@ class FsmDetectVisitor final : public VNVisitor {
     void visit(AstAlways* nodep) override {
         processOneBlockAlways(nodep);
         FsmRegisterCandidate reg;
-        if (matchRegisterAlways(nodep, m_scopep, reg)) m_registerCandidates.emplace(reg.stateVscp, reg);
+        if (matchRegisterAlways(nodep, m_scopep, reg))
+            m_registerCandidates.emplace(reg.stateVscp(), reg);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB
-            || (nodep->sentreep() && nodep->sentreep()->hasCombo() && !nodep->sentreep()->hasClocked())
+            || (nodep->sentreep() && nodep->sentreep()->hasCombo()
+                && !nodep->sentreep()->hasClocked())
             || (!nodep->sentreep() && nodep->keyword() == VAlwaysKwd::ALWAYS)) {
-            m_comboAlwayss.emplace_back(FsmComboAlways{m_scopep, nodep});
+            m_comboAlwayss.emplace_back(m_scopep, nodep);
         }
     }
 
