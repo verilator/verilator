@@ -19,10 +19,10 @@ os.environ['VERILATOR_BIN'] = os.environ["VERILATOR_ROOT"] + "/bin/verilator"
 # --no-unlimited-stack avoids the ulimit_stack_unlimited() backtick branch,
 # which would otherwise double the recursion fanout. Linear re-entry through
 # run() is enough to exercise the depth-cap abort.
-test.run(fails=True,
-         cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator",
-              "--no-unlimited-stack", "--version"],
-         logfile=test.run_log_filename)
+test.run(
+    fails=True,
+    cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--no-unlimited-stack", "--version"],
+    logfile=test.run_log_filename)
 
 test.file_grep(test.run_log_filename,
                r'%Error: verilator: re-entered \d+ levels deep via \$VERILATOR_RUNNING')
