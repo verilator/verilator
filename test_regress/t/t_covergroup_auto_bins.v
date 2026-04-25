@@ -10,8 +10,8 @@
 module t;
   /* verilator lint_off CMPCONST */
   logic [2:0] data;   // 3-bit: 0-7
-  logic [3:0] data4;  // 4-bit: exercises width<64 path in maxVal computation
-  logic [63:0] data64;  // 64-bit: exercises width>=64 (UINT64_MAX) path
+  logic [3:0] data4;  // 4-bit signal
+  logic [63:0] data64;  // 64-bit signal
 
   covergroup cg;
     coverpoint data {
@@ -19,14 +19,14 @@ module t;
     }
   endgroup
 
-  // 4-bit auto bins: exercises (width < 64) path: maxVal = (1<<4)-1 = 15
+  // 4-bit signal with auto[4]: creates 4 equal-width bins covering [0:15]
   covergroup cg_4bit;
     coverpoint data4 {
       bins auto[4];  // Creates 4 bins: [0:3], [4:7], [8:11], [12:15]
     }
   endgroup
 
-  // 4-bit auto bins with ignore_bins: exercises excluded-value skip path
+  // 4-bit auto bins with one value excluded by ignore_bins
   covergroup cg_4bit_excl;
     coverpoint data4 {
       ignore_bins bad = {0};  // value 0 excluded from auto expansion
@@ -34,7 +34,7 @@ module t;
     }
   endgroup
 
-  // auto_bin_max=2 on 64-bit: exercises numTotalValues=UINT64_MAX path
+  // 64-bit signal with auto_bin_max=2: creates 2 bins covering the full 64-bit range
   covergroup cg2;
     option.auto_bin_max = 2;
     coverpoint data64;

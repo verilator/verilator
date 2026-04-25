@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // Test that illegal_bins are excluded from coverage (like ignore_bins).
-// Also tests coverpoint where all bins are ignore/illegal (totalBins==0 path).
+// Also tests coverpoints where all bins are ignore/illegal — get_coverage returns 100.0.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Wilson Snyder.
@@ -21,23 +21,22 @@ module t;
     }
   endgroup
 
-  // cg2: exercises illegal_bins with 3-step transition (lines 744-747) and
-  //      illegal_bins array notation (lines 996-998)
+  // cg2: illegal_bins on multi-step transitions and array notation
   covergroup cg2;
     cp_trans: coverpoint data4 {
       bins ok = {0};
-      illegal_bins bad_2step = (1 => 2);       // 2-step illegal transition (simple path)
+      illegal_bins bad_2step = (1 => 2);       // 2-step illegal transition
       illegal_bins bad_3step = (1 => 2 => 3);  // multi-step illegal transition
-      illegal_bins lib_default = default;       // illegal_bins = default (L7123-7124)
+      illegal_bins lib_default = default;       // illegal_bins = default
     }
     cp_arr: coverpoint data4 {
       bins ok = {0};
       illegal_bins bad_arr[] = {8, 9, 10};     // illegal array bins
-      wildcard illegal_bins wlib = {4'b1?00};  // wildcard illegal bins (L7087-7088)
+      wildcard illegal_bins wlib = {4'b1?00};  // wildcard illegal bins
     }
   endgroup
 
-  // cg3: all bins are ignore_bins or illegal_bins -> totalBins==0 -> get_coverage returns 100.0
+  // cg3: all bins are ignore_bins or illegal_bins — get_coverage returns 100.0
   covergroup cg3;
     cp: coverpoint data {
       ignore_bins  ign = {0, 1};

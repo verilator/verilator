@@ -4,13 +4,12 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-// A plain (non-covergroup) class - exercises the non-covergroup class scope/varscope paths
+// A plain (non-covergroup) class included to verify it does not interfere with covergroup handling
 class PlainClass;
     int x;
 endclass
 
-// Top-level (file-scope) covergroup: exercises the m_modp==null path in
-// V3LinkParse::visit(AstCovergroup*), line 1269 false branch (libname = "")
+// Top-level (file-scope) covergroup declared outside any module
 // verilator lint_off COVERIGN
 covergroup cg_toplevel;
   cp_tl: coverpoint 0;
@@ -24,11 +23,10 @@ module t;
   logic clk = 0;
 
   covergroup cg(int var1, int var2 = 42);
-    cp1: coverpoint i;  // Non-empty body with args: exercises constructor-body path
+    cp1: coverpoint i;
   endgroup
 
-  // Clocked covergroup with constructor args: exercises the loop-past-sentinel path in
-  // V3LinkParse createCovergroupMethods (iterates past AstCovergroup sentinel to find 'new')
+  // Clocked covergroup with constructor arguments
   covergroup cg_clocked(int lim) @(posedge clk);
     cp_clocked: coverpoint i;
   endgroup
@@ -36,7 +34,7 @@ module t;
   cg cov1 = new(69, 77);
   cg cov2 = new(69);
   cg_clocked cov_clocked = new(10);
-  PlainClass plain_inst = new;  // Non-covergroup class instance: exercises early-return paths
+  PlainClass plain_inst = new;  // Non-covergroup class instance — must not affect covergroup coverage
 
   function void x();
     cov1.set_inst_name("the_inst_name");

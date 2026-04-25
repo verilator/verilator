@@ -13,7 +13,7 @@ module t;
   logic enable;
   int value;
 
-  // --- Original: iff on explicit value bins (lines 565-567) ---
+  // iff on explicit value bins
   covergroup cg_iff;
     cp_value: coverpoint value iff (enable) {
       bins disabled_lo = {1};
@@ -23,7 +23,7 @@ module t;
     }
   endgroup
 
-  // --- iff on default bin (lines 633-635/641) ---
+  // iff on default bin
   covergroup cg_default_iff;
     cp: coverpoint value iff (enable) {
       bins known = {10};
@@ -31,21 +31,21 @@ module t;
     }
   endgroup
 
-  // --- iff on array bins (lines 982-983) ---
+  // iff on array bins
   covergroup cg_array_iff;
     cp: coverpoint value iff (enable) {
       bins arr[] = {5, 6, 7};  // array bins, all gated by iff
     }
   endgroup
 
-  // --- iff on 2-step transition (lines 1109-1110) ---
+  // iff on 2-step transition
   covergroup cg_trans2_iff;
     cp: coverpoint value iff (enable) {
       bins t2 = (1 => 2);
     }
   endgroup
 
-  // --- iff on 3-step transition (lines 724-725, 762-763) ---
+  // iff on 3-step transition
   covergroup cg_trans3_iff;
     cp: coverpoint value iff (enable) {
       bins t3 = (1 => 2 => 3);
@@ -95,7 +95,7 @@ module t;
     value = 1; cg5.sample();
     value = 2; cg5.sample();  // mid-sequence, enable=1
     enable = 0;
-    value = 3; cg5.sample();  // iff fails at step 3 -- triggers restart path (line 762-763)
+    value = 3; cg5.sample();  // iff is disabled at step 3 — incomplete sequence is discarded
     enable = 1;
     value = 1; cg5.sample();
     value = 2; cg5.sample();

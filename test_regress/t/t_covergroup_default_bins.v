@@ -6,7 +6,7 @@
 
 // Test default bins - catch-all for values not in other bins
 
-// Non-covergroup class: exercises V3Active isCovergroup()=false branch
+// Non-covergroup class in the same module — must not interfere with covergroup processing
 class DataHelper;
   bit [7:0] val;
   function new(bit [7:0] v); val = v; endfunction
@@ -15,9 +15,9 @@ endclass
 module t;
   bit [7:0] data;
   logic [1:0] idx;
-  logic [63:0] data64;   // 64-bit: exercises width>=64 auto-bin path (L139)
-  logic [64:0] data65;   // 65-bit: exercises exprWidth>64 in makeRangeCondition
-  DataHelper helper;     // Module-level class var: exercises V3Active isCovergroup()=false
+  logic [63:0] data64;
+  logic [64:0] data65;
+  DataHelper helper;
 
   covergroup cg;
     coverpoint data {
@@ -27,44 +27,42 @@ module t;
     }
   endgroup
 
-  // Covergroup with default as the ONLY bin: exercises defaultCondp=BitTrue path
+  // Covergroup with default as the only bin — catches all sampled values
   covergroup cg2;
     cp_only_default: coverpoint data {
       bins all = default;
     }
   endgroup
 
-  // Covergroup with default + ignore + illegal bins: exercises BINS_IGNORE/BINS_ILLEGAL
-  // skip paths in generateDefaultBinMatchCode (L558-L559)
+  // Covergroup with default + ignore + illegal bins — excluded values must not count toward coverage
   covergroup cg3;
     coverpoint data {
-      ignore_bins  bad = {255};    // BINS_IGNORE skip path
-      illegal_bins err = {254};    // BINS_ILLEGAL skip path
+      ignore_bins  bad = {255};    // excluded from coverage
+      illegal_bins err = {254};    // illegal value, excluded from coverage
       bins normal = {[1:10]};
       bins other = default;
     }
   endgroup
 
-  // Covergroup with auto-bins + ignore_bins on small range: exercises L295 excluded-value continue
-  // When numValidValues <= auto_bin_max, single-value auto-bins are created per value; the
-  // excluded.find() check at L295 fires for the ignore_bins value (idx=2).
+  // Auto-bins on a small range with one value excluded by ignore_bins —
+  // when the range is small enough, one auto-bin per valid value is created; the excluded value is skipped.
   covergroup cg4;
     cp_idx: coverpoint idx {
       ignore_bins skip = {2};  // value 2 excluded; auto-bins created for 0,1,3
     }
   endgroup
 
-  // 64-bit signal with 4 auto-bins: exercises width>=64 branch in auto-bin range calculation
+  // 64-bit signal with auto_bin_max=4
   covergroup cg5;
     cp_data64: coverpoint data64 { bins auto[4]; }
   endgroup
 
-  // 65-bit signal with range bins: exercises exprWidth>64 path in makeRangeCondition
+  // 65-bit signal with explicit range bins
   covergroup cg6;
     cp_data65: coverpoint data65 { bins lo = {[0:15]}; bins hi = {[100:200]}; }
   endgroup
 
-  // Unlabeled coverpoint: exercises cpName fallback via exprp()->name() (L1394-1398)
+  // Unlabeled coverpoint — the signal name is used as the coverpoint name
   covergroup cg7;
     coverpoint data { bins lo = {[0:7]}; bins hi = {[8:15]}; }
   endgroup
@@ -108,15 +106,15 @@ module t;
     cg_inst.sample();
     cg2_inst.sample();
 
-    // Sample cg3: exercises BINS_IGNORE/BINS_ILLEGAL skip in default-bin detection loop
+    // Sample cg3: verify ignore/illegal bins do not contribute to coverage
     data = 2;   cg3_inst.sample();  // hits normal bin
     data = 7;   cg3_inst.sample();  // hits normal bin again
     data = 255; cg3_inst.sample();  // ignore_bins (not counted)
     // note: do not sample 254 (illegal_bins would cause runtime assertion)
     data = 100; cg3_inst.sample();  // hits default (other) bin
 
-    // Sample cg4: exercises auto-bin generation with excluded value (L295)
-    // idx=2 is in ignore_bins, so auto-bins cover 0,1,3 only
+    // Sample cg4: auto-bins with one excluded value
+    // idx=2 is in ignore_bins, so auto-bins cover 0, 1, 3 only
     idx = 0; cg4_inst.sample();
     idx = 1; cg4_inst.sample();
     idx = 3; cg4_inst.sample();
@@ -129,7 +127,7 @@ module t;
     data65 = 5;   cg6_inst.sample();  // hits bin lo=[0:15]
     data65 = 150; cg6_inst.sample();  // hits bin hi=[100:200]
 
-    // Sample cg7: unlabeled coverpoint (exercises exprp()->name() path)
+    // Sample cg7: unlabeled coverpoint
     data = 3;  cg7_inst.sample();  // hits bin lo
     data = 10; cg7_inst.sample();  // hits bin hi
 
