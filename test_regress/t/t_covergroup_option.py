@@ -8,9 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import coverage_covergroup_common
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile()
-
-test.passes()
+coverage_covergroup_common.run(test)
