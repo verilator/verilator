@@ -4,10 +4,13 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test option.name syntax: both declaration-time and runtime assignment compile.
-// Note: option.name does not currently affect the coverage.dat hierarchy key;
-// the type name is used regardless.
-// Also tests option.weight, option.goal, option.per_instance, option.comment.
+// Test option.name syntax: both declaration-time and runtime assignment.
+// Also tests option.weight, option.goal, option.per_instance, option.comment
+// (currently parsed/stored but not yet used by the backend).
+
+`define stop $stop
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t;
   // verilator lint_off COVERIGN
@@ -18,7 +21,7 @@ module t;
   endgroup
 
   // Test option.weight, option.goal, option.per_instance, option.comment
-  // Covergroup-level options (parsed but passed through constructor body)
+  // Covergroup-level options (parsed but not yet used by backend)
   covergroup cg2;
     option.weight      = 2;
     option.goal        = 90;
@@ -46,8 +49,13 @@ module t;
   initial begin
     cov1 = new;
     cov1.option.name = "new_cov1_name";
+    `checks(cov1.option.name, "new_cov1_name");
 
     cov2 = new;
+    //TODO `checkd(cov2.option.weight,      2);  // not yet implemented
+    //TODO `checkd(cov2.option.goal,        90);  // not yet implemented
+    //TODO `checkd(cov2.option.per_instance, 1);  // not yet implemented
+    //TODO `checks(cov2.option.comment, "my covergroup");  // not yet implemented
     data = 5;
     cov2.sample();
 
@@ -57,6 +65,7 @@ module t;
     data = 10;
     cov3.sample();
 
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 

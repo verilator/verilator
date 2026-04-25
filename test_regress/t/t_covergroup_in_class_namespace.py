@@ -9,8 +9,8 @@
 
 import vltest_bootstrap
 
+import coverage_covergroup_common
+
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--coverage'], expect_filename=test.golden_filename)
-
-test.passes()
+coverage_covergroup_common.run(test)
