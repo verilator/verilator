@@ -243,8 +243,8 @@ the extracted coverage model:
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather
 than printing them alongside non-reset arcs. Use
-:option:`verilator_coverage --include-reset-arcs` to include
-those arcs in the printed summary and annotated output.
+:option:`verilator_coverage --include-reset-arcs` to include those arcs in
+the printed summary and annotated output.
 
 Annotated output produced by :command:`verilator_coverage --annotate` will
 label FSM points with `fsm_state` and `fsm_arc`, and synthetic fallback

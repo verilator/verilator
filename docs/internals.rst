@@ -720,15 +720,15 @@ in that process. When ordering code using ``V3Order``, these triggers are
 provided as external domains of these variables. This ensures that the
 necessary combinational logic is triggered after a coroutine resumption.
 
-Every call to a `VlTriggerScheduler`'s `trigger()` method is preempt by
-a call to a proper `__VbeforeTrig` function which evaluates all the necessary
-triggers so, the information about order of suspension/resumption is not lost.
-The triggers necessary to evaluate are ones dependent on the same events
-as the `trigger()` - e.g.: if `triggers()` awaits for event `a` or `b`, then
-every trigger that depends on any of those shall be evaluated. If they wouldn't
-be evaluated and next coroutine after resumption would fire the event `a` then
-it is impossible to get to know whether await or fire on event `a` was called
-first - which is necessary to know.
+Every call to a `VlTriggerScheduler`'s `trigger()` method is preempt by a
+call to a proper `__VbeforeTrig` function which evaluates all the necessary
+triggers so, the information about order of suspension/resumption is not
+lost. The triggers necessary to evaluate are ones dependent on the same
+events as the `trigger()` - e.g.: if `triggers()` awaits for event `a` or
+`b`, then every trigger that depends on any of those shall be evaluated. If
+they wouldn't be evaluated and next coroutine after resumption would fire
+the event `a` then it is impossible to get to know whether await or fire on
+event `a` was called first - which is necessary to know.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
@@ -741,10 +741,10 @@ Thanks to this separation a coroutine:
 
 * awaiting a trigger cannot be suspended and resumed in the same iteration
   (``test_regress/t/t_timing_eval_act.v``) - which is necessary to make
-  Verilator more predictable; this is the reason for introduction of 3rd stage
-  in `VlTriggerScheduler` and thanks to this it is guaranteed that downstream
-  logic will be evaluated before resumption (assuming that the coroutine wasn't
-  already triggered in previous iteration);
+  Verilator more predictable; this is the reason for introduction of 3rd
+  stage in `VlTriggerScheduler` and thanks to this it is guaranteed that
+  downstream logic will be evaluated before resumption (assuming that the
+  coroutine wasn't already triggered in previous iteration);
 * cannot be resumed before it is suspended -
   ``test_regress/t/t_event_control_double_excessive.v``;
 * firing cannot cannot be lost
@@ -2136,13 +2136,14 @@ backtrace. You will typically see a frame sequence something like:
 Bisecting bad transformations
 -----------------------------
 
-If a bad transformation in the internals of Verilator causes a failure only at
-runtime, it can be found fairly automatically by only applying the transform a
-limited number of times, then performing a bisection search over the limit to
-pinpoint the exact transformation that introduces the failure.
+If a bad transformation in the internals of Verilator causes a failure only
+at runtime, it can be found fairly automatically by only applying the
+transform a limited number of times, then performing a bisection search
+over the limit to pinpoint the exact transformation that introduces the
+failure.
 
-To facilitate this an instance of the ``V3DebugBisect`` class can be used in
-conjunction with the ``verilator_bisect`` script.
+To facilitate this an instance of the ``V3DebugBisect`` class can be used
+in conjunction with the ``verilator_bisect`` script.
 
 In the offending algorithm, create a static instance of ``V3DebugBisect``:
 
@@ -2150,30 +2151,31 @@ In the offending algorithm, create a static instance of ``V3DebugBisect``:
 
    static V3DebugBisect s_debugBisect{"TransformName"};
 
-Call the ``stop`` method before applying a transformation, and do not proceed
-if it returns ``false``. Then use ``verilator_bisect`` to search an interval of
-values. You need to provide an arbitrary discriminator command, this should run
-Verilator, then any necessary checks (e.g.: simulation) to detect that the
-failure is still present. It should exit with a non-zero status if the failure
-is still present. The discriminator command can otherwise be arbitrarily
-complex, the actual search limit is passed via environment variables. E.g.:
+Call the ``stop`` method before applying a transformation, and do not
+proceed if it returns ``false``. Then use ``verilator_bisect`` to search an
+interval of values. You need to provide an arbitrary discriminator command,
+this should run Verilator, then any necessary checks (e.g.: simulation) to
+detect that the failure is still present. It should exit with a non-zero
+status if the failure is still present. The discriminator command can
+otherwise be arbitrarily complex, the actual search limit is passed via
+environment variables. E.g.:
 
 ::
 
-  bin/verilator_bisect DfgPeephole 0 1000 test_regress/t/t_myothertest.py
+   bin/verilator_bisect DfgPeephole 0 1000 test_regress/t/t_myothertest.py
 
-An additional command can be run before the discriminator command. E.g.  this
-will run RTLMeter, but first removes its working directory so the models are
-recompiled on every step:
+An additional command can be run before the discriminator command. E.g.
+this will run RTLMeter, but first removes its working directory so the
+models are recompiled on every step:
 
 ::
 
-  bin/verilator_bisect --pre "rm -rf work-bisect" DfgPeephole 0 10000000 \
-    rtlmeter run --cases "..." --workRoot=work-bisect
+   bin/verilator_bisect --pre "rm -rf work-bisect" DfgPeephole 0 10000000 \
+     rtlmeter run --cases "..." --workRoot=work-bisect
 
-When the bisection ends, the first value that makes the discriminator command
-fail is printed, which identifies the exact offending application of the
-transform.
+When the bisection ends, the first value that makes the discriminator
+command fail is printed, which identifies the exact offending application
+of the transform.
 
 Adding a New Feature
 ====================
@@ -2695,6 +2697,7 @@ the terms of either the GNU Lesser General Public License Version 3 or the
 Perl Artistic License Version 2.0.
 
 SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png
