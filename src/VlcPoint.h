@@ -81,11 +81,6 @@ public:
     bool isFsmResetInclude() const { return fsmTag() == "reset_include"; }
     bool isFsmResetArc() const { return fsmTag() == "reset"; }
     bool isFsmDefaultArc() const { return fsmTag() == "default"; }
-    // Reserved for structural UNR analysis (Phase 6b). Not emitted by any current pass.
-    bool isFsmUnreachable() const {
-        const string tag = fsmTag();
-        return (isFsmState() || isFsmArc()) && (tag.substr(0, 11) == "unreachable");
-    }
     bool fsmIsReset() const { return isFsmResetArc() || isFsmResetInclude(); }
     int lineno() const {
         const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
