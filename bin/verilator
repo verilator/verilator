@@ -27,16 +27,20 @@ use vars qw($Debug @Opt_Verilator_Sw);
 autoflush STDOUT 1;
 autoflush STDERR 1;
 
-# Guard against recursive re-entry. The wrapper shells out to its own
-# children (verilator_bin, gdb, valgrind, ...); if any of those are
-# misconfigured to invoke this wrapper again -- e.g. VERILATOR_BIN points
-# at this script, or PATH shadows verilator_bin -- we would fork-bomb.
-if ($ENV{VERILATOR_RUNNING}) {
-    die "%Error: verilator: re-entered via \$VERILATOR_RUNNING; check that"
-        . " VERILATOR_BIN, VERILATOR_GDB and VERILATOR_VALGRIND do"
-        . " not resolve back to this wrapper script.\n";
+# Guard against unbounded recursive re-entry. Hierarchical / --build flows
+# legitimately re-enter the wrapper a few levels deep (wrapper -> verilator_bin
+# -> make -> wrapper -> ...); a misconfigured VERILATOR_BIN, VERILATOR_GDB or
+# VERILATOR_VALGRIND that points back at this wrapper, however, recurses
+# without bound and exhausts the OS PID table. Use VERILATOR_RUNNING as a
+# depth counter and cap it well above any real nesting.
+my $verilator_running_max = 16;
+my $verilator_running_depth = ($ENV{VERILATOR_RUNNING} || 0) + 1;
+if ($verilator_running_depth > $verilator_running_max) {
+    die "%Error: verilator: re-entered $verilator_running_depth levels deep"
+        . " via \$VERILATOR_RUNNING; check that VERILATOR_BIN, VERILATOR_GDB"
+        . " and VERILATOR_VALGRIND do not resolve back to this wrapper script.\n";
 }
-$ENV{VERILATOR_RUNNING} = 1;
+$ENV{VERILATOR_RUNNING} = $verilator_running_depth;
 
 $Debug = 0;
 my $opt_aslr;

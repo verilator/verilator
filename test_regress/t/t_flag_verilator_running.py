@@ -11,11 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-# VERILATOR_RUNNING is the wrapper's re-entry sentinel. Setting it before
-# the first invocation simulates the misconfiguration that used to fork-bomb
-# (e.g. VERILATOR_BIN or PATH resolving back to bin/verilator). The wrapper
-# must abort with a clear error instead of recursing.
-os.environ['VERILATOR_RUNNING'] = '1'
+# VERILATOR_RUNNING is the wrapper's re-entry depth counter. Hierarchical
+# flows legitimately reach a few levels; only an unbounded recursion (the
+# fork-bomb case where VERILATOR_BIN/_GDB/_VALGRIND resolves back to the
+# wrapper) blows past the cap. Pre-set it at the cap to simulate that.
+os.environ['VERILATOR_RUNNING'] = '16'
 
 test.run(fails=True,
          cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--version"],
