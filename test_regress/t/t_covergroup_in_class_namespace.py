@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--coverage'])
+test.compile(verilator_flags2=['--coverage'], expect_filename=test.golden_filename)
 
 test.passes()

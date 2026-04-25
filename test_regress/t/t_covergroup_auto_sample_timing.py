@@ -8,14 +8,11 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import coverage_covergroup_common
 
 test.scenarios('vlt')
 
 # Use the same .v file as the non-timing test
 test.top_filename = "t/t_covergroup_clocked_sample.v"
 
-test.compile(v_flags2=["--timing"])
-
-test.execute()
-
-test.passes()
+coverage_covergroup_common.run(test, verilator_flags2=['--timing'])
