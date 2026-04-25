@@ -10,8 +10,8 @@
 module t;
 
   logic [2:0]  data3;
-  logic [3:0]  data4;   // 4-bit signal for range-bin path tests
-  logic [63:0] data64;  // 64-bit signal for width>=64 branch in createAutoBins
+  logic [3:0]  data4;
+  logic [63:0] data64;  // 64-bit signal
 
   // Test 1: auto_bin_max default (64) - creates 8 bins for 3-bit signal
   covergroup cg1;
@@ -24,7 +24,7 @@ module t;
     cp_data3: coverpoint data3;
   endgroup
 
-  // Test 3: auto_bin_max and at_least at *coverpoint* level (lines 207, 209)
+  // Test 3: auto_bin_max and at_least set at coverpoint level
   covergroup cg3;
     cp_data3: coverpoint data3 {
       option.auto_bin_max = 2;  // coverpoint-level: creates 2 bins [0:3],[4:7]
@@ -32,7 +32,7 @@ module t;
     }
   endgroup
 
-  // Test 4: range-bin skip path (lines 287, 356-359).
+  // Test 4: auto-bins where all values in a range are excluded by ignore_bins
   // auto_bin_max=4 on 4-bit signal -> 4 range bins: [0:3],[4:7],[8:11],[12:15].
   // ignore_bins {[0:3]} excludes all values in the first range -> that bin is skipped.
   covergroup cg4;
@@ -42,8 +42,7 @@ module t;
     }
   endgroup
 
-  // Test 5: 64-bit coverpoint exercises the width>=64 branches in createAutoBins
-  // (V3Covergroup.cpp:269-270: maxVal/numTotalValues use UINT64_MAX sentinel)
+  // Test 5: auto-bins on a 64-bit coverpoint with auto_bin_max=4
   covergroup cg5;
     option.auto_bin_max = 4;
     cp_data64: coverpoint data64;
@@ -84,7 +83,7 @@ module t;
     data4 = 8;  cg4_inst.sample();  // [8:11] bin
     data4 = 12; cg4_inst.sample();  // [12:15] bin
 
-    // Sample cg5 (64-bit): exercises width>=64 path in createAutoBins
+    // Sample cg5: 64-bit coverpoint, one sample per auto-bin
     data64 = 64'h0;                    cg5_inst.sample();
     data64 = 64'h1111111111111111;     cg5_inst.sample();
     data64 = 64'hffffffffffffffff;     cg5_inst.sample();

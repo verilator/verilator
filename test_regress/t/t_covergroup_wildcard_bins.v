@@ -20,10 +20,10 @@ module t;
       // Match specific pattern with don't cares
       wildcard bins pattern = {8'b10?0_11??};
 
-      // Non-wildcard range bin: InsideRange [min:max] where min != max (line 1318)
+      // Non-wildcard range bin: [min:max] with min != max
       bins mid_range = {[8'h40 : 8'h4F]};
 
-      // Wildcard bin using single-value InsideRange [5:5] (min==max, line 1312)
+      // Wildcard bin using single-value range [5:5] (min==max, equivalent to a single value)
       wildcard bins wc_point = {[8'd5 : 8'd5]};
     }
   endgroup
