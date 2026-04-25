@@ -7020,18 +7020,61 @@ coverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
 coverage_option<nodep>:  // ==IEEE: coverage_option
         //                      // option/type_option aren't really keywords
                 id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr
-                        { if (*$1 == "option" || *$1 == "type_option") {
+                        { $$ = nullptr;
+                          if (*$1 == "option" || *$1 == "type_option") {
                               const bool typeOpt = (*$1 == "type_option");
                               VCoverOptionType optType = VCoverOptionType::UNKNOWN;
-                              if (*$3 == "at_least") optType = VCoverOptionType::AT_LEAST;
-                              else if (*$3 == "weight") optType = VCoverOptionType::WEIGHT;
-                              else if (*$3 == "goal") optType = VCoverOptionType::GOAL;
-                              else if (*$3 == "auto_bin_max") optType = VCoverOptionType::AUTO_BIN_MAX;
-                              else if (*$3 == "per_instance") optType = VCoverOptionType::PER_INSTANCE;
-                              else if (*$3 == "comment") optType = VCoverOptionType::COMMENT;
-                              $$ = new AstCgOptionAssign{$<fl>1, typeOpt, optType, *$3, $5};
+                              bool valid = true;
+                              if (!typeOpt) {
+                                  // IEEE 1800-2023 Table 19-1: option.* names
+                                  if      (*$3 == "weight")                  optType = VCoverOptionType::WEIGHT;
+                                  else if (*$3 == "goal")                    optType = VCoverOptionType::GOAL;
+                                  else if (*$3 == "comment")                 optType = VCoverOptionType::COMMENT;
+                                  else if (*$3 == "at_least")                optType = VCoverOptionType::AT_LEAST;
+                                  else if (*$3 == "auto_bin_max")            optType = VCoverOptionType::AUTO_BIN_MAX;
+                                  else if (*$3 == "per_instance")            optType = VCoverOptionType::PER_INSTANCE;
+                                  else if (*$3 == "name")                    optType = VCoverOptionType::NAME;
+                                  else if (*$3 == "cross_num_print_missing") optType = VCoverOptionType::CROSS_NUM_PRINT_MISSING;
+                                  else if (*$3 == "cross_retain_auto_bins")  optType = VCoverOptionType::CROSS_RETAIN_AUTO_BINS;
+                                  else if (*$3 == "detect_overlap")          optType = VCoverOptionType::DETECT_OVERLAP;
+                                  else if (*$3 == "get_inst_coverage")       optType = VCoverOptionType::GET_INST_COVERAGE;
+                                  else {
+                                      $<fl>1->v3error("Unknown coverage option name 'option."
+                                                      << *$3 << "'"
+                                                      << "; not a valid option per IEEE 1800-2023 Table 19-1");
+                                      valid = false;
+                                  }
+                              } else {
+                                  // IEEE 1800-2023 Table 19-3: type_option.* names
+                                  if      (*$3 == "weight")           optType = VCoverOptionType::WEIGHT;
+                                  else if (*$3 == "goal")             optType = VCoverOptionType::GOAL;
+                                  else if (*$3 == "comment")          optType = VCoverOptionType::COMMENT;
+                                  else if (*$3 == "strobe")           optType = VCoverOptionType::STROBE;
+                                  else if (*$3 == "merge_instances")  optType = VCoverOptionType::MERGE_INSTANCES;
+                                  else if (*$3 == "distribute_first") optType = VCoverOptionType::DISTRIBUTE_FIRST;
+                                  else if (*$3 == "real_interval")    optType = VCoverOptionType::REAL_INTERVAL;
+                                  else {
+                                      // Specific message for option.* names used under type_option.*
+                                      if (*$3 == "name" || *$3 == "at_least" || *$3 == "auto_bin_max"
+                                          || *$3 == "cross_num_print_missing"
+                                          || *$3 == "cross_retain_auto_bins" || *$3 == "detect_overlap"
+                                          || *$3 == "per_instance" || *$3 == "get_inst_coverage") {
+                                          $<fl>1->v3error("'type_option." << *$3
+                                              << "' is not valid; use 'option." << *$3 << "' instead");
+                                      } else {
+                                          $<fl>1->v3error("Unknown coverage type option name 'type_option."
+                                              << *$3 << "'"
+                                              << "; not a valid type option per IEEE 1800-2023 Table 19-3");
+                                      }
+                                      valid = false;
+                                  }
+                              }
+                              if (valid) {
+                                  $$ = new AstCgOptionAssign{$<fl>1, typeOpt, optType, *$3, $5};
+                              } else {
+                                  DEL($5);
+                              }
                           } else {
-                              $$ = nullptr;
                               $<fl>1->v3error("Syntax error; expected 'option' or 'type_option': '" << *$1 << "'");
                               DEL($5);
                           } }

@@ -1332,12 +1332,13 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 optp->unlinkFrBack();
-                if (optp->optionType() == VCoverOptionType::UNKNOWN) {
-                    optp->v3warn(COVERIGN,
-                                 "Ignoring unsupported coverage option: " + optp->prettyNameQ());
-                } else {
+                if (optp->optionType() == VCoverOptionType::AT_LEAST
+                    || optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
                     nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
                                                           optp->valuep()->cloneTree(false)});
+                } else {
+                    optp->v3warn(COVERIGN,
+                                 "Ignoring unsupported coverage option: " + optp->prettyNameQ());
                 }
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
@@ -1356,11 +1357,8 @@ class LinkParseVisitor final : public VNVisitor {
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             const VCoverOptionType optType = optp->optionType();
-            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT
-                  || optType == VCoverOptionType::GOAL || optType == VCoverOptionType::COMMENT)) {
-                optp->v3warn(COVERIGN,
+            optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
-            }
             // Always preserve the option node so V3Coverage can track its source line
             // for coverage annotation, even when the option itself is unsupported.
             nodep->addOptionsp(
