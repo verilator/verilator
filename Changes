@@ -13,6 +13,9 @@ Verilator 5.047 devel
 
 **Important:**
 
+* Displaying Verilator generated FST files will require an updated version
+  of Surfer (built from 'main', or the future numbered release 0.7.0).
+  No GTKWave update is necessary (#7255).
 * Support jemalloc as the default allocator on Linux (#7250). [Yangyu Chen]
   For better performance, `apt install libjemalloc-dev` or equivalent before running ./configure.
 
