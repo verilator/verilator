@@ -33,7 +33,7 @@ autoflush STDERR 1;
 # at this script, or PATH shadows verilator_bin -- we would fork-bomb.
 if ($ENV{VERILATOR_RUNNING}) {
     die "%Error: verilator: re-entered via \$VERILATOR_RUNNING; check that"
-        . " VERILATOR_BIN, VERILATOR_GDB, VERILATOR_VALGRIND, and \$PATH do"
+        . " VERILATOR_BIN, VERILATOR_GDB and VERILATOR_VALGRIND do"
         . " not resolve back to this wrapper script.\n";
 }
 $ENV{VERILATOR_RUNNING} = 1;
