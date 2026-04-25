@@ -2017,6 +2017,26 @@ bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
     }
     return !lp && !rp;
 }
+bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
+    if (m_packed != sp->m_packed) return false;
+    // Anonymous structs/unions fall back to nominal (pointer) identity to avoid
+    // treating two independently-declared anonymous types as equivalent.
+    if (m_name.empty() || sp->m_name.empty()) return this == samep;
+    if (m_name != sp->m_name) return false;
+    // Same-name typedef: structurally compare members. Two AstNodeUOrStructDType
+    // instances can arise from one source-level typedef via parameter specialization.
+    const AstMemberDType* lp = membersp();
+    const AstMemberDType* rp = sp->membersp();
+    while (lp && rp) {
+        if (lp->name() != rp->name()) return false;
+        if (lp->width() != rp->width()) return false;
+        if (!lp->subDTypep()->similarDType(rp->subDTypep())) return false;
+        lp = VN_CAST(lp->nextp(), MemberDType);
+        rp = VN_CAST(rp->nextp(), MemberDType);
+    }
+    return !lp && !rp;
+}
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " ["s + this->userType().ascii() + "]";
