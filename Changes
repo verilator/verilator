@@ -175,6 +175,7 @@ Verilator 5.047 devel
 * Fix multiple inclusion of verilated_std.sv (#7478). [Larry Doolittle]
 * Fix std::randomize inside {typedef array} internal error (#7481). [Yilou Wang]
 * Fix module parameters not re-evaluated upon instantiation (#7463) (#7477). [em2machine]
+* Fix infinite recursion with VERILATOR_BIN (#7496) (#7497).
 
 
 Verilator 5.046 2026-02-28
