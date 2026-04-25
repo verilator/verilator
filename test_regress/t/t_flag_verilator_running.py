@@ -11,15 +11,20 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-# VERILATOR_RUNNING is the wrapper's re-entry depth counter. Hierarchical
-# flows legitimately reach a few levels; only an unbounded recursion (the
-# fork-bomb case where VERILATOR_BIN/_GDB/_VALGRIND resolves back to the
-# wrapper) blows past the cap. Pre-set it at the cap to simulate that.
-os.environ['VERILATOR_RUNNING'] = '16'
+# Real-world repro: a misconfigured VERILATOR_BIN that points back at the
+# Perl wrapper used to fork-bomb the host. The wrapper now caps re-entry
+# depth via $VERILATOR_RUNNING and aborts past the cap.
+os.environ['VERILATOR_BIN'] = os.environ["VERILATOR_ROOT"] + "/bin/verilator"
 
+# --no-unlimited-stack avoids the ulimit_stack_unlimited() backtick branch,
+# which would otherwise double the recursion fanout. Linear re-entry through
+# run() is enough to exercise the depth-cap abort.
 test.run(fails=True,
-         cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--version"],
-         logfile=test.run_log_filename,
-         expect_filename=test.golden_filename)
+         cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator",
+              "--no-unlimited-stack", "--version"],
+         logfile=test.run_log_filename)
+
+test.file_grep(test.run_log_filename,
+               r'%Error: verilator: re-entered \d+ levels deep via \$VERILATOR_RUNNING')
 
 test.passes()
