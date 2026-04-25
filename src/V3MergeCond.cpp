@@ -296,6 +296,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     }
 
     // VISITORS
+
     void visit(AstNode* nodep) override {
         // Push a new stack entry at the start of a list, but only if the list is not a
         // single element (this saves a lot of allocations in expressions)

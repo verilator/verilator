@@ -1,0 +1,9 @@
+cg.cp_array.arr: 3
+cg.cp_multi_item.multi: 1
+cg.cp_reptype.goto_bin: 1
+cg.cp_reptype.noncons_bin: 1
+cg.cp_trans2.trans1: 1
+cg.cp_trans2.trans2: 1
+cg.cp_trans2.trans3: 1
+cg.cp_trans3.seq_a: 1
+cg.cp_trans3.seq_b: 1
