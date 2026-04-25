@@ -169,14 +169,27 @@ sub debug {
 #######################################################################
 # Builds
 
+my $_verilator_bin_warned;
 sub verilator_bin {
     my $basename = ($ENV{VERILATOR_BIN}
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
-    if (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe") {
-        return "$RealBin/$basename";
-    } else {
-        return $basename;  # Find in PATH
+    my $bin = (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe")
+              ? "$RealBin/$basename" : $basename;
+    # Guard: VERILATOR_BIN must not point back at this Perl wrapper,
+    # or the backtick call in ulimit_stack_unlimited() would fork-bomb.
+    if ($ENV{VERILATOR_BIN}) {
+        my $resolved = eval { realpath($bin) };
+        my $self     = eval { realpath("$RealBin/$RealScript") };
+        if ($resolved && $self && $resolved eq $self) {
+            warn "%Warning: VERILATOR_BIN ($ENV{VERILATOR_BIN}) resolves to the"
+                . " Perl wrapper itself; ignoring it to avoid infinite recursion."
+                . " Set VERILATOR_BIN to 'verilator_bin' instead.\n"
+                unless $_verilator_bin_warned++;
+            delete $ENV{VERILATOR_BIN};
+            return verilator_bin();
+        }
     }
+    return $bin;
 }
 
 #######################################################################
