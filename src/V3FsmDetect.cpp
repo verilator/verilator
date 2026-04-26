@@ -481,7 +481,9 @@ class FsmDetectVisitor final : public VNVisitor {
     // reset transitions for an odd but legal coding style.
     static ResetAssignStatus collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
                                                       std::vector<FsmResetArcDesc>& resetArcs) {
-        for (AstNode* nodep = unwrapBeginStmtList(stmtp); nodep; nodep = nodep->nextp()) {
+        AstNode* nodep = unwrapBeginStmtList(stmtp);
+        if (!nodep) return ResetAssignStatus::NONE;
+        for (;; nodep = nodep->nextp()) {
             AstVarScope* assignStateVscp = nullptr;
             int value = 0;
             AstNodeAssign* const assp = directConstStateAssignNode(nodep, assignStateVscp, value);
@@ -495,8 +497,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 return ResetAssignStatus::MULTI_SAME_STATE;
             }
             resetArcs.emplace_back(value, assp);
+            if (!nodep->nextp()) return ResetAssignStatus::SINGLE;
         }
-        return resetArcs.empty() ? ResetAssignStatus::NONE : ResetAssignStatus::SINGLE;
     }
 
     static bool hasCanonicalNextStateDefaultBeforeCase(AstNode* stmtsp, AstCase* casep,
@@ -646,8 +648,8 @@ class FsmDetectVisitor final : public VNVisitor {
         } else {
             AstNodeExpr* resetCondp = nullptr;
             int resetValue = 0;
-            if (AstNodeAssign* const assp = directCondStateVarAssign(nodep, stateVscp, nextVscp,
-                                                                     resetCondp, resetValue)) {
+            if (AstNodeAssign* const assp
+                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetValue)) {
                 cand.resetArcs().emplace_back(resetValue, assp);
                 cand.resetCond() = describeResetCond(resetCondp);
                 cand.hasResetCond(cand.resetCond().varScopep != nullptr);
@@ -655,8 +657,6 @@ class FsmDetectVisitor final : public VNVisitor {
                 return false;
             }
         }
-        if (!stateVscp || !nextVscp) return false;
-
         cand.scopep(scopep);
         cand.alwaysp(alwaysp);
         cand.stateVscp(stateVscp);
@@ -942,8 +942,7 @@ class FsmDetectVisitor final : public VNVisitor {
         FsmRegisterCandidate reg;
         if (matchRegisterAlways(nodep, m_scopep, reg))
             m_registerCandidates.emplace(reg.stateVscp(), reg);
-        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB
-            || isPlainComboSentree(nodep->sentreep())
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB || isPlainComboSentree(nodep->sentreep())
             || (!nodep->sentreep() && nodep->keyword() == VAlwaysKwd::ALWAYS)) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
         }
