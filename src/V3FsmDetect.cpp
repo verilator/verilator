@@ -477,7 +477,8 @@ class FsmDetectVisitor final : public VNVisitor {
         AstNode* const bodyp = unwrapBeginStmtList(stmtsp);
         bool sawCanonicalDefault = false;
         for (AstNode* nodep = bodyp;; nodep = nodep->nextp()) {
-            UASSERT_OBJ(nodep, casep, "case(state_d) candidate not found in scanned statement list");
+            UASSERT_OBJ(nodep, casep,
+                        "case(state_d) candidate not found in scanned statement list");
             if (nodep == casep) return sawCanonicalDefault;
             if (isIgnorableStmt(nodep)) continue;
             if (AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign)) {

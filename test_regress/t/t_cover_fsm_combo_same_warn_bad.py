@@ -14,6 +14,8 @@ test.scenarios('vlt')
 # Two supported case statements in the same combinational always block for the
 # same FSM are legal RTL, but Phase 1 only instruments the first and warns on
 # the later duplicate.
-test.compile(verilator_flags2=["--cc --coverage"], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--cc --coverage"],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()
