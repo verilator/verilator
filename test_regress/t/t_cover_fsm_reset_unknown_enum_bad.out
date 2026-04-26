@@ -1,0 +1,6 @@
+%Warning-COVERIGN: t/t_cover_fsm_reset_unknown_enum_bad.v:49:15: Ignoring unsupported: FSM coverage on enum state transitions that assign a constant not present in the declared enum
+   49 |       state_q <= 2'd3;
+      |               ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

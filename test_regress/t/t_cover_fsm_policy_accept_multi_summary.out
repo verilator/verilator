@@ -3,5 +3,5 @@ Coverage Summary:
   toggle    : 0.0% ( 0/ 0)
   branch    : 0.0% ( 0/ 0)
   expr      : 0.0% ( 0/ 0)
-  fsm_state : 53.8% ( 7/13)
-  fsm_arc   : 77.8% ( 7/ 9)
+  fsm_state : 63.6% ( 7/11)
+  fsm_arc   : 58.3% ( 7/12)

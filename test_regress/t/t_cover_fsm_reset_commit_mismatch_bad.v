@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage warns on plain always with edge sensitivity
+// DESCRIPTION: Verilator: FSM coverage ignores reset/non-reset register commits to different vars
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -17,7 +17,8 @@ module t (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q /*verilator fsm_state*/;
+  state_t other_q;
   state_t state_d;
 
   initial begin
@@ -37,24 +38,20 @@ module t (
     end
   end
 
-  // This is intentionally unsupported for Phase 1: the next-state logic is
-  // written as a plain always block with edge sensitivity instead of a
-  // combinational sensitivity list or always_comb.
-  always @(posedge clk) begin
+  always_comb begin
     state_d = state_q;
     case (state_q)
-      S0: state_d = start ? S1 : S0;
-      S1: state_d = S2;
+      S0: state_d = start ? S1 : S2;
       default: state_d = S0;
     endcase
   end
 
+  // This is legal RTL, but the reset and non-reset commit write different
+  // registers. FSM extraction must reject that mismatch instead of pairing
+  // reset arcs from other_q with transitions from state_q.
   always_ff @(posedge clk) begin
-    if (rst) begin
-      state_q <= S0;
-    end else begin
-      state_q <= state_d;
-    end
+    if (rst) other_q <= S0;
+    else state_q <= state_d;
   end
 
 endmodule

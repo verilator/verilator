@@ -302,7 +302,7 @@ using DetectedFsmMap = std::map<const AstVarScope*, DetectedFsm>;
 // fills this with recovered FSM graphs; lowering consumes the completed graphs
 // immediately afterward without needing any AST serialization bridge.
 class FsmState final {
-    // All detected FSMs keyed by state varscope name. This is the only bridge
+    // All detected FSMs keyed by state varscope identity. This is the only bridge
     // between the adjacent detect and lower phases, so the second phase never
     // needs to rediscover or serialize the extracted machine.
     DetectedFsmMap m_fsms;
@@ -393,7 +393,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // If/else branches are a single subtree, not a statement list, so do not
     // walk nextp() here or we may accidentally consume the sibling else-arm.
     static AstNode* singleMeaningfulBranch(AstNode* branchp) {
-        if (!branchp || isIgnorableStmt(branchp)) return nullptr;
+        if (!branchp) return nullptr;
         return branchp;
     }
 
@@ -404,20 +404,23 @@ class FsmDetectVisitor final : public VNVisitor {
         return stmtp;
     }
 
-    // Phase 1 accepts plain combinational always blocks both as always @*
-    // (COMBO/COMBO_STAR) and explicit changed-sensitivity lists such as
-    // always @(a or b). Clocked and event-driven forms remain out of scope.
+    // By fsm-detect time, plain always @* blocks are already admitted through
+    // a missing sentree. This helper therefore only needs to recognize
+    // explicit changed-sensitivity lists such as always @(a or b); clocked and
+    // event-driven forms remain out of scope.
     static bool isPlainComboSentree(const AstSenTree* sentreep) {
-        if (!sentreep) return false;
+        UASSERT(sentreep, "plain combo sensitivity check requires a sensitivity tree");
         for (const AstSenItem* senp = sentreep->sensesp(); senp;
              senp = VN_AS(senp->nextp(), SenItem)) {
-            if (senp->edgeType() != VEdgeType::ET_CHANGED && !senp->isComboOrStar()) return false;
+            if (senp->edgeType() == VEdgeType::ET_CHANGED) continue;
+            return false;
         }
         return true;
     }
 
     void warnUnsupportedComboAlways(const FsmComboAlways& combo) {
         AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp()->stmtsp());
+        bool warned = false;
         for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
             AstCase* const casep = VN_CAST(nodep, Case);
             if (!casep) continue;
@@ -426,7 +429,6 @@ class FsmDetectVisitor final : public VNVisitor {
 
             for (const auto& it : m_registerCandidates) {
                 const FsmRegisterCandidate& reg = it.second;
-                if (reg.scopep() != combo.scopep()) continue;
                 if (selp->varScopep() == reg.nextVscp()) {
                     if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
                                                                 reg.nextVscp())) {
@@ -439,8 +441,10 @@ class FsmDetectVisitor final : public VNVisitor {
                 casep->v3warn(COVERIGN,
                               "Ignoring unsupported: FSM coverage on plain always blocks "
                               "requires a combinational sensitivity list or always_comb");
-                return;
+                warned = true;
+                break;
             }
+            if (warned) break;
         }
     }
 
@@ -461,9 +465,10 @@ class FsmDetectVisitor final : public VNVisitor {
                                              AstVarScope*& fromVscp) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
+        UASSERT_OBJ(lhsp, assp, "register commit lhs should be normalized to a VarRef");
         AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
-        if (!lhsp || !rhsp) return nullptr;
+        if (!rhsp) return nullptr;
         stateVscp = lhsp->varScopep();
         fromVscp = rhsp->varScopep();
         return assp;
@@ -474,9 +479,10 @@ class FsmDetectVisitor final : public VNVisitor {
                                                    int& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
+        UASSERT_OBJ(lhsp, assp, "conditional register commit lhs should be normalized to a VarRef");
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
-        if (!lhsp || !rhsp) return nullptr;
+        if (!rhsp) return nullptr;
         AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
         if (!elsep || !exprConstValue(rhsp->thenp(), resetValue)) return nullptr;
         stateVscp = lhsp->varScopep();
@@ -489,8 +495,9 @@ class FsmDetectVisitor final : public VNVisitor {
                                                      int& value) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
-        if (!lhsp || !exprConstValue(assp->rhsp(), value)) return nullptr;
+        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
+        UASSERT_OBJ(lhsp, assp, "direct constant state assignment lhs should be normalized to a VarRef");
+        if (!exprConstValue(assp->rhsp(), value)) return nullptr;
         stateVscp = lhsp->varScopep();
         return assp;
     }
@@ -508,7 +515,7 @@ class FsmDetectVisitor final : public VNVisitor {
     static ResetAssignStatus collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
                                                       std::vector<FsmResetArcDesc>& resetArcs) {
         AstNode* nodep = unwrapBeginStmtList(stmtp);
-        if (!nodep) return ResetAssignStatus::NONE;
+        UASSERT_OBJ(nodep, stmtp, "Empty reset branch unexpectedly survived to FSM detection");
         for (;; nodep = nodep->nextp()) {
             AstVarScope* assignStateVscp = nullptr;
             int value = 0;
@@ -536,7 +543,6 @@ class FsmDetectVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep, casep,
                         "case(state_d) candidate not found in scanned statement list");
             if (nodep == casep) return sawCanonicalDefault;
-            if (isIgnorableStmt(nodep)) continue;
             if (AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign)) {
                 AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
                 AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
@@ -561,8 +567,9 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* thenVscp = nullptr;
         AstVarScope* elseVscp = nullptr;
         AstNode* const thenNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->thensp()));
+        UASSERT_OBJ(thenNodep, ifp, "Empty then-branch unexpectedly survived to FSM detection");
         AstNode* const elseNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->elsesp()));
-        if (!thenNodep || !elseNodep) return false;
+        if (!elseNodep) return false;
         if (!directConstStateAssignNode(thenNodep, thenVscp, thenValue)) return false;
         if (!directConstStateAssignNode(elseNodep, elseVscp, elseValue)) return false;
         if (thenVscp == stateVscp && elseVscp == stateVscp) return true;
@@ -571,8 +578,11 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* finalStateVscp = nullptr;
         AstVarScope* finalFromVscp = nullptr;
         AstNode* const finalNodep = singleMeaningfulBranch(followp);
-        return finalNodep && nodeStateVarAssign(finalNodep, finalStateVscp, finalFromVscp)
-               && finalStateVscp == stateVscp && finalFromVscp == thenVscp;
+        if (!finalNodep) return false;
+        if (!nodeStateVarAssign(finalNodep, finalStateVscp, finalFromVscp)) return false;
+        if (finalStateVscp != stateVscp) return false;
+        if (finalFromVscp != thenVscp) return false;
+        return true;
     }
 
     static bool directStateCondConstAssign(AstNode* stmtp, AstVarScope* stateVscp, int& thenValue,
@@ -587,7 +597,9 @@ class FsmDetectVisitor final : public VNVisitor {
 
     static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp,
                                         bool inclCond) {
-        if (itemp->isDefault() && !inclCond) return false;
+        if (itemp->isDefault()) {
+            if (!inclCond) return false;
+        }
         AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp);
         if (assp) {
             int toValue = 0;
@@ -659,15 +671,16 @@ class FsmDetectVisitor final : public VNVisitor {
                 cand.resetArcs().clear();
                 int resetValue = 0;
                 AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
-                if (!thenNodep
-                    || !directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
+                UASSERT_OBJ(thenNodep, ifp, "reset fallback requires a non-empty reset branch");
+                if (!directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
                     return false;
                 cand.resetArcs().emplace_back(resetValue, ifp->thensp());
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
             AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
-            if (!elseNodep || !nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
+            UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
+            if (!nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
             if (resetStateVscp != stateVscp) return false;
             cand.resetCond() = describeResetCond(ifp->condp());
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
@@ -705,7 +718,7 @@ class FsmDetectVisitor final : public VNVisitor {
         if (!enump && !forced) return false;
 
         if (enump) {
-            if (stateVscp->width() < 1 || stateVscp->width() > 32) {
+            if (stateVscp->width() > 32) {
                 nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on enum-typed state "
                                         "variables wider than 32 bits");
                 return false;
@@ -721,7 +734,7 @@ class FsmDetectVisitor final : public VNVisitor {
         }
 
         const int width = stateVarp->width();
-        if (width < 1 || width >= 31) return false;
+        if (width >= 31) return false;
         const unsigned stateCount = 1U << width;
         for (unsigned value = 0; value < stateCount; ++value) {
             const string label = "S" + cvtToStr(value);
@@ -795,7 +808,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // later lowering phase will consume directly, while reviewers can still
     // inspect the extracted machine via DOT dumps.
     void processCase(AstCase* casep, AstVarScope* assignVscp, const FsmRegisterCandidate& reg) {
-        if (!assignVscp) return;
+        UASSERT_OBJ(assignVscp, casep, "FSM case processing requires a non-null assignment var");
         AstVarScope* const stateVscp = reg.stateVscp();
         std::vector<std::pair<string, int>> states;
         std::unordered_map<int, string> labels;
@@ -872,8 +885,9 @@ class FsmDetectVisitor final : public VNVisitor {
                         reg.resetArcs().clear();
                         int resetValue = 0;
                         AstNode* const thenNodep = singleMeaningfulBranch(firstIfp->thensp());
-                        if (thenNodep
-                            && directConstStateAssignNode(thenNodep, resetStateVscp, resetValue)
+                        UASSERT_OBJ(thenNodep, firstIfp,
+                                    "one-block reset fallback requires a non-empty reset branch");
+                        if (directConstStateAssignNode(thenNodep, resetStateVscp, resetValue)
                             && resetStateVscp == vscp) {
                             reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
                         }
@@ -917,7 +931,6 @@ class FsmDetectVisitor final : public VNVisitor {
             const FsmRegisterCandidate* matchedp = nullptr;
             for (const auto& it : m_registerCandidates) {
                 const FsmRegisterCandidate& reg = it.second;
-                if (reg.scopep() != combo.scopep()) continue;
                 if (selp->varScopep() == reg.nextVscp()) {
                     if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
                                                                 reg.nextVscp())) {
@@ -968,11 +981,14 @@ class FsmDetectVisitor final : public VNVisitor {
         FsmRegisterCandidate reg;
         if (matchRegisterAlways(nodep, m_scopep, reg))
             m_registerCandidates.emplace(reg.stateVscp(), reg);
-        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB || isPlainComboSentree(nodep->sentreep())
-            || (!nodep->sentreep() && nodep->keyword() == VAlwaysKwd::ALWAYS)) {
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
-        } else if (nodep->keyword() == VAlwaysKwd::ALWAYS && nodep->sentreep()) {
-            m_nonComboAlwayss.emplace_back(m_scopep, nodep);
+        } else if (nodep->keyword() == VAlwaysKwd::ALWAYS) {
+            if (!nodep->sentreep() || isPlainComboSentree(nodep->sentreep())) {
+                m_comboAlwayss.emplace_back(m_scopep, nodep);
+            } else {
+                m_nonComboAlwayss.emplace_back(m_scopep, nodep);
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage forced non-enum test
+# DESCRIPTION: Verilator: FSM coverage keeps grouped canonical case(state_d) forms
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -17,8 +17,17 @@ test.compile(verilator_flags2=['--cc --coverage-fsm'])
 
 test.execute()
 
-# Use annotated-source golden output so hit-count regressions are visible in the
-# expected file instead of being hidden behind coarse coverage.dat greps.
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    "--include-reset-arcs",
+    test.obj_dir + "/coverage.dat",
+],
+         logfile=test.obj_dir + "/summary.log",
+         tee=False,
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/summary.log", "t/" + test.name + "_summary.out")
+
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate",

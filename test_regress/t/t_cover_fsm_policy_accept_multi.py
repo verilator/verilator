@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage ternary two-process test
+# DESCRIPTION: Verilator: FSM coverage keeps grouped accepted policy-style forms
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -13,9 +13,19 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage'])
+test.compile(verilator_flags2=['--cc --coverage-fsm'])
 
 test.execute()
+
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    test.obj_dir + "/coverage.dat",
+],
+         logfile=test.obj_dir + "/summary.log",
+         tee=False,
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/summary.log", "t/" + test.name + "_summary.out")
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",

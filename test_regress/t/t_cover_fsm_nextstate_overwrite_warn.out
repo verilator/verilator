@@ -1,5 +1,6 @@
 %Warning-COVERIGN: t/t_cover_fsm_nextstate_overwrite_warn.v:21:13: Ignoring unsupported: FSM coverage on case(state_d) when the canonical state_d = state_q default is overwritten before the case statement
-   21 |     state_d = foo;
+   21 |     state_d = (state_d == S0) ? S1 : S0;
       |             ^
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

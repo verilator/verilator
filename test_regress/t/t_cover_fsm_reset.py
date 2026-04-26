@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage reset policy test
+# DESCRIPTION: Verilator: FSM coverage grouped reset semantics test
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -13,7 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage'])
+test.compile(verilator_flags2=['--cc --coverage-fsm'])
 
 test.execute()
 

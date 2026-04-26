@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage forced non-enum test
+// DESCRIPTION: Verilator: FSM coverage ignores forced non-enum state variables that are too wide
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -10,7 +10,7 @@ module t (
 
   integer cyc;
   logic rst;
-  logic [1:0] state  /*verilator fsm_state*/;
+  logic [30:0] state  /*verilator fsm_state*/;
 
   initial begin
     cyc = 0;
@@ -28,13 +28,12 @@ module t (
 
   always_ff @(posedge clk) begin
     if (rst) begin
-      state <= 2'd0;
-    end
-    else begin
+      state <= 31'd0;
+    end else begin
       case (state)
-        2'd0: state <= 2'd1;
-        2'd1: state <= 2'd2;
-        default: state <= 2'd0;
+        31'd0: state <= 31'd1;
+        31'd1: state <= 31'd2;
+        default: state <= 31'd0;
       endcase
     end
   end

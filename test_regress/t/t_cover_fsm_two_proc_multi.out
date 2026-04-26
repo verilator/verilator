@@ -313,6 +313,41 @@
           end
         endmodule
         
+        module fsm_plain_always_list (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic go
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000004   state_t state_q;
+%000004   state_t state_d;
+        
+%000008   always @(state_q or go) begin
+%000008     state_d = state_q;
+%000008     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.plain_always_list_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000000        // [fsm_arc t.plain_always_list_u.state_q::S0->S1]
+%000004        // [fsm_arc t.plain_always_list_u.state_q::S0->S2]
+%000003        // [fsm_state t.plain_always_list_u.state_q::S0]
+%000000        // [fsm_state t.plain_always_list_u.state_q::S1] *** UNCOVERED ***
+%000004        // [fsm_state t.plain_always_list_u.state_q::S2]
+%000007       S0: state_d = go ? S1 : S2;
+%000004       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
         module fsm_caseassigns_off (
 %000009     input logic clk,
 %000001     input logic rst,
@@ -391,6 +426,7 @@
           fsm_nextstate_sel_ok nextstate_sel_ok_u (.clk(clk), .rst(rst), .start(start));
           fsm_ternary ternary_u (.clk(clk), .rst(rst), .sel(sel));
           fsm_plain_always plain_always_u (.clk(clk), .rst(rst), .go(start));
+          fsm_plain_always_list plain_always_list_u (.clk(clk), .rst(rst), .go(start));
           fsm_caseassigns_off caseassigns_off_u (.clk(clk), .rst(rst), .go(start));
           fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
         

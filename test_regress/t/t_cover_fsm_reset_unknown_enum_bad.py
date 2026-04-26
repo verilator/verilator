@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: combined FSMMULTI warning regression
+# DESCRIPTION: Verilator: FSM reset arc bad enum constant test
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--coverage-fsm"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

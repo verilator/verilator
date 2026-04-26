@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: combined FSMMULTI warning regression
+# DESCRIPTION: Verilator: FSM coverage ignores plain always cases that do not assign next-state
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=["--coverage-fsm"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--cc --coverage-fsm', '-Werror-COVERIGN'])
+
+test.execute()
+
+test.files_identical(test.obj_dir + "/coverage.dat", "t/" + test.name + ".out")
 
 test.passes()

@@ -15,11 +15,8 @@ test.scenarios('vlt')
 # not a realistic reset style to model as distinct reset arcs. Warn and ignore
 # reset-arc extraction for that branch instead of inventing multiple ANY->state
 # coverage edges.
-test.lint(verilator_flags2=["--coverage-fsm"], fails=True)
-
-test.file_grep(
-    test.compile_log_filename,
-    r'%Warning-COVERIGN: t/t_cover_fsm_reset_multi.v:\d+:\d+: Ignoring unsupported: FSM '
-    r'coverage on reset branches with multiple assignments to the state variable')
+test.lint(verilator_flags2=["--coverage-fsm"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()
