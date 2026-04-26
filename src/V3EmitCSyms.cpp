@@ -1219,7 +1219,8 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
         puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
-        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
+        puts("__Vm_dumperp->dumpvars(_vm_contextp__->dumpvars());\n");
+        puts("_vm_contextp__->trace(__Vm_dumperp, 0, 0);\n");
         puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
         puts("__Vm_dumperp->open(dumpfile.c_str());\n");
         puts("__Vm_dumping = true;\n");

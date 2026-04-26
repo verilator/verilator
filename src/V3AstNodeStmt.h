@@ -641,6 +641,8 @@ class AstDumpCtl final : public AstNodeStmt {
     // $dumpon etc
     // Parents: expr
     // @astgen op1 := exprp : Optional[AstNodeExpr] // Expression based on type of statement
+    // @astgen op2 := scopeNamep : Optional[AstScopeName] // Scope of the $dumpvars call site
+    // @astgen op3 := targetsp : List[AstNode] // Optional scope/signal targets for $dumpvars
     const VDumpCtlType m_ctlType;  // Type of operation
 public:
     AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNodeExpr* exprp = nullptr)
@@ -655,7 +657,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
     virtual bool cleanOut() const { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return ctlType() == VN_DBG_AS(samep, DumpCtl)->ctlType();
+    }
     VDumpCtlType ctlType() const { return m_ctlType; }
 };
 class AstEventControl final : public AstNodeStmt {

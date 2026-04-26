@@ -221,7 +221,7 @@ private:
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
     void* m_initUserp = nullptr;  // The callback userp of the instance currently being initialized
     // TODO: Should keep this as a Trie, that is how it's accessed all the time.
-    std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
+    VerilatedTraceDumpVarsEntries m_dumpvars;  // dumpvar() entries
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
@@ -248,6 +248,58 @@ private:
     VL_UNCOPYABLE(VerilatedTrace);
 
 protected:
+    struct DumpvarsPath final {
+        std::string m_name;
+        std::vector<size_t> m_scopeEndps;
+
+        static bool countsAsScopeLevel(VerilatedTracePrefixType type) {
+            return type == VerilatedTracePrefixType::SCOPE_MODULE
+                   || type == VerilatedTracePrefixType::SCOPE_INTERFACE
+                   || type == VerilatedTracePrefixType::ROOTIO_WRAPPER;
+        }
+        static char separator(VerilatedTracePrefixType type) {
+            return (type == VerilatedTracePrefixType::ARRAY_PACKED
+                    || type == VerilatedTracePrefixType::ARRAY_UNPACKED)
+                       ? '\0'
+                       : '.';
+        }
+
+        static std::string trimPrefix(const std::string& prefix) {
+            if (!prefix.empty() && prefix.back() == ' ') {
+                return prefix.substr(0, prefix.size() - 1);
+            }
+            return prefix;
+        }
+
+        void append(const std::string& piece, VerilatedTracePrefixType type,
+                    bool countLevel = true) {
+            if (piece.empty()) return;
+            const char sep = separator(type);
+            if (sep && !m_name.empty()) m_name += sep;
+            m_name += piece;
+            if (countLevel && countsAsScopeLevel(type)) m_scopeEndps.push_back(m_name.size());
+        }
+
+        bool matchesPrefix(const std::string& prefix) const {
+            if (prefix.empty()) return true;
+            if (m_name.compare(0, prefix.size(), prefix) != 0) return false;
+            return prefix.size() >= m_name.size() || m_name[prefix.size()] == '.';
+        }
+
+        int scopeLevelsBelow(size_t prefixLen) const {
+            int levels = 0;
+            for (const size_t endp : m_scopeEndps) {
+                if (endp > prefixLen) ++levels;
+            }
+            return levels;
+        }
+
+        bool matches(const VerilatedTraceDumpVarsEntry& entry) const {
+            if (!matchesPrefix(entry.m_hier)) return false;
+            return entry.m_level <= 0 || scopeLevelsBelow(entry.m_hier.size()) < entry.m_level;
+        }
+    };
+
     //=========================================================================
     // Internals available to format-specific implementations
 
@@ -267,7 +319,7 @@ protected:
     void traceInit() VL_MT_UNSAFE;
 
     // Declare new signal and return true if enabled
-    bool declCode(uint32_t code, const std::string& declName, uint32_t bits);
+    bool declCode(uint32_t code, const DumpvarsPath& path, uint32_t bits);
 
     void closeBase();
     void flushBase();
@@ -279,6 +331,23 @@ protected:
         const size_t idx = str.rfind(' ');
         if (idx == std::string::npos) return str;
         return str.substr(idx + 1);
+    }
+
+    static DumpvarsPath dumpvarsPath(
+        const std::vector<std::pair<std::string, VerilatedTracePrefixType>>& prefixStack,
+        const char* namep) {
+        DumpvarsPath out;
+        std::string prev;
+        for (size_t i = 1; i < prefixStack.size(); ++i) {
+            const std::string curr = DumpvarsPath::trimPrefix(prefixStack[i].first);
+            if (curr.size() < prev.size()) continue;
+            std::string piece = curr.substr(prev.size());
+            if (!piece.empty() && piece.front() == ' ') piece.erase(0, 1);
+            out.append(piece, prefixStack[i].second);
+            prev = curr;
+        }
+        out.append(namep ? namep : "", prefixStack.back().second, false);
+        return out;
     }
 
     //=========================================================================
@@ -315,6 +384,11 @@ public:
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
+    void dumpvars(const VerilatedTraceDumpVarsEntries& entries) VL_MT_SAFE {
+        for (const VerilatedTraceDumpVarsEntry& entry : entries) {
+            dumpvars(entry.m_level, entry.m_hier);
+        }
+    }
 
     // Call
     void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);

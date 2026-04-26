@@ -377,6 +377,12 @@ class BeginVisitor final : public VNVisitor {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Inline
         if (nodep->user1SetOnce()) return;  // Don't double-add text's
+        // $dumpvars scope names resolve relative to the enclosing module,
+        // not the block, so don't add block scope components for them.
+        if (VN_IS(nodep->backp(), DumpCtl)) {
+            iterateChildren(nodep);
+            return;
+        }
         // DPI svGetScope doesn't include function name, but %m does
         const std::string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
         // To keep correct visual order, must add before exising
