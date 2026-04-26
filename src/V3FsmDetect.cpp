@@ -406,6 +406,18 @@ class FsmDetectVisitor final : public VNVisitor {
         return stmtp;
     }
 
+    // Phase 1 accepts plain combinational always blocks both as always @*
+    // (COMBO/COMBO_STAR) and explicit changed-sensitivity lists such as
+    // always @(a or b). Clocked and event-driven forms remain out of scope.
+    static bool isPlainComboSentree(const AstSenTree* sentreep) {
+        if (!sentreep) return false;
+        for (const AstSenItem* senp = sentreep->sensesp(); senp;
+             senp = VN_AS(senp->nextp(), SenItem)) {
+            if (senp->edgeType() != VEdgeType::ET_CHANGED && !senp->isComboOrStar()) return false;
+        }
+        return true;
+    }
+
     // Case-item bodies are single subtrees like if/else arms, not statement
     // lists, so unwrap only local begin/end wrappers here rather than walking
     // sibling case items via nextp().
@@ -428,6 +440,22 @@ class FsmDetectVisitor final : public VNVisitor {
         if (!lhsp || !rhsp) return nullptr;
         stateVscp = lhsp->varScopep();
         fromVscp = rhsp->varScopep();
+        return assp;
+    }
+
+    static AstNodeAssign* directCondStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
+                                                   AstVarScope*& fromVscp, AstNodeExpr*& condp,
+                                                   int& resetValue) {
+        AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
+        if (!assp) return nullptr;
+        AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+        AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
+        if (!lhsp || !rhsp) return nullptr;
+        AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
+        if (!elsep || !exprConstValue(rhsp->thenp(), resetValue)) return nullptr;
+        stateVscp = lhsp->varScopep();
+        fromVscp = elsep->varScopep();
+        condp = rhsp->condp();
         return assp;
     }
 
@@ -519,6 +547,16 @@ class FsmDetectVisitor final : public VNVisitor {
                && finalStateVscp == stateVscp && finalFromVscp == thenVscp;
     }
 
+    static bool directStateCondConstAssign(AstNode* stmtp, AstVarScope* stateVscp, int& thenValue,
+                                           int& elseValue) {
+        AstNodeAssign* const assp = directStateAssign(stmtp, stateVscp);
+        if (!assp) return false;
+        AstCond* const condp = VN_CAST(assp->rhsp(), Cond);
+        if (!condp) return false;
+        return exprConstValue(condp->thenp(), thenValue)
+               && exprConstValue(condp->elsep(), elseValue);
+    }
+
     static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp,
                                         bool inclCond) {
         if (itemp->isDefault() && !inclCond) return false;
@@ -529,7 +567,8 @@ class FsmDetectVisitor final : public VNVisitor {
         }
         int thenValue = 0;
         int elseValue = 0;
-        return ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue);
+        return directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
+               || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue);
     }
 
     // Combinational transition blocks are paired only through supported case
@@ -575,7 +614,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // commit, or a top-level reset guard whose else path is that commit.
     static bool matchRegisterAlways(AstAlways* alwaysp, AstScope* scopep,
                                     FsmRegisterCandidate& cand) {
-        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return false;
+        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return false;
 
         AstNode* const stmtsp = unwrapBeginStmtList(alwaysp->stmtsp());
         AstNode* const nodep = singleMeaningfulStmt(stmtsp);
@@ -605,7 +644,16 @@ class FsmDetectVisitor final : public VNVisitor {
             cand.resetCond() = describeResetCond(ifp->condp());
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
-            if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) return false;
+            AstNodeExpr* resetCondp = nullptr;
+            int resetValue = 0;
+            if (AstNodeAssign* const assp = directCondStateVarAssign(nodep, stateVscp, nextVscp,
+                                                                     resetCondp, resetValue)) {
+                cand.resetArcs().emplace_back(resetValue, assp);
+                cand.resetCond() = describeResetCond(resetCondp);
+                cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+            } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
+                return false;
+            }
         }
         if (!stateVscp || !nextVscp) return false;
 
@@ -691,7 +739,8 @@ class FsmDetectVisitor final : public VNVisitor {
 
         int thenValue = 0;
         int elseValue = 0;
-        if (ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
+        if (directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
+            || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
             if (!validateKnownStateValue(itemp->stmtsp(), labels, thenValue)) return true;
             if (!validateKnownStateValue(itemp->stmtsp(), labels, elseValue)) return true;
             for (const int branchValue : {thenValue, elseValue}) {
@@ -756,7 +805,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // and expand detection in a later PR rather than over-infer coverage from
     // forms we do not yet model confidently.
     void processOneBlockAlways(AstAlways* alwaysp) {
-        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return;
+        if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return;
         std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
         AstNode* stmtsp = alwaysp->stmtsp();
         AstIf* const firstIfp = VN_CAST(stmtsp, If);
@@ -894,8 +943,7 @@ class FsmDetectVisitor final : public VNVisitor {
         if (matchRegisterAlways(nodep, m_scopep, reg))
             m_registerCandidates.emplace(reg.stateVscp(), reg);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB
-            || (nodep->sentreep() && nodep->sentreep()->hasCombo()
-                && !nodep->sentreep()->hasClocked())
+            || isPlainComboSentree(nodep->sentreep())
             || (!nodep->sentreep() && nodep->keyword() == VAlwaysKwd::ALWAYS)) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
         }

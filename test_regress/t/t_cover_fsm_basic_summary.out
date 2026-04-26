@@ -4,4 +4,4 @@ Coverage Summary:
   branch    : 0.0% (0/0)
   expr      : 0.0% (0/0)
   fsm_state : 50.0% (2/4)
-  fsm_arc   : 100.0% (3/3)
+  fsm_arc   : 100.0% (5/5)

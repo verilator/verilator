@@ -47,6 +47,8 @@
 %000003       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000000        // [fsm_arc t.state::S0->S1]
+%000003        // [fsm_arc t.state::S0->S2]
 %000000        // [fsm_arc t.state::S1->S0]
 %000002        // [fsm_state t.state::S0]
 %000000        // [fsm_state t.state::S1] *** UNCOVERED ***
