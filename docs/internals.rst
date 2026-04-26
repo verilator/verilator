@@ -2689,6 +2689,55 @@ xsim_flags / xsim_flags2 / xsim_run_flags
    only for use with the Xilinx XSim simulator.
 
 
+Version Release Process
+=======================
+
+This section documents the process to release a new version. This is not
+intended to be run by other than the primary repository admins.
+
+#. If activity requires, announce release pending as GitHub issue.
+#. Check all test suites pass:
+
+   - rtlmeter (or wait until overnight cron passes).
+   - sv-tests (run manually or wait a few days and check proper version was
+     tested).
+   - uvm (currently requires private accellera access).
+   - verilator-ext-tests: ``make pull && make clean && make test``
+
+#. Check documentation:
+
+   - ``nodist/log_changes # and update Changes``
+   - ``make spelling # and check warnings``
+   - ``make docs # and check warnings``
+
+#. Prepare release:
+
+   - edit ``Changes`` to update version banner.
+   - edit ``configure.ac`` to change version number and "devel" to proper
+     ISO-format date.
+   - edit ``CMakeLists.txt`` version number.
+
+#. Test and release:
+
+   - ``git commit -am "Version bump"``
+   - ``make distclean && autoconf && ./configure && make test``
+   - ``make maintainer-dist``
+
+#. Wait for GitHub CI build actions to pass.
+#. File announcement issue at verilator-announce, pasting in ``Changes``
+   information.
+#. Devel release:
+
+   - edit ``Changes``, ``configure.ac``, ``CMakeLists.txt`` to devel and
+     devel version number.
+   - ``git commit -am "devel release"``
+   - ``make distclean && autoconf && ./configure && make test``
+   - ``git push``
+
+#. Merge GitHub pull requests tagged ``status:merge-after-release``.
+#. Check ``docs/guide/deprecations.rst`` for things due to remove.
+
+
 Distribution
 ============
 
