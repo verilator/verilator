@@ -378,6 +378,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // Normal Verilog begin/end wrappers should not affect the conservative
     // single-statement matching used by the Phase 1 detector.
     static AstNode* unwrapMeaningfulStmt(AstNode* nodep) {
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin))
+            return singleMeaningfulStmt(beginp->stmtsp());
         return nodep;
     }
 

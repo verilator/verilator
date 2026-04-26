@@ -46,8 +46,6 @@
 %000003       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S0[reset]] [reset arc, excluded from %]
-%000000        // [fsm_arc t.state::S0->S1]
-%000003        // [fsm_arc t.state::S0->S2]
 %000000        // [fsm_arc t.state::S1->S3]
 %000000        // [SYNTHETIC DEFAULT ARC: t.state::default->S0]
 %000002        // [fsm_state t.state::S0]

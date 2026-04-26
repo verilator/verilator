@@ -47,8 +47,6 @@
         // [FSM coverage]
 %000001        // [fsm_arc t.state::ANY->S_IDLE[reset_include]] [reset arc, excluded from %]
 %000004        // [fsm_arc t.state::S_DONE->S_DONE]
-%000003        // [fsm_arc t.state::S_IDLE->S_IDLE]
-%000001        // [fsm_arc t.state::S_IDLE->S_RUN]
 %000001        // [fsm_arc t.state::S_RUN->S_DONE]
 %000001        // [fsm_state t.state::S_DONE]
 %000000        // [fsm_state t.state::S_ERR] *** UNCOVERED ***
