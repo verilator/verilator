@@ -375,14 +375,6 @@ class FsmDetectVisitor final : public VNVisitor {
         return nodep;
     }
 
-    // Normal Verilog begin/end wrappers should not affect the conservative
-    // single-statement matching used by the Phase 1 detector.
-    static AstNode* unwrapMeaningfulStmt(AstNode* nodep) {
-        if (AstBegin* const beginp = VN_CAST(nodep, Begin))
-            return singleMeaningfulStmt(beginp->stmtsp());
-        return nodep;
-    }
-
     // Conservative extractor for statement lists: only treat a list as simple
     // when exactly one non-coverage statement remains after unwrapping.
     // Richer multi-statement or control-flow forms are intentionally left for
@@ -392,7 +384,7 @@ class FsmDetectVisitor final : public VNVisitor {
         for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) {
             if (isIgnorableStmt(nodep)) continue;
             if (resultp) return nullptr;
-            resultp = unwrapMeaningfulStmt(nodep);
+            resultp = nodep;
         }
         return resultp;
     }
@@ -484,20 +476,25 @@ class FsmDetectVisitor final : public VNVisitor {
                                                        AstVarScope* nextVscp) {
         AstNode* const bodyp = unwrapBeginStmtList(stmtsp);
         bool sawCanonicalDefault = false;
-        for (AstNode* nodep = bodyp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* nodep = bodyp;; nodep = nodep->nextp()) {
+            UASSERT_OBJ(nodep, casep, "case(state_d) candidate not found in scanned statement list");
             if (nodep == casep) return sawCanonicalDefault;
             if (isIgnorableStmt(nodep)) continue;
-            AstNode* const simplep = unwrapMeaningfulStmt(nodep);
-            if (AstNodeAssign* const assp = VN_CAST(simplep, NodeAssign)) {
+            if (AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign)) {
                 AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
                 AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
                 if (!lhsp || lhsp->varScopep() != nextVscp) continue;
-                if (sawCanonicalDefault) return false;
+                if (sawCanonicalDefault) {
+                    assp->v3warn(
+                        COVERIGN,
+                        "Ignoring unsupported: FSM coverage on case(state_d) when the canonical "
+                        "state_d = state_q default is overwritten before the case statement");
+                    return false;
+                }
                 if (!rhsp || rhsp->varScopep() != stateVscp) return false;
                 sawCanonicalDefault = true;
             }
         }
-        return false;
     }
 
     static bool ifStateConstAssign(AstNode* stmtp, AstVarScope* stateVscp, int& thenValue,
@@ -554,8 +551,6 @@ class FsmDetectVisitor final : public VNVisitor {
     // The extractor only models constant-valued state transitions, and by the
     // time detect runs those values have already been constant-folded.
     static bool exprConstValue(AstNodeExpr* exprp, int& value) {
-        if (AstExprStmt* const exprStmtp = VN_CAST(exprp, ExprStmt))
-            return exprConstValue(exprStmtp->resultp(), value);
         if (AstConst* const constp = VN_CAST(exprp, Const)) {
             value = constp->toSInt();
             return true;
