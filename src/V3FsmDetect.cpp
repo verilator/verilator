@@ -469,9 +469,8 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!stateVscp) stateVscp = assignStateVscp;
             if (assignStateVscp != stateVscp) return ResetAssignStatus::NONE;
             if (!resetArcs.empty()) {
-                assp->v3warn(COVERIGN,
-                             "Ignoring unsupported: FSM coverage on reset branches with "
-                             "multiple assignments to the state variable");
+                assp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on reset branches with "
+                                       "multiple assignments to the state variable");
                 resetArcs.clear();
                 return ResetAssignStatus::MULTI_SAME_STATE;
             }
@@ -522,7 +521,8 @@ class FsmDetectVisitor final : public VNVisitor {
                && finalStateVscp == stateVscp && finalFromVscp == thenVscp;
     }
 
-    static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp, bool inclCond) {
+    static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp,
+                                        bool inclCond) {
         if (itemp->isDefault() && !inclCond) return false;
         AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp);
         if (assp) {
@@ -537,7 +537,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // Combinational transition blocks are paired only through supported case
     // items that assign to the recorded next-state variable.
     static bool caseAssignsState(AstCase* casep, AstVarScope* stateVscp, bool inclCond) {
-        for (AstCaseItem* itemp = casep->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* itemp = casep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (caseItemHasSupportedArc(itemp, stateVscp, inclCond)) return true;
         }
         return false;
@@ -576,7 +577,8 @@ class FsmDetectVisitor final : public VNVisitor {
 
     // Strict Phase 1 matcher for register processes: either a bare state
     // commit, or a top-level reset guard whose else path is that commit.
-    static bool matchRegisterAlways(AstAlways* alwaysp, AstScope* scopep, FsmRegisterCandidate& cand) {
+    static bool matchRegisterAlways(AstAlways* alwaysp, AstScope* scopep,
+                                    FsmRegisterCandidate& cand) {
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasClocked()) return false;
 
         AstNode* const stmtsp = unwrapBeginStmtList(alwaysp->stmtsp());
@@ -594,7 +596,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 cand.resetArcs().clear();
                 int resetValue = 0;
                 AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
-                if (!thenNodep || !directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
+                if (!thenNodep
+                    || !directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
                     return false;
                 cand.resetArcs().emplace_back(resetValue, ifp->thensp());
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
@@ -637,7 +640,8 @@ class FsmDetectVisitor final : public VNVisitor {
                                         "variables wider than 32 bits");
                 return false;
             }
-            for (AstEnumItem* itemp = enump->itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* itemp = enump->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const int value = constp->toSInt();
                 states.emplace_back(itemp->name(), value);
@@ -791,9 +795,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 reg.inclCond(vscp->varp()->attrFsmArcInclCond());
                 if (firstIfp && reg.hasResetCond()) {
                     AstVarScope* resetStateVscp = nullptr;
-                    const ResetAssignStatus resetStatus
-                        = collectConstStateAssigns(firstIfp->thensp(), resetStateVscp,
-                                                   reg.resetArcs());
+                    const ResetAssignStatus resetStatus = collectConstStateAssigns(
+                        firstIfp->thensp(), resetStateVscp, reg.resetArcs());
                     if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
                         reg.resetArcs().clear();
                         int resetValue = 0;
@@ -820,17 +823,15 @@ class FsmDetectVisitor final : public VNVisitor {
                                    "candidate will be instrumented.");
             }
         }
-
     }
 
     // Phase 1 two-process pairing scans combinational always blocks only after
     // all strict register candidates have been collected, so source order does
     // not matter.
     static void warnComboSameAlways(AstCase* casep) {
-        casep->v3warn(FSMMULTI,
-                      "FSM coverage: multiple supported transition candidates found in "
-                      "the same combinational always block. Only the first candidate "
-                      "will be instrumented.");
+        casep->v3warn(FSMMULTI, "FSM coverage: multiple supported transition candidates found in "
+                                "the same combinational always block. Only the first candidate "
+                                "will be instrumented.");
     }
 
     void processComboAlways(const FsmComboAlways& combo) {
@@ -963,8 +964,8 @@ class FsmLowerVisitor final {
     // used by generated models: declarations, previous-state tracking, and the
     // pre/post-triggered increment logic for states and arcs.
     void buildOne(const FsmGraph& graph) {
-        UINFO(1, "buildOne lowering FSM " << graph.stateVarName() << " vertices="
-                                          << graph.vertices().size() << endl);
+        UINFO(1, "buildOne lowering FSM " << graph.stateVarName()
+                                          << " vertices=" << graph.vertices().size() << endl);
         AstAlways* const alwaysp = graph.stateAlwaysp();
         AstScope* const scopep = graph.scopep();
         AstVarScope* const stateVscp = graph.stateVarScopep();
@@ -1105,9 +1106,7 @@ public:
     // still valid in the same pass.
     explicit FsmLowerVisitor(const FsmState& state)
         : m_state{state} {
-        for (const auto& it : m_state.fsms()) {
-            buildOne(*it.second.graphp);
-        }
+        for (const auto& it : m_state.fsms()) { buildOne(*it.second.graphp); }
     }
 };
 
