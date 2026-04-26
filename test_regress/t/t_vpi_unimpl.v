@@ -12,10 +12,9 @@
 import "DPI-C" context function int mon_check();
 `endif
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
 `ifdef VERILATOR
 `systemc_header
@@ -23,25 +22,23 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   input clk;
+  reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
 
-   reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
+  integer        status;
 
-   integer        status;
-
-   // Test loop
-   initial begin
+  // Test loop
+  initial begin
 `ifdef VERILATOR
-      status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `else
-      status = mon_check();
+    status = mon_check();
 `endif
-      if (status != 0) begin
-         $write("%%Error: t_vpi_unimpl.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if (status != 0) begin
+      $write("%%Error: t_vpi_unimpl.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule : t

@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $display(local::x);
-      $finish;
-   end
+  initial begin
+    $display(local:: x);
+    $finish;
+  end
 endmodule

@@ -1,12 +1,12 @@
-%Error: t/t_lint_const_func_dpi_bad.v:8:32: Constant function may not be DPI import (IEEE 1800-2023 13.4.3)
+%Error: t/t_lint_const_func_dpi_bad.v:8:31: Constant function may not be DPI import (IEEE 1800-2023 13.4.3)
                                           : ... note: In instance 't'
-    8 |    import "DPI-C" function int dpiFunc();
-      |                                ^~~~~~~
+    8 |   import "DPI-C" function int dpiFunc();
+      |                               ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_const_func_dpi_bad.v:9:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'dpiFunc'
+%Error: t/t_lint_const_func_dpi_bad.v:9:22: Expecting expression to be constant, but can't determine constant for FUNCREF 'dpiFunc'
                                           : ... note: In instance 't'
-        t/t_lint_const_func_dpi_bad.v:8:32: ... Location of non-constant FUNC 'dpiFunc': DPI import functions aren't simulatable
-        t/t_lint_const_func_dpi_bad.v:9:23: ... Called from 'dpiFunc()' with parameters:
-    9 |    localparam PARAM = dpiFunc();
-      |                       ^~~~~~~
+        t/t_lint_const_func_dpi_bad.v:8:31: ... Location of non-constant FUNC 'dpiFunc': DPI import functions aren't simulatable
+        t/t_lint_const_func_dpi_bad.v:9:22: ... Called from 'dpiFunc()' with parameters:
+    9 |   localparam PARAM = dpiFunc();
+      |                      ^~~~~~~
 %Error: Exiting due to

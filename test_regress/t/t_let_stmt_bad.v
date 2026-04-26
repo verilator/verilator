@@ -6,14 +6,14 @@
 
 module t;
 
-    wire clk;
+  wire clk;
 
-    let letf(x) = (x << 1);
+  let letf(x) = (x << 1);
 
-    always @(posedge clk) begin
-        case (0)
-          0: letf(0); // Bad, need a statement
-        endcase
-    end
+  always @(posedge clk) begin
+    case (0)
+      0: letf(0);  // Bad, need a statement
+    endcase
+  end
 
 endmodule

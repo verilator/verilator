@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class NonAsbstract;
-    pure constraint raintBad;  // Bad: Not in abstract class
+   pure constraint raintBad;  // Bad: Not in abstract class
 endclass
 
 module t;

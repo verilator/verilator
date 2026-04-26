@@ -333,6 +333,7 @@ Muhlestein
 Multithreaded
 Multithreading
 Mykyta
+NFA
 NOUNOPTFLAT
 NaN
 Nalbantis
@@ -589,6 +590,7 @@ al
 ala
 alejandro
 algrobman
+allocator
 andit
 ar
 architected
@@ -810,6 +812,7 @@ fs
 fscanf
 fseek
 fsiegle
+fsm
 fst
 fstrict
 ftell
@@ -834,8 +837,10 @@ glibc
 gmake
 gmon
 gotFinish
+goto
 gprof
 gtkwave
+hdl
 hdr
 hdzhangdoc
 hh
@@ -878,6 +883,7 @@ iostream
 ish
 isunbounded
 isunknown
+jemalloc
 jobserver
 json
 jwoutersymatra
@@ -891,6 +897,7 @@ len
 libc
 libext
 libgoogle
+libjemalloc
 liblist
 libsystemc
 libtcmalloc
@@ -917,6 +924,7 @@ lxt
 macromodule
 makefile
 makefiles
+malloc
 manpages
 metacomment
 metacomments
@@ -979,6 +987,7 @@ onehot
 ooo
 oprofile
 ortegon
+output
 oversized
 oversubscription
 parallelized
@@ -1067,12 +1076,14 @@ recrem
 recurse
 recurses
 redeclaring
+reentrant
 regs
 reloop
 replaceShiftOp
 reproducibility
 resetall
 respecified
+reusability
 rodata
 rolloverSize
 rr
@@ -1146,6 +1157,7 @@ sys
 systemc
 taskify
 tcmalloc
+tcmalloc
 tenghtt
 testbench
 threadsafe
@@ -1206,6 +1218,7 @@ upcasting
 urandom
 uselib
 utimes
+uvm
 uwire
 uwires
 valgrind
@@ -1239,6 +1252,7 @@ vpiConstType
 vpiDefName
 vpiInertialDelay
 vpiInstance
+vpiIntVal
 vpiLeftRange
 vpiModule
 vpiSigned
@@ -1251,6 +1265,7 @@ vpm
 vpp
 warmup
 wavealloca
+wavediff
 waveforms
 whitespace
 widthed

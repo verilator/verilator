@@ -4,24 +4,24 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
-   integer      cyc = 0;
+module t (
+    input clk
+);
 
-   // Trace would overflow at 256KB which is 256 kb dump, 16 kb in a chunk
+  integer cyc = 0;
 
-   typedef struct packed {
-      logic [128*1024:0] d;
-   } s1_t; // 128 b
+  // Trace would overflow at 256KB which is 256 kb dump, 16 kb in a chunk
 
-   s1_t biggie;
+  typedef struct packed {logic [128*1024:0] d;} s1_t;  // 128 b
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      biggie [ cyc +: 32 ] <= 32'hfeedface;
-      if (cyc == 5) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  s1_t biggie;
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    biggie[cyc+:32] <= 32'hfeedface;
+    if (cyc == 5) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

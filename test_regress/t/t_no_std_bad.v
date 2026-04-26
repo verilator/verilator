@@ -6,5 +6,5 @@
 
 // verilator lint_off DECLFILENAME
 module t;
-   import std::*;
+  import std::*;
 endmodule

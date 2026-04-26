@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_cover_assert.v:38:5: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                           : ... note: In instance 't'
-   38 |     cover property (a) begin
-      |     ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

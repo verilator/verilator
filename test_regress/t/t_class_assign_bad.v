@@ -16,24 +16,26 @@ endclass
 typedef Cls2 cls2_t;
 
 module t;
-   Cls c;
-   Cls2 c2;
-   cls2_t ct2;
-   ClsExt c_ext;
+  Cls c;
+  Cls2 c2;
+  cls2_t ct2;
+  ClsExt c_ext;
 
-   task t(Cls c); endtask
-   function void f(ClsExt c); endfunction
+  task t(Cls c);
+  endtask
+  function void f(ClsExt c);
+  endfunction
 
-   initial begin
-      c = 0;
-      c = 1;
-      c = c2;
-      c_ext = c;
-      ct2 = c;
+  initial begin
+    c = 0;
+    c = 1;
+    c = c2;
+    c_ext = c;
+    ct2 = c;
 
-      t(0);
-      t(1);
-      t(c2);
-      f(c);
-   end
+    t(0);
+    t(1);
+    t(c2);
+    f(c);
+  end
 endmodule

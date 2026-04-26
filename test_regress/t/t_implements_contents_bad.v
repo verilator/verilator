@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface class Icls;
-   int badi;
-   task badtask;
-   endtask
+  int badi;
+  task badtask;
+  endtask
 endclass
 
 module t;

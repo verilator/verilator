@@ -1,6 +1,6 @@
-%Error: t/t_lint_comb_bad.v:14:4: Event control statements not legal under always_comb (IEEE 1800-2023 9.2.2.2.2)
+%Error: t/t_lint_comb_bad.v:14:3: Event control statements not legal under always_comb (IEEE 1800-2023 9.2.2.2.2)
                                 : ... Suggest use a normal 'always'
-   14 |    always_comb @(*) begin
-      |    ^~~~~~~~~~~
+   14 |   always_comb @(*) begin
+      |   ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

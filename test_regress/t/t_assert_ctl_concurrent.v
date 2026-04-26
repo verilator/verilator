@@ -6,39 +6,33 @@
 
 module t;
 
-   bit clock = 1'b0;
-   bit reset = 1'b0;
+  bit clock = 1'b0;
+  bit reset = 1'b0;
 
-   initial begin
-      $assertkill;
+  initial begin
+    $assertkill;
 
-      #10
+    #10 reset = 1'b1;
+    $display("%t: deassert reset %d", $time, reset);
 
-      reset = 1'b1;
-      $display("%t: deassert reset %d", $time, reset);
+    #40 $asserton;
 
-      #40
+    reset = 1'b0;
+    $display("%t: deassert reset %d", $time, reset);
 
-      $asserton;
+    #200 $display("%t: finish", $time);
+    $write("*-* All Finished *-*\n");
+    $finish;
 
-      reset = 1'b0;
-      $display("%t: deassert reset %d", $time, reset);
+  end
 
-      #200
+  always #10 clock = ~clock;
+  reg r = 1'b0;
 
-      $display("%t: finish", $time);
-      $write("*-* All Finished *-*\n");
-      $finish;
+  always @(posedge clock) if (reset) r <= 1'b1;
 
-   end
-
-   always #10 clock = ~clock;
-   reg r = 1'b0;
-
-   always @(posedge clock) if (reset) r <= 1'b1;
-
-   assert_test:
-      assert property (@(posedge clock) (reset | r))
-      else $error("%t: assertion triggered", $time);
+  assert_test :
+  assert property (@(posedge clock) (reset | r))
+  else $error("%t: assertion triggered", $time);
 
 endmodule

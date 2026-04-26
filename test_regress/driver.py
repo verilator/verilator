@@ -7,7 +7,6 @@ import collections
 import ctypes
 import glob
 import hashlib
-import json
 import logging
 import multiprocessing
 import os
@@ -696,6 +695,7 @@ class VlTest:
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
         self._start_time = time.time()
+        self._uses_asan = False
         self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
@@ -1127,6 +1127,9 @@ class VlTest:
         else:
             self.trace_format = 'vcd-c'  # pylint: disable=attribute-defined-outside-init
 
+        if re.search(r'-runtime-debug', checkflags):
+            self._uses_asan = True
+
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
             verilator_flags += ["--gdb"]
@@ -1144,8 +1147,6 @@ class VlTest:
             verilator_flags += ["--debug-partition"]
         if param['threads'] >= 0:
             verilator_flags += ["--threads", str(param['threads'])]
-        if param['vltmt'] and re.search(r'-trace-fst ', checkflags):
-            verilator_flags += ["--trace-threads 2"]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
         if param['make_main'] and param['verilator_make_gmake']:
@@ -1191,6 +1192,7 @@ class VlTest:
             'make_flags': [],
             'tee': True,
             'timing_loop': False,
+            'main_top_name': "top",
         }
         param.update(vars(self))
         param.update(kwargs)
@@ -1360,7 +1362,7 @@ class VlTest:
                 return
 
             if not param['fails'] and param['make_main']:
-                self._make_main(param['timing_loop'])
+                self._make_main(param['timing_loop'], param['main_top_name'])
 
             if (param['verilator_make_gmake']
                     or (not param['verilator_make_gmake'] and not param['verilator_make_cmake'])):
@@ -1696,6 +1698,13 @@ class VlTest:
             self._ok = False
         return self._ok
 
+    def parse_name(self, regex: str):
+        basename = os.path.basename(test.py_filename)
+        match = re.match(regex, basename.partition(".")[0])
+        if match is None:
+            test.error(f"Invalid test file name '{basename}")
+        return match.groups()
+
     def passes(self, is_ok=True):
         if not self.errors:
             self._ok = is_ok
@@ -1844,6 +1853,10 @@ class VlTest:
 
         if entering:
             print("driver: Entering directory '" + os.path.abspath(entering) + "'")
+
+        if self._uses_asan and platform.system() == "Darwin":
+            # Otherwise asan prints warning that causes mismatch with expected output
+            os.environ['MallocNanoZone'] = '0'
 
         # Execute command redirecting output, keeping order between stderr and stdout.
         # Must do low-level IO so GCC interaction works (can't be line-based)
@@ -2011,7 +2024,7 @@ class VlTest:
                     return size + line
         return size + firstline
 
-    def _make_main(self, timing_loop: bool) -> None:
+    def _make_main(self, timing_loop: bool, main_top_name: str) -> None:
         if timing_loop and self.sc:
             self.error("Cannot use timing loop and SystemC together!")
 
@@ -2108,7 +2121,7 @@ class VlTest:
             fh.write("    srand48(5);\n")  # Ensure determinism
             if self.verilated_randReset is not None and self.verilated_randReset != "":
                 fh.write("    contextp->randReset(" + str(self.verilated_randReset) + ");\n")
-            fh.write("    topp.reset(new " + self.vm_prefix + "{\"top\"});\n")
+            fh.write("    topp.reset(new " + self.vm_prefix + '{"' + main_top_name + '"});\n')
             if self.verilated_debug:
                 fh.write("    contextp->internalsDump()\n;")
 
@@ -2430,11 +2443,11 @@ class VlTest:
                 line = re.sub(r'CPU Time: +[0-9.]+ seconds[^\n]+', 'CPU Time: ###', line)
                 line = re.sub(r'\?v=[0-9.]+', '?v=latest', line)  # warning URL
                 line = re.sub(r'_h[0-9a-f]{8}_', '_h########_', line)
-                line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1',
-                              line)  # Avoid absolute paths
-                line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2',
-                              line)  # Avoid absolute paths
+                # Avoid absolute paths
+                line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1', line)
+                line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2', line)
                 line = re.sub(r' \/[^ ]+\/verilated_std.sv', ' verilated_std.sv', line)
+                line = re.sub(r'(With current working directory \')[^\']+\'', r"\1...'", line)
                 #
                 (line, n) = re.subn(r'Exiting due to.*', r"Exiting due to", line)
                 if n:
@@ -2497,58 +2510,19 @@ class VlTest:
             print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
             shutil.copy(fn1, fn2)
 
-    def vcd_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
-        """Test if two VCD files have logically-identical contents"""
-        # vcddiff to check transitions, if installed
-        cmd = "vcddiff --help"
-        out = test.run_capture(cmd, check=True)
-        cmd = 'vcddiff ' + fn1 + ' ' + fn2
-        out = test.run_capture(cmd, check=True)
-        if out != "":
-            cmd = 'vcddiff ' + fn2 + " " + fn1  # Reversed arguments
-            out = VtOs.run_capture(cmd, check=False)
-            if out != "":
-                print(out)
-                self.copy_if_golden(fn1, fn2)
-                self.error("VCD miscompares " + fn2 + " " + fn1)
-
-        # vcddiff doesn't check module and variable scope, so check that
-        # Also provides backup if vcddiff not installed
-        h1 = self._vcd_read(fn1)
-        h2 = self._vcd_read(fn2)
-        if ignore_attr:
-            h1 = {k: v for k, v in h1.items() if "$attr" not in v}
-            h2 = {k: v for k, v in h2.items() if "$attr" not in v}
-        a = json.dumps(h1, sort_keys=True, indent=1)
-        b = json.dumps(h2, sort_keys=True, indent=1)
-        if a != b:
+    def vcd_identical(self, fn1: str, fn2: str) -> None:
+        """Test if two VCD/FST files have logically-identical contents"""
+        cmd = VtOs.getenv_def('WAVEDIFF', 'wavediff') + ' --epsilon 0.0000001 ' + fn1 + ' ' + fn2
+        proc = subprocess.run([cmd], capture_output=True, text=True, shell=True, check=False)
+        if proc.returncode:
+            print(proc.stderr)
+            print(proc.stdout)
             self.copy_if_golden(fn1, fn2)
-            self.error("VCD hier miscompares " + fn1 + " " + fn2 + "\nGOT=" + a + "\nEXP=" + b +
-                       "\n")
+            self.error("VCD miscompares " + fn1 + " " + fn2)
 
-    def fst2vcd(self, fn1: str, fn2: str) -> None:
-        cmd = "fst2vcd -h"
-        out = VtOs.run_capture(cmd, check=False)
-        if out == "" or not re.search(r'Usage:', out):
-            self.skip("No fst2vcd installed")
-            return
-
-        cmd = 'fst2vcd -e -f "' + fn1 + '" -o "' + fn2 + '"'
-        print("\t " + cmd + "\n")  # Always print to help debug race cases
-        out = VtOs.run_capture(cmd, check=False)
-        print(out)
-
-    def fst_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
+    def fst_identical(self, fn1: str, fn2: str) -> None:
         """Test if two FST files have logically-identical contents"""
-        if fn1.endswith(".fst"):
-            tmp = fn1 + ".vcd"
-            self.fst2vcd(fn1, tmp)
-            fn1 = tmp
-        if fn2.endswith(".fst"):
-            tmp = fn2 + ".vcd"
-            self.fst2vcd(fn2, tmp)
-            fn2 = tmp
-        self.vcd_identical(fn1, fn2, ignore_attr)
+        self.vcd_identical(fn1, fn2)
 
     def saif_identical(self, fn1: str, fn2: str) -> None:
         """Test if two SAIF files have logically-identical contents"""
@@ -2561,41 +2535,16 @@ class VlTest:
             self.copy_if_golden(fn1, fn2)
             self.error("SAIF files miscompare")
 
-    def _vcd_read(self, filename: str) -> dict:
-        data = {}
-        with open(filename, 'r', encoding='latin-1') as fh:
-            hier_stack = ["TOP"]
-            var = []
-            for line in fh:
-                match1 = re.search(r'\$scope (module|struct|interface)\s+(\S+)', line)
-                match2 = re.search(r'(\$var (\S+)\s+\d+\s+)\S+\s+(\S+)', line)
-                match3 = re.search(r'(\$attrbegin .* \$end)', line)
-                line = line.rstrip()
-                # print("VR"+ ' '*len(hier_stack) +" L " + line)
-                if match1:  # $scope
-                    name = match1.group(2)
-                    # print("VR"+ ' '*len(hier_stack) +" scope " + line)
-                    hier_stack += [name]
-                    scope = '.'.join(hier_stack)
-                    data[scope] = match1.group(1) + " " + name
-                elif match2:  # $var
-                    # print("VR"+ ' '*len(hier_stack) +" var " + line)
-                    scope = '.'.join(hier_stack)
-                    var = match2.group(2)
-                    data[scope + "." + var] = match2.group(1) + match2.group(3)
-                elif match3:  # $attrbegin
-                    # print("VR"+ ' '*len(hier_stack) +" attr " + line)
-                    if var:
-                        scope = '.'.join(hier_stack)
-                        data[scope + "." + var + "#"] = match3.group(1)
-                elif re.search(r'\$enddefinitions', line):
-                    break
-                n = len(re.findall(r'\$upscope', line))
-                if n:
-                    for i in range(0, n):  # pylint: disable=unused-variable
-                        # print("VR"+ ' '*len(hier_stack) +" upscope " + line)
-                        hier_stack.pop()
-        return data
+    def trace_identical(self, traceFn: str, goldenFn: str) -> None:
+        match traceFn.rpartition(".")[-1]:
+            case "vcd":
+                self.vcd_identical(traceFn, goldenFn)
+            case "fst":
+                self.fst_identical(traceFn, goldenFn)
+            case "saif":
+                self.saif_identical(traceFn, goldenFn)
+            case _:
+                self.error("Unknown trace file format " + traceFn)
 
     def inline_checks(self) -> None:
         covfn = self.coverage_filename
@@ -2685,13 +2634,13 @@ class VlTest:
             self.error("File_grep: " + filename + ": Got='" + match.group(1) + "' Expected='" +
                        str(expvalue) + "' in regexp: '" + regexp + "'")
             return None
-        return [match.groups()]
+        return match.groups()
 
     def file_grep_count(self, filename: str, regexp, expcount: int) -> None:
         contents = self.file_contents(filename)
         if contents == "_Already_Errored_":
             return
-        count = len(re.findall(regexp, contents))
+        count = len(re.findall(regexp, contents, re.MULTILINE))
         if expcount != count:
             self.error("File_grep_count: " + filename + ": Got='" + str(count) + "' Expected='" +
                        str(expcount) + "' in regexp: '" + regexp + "'")
@@ -2701,7 +2650,7 @@ class VlTest:
             contents = self.file_contents(filename)
             if contents == "_Already_Errored_":
                 return
-            match = re.search(regexp, contents)
+            match = re.search(regexp, contents, re.MULTILINE)
             if match:
                 if expvalue is not None and str(expvalue) != match.group(1):
                     self.error("file_grep: " + filename + ": Got='" + match.group(1) +
@@ -3092,5 +3041,9 @@ if __name__ == '__main__':
     else:
         # Speed up single-test makes
         Args.driver_build_jobs_n = calc_jobs()
+
+    if Capabilities.have_dev_asan and platform.system() == "Darwin":
+        # Otherwise asan prints warning that causes mismatch with expected output
+        os.environ['MallocNanoZone'] = '0'
 
     run_them()

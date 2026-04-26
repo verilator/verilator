@@ -6,8 +6,8 @@
 
 //bug1587
 module t;
-   reg a[0];
-   reg b;
-   reg c;
-   initial c = (a != &b);
+  reg a[0];
+  reg b;
+  reg c;
+  initial c = (a != &b);
 endmodule

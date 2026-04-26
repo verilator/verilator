@@ -45,16 +45,16 @@ endclass
 
 module t;
 
-   int i;
+  int i;
 
-   initial begin
-      Cls c;
-      c = new;
-      i = $c(c, "->my_function()");
-      $c(c, "->my_imp_function();");
-      $c(c, "->my_inline_function();");
-      c = null;  // Causes destruction and All Finished
-      $finish;
-   end
+  initial begin
+    Cls c;
+    c = new;
+    i = $c(c, "->my_function()");
+    $c(c, "->my_imp_function();");
+    $c(c, "->my_inline_function();");
+    c = null;  // Causes destruction and All Finished
+    $finish;
+  end
 
 endmodule

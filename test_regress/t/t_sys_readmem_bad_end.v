@@ -6,16 +6,16 @@
 
 module t;
 
-   reg [175:0] hex [15:0];
+  reg [175:0] hex[15:0];
 
-   integer   i;
+  integer i;
 
-   initial begin
-      // No warning as has addresses
-      $readmemh("t/t_sys_readmem_bad_end2.mem", hex, 0, 15);
-      // Warning as wrong end address
-      $readmemh("t/t_sys_readmem_bad_end.mem", hex, 0, 15);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    // No warning as has addresses
+    $readmemh("t/t_sys_readmem_bad_end2.mem", hex, 0, 15);
+    // Warning as wrong end address
+    $readmemh("t/t_sys_readmem_bad_end.mem", hex, 0, 15);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

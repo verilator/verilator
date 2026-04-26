@@ -140,7 +140,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         TEST_CHECK_EQ(std::string{value.value.str}, binStr);
     }
 
-    // don't care for non verilator
+    // don't care for non-Verilator
     // (crashes on Icarus)
     if (TestSimulator::is_icarus()) {
         vpi_printf((PLI_BYTE8*)"Skipping property checks for simulator %s\n",

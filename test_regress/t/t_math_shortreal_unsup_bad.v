@@ -6,8 +6,8 @@
 
 module t;
 
-   shortreal s;
+  shortreal s;
 
-   initial s = 1.2345;
+  initial s = 1.2345;
 
 endmodule

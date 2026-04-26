@@ -9,21 +9,20 @@
 `endif
 
 class item;
-    bit [`WIDTH-1:0] data;
+  bit [`WIDTH-1:0] data;
 endclass
 
-module t ();
-    logic [`WIDTH-1:0] data;
-    item item0 = new;
+module t;
+  logic [`WIDTH-1:0] data;
+  item item0 = new;
 
-    initial begin
-        item0.data = `WIDTH'hda7ada7a;
-        data = item0.data;
+  initial begin
+    item0.data = `WIDTH'hda7ada7a;
+    data = item0.data;
 
-        if (data != `WIDTH'hda7ada7a)
-            $stop();
+    if (data != `WIDTH'hda7ada7a) $stop();
 
-        $write("*-* All Finished *-*\n");
-        $finish();
-    end
+    $write("*-* All Finished *-*\n");
+    $finish();
+  end
 endmodule

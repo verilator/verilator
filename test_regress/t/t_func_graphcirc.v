@@ -4,50 +4,52 @@
 // SPDX-FileCopyrightText: 2006 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
+module t (
+    input clk
+);
 
-   integer cyc; initial cyc = 0;
+  integer cyc;
+  initial cyc = 0;
 
-   always @(posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc == 1) begin
-         ReadContDisps;
-      end
-      else if (cyc == 5) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) begin
+      ReadContDisps;
+    end
+    else if (cyc == 5) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
 `ifndef verilator
-      DispContDisps;
+    DispContDisps;
 `endif
-   end
+  end
 
-   task ReadContDisps;
-      begin
-         $display("%m: Here: %d", cyc);
-      end
-   endtask
+  task ReadContDisps;
+    begin
+      $display("%m: Here: %d", cyc);
+    end
+  endtask
 
-   integer dindex;
+  integer dindex;
 
-   task DispContDisps;
-      /* verilator public */
-      begin
-         if (cyc >= 2) begin
-            if ( cyc >= 4 ) begin
-               dindex = dindex + 2; //*** Error line
-               $display("%m: DIndex increment %d", cyc);
+  task DispContDisps;
+    /* verilator public */
+    begin
+      if (cyc >= 2) begin
+        if (cyc >= 4) begin
+          dindex = dindex + 2;  //*** Error line
+          $display("%m: DIndex increment %d", cyc);
 `ifdef VERILATOR
-               $c("VL_PRINTF(\"Hello1?\\n\");");
+          $c("VL_PRINTF(\"Hello1?\\n\");");
 `endif
-            end
+        end
 `ifdef VERILATOR
-            $c("VL_PRINTF(\"Hello2?\\n\");");
-            $c("VL_PRINTF(\"Hello3?\\n\");");
+        $c("VL_PRINTF(\"Hello2?\\n\");");
+        $c("VL_PRINTF(\"Hello3?\\n\");");
 `endif
-         end
       end
-   endtask
+    end
+  endtask
 
 endmodule

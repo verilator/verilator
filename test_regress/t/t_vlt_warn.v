@@ -7,7 +7,7 @@
 // Try inline config
 `ifdef verilator
   `verilator_config
-    lint_off -rule CASEX -file "t/t_vlt_warn.v"
+   lint_off -rule CASEX -file "t/t_vlt_warn.v"
   `verilog
 `endif
 
@@ -15,20 +15,20 @@
 
 
 module t;
-   reg width_warn_var_line18 = 2'b11;  // Width warning - must be line 18
-   reg width_warn2_var_line19 = 2'b11;  // Width warning - must be line 19
-   reg width_warn3_var_line20 = 2'b11;  // Width warning - must be line 20
+  reg width_warn_var_line18 = 2'b11;  // Width warning - must be line 18
+  reg width_warn2_var_line19 = 2'b11;  // Width warning - must be line 19
+  reg width_warn3_var_line20 = 2'b11;  // Width warning - must be line 20
 
-   // Must not turn back on warning disabled via control file
-   // verilator lint_on CASEINCOMPLETE
-   // verilator lint_on CASEX
+  // Must not turn back on warning disabled via control file
+  // verilator lint_on CASEINCOMPLETE
+  // verilator lint_on CASEX
 
-   initial begin
-      casex (1'b1)
-        1'b0: $stop;
-      endcase
+  initial begin
+    casex (1'b1)
+      1'b0: $stop;
+    endcase
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

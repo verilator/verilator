@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls1;
-   randc int rc;
+  randc int rc;
 
-   constraint c_bad { soft rc > 4; }  // Bad, no soft on randc
+  constraint c_bad { soft rc > 4; }  // Bad, no soft on randc
 endclass
 
 module t;

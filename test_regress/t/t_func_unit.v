@@ -5,20 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 task tsk(output tfo);
-   tfo = 1'b0;
+  tfo = 1'b0;
 endtask
 
 module t (/*AUTOARG*/
-   // Outputs
-   to
-   );
-   output reg to[2:0];
+  // Outputs
+  to
+  );
+  output reg to[2:0];
 
-   integer i = 0;
+  integer i = 0;
 
-   initial begin
-      tsk(to[i]);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    tsk(to[i]);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -10,26 +10,26 @@
 // verilog_format: on
 
 typedef enum {
-   UVM_TLM_READ_COMMAND,
-   UVM_TLM_WRITE_COMMAND,
-   UVM_TLM_IGNORE_COMMAND
+  UVM_TLM_READ_COMMAND,
+  UVM_TLM_WRITE_COMMAND,
+  UVM_TLM_IGNORE_COMMAND
 } uvm_tlm_command_e;
 
 module t;
 
-   initial begin
-      automatic bit array[] = new [8];
-      automatic int unsigned m_length;
-      automatic uvm_tlm_command_e m_command;
+  initial begin
+    automatic bit array[] = new[8];
+    automatic int unsigned m_length;
+    automatic uvm_tlm_command_e m_command;
 
-      m_length = 2;
-      array = '{0, 0, 0, 0, 0, 0, 1, 0};
-      array = new [$bits(m_length)] (array);
-      m_command = uvm_tlm_command_e'({ << bit { array }});
+    m_length = 2;
+    array = '{0, 0, 0, 0, 0, 0, 1, 0};
+    array = new[$bits(m_length)] (array);
+    m_command = uvm_tlm_command_e'({<<bit{array}});
 
-      `checkh(m_command, 'h40)
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    `checkh(m_command, 'h40)
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

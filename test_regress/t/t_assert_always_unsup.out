@@ -1,16 +1,16 @@
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:21:7: Unsupported: always[] (in property expression)
-   21 |       always [2:5] a;
-      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:20:5: Unsupported: always[] (in property expression)
+   20 |     always [2:5] a;
+      |     ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:25:7: Unsupported: s_always (in property expression)
-   25 |       s_always [2:5] a;
-      |       ^~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:29:7: Unsupported: eventually[] (in property expression)
-   29 |       eventually [2:5] a;
-      |       ^~~~~~~~~~
-%Error: t/t_assert_always_unsup.v:33:20: syntax error, unexpected ']', expecting ':'
-   33 |       eventually [2] a;
-      |                    ^
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:24:5: Unsupported: s_always (in property expression)
+   24 |     s_always [2:5] a;
+      |     ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:28:5: Unsupported: eventually[] (in property expression)
+   28 |     eventually [2:5] a;
+      |     ^~~~~~~~~~
+%Error: t/t_assert_always_unsup.v:32:18: syntax error, unexpected ']', expecting ':'
+   32 |     eventually [2] a;
+      |                  ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Cannot continue
         ... This fatal error may be caused by the earlier error(s); resolve those first.

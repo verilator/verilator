@@ -5,9 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `line 6 "t/t_preproc.v" 0
+// verilog_format: off
 // This file intentionally includes some tabs
-
-`line 8 "t/t_preproc.v" 0
 //===========================================================================
 // Includes
  

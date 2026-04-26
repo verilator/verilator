@@ -203,7 +203,7 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
 VStringList V3HierBlock::hierBlockArgs() const {
     VStringList opts;
     const StrGParams gparamsStr = stringifyParams(m_params, false);
-    opts.push_back("--hierarchical-block ");
+    opts.emplace_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
     for (const StrGParam& pair : gparamsStr) {
@@ -315,7 +315,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     std::vector<V3HierBlock*> m_childrenp;
 
     // VISITORSs
-    void visit(AstNodeModule*) override {}  // Ignore all non AstModule
+    void visit(AstNodeModule*) override {}  // Ignore all non-AstModule
     void visit(AstModule* nodep) override {
         // Visit each module once
         if (nodep->user1SetOnce()) return;
@@ -346,7 +346,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         for (V3HierBlock* const childp : m_childrenp) new V3GraphEdge{m_graphp, blockp, childp, 1};
     }
     void visit(AstCell* nodep) override {
-        // Nothing to do for non AstModules because hierarchical block cannot exist under them.
+        // Nothing to do for non-AstModules because hierarchical block cannot exist under them.
         AstModule* const modp = VN_CAST(nodep->modp(), Module);
         if (!modp) return;
         // Depth-first traversal of module hierechy

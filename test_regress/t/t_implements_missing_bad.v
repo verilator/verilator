@@ -5,17 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface class Icls1;
-   pure virtual function int icf1;
-   pure virtual function int icf2;
+  pure virtual function int icf1;
+  pure virtual function int icf2;
 endclass
 
 class Cls implements Icls1;
-   virtual function int icf1;
-      return 1;
-   endfunction
-   // Bad missing icf2
+  virtual function int icf1;
+    return 1;
+  endfunction
+  // Bad missing icf2
 endclass
 
 module t;
-   Cls c;
+  Cls c;
 endmodule

@@ -6,74 +6,82 @@
 // SPDX-FileCopyrightText: 2017 Rob Stoddard
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Outputs
-   out,
-   // Inputs
-   data, up_down, clk, reset
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    out,
+    // Inputs
+    data,
+    up_down,
+    clk,
+    reset
+);
 
-   //----------Output Ports--------------
-   output [7:0] out;
-   //------------Input Ports--------------
-   //input [7:0] data ;
-   input [7:0]  data;
-   input        up_down, clk, reset;
-   //------------Internal Variables--------
-   reg [7:0]    out;
-   logic [7:0]  q_out;
+  //----------Output Ports--------------
+  output [7:0] out;
+  //------------Input Ports--------------
+  //input [7:0] data ;
+  input [7:0] data;
+  input up_down, clk, reset;
+  //------------Internal Variables--------
+  reg [7:0] out;
+  logic [7:0] q_out;
 
-   //-------------Code Starts Here-------
-   always @(posedge clk)
-     if (reset) begin // active high reset
-        out <= 8'b0 ;
-     end else if (up_down) begin
-        out <= out + 1;
-     end else begin
-        out <= q_out;
-     end
+  //-------------Code Starts Here-------
+  always @(posedge clk)
+    if (reset) begin  // active high reset
+      out <= 8'b0;
+    end
+    else if (up_down) begin
+      out <= out + 1;
+    end
+    else begin
+      out <= q_out;
+    end
 
-   // verilator lint_off PINMISSING
-   sub_mod sub_mod
-     (
+  // verilator lint_off PINMISSING
+  sub_mod sub_mod (
       .clk(clk),
       .data(data),
       .reset(reset),
       .q(q_out)
-      );
-   // verilator lint_on PINMISSING
+  );
+  // verilator lint_on PINMISSING
 
 endmodule
 
-module sub_mod (/*AUTOARG*/
-   // Outputs
-   q, test_out,
-   // Inouts
-   test_inout,
-   // Inputs
-   data, clk, reset
-   );
+module sub_mod (  /*AUTOARG*/
+    // Outputs
+    q,
+    test_out,
+    // Inouts
+    test_inout,
+    // Inputs
+    data,
+    clk,
+    reset
+);
 
-   //-----------Input Ports---------------
+  //-----------Input Ports---------------
 
-   input [7:0] data /*verilator public*/;
-   input       clk, reset;
-   inout       test_inout;  // Get rid of this, the problem goes away.
+  input [7:0] data  /*verilator public*/;
+  input clk, reset;
+  inout test_inout;  // Get rid of this, the problem goes away.
 
-   //-----------Output Ports---------------
-   output [7:0] q;
-   output       test_out;  // Not assigned,  no problem.
+  //-----------Output Ports---------------
+  output [7:0] q;
+  output test_out;  // Not assigned,  no problem.
 
-   logic [7:0]  que;
+  logic [7:0] que;
 
-   // Uncomment this line, the error goes away.
-   //assign test_inout = que;
+  // Uncomment this line, the error goes away.
+  //assign test_inout = que;
 
-   assign q = que;
-   always @ ( posedge clk)
-     if (~reset) begin
-        que <= 8'b0;
-     end else begin
-        que <= data;
-     end
+  assign q = que;
+  always @(posedge clk)
+    if (~reset) begin
+      que <= 8'b0;
+    end
+    else begin
+      que <= data;
+    end
 endmodule

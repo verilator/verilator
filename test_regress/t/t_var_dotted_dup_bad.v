@@ -6,14 +6,14 @@
 
 module t;
 
-   generate
-      begin
-         eh2_ram dccm_bank (.*);
-      end
-      begin
-         eh2_ram dccm_bank (.*);  // Error: duplicate
-      end
-   endgenerate
+  generate
+    begin
+      eh2_ram dccm_bank (.*);
+    end
+    begin
+      eh2_ram dccm_bank (.*);  // Error: duplicate
+    end
+  endgenerate
 
 endmodule
 

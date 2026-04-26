@@ -6,24 +6,24 @@
 
 package uvm_pkg;
 
-class uvm_reg_field; // extends uvm_object;
-   function void configure(bit overde, bit is_rand);
+  class uvm_reg_field;  // extends uvm_object;
+    function void configure(bit overde, bit is_rand);
       if (overde) is_rand = 0;
-      if (!is_rand) ;   // value.rand_mode(0);
+      if (!is_rand);  // value.rand_mode(0);
       // See issue #4567
-   endfunction
-endclass
+    endfunction
+  endclass
 
 endpackage
 
 module t;
 
-   initial begin
-      automatic uvm_pkg::uvm_reg_field c = new;
-      c.configure(1, 0);
-      c.configure(0, 0);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic uvm_pkg::uvm_reg_field c = new;
+    c.configure(1, 0);
+    c.configure(0, 0);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

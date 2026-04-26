@@ -4,21 +4,21 @@
 // SPDX-FileCopyrightText: 2005-2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   value
-   );
+module t (  /*AUTOARG*/
+    // Inputs
+    value
+);
 
-   input [3:0] value;
-   always @ (/*AS*/value) begin
-      casex (value)
-        default: $stop;
-      endcase
-      case (value)
-        4'b0000: $stop;
-        4'b1xxx: $stop;
-        default: $stop;
-      endcase
-   end
+  input [3:0] value;
+  always @(  /*AS*/ value) begin
+    casex (value)
+      default: $stop;
+    endcase
+    case (value)
+      4'b0000: $stop;
+      4'b1xxx: $stop;
+      default: $stop;
+    endcase
+  end
 
 endmodule

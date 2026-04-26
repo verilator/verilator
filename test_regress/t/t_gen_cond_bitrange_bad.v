@@ -10,97 +10,91 @@
 // SPDX-FileCopyrightText: 2012 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
-`define MAX_SIZE  3
+`define MAX_SIZE 3
 
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   // Set the parameters, so that we use a size less than MAX_SIZE
-   test_gen
-     #(.SIZE (2),
-       .MASK (2'b11))
-     i_test_gen (.clk (clk));
+  // Set the parameters, so that we use a size less than MAX_SIZE
+  test_gen #(
+      .SIZE(2),
+      .MASK(2'b11)
+  ) i_test_gen (
+      .clk(clk)
+  );
 
-   // This is only a compilation test, so we can immediately finish
-   always @(posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  // This is only a compilation test, so we can immediately finish
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-endmodule // t
+endmodule  // t
 
 
-module test_gen
+module test_gen #(
+    parameter SIZE = `MAX_SIZE,
+    MASK = `MAX_SIZE'b0
+) (
+    input clk
+);
 
-  #( parameter
-     SIZE = `MAX_SIZE,
-     MASK = `MAX_SIZE'b0)
+  // Generate blocks that all have errors in applying short-circuting to
+  // generate "if" conditionals.
 
- (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Attempt to access invalid bits of MASK in different ways
+  generate
+    genvar g;
 
-   input clk;
-
-   // Generate blocks that all have errors in applying short-circuting to
-   // generate "if" conditionals.
-
-   // Attempt to access invalid bits of MASK in different ways
-   generate
-      genvar g;
-
-      for (g = 0; g < `MAX_SIZE; g = g + 1) begin
-         if ((g < (SIZE + 1)) && MASK[g]) begin
-            always @(posedge clk) begin
+    for (g = 0; g < `MAX_SIZE; g = g + 1) begin
+      if ((g < (SIZE + 1)) && MASK[g]) begin
+        always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-               $write ("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
+          $write("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-            end
-         end
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   generate
-      for (g = 0; g < `MAX_SIZE; g = g + 1) begin
-         if ((g < SIZE) && MASK[g + 1]) begin
-            always @(posedge clk) begin
+  generate
+    for (g = 0; g < `MAX_SIZE; g = g + 1) begin
+      if ((g < SIZE) && MASK[g+1]) begin
+        always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-               $write ("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
+          $write("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-            end
-         end
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   // Attempt to short-circuit bitwise AND
-   generate
-      for (g = 0; g < `MAX_SIZE; g = g + 1) begin
-         if ((g < (SIZE)) & MASK[g]) begin
-            always @(posedge clk) begin
+  // Attempt to short-circuit bitwise AND
+  generate
+    for (g = 0; g < `MAX_SIZE; g = g + 1) begin
+      if ((g < (SIZE)) & MASK[g]) begin
+        always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-               $write ("Bitwise AND generate if MASK [%1d] = %d\n", g, MASK[g]);
+          $write("Bitwise AND generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-            end
-         end
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   // Attempt to short-circuit bitwise OR
-   generate
-      for (g = 0; g < `MAX_SIZE; g = g + 1) begin
-         if (!((g >= SIZE) | ~MASK[g])) begin
-            always @(posedge clk) begin
+  // Attempt to short-circuit bitwise OR
+  generate
+    for (g = 0; g < `MAX_SIZE; g = g + 1) begin
+      if (!((g >= SIZE) | ~MASK[g])) begin
+        always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-               $write ("Bitwise OR generate if MASK [%1d] = %d\n", g, MASK[g]);
+          $write("Bitwise OR generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-            end
-         end
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
 endmodule

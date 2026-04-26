@@ -1,0 +1,6 @@
+%Error: t/t_sequence_nonconst_delay_unsup.v:14:38: Delay value is not a non-negative elaboration-time constant (IEEE 1800-2023 16.7)
+                                                 : ... note: In instance 't'
+   14 |   assert property (@(posedge clk) (a ##delay b) and (c ##1 d));
+      |                                      ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2004 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
 `define DEFINED
 

@@ -27,6 +27,21 @@ use vars qw($Debug @Opt_Verilator_Sw);
 autoflush STDOUT 1;
 autoflush STDERR 1;
 
+# Guard against unbounded recursive re-entry. Hierarchical / --build flows
+# legitimately re-enter the wrapper a few levels deep (wrapper -> verilator_bin
+# -> make -> wrapper -> ...); a misconfigured VERILATOR_BIN, VERILATOR_GDB or
+# VERILATOR_VALGRIND that points back at this wrapper, however, recurses
+# without bound and exhausts the OS PID table. Use VERILATOR_RUNNING as a
+# depth counter and cap it well above any real nesting.
+my $verilator_running_max = 16;
+my $verilator_running_depth = ($ENV{VERILATOR_RUNNING} || 0) + 1;
+if ($verilator_running_depth > $verilator_running_max) {
+    die "%Error: verilator: re-entered $verilator_running_depth levels deep"
+        . " via \$VERILATOR_RUNNING; check that VERILATOR_BIN, VERILATOR_GDB"
+        . " and VERILATOR_VALGRIND do not resolve back to this wrapper script.\n";
+}
+$ENV{VERILATOR_RUNNING} = $verilator_running_depth;
+
 $Debug = 0;
 my $opt_aslr;
 my $opt_gdb;
@@ -149,7 +164,7 @@ if ($opt_gdb) {
         . verilator_bin()
         . " " . join(' ', @quoted_sw));
 } else {
-    # Normal, non gdb
+    # Normal, non-gdb
     run(ulimit_stack_unlimited() . aslr(1) . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
@@ -213,14 +228,22 @@ sub ulimit_stack_unlimited {
     # AddressSanitizer doesn't work with 'ulimit -s unlimted'
     if (`${\(verilator_bin())} --get-supported DEV_ASAN` eq "1\n") {
         # Use host 'physical memory / #cores / 8' instead
-        open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
-        while (<$fh>) {
-            if (m/MemTotal:\s+(\d+)\s+kB/) {
-                $limit = int(int($1)/`nproc`/8);
-                last;
+        if ($^O eq "darwin") {
+            my $membytes = `sysctl -n hw.memsize`;
+            chomp $membytes;
+            my $ncpu = `sysctl -n hw.ncpu`;
+            chomp $ncpu;
+            $limit = int(int($membytes / 1024) / $ncpu / 8);
+        } else {
+            open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
+            while (<$fh>) {
+                if (m/MemTotal:\s+(\d+)\s+kB/) {
+                    $limit = int(int($1)/`nproc`/8);
+                    last;
+                }
             }
+            close($fh);
         }
-        close($fh);
     }
     system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
@@ -345,10 +368,12 @@ detailed descriptions of these arguments.
      -CFLAGS <flags>            C++ compiler arguments for makefile
     --compiler <compiler-name>  Tune for specified C++ compiler
     --compiler-include          Include additional header in the precompiled one
+    --constraint-array-limit <size>   Maximum array size for constraint array reduction
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-expr             Enable expression coverage
     --coverage-expr-max <value>     Maximum permutations allowed for an expression
+    --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
@@ -370,6 +395,7 @@ detailed descriptions of these arguments.
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
+    --dump-dfg-patterns         Enable dumping Dfg pattern statistics
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files
@@ -390,6 +416,7 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
+    --func-recursion-depth <value>  Maximum recursive constant function depth
     --future0 <option>          Ignore an option for compatibility
     --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage
@@ -496,7 +523,6 @@ detailed descriptions of these arguments.
     --no-std-package            Prevent parsing standard package
     --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
-    --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading
@@ -517,7 +543,6 @@ detailed descriptions of these arguments.
     --trace-params              Enable tracing of parameters
     --trace-saif                Enable SAIF file creation
     --trace-structs             Enable tracing structure names
-    --trace-threads <threads>   Enable FST waveform creation on separate threads
     --no-trace-top              Do not emit traces for signals in the top module generated by verilator
     --trace-underscore          Enable tracing of _signals
     --trace-vcd                 Enable VCD waveform creation
@@ -576,6 +601,7 @@ description of these arguments.
      +verilator+quiet                      Minimize additional printing
      +verilator+rand+reset+<value>         Set random reset technique
      +verilator+seed+<value>               Set random seed
+     +verilator+solver+file+<filename>     Set random solver log filename
      +verilator+V                          Show verbose version and config
      +verilator+version                    Show version and exit
      +verilator+wno+unsatconstr+<value>    Disable constraint warnings

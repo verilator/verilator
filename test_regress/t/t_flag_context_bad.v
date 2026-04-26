@@ -6,6 +6,6 @@
 
 module t;
 
-   wire [2:0] foo = 5'b11111;
+  wire [2:0] foo = 5'b11111;
 
 endmodule

@@ -55,7 +55,7 @@ jobs:
     steps:
 
       - name: Download repository archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.archive }}
           path: ${{ github.workspace }}
@@ -99,11 +99,13 @@ jobs:
 
       - name: Upload code coverage data
         if: ${{ inputs.dev-gcov }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info
           name: code-coverage-${{ inputs.suite }}
 
       - name: Fail job if a test failed
         if: ${{ steps.run-test.outcome == 'failure' && !cancelled() }}
-        run: exit 1
+        run: |-
+          echo "Click on '> Tests' arrow above (or on other steps), to expand it, and see the failure reasons"
+          exit 1

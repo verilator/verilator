@@ -7,9 +7,9 @@
 module t;
 
 <<<<<<< HEAD  // Intentional test: This conflict marker should be here
-   initial $display("Hello");
+  initial $display("Hello");
 =======   // Intentional test: This conflict marker should be here
-   initial $display("Goodbye");
+  initial $display("Goodbye");
 >>>>>>> MERGE  // Intentional test: This conflict marker should be here
 
 endmodule

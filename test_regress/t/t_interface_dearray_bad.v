@@ -11,31 +11,31 @@ typedef virtual A a_t;
 typedef a_t a_array_t[6];
 
 class C;
-   a_array_t vif;
+  a_array_t vif;
 endclass
 
-module tb_top();
-   A a[6](), b[7](), f[6]();
-   C c, d, e;
-   a_array_t g;
+module tb_top ();
+  A a[6] (), b[7] (), f[6] ();
+  C c, d, e;
+  a_array_t g;
 
-   initial begin
-      a = f;
+  initial begin
+    a = f;
 
-      c = new();
-      c.vif = b;
+    c = new();
+    c.vif = b;
 
-      d = new();
+    d = new();
 
-      for (int i = 0; i < 6; ++i) begin
-         d.vif[i] = a[i];
-      end
+    for (int i = 0; i < 6; ++i) begin
+      d.vif[i] = a[i];
+    end
 
-      e = new();
-      e.vif = b[0:5];
+    e = new();
+    e.vif = b[0:5];
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

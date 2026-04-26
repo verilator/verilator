@@ -92,8 +92,9 @@ class EmitCImp final : public EmitCFunc {
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
-        m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                         "(" + modName + "* vlSelf);");
+        if (modp->ctorVarReset())
+            m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
+                             "(" + modName + "* vlSelf);");
         puts("\n");
 
         const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
@@ -148,7 +149,7 @@ class EmitCImp final : public EmitCFunc {
         }
 
         putsDecoration(modp, "// Reset structure values\n");
-        puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
+        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");
@@ -179,7 +180,9 @@ class EmitCImp final : public EmitCFunc {
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp) {\n");
+                 "linescovp,\n");
+            puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
+                 "fsmTagp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -197,10 +200,14 @@ class EmitCImp final : public EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            puts("\"hier\",fullhier,");
+            puts("\"hier\",fullhier.c_str(),");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
-            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
+            puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp,");
+            puts("  (fsmVarp[0] ? \"fsm_var\" : \"\"), fsmVarp,");
+            puts("  (fsmFromp[0] ? \"fsm_from\" : \"\"), fsmFromp,");
+            puts("  (fsmTop[0] ? \"fsm_to\" : \"\"), fsmTop,");
+            puts("  (fsmTagp[0] ? \"fsm_tag\" : \"\"), fsmTagp);\n");
             puts("}\n");
         }
         if (v3Global.opt.coverageToggle()) {
@@ -236,7 +243,7 @@ class EmitCImp final : public EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            puts("\"hier\",fullhier,");
+            puts("\"hier\",fullhier.c_str(),");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentWithIndex.c_str(),");
             puts("  \"\", \"\");\n");  //  linescov argument, but in toggle coverage it is always
@@ -626,27 +633,47 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
+        std::string direction;
+        direction = nodep->declDirection().traceSigDirection();
+
+        AstCCall* const callp = nodep->dtypeCallp();
+        if (callp) {
+            callp->argTypes(callp->argTypes() + ", " + cvtToStr(nodep->fidx()) + ", c+"
+                            + cvtToStr(nodep->code()) + ", " + direction);
+            return;
+        }
+
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("tracep->declDouble(");
+            puts("VL_TRACE_DECL_DOUBLE");
         } else if (nodep->isWide()) {
-            puts("tracep->declArray(");
+            puts("VL_TRACE_DECL_WIDE");
         } else if (nodep->isQuad()) {
-            puts("tracep->declQuad(");
+            puts("VL_TRACE_DECL_QUAD");
         } else if (nodep->bitRange().ranged()) {
-            puts("tracep->declBus(");
+            puts("VL_TRACE_DECL_BUS");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("tracep->declEvent(");
+            puts("VL_TRACE_DECL_EVENT");
         } else {
-            puts("tracep->declBit(");
+            puts("VL_TRACE_DECL_BIT");
+        }
+
+        if (nodep->arrayRange().ranged()) {
+            puts("_ARRAY(tracep");
+        } else {
+            puts("(tracep");
         }
 
         // Code
-        puts("c+" + cvtToStr(nodep->code()));
+        puts(",c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
 
         // Function index
         puts(",");
-        puts(cvtToStr(nodep->fidx()));
+        if (nodep->inDtypeFunc()) {
+            puts("fidx");
+        } else {
+            puts(cvtToStr(nodep->fidx()));
+        }
 
         // Name
         puts(",");
@@ -656,14 +683,10 @@ class EmitCTrace final : public EmitCFunc {
         puts("," + cvtToStr(enumNum));
 
         // Direction
-        if (nodep->declDirection().isInout()) {
-            puts(", VerilatedTraceSigDirection::INOUT");
-        } else if (nodep->declDirection().isWritable()) {
-            puts(", VerilatedTraceSigDirection::OUTPUT");
-        } else if (nodep->declDirection().isNonOutput()) {
-            puts(", VerilatedTraceSigDirection::INPUT");
+        if (nodep->inDtypeFunc()) {
+            puts(", direction");
         } else {
-            puts(", VerilatedTraceSigDirection::NONE");
+            puts(", " + direction);
         }
 
         // Kind
@@ -676,9 +699,11 @@ class EmitCTrace final : public EmitCFunc {
 
         // Array range
         if (nodep->arrayRange().ranged()) {
-            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
-        } else {
-            puts(", false,-1");
+            if (nodep->arrayRange().ascending()) {
+                puts(", (i + " + std::to_string(nodep->arrayRange().lo()) + ")");
+            } else {
+                puts(", (" + std::to_string(nodep->arrayRange().hi()) + " - i)");
+            }
         }
 
         // Bit range
@@ -733,11 +758,13 @@ class EmitCTrace final : public EmitCFunc {
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        puts(v3Global.opt.useTraceOffload() && nodep->traceType() == VTraceType::CHANGE
-                 ? "(base+"
-                 : "(oldp+");
+        puts("(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
+        const VNumRange& arrayRange = nodep->declp()->arrayRange();
+        if (arrayRange.ranged() && !arrayRange.ascending()) {
+            arrayindex = arrayRange.elements() - 1 - arrayindex;
+        }
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
@@ -754,16 +781,7 @@ class EmitCTrace final : public EmitCFunc {
                 puts("VL_SC_BV_DATAP(");
             }
             iterateConst(varrefp);  // Put var name out
-            // Tracing only supports 1D arrays
-            if (nodep->declp()->arrayRange().ranged()) {
-                if (arrayindex == -2) {
-                    puts("[i]");
-                } else if (arrayindex == -1) {
-                    puts("[0]");
-                } else {
-                    puts("[" + cvtToStr(arrayindex) + "]");
-                }
-            }
+            emitTraceIndex(nodep, arrayindex);
             if (varp->isSc()) puts(".read()");
             if (emitTraceIsScUint(nodep)) {
                 puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
@@ -776,7 +794,21 @@ class EmitCTrace final : public EmitCFunc {
         } else {
             puts("(");
             iterateConst(nodep->valuep());
+            emitTraceIndex(nodep, arrayindex);
             puts(")");
+        }
+    }
+
+    void emitTraceIndex(const AstTraceInc* const nodep, int arrayindex) {
+        // Tracing only supports 1D arrays
+        if (nodep->declp()->arrayRange().ranged()) {
+            if (arrayindex == -2) {
+                puts("[i]");
+            } else if (arrayindex == -1) {
+                puts("[0]");
+            } else {
+                puts("[" + cvtToStr(arrayindex) + "]");
+            }
         }
     }
 
@@ -798,14 +830,20 @@ class EmitCTrace final : public EmitCFunc {
         EmitCFunc::visit(nodep);
     }
     void visit(AstTracePushPrefix* nodep) override {
-        putns(nodep, "tracep->pushPrefix(");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        putns(nodep, "VL_TRACE_PUSH_PREFIX(tracep, ");
+        if (nodep->quotedPrefix()) {
+            putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        } else {
+            puts(nodep->prefix());
+        }
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
+        puts(", " + std::to_string(nodep->left()));
+        puts(", " + std::to_string(nodep->right()));
         puts(");\n");
     }
     void visit(AstTracePopPrefix* nodep) override {  //
-        putns(nodep, "tracep->popPrefix();\n");
+        putns(nodep, "VL_TRACE_POP_PREFIX(tracep);\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());

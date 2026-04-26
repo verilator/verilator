@@ -6,11 +6,11 @@
 
 module t;
 
-   logic [31:0] a;
+  logic [31:0] a;
 
-   initial begin
-      a = 1234;
-      if (a ==? 1.0) $stop;  // Bad
-   end
+  initial begin
+    a = 1234;
+    if (a ==? 1.0) $stop;  // Bad
+  end
 
 endmodule

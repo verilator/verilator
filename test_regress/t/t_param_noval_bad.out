@@ -7,27 +7,27 @@
                                   : ... note: In instance 't'
     7 | module t #(parameter P, parameter type T);
       |                                        ^
-%Warning-WIDTHTRUNC: t/t_param_noval_bad.v:10:7: Logical operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_param_noval_bad.v:10:5: Logical operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
                                                : ... note: In instance 't'
-   10 |       for (j=0; P; j++)
-      |       ^~~
+   10 |     for (j=0; P; j++)
+      |     ^~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Error: t/t_param_noval_bad.v:10:7: Non-genvar used in generate for: 'j'
+%Error: t/t_param_noval_bad.v:10:5: Non-genvar used in generate for: 'j'
                                   : ... note: In instance 't'
-   10 |       for (j=0; P; j++)
-      |       ^~~
-%Error: t/t_param_noval_bad.v:10:7: Loop unrolling failed.
+   10 |     for (j=0; P; j++)
+      |     ^~~
+%Error: t/t_param_noval_bad.v:10:5: Loop unrolling failed.
                                   : ... note: In instance 't'
-   10 |       for (j=0; P; j++)
-      |       ^~~
-%Error-UNSUPPORTED: t/t_param_noval_bad.v:10:7: Unsupported: Can't unroll generate for; Unable to unroll loop
+   10 |     for (j=0; P; j++)
+      |     ^~~
+%Error-UNSUPPORTED: t/t_param_noval_bad.v:10:5: Unsupported: Can't unroll generate for; Unable to unroll loop
                                               : ... note: In instance 't'
-   10 |       for (j=0; P; j++)
-      |       ^~~
+   10 |     for (j=0; P; j++)
+      |     ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_param_noval_bad.v:10:7: For loop doesn't have genvar index, or is malformed
+%Error: t/t_param_noval_bad.v:10:5: For loop doesn't have genvar index, or is malformed
                                   : ... note: In instance 't'
-   10 |       for (j=0; P; j++)
-      |       ^~~
+   10 |     for (j=0; P; j++)
+      |     ^~~
 %Error: Exiting due to

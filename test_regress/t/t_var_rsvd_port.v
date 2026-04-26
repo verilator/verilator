@@ -4,19 +4,19 @@
 // SPDX-FileCopyrightText: 2005 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   bool
-   );
+module t (  /*AUTOARG*/
+    // Inputs
+    bool
+);
 
-   input bool;  // BAD
+  input bool;  // BAD
 
-   reg  vector; // OK, as not public
-   reg  switch /*verilator public*/;    // Bad
-   reg  free /*verilator public*/;    // OK, not actually a keyword
+  reg vector;  // OK, as not public
+  reg switch  /*verilator public*/;  // Bad
+  reg free  /*verilator public*/;  // OK, not actually a keyword
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

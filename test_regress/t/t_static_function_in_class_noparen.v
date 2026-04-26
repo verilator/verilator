@@ -16,7 +16,7 @@ class Foo;
   endfunction
 endclass
 
-module t();
+module t;
   initial begin
     int v;
 

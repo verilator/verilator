@@ -5,27 +5,27 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub #(10,11,12,13) sub ();
+  sub #(10, 11, 12, 13) sub ();
 
 endmodule
 
-module  sub ();
-   parameter A = 0;
-   parameter B = 1;
+module sub ();
+  parameter A = 0;
+  parameter B = 1;
 
-   ip ip();
+  ip ip ();
 
-   parameter C = 2;
-   parameter D = 3;
+  parameter C = 2;
+  parameter D = 3;
 
-   initial begin
-      if (A!=10) $stop;
-      if (B!=11) $stop;
-      if (C!=12) $stop;
-      if (D!=13) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (A != 10) $stop;
+    if (B != 11) $stop;
+    if (C != 12) $stop;
+    if (D != 13) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 

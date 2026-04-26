@@ -489,7 +489,9 @@ class EmitCModel final : public EmitCFunc {
               "void " + topModNameProtected + "__" + protect("_eval_final") + selfDecl + ";\n");
         // ::final
         puts("\nVL_ATTR_COLD void " + EmitCUtil::topClassName() + "::final() {\n");
+        puts("contextp()->executingFinal(true);\n");
         puts(/**/ topModNameProtected + "__" + protect("_eval_final") + "(&(vlSymsp->TOP));\n");
+        puts("contextp()->executingFinal(false);\n");
         puts("}\n");
 
         putSectionDelimiter("Implementations of abstract methods from VerilatedModel\n");
@@ -517,8 +519,6 @@ class EmitCModel final : public EmitCFunc {
                             + "::traceConfig() const {\n");
             puts("return std::unique_ptr<VerilatedTraceConfig>{new VerilatedTraceConfig{");
             puts(v3Global.opt.useTraceParallel() ? "true" : "false");
-            puts(v3Global.opt.useTraceOffload() ? ", true" : ", false");
-            puts(v3Global.opt.useFstWriterThread() ? ", true" : ", false");
             puts("}};\n");
             puts("};\n");
         }

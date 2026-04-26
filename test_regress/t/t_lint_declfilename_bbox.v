@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t_lint_declfilename_bbox ();
-   parameter IN = 0;
-   if (IN) begin : gen_hasbbox
-      // Should not warn, see bug2430
-      BLACKBOXED bboxed ();
-   end
+  parameter IN = 0;
+  if (IN) begin : gen_hasbbox
+    // Should not warn, see bug2430
+    BLACKBOXED bboxed ();
+  end
 endmodule

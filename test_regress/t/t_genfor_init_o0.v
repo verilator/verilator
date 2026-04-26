@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   genvar i;
-   for (i = 0; i < 0; i = i + 1) begin end
+  genvar i;
+  for (i = 0; i < 0; i = i + 1) begin
+  end
 endmodule

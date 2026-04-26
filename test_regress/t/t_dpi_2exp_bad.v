@@ -8,11 +8,13 @@
 
 module t;
 
-   export "DPI-C" task dpix_twice;
-   export "DPI-C" dpix_t_int_renamed = task dpix_twice;
-   task dpix_twice(input int i, output int o);  o = ~i; endtask
+  export "DPI-C" task dpix_twice;
+  export "DPI-C" dpix_t_int_renamed = task dpix_twice;
+  task dpix_twice(input int i, output int o);
+    o = ~i;
+  endtask
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 endmodule

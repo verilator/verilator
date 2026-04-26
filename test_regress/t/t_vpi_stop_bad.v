@@ -8,12 +8,12 @@
 
 module t;
 
-   import "DPI-C" function void dpii_test();
+  import "DPI-C" function void dpii_test();
 
-   initial begin
-      dpii_test();
-      $display("Should have stopped above");
-      //$write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    dpii_test();
+    $display("Should have stopped above");
+    //$write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

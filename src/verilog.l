@@ -848,6 +848,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
+  /* Experimental Verilator-specific FSM coverage controls. These names were
+   * chosen to match the current extractor behavior, not a published synthesis
+   * or simulator pragma standard, so they may evolve as we settle on longer-
+   * term compatibility/aliasing.
+   */
+  "/*verilator fsm_arc_include_cond*/"  { FL; return yVL_FSM_ARC_INCL_COND; }
+  "/*verilator fsm_reset_arc*/"         { FL; return yVL_FSM_RESET_ARC; }
+  "/*verilator fsm_state*/"             { FL; return yVL_FSM_STATE; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
   "/*verilator timing_off*/"            { FL_FWD; PARSEP->lexFileline()->timingOn(false); FL_BRK; }
@@ -1172,6 +1180,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                                                   FL_BRK; }
 
   /* Verilator */
+  /* See also V3ParseImp::preprocDumps() */
   "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
   "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
   "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }

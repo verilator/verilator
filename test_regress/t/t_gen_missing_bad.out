@@ -1,6 +1,6 @@
-%Error-MODMISSING: t/t_gen_missing.v:43:20: Cannot find file containing module: 'foo_not_needed'
-   43 |                    foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
-      |                    ^~~~~~~~~~~~~~
+%Error-MODMISSING: t/t_gen_missing.v:43:14: Cannot find file containing module: 'foo_not_needed'
+   43 |              foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
+      |              ^~~~~~~~~~~~~~
                    ... For error description see https://verilator.org/warn/MODMISSING?v=latest
                    ... Looked in:
                         t/foo_not_needed
@@ -12,4 +12,5 @@
                         obj_vlt/t_gen_missing_bad/foo_not_needed
                         obj_vlt/t_gen_missing_bad/foo_not_needed.v
                         obj_vlt/t_gen_missing_bad/foo_not_needed.sv
+                   ... With current working directory '...'
 %Error: Exiting due to

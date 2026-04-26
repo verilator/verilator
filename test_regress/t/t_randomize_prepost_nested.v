@@ -10,7 +10,7 @@
 // verilog_format: on
 
 // Test: pre/post_randomize callbacks on nested rand class objects and inherited methods
-// Covers: IEEE 1800-2017 Section 18.4.1 recursive callback invocation
+// Covers: IEEE 1800-2023 18.4.1 recursive callback invocation
 
 // --- Inherited callbacks (no override) ---
 

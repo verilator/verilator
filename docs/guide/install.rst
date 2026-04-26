@@ -61,7 +61,7 @@ In brief, to install from git:
 
    # Prerequisites:
    #sudo apt-get install git help2man perl python3 make autoconf g++ flex bison ccache
-   #sudo apt-get install libgoogle-perftools-dev numactl perl-doc
+   #sudo apt-get install libgoogle-perftools-dev libjemalloc-dev numactl perl-doc
    #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
    #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
    #sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
@@ -144,7 +144,7 @@ installed for good performance:
 
    sudo apt-get install ccache  # If present at build, needed for run
    sudo apt-get install mold  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev numactl
+   sudo apt-get install libjemalloc-dev numactl
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:

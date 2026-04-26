@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial disable fork;
+  initial disable fork;
 endmodule

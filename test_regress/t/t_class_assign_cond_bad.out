@@ -1,22 +1,22 @@
-%Error: t/t_class_assign_cond_bad.v:22:25: Incompatible types of operands of condition operator: CLASSREFDTYPE 'Cls1' and CLASSREFDTYPE 'Cls2'
+%Error: t/t_class_assign_cond_bad.v:22:23: Incompatible types of operands of condition operator: CLASSREFDTYPE 'Cls1' and CLASSREFDTYPE 'Cls2'
                                          : ... note: In instance 't'
-   22 |       c1 = (c1 != null) ? c1 : c2;
-      |                         ^
+   22 |     c1 = (c1 != null) ? c1 : c2;
+      |                       ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_assign_cond_bad.v:23:10: Assign RHS expects a CLASSREFDTYPE 'Cls1', got CLASSREFDTYPE 'Cls2'
+%Error: t/t_class_assign_cond_bad.v:23:8: Assign RHS expects a CLASSREFDTYPE 'Cls1', got CLASSREFDTYPE 'Cls2'
+                                        : ... note: In instance 't'
+   23 |     c1 = (c1 != null) ? c2 : c2;
+      |        ^
+%Error: t/t_class_assign_cond_bad.v:24:23: Incompatible types of operands of condition operator: BASICDTYPE 'bit' and CLASSREFDTYPE 'Cls2'
                                          : ... note: In instance 't'
-   23 |       c1 = (c1 != null) ? c2 : c2;
-      |          ^
-%Error: t/t_class_assign_cond_bad.v:24:25: Incompatible types of operands of condition operator: BASICDTYPE 'logic' and CLASSREFDTYPE 'Cls2'
+   24 |     c2 = (c1 == null) ? 1'b1 : c2;
+      |                       ^
+%Error: t/t_class_assign_cond_bad.v:24:8: Assign RHS expects a CLASSREFDTYPE 'Cls2', got BASICDTYPE 'bit'
+                                        : ... note: In instance 't'
+   24 |     c2 = (c1 == null) ? 1'b1 : c2;
+      |        ^
+%Error: t/t_class_assign_cond_bad.v:25:27: Incompatible types of operands of condition operator: CLASSREFDTYPE 'ExtCls1' and CLASSREFDTYPE 'Cls1'
                                          : ... note: In instance 't'
-   24 |       c2 = (c1 == null) ? 1'b1 : c2;
-      |                         ^
-%Error: t/t_class_assign_cond_bad.v:24:10: Assign RHS expects a CLASSREFDTYPE 'Cls2', got BASICDTYPE 'logic'
-                                         : ... note: In instance 't'
-   24 |       c2 = (c1 == null) ? 1'b1 : c2;
-      |          ^
-%Error: t/t_class_assign_cond_bad.v:25:29: Incompatible types of operands of condition operator: CLASSREFDTYPE 'ExtCls1' and CLASSREFDTYPE 'Cls1'
-                                         : ... note: In instance 't'
-   25 |       ext_c1 = (c1 == null) ? ext_c1 : c1;
-      |                             ^
+   25 |     ext_c1 = (c1 == null) ? ext_c1 : c1;
+      |                           ^
 %Error: Exiting due to

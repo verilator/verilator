@@ -6,30 +6,28 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   reg [31:0]      count        /*verilator public_flat_rd */;
+  reg [31:0] count  /*verilator public_flat_rd */;
 
-   integer        status;
+  integer status;
 
-   // Test loop
-   initial begin
-      count = 0;
-   end
+  // Test loop
+  initial begin
+    count = 0;
+  end
 
-   always @(posedge clk) begin
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-      $display("[%0t] clk", $time);
+    $display("[%0t] clk", $time);
 `endif
-      count <= count + 2;
-      if (count == 1000) begin
-         // See C++ code: $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    count <= count + 2;
+    if (count == 1000) begin
+      // See C++ code: $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule : t

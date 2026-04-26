@@ -11,7 +11,7 @@
 
 // Example from IEEE 1800-2023 10.6.2
 
-  module t;
+module t;
   logic a, b, c, d;
   wire e;
   and and1 (e, a, b, c);

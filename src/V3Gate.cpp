@@ -429,11 +429,11 @@ class GateOkVisitor final : public VNVisitorConst {
 
         // We only allow a LHS ref for the var being set, and a RHS ref for
         // something else being read.
+        AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
             if (m_lhsVarRef) clearSimple(">1 write refs");
             m_lhsVarRef = nodep;
         } else {
-            AstVarScope* const vscp = nodep->varScopep();
             // TODO: possible bug, should it be >= 1 as add is below?
             if (m_readVscps.size() > 1) {
                 if (m_buffersOnly) clearSimple(">1 rhs varRefs");
@@ -456,7 +456,7 @@ class GateOkVisitor final : public VNVisitorConst {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
-    void visit(AstCReset* nodep) override {
+    void visit(AstCReset* /*nodep*/) override {
         if (!m_isSimple) return;
         // CReset is pure because we can optimize assignments, but if is
         // the only assignment to a variable we still need to initial
@@ -692,11 +692,17 @@ class GateInline final {
                 }
             }
 
+            AstVarScope* const vscp = vVtxp->varScp();
+            AstNodeExpr* const substp = okVisitor.substitutionp();
+
+            // Only inline arrays if a simple variable
+            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!VN_IS(substp, NodeVarRef)) continue;
+            }
+
             // Process it
             ++m_statInlined;
 
-            AstVarScope* const vscp = vVtxp->varScp();
-            AstNodeExpr* const substp = okVisitor.substitutionp();
             if (debug() >= 9) {
                 vscp->dumpTree("substituting: ");
                 substp->dumpTree("        with: ");
@@ -721,7 +727,7 @@ class GateInline final {
                 // If the consumer logic writes one of the variables that the substitution
                 // is reading, then we would get a cycles, so we cannot do that.
                 bool canInline = true;
-                for (V3GraphEdge& dedge : dstVtxp->outEdges()) {
+                for (const V3GraphEdge& dedge : dstVtxp->outEdges()) {
                     const GateVarVertex* const consVVertexp = dedge.top()->as<GateVarVertex>();
                     if (readVscps.count(consVVertexp->varScp())) {
                         canInline = false;
@@ -824,7 +830,7 @@ class GateDedupeHash final : public V3DupFinderUserSame {
 
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
 
-    bool same(AstNode* node1p, AstNode* node2p) {
+    static bool same(AstNode* node1p, AstNode* node2p) {
         // Regarding the complexity of this function 'same':
         // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
         // number of comparisons (number of pairs). AstNode::sameTree itself, is O(sizeOfTree) in

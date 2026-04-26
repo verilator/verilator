@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define CHECK  text \
   multiline
 

@@ -1,6 +1,6 @@
-%Error: t/t_struct_notfound_bad.v:13:9: Member 'nfmember' not found in structure
+%Error: t/t_struct_notfound_bad.v:13:7: Member 'nfmember' not found in structure
                                       : ... note: In instance 't'
-   13 |       s.nfmember = 0;  
-      |         ^~~~~~~~
+   13 |     s.nfmember = 0;   
+      |       ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

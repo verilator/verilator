@@ -5,20 +5,19 @@
 // SPDX-License-Identifier: CC0-1.0
 
 
-module t (/*AUTOARG*/
-   // Inputs
-   input clk
-   );
+module t (
+    input clk
+);
 
-   reg [31:0]     count    /*verilator public_flat_rd */;
+  reg [31:0] count  /*verilator public_flat_rd */;
 
-   // Test loop
-   initial begin
-      count = 0;
-   end
+  // Test loop
+  initial begin
+    count = 0;
+  end
 
-   always @(posedge clk) begin
-      count <= count + 2;
-   end
+  always @(posedge clk) begin
+    count <= count + 2;
+  end
 
 endmodule : t

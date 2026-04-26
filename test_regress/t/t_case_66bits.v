@@ -4,24 +4,22 @@
 // SPDX-FileCopyrightText: 2005 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  reg [65:0] idx  /*verilator public*/;
+  initial idx = 1;
 
-   reg [65:0] idx /*verilator public*/; initial idx = 1;
-
-   always @(posedge clk) begin
-      case(idx)
-        1: idx = 100;
-        100: begin
-           $write("*-* All Finished *-*\n");
-           $finish;
-        end
-        default: $stop;
-      endcase
-   end
+  always @(posedge clk) begin
+    case (idx)
+      1: idx = 100;
+      100: begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+      default: $stop;
+    endcase
+  end
 
 endmodule

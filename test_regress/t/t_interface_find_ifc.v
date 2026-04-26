@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface t_interface_find_ifc;
-   logic [3:0] value;
+  logic [3:0] value;
 endinterface

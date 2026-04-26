@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface class Icls;
-   localparam IP = 1;
-   typedef int i_t;
+  localparam IP = 1;
+  typedef int i_t;
 endclass
 
 class Cls implements Icls;
-   function void f;
-      $display(IP); // Bad
-   endfunction
+  function void f;
+    $display(IP); // Bad
+  endfunction
 endclass
 
 module t;
-   Cls c;
+  Cls c;
 endmodule

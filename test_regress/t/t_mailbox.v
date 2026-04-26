@@ -17,75 +17,75 @@
 //  endclass
 
 `ifndef MAILBOX_T
- `define MAILBOX_T mailbox
+`define MAILBOX_T mailbox
 `endif
 
 // verilator lint_off DECLFILENAME
 module t;
-   `MAILBOX_T #(int) m;
-   int     msg;
-   int     out;
+  `MAILBOX_T #(int) m;
+  int msg;
+  int out;
 
-   initial begin
-      m = new(4);
-      if (m.num() != 0) $stop;
-      if (m.try_get(msg) > 0) $stop;
+  initial begin
+    m = new(4);
+    if (m.num() != 0) $stop;
+    if (m.try_get(msg) > 0) $stop;
 
-      msg = 123;
-      m.put(msg);
-      msg = 0;
-      if (m.num() != 1) $stop;
-      if (m.try_peek(out) <= 0) $stop;
-      if (out != 123) $stop;
-      if (m.num() != 1) $stop;
-      out = 0;
-      if (m.try_peek(out) <= 0) $stop;
-      if (out != 123) $stop;
-      out = 0;
-      if (m.try_get(out) <= 0) $stop;
-      if (out != 123) $stop;
-      if (m.num() != 0) $stop;
+    msg = 123;
+    m.put(msg);
+    msg = 0;
+    if (m.num() != 1) $stop;
+    if (m.try_peek(out) <= 0) $stop;
+    if (out != 123) $stop;
+    if (m.num() != 1) $stop;
+    out = 0;
+    if (m.try_peek(out) <= 0) $stop;
+    if (out != 123) $stop;
+    out = 0;
+    if (m.try_get(out) <= 0) $stop;
+    if (out != 123) $stop;
+    if (m.num() != 0) $stop;
 
-      msg = 124;
-      m.put(msg);
-      out = 0;
-      m.get(out);
-      if (out != 124) $stop;
+    msg = 124;
+    m.put(msg);
+    out = 0;
+    m.get(out);
+    if (out != 124) $stop;
 
-      msg = 125;
-      m.put(msg);
-      m.put(msg);
-      if (m.try_put(msg) == 0) $stop;
-      if (m.try_put(msg) == 0) $stop;
-      if (m.num() != 4) $stop;
-      if (m.try_put(msg) != 0) $stop;
-      if (m.num() != 4) $stop;
-      m.get(out);
-      m.get(out);
-      m.get(out);
-      m.get(out);
-      if (m.num() != 0) $stop;
+    msg = 125;
+    m.put(msg);
+    m.put(msg);
+    if (m.try_put(msg) == 0) $stop;
+    if (m.try_put(msg) == 0) $stop;
+    if (m.num() != 4) $stop;
+    if (m.try_put(msg) != 0) $stop;
+    if (m.num() != 4) $stop;
+    m.get(out);
+    m.get(out);
+    m.get(out);
+    m.get(out);
+    if (m.num() != 0) $stop;
 
-      fork
-         begin
-            #10;  // So later then get() starts below
-            msg = 130;
-            m.put(msg);
-            msg = 131;
-            m.put(msg);
-         end
-         begin
-            if (m.try_get(msg) != 0) $stop;
-            out = 0;
-            m.get(out);  // Blocks until put
-            if (out != 130) $stop;
-            out = 0;
-            m.get(out);
-            if (out != 131) $stop;
-         end
-      join
+    fork
+      begin
+        #10;  // So later then get() starts below
+        msg = 130;
+        m.put(msg);
+        msg = 131;
+        m.put(msg);
+      end
+      begin
+        if (m.try_get(msg) != 0) $stop;
+        out = 0;
+        m.get(out);  // Blocks until put
+        if (out != 130) $stop;
+        out = 0;
+        m.get(out);
+        if (out != 131) $stop;
+      end
+    join
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -4,11 +4,13 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-interface iface #(parameter DWIDTH = 32)();
+interface iface #(
+    parameter DWIDTH = 32
+) ();
   localparam TOTAL_PACKED_WIDTH = DWIDTH + 1;
   modport Tx(output sop, data, import unpack);
   logic sop;
-  logic [DWIDTH - 1:0]  data = '0;
+  logic [DWIDTH - 1:0] data = '0;
 
   task static unpack(input logic [TOTAL_PACKED_WIDTH-1:0] packed_in, input logic sop_i);
     logic sop_nc;
@@ -18,5 +20,5 @@ interface iface #(parameter DWIDTH = 32)();
 endinterface
 
 module t;
-iface ifc();
+  iface ifc ();
 endmodule

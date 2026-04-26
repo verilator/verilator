@@ -1,6 +1,6 @@
-%Error: t/t_array_method_bad.v:11:9: Unknown built-in array method 'mex'
+%Error: t/t_array_method_bad.v:11:7: Unknown built-in array method 'mex'
                                    : ... note: In instance 't'
-   11 |       q.mex;
-      |         ^~~
+   11 |     q.mex;
+      |       ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

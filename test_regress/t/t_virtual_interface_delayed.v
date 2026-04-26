@@ -10,37 +10,39 @@
 // verilog_format: on
 
 interface Ifc;
-   bit [7:0] rdata;
+  bit [7:0] rdata;
 endinterface
 
 class drv_c;
-   virtual Ifc vif;
+  virtual Ifc vif;
 
-   virtual task run();
-      #100;
-      `checkh(vif.rdata, 8'haa);
-      #100;
-      `checkh(vif.rdata, 8'haa);
-      #100;
-   endtask
+  virtual task run();
+    #100;
+    `checkh(vif.rdata, 8'haa);
+    #100;
+    `checkh(vif.rdata, 8'haa);
+    #100;
+  endtask
 endclass
 
-module dut (output wire [7:0] rd_val);
-   assign rd_val = 8'haa;
+module dut (
+    output wire [7:0] rd_val
+);
+  assign rd_val = 8'haa;
 endmodule
 
 module m;
-   drv_c d_0;
+  drv_c d_0;
 
-   Ifc u_Ifc ();
-   dut u_dut (.rd_val (u_Ifc.rdata));
+  Ifc u_Ifc ();
+  dut u_dut (.rd_val(u_Ifc.rdata));
 
-   initial begin
-      d_0 = new();
-      d_0.vif = u_Ifc;
-      //u_Ifc.rdata = 10;
-      d_0.run();
-      $write("*-* All Finished *-*\n");
-      $finish(2);
-   end
+  initial begin
+    d_0 = new();
+    d_0.vif = u_Ifc;
+    //u_Ifc.rdata = 10;
+    d_0.run();
+    $write("*-* All Finished *-*\n");
+    $finish(2);
+  end
 endmodule

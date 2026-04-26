@@ -1,6 +1,6 @@
-%Error: t/t_mailbox_bad.v:12:13: Class method 'bad_method' not found in class 'mailbox__Tz1'
+%Error: t/t_mailbox_bad.v:12:11: Class method 'bad_method' not found in class 'mailbox__Tz1'
                                : ... note: In instance 't'
-   12 |       if (m.bad_method() != 0) $stop;
-      |             ^~~~~~~~~~
+   12 |     if (m.bad_method() != 0) $stop;
+      |           ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,6 +1,6 @@
-%Error-PORTSHORT: t/t_lint_setout_bad.v:17:8: Output port is connected to a constant pin, electrical short
+%Error-PORTSHORT: t/t_lint_setout_bad.v:17:6: Output port is connected to a constant pin, electrical short
                                             : ... note: In instance 't'
-   17 |       .cpu_if_timeout(1'b0)
-      |        ^~~~~~~~~~~~~~
+   17 |     .cpu_if_timeout(1'b0)
+      |      ^~~~~~~~~~~~~~
                   ... For error description see https://verilator.org/warn/PORTSHORT?v=latest
 %Error: Exiting due to

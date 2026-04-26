@@ -51,6 +51,7 @@ private:
 
     int m_filep = 0;  // File we're writing to
     bool m_isOpen = false;  // True indicates open file
+    uint64_t m_startTime = 0;  // Time file was opened
     std::string m_filename;  // Filename we're writing to (if open)
     std::string m_buffer;  // Write data buffer
 
@@ -60,9 +61,9 @@ private:
     // Currently active scope
     VerilatedSaifActivityScope* m_currentScope = nullptr;
     // Array of declared scopes
-    std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes{};
+    std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes;
     // Activity accumulators used to store variables statistics over simulation time
-    std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators{};
+    std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators;
     // Total time of the currently traced simulation
     uint64_t m_time = 0;
 
@@ -146,25 +147,58 @@ public:
     void pushPrefix(const char*, VerilatedTracePrefixType);
     void popPrefix();
 
-    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                   bool array, int arraynum);
-    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                 bool array, int arraynum);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                 bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                  bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                   bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                    bool array, int arraynum);
+    // versions to call when the sig is not array member
+    void declEvent(uint32_t code, uint32_t fidx, const char* name);
+    void declBit(uint32_t code, uint32_t fidx, const char* name);
+    void declBus(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
+    void declQuad(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
+    void declWide(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
+    void declDouble(uint32_t code, uint32_t fidx, const char* name);
+
+    // versions to call when the sig is array member
+    void declEventArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
+    void declBitArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
+    void declBusArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                      int lsb);
+    void declQuadArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                       int lsb);
+    void declWideArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                       int lsb);
+    void declDoubleArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
 };
+
+// We use macros to drop unused arguments at compile time. This saves code size.
+#define VL_TRACE_PUSH_PREFIX(tracep, name, type, left, right) tracep->pushPrefix(name, type);
+#define VL_TRACE_POP_PREFIX(tracep) tracep->popPrefix();
+
+#define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
+    tracep->declEvent(code, fidx, name)
+#define VL_TRACE_DECL_BIT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
+    tracep->declBit(code, fidx, name)
+#define VL_TRACE_DECL_BUS(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
+    tracep->declBus(code, fidx, name, msb, lsb)
+#define VL_TRACE_DECL_QUAD(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
+    tracep->declQuad(code, fidx, name, msb, lsb)
+#define VL_TRACE_DECL_WIDE(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
+    tracep->declWide(code, fidx, name, msb, lsb)
+#define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, dir, kind, type) \
+    tracep->declDouble(code, fidx, name)
+
+#define VL_TRACE_DECL_EVENT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
+    tracep->declEventArray(code, fidx, name, arraynum)
+#define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
+    tracep->declBitArray(code, fidx, name, arraynum)
+#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                msb, lsb) \
+    tracep->declBusArray(code, fidx, name, arraynum, msb, lsb)
+#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
+    tracep->declQuadArray(code, fidx, name, arraynum, msb, lsb)
+#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
+    tracep->declWideArray(code, fidx, name, arraynum, msb, lsb)
+#define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
+    tracep->declDoubleArray(code, fidx, name, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedSaifC just below
@@ -190,7 +224,6 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     friend VerilatedSaif;
     friend VerilatedSaif::Super;
     friend VerilatedSaif::Buffer;
-    friend VerilatedSaif::OffloadBuffer;
 
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
     uint32_t m_fidx;  // Index of target activity accumulator

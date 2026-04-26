@@ -262,15 +262,27 @@ Summary:
    limitation that allow only one precompiled header per compilation.
    Use this instead of ::vlopt:`-CFLAGS` with `-include <header-path>`.
 
+.. option:: --constraint-array-limit <size>
+
+   Specifies the maximum array size for which array reduction methods
+   (sum, product, and, or, xor) in constraint expressions will be
+   expanded. Arrays larger than this limit will have their reduction
+   constraints ignored with a `CONSTRAINTIGN` warning. This prevents
+   excessive code generation for very large arrays.
+
+   Defaults to 64. Setting to 0 disables all array reduction constraint
+   expansion.
+
 .. option:: --converge-limit <loops>
 
    Rarely needed. Specifies the maximum number of runtime iterations before
-   creating a model failed to converge error. Defaults to 100.
+   creating a model failed to converge error. Defaults to 10000.
 
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm`
+   :vlopt:`--coverage-user`.
 
 .. option:: --coverage-expr
 
@@ -281,6 +293,10 @@ Summary:
    Rarely needed. Specifies the maximum number of permutations able to be
    covered for a given expression. Defaults to 32. Increasing may slow
    coverage simulations and make analyzing the results unwieldy.
+
+.. option:: --coverage-fsm
+
+   Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
 .. option:: --coverage-line
 
@@ -467,6 +483,10 @@ Summary:
    Rarely needed. Enable dumping DfgGraph .dot debug files with dumping
    level 3.
 
+.. option:: --dump-dfg-patterns
+
+   Rarely needed. Enable dumping DfgGraph pattern statistics.
+
 .. option:: --dump-graph
 
    Rarely needed. Enable dumping V3Graph .dot debug files with dumping
@@ -638,9 +658,12 @@ Summary:
 
 .. option:: -fno-dfg
 
-   Rarely needed. Disable all use of the DFG-based combinational logic
-   optimizer. Alias for :vlopt:`-fno-dfg-pre-inline`,
-   :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
+   Rarely needed. Disable the DFG-based combinational logic optimizer.
+
+   In versions before 5.048:
+
+   Alias for :vlopt:`-fno-dfg-pre-inline`, :vlopt:`-fno-dfg-post-inline` and
+   :vlopt:`-fno-dfg-scoped`.
 
 .. option:: -fno-dfg-break-cycles
 
@@ -656,11 +679,15 @@ Summary:
 
 .. option:: -fno-dfg-post-inline
 
-   Rarely needed. Do not apply the DFG optimizer after inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-dfg-pre-inline
 
-   Rarely needed. Do not apply the DFG optimizer before inlining.
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.048: Do not apply the DFG optimizer before inlining.
 
 .. option:: -fno-dfg-push-down-sels
 
@@ -668,7 +695,10 @@ Summary:
 
 .. option:: -fno-dfg-scoped
 
-   Rarely needed. Do not apply the DFG optimizer across module scopes.
+   Deprecated; use :vlopt:`-fno-dfg` instead.
+
+   In versions before 5.048: Do not apply the DFG optimizer across module
+   scopes.
 
 .. option:: -fno-expand
 
@@ -693,6 +723,8 @@ Summary:
 .. option:: -fno-life
 
 .. option:: -fno-life-post
+
+.. option:: -fno-lift-expr
 
 .. option:: -fno-localize
 
@@ -730,6 +762,14 @@ Summary:
 
    Rarely needed. Set the maximum array size (number of elements) for slice
    optimization to avoid excessive memory usage.
+
+.. option:: --func-recursion-depth <value>
+
+   Specifies the maximum depth of recursive constant function evaluation.
+   When a recursive function exceeds this depth during constant folding,
+   Verilator gives up and treats the expression as non-constant.
+
+   Defaults to 1000.
 
 .. option:: -future0 <option>
 
@@ -1661,6 +1701,8 @@ Summary:
 
 .. option:: --structs-packed
 
+   Deprecated; discontinue use of this option.
+
    Converts all unpacked structures to packed structures, and issues an
    :option:`UNPACKED` warning. Specifying this option allows for backward
    compatibility with versions before Verilator 5.006, when Verilator would
@@ -1792,7 +1834,7 @@ Summary:
 .. option:: --trace-fst
 
    Enable FST waveform tracing in the model. This overrides
-   :vlopt:`--trace`. See also :vlopt:`--trace-threads` option.
+   :vlopt:`--trace`.
 
 .. option:: --trace-max-array <depth>
 
@@ -1825,6 +1867,10 @@ Summary:
    and larger trace files.
 
 .. option:: --trace-threads <threads>
+
+   Deprecated and has no effect.
+
+   In versions before 5.048:
 
    Enable waveform tracing using separate threads. This is typically faster
    in simulation runtime but uses more total compute. This option only

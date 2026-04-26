@@ -5,17 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class Base;
-   pure virtual function void pvfunc();
+  pure virtual function void pvfunc();
 endclass
 
 class Bar extends Base;
-   // Bad, no implementation of pvfunc
+  // Bad, no implementation of pvfunc
 endclass
 
 module t;
-   initial begin
-      automatic Bar obj = new();
-      obj.pvfunc();
-      $stop;
-   end
+  initial begin
+    automatic Bar obj = new();
+    obj.pvfunc();
+    $stop;
+  end
 endmodule

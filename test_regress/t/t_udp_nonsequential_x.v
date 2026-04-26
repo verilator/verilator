@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2025 Michael Bikovitsky
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
   wire true1;
   not1 a(true1, '0);

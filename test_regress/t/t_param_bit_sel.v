@@ -9,25 +9,23 @@
 // SPDX-FileCopyrightText: 2013 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   // At this point it is ambiguous whether a is scalar or vector
-   parameter A = 1'b0;
-   wire  b = A[0];
-   // Note however b[0] is illegal.
+  // At this point it is ambiguous whether a is scalar or vector
+  parameter A = 1'b0;
+  wire b = A[0];
+  // Note however b[0] is illegal.
 
-   always @(posedge clk) begin
-      if (b == 1'b0) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $stop;
-      end
-   end
+  always @(posedge clk) begin
+    if (b == 1'b0) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    else begin
+      $stop;
+    end
+  end
 
 endmodule

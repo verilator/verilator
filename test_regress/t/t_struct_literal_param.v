@@ -5,9 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package Some_pkg;
-    typedef struct packed {
-        int foo;
-    } some_struct_t;
+  typedef struct packed {int foo;} some_struct_t;
 endpackage
 
 module sub #(
@@ -15,24 +13,16 @@ module sub #(
 ) ();
 endmodule
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  // finish report
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-   // finish report
-   always @ (posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
-
-   sub #(
-       .the_some_struct(
-            Some_pkg::some_struct_t'{
-                foo: 1
-            }))
-    the_sub ();
+  sub #(.the_some_struct(Some_pkg::some_struct_t'{foo: 1})) the_sub ();
 
 endmodule

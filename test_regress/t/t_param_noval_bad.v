@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t #(parameter P, parameter type T);
-   generate
-      var j;
-      for (j=0; P; j++)
-        initial begin end
-   endgenerate
+  generate
+    var j;
+    for (j=0; P; j++)
+      initial begin end
+  endgenerate
 endmodule

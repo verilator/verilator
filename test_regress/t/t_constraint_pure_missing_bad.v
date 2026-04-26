@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class Base;
-    pure constraint raint;
+   pure constraint raint;
 endclass
 
 class Cls extends Base;
-   // Bad: Missing 'constraint raint'
+  // Bad: Missing 'constraint raint'
 endclass
 
 module t;

@@ -4,20 +4,20 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Outputs
-   o,
-   // Inputs
-   i
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    o,
+    // Inputs
+    i
+);
 
-   // Need some logic to get mtask debug fully covered
-   input i;
-   output wire o;
-   assign o = i;
+  // Need some logic to get mtask debug fully covered
+  input i;
+  output wire o;
+  assign o = i;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

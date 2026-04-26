@@ -4,12 +4,14 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-class Foo#(type T = logic) extends T;
+class Foo #(
+    type T = logic
+) extends T;
 endclass
 
 module t;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

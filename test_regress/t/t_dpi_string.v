@@ -6,22 +6,22 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
-   import "DPI-C" function int dpii_string(input string DSM_NAME);
+  import "DPI-C" function int dpii_string(input string DSM_NAME);
 
-   generate
-      begin : DSM
-         string SOME_STRING;
-      end
-   endgenerate
+  generate
+    begin : DSM
+      string SOME_STRING;
+    end
+  endgenerate
 
-   initial begin
-      $sformat(DSM.SOME_STRING, "%m");
-      if (dpii_string(DSM.SOME_STRING) != 5) $stop;
+  initial begin
+    $sformat(DSM.SOME_STRING, "%m");
+    if (dpii_string(DSM.SOME_STRING) != 5) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

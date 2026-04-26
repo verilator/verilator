@@ -17,17 +17,17 @@
 //  endclass
 
 `ifndef MAILBOX_T
- `define MAILBOX_T mailbox
+`define MAILBOX_T mailbox
 `endif
 
 // verilator lint_off DECLFILENAME
 module t;
-   `MAILBOX_T #(int) m;
+  `MAILBOX_T #(int) m;
 
-   initial begin
-      m = new(4);
-      if (m.num() != 0) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    m = new(4);
+    if (m.num() != 0) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

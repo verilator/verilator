@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class RecursiveExtCls extends RecursiveExtCls;
-   int i;
+  int i;
 endclass
 
 module t;
-   RecursiveExtCls cls = new;
+  RecursiveExtCls cls = new;
 endmodule

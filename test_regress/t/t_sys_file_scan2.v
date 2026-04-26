@@ -11,29 +11,29 @@
 // verilog_format: on
 
 module t;
-   int cfg_file, f_stat;
-   reg [8*8:1] fname;
-   int index;
-   int count;
+  int cfg_file, f_stat;
+  reg [8*8:1] fname;
+  int index;
+  int count;
 
-   initial begin
-      cfg_file = $fopen("t/t_sys_file_scan2.dat", "r");
+  initial begin
+    cfg_file = $fopen("t/t_sys_file_scan2.dat", "r");
 
-      f_stat = $fscanf(cfg_file, "%s", fname);
-      `checkd(f_stat, 1);
-      `checks(fname, "vec");
-      f_stat = $fscanf(cfg_file, "%d", index);
-      `checkd(f_stat, 1);
-      `checkd(index, 6163);
-      f_stat = $fscanf(cfg_file, "%d", count);
-      `checkd(f_stat, 1);
-      `checkd(count, 16);
+    f_stat = $fscanf(cfg_file, "%s", fname);
+    `checkd(f_stat, 1);
+    `checks(fname, "vec");
+    f_stat = $fscanf(cfg_file, "%d", index);
+    `checkd(f_stat, 1);
+    `checkd(index, 6163);
+    f_stat = $fscanf(cfg_file, "%d", count);
+    `checkd(f_stat, 1);
+    `checkd(count, 16);
 
-      //eof
-      f_stat = $fscanf(cfg_file, "%s", fname);
-      `checkd(f_stat, -1);
+    //eof
+    f_stat = $fscanf(cfg_file, "%s", fname);
+    `checkd(f_stat, -1);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

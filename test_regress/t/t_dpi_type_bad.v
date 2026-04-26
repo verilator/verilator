@@ -8,8 +8,8 @@
 
 module t;
 
-   import "DPI-BAD" task dpix_twice;
-   initial begin
-      $stop;
-   end
+  import "DPI-BAD" task dpix_twice;
+  initial begin
+    $stop;
+  end
 endmodule

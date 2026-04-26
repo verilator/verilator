@@ -1,8 +1,20 @@
-%Error-UNSUPPORTED: t/t_mod_interface_array3.v:22:20: Unsupported: Multidimensional instances/interfaces.
-   22 |    a_if iface [2:0][1:0] ();
-      |                    ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_mod_interface_array3.v:24:18: Unsupported: Multidimensional instances/interfaces.
-   24 |    sub i_sub[2:0][1:0] (.s(str));
-      |                  ^
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[2][1]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[2][0]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[1][1]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[1][0]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[0][1]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
+%Error: t/t_mod_interface_array3.v:28:25: VARREF 't.__Vcellout__i_sub[0][0]__s' is not an unpacked array, but is in an unpacked array context
+   28 |   sub i_sub[2:0][1:0] (.s(str));
+      |                         ^
 %Error: Exiting due to

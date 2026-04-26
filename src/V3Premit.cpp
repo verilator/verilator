@@ -91,6 +91,8 @@ class PremitVisitor final : public VNVisitor {
             // Keep as local temporary.
             const std::string name = "__Vtemp_" + std::to_string(++m_tmpVarCnt);
             varp = new AstVar{flp, VVarType::STMTTEMP, name, nodep->dtypep()};
+            varp->funcLocal(true);
+            varp->noReset(true);
             m_cfuncp->addVarsp(varp);
             ++m_temporaryVarsCreated;
 
@@ -165,11 +167,11 @@ class PremitVisitor final : public VNVisitor {
     // VISITORS - Statements
 #define START_STATEMENT_OR_RETURN(stmtp) \
     if (!m_cfuncp) return; \
-    if (stmtp->user1SetOnce()) return; \
+    if ((stmtp)->user1SetOnce()) return; \
     VL_RESTORER(m_assignLhs); \
     VL_RESTORER(m_stmtp); \
     m_assignLhs = false; \
-    m_stmtp = stmtp;
+    m_stmtp = (stmtp);
 
     void visit(AstNodeAssign* nodep) override {
         START_STATEMENT_OR_RETURN(nodep);
@@ -261,6 +263,10 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    void visit(AstCMethodHard* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstCvtArrayToPacked* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
@@ -317,10 +323,16 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
-        for (AstNodeExpr *expp = nodep->exprsp(), *nextp; expp; expp = nextp) {
-            nextp = VN_AS(expp->nextp(), NodeExpr);
-            if (expp->isString() && !VN_IS(expp, VarRef)) {
-                AstVar* const varp = createTemp(expp);
+        AstNodeExpr* exprsp = nodep->exprsp();
+        if (nodep->exprFormat()) exprsp = VN_AS(exprsp->nextp(), NodeExpr);
+        for (AstNodeExpr *argp = exprsp, *nextp; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), NodeExpr);
+
+            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+            AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
+            // Must avoid taking address of rvalue, so even Const needs a temp
+            if (subargp->isString() && !VN_IS(subargp, VarRef)) {
+                AstVar* const varp = createTemp(subargp);
                 // Do not remove VarRefs to this in V3Const
                 varp->noSubst(true);
             }

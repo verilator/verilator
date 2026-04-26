@@ -10,26 +10,26 @@
 // verilog_format: on
 
 module tb2 ();
-   parameter CLK_PERIOD = 2;
+  parameter CLK_PERIOD = 2;
 
-   reg clk = 1'b0;
-   int messages;
+  reg clk = 1'b0;
+  int messages;
 
-   always #(CLK_PERIOD / 2) clk = ~clk;
+  always #(CLK_PERIOD / 2) clk = ~clk;
 
-   always begin
-      static int counter = 0;
-      while (counter < 3) begin
-         counter += 1;
-         $display("[%0t] Running loop %0d", $time, counter);
-         messages += 1;
-         @(posedge clk);
-      end
+  always begin
+    static int counter = 0;
+    while (counter < 3) begin
+      counter += 1;
+      $display("[%0t] Running loop %0d", $time, counter);
+      messages += 1;
+      @(posedge clk);
+    end
 
-      $write("[%0t] *-* All Finished *-*\n", $time);
-      $finish;
-   end
+    $write("[%0t] *-* All Finished *-*\n", $time);
+    $finish;
+  end
 
-   final `checkd(messages, 3);
+  final `checkd(messages, 3);
 
 endmodule

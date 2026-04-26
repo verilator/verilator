@@ -7,13 +7,13 @@
 int i = 0;
 
 function int postincrement_i;
-    return i++;
+  return i++;
 endfunction
 
 module t;
-    initial begin
-        automatic int arr [1:0] = {0, 0};
-        i = 0;
-        $display("Value: %d", arr[postincrement_i()]++);
-    end
+  initial begin
+    automatic int arr[1:0] = {0, 0};
+    i = 0;
+    $display("Value: %d", arr[postincrement_i()]++);
+  end
 endmodule

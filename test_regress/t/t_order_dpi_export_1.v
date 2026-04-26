@@ -8,28 +8,28 @@
 
 module testbench;
 
-   logic clk;
+  logic clk;
 
-   export "DPI-C" function set_clk;
-   function void set_clk(bit val);
-      clk = val;
-   endfunction;
+  export "DPI-C" function set_clk;
+  function void set_clk(bit val);
+    clk = val;
+  endfunction
 
-   // Downstream signal dependent on clk demonstrates scheduling issue.
-   // The '$c("1") &' ensures that dependent_clk does not get
-   // replaced with clk early and hence hiding the issue
-   wire  dependent_clk = $c1("1") & clk;
+  // Downstream signal dependent on clk demonstrates scheduling issue.
+  // The '$c("1") &' ensures that dependent_clk does not get
+  // replaced with clk early and hence hiding the issue
+  wire dependent_clk = $c1("1") & clk;
 
-   int   n = 0;
+  int n = 0;
 
-   always @(posedge dependent_clk) begin
-      $display("t=%t n=%d", $time, n);
-      if ($time != (2*n+1) * 500) $stop;
-      if (n == 20) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      n += 1;
-   end
+  always @(posedge dependent_clk) begin
+    $display("t=%t n=%d", $time, n);
+    if ($time != (2 * n + 1) * 500) $stop;
+    if (n == 20) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    n += 1;
+  end
 
 endmodule

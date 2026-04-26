@@ -8,20 +8,20 @@
 
 module t;
 
-   import "DPI-C" function int dpii_failure();
-   import "DPI-C" function void dpii_check();
+  import "DPI-C" function int dpii_failure();
+  import "DPI-C" function void dpii_check();
 
-   initial begin
-      dpii_check();
+  initial begin
+    dpii_check();
 
-      if (dpii_failure()!=0) begin
-         $write("%%Error: Failure in DPI tests\n");
-         $stop;
-      end
-      else begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    if (dpii_failure() != 0) begin
+      $write("%%Error: Failure in DPI tests\n");
+      $stop;
+    end
+    else begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule

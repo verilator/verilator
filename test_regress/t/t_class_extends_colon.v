@@ -8,12 +8,14 @@ interface class Icempty;
 endclass : Icempty
 
 package Pkg;
-class Icls1 #(parameter PARAM = 12);
-   localparam LP1 = 1;
-   function int getParam();
+  class Icls1 #(
+      parameter PARAM = 12
+  );
+    localparam LP1 = 1;
+    function int getParam();
       return PARAM;
-   endfunction
-endclass
+    endfunction
+  endclass
 
 endpackage
 
@@ -22,14 +24,14 @@ endclass
 
 module t;
 
-   Cls12 cp12;
+  Cls12 cp12;
 
-   initial begin
-      cp12 = new;
-      if (cp12.getParam() != 12) $stop;
+  initial begin
+    cp12 = new;
+    if (cp12.getParam() != 12) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

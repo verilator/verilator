@@ -29,7 +29,7 @@ elif [ "$CI_OS_NAME" = "freebsd" ]; then
   export MAKE=gmake
   NPROC=$(sysctl -n hw.ncpu)
 else
-  fatal "Unknown os: '$CI_OS_NAME'"
+  fatal "Unknown CI_OS_NAME: '$CI_OS_NAME'"
 fi
 NPROC=$(expr $NPROC '+' 1)
 
@@ -192,7 +192,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=9/10
       ;;
     *)
-      fatal "Unknown test: $TESTS"
+      fatal "Unknown TESTS: $TESTS"
       ;;
   esac
 
@@ -204,5 +204,5 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 else
   ##############################################################################
   # Unknown build stage
-  fatal "Unknown build stage: '$CI_BUILD_STAGE_NAME'"
+  fatal "Unknown CI_BUILD_STAGE_NAME: '$CI_BUILD_STAGE_NAME'"
 fi

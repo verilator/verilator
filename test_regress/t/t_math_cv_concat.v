@@ -10,35 +10,35 @@
 // verilog_format: on
 
 module t;
-   // Issue #5972
+  // Issue #5972
 
-   reg clk;
-   reg signed [28:28] in1;
-   reg signed [21:8] reg_10;
+  reg clk;
+  reg signed [28:28] in1;
+  reg signed [21:8] reg_10;
 
-   // verilator lint_off WIDTHEXPAND
-   always @(negedge clk) begin
-      // Issue #5972
-      reg_10[14:8] <= {1'b1, ~((in1[28:28] & ~(in1[28:28])))};
-   end
+  // verilator lint_off WIDTHEXPAND
+  always @(negedge clk) begin
+    // Issue #5972
+    reg_10[14:8] <= {1'b1, ~((in1[28:28] & ~(in1[28:28])))};
+  end
 
-   initial begin
-      clk = 1;
-      in1 = 1'b0;
-      reg_10 = '0;
-      #2;
-      clk = 0;
-      #2;
-      `checkh(reg_10, 3);
+  initial begin
+    clk = 1;
+    in1 = 1'b0;
+    reg_10 = '0;
+    #2;
+    clk = 0;
+    #2;
+    `checkh(reg_10, 3);
 
-      in1 = 1'b1;
-      clk = 1;
-      #2;
-      clk = 0;
-      #2;
-      `checkh(reg_10, 3);
+    in1 = 1'b1;
+    clk = 1;
+    #2;
+    clk = 0;
+    #2;
+    `checkh(reg_10, 3);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

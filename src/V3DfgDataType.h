@@ -50,6 +50,7 @@
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3Hash.h"
 
 #include <memory>
 #include <unordered_map>
@@ -124,6 +125,8 @@ public:
     // Thanks to the interning, equality is identity
     bool operator==(const DfgDataType& that) const { return this == &that; }
     bool operator!=(const DfgDataType& that) const { return this != &that; }
+    // Similarly for hash
+    V3Hash hash() const { return V3Hash{this}; }
 
     // Type of elements, for arrays only
     const DfgDataType& elemDtype() const {

@@ -8,27 +8,27 @@
 
 import "DPI-C" context function int mon_check();
 
-module t (/*AUTOARG*/
-   ); /*verilator public_module*/
+module t (  /*AUTOARG*/
+);  /*verilator public_module*/
 
-   parameter int intParam /*verilator public_flat_rd*/ = 5;
-   parameter real realParam /*verilator public_flat_rd*/ = 2.3;
-   parameter time timeParam /*verilator public_flat_rd*/ = 0;
-   parameter string strParam /*verilator public_flat_rd*/ = "abc";
+  parameter int intParam  /*verilator public_flat_rd*/ = 5;
+  parameter real realParam  /*verilator public_flat_rd*/ = 2.3;
+  parameter time timeParam  /*verilator public_flat_rd*/ = 0;
+  parameter string strParam  /*verilator public_flat_rd*/ = "abc";
 
-   logic [31:0] signal_rw /*verilator public_flat_rw*/;
-   logic [31:0] signal_rd /*verilator public_flat_rd*/;
+  logic [31:0] signal_rw  /*verilator public_flat_rw*/;
+  logic [31:0] signal_rd  /*verilator public_flat_rd*/;
 
-   int status;
+  int status;
 
-   initial begin
-      status = mon_check();
-      if (status!=0) begin
-         $write("%%Error: t_vpi_const_type.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    status = mon_check();
+    if (status != 0) begin
+      $write("%%Error: t_vpi_const_type.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule : t

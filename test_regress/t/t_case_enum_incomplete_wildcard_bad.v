@@ -5,42 +5,42 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-    t1 i_t1();
+  t1 i_t1 ();
 endmodule
 
 module t1;
 
-    enum logic [1:0] {
-        S00 = 'b00,
-        S01 = 'b01,
-        S10 = 'b10,
+  enum logic [1:0] {
+    S00 = 'b00,
+    S01 = 'b01,
+    S10 = 'b10,
 
-        SX0 = 2'b?0,
-        S0X = 'b0?
-    } state;
+    SX0 = 2'b?0,
+    S0X = 'b0?
+  } state;
 
-    int v = 0;
+  int v = 0;
 
-    initial begin
-        state = S10;
-        unique case (state)
-            S00: $stop;
-            2'b01: $stop;
-        endcase
-        unique case (state)
-            2'd2: v++;
-            2'd1: $stop;
-        endcase
+  initial begin
+    state = S10;
+    unique case (state)
+      S00: $stop;
+      2'b01: $stop;
+    endcase
+    unique case (state)
+      2'd2: v++;
+      2'd1: $stop;
+    endcase
 
-        unique casez (state)
-            S0X: $stop;
-            2'b11: $stop;
-        endcase
+    unique casez (state)
+      S0X: $stop;
+      2'b11: $stop;
+    endcase
 
-        case (state)
-            S00: $stop;
-            S01: $stop;
-            S10: v++;
-        endcase
-    end
+    case (state)
+      S00: $stop;
+      S01: $stop;
+      S10: v++;
+    endcase
+  end
 endmodule

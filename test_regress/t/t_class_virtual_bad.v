@@ -8,7 +8,7 @@ virtual class VBase;
 endclass
 
 module t;
-   initial begin
-      automatic VBase b = new;  // Error
-   end
+  initial begin
+    automatic VBase b = new;  // Error
+  end
 endmodule

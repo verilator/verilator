@@ -6,14 +6,14 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
-   initial begin
-      // All Finished is in dpic_final
-      $finish;
-   end
+  initial begin
+    // All Finished is in dpic_final
+    $finish;
+  end
 
-   import "DPI-C" context function void dpic_final();
-   final dpic_final();
+  import "DPI-C" context function void dpic_final();
+  final dpic_final();
 
 endmodule

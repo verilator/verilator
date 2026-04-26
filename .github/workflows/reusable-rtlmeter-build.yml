@@ -36,8 +36,8 @@ jobs:
           echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
           sudo apt update || \
           sudo apt update
-          sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev || \
-          sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev
+          sudo apt install ccache mold help2man libfl-dev libjemalloc-dev libsystemc-dev || \
+          sudo apt install ccache mold help2man libfl-dev libjemalloc-dev libsystemc-dev
 
       - name: Use saved ccache
         uses: actions/cache@v5
@@ -70,7 +70,7 @@ jobs:
         run: tar --posix -c -z -f verilator-rtlmeter.tar.gz install
 
       - name: Upload Verilator installation archive
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: verilator-rtlmeter.tar.gz
           name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}

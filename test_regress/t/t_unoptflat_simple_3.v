@@ -7,70 +7,72 @@
 // SPDX-FileCopyrightText: 2013 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
+  input clk;
 
-   wire [2:0] x;
+  wire [2:0] x;
 
-   test1 test1i ( .clk     (clk),
-                  .xvecin  (x[1:0]),
-                  .xvecout (x[2:1]));
+  test1 test1i (
+      .clk(clk),
+      .xvecin(x[1:0]),
+      .xvecout(x[2:1])
+  );
 
-   test2 test2i ( .clk     (clk),
-                  .xvecin  (x[2:1]),
-                  .xvecout (x[1:0]));
+  test2 test2i (
+      .clk(clk),
+      .xvecin(x[2:1]),
+      .xvecout(x[1:0])
+  );
 
-   always @(posedge clk or negedge clk) begin
+  always @(posedge clk or negedge clk) begin
 
 `ifdef TEST_VERBOSE
-      $write("x = %x\n", x);
+    $write("x = %x\n", x);
 `endif
 
-      if (x[1] != 0) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    if (x[1] != 0) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
-endmodule // t
-
-
-module test1
-  (/*AUTOARG*/
-   // Inputs
-   clk,
-   xvecin,
-   // Outputs
-   xvecout
-   );
-
-   input clk;
-   input wire [1:0] xvecin;
-
-   output wire [1:0] xvecout;
-
-   assign xvecout = {xvecin[0], clk};
-
-endmodule // test
+endmodule  // t
 
 
-module test2
-  (/*AUTOARG*/
-   // Inputs
-   clk,
-   xvecin,
-   // Outputs
-   xvecout
-   );
+module test1 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    xvecin,
+    // Outputs
+    xvecout
+);
 
-   input clk;
-   input wire [1:0] xvecin;
+  input clk;
+  input wire [1:0] xvecin;
 
-   output wire [1:0] xvecout;
+  output wire [1:0] xvecout;
 
-   assign xvecout = {clk, xvecin[1]};
+  assign xvecout = {xvecin[0], clk};
 
-endmodule // test
+endmodule  // test
+
+
+module test2 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    xvecin,
+    // Outputs
+    xvecout
+);
+
+  input clk;
+  input wire [1:0] xvecin;
+
+  output wire [1:0] xvecout;
+
+  assign xvecout = {clk, xvecin[1]};
+
+endmodule  // test

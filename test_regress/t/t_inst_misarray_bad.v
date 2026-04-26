@@ -4,38 +4,46 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   logic foo; initial foo = 0;
+  logic foo;
+  initial foo = 0;
 
-//   dut #(.W(4)) udut(.*);
-   dut #(.W(4)) udut(.clk(clk),
-                     .foo(foo));  // Assigning logic to logic array
+  //   dut #(.W(4)) udut(.*);
+  dut #(
+      .W(4)
+  ) udut (
+      .clk(clk),
+      .foo(foo)
+  );  // Assigning logic to logic array
 
 endmodule
 
-module dut
-    #(parameter W = 1)
-    (input logic clk,
-     input logic foo[W-1:0]);
+module dut #(
+    parameter W = 1
+) (
+    input logic clk,
+    input logic foo[W-1:0]
+);
 
-    genvar i;
-    generate
-       for (i = 0; i < W; i++) begin
-          suba ua(.clk(clk), .foo(foo[i]));
-       end
-    endgenerate
+  genvar i;
+  generate
+    for (i = 0; i < W; i++) begin
+      suba ua (
+          .clk(clk),
+          .foo(foo[i])
+      );
+    end
+  endgenerate
 endmodule
 
-module suba
-  (input logic clk,
-   input logic foo);
+module suba (
+    input logic clk,
+    input logic foo
+);
 
-   always @(posedge clk)
-     $display("foo=%b", foo);
+  always @(posedge clk) $display("foo=%b", foo);
 
 endmodule

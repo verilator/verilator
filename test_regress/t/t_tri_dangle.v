@@ -4,32 +4,35 @@
 // SPDX-FileCopyrightText: 2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inouts
-   AVDD, AVSS
-   );
-   inout AVDD;
-   inout  AVSS;
+module t (  /*AUTOARG*/
+    // Inouts
+    AVDD,
+    AVSS
+);
+  inout AVDD;
+  inout AVSS;
 
-   sub sub (/*AUTOINST*/
-            // Inouts
-            .AVDD                       (AVDD),
-            .AVSS                       (AVSS));
+  sub sub (  /*AUTOINST*/
+      // Inouts
+      .AVDD(AVDD),
+      .AVSS(AVSS)
+  );
 
-   initial begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
-module sub (/*AUTOARG*/
-   // Inouts
-   AVDD, AVSS
-   );
-   // verilator no_inline_module
-   inout AVDD;
-   inout AVSS;
-   tri NON_IO;
-   // +verilator+rand+reset+0 so z will read as zero
-   initial if (NON_IO !== 'z) $stop;
+module sub (  /*AUTOARG*/
+    // Inouts
+    AVDD,
+    AVSS
+);
+  // verilator no_inline_module
+  inout AVDD;
+  inout AVSS;
+  tri NON_IO;
+  // +verilator+rand+reset+0 so z will read as zero
+  initial if (NON_IO !== 'z) $stop;
 endmodule

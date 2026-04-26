@@ -8,9 +8,9 @@ import "DPI-C" function void write_all_finished();
 
 module t;
 
-   initial begin
-      write_all_finished;
-      $finish;
-   end
+  initial begin
+    write_all_finished;
+    $finish;
+  end
 
 endmodule

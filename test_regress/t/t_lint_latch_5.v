@@ -4,17 +4,14 @@
 // SPDX-FileCopyrightText: 2021 Julien Margetts (Originally provided by Thomas Sailer)
 // SPDX-License-Identifier: Unlicense
 
-module test
-  (input  logic [1:0] a,
-   input  logic       e,
-   output logic [1:0] z);
+module test (
+    input logic [1:0] a,
+    input logic e,
+    output logic [1:0] z
+);
 
-   always_latch
-     if (e)
-       z[0] = a[0];
+  always_latch if (e) z[0] = a[0];
 
-   always_latch
-     if (e)
-       z[1] = a[1];
+  always_latch if (e) z[1] = a[1];
 
 endmodule

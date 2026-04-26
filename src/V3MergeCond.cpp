@@ -137,12 +137,19 @@ struct StmtProperties final {
     std::set<const AstVar*> m_rdVars;  // Variables read by this statement
     std::set<const AstVar*> m_wrVars;  // Variables written by this statement
     bool m_isFence = false;  // Nothing should move across this statement, nor should it be merged
+    bool m_sideEffect = false;  // Statement may have side effect, without access to model state
+    bool m_implPubRd = false;  // Statement may implicitly read public state (without VarRef)
+    bool m_implPubWr = false;  // Statement may implicitly write public state (without VarRef)
+    bool m_explPubRef = false;  // Statement explicitly references public state via VarRef
     AstNodeStmt* m_prevWithSameCondp = nullptr;  // Previous node in same list, with same condition
-    bool writesConditionVar() const {
+    bool writesConditionVar(bool condPubWritable) const {
         // This relies on MarkVarsVisitor having been called on the condition node
         for (const AstVar* const varp : m_wrVars) {
             if (varp->user1()) return true;
         }
+        // If the condition contains a public variable, check if it might be written
+        if (condPubWritable && m_implPubWr) return true;
+        // Otherwise not written
         return false;
     }
 };
@@ -231,8 +238,12 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
             // Add all rd/wr vars to outer statement
             outerPropsp->m_rdVars.insert(m_propsp->m_rdVars.cbegin(), m_propsp->m_rdVars.cend());
             outerPropsp->m_wrVars.insert(m_propsp->m_wrVars.cbegin(), m_propsp->m_wrVars.cend());
-            // If this statement is impure, the enclosing statement is also impure
-            if (m_propsp->m_isFence) outerPropsp->m_isFence = true;
+            // Propagate flags to enclosing statement
+            outerPropsp->m_isFence |= m_propsp->m_isFence;
+            outerPropsp->m_sideEffect |= m_propsp->m_sideEffect;
+            outerPropsp->m_implPubRd |= m_propsp->m_implPubRd;
+            outerPropsp->m_implPubWr |= m_propsp->m_implPubWr;
+            outerPropsp->m_explPubRef |= m_propsp->m_explPubRef;
         }
     }
 
@@ -242,11 +253,44 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
         // Gather read and written variables
         if (access.isReadOrRW()) m_propsp->m_rdVars.insert(varp);
         if (access.isWriteOrRW()) m_propsp->m_wrVars.insert(varp);
+        if (varp->isSigPublic() || varp->isWrittenByDpi() || varp->isReadByDpi()) {
+            m_propsp->m_explPubRef = true;
+        }
+    }
+
+    void checkProperties(AstNode* nodep) {
+        // Ignore StmtExpr. It interferes with special casing DPI calls below,
+        // and it only checks if the child expr is impure, which is checked
+        // explicitly during the analysis.
+        if (VN_IS(nodep, StmtExpr)) return;
+
+        // Call to a DPI import
+        if (const AstNodeCCall* const ccallp = VN_CAST(nodep, NodeCCall)) {
+            AstCFunc* const funcp = ccallp->funcp();
+            if (funcp->dpiImportWrapper()) {
+                if (!funcp->dpiPure()) {
+                    // Assume has side effect and accesses public state
+                    m_propsp->m_sideEffect = true;
+                    m_propsp->m_implPubRd = true;
+                    m_propsp->m_implPubWr = true;
+                }
+                return;
+            }
+        }
+
+        // Side effect, but assume does not access public state
+        if (VN_IS(nodep, Display) || VN_IS(nodep, Stop)) {
+            m_propsp->m_sideEffect = true;
+            return;
+        }
+
+        // If impure, or branch, mark statement as fence
+        if (!nodep->isPure() || nodep->isBrancher()) m_propsp->m_isFence = true;
     }
 
     void analyzeNode(AstNode* nodep) {
-        // If impure, or branch, mark statement as fence
-        if (m_propsp && (!nodep->isPure() || nodep->isBrancher())) m_propsp->m_isFence = true;
+        // Check properties of this node if under a statement
+        if (m_propsp) checkProperties(nodep);
         // Analyze children
         iterateChildrenConst(nodep);
     }
@@ -310,6 +354,13 @@ class CodeMotionOptimizeVisitor final : public VNVisitor {
         // Don't move across fences
         if (aProps.m_isFence) return false;
         if (bProps.m_isFence) return false;
+        // Don't swap side effecting statements, but can move others across them
+        if (aProps.m_sideEffect && bProps.m_sideEffect) return false;
+        // Don't swap if there is a hazard around public state - must observe ordering
+        const bool bPubRef = bProps.m_implPubWr || bProps.m_implPubRd || bProps.m_explPubRef;
+        if (aProps.m_implPubWr && bPubRef) return false;
+        const bool aPubRef = aProps.m_implPubWr || aProps.m_implPubRd || aProps.m_explPubRef;
+        if (aPubRef && bProps.m_implPubWr) return false;
         // If either statement writes a variable that the other reads, they are not swappable
         if (!areDisjoint(aProps.m_rdVars, bProps.m_wrVars)) return false;
         if (!areDisjoint(bProps.m_rdVars, aProps.m_wrVars)) return false;
@@ -446,6 +497,7 @@ class MergeCondVisitor final : public VNVisitor {
     AstNodeExpr* m_mgCondp = nullptr;  // The condition of the first node
     const AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
     const AstNode* m_mgNextp = nullptr;  // Next node in list being examined
+    bool m_mgCondPubWritable = false;  // True if m_mgCondp contains a public writable variable
     uint32_t m_listLenght = 0;  // Length of current list
 
     std::queue<AstNode*>* m_workQueuep = nullptr;  // Node lists (via AstNode::nextp()) to merge
@@ -717,6 +769,7 @@ class MergeCondVisitor final : public VNVisitor {
         m_mgCondp = nullptr;
         m_mgLastp = nullptr;
         m_mgNextp = nullptr;
+        m_mgCondPubWritable = false;
         AstNode::user1ClearTree();  // Clear marked variables
         AstNode::user2ClearTree();
         // Merge recursively within the branches of an un-merged AstNodeIF
@@ -753,14 +806,19 @@ class MergeCondVisitor final : public VNVisitor {
         // Set up head of new list if node is first in list
         if (!m_mgFirstp) {
             UASSERT_OBJ(condp, nodep, "Cannot start new list without condition");
-            // Mark variable references in the condition
-            condp->foreach([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
+            // Mark variable references in the condition, record if a public variable is involved
+            condp->foreach([&](const AstVarRef* nodep) {
+                AstVar* const varp = nodep->varp();
+                varp->user1(1);
+                if (varp->isSigPublic() || varp->isWrittenByDpi()) m_mgCondPubWritable = true;
+            });
             // Now check again if mergeable. We need this to pick up assignments to conditions,
             // e.g.: 'c = c ? a : b' at the beginning of the list, which is in fact not mergeable
             // because it updates the condition. We simply bail on these.
-            if ((*m_stmtPropertiesp)(nodep).writesConditionVar()) {
+            if ((*m_stmtPropertiesp)(nodep).writesConditionVar(m_mgCondPubWritable)) {
                 // Clear marked variables
                 AstNode::user1ClearTree();
+                m_mgCondPubWritable = false;
                 // We did not add to the list
                 return false;
             }
@@ -773,7 +831,7 @@ class MergeCondVisitor final : public VNVisitor {
                 AstNodeStmt* const backp = VN_CAST(m_mgFirstp->backp(), NodeStmt);
                 if (!backp || backp->nextp() != m_mgFirstp) break;  // Don't move up the tree
                 const StmtProperties& props = (*m_stmtPropertiesp)(backp);
-                if (props.m_isFence || props.writesConditionVar()) break;
+                if (props.m_isFence || props.writesConditionVar(m_mgCondPubWritable)) break;
                 if (isSimplifiableNode(backp)) {
                     ++m_listLenght;
                     m_mgFirstp = backp;
@@ -824,7 +882,7 @@ class MergeCondVisitor final : public VNVisitor {
         if (props.m_isFence) return false;  // Fence node never mergeable
         // If the statement writes a condition variable of a pending merge,
         // we must end the pending merge
-        if (m_mgFirstp && props.writesConditionVar()) mergeEnd();
+        if (m_mgFirstp && props.writesConditionVar(m_mgCondPubWritable)) mergeEnd();
         return true;  // Now surely mergeable
     }
 

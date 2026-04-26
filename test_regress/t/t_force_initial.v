@@ -9,14 +9,14 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-  module t;
+module t;
   reg [1:0] a = 0;
   reg [1:0] b = 2;
 
   initial begin
-     force b = a;
-     `checkh(a, 0);
-     `checkh(b, 0);
+    force b = a;
+    `checkh(a, 0);
+    `checkh(b, 0);
   end
 
   initial begin

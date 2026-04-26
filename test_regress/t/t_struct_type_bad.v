@@ -6,11 +6,11 @@
 
 module t;
 
-   int i;
+  int i;
 
-   typedef struct packed {
-      int i;
-      i badi;  // Bad
-   } struct_t;
+  typedef struct packed {
+    int i;
+    i badi;  // Bad
+  } struct_t;
 
 endmodule

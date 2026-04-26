@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   localparam type t = logic;  // Fine
-   localparam type bad2 = 2;  // Bad
+  localparam type t = logic;  // Fine
+  localparam type bad2 = 2;  // Bad
 endmodule

@@ -1,14 +1,14 @@
-%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:13:17: Instance pin is not connected: '__pinNumber2'
-   13 |    sub sub (ok, , nc);
-      |                 ^
+%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:15:8: Instance pin is not connected: '__pinNumber2'
+   15 |       ,,
+      |        ^
                        ... For warning description see https://verilator.org/warn/PINNOCONNECT?v=latest
                        ... Use "/* verilator lint_off PINNOCONNECT */" and lint_on around source to disable this message.
-%Warning-PINMISSING: t/t_inst_missing_bad.v:13:8: Instance has missing pin: 'missing'
-   13 |    sub sub (ok, , nc);
-      |        ^~~
-                     t/t_inst_missing_bad.v:16:51: ... Location of port declaration
-   16 | module sub (input ok, input none, input nc, input missing);
-      |                                                   ^~~~~~~
+%Warning-PINMISSING: t/t_inst_missing_bad.v:13:7: Instance has missing pin: 'missing'
+   13 |   sub sub (
+      |       ^~~
+                     t/t_inst_missing_bad.v:24:11: ... Location of port declaration
+   24 |     input missing
+      |           ^~~~~~~
                      ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: Exiting due to

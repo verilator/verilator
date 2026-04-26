@@ -6,12 +6,12 @@
 
 module t;
 
-   int a;
-   reg [3:0] b;
+  int a;
+  reg [3:0] b;
 
-   initial begin
-      a = 1;
-      b = (-1)'(a);  // Bad
-   end
+  initial begin
+    a = 1;
+    b = (-1)'(a);  // Bad
+  end
 
 endmodule

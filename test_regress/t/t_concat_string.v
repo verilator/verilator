@@ -7,25 +7,27 @@
 typedef enum {efgh} en;
 
 module t;
-   initial begin
-      en e;
-      string s;
+  initial begin
+    en e;
+    string s;
 
-      s = {"a", "b"};
-      if (s != "ab") $stop;
+    s = {"a", "b"};
+    if (s != "ab") $stop;
 
-      e = efgh;
-      s = {"abcd", e.name(), "ijkl"};
-      if (s != "abcdefghijkl") $stop;
+    e = efgh;
+    s = {"abcd", e.name(), "ijkl"};
+    if (s != "abcdefghijkl") $stop;
 
-      // hang V3Width if complexity grows exponential (2**52 should suffice)
-      s = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-           "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-           "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-           "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
-      if (s != "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz") $stop;
+    // hang V3Width if complexity grows exponential (2**52 should suffice)
+    // verilog_format: off
+    s = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+         "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+         "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
+    // verilog_format: on
+    if (s != "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz") $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

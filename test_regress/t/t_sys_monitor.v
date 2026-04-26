@@ -4,43 +4,40 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  int cyc = 0;
 
-   int cyc = 0;
-
-   // Test loop
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc == 10) begin
-         $monitor("[%0t] cyc=%0d", $time, cyc);
-      end
-      else if (cyc == 17) begin
-         $monitorb(cyc, "b");
-      end
-      else if (cyc == 18) begin
-         $monitorh(cyc, "h");
-      end
-      else if (cyc == 19) begin
-         $monitoro(cyc, "o");
-      end
-      else if (cyc == 22) begin
-         $monitor("[%0t] cyc=%0d new-monitor", $time, cyc);
-      end
-      else if (cyc == 24) begin
-         $monitoroff;
-      end
-      else if (cyc == 26) begin
-         $monitoron;
-      end
-      else if (cyc == 30) begin
-         $monitoroff;  // To avoid inconsistent output between --vlt and --vltmt
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  // Test loop
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 10) begin
+      $monitor("[%0t] cyc=%0d", $time, cyc);
+    end
+    else if (cyc == 17) begin
+      $monitorb(cyc, "b");
+    end
+    else if (cyc == 18) begin
+      $monitorh(cyc, "h");
+    end
+    else if (cyc == 19) begin
+      $monitoro(cyc, "o");
+    end
+    else if (cyc == 22) begin
+      $monitor("[%0t] cyc=%0d new-monitor", $time, cyc);
+    end
+    else if (cyc == 24) begin
+      $monitoroff;
+    end
+    else if (cyc == 26) begin
+      $monitoron;
+    end
+    else if (cyc == 30) begin
+      $monitoroff;  // To avoid inconsistent output between --vlt and --vltmt
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

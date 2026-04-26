@@ -311,6 +311,9 @@ public:
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
+        VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
+        VAR_FSM_RESET_ARC,              // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
@@ -336,10 +339,10 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
-            "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT",
-            "VAR_SPLIT_VAR"
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
+            "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW", "VAR_ISOLATE_ASSIGNMENTS",
+            "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];
@@ -574,6 +577,7 @@ public:
                 || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
                 || m_e == TIME);
     }
+    bool isBit() const { return m_e == BIT; }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);
     }
@@ -715,13 +719,9 @@ public:
     bool likely() const { return m_e == BP_LIKELY; }
     bool unlikely() const { return m_e == BP_UNLIKELY; }
     VBranchPred invert() const {
-        if (m_e == BP_UNLIKELY) {
-            return BP_LIKELY;
-        } else if (m_e == BP_LIKELY) {
-            return BP_UNLIKELY;
-        } else {
-            return m_e;
-        }
+        if (m_e == BP_UNLIKELY) return BP_LIKELY;
+        if (m_e == BP_LIKELY) return BP_UNLIKELY;
+        return m_e;
     }
     const char* ascii() const {
         static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
@@ -757,6 +757,7 @@ public:
         ARRAY_FIRST,
         ARRAY_INSIDE,
         ARRAY_LAST,
+        ARRAY_MAP,
         ARRAY_MAX,
         ARRAY_MIN,
         ARRAY_NEXT,
@@ -801,6 +802,9 @@ public:
         DYN_RESIZE,
         DYN_SIZE,
         DYN_SLICE,
+        DYN_SLICE_ASSIGN,
+        DYN_SLICE_ASSIGN_BACK_BACK,
+        DYN_SLICE_ASSIGN_FRONT_BACK,
         DYN_SLICE_BACK_BACK,
         DYN_SLICE_FRONT_BACK,
         EVENT_CLEAR_FIRED,
@@ -808,17 +812,28 @@ public:
         EVENT_FIRE,
         EVENT_IS_FIRED,
         EVENT_IS_TRIGGERED,
+        FORCE_ADD,
+        FORCE_READ,
+        FORCE_READ_INDEX,
+        FORCE_RELEASE,
+        FORCE_TOUCH,
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
+        FORK_ON_KILL,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
+        RANDOMIZER_DISABLE_SOFT,
         RANDOMIZER_HARD,
+        RANDOMIZER_SOFT,
         RANDOMIZER_UNIQUE,
         RANDOMIZER_MARK_RANDC,
         RANDOMIZER_SOLVE_BEFORE,
+        RANDOMIZER_PIN_VAR,
         RANDOMIZER_WRITE_VAR,
+        RANDOMIZER_SET_VAR_DISABLED,
+        RANDOMIZER_CLEAR_VAR_DISABLED,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -893,6 +908,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {ARRAY_FIRST, "first", false}, \
            {ARRAY_INSIDE, "inside", true}, \
            {ARRAY_LAST, "last", false}, \
+           {ARRAY_MAP, "map", true}, \
            {ARRAY_MAX, "max", true}, \
            {ARRAY_MIN, "min", true}, \
            {ARRAY_NEXT, "next", false}, \
@@ -937,6 +953,9 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {DYN_RESIZE, "resize", false}, \
            {DYN_SIZE, "size", true}, \
            {DYN_SLICE, "slice", true}, \
+           {DYN_SLICE_ASSIGN, "sliceAssign", false}, \
+           {DYN_SLICE_ASSIGN_BACK_BACK, "sliceAssignBackBack", false}, \
+           {DYN_SLICE_ASSIGN_FRONT_BACK, "sliceAssignFrontBack", false}, \
            {DYN_SLICE_BACK_BACK, "sliceBackBack", true}, \
            {DYN_SLICE_FRONT_BACK, "sliceFrontBack", true}, \
            {EVENT_CLEAR_FIRED, "clearFired", false}, \
@@ -944,17 +963,28 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {EVENT_FIRE, "fire", false}, \
            {EVENT_IS_FIRED, "isFired", true}, \
            {EVENT_IS_TRIGGERED, "isTriggered", true}, \
+           {FORCE_ADD, "addForce", false}, \
+           {FORCE_READ, "read", true}, \
+           {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_RELEASE, "release", false}, \
+           {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
+           {FORK_ON_KILL, "onKill", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
+           {RANDOMIZER_DISABLE_SOFT, "disable_soft", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
+           {RANDOMIZER_SOFT, "soft", false}, \
            {RANDOMIZER_UNIQUE, "rand_unique", false}, \
            {RANDOMIZER_MARK_RANDC, "markRandc", false}, \
            {RANDOMIZER_SOLVE_BEFORE, "solveBefore", false}, \
+           {RANDOMIZER_PIN_VAR, "pin_var", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
+           {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
+           {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
@@ -977,6 +1007,48 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \
            {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
+class VCStmtType final {
+public:
+    enum en : uint8_t {
+        NONE,  // Unknown or not applicable
+        CTOR_VAR_RESET_CALL,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Statement's enum mnemonic, for checking
+        const char* m_name;  // Statements name, for debugging
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCStmtType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCStmtType(en _e)
+        : m_e{_e} {}
+    explicit VCStmtType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        return names[m_e];
+    }
+    bool isNone() const { return m_e == NONE; }
+};
+constexpr bool operator==(const VCStmtType& lhs, const VCStmtType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCStmtType& lhs, VCStmtType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCStmtType::en lhs, const VCStmtType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCStmtType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 
@@ -1080,6 +1152,16 @@ public:
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
+    string traceSigDirection() const {
+        if (isInout()) {
+            return "VerilatedTraceSigDirection::INOUT";
+        } else if (isWritable()) {
+            return "VerilatedTraceSigDirection::OUTPUT";
+        } else if (isNonOutput()) {
+            return "VerilatedTraceSigDirection::INPUT";
+        }
+        return "VerilatedTraceSigDirection::NONE";
+    }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;
@@ -1375,7 +1457,7 @@ public:
     bool isAutomatic() const { return m_e == AUTOMATIC_EXPLICIT || m_e == AUTOMATIC_IMPLICIT; }
     bool isStatic() const { return m_e == STATIC_EXPLICIT || m_e == STATIC_IMPLICIT; }
     bool isStaticExplicit() const { return m_e == STATIC_EXPLICIT; }
-    VLifetime makeImplicit() {
+    VLifetime makeImplicit() const {
         switch (m_e) {
         case AUTOMATIC_EXPLICIT: return AUTOMATIC_IMPLICIT;
         case STATIC_EXPLICIT: return STATIC_IMPLICIT;
@@ -1423,11 +1505,7 @@ public:
     ~VNumRange() = default;
     // MEMBERS
     void init(int hi, int lo, bool ascending) {
-        if (lo > hi) {
-            const int t = hi;
-            hi = lo;
-            lo = t;
-        }
+        if (lo > hi) std::swap(hi, lo);
         m_left = ascending ? lo : hi;
         m_right = ascending ? hi : lo;
         m_ranged = true;
@@ -1743,6 +1821,10 @@ public:
         static const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
         return names[m_e];
     }
+    const char* func_prefix() const {
+        static const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
+        return names[m_e];
+    }
 };
 constexpr bool operator==(const VTraceType& lhs, const VTraceType& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1771,7 +1853,7 @@ public:
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
-    bool containsAny(VUseType other) { return m_e & other.m_e; }
+    bool containsAny(VUseType other) const { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
@@ -1781,10 +1863,10 @@ constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
 constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+    return VUseType::en(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();

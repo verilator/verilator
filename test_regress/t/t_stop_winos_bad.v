@@ -7,11 +7,11 @@
 `line 7 "C:\\some\\windows\\path\\t_stop_winos_bad.v" 0
 
 module t;
-   localparam string FILENAME = `__FILE__;
-   initial begin
-      $write("Intentional stop\n");
-      // Print length to make sure \\ counts as 1 character
-      $write("Filename '%s'  Length = %0d\n", FILENAME, FILENAME.len());
-      $stop;
-   end
+  localparam string FILENAME = `__FILE__;
+  initial begin
+    $write("Intentional stop\n");
+    // Print length to make sure \\ counts as 1 character
+    $write("Filename '%s'  Length = %0d\n", FILENAME, FILENAME.len());
+    $stop;
+  end
 endmodule

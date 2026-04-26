@@ -8,10 +8,10 @@
 
 module t;
 
-   import "DPI-C" function void dpii_test();
+  import "DPI-C" function void dpii_test();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      dpii_test();  // $finish
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    dpii_test();  // $finish
+  end
 endmodule

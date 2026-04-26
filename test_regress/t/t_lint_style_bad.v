@@ -6,17 +6,18 @@
 
 module t;
 
-   integer top;
+  integer top;
 
-   task x;
-      output top;
-      begin end
-   endtask
+  task x;
+    output top;
+    begin
+    end
+  endtask
 
-   initial begin
-      begin: lower
-         integer top;
-      end
-   end
+  initial begin
+    begin : lower
+      integer top;
+    end
+  end
 
 endmodule

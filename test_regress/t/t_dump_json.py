@@ -7,14 +7,21 @@
 # SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+import json
 import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_dump.v"
 
+out_filename = test.obj_dir + "/V" + test.name + "_002_cellsort.tree.json"
+
 test.lint(v_flags=["--dump-tree-json --no-json-edit-nums"])
 
-test.files_identical(test.obj_dir + "/Vt_dump_json_002_cellsort.tree.json", test.golden_filename,
-                     'logfile')
+# not files_identical as output is too sensitive to internal changes
+test.file_grep(out_filename, r'"type":"MODULE"')
+
+# check JSON is parsable
+with open(out_filename, 'r', encoding="utf8") as fh:
+    json.load(fh)
 
 test.passes()

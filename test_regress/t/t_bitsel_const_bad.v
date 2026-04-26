@@ -8,11 +8,11 @@
 
 module t;
 
-   // Note that if we declare "wire [0:0] b", this works just fine.
-   wire  a;
-   wire  b;
+  // Note that if we declare "wire [0:0] b", this works just fine.
+  wire a;
+  wire b;
 
-   assign b = 1'b0;
-   assign a = b[0];  // IEEE illegal can't extract scalar
+  assign b = 1'b0;
+  assign a = b[0];  // IEEE illegal can't extract scalar
 
 endmodule

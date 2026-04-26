@@ -6,28 +6,25 @@
 
 module t;
 
-   counter_if iface();
+  counter_if iface ();
 
-   source source (
-      .itf  (iface)
-   );
+  source source (.itf(iface));
 
 endmodule
 
 interface counter_if;
-   logic [3:0] value;
+  logic [3:0] value;
 endinterface
 
-module source
-  (
-   counter_if itf
-   );
+module source (
+    counter_if itf
+);
 
-   logic [3:0] getter;
+  logic [3:0] getter;
 
-   initial begin
-      getter = itf;  // Intended to write itf.value
-      getter = 4'd3 + itf;  // Intended to write itf.value
-   end
+  initial begin
+    getter = itf;  // Intended to write itf.value
+    getter = 4'd3 + itf;  // Intended to write itf.value
+  end
 
 endmodule

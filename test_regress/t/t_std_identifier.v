@@ -6,12 +6,12 @@
 
 package foo;
 `ifdef TEST_DECLARE_STD
-    class std;
-        static int bar;
-    endclass
+  class std;
+    static int bar;
+  endclass
 `endif
 endpackage
 
 module t;
-    int baz = foo::std::bar;
+  int baz = foo::std::bar;
 endmodule

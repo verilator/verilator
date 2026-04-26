@@ -113,7 +113,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
     return callp;
 }
 
-AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const netlistp) {
+AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
     for (auto& p : m_lbs) {
         AstActive* const ap = p.second;
         // TODO: this triple VN_AS expression is ridiculous
@@ -297,7 +297,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    AwaitVisitor{netlistp, lbs, postUpdates, externalDomains};
+    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains}; }
     return {std::move(lbs), postUpdates, std::move(externalDomains)};
 }
 
@@ -466,7 +466,7 @@ public:
 
 void transformForks(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return;
-    TransformForksVisitor{netlistp};
+    { TransformForksVisitor{netlistp}; }
     V3Global::dumpCheckGlobalTree("transform_forks", 0, dumpTreeEitherLevel() >= 3);
 }
 

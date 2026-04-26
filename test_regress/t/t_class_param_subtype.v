@@ -6,44 +6,48 @@
 
 // Test for bug4281
 
-class CParam #(parameter PARAM=10);
-    typedef int type_t;
+class CParam #(
+    parameter PARAM = 10
+);
+  typedef int type_t;
 endclass
 
-class CParam2 #(parameter PARAM=10);
-    typedef int type_t;
+class CParam2 #(
+    parameter PARAM = 10
+);
+  typedef int type_t;
 
-    typedef logic [PARAM-1:0] type2_t;
+  typedef logic [PARAM-1:0] type2_t;
 endclass
 
 `ifdef CONSTSIM
-module sub();
-    parameter N = 32;
-    for (genvar i = 0; i < N/8; i = i + 1) begin
-        initial begin
-        end
+module sub ();
+  parameter N = 32;
+  for (genvar i = 0; i < N / 8; i = i + 1) begin
+    initial begin
     end
-    // Test for bug4281, usage conflict of user2 with constant simulator in V3Param.cpp
+  end
+  // Test for bug4281, usage conflict of user2 with constant simulator in V3Param.cpp
 endmodule
 `endif
 
 module t;
 `ifdef BAD_PAREN
-    CParam::type_t val_0 = 100;
+  CParam::type_t val_0 = 100;
 `else
-    CParam#()::type_t val_0 = 100;
+  CParam #()::type_t val_0 = 100;
 `endif
-    CParam2#()::type_t val_2 = 200;
+  CParam2 #()::type_t val_2 = 200;
 
 `ifdef CONSTSIM
 
-    sub i_sub();
+  sub i_sub ();
 `endif
 
-    initial begin
-        if (val_0 != 100) $stop;
-        if (val_2 != 200) $stop;
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    if (val_0 != 100) $stop;
+    if (val_2 != 200) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

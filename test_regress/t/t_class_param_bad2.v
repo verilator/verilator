@@ -4,11 +4,13 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-class Cls #(type PARAMB);
+class Cls #(
+    type PARAMB
+);
 endclass
 
 module t;
 
-   Cls c;  // Missing type param
+  Cls c;  // Missing type param
 
 endmodule

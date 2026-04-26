@@ -4,35 +4,39 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-class Foo #(type T=bit);
-   int x = $bits(T);
+class Foo #(
+    type T = bit
+);
+  int x = $bits(T);
 endclass
 
-class Bar #(type S=int) extends Foo#(S);
+class Bar #(
+    type S = int
+) extends Foo #(S);
 endclass
 
 typedef Bar#() bar_default_t;
 
 class Baz;
-   Bar#(logic[7:0]) bar_string;
-   int bar_x;
-   function new;
-      bar_string = new;
-      bar_x = bar_string.x;
-   endfunction
+  Bar #(logic [7:0]) bar_string;
+  int bar_x;
+  function new;
+    bar_string = new;
+    bar_x = bar_string.x;
+  endfunction
 endclass
 
 typedef Baz baz_t;
 
 module t;
-   initial begin
-      automatic bar_default_t bar_default = new;
-      automatic baz_t baz = new;
+  initial begin
+    automatic bar_default_t bar_default = new;
+    automatic baz_t baz = new;
 
-      if (bar_default.x != 32) $stop;
-      if (baz.bar_x != 8) $stop;
+    if (bar_default.x != 32) $stop;
+    if (baz.bar_x != 8) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

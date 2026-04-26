@@ -7,20 +7,20 @@
 typedef logic logic_alias_t;
 
 module t;
-   logic_alias_t [6:1] signal;
-   // verilator lint_off ASCRANGE
-   logic_alias_t [1:6] signal2;
-   // verilator lint_on ASCRANGE
+  logic_alias_t [6:1] signal;
+  // verilator lint_off ASCRANGE
+  logic_alias_t [1:6] signal2;
+  // verilator lint_on ASCRANGE
 
-   initial begin
-      signal[6:1] = 'b100001;
-      signal[3] = 'b1;
-      signal2[1:6] = 'b100001;
-      signal2[4] = 'b1;
+  initial begin
+    signal[6:1] = 'b100001;
+    signal[3] = 'b1;
+    signal2[1:6] = 'b100001;
+    signal2[4] = 'b1;
 
-      if (signal != 'b100101) $stop;
-      if (signal2 != 'b100101) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if (signal != 'b100101) $stop;
+    if (signal2 != 'b100101) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

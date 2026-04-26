@@ -4,82 +4,83 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   parameter PAR = 3;
+module t (
+    input clk
+);
 
-   m1 #(PAR) m1();
-   m3 #(PAR) m3();
-   mnooverride #(10) mno();
-   mreal #1.2 mr();
+  parameter PAR = 3;
 
-   input clk;
-   integer cyc=1;
-   reg [4:0] bitsel;
+  m1 #(PAR) m1 ();
+  m3 #(PAR) m3 ();
+  mnooverride #(10) mno ();
+  mreal #1.2 mr ();
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==0) begin
-         bitsel = 0;
-         if (PAR[bitsel]!==1'b1) $stop;
-         bitsel = 1;
-         if (PAR[bitsel]!==1'b1) $stop;
-         bitsel = 2;
-         if (PAR[bitsel]!==1'b0) $stop;
-      end
-      if (cyc==1) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  integer cyc = 1;
+  reg [4:0] bitsel;
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 0) begin
+      bitsel = 0;
+      if (PAR[bitsel] !== 1'b1) $stop;
+      bitsel = 1;
+      if (PAR[bitsel] !== 1'b1) $stop;
+      bitsel = 2;
+      if (PAR[bitsel] !== 1'b0) $stop;
+    end
+    if (cyc == 1) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
 module m1;
-   localparam PAR1MINUS1 = PAR1DUP-2-1;
-   localparam PAR1DUP = PAR1+2;  // Check we propagate parameters properly
-   parameter PAR1 = 0;
-   m2 #(PAR1MINUS1) m2 ();
+  localparam PAR1MINUS1 = PAR1DUP - 2 - 1;
+  localparam PAR1DUP = PAR1 + 2;  // Check we propagate parameters properly
+  parameter PAR1 = 0;
+  m2 #(PAR1MINUS1) m2 ();
 
-   // Packed arrays
-   localparam [1:0][3:0] PACKED_PARAM = { 4'h3, 4'h6 };
-   initial if (PACKED_PARAM != 8'h36) $stop;
+  // Packed arrays
+  localparam [1:0][3:0] PACKED_PARAM = {4'h3, 4'h6};
+  initial if (PACKED_PARAM != 8'h36) $stop;
 endmodule
 
 // See issue #810
-module m2 #(/*parameter*/ integer PAR2 = 10);
-   initial begin
-      $display("%x",PAR2);
-      if (PAR2 !== 2) $stop;
-   end
+module m2 #(  /*parameter*/
+    integer PAR2 = 10
+);
+  initial begin
+    $display("%x", PAR2);
+    if (PAR2 !== 2) $stop;
+  end
 endmodule
 
 module m3;
-   localparam LOC = 13;
-   parameter PAR = 10;
-   initial begin
-      $display("%x %x",LOC,PAR);
-      if (LOC !== 13) $stop;
-      if (PAR !== 3) $stop;
-   end
+  localparam LOC = 13;
+  parameter PAR = 10;
+  initial begin
+    $display("%x %x", LOC, PAR);
+    if (LOC !== 13) $stop;
+    if (PAR !== 3) $stop;
+  end
 endmodule
 
 module mnooverride;
-   localparam LOC = 13;
-   parameter PAR = 10;
-   initial begin
-      $display("%x %x",LOC,PAR);
-      if (LOC !== 13) $stop;
-      if (PAR !== 10) $stop;
-   end
+  localparam LOC = 13;
+  parameter PAR = 10;
+  initial begin
+    $display("%x %x", LOC, PAR);
+    if (LOC !== 13) $stop;
+    if (PAR !== 10) $stop;
+  end
 endmodule
 
 module mreal;
-   parameter real REAL = 99.99;
-   initial begin
-      $display("%f", REAL);
-      if (REAL !== 1.2) $stop;
-   end
+  parameter real REAL = 99.99;
+  initial begin
+    $display("%f", REAL);
+    if (REAL !== 1.2) $stop;
+  end
 endmodule

@@ -35,13 +35,13 @@
 # include <psapi.h>   // GetProcessMemoryInfo
 #endif
 
-#if defined(__linux)
+#ifdef __linux
 # include <sched.h>  // For sched_getcpu()
 #endif
 #if defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
-#if defined(__FreeBSD__)
+#ifdef __FreeBSD__
 # include <pthread_np.h>  // For pthread_getaffinity_np()
 #endif
 
@@ -93,7 +93,7 @@ double DeltaWallTime::gettime() VL_MT_SAFE {
 // Vlos::getcpu implementation
 
 uint16_t getcpu() VL_MT_SAFE {
-#if defined(__linux)
+#ifdef __linux
     return sched_getcpu();  // TODO: this is a system call. Not exactly cheap.
 #elif defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
     uint32_t info[4];
@@ -194,7 +194,7 @@ void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
 
 std::string getenvStr(const std::string& envvar, const std::string& defaultValue) VL_MT_SAFE {
     std::string ret;
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
     // Note: MinGW does not offer _dupenv_s
     const char* envvalue = nullptr;
     _dupenv_s((char**)&envvalue, nullptr, envvar.c_str());

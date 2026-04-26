@@ -1,7 +1,7 @@
-%Warning-WIDTHCONCAT: t/t_func_const3_bad.v:12:28: Replication of more that --replication-limit 8192 is suspect: 9000
+%Warning-WIDTHCONCAT: t/t_func_const3_bad.v:13:27: Replication of more that --replication-limit 8192 is suspect: 9000
                                                  : ... note: In instance 't.b9k.c9'
-   12 |    localparam SOMEP = {BITS{1'b0}};
-      |                            ^
+   13 |   localparam SOMEP = {BITS{1'b0}};
+      |                           ^
                       ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=latest
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
 %Error: Exiting due to

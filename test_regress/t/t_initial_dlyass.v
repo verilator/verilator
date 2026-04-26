@@ -4,29 +4,28 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   integer cyc; initial cyc = 0;
-   integer a;
-   integer b;
+  integer cyc;
+  initial cyc = 0;
+  integer a;
+  integer b;
 
-   initial begin
-      a <= 22;
-      b <= 33;
-   end
+  initial begin
+    a <= 22;
+    b <= 33;
+  end
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==99) begin
-         if (a != 22) $stop;
-         if (b != 33) $stop;
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 99) begin
+      if (a != 22) $stop;
+      if (b != 33) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule

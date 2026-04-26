@@ -106,7 +106,9 @@ public:
         ENUMITEMWIDTH,  // Error: enum item width mismatch
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
+        FSMMULTI,       // Multiple FSM candidates in one always block
         FUNCTIMECTL,    // Functions cannot have timing/delay/wait
+        FUTURE,         // Feature is under development and not yet supported
         GENCLK,         // Generated Clock. Historical, never issued.
         GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
@@ -222,14 +224,14 @@ public:
             "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
             "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
             "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
-            "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
-            "INFINITELOOP", "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN",
-            "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP",
-            "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NULLPORT", "PARAMNODEFAULT",
-            "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
-            "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
+            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FSMMULTI",
+            "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH",
+            "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
+            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH",
+            "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN",
+            "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NULLPORT",
+            "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
+            "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
             "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
             "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN",
@@ -378,7 +380,7 @@ class VErrorBitSet final {
 
 public:
     class AllOnes {};
-    VErrorBitSet() {}
+    VErrorBitSet() = default;
     explicit VErrorBitSet(AllOnes) { m_bitset.set(); }
     ~VErrorBitSet() = default;
     bool test(V3ErrorCode code) const { return m_bitset[code]; }
@@ -496,8 +498,8 @@ public:
     void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
     void incWarnings() VL_REQUIRES(m_mutex) { ++m_warnCount; }
     void incErrors() VL_REQUIRES(m_mutex) { ++m_errCount; }
-    int errorCount() VL_REQUIRES(m_mutex) { return m_errCount; }
-    bool isErrorOrWarn() VL_REQUIRES(m_mutex) {
+    int errorCount() const VL_REQUIRES(m_mutex) { return m_errCount; }
+    bool isErrorOrWarn() const VL_REQUIRES(m_mutex) {
         return errorCount() || (warnFatal() && warnCount());
     }
     bool pretendError(V3ErrorCode code) VL_REQUIRES(m_mutex) { return m_pretendError.test(code); }
@@ -505,16 +507,16 @@ public:
         code.forDelegateCodes([this, flag](V3ErrorCode subcode)
                                   VL_REQUIRES(m_mutex) { m_pretendError.set(subcode, flag); });
     }
-    int debugDefault() VL_MT_SAFE { return m_debugDefault; }
+    int debugDefault() const VL_MT_SAFE { return m_debugDefault; }
     void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
-    int errorLimit() VL_REQUIRES(m_mutex) { return m_errorLimit; }
+    int errorLimit() const VL_REQUIRES(m_mutex) { return m_errorLimit; }
     void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
-    bool warnFatal() VL_REQUIRES(m_mutex) { return m_warnFatal; }
+    bool warnFatal() const VL_REQUIRES(m_mutex) { return m_warnFatal; }
     void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
-    V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_message.code(); }
+    V3ErrorCode errorCode() const VL_REQUIRES(m_mutex) { return m_message.code(); }
     bool errorContexted() VL_REQUIRES(m_mutex) { return m_errorContexted; }
-    int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }
-    bool errorSuppressed() VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
+    int warnCount() const VL_REQUIRES(m_mutex) { return m_warnCount; }
+    bool errorSuppressed() const VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
     void errorSuppressed(bool flag) VL_REQUIRES(m_mutex) { m_errorSuppressed = flag; }
     bool describedEachWarn(V3ErrorCode code) VL_REQUIRES(m_mutex) {
         return m_describedEachWarn.test(code);
@@ -537,9 +539,9 @@ public:
 
 class V3Error final {
     // Static members only
-    V3Error() = delete;
 
 public:
+    V3Error() = delete;
     static V3ErrorGuarded& s() VL_MT_SAFE {  // Singleton
         static V3ErrorGuarded s_s;
         return s_s;

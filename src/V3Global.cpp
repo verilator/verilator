@@ -174,7 +174,8 @@ string V3Global::digitsFilename(int number) {
     return ss.str();
 }
 
-void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
+void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump,
+                                   bool doCheck) {
     const string treeFilename = v3Global.debugFilename(stagename + ".tree", newNumber);
     if (dumpTreeLevel()) v3Global.rootp()->dumpTreeFile(treeFilename, doDump);
     if (dumpTreeJsonLevel()) {
@@ -186,7 +187,7 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
 
     if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(treeFilename + ".v");
-    if (v3Global.opt.debugCheck() || dumpTreeEitherLevel()) {
+    if (doCheck && (v3Global.opt.debugCheck() || dumpTreeEitherLevel())) {
         // Error check
         v3Global.rootp()->checkTree();
         // Broken isn't part of check tree because it can munge iterp's

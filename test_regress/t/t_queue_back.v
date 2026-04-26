@@ -6,37 +6,37 @@
 
 module t;
 
-   int q[$];
-   int r;
+  int q[$];
+  int r;
 
-   function void set_val(ref int lhs, input int rhs);
-      lhs = rhs;
-   endfunction
+  function void set_val(ref int lhs, input int rhs);
+    lhs = rhs;
+  endfunction
 
-   initial begin
-      q = { 60, 50, 40 };
-      set_val(q[$-1], 30);
-      q[$-2] = 20;
+  initial begin
+    q = {60, 50, 40};
+    set_val(q[$-1], 30);
+    q[$-2] = 20;
 
-      r = q[$];
-      if (r != 40) $stop;
+    r = q[$];
+    if (r != 40) $stop;
 
-      r = q[$-1];
-      if (r != 30) $stop;
+    r = q[$-1];
+    if (r != 30) $stop;
 
-      q = q[0:$-1]; // void'(q.pop_back()) or q.delete(q.size-1)
-      if (q.size != 2) $stop;
-      if (q[0] != 20) $stop;
-      if (q[1] != 30) $stop;
+    q = q[0:$-1];  // void'(q.pop_back()) or q.delete(q.size-1)
+    if (q.size != 2) $stop;
+    if (q[0] != 20) $stop;
+    if (q[1] != 30) $stop;
 
-      q = { 20, 30, 40 };
-      q = q[$-1:$];
-      if (q.size != 2) $stop;
-      if (q[0] != 30) $stop;
-      if (q[1] != 40) $stop;
+    q = {20, 30, 40};
+    q = q[$-1:$];
+    if (q.size != 2) $stop;
+    if (q[0] != 30) $stop;
+    if (q[1] != 40) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

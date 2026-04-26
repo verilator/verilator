@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.compile(fails=True,
              verilator_flags2=["--binary -Wno-UNOPTFLAT"],

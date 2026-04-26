@@ -1,0 +1,10 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_coverage_bad.v:13:15: Bit [0] of signal 't.w' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_lint_multidriven_coverage_bad.v:15:15: ... Location of offending driver
+   15 |   assign w[0] = a;   
+      |               ^
+                      t/t_lint_multidriven_coverage_bad.v:16:15: ... Location of offending driver
+   16 |   assign w[0] = b;   
+      |               ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

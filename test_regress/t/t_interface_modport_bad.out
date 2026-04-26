@@ -1,6 +1,6 @@
-%Error: t/t_interface_modport_bad.v:23:8: Modport not found under interface 'ifc': 'oop_modport'
+%Error: t/t_interface_modport_bad.v:24:9: Modport not found under interface 'ifc': 'oop_modport'
                                         : ... Suggested alternative: 'out_modport'
-   23 |    ifc.oop_modport isub,   
-      |        ^~~~~~~~~~~
+   24 |     ifc.oop_modport isub,   
+      |         ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

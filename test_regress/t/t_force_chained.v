@@ -4,12 +4,12 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-// verilog_format: off
-`define stop  // TODO
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: off
 
-  module t;
+module t;
   reg [1:0] a;
   wire [1:0] b = 1;
   bit [1:0] c;
@@ -26,7 +26,6 @@
     #1;
     `checkh(a, 1);
     `checkh(b, 1);
-    // TODO implement inter-dependency resolution between force statements
     `checkh(c, 1);
 
     a = 2;

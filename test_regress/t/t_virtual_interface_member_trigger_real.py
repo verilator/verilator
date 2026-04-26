@@ -9,8 +9,6 @@
 
 import vltest_bootstrap
 
-test.skip("Test is broken, see #6613")
-
 test.scenarios('simulator')
 
 test.compile(verilator_flags2=['--binary'])

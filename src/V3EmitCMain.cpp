@@ -55,16 +55,27 @@ private:
         // Heavily commented output, as users are likely to look at or copy this code
 
         puts("#include \"verilated.h\"\n");
+        if (v3Global.opt.vpi()) puts("#include \"verilated_vpi.h\"\n");
         puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
         if (v3Global.opt.debugRuntimeTimeout()) {
             puts("\n");
             puts("#include <csignal>\n");
         }
+        puts("\n");
 
-        puts("\n//======================\n\n");
+        if (v3Global.opt.vpi()) {
+            puts("// User VPI code adds to this array to get startup main() callbacks\n");
+            puts("extern \"C\" void (*vlog_startup_routines[])() VL_ATTR_WEAK;\n");
+            puts("\n");
+        }
+
+        puts("//======================\n\n");
 
         if (v3Global.opt.debugRuntimeTimeout()) {
             puts("void alarmHandler(int signum) {\n");
+            // Add newline so %Error is at beginning-of-line, as might get the alarm
+            // when in the middle of some other print with no newline
+            puts("    VL_PRINTF_MT(\"\\n\");\n");
             puts("    VL_FATAL_MT(\"\", 0, \"\", \"Alarm signal received,"s
                  + " '--debug-runtime-timeout "s
                  + std::to_string(v3Global.opt.debugRuntimeTimeout()) + "' exceeded\\n\");\n");
@@ -92,18 +103,43 @@ private:
              + EmitCUtil::topClassName() + "{contextp.get(), \"" + topName + "\"}};\n");
         puts("\n");
 
+        if (v3Global.opt.vpi()) {
+            puts("// Hook VPI startup routines and invoke callback\n");
+            puts("if (vlog_startup_routines) {\n");
+            puts(/**/ "for (auto routinep = &vlog_startup_routines[0]; *routinep; routinep++)"
+                      " (*routinep)();\n");
+            puts("}\n");
+            puts("VerilatedVpi::callCbs(cbStartOfSimulation);\n");
+            puts("\n");
+        }
+
         puts("// Simulate until $finish\n");
         puts("while (VL_LIKELY(!contextp->gotFinish())) {\n");
+        if (v3Global.opt.vpi()) {
+            puts(/**/ "// VPI callbacks\n");
+            puts(/**/ "VerilatedVpi::callTimedCbs();\n");
+            puts(/**/ "VerilatedVpi::callCbs(cbNextSimTime);\n");  // Before next event queue
+            puts(/**/ "VerilatedVpi::callCbs(cbAtStartOfSimTime);\n");  // Before time queue
+        }
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
+        if (v3Global.opt.vpi()) {
+            puts(/**/ "// VPI callbacks\n");
+            puts(/**/ "VerilatedVpi::callValueCbs();\n");
+            puts(/**/ "VerilatedVpi::callCbs(cbAtEndOfSimTime);\n");  // After nonblocking events
+            puts(/**/ "VerilatedVpi::callCbs(cbReadWriteSynch);\n");  // After a specified time
+            puts(/**/ "VerilatedVpi::callCbs(cbReadOnlySynch);\n");  // After cbReadWriteSynch
+        }
         puts(/**/ "// Advance time\n");
         if (v3Global.rootp()->delaySchedulerp() || v3Global.opt.timing()) {
             puts("if (!topp->eventsPending()) break;\n");
         }
-        if (v3Global.rootp()->delaySchedulerp()) {
-            puts("contextp->time(topp->nextTimeSlot());\n");
+        const std::string nextSlot = v3Global.rootp()->delaySchedulerp() ? "topp->nextTimeSlot()"
+                                                                         : "contextp->time() + 1";
+        if (v3Global.opt.vpi()) {
+            puts("contextp->time(std::min("s + nextSlot + ", VerilatedVpi::cbNextDeadline()));\n");
         } else {
-            puts("contextp->timeInc(1);\n");
+            puts("contextp->time("s + nextSlot + ");\n");
         }
 
         puts("}\n");
@@ -116,6 +152,7 @@ private:
 
         puts("// Execute 'final' processes\n");
         puts("topp->final();\n");
+        if (v3Global.opt.vpi()) puts("VerilatedVpi::callCbs(cbEndOfSimulation);\n");
         puts("\n");
 
         if (v3Global.opt.coverage()) {
@@ -140,5 +177,5 @@ private:
 
 void V3EmitCMain::emit() {
     UINFO(2, __FUNCTION__ << ":");
-    { EmitCMain visitor; }
+    { const EmitCMain visitor; }
 }

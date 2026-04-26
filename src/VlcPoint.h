@@ -57,7 +57,7 @@ public:
     void testsCoveringInc() { m_testsCovering++; }
     bool ok(unsigned annotateMin) const {
         const std::string threshStr = thresh();
-        unsigned threshi = !threshStr.empty() ? std::atoi(threshStr.c_str()) : annotateMin;
+        const unsigned threshi = !threshStr.empty() ? std::atoi(threshStr.c_str()) : annotateMin;
         return m_count >= threshi;
     }
     // KEY ACCESSORS
@@ -70,6 +70,18 @@ public:
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
     }
     string linescov() const { return keyExtract(VL_CIK_LINESCOV, m_name.c_str()); }
+    bool isFsmState() const { return type() == "fsm_state"; }
+    bool isFsmArc() const { return type() == "fsm_arc"; }
+    // Arc-specific helpers are used after callers have already filtered to
+    // FSM arc points, so they do not repeat the type check here.
+    string fsmVarName() const { return keyExtract(VL_CIK_FSM_VAR, m_name.c_str()); }
+    string fsmFromState() const { return keyExtract(VL_CIK_FSM_FROM, m_name.c_str()); }
+    string fsmToState() const { return keyExtract(VL_CIK_FSM_TO, m_name.c_str()); }
+    string fsmTag() const { return keyExtract(VL_CIK_FSM_TAG, m_name.c_str()); }
+    bool isFsmResetInclude() const { return fsmTag() == "reset_include"; }
+    bool isFsmResetArc() const { return fsmTag() == "reset"; }
+    bool isFsmDefaultArc() const { return fsmTag() == "default"; }
+    bool fsmIsReset() const { return isFsmResetArc() || isFsmResetInclude(); }
     int lineno() const {
         const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
         return std::atoi(lineStr.c_str());

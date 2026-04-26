@@ -153,7 +153,7 @@ AstAlways::AstAlways(AstAssignW* assignp)
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
-    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});
+    addFmtp(new AstSFormatF{fl, "", true, exprsp});
     m_displayType = dispType;
 }
 
@@ -183,23 +183,17 @@ AstVarRef::AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access)
 string AstVarRef::name() const { return varp() ? varp()->name() : nameThis(); }
 
 bool AstVarRef::sameNode(const AstVarRef* samep) const {
-    if (varScopep()) {
-        return (varScopep() == samep->varScopep() && access() == samep->access());
-    } else {
-        return (selfPointer() == samep->selfPointer()
-                && classOrPackagep() == samep->classOrPackagep() && access() == samep->access()
-                && (varp() && samep->varp() && varp()->sameNode(samep->varp())));
-    }
+    if (varScopep()) return (varScopep() == samep->varScopep() && access() == samep->access());
+    return (selfPointer() == samep->selfPointer() && classOrPackagep() == samep->classOrPackagep()
+            && access() == samep->access()
+            && (varp() && samep->varp() && varp()->sameNode(samep->varp())));
 }
 bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
-    if (varScopep()) {
-        return (varScopep() == samep->varScopep());
-    } else {
-        return (selfPointer() == samep->selfPointer()
-                && classOrPackagep() == samep->classOrPackagep()
-                && (!selfPointer().isEmpty() || !samep->selfPointer().isEmpty())
-                && varp()->sameNode(samep->varp()));
-    }
+    if (varScopep()) return (varScopep() == samep->varScopep());
+
+    return (selfPointer() == samep->selfPointer() && classOrPackagep() == samep->classOrPackagep()
+            && (!selfPointer().isEmpty() || !samep->selfPointer().isEmpty())
+            && varp()->sameNode(samep->varp()));
 }
 
 AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const VAccess& access)
@@ -210,5 +204,14 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
 }
 
 AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
+
+// Walk up the AST via backp() to find the containing AstNodeModule.
+// Returns nullptr if not found.
+inline AstNodeModule* findParentModule(AstNode* nodep) {
+    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+        if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
+    }
+    return nullptr;
+}
 
 #endif  // Guard

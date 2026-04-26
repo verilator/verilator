@@ -44,7 +44,7 @@ class Subfoo extends Foo;
   virtual task do_something();#5;endtask
 endclass
 
-module t();
+module t;
   initial begin
     Subfoo subfoo;
     Foo foo;

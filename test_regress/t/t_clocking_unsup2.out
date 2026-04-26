@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_clocking_unsup2.v:16:11: Unsupported: ##0 delays
-                                               : ... note: In instance 't'
-   16 |    always ##0;
-      |           ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

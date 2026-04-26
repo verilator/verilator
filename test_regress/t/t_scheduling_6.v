@@ -6,11 +6,9 @@
 // SPDX-FileCopyrightText: 2022 Geza Lore
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module top(
-  clk
+module top (
+    input clk
 );
-
-  input clk;
 
   reg clk_half = 0;
 
@@ -33,7 +31,7 @@ module top(
   end
 
   always @(posedge clk) a = cyc + $c(1);
-  always @(a)   b = a + $c(1);
-  assign        c = a + $c(1);
+  always @(a) b = a + $c(1);
+  assign c = a + $c(1);
 
 endmodule

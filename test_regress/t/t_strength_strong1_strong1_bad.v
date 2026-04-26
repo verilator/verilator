@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   wire (strong1, strong1) a = 1;
-   initial begin
-      $stop;
-   end
+  wire (strong1, strong1) a = 1;
+  initial begin
+    $stop;
+  end
 
 endmodule

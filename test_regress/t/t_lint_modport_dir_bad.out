@@ -1,6 +1,6 @@
-%Error: t/t_lint_modport_dir_bad.v:26:20: Attempt to drive input-only modport: 'signal'
+%Error: t/t_lint_modport_dir_bad.v:26:19: Attempt to drive input-only modport: 'signal'
                                         : ... note: In instance 't.sub'
-   26 |    assign dummy_in.signal = signal_i;
-      |                    ^~~~~~
+   26 |   assign dummy_in.signal = signal_i;
+      |                   ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

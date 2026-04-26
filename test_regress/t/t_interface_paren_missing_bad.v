@@ -10,6 +10,6 @@ interface intf;
 endinterface
 
 module t;
-   intf intf_i;
-   initial $finish;
+  intf intf_i;
+  initial $finish;
 endmodule

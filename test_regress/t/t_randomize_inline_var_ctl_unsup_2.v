@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
-   int x;
+  int x;
 
-   static function Foo get;
-      Foo foo = new;
-      return foo;
-   endfunction
+  static function Foo get;
+    Foo foo = new;
+    return foo;
+  endfunction
 endclass
 
 module t;
-   initial void'(Foo::get().randomize(x));
+  initial void'(Foo::get().randomize(x));
 endmodule

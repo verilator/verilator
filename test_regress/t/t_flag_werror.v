@@ -6,7 +6,7 @@
 
 module t;
 
-   // Width error below
-   wire [3:0] foo = 6'h2e;
+  // Width error below
+  wire [3:0] foo = 6'h2e;
 
 endmodule

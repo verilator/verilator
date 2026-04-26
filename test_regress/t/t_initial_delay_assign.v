@@ -23,7 +23,7 @@
   end \
 
 
-module t ();
+module t;
   reg foo1;
   wire bar1;
   initial foo1 = '0;

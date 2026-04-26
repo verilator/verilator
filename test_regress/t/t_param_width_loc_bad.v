@@ -6,17 +6,16 @@
 
 module t;
 
-   // bug1624
-   test #(.PARAM(32'd0)) test_i();
+  // bug1624
+  test #(.PARAM(32'd1)) test_i ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
-module test
-  #(
+module test #(
     parameter logic PARAM = 1'b0
-    ) ();
+) ();
 endmodule

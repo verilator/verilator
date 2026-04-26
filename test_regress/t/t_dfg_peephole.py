@@ -32,6 +32,9 @@ with open(hdrFile, 'r', encoding="utf8") as hdrFh:
         if prevOpt > opt:
             test.error(hdrFile + ":" + str(lineno) + ": '" + opt + "; is not in sorted order")
         prevOpt = opt
+        # Trivial, but also hard to trigger on purpose as it depends on rewrite order
+        if opt == "REPLACE_WITH_EQUIVALENT":
+            continue
         optimizations.append(opt)
 
 if len(optimizations) < 1:
@@ -91,6 +94,7 @@ test.compile(verilator_flags2=[
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
+    "-fno-lift-expr", # Assumes V3Const run prior to V3LiftExpr
     "-fdfg-synthesize-all",
     "--dump-dfg",  # To fill code coverage
     "-CFLAGS \"-I .. -I ../obj_ref\"",
@@ -102,7 +106,7 @@ test.compile(verilator_flags2=[
 def check(name, enabled):
     name = name.lower()
     name = re.sub(r'_', ' ', name)
-    pattern = r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)\s*$'
+    pattern = r'DFG, Peephole, ' + name + r'\s+([1-9]\d*)\s*$'
     if enabled:
         test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt", pattern)
     else:

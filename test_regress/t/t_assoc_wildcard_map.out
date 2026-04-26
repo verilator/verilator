@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_assoc_wildcard_map.v:19:15: Unsupported: Wildcard array 'map' method (IEEE 1800-2023 7.12.5)
-                                                  : ... note: In instance 't'
-   19 |       res = a.map(el) with (el == 2);
-      |               ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

@@ -4,16 +4,17 @@
 // SPDX-FileCopyrightText: 2003-2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
+module t (
+    input clk
+);
 
-   reg [43:0] mi;
-   reg [3:0]  sel2;
-   reg [0:22] backwd;
+  reg [43:0] mi;
+  reg [3:0] sel2;
+  reg [0:22] backwd;
 
-   always @ (posedge clk) begin
-      mi = 44'h123;
-      sel2 = mi[1:4];
-      $write ("Bad select %x\n", sel2);
-   end
+  always @(posedge clk) begin
+    mi = 44'h123;
+    sel2 = mi[1:4];
+    $write("Bad select %x\n", sel2);
+  end
 endmodule

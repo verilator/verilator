@@ -7,37 +7,36 @@
 // Auto-resolved by t_interface_find_ifc.v
 // interface t_interface_find_ifc;
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-   integer cyc=1;
+  integer cyc = 1;
 
-   t_interface_find_ifc itop();
+  t_interface_find_ifc itop ();
 
-   sub  c1 (.isub(itop),
-            .i_value(4'h4));
+  sub c1 (
+      .isub(itop),
+      .i_value(4'h4)
+  );
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==20) begin
-         if (c1.i_value != 4) $stop;  // 'Normal' crossref just for comparison
-         if (itop.value != 4) $stop;
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 20) begin
+      if (c1.i_value != 4) $stop;  // 'Normal' crossref just for comparison
+      if (itop.value != 4) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule
 
-module sub
-  (
-   t_interface_find_ifc isub,
-   input logic [3:0] i_value
-   );
+module sub (
+    t_interface_find_ifc isub,
+    input logic [3:0] i_value
+);
 
-   always @* begin
-      isub.value = i_value;
-   end
+  always @* begin
+    isub.value = i_value;
+  end
 endmodule : sub

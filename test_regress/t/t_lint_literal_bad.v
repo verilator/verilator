@@ -7,6 +7,6 @@
 module t (
 );
 
-    localparam the_localparam = 8'd256;
+  localparam the_localparam = 8'd256;
 
 endmodule

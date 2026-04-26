@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      casex (1'bx) inside
-        default: $stop;
-      endcase
-   end
+  initial begin
+    casex (1'bx) inside
+      default: $stop;
+    endcase
+  end
 endmodule

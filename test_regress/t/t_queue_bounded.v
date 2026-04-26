@@ -6,38 +6,38 @@
 
 module t;
 
-   localparam TWO = 2;
+  localparam TWO = 2;
 
-   int q[$ : TWO];  // Shall not go higher than [2], i.e. size 3
+  int q[$ : TWO];  // Shall not go higher than [2], i.e. size 3
 
-   initial begin
-      q.push_front(3);
-      if (q.size() != 1) $stop;
-      q.push_front(2);
-      if (q.size() != 2) $stop;
-      q.push_front(1);
-      if (q.size() != 3) $stop;
-      q.push_front(0);
-      if (q.size() != 3) $stop;
-      q[3] = -1;
-      if (q.size() != 3) $stop;
-      if (q[0] != 0) $stop;
-      if (q[1] != 1) $stop;
-      if (q[2] != 2) $stop;
+  initial begin
+    q.push_front(3);
+    if (q.size() != 1) $stop;
+    q.push_front(2);
+    if (q.size() != 2) $stop;
+    q.push_front(1);
+    if (q.size() != 3) $stop;
+    q.push_front(0);
+    if (q.size() != 3) $stop;
+    q[3] = -1;
+    if (q.size() != 3) $stop;
+    if (q[0] != 0) $stop;
+    if (q[1] != 1) $stop;
+    if (q[2] != 2) $stop;
 
-      q.delete();
-      q.push_back(0);
-      q.push_back(1);
-      q.push_back(2);
-      if (q.size() != 3) $stop;
-      q.push_back(3);
-      if (q.size() != 3) $stop;
-      if (q[0] != 0) $stop;
-      if (q[1] != 1) $stop;
-      if (q[2] != 2) $stop;
+    q.delete();
+    q.push_back(0);
+    q.push_back(1);
+    q.push_back(2);
+    if (q.size() != 3) $stop;
+    q.push_back(3);
+    if (q.size() != 3) $stop;
+    if (q[0] != 0) $stop;
+    if (q[1] != 1) $stop;
+    if (q[2] != 2) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

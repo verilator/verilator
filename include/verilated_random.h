@@ -28,10 +28,10 @@
 
 #include "verilated.h"
 
-#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <set>
 #include <sstream>
 
 //=============================================================================
@@ -75,7 +75,7 @@ public:
     std::string name() const { return m_name; }
     int width() const { return m_width; }
     int dimension() const { return m_dimension; }
-    virtual void* datap(int idx) const { return m_datap; }
+    virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
     bool set(const std::string& idx, const std::string& val) const;
@@ -88,6 +88,7 @@ public:
         m_arrVarsRefp = arrVarsRefp;
     }
     mutable std::map<std::string, int> count_cache;
+    void clearCountCache() const { count_cache.clear(); }
     int countMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
         if (VL_LIKELY(count_cache.find(base_name) != count_cache.end()))
             return count_cache[base_name];
@@ -109,12 +110,9 @@ public:
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) {
-            return it->second->m_datap;
-        } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
-            return nullptr;  // LCOV_EXCL_BR_LINE
-        }
+        if (VL_LIKELY(it != m_arrVarsRefp->end())) return it->second->m_datap;
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+        return nullptr;  // LCOV_EXCL_BR_LINE
     }
     void emitHexs(std::ostream& s, const std::vector<IData>& indices, const size_t bit_width,
                   size_t idx) const {
@@ -172,7 +170,14 @@ public:
                 for (int i = 0; i < dimension(); ++i) s << ")";
             }
         } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+            if (dimension() > 0) {
+                for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+                s << "(_ BitVec " << width() << ")";
+                for (int i = 0; i < dimension(); ++i) s << ")";
+            } else {
+                VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                            "indexed_name not found in m_arr_vars");
+            }
         }
     }
     int totalWidth() const override {
@@ -200,27 +205,31 @@ public:
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
+    std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
-                                                                       // variables
+    std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
+                                           // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
     std::vector<std::string> m_unique_arrays;
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
     std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
-    std::map<std::string, std::deque<uint64_t>>
-        m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
-    size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
+    std::map<std::string, std::set<uint64_t>>
+        m_randcUsedValues;  // Previously used values per randc var (exclusion-based cycling)
+    size_t m_randcConstraintHash = 0;  // Hash of constraints when history was valid
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& file, bool log = false);
-    void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
+    bool parseSolution(std::iostream& os, bool log = false);
+    bool checkSat(std::iostream& os);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints() const;
     bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
 
@@ -328,6 +337,12 @@ public:
                     "supported currently.");
     }
 
+    // Mark a variable as rand_mode-disabled: solver keeps it in m_vars
+    // (so constraints still reference it) but skips write-back after solving.
+    void set_var_disabled(const char* name) { m_disabledVars.insert(name); }
+    // Clear disabled state for a variable
+    void clear_var_disabled(const char* name) { m_disabledVars.erase(name); }
+
     // ---  write_var to register variables  ---
     // Register scalar variable (non-struct, basic type)
     template <typename T>
@@ -354,12 +369,15 @@ public:
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
-            name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
+                name, width, &var, dimension, randmodeIdx);
+        }
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
 
@@ -376,21 +394,23 @@ public:
     write_var(VlUnpacked<T, N_Depth>& var, uint32_t width, const std::string& name,
               uint32_t dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-
-        if (m_vars.find(name) != m_vars.end()) return;
-
-        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
-            name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name]
+                = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
+                    name, width, &var, dimension, randmodeIdx);
+        }
 
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
     // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
+    write_var(VlUnpacked<T, N_Depth>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
@@ -400,20 +420,23 @@ public:
     typename std::enable_if<!VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name]
-            = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-                name, width, &var, dimension, randmodeIdx);
+        if (m_vars.find(name) == m_vars.end()) {
+            m_vars[name]
+                = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
+                    name, width, &var, dimension, randmodeIdx);
+        }
         if (dimension > 0) {
             m_index = 0;
+            clear_arr_table(name);
             record_arr_table(var, name, dimension, {}, {});
+            m_vars[name]->clearCountCache();
         }
     }
 
     // Register associative array of structs
     template <typename T_Key, typename T_Value>
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
-    write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
+    write_var(VlAssocArray<T_Key, T_Value>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
@@ -423,8 +446,8 @@ public:
     // Record a flat (non-class) element into the array variable table
     template <typename T>
     typename std::enable_if<!std::is_class<T>::value || VlIsVlWide<T>::value, void>::type
-    record_arr_table(T& var, const std::string& name, int dimension, std::vector<IData> indices,
-                     std::vector<size_t> idxWidths) {
+    record_arr_table(T& var, const std::string& name, int /*dimension*/,
+                     std::vector<IData> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, m_index);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
         ++m_index;
@@ -499,8 +522,8 @@ public:
     // Register a single structArray element via write_var
     template <typename T>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    record_struct_arr(T& var, const std::string& name, int dimension, std::vector<IData> indices,
-                      std::vector<size_t> idxWidths) {
+    record_struct_arr(T& var, const std::string& name, int /*dimension*/,
+                      std::vector<IData> indices, std::vector<size_t> idxWidths) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
             oss << std::hex << std::setw(int(idxWidths[i] / 4)) << std::setfill('0')
@@ -580,7 +603,7 @@ public:
     }
 
     // Helper: Generate unique variable key from name and index
-    std::string generateKey(const std::string& name, int idx) {
+    static std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
             const size_t space_pos = name.find(' ');
             return (space_pos != std::string::npos ? name.substr(0, space_pos) : name)
@@ -591,13 +614,31 @@ public:
                + std::to_string(idx);
     }
 
+    // Helper: Clear existing array element entries for a base name
+    void clear_arr_table(const std::string& name) {
+        for (int index = 0;; ++index) {
+            const std::string key = generateKey(name, index);
+            const auto it = m_arr_vars.find(key);
+            if (it == m_arr_vars.end()) break;
+            m_arr_vars.erase(it);
+        }
+    }
+
     void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
+    void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+              const char* source = "");
+    void pin_var(const char* name, int width, uint64_t value) {
+        std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
+                                 + std::to_string(width) + ")))";
+        hard(std::move(constraint));
+    }
+    void disable_soft(const std::string& varName);
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
-    void solveBefore(const char* beforeName,
-                     const char* afterName);  // Register solve-before ordering
+    void solveBefore(const std::string& beforeName,
+                     const std::string& afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

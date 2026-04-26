@@ -4,100 +4,98 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   integer      cyc = 0;
-   reg [63:0]   crc;
-   reg [63:0]   sum;
+  integer cyc = 0;
+  reg [63:0] crc;
+  reg [63:0] sum;
 
-   // Take CRC data and apply to testblock inputs
-   wire [7:0]  operand_a = crc[7:0];
-   wire [7:0]  operand_b = crc[15:8];
+  // Take CRC data and apply to testblock inputs
+  wire [7:0] operand_a = crc[7:0];
+  wire [7:0] operand_b = crc[15:8];
 
-   /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [6:0]           out;                    // From test of Test.v
-   // End of automatics
+  /*AUTOWIRE*/
+  // Beginning of automatic wires (for undeclared instantiated-module outputs)
+  wire [6:0] out;  // From test of Test.v
+  // End of automatics
 
-   Test test (/*AUTOINST*/
-              // Outputs
-              .out                      (out[6:0]),
-              // Inputs
-              .clk                      (clk),
-              .operand_a                (operand_a[7:0]),
-              .operand_b                (operand_b[7:0]));
-
-   // Aggregate outputs into a single result vector
-   wire [63:0] result = {57'h0, out};
-
-   // Test loop
-   always @ (posedge clk) begin
-`ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
-`endif
-      cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
-      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
-      if (cyc==0) begin
-         // Setup
-         crc <= 64'h5aef0c8d_d70a4497;
-         sum <= 64'h0;
-      end
-      else if (cyc<10) begin
-         sum <= 64'h0;
-      end
-      else if (cyc<90) begin
-      end
-      else if (cyc==99) begin
-         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
-         if (crc !== 64'hc77bb9b3784ea091) $stop;
-         // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h8a78c2ec4946ac38
-         if (sum !== `EXPECTED_SUM) $stop;
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
-
-endmodule
-
-module Test
-  (
-   // Inputs
-   input wire        clk,
-   input wire [7:0]  operand_a, // operand a
-   input wire [7:0]  operand_b, // operand b
-             // Outputs
-   output wire [6:0] out
-   );
-
-   wire [6:0]        clz_a;
-   wire [6:0]        clz_b;
-
-   clz u_clz_a
-     (
+  Test test (  /*AUTOINST*/
+      // Outputs
+      .out(out[6:0]),
       // Inputs
-      .data_i      (operand_a),
-      .out      (clz_a));
+      .clk(clk),
+      .operand_a(operand_a[7:0]),
+      .operand_b(operand_b[7:0])
+  );
 
-  clz u_clz_b
-    (
-     // Inputs
-     .data_i      (operand_b),
-     .out      (clz_b));
+  // Aggregate outputs into a single result vector
+  wire [63:0] result = {57'h0, out};
 
-   assign out     = clz_a - clz_b;
+  // Test loop
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-   always @(posedge clk)
-     $display("Out(%x) =  clz_a(%x) - clz_b(%x)", out, clz_a, clz_b);
+    $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
+`endif
+    cyc <= cyc + 1;
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
+    if (cyc == 0) begin
+      // Setup
+      crc <= 64'h5aef0c8d_d70a4497;
+      sum <= 64'h0;
+    end
+    else if (cyc < 10) begin
+      sum <= 64'h0;
+    end
+    else if (cyc < 90) begin
+    end
+    else if (cyc == 99) begin
+      $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
+      if (crc !== 64'hc77bb9b3784ea091) $stop;
+      // What checksum will we end up with (above print should match)
+      `define EXPECTED_SUM 64'h8a78c2ec4946ac38
+      if (sum !== `EXPECTED_SUM) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+
+endmodule
+
+module Test (
+    // Inputs
+    input wire clk,
+    input wire [7:0] operand_a,  // operand a
+    input wire [7:0] operand_b,  // operand b
+    // Outputs
+    output wire [6:0] out
+);
+
+  wire [6:0] clz_a;
+  wire [6:0] clz_b;
+
+  clz u_clz_a (
+      // Inputs
+      .data_i(operand_a),
+      .out(clz_a)
+  );
+
+  clz u_clz_b (
+      // Inputs
+      .data_i(operand_b),
+      .out(clz_b)
+  );
+
+  assign out = clz_a - clz_b;
+`ifdef TEST_VERBOSE
+  always @(posedge clk) $display("Out(%x) =  clz_a(%x) - clz_b(%x)", out, clz_a, clz_b);
 `endif
 
 endmodule
 
+// verilog_format: off
 `define def_0000_001x 8'b0000_0010, 8'b0000_0011
 
 `define def_0000_01xx 8'b0000_0100, 8'b0000_0101, 8'b0000_0110, 8'b0000_0111
@@ -204,7 +202,6 @@ endmodule
 `define def_001x_xxxx `def_0010_xxxx, `def_0011_xxxx
 
 
-
 module clz(
   input wire [7:0] data_i,
   output wire [6:0] out
@@ -276,4 +273,4 @@ module clz(
 
   assign out = {4'b0000, clz_byte1};
 
-endmodule // clz
+endmodule

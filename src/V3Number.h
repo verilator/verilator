@@ -30,11 +30,52 @@
 #include <limits>
 #include <vector>
 
-//============================================================================
-
 class AstNode;
 class AstNodeDType;
+class AstSFormatArg;
 class FileLine;
+
+//============================================================================
+
+class VFormatAttr final {
+public:
+    enum en : char {
+        //               // AstSFormatArg is typically skipped for UNSIGNED, as is the default
+        UNSIGNED = VL_VFORMATATTR_UNSIGNED,
+        SIGNED = VL_VFORMATATTR_SIGNED,
+        //
+        COMPLEX = VL_VFORMATATTR_COMPLEX,
+        DOUBLE = VL_VFORMATATTR_DOUBLE,
+        SCOPE = VL_VFORMATATTR_SCOPE,
+        STRING = VL_VFORMATATTR_STRING,
+        TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
+    };
+    enum en m_e;
+    VFormatAttr()
+        : m_e{UNSIGNED} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFormatAttr(en _e)
+        : m_e{_e} {}
+    explicit VFormatAttr(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    char ascii() const { return m_e; }
+    bool isComplex() const { return m_e == COMPLEX; }
+    bool isDouble() const { return m_e == DOUBLE; }
+    bool isSigned() const { return m_e == SIGNED; }
+    bool isString() const { return m_e == STRING; }
+    bool isUnsigned() const { return m_e == UNSIGNED; }
+};
+constexpr bool operator==(const VFormatAttr& lhs, const VFormatAttr& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VFormatAttr& lhs, VFormatAttr::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VFormatAttr::en lhs, const VFormatAttr& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VFormatAttr& rhs) {
+    return os << rhs.ascii();
+}
+
+//============================================================================
 
 class V3NumberData final {
 public:
@@ -94,7 +135,6 @@ public:
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
 
-public:
     // CONSTRUCTORS
     V3NumberData()
         : m_type{V3NumberDataType::UNINITIALIZED}
@@ -299,6 +339,8 @@ private:
     void initString(Args&&... args) {
         new (&m_string) std::string(std::forward<Args>(args)...);
     }
+
+    string formatDecimal();
 
     void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
     void destroyString() { m_string.~string(); }
@@ -537,7 +579,7 @@ public:
     V3Number(V3Number&& other) = default;
     V3Number& operator=(V3Number&& other) = default;
 
-    ~V3Number() {}
+    ~V3Number() = default;
 
 private:
     void selfTestThis();
@@ -595,9 +637,11 @@ public:
 
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_STABLE;
-    string displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE;
-    string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
-    static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
+    string displayed(const AstNode* nodep, const string& vformat,
+                     const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
+    string displayed(FileLine* fl, const string& vformat,
+                     const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
+    static bool displayedFmtHasArg(char format, bool isScan);
     string emitC() const VL_MT_STABLE;
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthToFit() const;  // Minimum width that can represent this number (~== log2(num)+1)
@@ -621,6 +665,7 @@ public:
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
     bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
     bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
+    bool isOpaque() const VL_MT_SAFE { return isDouble() || isString(); }
     bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;

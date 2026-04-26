@@ -13,405 +13,293 @@ module t (
     input clk
 );
 
-   reg [31:0] cyc = 0;
-   reg [6:0] cntA = 0;
-   reg [6:0] cntB = 0;
-   reg [6:0] cntC = 0;
-   reg [6:0] cntD = 0;
+  reg [31:0] cyc = 0;
+  reg [6:0] cntA = 0;
+  reg [6:0] cntB = 0;
+  reg [6:0] cntC = 0;
+  reg [6:0] cntD = 0;
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc[0])  cntA <= cntA + 7'd1;
-      if (cntA[0]) cntB <= cntB + 7'd1;
-      if (cntB[0]) cntC <= cntC + 7'd1;
-      if (cntC[0]) cntD <= cntD + 7'd1;
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc[0]) cntA <= cntA + 7'd1;
+    if (cntA[0]) cntB <= cntB + 7'd1;
+    if (cntB[0]) cntC <= cntC + 7'd1;
+    if (cntC[0]) cntD <= cntD + 7'd1;
 
-      if (cyc == 99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
-   // Should create decoder
-   wire [127:0] cntAOneHot = {
-     cntA == 7'd127,
-     cntA == 7'd126,
-     cntA == 7'd125,
-     cntA == 7'd124,
-     cntA == 7'd123,
-     cntA == 7'd122,
-     cntA == 7'd121,
-     cntA == 7'd120,
-     cntA == 7'd119,
-     cntA == 7'd118,
-     cntA == 7'd117,
-     cntA == 7'd116,
-     cntA == 7'd115,
-     cntA == 7'd114,
-     cntA == 7'd113,
-     cntA == 7'd112,
-     cntA == 7'd111,
-     cntA == 7'd110,
-     cntA == 7'd109,
-     cntA == 7'd108,
-     cntA == 7'd107,
-     cntA == 7'd106,
-     cntA == 7'd105,
-     cntA == 7'd104,
-     cntA == 7'd103,
-     cntA == 7'd102,
-     cntA == 7'd101,
-     cntA == 7'd100,
-     cntA == 7'd99,
-     cntA == 7'd98,
-     cntA == 7'd97,
-     cntA == 7'd96,
-     cntA == 7'd95,
-     cntA == 7'd94,
-     cntA == 7'd93,
-     cntA == 7'd92,
-     cntA == 7'd91,
-     cntA == 7'd90,
-     cntA == 7'd89,
-     cntA == 7'd88,
-     cntA == 7'd87,
-     cntA == 7'd86,
-     cntA == 7'd85,
-     cntA == 7'd84,
-     cntA == 7'd83,
-     cntA == 7'd82,
-     cntA == 7'd81,
-     cntA == 7'd80,
-     cntA == 7'd79,
-     cntA == 7'd78,
-     cntA == 7'd77,
-     cntA == 7'd76,
-     cntA == 7'd75,
-     cntA == 7'd74,
-     cntA == 7'd73,
-     cntA == 7'd72,
-     cntA == 7'd71,
-     cntA == 7'd70,
-     cntA == 7'd69,
-     cntA == 7'd68,
-     cntA == 7'd67,
-     cntA == 7'd66,
-     cntA == 7'd65,
-     cntA == 7'd64,
-     cntA == 7'd63,
-     cntA == 7'd62,
-     cntA == 7'd61,
-     cntA == 7'd60,
-     cntA == 7'd59,
-     cntA == 7'd58,
-     cntA == 7'd57,
-     cntA == 7'd56,
-     cntA == 7'd55,
-     cntA == 7'd54,
-     cntA == 7'd53,
-     cntA == 7'd52,
-     cntA == 7'd51,
-     cntA == 7'd50,
-     cntA == 7'd49,
-     cntA == 7'd48,
-     cntA == 7'd47,
-     cntA == 7'd46,
-     cntA == 7'd45,
-     cntA == 7'd44,
-     cntA == 7'd43,
-     cntA == 7'd42,
-     cntA == 7'd41,
-     cntA == 7'd40,
-     cntA == 7'd39,
-     cntA == 7'd38,
-     cntA == 7'd37,
-     cntA == 7'd36,
-     cntA == 7'd35,
-     cntA == 7'd34,
-     cntA == 7'd33,
-     cntA == 7'd32,
-     cntA == 7'd31,
-     cntA == 7'd30,
-     cntA == 7'd29,
-     cntA == 7'd28,
-     cntA == 7'd27,
-     cntA == 7'd26,
-     cntA == 7'd25,
-     cntA == 7'd24,
-     cntA == 7'd23,
-     cntA == 7'd22,
-     cntA == 7'd21,
-     cntA == 7'd20,
-     cntA == 7'd19,
-     cntA == 7'd18,
-     cntA == 7'd17,
-     cntA == 7'd16,
-     cntA == 7'd15,
-     cntA == 7'd14,
-     cntA == 7'd13,
-     cntA == 7'd12,
-     cntA == 7'd11,
-     cntA == 7'd10,
-     cntA == 7'd9,
-     cntA == 7'd8,
-     cntA == 7'd7,
-     cntA == 7'd6,
-     cntA == 7'd5,
-     cntA == 7'd4,
-     cntA == 7'd3,
-     cntA == 7'd2,
-     cntA == 7'd1,
-     cntA == 7'd0
-   };
+  sub u_sub(clk, cyc, cntB, cntC);
 
-   // Should create decoder - with temporary needed for index variabls
-   wire [127:0] notCntAOneHot = {
-     ~cntA == 7'd127,
-     ~cntA == 7'd126,
-     ~cntA == 7'd125,
-     ~cntA == 7'd124,
-     ~cntA == 7'd123,
-     ~cntA == 7'd122,
-     ~cntA == 7'd121,
-     ~cntA == 7'd120,
-     ~cntA == 7'd119,
-     ~cntA == 7'd118,
-     ~cntA == 7'd117,
-     ~cntA == 7'd116,
-     ~cntA == 7'd115,
-     ~cntA == 7'd114,
-     ~cntA == 7'd113,
-     ~cntA == 7'd112,
-     ~cntA == 7'd111,
-     ~cntA == 7'd110,
-     ~cntA == 7'd109,
-     ~cntA == 7'd108,
-     ~cntA == 7'd107,
-     ~cntA == 7'd106,
-     ~cntA == 7'd105,
-     ~cntA == 7'd104,
-     ~cntA == 7'd103,
-     ~cntA == 7'd102,
-     ~cntA == 7'd101,
-     ~cntA == 7'd100,
-     ~cntA == 7'd99,
-     ~cntA == 7'd98,
-     ~cntA == 7'd97,
-     ~cntA == 7'd96,
-     ~cntA == 7'd95,
-     ~cntA == 7'd94,
-     ~cntA == 7'd93,
-     ~cntA == 7'd92,
-     ~cntA == 7'd91,
-     ~cntA == 7'd90,
-     ~cntA == 7'd89,
-     ~cntA == 7'd88,
-     ~cntA == 7'd87,
-     ~cntA == 7'd86,
-     ~cntA == 7'd85,
-     ~cntA == 7'd84,
-     ~cntA == 7'd83,
-     ~cntA == 7'd82,
-     ~cntA == 7'd81,
-     ~cntA == 7'd80,
-     ~cntA == 7'd79,
-     ~cntA == 7'd78,
-     ~cntA == 7'd77,
-     ~cntA == 7'd76,
-     ~cntA == 7'd75,
-     ~cntA == 7'd74,
-     ~cntA == 7'd73,
-     ~cntA == 7'd72,
-     ~cntA == 7'd71,
-     ~cntA == 7'd70,
-     ~cntA == 7'd69,
-     ~cntA == 7'd68,
-     ~cntA == 7'd67,
-     ~cntA == 7'd66,
-     ~cntA == 7'd65,
-     ~cntA == 7'd64,
-     ~cntA == 7'd63,
-     ~cntA == 7'd62,
-     ~cntA == 7'd61,
-     ~cntA == 7'd60,
-     ~cntA == 7'd59,
-     ~cntA == 7'd58,
-     ~cntA == 7'd57,
-     ~cntA == 7'd56,
-     ~cntA == 7'd55,
-     ~cntA == 7'd54,
-     ~cntA == 7'd53,
-     ~cntA == 7'd52,
-     ~cntA == 7'd51,
-     ~cntA == 7'd50,
-     ~cntA == 7'd49,
-     ~cntA == 7'd48,
-     ~cntA == 7'd47,
-     ~cntA == 7'd46,
-     ~cntA == 7'd45,
-     ~cntA == 7'd44,
-     ~cntA == 7'd43,
-     ~cntA == 7'd42,
-     ~cntA == 7'd41,
-     ~cntA == 7'd40,
-     ~cntA == 7'd39,
-     ~cntA == 7'd38,
-     ~cntA == 7'd37,
-     ~cntA == 7'd36,
-     ~cntA == 7'd35,
-     ~cntA == 7'd34,
-     ~cntA == 7'd33,
-     ~cntA == 7'd32,
-     ~cntA == 7'd31,
-     ~cntA == 7'd30,
-     ~cntA == 7'd29,
-     ~cntA == 7'd28,
-     ~cntA == 7'd27,
-     ~cntA == 7'd26,
-     ~cntA == 7'd25,
-     ~cntA == 7'd24,
-     ~cntA == 7'd23,
-     ~cntA == 7'd22,
-     ~cntA == 7'd21,
-     ~cntA == 7'd20,
-     ~cntA == 7'd19,
-     ~cntA == 7'd18,
-     ~cntA == 7'd17,
-     ~cntA == 7'd16,
-     ~cntA == 7'd15,
-     ~cntA == 7'd14,
-     ~cntA == 7'd13,
-     ~cntA == 7'd12,
-     ~cntA == 7'd11,
-     ~cntA == 7'd10,
-     ~cntA == 7'd9,
-     ~cntA == 7'd8,
-     ~cntA == 7'd7,
-     ~cntA == 7'd6,
-     ~cntA == 7'd5,
-     ~cntA == 7'd4,
-     ~cntA == 7'd3,
-     ~cntA == 7'd2,
-     ~cntA == 7'd1,
-     ~cntA == 7'd0
-   };
+  // Should create decoder
+  wire [127:0] cntAOneHot = {
+    cntA == 7'd127,
+    cntA == 7'd126,
+    cntA == 7'd125,
+    cntA == 7'd124,
+    cntA == 7'd123,
+    cntA == 7'd122,
+    cntA == 7'd121,
+    cntA == 7'd120,
+    cntA == 7'd119,
+    cntA == 7'd118,
+    cntA == 7'd117,
+    cntA == 7'd116,
+    cntA == 7'd115,
+    cntA == 7'd114,
+    cntA == 7'd113,
+    cntA == 7'd112,
+    cntA == 7'd111,
+    cntA == 7'd110,
+    cntA == 7'd109,
+    cntA == 7'd108,
+    cntA == 7'd107,
+    cntA == 7'd106,
+    cntA == 7'd105,
+    cntA == 7'd104,
+    cntA == 7'd103,
+    cntA == 7'd102,
+    cntA == 7'd101,
+    cntA == 7'd100,
+    cntA == 7'd99,
+    cntA == 7'd98,
+    cntA == 7'd97,
+    cntA == 7'd96,
+    cntA == 7'd95,
+    cntA == 7'd94,
+    cntA == 7'd93,
+    cntA == 7'd92,
+    cntA == 7'd91,
+    cntA == 7'd90,
+    cntA == 7'd89,
+    cntA == 7'd88,
+    cntA == 7'd87,
+    cntA == 7'd86,
+    cntA == 7'd85,
+    cntA == 7'd84,
+    cntA == 7'd83,
+    cntA == 7'd82,
+    cntA == 7'd81,
+    cntA == 7'd80,
+    cntA == 7'd79,
+    cntA == 7'd78,
+    cntA == 7'd77,
+    cntA == 7'd76,
+    cntA == 7'd75,
+    cntA == 7'd74,
+    cntA == 7'd73,
+    cntA == 7'd72,
+    cntA == 7'd71,
+    cntA == 7'd70,
+    cntA == 7'd69,
+    cntA == 7'd68,
+    cntA == 7'd67,
+    cntA == 7'd66,
+    cntA == 7'd65,
+    cntA == 7'd64,
+    cntA == 7'd63,
+    cntA == 7'd62,
+    cntA == 7'd61,
+    cntA == 7'd60,
+    cntA == 7'd59,
+    cntA == 7'd58,
+    cntA == 7'd57,
+    cntA == 7'd56,
+    cntA == 7'd55,
+    cntA == 7'd54,
+    cntA == 7'd53,
+    cntA == 7'd52,
+    cntA == 7'd51,
+    cntA == 7'd50,
+    cntA == 7'd49,
+    cntA == 7'd48,
+    cntA == 7'd47,
+    cntA == 7'd46,
+    cntA == 7'd45,
+    cntA == 7'd44,
+    cntA == 7'd43,
+    cntA == 7'd42,
+    cntA == 7'd41,
+    cntA == 7'd40,
+    cntA == 7'd39,
+    cntA == 7'd38,
+    cntA == 7'd37,
+    cntA == 7'd36,
+    cntA == 7'd35,
+    cntA == 7'd34,
+    cntA == 7'd33,
+    cntA == 7'd32,
+    cntA == 7'd31,
+    cntA == 7'd30,
+    cntA == 7'd29,
+    cntA == 7'd28,
+    cntA == 7'd27,
+    cntA == 7'd26,
+    cntA == 7'd25,
+    cntA == 7'd24,
+    cntA == 7'd23,
+    cntA == 7'd22,
+    cntA == 7'd21,
+    cntA == 7'd20,
+    cntA == 7'd19,
+    cntA == 7'd18,
+    cntA == 7'd17,
+    cntA == 7'd16,
+    cntA == 7'd15,
+    cntA == 7'd14,
+    cntA == 7'd13,
+    cntA == 7'd12,
+    cntA == 7'd11,
+    cntA == 7'd10,
+    cntA == 7'd9,
+    cntA == 7'd8,
+    cntA == 7'd7,
+    cntA == 7'd6,
+    cntA == 7'd5,
+    cntA == 7'd4,
+    cntA == 7'd3,
+    cntA == 7'd2,
+    cntA == 7'd1,
+    cntA == 7'd0
+  };
 
-   // Should create decoder
-   wire stupidWayToWriteConstOne = 1'b0
-     + (cntB == 7'd127)
-     + (cntB == 7'd126)
-     + (cntB == 7'd125)
-     + (cntB == 7'd124)
-     + (cntB == 7'd123)
-     + (cntB == 7'd122)
-     + (cntB == 7'd121)
-     + (cntB == 7'd120)
-     + (cntB == 7'd119)
-     + (cntB == 7'd118)
-     + (cntB == 7'd117)
-     + (cntB == 7'd116)
-     + (cntB == 7'd115)
-     + (cntB == 7'd114)
-     + (cntB == 7'd113)
-     + (cntB == 7'd112)
-     + (cntB == 7'd111)
-     + (cntB == 7'd110)
-     + (cntB == 7'd109)
-     + (cntB == 7'd108)
-     + (cntB == 7'd107)
-     + (cntB == 7'd106)
-     + (cntB == 7'd105)
-     + (cntB == 7'd104)
-     + (cntB == 7'd103)
-     + (cntB == 7'd102)
-     + (cntB == 7'd101)
-     + (cntB == 7'd100)
-     + (cntB == 7'd99)
-     + (cntB == 7'd98)
-     + (cntB == 7'd97)
-     + (cntB == 7'd96)
-     + (cntB == 7'd95)
-     + (cntB == 7'd94)
-     + (cntB == 7'd93)
-     + (cntB == 7'd92)
-     + (cntB == 7'd91)
-     + (cntB == 7'd90)
-     + (cntB == 7'd89)
-     + (cntB == 7'd88)
-     + (cntB == 7'd87)
-     + (cntB == 7'd86)
-     + (cntB == 7'd85)
-     + (cntB == 7'd84)
-     + (cntB == 7'd83)
-     + (cntB == 7'd82)
-     + (cntB == 7'd81)
-     + (cntB == 7'd80)
-     + (cntB == 7'd79)
-     + (cntB == 7'd78)
-     + (cntB == 7'd77)
-     + (cntB == 7'd76)
-     + (cntB == 7'd75)
-     + (cntB == 7'd74)
-     + (cntB == 7'd73)
-     + (cntB == 7'd72)
-     + (cntB == 7'd71)
-     + (cntB == 7'd70)
-     + (cntB == 7'd69)
-     + (cntB == 7'd68)
-     + (cntB == 7'd67)
-     + (cntB == 7'd66)
-     + (cntB == 7'd65)
-     + (cntB == 7'd64)
-     + (cntB == 7'd63)
-     + (cntB == 7'd62)
-     + (cntB == 7'd61)
-     + (cntB == 7'd60)
-     + (cntB == 7'd59)
-     + (cntB == 7'd58)
-     + (cntB == 7'd57)
-     + (cntB == 7'd56)
-     + (cntB == 7'd55)
-     + (cntB == 7'd54)
-     + (cntB == 7'd53)
-     + (cntB == 7'd52)
-     + (cntB == 7'd51)
-     + (cntB == 7'd50)
-     + (cntB == 7'd49)
-     + (cntB == 7'd48)
-     + (cntB == 7'd47)
-     + (cntB == 7'd46)
-     + (cntB == 7'd45)
-     + (cntB == 7'd44)
-     + (cntB == 7'd43)
-     + (cntB == 7'd42)
-     + (cntB == 7'd41)
-     + (cntB == 7'd40)
-     + (cntB == 7'd39)
-     + (cntB == 7'd38)
-     + (cntB == 7'd37)
-     + (cntB == 7'd36)
-     + (cntB == 7'd35)
-     + (cntB == 7'd34)
-     + (cntB == 7'd33)
-     + (cntB == 7'd32)
-     + (cntB == 7'd31)
-     + (cntB == 7'd30)
-     + (cntB == 7'd29)
-     + (cntB == 7'd28)
-     + (cntB == 7'd27)
-     + (cntB == 7'd26)
-     + (cntB == 7'd25)
-     + (cntB == 7'd24)
-     + (cntB == 7'd23)
-     + (cntB == 7'd22)
-     + (cntB == 7'd21)
-     + (cntB == 7'd20)
-     + (cntB == 7'd19)
-     + (cntB == 7'd18)
-     + (cntB <= 7'd17);
+  // Should create decoder - with temporary needed for index variabls
+  wire [127:0] notCntAOneHot = {
+    ~cntA == 7'd127,
+    ~cntA == 7'd126,
+    ~cntA == 7'd125,
+    ~cntA == 7'd124,
+    ~cntA == 7'd123,
+    ~cntA == 7'd122,
+    ~cntA == 7'd121,
+    ~cntA == 7'd120,
+    ~cntA == 7'd119,
+    ~cntA == 7'd118,
+    ~cntA == 7'd117,
+    ~cntA == 7'd116,
+    ~cntA == 7'd115,
+    ~cntA == 7'd114,
+    ~cntA == 7'd113,
+    ~cntA == 7'd112,
+    ~cntA == 7'd111,
+    ~cntA == 7'd110,
+    ~cntA == 7'd109,
+    ~cntA == 7'd108,
+    ~cntA == 7'd107,
+    ~cntA == 7'd106,
+    ~cntA == 7'd105,
+    ~cntA == 7'd104,
+    ~cntA == 7'd103,
+    ~cntA == 7'd102,
+    ~cntA == 7'd101,
+    ~cntA == 7'd100,
+    ~cntA == 7'd99,
+    ~cntA == 7'd98,
+    ~cntA == 7'd97,
+    ~cntA == 7'd96,
+    ~cntA == 7'd95,
+    ~cntA == 7'd94,
+    ~cntA == 7'd93,
+    ~cntA == 7'd92,
+    ~cntA == 7'd91,
+    ~cntA == 7'd90,
+    ~cntA == 7'd89,
+    ~cntA == 7'd88,
+    ~cntA == 7'd87,
+    ~cntA == 7'd86,
+    ~cntA == 7'd85,
+    ~cntA == 7'd84,
+    ~cntA == 7'd83,
+    ~cntA == 7'd82,
+    ~cntA == 7'd81,
+    ~cntA == 7'd80,
+    ~cntA == 7'd79,
+    ~cntA == 7'd78,
+    ~cntA == 7'd77,
+    ~cntA == 7'd76,
+    ~cntA == 7'd75,
+    ~cntA == 7'd74,
+    ~cntA == 7'd73,
+    ~cntA == 7'd72,
+    ~cntA == 7'd71,
+    ~cntA == 7'd70,
+    ~cntA == 7'd69,
+    ~cntA == 7'd68,
+    ~cntA == 7'd67,
+    ~cntA == 7'd66,
+    ~cntA == 7'd65,
+    ~cntA == 7'd64,
+    ~cntA == 7'd63,
+    ~cntA == 7'd62,
+    ~cntA == 7'd61,
+    ~cntA == 7'd60,
+    ~cntA == 7'd59,
+    ~cntA == 7'd58,
+    ~cntA == 7'd57,
+    ~cntA == 7'd56,
+    ~cntA == 7'd55,
+    ~cntA == 7'd54,
+    ~cntA == 7'd53,
+    ~cntA == 7'd52,
+    ~cntA == 7'd51,
+    ~cntA == 7'd50,
+    ~cntA == 7'd49,
+    ~cntA == 7'd48,
+    ~cntA == 7'd47,
+    ~cntA == 7'd46,
+    ~cntA == 7'd45,
+    ~cntA == 7'd44,
+    ~cntA == 7'd43,
+    ~cntA == 7'd42,
+    ~cntA == 7'd41,
+    ~cntA == 7'd40,
+    ~cntA == 7'd39,
+    ~cntA == 7'd38,
+    ~cntA == 7'd37,
+    ~cntA == 7'd36,
+    ~cntA == 7'd35,
+    ~cntA == 7'd34,
+    ~cntA == 7'd33,
+    ~cntA == 7'd32,
+    ~cntA == 7'd31,
+    ~cntA == 7'd30,
+    ~cntA == 7'd29,
+    ~cntA == 7'd28,
+    ~cntA == 7'd27,
+    ~cntA == 7'd26,
+    ~cntA == 7'd25,
+    ~cntA == 7'd24,
+    ~cntA == 7'd23,
+    ~cntA == 7'd22,
+    ~cntA == 7'd21,
+    ~cntA == 7'd20,
+    ~cntA == 7'd19,
+    ~cntA == 7'd18,
+    ~cntA == 7'd17,
+    ~cntA == 7'd16,
+    ~cntA == 7'd15,
+    ~cntA == 7'd14,
+    ~cntA == 7'd13,
+    ~cntA == 7'd12,
+    ~cntA == 7'd11,
+    ~cntA == 7'd10,
+    ~cntA == 7'd9,
+    ~cntA == 7'd8,
+    ~cntA == 7'd7,
+    ~cntA == 7'd6,
+    ~cntA == 7'd5,
+    ~cntA == 7'd4,
+    ~cntA == 7'd3,
+    ~cntA == 7'd2,
+    ~cntA == 7'd1,
+    ~cntA == 7'd0
+  };
 
-   // Should not create decoder
-   wire [6:0] twiceCntC =
+  // Should not create decoder
+  wire [6:0] twiceCntC =
      cntC == 7'd127 ? (7'd127 * 7'd2) :
      cntC == 7'd126 ? (7'd126 * 7'd2) :
      cntC == 7'd125 ? (7'd125 * 7'd2) :
@@ -540,10 +428,9 @@ module t (
      cntC == 7'd2 ? (7'd2 * 7'd2) :
      cntC == 7'd1 ? (7'd1 * 7'd2) : 7'd0;
 
-
-   // Should create decoder
-   wire [127:0] cntD_OH = 128'h1 << cntD;
-   wire [6:0] cntD_sel =
+  // Should create decoder
+  wire [127:0] cntD_OH = 128'h1 << cntD;
+  wire [6:0] cntD_sel =
       (cntD_OH[127] ? 7'd127 : 0) |
       (cntD_OH[126] ? 7'd126 : 0) |
       (cntD_OH[125] ? 7'd125 : 0) |
@@ -673,24 +560,275 @@ module t (
       (cntD_OH[1] ? 7'd1 : 0) |
       (cntD_OH[0] ? 7'd0 : 0);
 
-   always @(posedge clk) begin
-      `check(cntAOneHot[cntA], 1'b1);
-      for (int i = 0; i < $bits(cntAOneHot); i = i + 1) begin
-          if (i == int'(cntA)) continue;
-         `check(cntAOneHot[i], 1'b0);
-      end
+  always @(posedge clk) begin
+    `check(cntAOneHot[cntA], 1'b1);
+    for (int i = 0; i < $bits(cntAOneHot); i = i + 1) begin
+      if (i == int'(cntA)) continue;
+      `check(cntAOneHot[i], 1'b0);
+    end
 
-      `check(notCntAOneHot[~cntA], 1'b1);
-      for (int i = 0; i < $bits(notCntAOneHot); i = i + 1) begin
-          if (i == {25'd0, ~cntA}) continue;
-         `check(notCntAOneHot[i], 1'b0);
-      end
+    `check(notCntAOneHot[~cntA], 1'b1);
+    for (int i = 0; i < $bits(notCntAOneHot); i = i + 1) begin
+      if (i == {25'd0, ~cntA}) continue;
+      `check(notCntAOneHot[i], 1'b0);
+    end
 
-      `check(stupidWayToWriteConstOne, 1'b1);
+    `check(twiceCntC, cntC * 7'd2);
 
-      `check(twiceCntC, cntC * 7'd2);
+    `check(cntD_sel, cntD);
+  end
 
-      `check(cntD_sel, cntD);
-   end
+endmodule
+
+module alt;
+  reg [6:0] cntC_q;
+endmodule
+
+module sub (
+  input wire clk,
+  input wire [31:0] cyc,
+  input wire [6:0] cntB,
+  input wire [6:0] cntC
+);
+
+  reg [6:0] cntB_q;
+  always @(posedge clk) cntB_q <= cntB;
+
+  alt u_alt();
+  always @(posedge clk) u_alt.cntC_q <= cntC;
+
+  // Should create decoder
+  wire stupidWayToWriteConstOne_B = 1'b0
+     + (cntB_q == 7'd127)
+     + (cntB_q == 7'd126)
+     + (cntB_q == 7'd125)
+     + (cntB_q == 7'd124)
+     + (cntB_q == 7'd123)
+     + (cntB_q == 7'd122)
+     + (cntB_q == 7'd121)
+     + (cntB_q == 7'd120)
+     + (cntB_q == 7'd119)
+     + (cntB_q == 7'd118)
+     + (cntB_q == 7'd117)
+     + (cntB_q == 7'd116)
+     + (cntB_q == 7'd115)
+     + (cntB_q == 7'd114)
+     + (cntB_q == 7'd113)
+     + (cntB_q == 7'd112)
+     + (cntB_q == 7'd111)
+     + (cntB_q == 7'd110)
+     + (cntB_q == 7'd109)
+     + (cntB_q == 7'd108)
+     + (cntB_q == 7'd107)
+     + (cntB_q == 7'd106)
+     + (cntB_q == 7'd105)
+     + (cntB_q == 7'd104)
+     + (cntB_q == 7'd103)
+     + (cntB_q == 7'd102)
+     + (cntB_q == 7'd101)
+     + (cntB_q == 7'd100)
+     + (cntB_q == 7'd99)
+     + (cntB_q == 7'd98)
+     + (cntB_q == 7'd97)
+     + (cntB_q == 7'd96)
+     + (cntB_q == 7'd95)
+     + (cntB_q == 7'd94)
+     + (cntB_q == 7'd93)
+     + (cntB_q == 7'd92)
+     + (cntB_q == 7'd91)
+     + (cntB_q == 7'd90)
+     + (cntB_q == 7'd89)
+     + (cntB_q == 7'd88)
+     + (cntB_q == 7'd87)
+     + (cntB_q == 7'd86)
+     + (cntB_q == 7'd85)
+     + (cntB_q == 7'd84)
+     + (cntB_q == 7'd83)
+     + (cntB_q == 7'd82)
+     + (cntB_q == 7'd81)
+     + (cntB_q == 7'd80)
+     + (cntB_q == 7'd79)
+     + (cntB_q == 7'd78)
+     + (cntB_q == 7'd77)
+     + (cntB_q == 7'd76)
+     + (cntB_q == 7'd75)
+     + (cntB_q == 7'd74)
+     + (cntB_q == 7'd73)
+     + (cntB_q == 7'd72)
+     + (cntB_q == 7'd71)
+     + (cntB_q == 7'd70)
+     + (cntB_q == 7'd69)
+     + (cntB_q == 7'd68)
+     + (cntB_q == 7'd67)
+     + (cntB_q == 7'd66)
+     + (cntB_q == 7'd65)
+     + (cntB_q == 7'd64)
+     + (cntB_q == 7'd63)
+     + (cntB_q == 7'd62)
+     + (cntB_q == 7'd61)
+     + (cntB_q == 7'd60)
+     + (cntB_q == 7'd59)
+     + (cntB_q == 7'd58)
+     + (cntB_q == 7'd57)
+     + (cntB_q == 7'd56)
+     + (cntB_q == 7'd55)
+     + (cntB_q == 7'd54)
+     + (cntB_q == 7'd53)
+     + (cntB_q == 7'd52)
+     + (cntB_q == 7'd51)
+     + (cntB_q == 7'd50)
+     + (cntB_q == 7'd49)
+     + (cntB_q == 7'd48)
+     + (cntB_q == 7'd47)
+     + (cntB_q == 7'd46)
+     + (cntB_q == 7'd45)
+     + (cntB_q == 7'd44)
+     + (cntB_q == 7'd43)
+     + (cntB_q == 7'd42)
+     + (cntB_q == 7'd41)
+     + (cntB_q == 7'd40)
+     + (cntB_q == 7'd39)
+     + (cntB_q == 7'd38)
+     + (cntB_q == 7'd37)
+     + (cntB_q == 7'd36)
+     + (cntB_q == 7'd35)
+     + (cntB_q == 7'd34)
+     + (cntB_q == 7'd33)
+     + (cntB_q == 7'd32)
+     + (cntB_q == 7'd31)
+     + (cntB_q == 7'd30)
+     + (cntB_q == 7'd29)
+     + (cntB_q == 7'd28)
+     + (cntB_q == 7'd27)
+     + (cntB_q == 7'd26)
+     + (cntB_q == 7'd25)
+     + (cntB_q == 7'd24)
+     + (cntB_q == 7'd23)
+     + (cntB_q == 7'd22)
+     + (cntB_q == 7'd21)
+     + (cntB_q == 7'd20)
+     + (cntB_q == 7'd19)
+     + (cntB_q == 7'd18)
+     + (cntB_q <= 7'd17);
+
+  // Should create decoder
+  wire stupidWayToWriteConstOne_C = 1'b0
+     + (u_alt.cntC_q == 7'd127)
+     + (u_alt.cntC_q == 7'd126)
+     + (u_alt.cntC_q == 7'd125)
+     + (u_alt.cntC_q == 7'd124)
+     + (u_alt.cntC_q == 7'd123)
+     + (u_alt.cntC_q == 7'd122)
+     + (u_alt.cntC_q == 7'd121)
+     + (u_alt.cntC_q == 7'd120)
+     + (u_alt.cntC_q == 7'd119)
+     + (u_alt.cntC_q == 7'd118)
+     + (u_alt.cntC_q == 7'd117)
+     + (u_alt.cntC_q == 7'd116)
+     + (u_alt.cntC_q == 7'd115)
+     + (u_alt.cntC_q == 7'd114)
+     + (u_alt.cntC_q == 7'd113)
+     + (u_alt.cntC_q == 7'd112)
+     + (u_alt.cntC_q == 7'd111)
+     + (u_alt.cntC_q == 7'd110)
+     + (u_alt.cntC_q == 7'd109)
+     + (u_alt.cntC_q == 7'd108)
+     + (u_alt.cntC_q == 7'd107)
+     + (u_alt.cntC_q == 7'd106)
+     + (u_alt.cntC_q == 7'd105)
+     + (u_alt.cntC_q == 7'd104)
+     + (u_alt.cntC_q == 7'd103)
+     + (u_alt.cntC_q == 7'd102)
+     + (u_alt.cntC_q == 7'd101)
+     + (u_alt.cntC_q == 7'd100)
+     + (u_alt.cntC_q == 7'd99)
+     + (u_alt.cntC_q == 7'd98)
+     + (u_alt.cntC_q == 7'd97)
+     + (u_alt.cntC_q == 7'd96)
+     + (u_alt.cntC_q == 7'd95)
+     + (u_alt.cntC_q == 7'd94)
+     + (u_alt.cntC_q == 7'd93)
+     + (u_alt.cntC_q == 7'd92)
+     + (u_alt.cntC_q == 7'd91)
+     + (u_alt.cntC_q == 7'd90)
+     + (u_alt.cntC_q == 7'd89)
+     + (u_alt.cntC_q == 7'd88)
+     + (u_alt.cntC_q == 7'd87)
+     + (u_alt.cntC_q == 7'd86)
+     + (u_alt.cntC_q == 7'd85)
+     + (u_alt.cntC_q == 7'd84)
+     + (u_alt.cntC_q == 7'd83)
+     + (u_alt.cntC_q == 7'd82)
+     + (u_alt.cntC_q == 7'd81)
+     + (u_alt.cntC_q == 7'd80)
+     + (u_alt.cntC_q == 7'd79)
+     + (u_alt.cntC_q == 7'd78)
+     + (u_alt.cntC_q == 7'd77)
+     + (u_alt.cntC_q == 7'd76)
+     + (u_alt.cntC_q == 7'd75)
+     + (u_alt.cntC_q == 7'd74)
+     + (u_alt.cntC_q == 7'd73)
+     + (u_alt.cntC_q == 7'd72)
+     + (u_alt.cntC_q == 7'd71)
+     + (u_alt.cntC_q == 7'd70)
+     + (u_alt.cntC_q == 7'd69)
+     + (u_alt.cntC_q == 7'd68)
+     + (u_alt.cntC_q == 7'd67)
+     + (u_alt.cntC_q == 7'd66)
+     + (u_alt.cntC_q == 7'd65)
+     + (u_alt.cntC_q == 7'd64)
+     + (u_alt.cntC_q == 7'd63)
+     + (u_alt.cntC_q == 7'd62)
+     + (u_alt.cntC_q == 7'd61)
+     + (u_alt.cntC_q == 7'd60)
+     + (u_alt.cntC_q == 7'd59)
+     + (u_alt.cntC_q == 7'd58)
+     + (u_alt.cntC_q == 7'd57)
+     + (u_alt.cntC_q == 7'd56)
+     + (u_alt.cntC_q == 7'd55)
+     + (u_alt.cntC_q == 7'd54)
+     + (u_alt.cntC_q == 7'd53)
+     + (u_alt.cntC_q == 7'd52)
+     + (u_alt.cntC_q == 7'd51)
+     + (u_alt.cntC_q == 7'd50)
+     + (u_alt.cntC_q == 7'd49)
+     + (u_alt.cntC_q == 7'd48)
+     + (u_alt.cntC_q == 7'd47)
+     + (u_alt.cntC_q == 7'd46)
+     + (u_alt.cntC_q == 7'd45)
+     + (u_alt.cntC_q == 7'd44)
+     + (u_alt.cntC_q == 7'd43)
+     + (u_alt.cntC_q == 7'd42)
+     + (u_alt.cntC_q == 7'd41)
+     + (u_alt.cntC_q == 7'd40)
+     + (u_alt.cntC_q == 7'd39)
+     + (u_alt.cntC_q == 7'd38)
+     + (u_alt.cntC_q == 7'd37)
+     + (u_alt.cntC_q == 7'd36)
+     + (u_alt.cntC_q == 7'd35)
+     + (u_alt.cntC_q == 7'd34)
+     + (u_alt.cntC_q == 7'd33)
+     + (u_alt.cntC_q == 7'd32)
+     + (u_alt.cntC_q == 7'd31)
+     + (u_alt.cntC_q == 7'd30)
+     + (u_alt.cntC_q == 7'd29)
+     + (u_alt.cntC_q == 7'd28)
+     + (u_alt.cntC_q == 7'd27)
+     + (u_alt.cntC_q == 7'd26)
+     + (u_alt.cntC_q == 7'd25)
+     + (u_alt.cntC_q == 7'd24)
+     + (u_alt.cntC_q == 7'd23)
+     + (u_alt.cntC_q == 7'd22)
+     + (u_alt.cntC_q == 7'd21)
+     + (u_alt.cntC_q == 7'd20)
+     + (u_alt.cntC_q == 7'd19)
+     + (u_alt.cntC_q == 7'd18)
+     + (u_alt.cntC_q <= 7'd17);
+
+  always @(posedge clk) begin
+    `check(stupidWayToWriteConstOne_B, 1'b1);
+
+    `check(stupidWayToWriteConstOne_C, 1'b1);
+  end
 
 endmodule

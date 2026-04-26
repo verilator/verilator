@@ -19,28 +19,28 @@
 //   endclass
 
 module t;
-   process p;
+  process p;
 
-   initial begin
-      if (p != null) $stop;
-      p = process::self();
-      if (p.status() != process::RUNNING) $stop;
-      if (p.status() == process::WAITING) $stop;
-      if (p.status() == process::SUSPENDED) $stop;
-      if (p.status() == process::KILLED) $stop;
-      if (p.status() == process::FINISHED) $stop;
+  initial begin
+    if (p != null) $stop;
+    p = process::self();
+    if (p.status() != process::RUNNING) $stop;
+    if (p.status() == process::WAITING) $stop;
+    if (p.status() == process::SUSPENDED) $stop;
+    if (p.status() == process::KILLED) $stop;
+    if (p.status() == process::FINISHED) $stop;
 
-      if (0) p.kill();
-      if (0) p.await();
-      if (0) p.suspend();
-      if (0) p.resume();
-      // See also t_urandom.py
-      p.srandom(0);
-      p.set_randstate(p.get_randstate());
+    if (0) p.kill();
+    if (0) p.await();
+    if (0) p.suspend();
+    if (0) p.resume();
+    // See also t_urandom.py
+    p.srandom(0);
+    p.set_randstate(p.get_randstate());
 
-      $display("%p", p);
+    $display("%p", p);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

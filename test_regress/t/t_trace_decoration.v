@@ -4,20 +4,22 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
-   integer      a_very_long_name_which_we_will_hash_eventually=0;
+module t (
+    input clk
+);
 
-   always @ (posedge clk) begin
-      a_very_long_name_which_we_will_hash_eventually <= a_very_long_name_which_we_will_hash_eventually + 1;
-      if (a_very_long_name_which_we_will_hash_eventually == 5) begin
-         fin();
-      end
-   end
+  integer a_very_long_name_which_we_will_hash_eventually = 0;
 
-   task fin;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   endtask
+  always @(posedge clk) begin
+    a_very_long_name_which_we_will_hash_eventually <= a_very_long_name_which_we_will_hash_eventually + 1;
+    if (a_very_long_name_which_we_will_hash_eventually == 5) begin
+      fin();
+    end
+  end
+
+  task fin;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  endtask
 
 endmodule

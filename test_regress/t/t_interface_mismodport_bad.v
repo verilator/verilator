@@ -5,30 +5,31 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface ifc;
-   integer ok;
-   integer bad;
-   modport out_modport (output ok);
+  integer ok;
+  integer bad;
+  modport out_modport(output ok);
 endinterface
 
 module t;
 
-   integer cyc=1;
+  integer cyc = 1;
 
-   ifc itop();
+  ifc itop ();
 
-   counter_ansi  c1 (.isub(itop),
-                     .i_value(4'h4));
+  counter_ansi c1 (
+      .isub(itop),
+      .i_value(4'h4)
+  );
 
 endmodule
 
-module counter_ansi
-  (
-   ifc.out_modport isub,
-   input logic [3:0] i_value
-   );
+module counter_ansi (
+    ifc.out_modport isub,
+    input logic [3:0] i_value
+);
 
-   always @* begin
-      isub.ok = i_value;
-      isub.bad = i_value;  // Illegal access
-   end
+  always @* begin
+    isub.ok = i_value;
+    isub.bad = i_value;  // Illegal access
+  end
 endmodule

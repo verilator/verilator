@@ -5,15 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   typedef enum [3:0] {
-                       E01 = 1
-                       } my_t;
+  typedef enum [3:0] {
+                      E01 = 1
+                      } my_t;
 
-   my_t e;
+  my_t e;
 
-   initial begin
-      e.bad_no_such_method();
-      $stop;
-   end
+  initial begin
+    e.bad_no_such_method();
+    $stop;
+  end
 
 endmodule

@@ -82,7 +82,8 @@ class CastVisitor final : public VNVisitor {
     }
     void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
-            if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
+            if (!nodep->isNull() && !nodep->isString() && !nodep->isDouble())
+                insertCast(nodep, castSize(nodep->backp()));
         }
     }
     // cppcheck-suppress constParameterPointer // lhsp might be changed

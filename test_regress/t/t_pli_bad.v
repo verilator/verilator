@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   integer i;
-   initial begin
-      $unknown_pli_task;
-      $unknown_pli_task("arg", i);
-      i = $unknown_pli_function;
-      i = $unknown_pli_function("arg", i);
+  integer i;
+  initial begin
+    $unknown_pli_task;
+    $unknown_pli_task("arg", i);
+    i = $unknown_pli_function;
+    i = $unknown_pli_function("arg", i);
 
-      $sformatff();  // Typo
-      i = $sformatff();  // Typo
+    $sformatff();  // Typo
+    i = $sformatff();  // Typo
 
-      $stop;
-   end
+    $stop;
+  end
 endmodule

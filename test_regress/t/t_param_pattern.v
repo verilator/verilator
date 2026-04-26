@@ -4,43 +4,43 @@
 // SPDX-FileCopyrightText: 2021 Krzysztof Bieganski
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 package config_pkg;
-   typedef struct packed {
-      int UPPER0;
-      int UPPER2;
-      int USE_QUAD0;
-      int USE_QUAD1;
-      int USE_QUAD2;
-   } config_struct_t;
+  typedef struct packed {
+    int UPPER0;
+    int UPPER2;
+    int USE_QUAD0;
+    int USE_QUAD1;
+    int USE_QUAD2;
+  } config_struct_t;
 
 endpackage
 
 module t;
-    import config_pkg::*;
+  import config_pkg::*;
 
-    struct_submodule #(.MY_CONFIG('{
-                                       UPPER0: 10,
-                                       UPPER2: 20,
-                                       USE_QUAD0: 4,
-                                       USE_QUAD1: 5,
-                                       USE_QUAD2: 6
-                                    })) a_submodule_I ();
+  struct_submodule #(
+      .MY_CONFIG('{UPPER0: 10, UPPER2: 20, USE_QUAD0: 4, USE_QUAD1: 5, USE_QUAD2: 6})
+  ) a_submodule_I ();
 endmodule
 
 module struct_submodule
   import config_pkg::*;
-   #(parameter config_struct_t MY_CONFIG = '0);
+#(
+    parameter config_struct_t MY_CONFIG = '0
+);
 
-   initial begin
-      `checkd(MY_CONFIG.UPPER0, 10);
-      `checkd(MY_CONFIG.USE_QUAD0, 4);
-      `checkd(MY_CONFIG.USE_QUAD1, 5);
-      `checkd(MY_CONFIG.USE_QUAD2, 6);
-      `checkd(MY_CONFIG.UPPER2, 20);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    `checkd(MY_CONFIG.UPPER0, 10);
+    `checkd(MY_CONFIG.USE_QUAD0, 4);
+    `checkd(MY_CONFIG.USE_QUAD1, 5);
+    `checkd(MY_CONFIG.USE_QUAD2, 6);
+    `checkd(MY_CONFIG.UPPER2, 20);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

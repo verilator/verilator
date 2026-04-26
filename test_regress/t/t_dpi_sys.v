@@ -10,20 +10,20 @@
 import "DPI-C" dpii_sys_task = function void \$dpii_sys (int i);
 import "DPI-C" dpii_sys_func = function int \$dpii_func (int i);
 
-module t ();
+module t;
 
 `ifndef verilator
-   `error "Only Verilator supports PLI-ish DPI calls."
+  `error "Only Verilator supports PLI-ish DPI calls."
 `endif
 
-   initial begin
-      $dpii_sys(1);
-      if ($dpii_func(2) != 3) $stop;
-      $dpii_sys(10);
-      if ($dpii_func(2) != 12) $stop;
+  initial begin
+    $dpii_sys(1);
+    if ($dpii_func(2) != 3) $stop;
+    $dpii_sys(10);
+    if ($dpii_func(2) != 12) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

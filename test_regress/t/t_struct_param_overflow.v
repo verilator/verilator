@@ -33,12 +33,10 @@ package config_pkg;
 
 endpackage : config_pkg
 
-module t (  /*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
   import config_pkg::*;
 
   parameter config_struct_t MY_CONFIG = '{

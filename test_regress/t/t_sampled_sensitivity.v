@@ -4,12 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   always @(posedge $sampled(clk)) begin
     $write("*-* All Finished *-*\n");

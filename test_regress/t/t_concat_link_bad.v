@@ -6,10 +6,10 @@
 
 module t;
 
-    typedef logic [3:0] foo_t;
+  typedef logic [3:0] foo_t;
 
-    foo_t foo_s;
+  foo_t foo_s;
 
-    assign bar_s = {foo_s, foo_s}.f1;
+  assign bar_s = {foo_s, foo_s}.f1;
 
 endmodule

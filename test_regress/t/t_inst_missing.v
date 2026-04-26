@@ -5,18 +5,28 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   wire ok = 1'b0;
-   // verilator lint_off UNDRIVEN
-   wire nc;
-   // verilator lint_on UNDRIVEN
+  wire ok = 1'b0;
+  // verilator lint_off UNDRIVEN
+  wire nc;
+  // verilator lint_on UNDRIVEN
 
-   // verilator lint_off PINNOCONNECT
-   // verilator lint_off PINCONNECTEMPTY
-   sub sub (ok, , nc);
-   // verilator lint_on PINCONNECTEMPTY
-   // verilator lint_on PINNOCONNECT
+  // verilator lint_off PINNOCONNECT
+  // verilator lint_off PINCONNECTEMPTY
+  sub sub (
+      ok
+      ,,
+      nc
+  );
+  // verilator lint_on PINCONNECTEMPTY
+  // verilator lint_on PINNOCONNECT
 endmodule
 
-module sub (input ok, input none, input nc);
-   initial if (ok && none && nc) begin end  // No unused warning
+module sub (
+    input ok,
+    input none,
+    input nc
+);
+  initial
+    if (ok && none && nc) begin
+    end  // No unused warning
 endmodule

@@ -4,39 +4,38 @@
 // SPDX-FileCopyrightText: 2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  // verilog_format: off
+  always @(*) begin
+    if (clk) begin end
+  end
 
-   always @(*) begin
-      if (clk) begin end
-   end
+  always @(* ) begin
+    if (clk) begin end
+  end
 
-   always @(* ) begin
-      if (clk) begin end
-   end
+  // Not legal in some simulators, legal in others
+//  always @(* /*cmt*/ ) begin
+//    if (clk) begin end
+//  end
 
-   // Not legal in some simulators, legal in others
-//   always @(* /*cmt*/ ) begin
-//      if (clk) begin end
-//   end
+  // Not legal in some simulators, legal in others
+//  always @(* // cmt
+//       ) begin
+//    if (clk) begin end
+//  end
 
-   // Not legal in some simulators, legal in others
-//   always @(* // cmt
-//          ) begin
-//      if (clk) begin end
-//   end
+  always @ (*
+         ) begin
+    if (clk) begin end
+  end
+  // verilog_format: on
 
-   always @ (*
-             ) begin
-      if (clk) begin end
-   end
-
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

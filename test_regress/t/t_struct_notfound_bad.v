@@ -6,11 +6,11 @@
 
 module t;
 
-   typedef struct packed { bit m; } struct_t;
-   struct_t s;
+  typedef struct packed {bit m;} struct_t;
+  struct_t s;
 
-   initial begin
-      s.nfmember = 0; // Member not found
-      $finish;
-   end
+  initial begin
+    s.nfmember = 0;  // Member not found
+    $finish;
+  end
 endmodule

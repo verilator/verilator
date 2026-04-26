@@ -1,9 +1,9 @@
-%Warning-UNOPTFLAT: t/t_unopt_converge.v:19:11: Signal unoptimizable: Circular combinational logic: 'x'
-   19 |    output x;    
-      |           ^
+%Warning-UNOPTFLAT: t/t_unopt_converge.v:19:10: Signal unoptimizable: Circular combinational logic: 'x'
+   19 |   output x;   
+      |          ^
                     ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=latest
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
-                    t/t_unopt_converge.v:19:11:      Example path: x
-                    t/t_unopt_converge.v:22:4:      Example path: ALWAYS
-                    t/t_unopt_converge.v:19:11:      Example path: x
+                    t/t_unopt_converge.v:19:10:      Example path: x
+                    t/t_unopt_converge.v:22:3:      Example path: ALWAYS
+                    t/t_unopt_converge.v:19:10:      Example path: x
 %Error: Exiting due to

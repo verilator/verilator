@@ -4,116 +4,128 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
+// verilog_format: on
 
 // See also t_class_param.v
 
 module t;
 
-class Cls #(parameter PBASE = 12);
-   bit [PBASE-1:0] member;
-   function bit [PBASE-1:0] get_member;
+  class Cls #(
+      parameter PBASE = 12
+  );
+    bit [PBASE-1:0] member;
+    function bit [PBASE-1:0] get_member;
       return member;
-   endfunction
-   static function int get_p;
+    endfunction
+    static function int get_p;
       return PBASE;
-   endfunction
-   typedef enum { E_PBASE = PBASE } enum_t;
-endclass
+    endfunction
+    typedef enum {E_PBASE = PBASE} enum_t;
+  endclass
 
-class Wrap #(parameter P = 13);
-   function int get_p;
+  class Wrap #(
+      parameter P = 13
+  );
+    function int get_p;
       return c1.get_p();
-   endfunction
-   function new;
+    endfunction
+    function new;
       c1 = new;
-   endfunction
-   Cls#(PMINUS1 + 1) c1;
-   localparam PMINUS1 = P - 1;  // Checking works when last
-endclass
+    endfunction
+    Cls #(PMINUS1 + 1) c1;
+    localparam PMINUS1 = P - 1;  // Checking works when last
+  endclass
 
-class Wrap2 #(parameter P = 35);
-   function int get_p;
+  class Wrap2 #(
+      parameter P = 35
+  );
+    function int get_p;
       return c1.get_p();
-   endfunction
-   function new;
+    endfunction
+    function new;
       c1 = new;
-   endfunction
-   Wrap#(PMINUS1 + 1) c1;
-   localparam PMINUS1 = P - 1;  // Checking works when last
-endclass
+    endfunction
+    Wrap #(PMINUS1 + 1) c1;
+    localparam PMINUS1 = P - 1;  // Checking works when last
+  endclass
 
-   typedef Cls#(8) Cls8_t;
+  typedef Cls#(8) Cls8_t;
 
-class SelfRefClassTypeParam #(type T=logic);
-   typedef SelfRefClassTypeParam #(int) self_int_t;
-   T field;
-endclass
+  class SelfRefClassTypeParam #(
+      type T = logic
+  );
+    typedef SelfRefClassTypeParam#(int) self_int_t;
+    T field;
+  endclass
 
-class SelfRefClassIntParam #(int P=1);
-   typedef SelfRefClassIntParam #(10) self_int_t;
-endclass
+  class SelfRefClassIntParam #(
+      int P = 1
+  );
+    typedef SelfRefClassIntParam#(10) self_int_t;
+  endclass
 
-   Cls c12;
-   Cls #(.PBASE(4)) c4;
-   Cls8_t c8;
-   Wrap #(.P(16)) w16;
-   Wrap2 #(.P(32)) w32;
-   SelfRefClassTypeParam src_logic;
-   SelfRefClassTypeParam#()::self_int_t src_int;
-   SelfRefClassIntParam src1;
-   SelfRefClassIntParam#()::self_int_t src10;
-   initial begin
-      c12 = new;
-      c4 = new;
-      c8 = new;
-      w16 = new;
-      w32 = new;
-      src_int = new;
-      src_logic = new;
-      src1 = new;
-      src10 = new;
-      if (Cls#()::PBASE != 12) $stop;
-      if (Cls#(4)::PBASE != 4) $stop;
-      if (Cls8_t::PBASE != 8) $stop;
+  Cls c12;
+  Cls #(.PBASE(4)) c4;
+  Cls8_t c8;
+  Wrap #(.P(16)) w16;
+  Wrap2 #(.P(32)) w32;
+  SelfRefClassTypeParam src_logic;
+  SelfRefClassTypeParam #()::self_int_t src_int;
+  SelfRefClassIntParam src1;
+  SelfRefClassIntParam #()::self_int_t src10;
+  initial begin
+    c12 = new;
+    c4 = new;
+    c8 = new;
+    w16 = new;
+    w32 = new;
+    src_int = new;
+    src_logic = new;
+    src1 = new;
+    src10 = new;
+    if (Cls#()::PBASE != 12) $stop;
+    if (Cls#(4)::PBASE != 4) $stop;
+    if (Cls8_t::PBASE != 8) $stop;
 
-      if (Cls#()::E_PBASE != 12) $stop;
-      if (Cls#(4)::E_PBASE != 4) $stop;
-      if (Cls8_t::E_PBASE != 8) $stop;
+    if (Cls#()::E_PBASE != 12) $stop;
+    if (Cls#(4)::E_PBASE != 4) $stop;
+    if (Cls8_t::E_PBASE != 8) $stop;
 
-      if (c12.PBASE != 12) $stop;
-      if (c4.PBASE != 4) $stop;
-      if (c8.PBASE != 8) $stop;
+    if (c12.PBASE != 12) $stop;
+    if (c4.PBASE != 4) $stop;
+    if (c8.PBASE != 8) $stop;
 
-      if (Cls#()::get_p() != 12) $stop;
-      if (Cls#(4)::get_p() != 4) $stop;
-      if (Cls8_t::get_p() != 8) $stop;
+    if (Cls#()::get_p() != 12) $stop;
+    if (Cls#(4)::get_p() != 4) $stop;
+    if (Cls8_t::get_p() != 8) $stop;
 
-      if (c12.get_p() != 12) $stop;
-      if (c4.get_p() != 4) $stop;
-      if (c8.get_p() != 8) $stop;
-      if (w16.get_p() != 16) $stop;
-      if (w32.get_p() != 32) $stop;
+    if (c12.get_p() != 12) $stop;
+    if (c4.get_p() != 4) $stop;
+    if (c8.get_p() != 8) $stop;
+    if (w16.get_p() != 16) $stop;
+    if (w32.get_p() != 32) $stop;
 
-      // verilator lint_off WIDTH
-      c12.member = 32'haaaaaaaa;
-      c4.member = 32'haaaaaaaa;
-      c8.member = 32'haaaaaaaa;
-      // verilator lint_on WIDTH
-      if (c12.member != 12'haaa) $stop;
-      if (c4.member != 4'ha) $stop;
-      if (c12.get_member() != 12'haaa) $stop;
-      if (c4.get_member() != 4'ha) $stop;
-      `checkp(c12, "'{member:'haaa}");
-      `checkp(c4, "'{member:'ha}");
+    // verilator lint_off WIDTH
+    c12.member = 32'haaaaaaaa;
+    c4.member = 32'haaaaaaaa;
+    c8.member = 32'haaaaaaaa;
+    // verilator lint_on WIDTH
+    if (c12.member != 12'haaa) $stop;
+    if (c4.member != 4'ha) $stop;
+    if (c12.get_member() != 12'haaa) $stop;
+    if (c4.get_member() != 4'ha) $stop;
+    `checkp(c12, "'{member:'haaa}");
+    `checkp(c4, "'{member:'ha}");
 
-      if ($bits(src_logic.field) != 1) $stop;
-      if ($bits(src_int.field) != 32) $stop;
-      if (src1.P != 1) $stop;
-      if (src10.P != 10) $stop;
+    if ($bits(src_logic.field) != 1) $stop;
+    if ($bits(src_int.field) != 32) $stop;
+    if (src1.P != 1) $stop;
+    if (src10.P != 10) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

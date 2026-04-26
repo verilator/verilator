@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Inputs
-   d, clk, num
-   );
-   input d;
-   input clk;
-   input int num;
+  // Inputs
+  d, clk, num
+  );
+  input d;
+  input clk;
+  input int num;
 
-   always @ (posedge clk) begin
-      if ($past(d, 1, 1)) $stop;  // Unsup
-      if ($past(d, 1, 1, )) $stop;  // Unsup
-      if ($past(d, 1, 1, @(posedge clk))) $stop;  // Unsup
-   end
+  always @ (posedge clk) begin
+    if ($past(d, 1, 1)) $stop;  // Unsup
+    if ($past(d, 1, 1, )) $stop;  // Unsup
+    if ($past(d, 1, 1, @(posedge clk))) $stop;  // Unsup
+  end
 endmodule

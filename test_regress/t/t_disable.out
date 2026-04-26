@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_disable.v:17:13: Unsupported: disabling block that contains a fork
-   17 |             disable forked;
-      |             ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

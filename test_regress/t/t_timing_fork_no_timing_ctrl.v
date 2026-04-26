@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial
-      fork
-         begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
-      join_none
+  initial
+    fork
+      begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+    join_none
 endmodule

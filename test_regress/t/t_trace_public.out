@@ -6,8 +6,8 @@ $timescale 1ps $end
   $scope module t $end
    $var wire 1 4 CLK $end
    $var wire 1 " RESET $end
-   $var wire 2 # vec[3] [2:1] $end
-   $var wire 2 $ vec[4] [2:1] $end
+   $var wire 2 # vec[4] [2:1] $end
+   $var wire 2 $ vec[3] [2:1] $end
    $var wire 32 % val [31:0] $end
    $scope module glbl $end
     $var wire 1 6 GSR $end

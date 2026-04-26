@@ -52,9 +52,8 @@ public:
             if (m_multiplicity.count(name) == 0) {
                 m_multiplicity[name] = 0;
                 return name;
-            } else {
-                return get(name + "__" + cvtToStr(m_multiplicity[name]++));
             }
+            return get(name + "__" + cvtToStr(m_multiplicity[name]++));
         }
         // NORMAL mode
         const unsigned num = m_multiplicity[name]++;

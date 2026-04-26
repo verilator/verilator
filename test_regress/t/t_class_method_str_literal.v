@@ -6,36 +6,37 @@
 
 module t;
 
-class uvm_reg;
+  class uvm_reg;
     function int get_1;
-        return 1;
+      return 1;
     endfunction
 
     function bit get_true;
-        return 1;
+      return 1;
     endfunction
 
     function string get_string;
-        if (get_1() == 1) begin
-            return get_true() ? "user backdoor" : "DPI backdoor";
-        end else begin
-            return "";
-        end
+      if (get_1() == 1) begin
+        return get_true() ? "user backdoor" : "DPI backdoor";
+      end
+      else begin
+        return "";
+      end
     endfunction
-endclass
+  endclass
 
-class T;
+  class T;
     function automatic string return_str(input string a_string);
-       return a_string;
+      return a_string;
     endfunction
 
     static function automatic string static_return_str(input string a_string);
-        return a_string;
+      return a_string;
     endfunction
-endclass
+  endclass
 
 
-initial begin
+  initial begin
     automatic T t_c = new;
     automatic uvm_reg u_r = new;
     if (u_r.get_string() != "user backdoor") $stop;
@@ -44,5 +45,5 @@ initial begin
     if (T::static_return_str("C") != "C") $stop;
     $write("*-* All Finished *-*\n");
     $finish;
-end
+  end
 endmodule

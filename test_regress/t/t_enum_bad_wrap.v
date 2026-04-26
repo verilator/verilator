@@ -6,7 +6,7 @@
 
 module t;
 
-   typedef enum [1:0] {
+  typedef enum [1:0] {
                   PREWRAP = 2'd3,
                   WRAPPED
                   } wrap_t;

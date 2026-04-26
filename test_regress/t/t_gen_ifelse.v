@@ -5,31 +5,25 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module s;
-   parameter A = 0;
-   generate
-      if (A == 1)
-            int i;
-      else if (A == 2)
-                 int i;
-      else
-           int i;
-   endgenerate
-   generate
-      if (A == 1)
-            int i;
-      else if (A == 2)
-                 int i;
-      else
-           int i;
-   endgenerate
+  parameter A = 0;
+  generate
+    if (A == 1) int i;
+    else if (A == 2) int i;
+    else int i;
+  endgenerate
+  generate
+    if (A == 1) int i;
+    else if (A == 2) int i;
+    else int i;
+  endgenerate
 endmodule
 
 module t;
-   s #(0) s0();
-   s #(1) s1();
-   s #(2) s2();
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  s #(0) s0 ();
+  s #(1) s1 ();
+  s #(2) s2 ();
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      // Syntax error, so not checking: if (type(real) == 1)) $stop;  // Bad
+  initial begin
+    // Syntax error, so not checking: if (type(real) == 1)) $stop;  // Bad
 
-      case (type(real))
-        1: $stop;  // Bad
-        default: $finish;
-      endcase
+    case (type(real))
+      1: $stop;  // Bad
+      default: $finish;
+    endcase
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

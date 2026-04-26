@@ -1,30 +1,30 @@
-%Warning-MULTIDRIVEN: t/t_order_blkandnblk_bad.v:33:6: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 'unpacked'
-                                                     : ... note: In instance 't'
-                      t/t_order_blkandnblk_bad.v:33:6: 
-   33 |      unpacked.b <= unpacked.a;
-      |      ^~~~~~~~
-                      t/t_order_blkandnblk_bad.v:30:16: ... Location of always_comb write
-   30 |    always_comb unpacked.a = i;
-      |                ^~~~~~~~
+%Warning-MULTIDRIVEN: t/t_order_blkandnblk_bad.v:33:25: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 'unpacked'
+                                                      : ... note: In instance 't'
+                      t/t_order_blkandnblk_bad.v:33:25: 
+   33 |   always @(posedge clk) unpacked.b <= unpacked.a;
+      |                         ^~~~~~~~
+                      t/t_order_blkandnblk_bad.v:31:15: ... Location of always_comb write
+   31 |   always_comb unpacked.a = i;
+      |               ^~~~~~~~
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:18:21: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 't.array'
-   18 |    logic [1:0][3:0] array;
-      |                     ^~~~~
-                   t/t_order_blkandnblk_bad.v:20:25: ... Location of blocking assignment (bits [3:0])
-   20 |    always_comb array[0] = i;
-      |                         ^
-                   t/t_order_blkandnblk_bad.v:23:6: ... Location of nonblocking assignment (bits [3:0])
-   23 |      array[0] <= array[0];
-      |      ^~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:20:20: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 't.array'
+   20 |   logic [1:0][3:0] array;
+      |                    ^~~~~
+                   t/t_order_blkandnblk_bad.v:22:24: ... Location of blocking assignment (bits [3:0])
+   22 |   always_comb array[0] = i;
+      |                        ^
+                   t/t_order_blkandnblk_bad.v:24:25: ... Location of nonblocking assignment (bits [3:0])
+   24 |   always @(posedge clk) array[0] <= array[0];
+      |                         ^~~~~
                    ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
-%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:28:6: Unsupported: Blocking and non-blocking assignments to same non-packed variable: 't.unpacked'
-   28 |    } unpacked;
-      |      ^~~~~~~~
-                   t/t_order_blkandnblk_bad.v:30:16: ... Location of blocking assignment
-   30 |    always_comb unpacked.a = i;
-      |                ^~~~~~~~
-                   t/t_order_blkandnblk_bad.v:33:6: ... Location of nonblocking assignment
-   33 |      unpacked.b <= unpacked.a;
-      |      ^~~~~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:29:5: Unsupported: Blocking and non-blocking assignments to same non-packed variable: 't.unpacked'
+   29 |   } unpacked;
+      |     ^~~~~~~~
+                   t/t_order_blkandnblk_bad.v:31:15: ... Location of blocking assignment
+   31 |   always_comb unpacked.a = i;
+      |               ^~~~~~~~
+                   t/t_order_blkandnblk_bad.v:33:25: ... Location of nonblocking assignment
+   33 |   always @(posedge clk) unpacked.b <= unpacked.a;
+      |                         ^~~~~~~~
 %Error: Exiting due to

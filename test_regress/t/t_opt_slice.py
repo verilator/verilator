@@ -13,6 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=['--sc', '--stats'])
 
-test.file_grep(test.stats, r'Optimizations, Slice array assignments\s+(\d+)', 5)
+test.file_grep(test.stats, r'Optimizations, Slice array assignments\s+(\d+)', 2)
 
 test.passes()

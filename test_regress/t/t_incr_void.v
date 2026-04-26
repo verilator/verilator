@@ -4,17 +4,13 @@
 // SPDX-FileCopyrightText: 2023 Drew Ranck
 // SPDX-License-Identifier: CC0-1.0
 
-module t
-  (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-  input clk;
+  int cyc = 0;
 
-  int   cyc = 0;
-
-  always @ (posedge clk) begin : main
+  always @(posedge clk) begin : main
     cyc <= cyc + 1;
 
     if (cyc > 100) begin
@@ -32,16 +28,15 @@ module t
   logic [3:0] want_count_q = '0;
 
   always_ff @(posedge clk) begin : flops
-    count_q        <= count_d;
-    want_count_q   <= want_count_d;
+    count_q <= count_d;
+    want_count_q <= want_count_d;
   end
 
   always @(posedge clk) begin : simple_check
     if (cyc > 0) begin
       if (count_q !== want_count_q) begin
-        $error("%m: cyc=%0d, count_q (%0d) !== want_count_q (%0d)",
-               cyc, count_q, want_count_q);
-        $stop; // don't finish to fail the test.
+        $error("%m: cyc=%0d, count_q (%0d) !== want_count_q (%0d)", cyc, count_q, want_count_q);
+        $stop;  // don't finish to fail the test.
       end
     end
   end

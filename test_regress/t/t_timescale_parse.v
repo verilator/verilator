@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //verilator lint_off REALCVT
+// verilog_format: off
 
 `define testmod(modname) \
 module modname; \

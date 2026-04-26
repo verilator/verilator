@@ -6,19 +6,19 @@
 
 module t;
 
-   integer p_i;
+  integer p_i;
 
-   initial begin
-      // BAD: Missing argument
-      if ($value$plusargs("NOTTHERE", p_i)!==0) $stop;
+  initial begin
+    // BAD: Missing argument
+    if ($value$plusargs("NOTTHERE", p_i) !== 0) $stop;
 
-      // BAD: Bad letter
-      if ($value$plusargs("INT=%z", p_i)!==0) $stop;
+    // BAD: Bad letter
+    if ($value$plusargs("INT=%z", p_i) !== 0) $stop;
 
-      // BAD: Multi letter
-      if ($value$plusargs("INT=%x%x", p_i)!==0) $stop;
+    // BAD: Multi letter
+    if ($value$plusargs("INT=%x%x", p_i) !== 0) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -48,47 +48,32 @@
 class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
     // Represents a variable. It has 2 optional inputs, 'srcp' and 'defaultp'.
 
-    AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
-    AstVarScope* const m_varScopep;  // The AstVarScope associated with this vertex (not owned)
+    AstVarScope* const m_vscp;  // The AstVarScope associated with this vertex (not owned)
     // Location of driver of this variable. Only used for converting back to Ast. Might be nullptr.
     FileLine* m_driverFileLine = nullptr;
-    // If this DfgVertexVar is a synthesized temporary, this is the original Var/VarScope it stands
-    // for. It might point to m_varp/m_varScopep itself to indicate it's a temporary without an
-    // associated input Var/VarScope.
-    AstNode* m_tmpForp = nullptr;
+    // If this DfgVertexVar is a synthesized temporary, this is the original AstVarScope it stands
+    // for. It might point to m_vscp itself to indicate it's a temporary without an associated
+    // input AstVarScope.
+    AstVarScope* m_tmpForp = nullptr;
 
-    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, AstVarScope* vscp)
-        : DfgVertex{dfg, type, varp->fileline(), *DfgDataType::fromAst(varp->dtypep())}
-        , m_varp{varp}
-        , m_varScopep{vscp} {
-#ifdef VL_DEBUG
-        if (v3Global.rootp()->topScopep()) {
-            UASSERT_OBJ(vscp, varp, "Un-scoped DfgVertexVar created in scoped DfgGraph");
-        } else {
-            UASSERT_OBJ(!vscp, varp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
-        }
-#endif
+protected:
+    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
+        : DfgVertex{dfg, type, vscp->varp()->fileline(),
+                    *DfgDataType::fromAst(vscp->varp()->dtypep())}
+        , m_vscp{vscp} {
         // Increment reference count
-        AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() + 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) > 0, variablep, "Reference count overflow");
+        m_vscp->user1(m_vscp->user1() + 0x20);
+        UASSERT_OBJ((m_vscp->user1() >> 5) > 0, m_vscp, "Reference count overflow");
         // Allocate sources
         newInput();
         newInput();
     }
 
-protected:
-    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp)
-        : DfgVertexVar{dfg, type, varp, nullptr} {}
-    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
-        : DfgVertexVar{dfg, type, vscp->varp(), vscp} {}
-
 public:
     ~DfgVertexVar() {
         // Decrement reference count
-        AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() - 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) >= 0, variablep, "Reference count underflow");
+        m_vscp->user1(m_vscp->user1() - 0x20);
+        UASSERT_OBJ((m_vscp->user1() >> 5) >= 0, m_vscp, "Reference count underflow");
     }
     ASTGEN_MEMBERS_DfgVertexVar;
 
@@ -102,59 +87,55 @@ public:
     std::string srcName(size_t idx) const override final { return idx ? "defaultp" : "srcp"; }
 
     // The Ast variable this vertex representess
-    AstVar* varp() const { return m_varp; }
-    AstVarScope* varScopep() const { return m_varScopep; }
-    AstNode* nodep() const {
-        return m_varScopep ? static_cast<AstNode*>(m_varScopep) : static_cast<AstNode*>(m_varp);
-    }
+    // AstVar* varp() const { return m_varp; }
+    AstVarScope* vscp() const { return m_vscp; }
 
     // If this is a temporary, the Ast variable it stands for,  or same as
     // 'nodep()' if it's a temporary with no associated original Ast variable.
-    AstNode* tmpForp() const { return m_tmpForp; }
-    void tmpForp(AstNode* nodep) { m_tmpForp = nodep; }
+    AstVarScope* tmpForp() const { return m_tmpForp; }
+    void tmpForp(AstVarScope* nodep) { m_tmpForp = nodep; }
 
     // Location of driver of variable (only used if 'srcp' is not a splice)
     FileLine* driverFileLine() const { return m_driverFileLine; }
     void driverFileLine(FileLine* flp) { m_driverFileLine = flp; }
 
     // Variable referenced from other DFG in the same module/netlist
-    bool hasDfgRefs() const { return nodep()->user1() >> 5; }  // I.e.: (nodep()->user1() >> 4) > 1
+    bool hasDfgRefs() const { return m_vscp->user1() >> 6; }  // I.e.: (nodep()->user1() >> 5) > 1
 
     // Variable referenced from Ast code in the same module/netlist
-    static bool hasModRdRefs(const AstNode* nodep) { return nodep->user1() & 0x04; }
-    static bool hasModWrRefs(const AstNode* nodep) { return nodep->user1() & 0x08; }
-    static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
-    static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
-    bool hasModRdRefs() const { return hasModRdRefs(nodep()); }
-    bool hasModWrRefs() const { return hasModWrRefs(nodep()); }
-    bool hasModRefs() const { return hasModRdRefs() || hasModWrRefs(); }
-    void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
-    void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
+    static bool hasModWrRefs(const AstVarScope* nodep) { return nodep->user1() & 0x08; }
+    static void setHasModWrRefs(AstVarScope* nodep) { nodep->user1(nodep->user1() | 0x08); }
+    bool hasModWrRefs() const { return hasModWrRefs(m_vscp); }
+    void setHasModWrRefs() const { setHasModWrRefs(m_vscp); }
 
     // Variable referenced outside the containing module/netlist.
-    static bool hasExtRdRefs(const AstNode* nodep) { return nodep->user1() & 0x01; }
-    static bool hasExtWrRefs(const AstNode* nodep) { return nodep->user1() & 0x02; }
-    static void setHasExtRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x01); }
-    static void setHasExtWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x02); }
-    bool hasExtRdRefs() const { return hasExtRdRefs(nodep()); }
-    bool hasExtWrRefs() const { return hasExtWrRefs(nodep()); }
+    static bool hasExtRdRefs(const AstVarScope* nodep) { return nodep->user1() & 0x01; }
+    static bool hasExtWrRefs(const AstVarScope* nodep) { return nodep->user1() & 0x02; }
+    static void setHasExtRdRefs(AstVarScope* nodep) { nodep->user1(nodep->user1() | 0x01); }
+    static void setHasExtWrRefs(AstVarScope* nodep) { nodep->user1(nodep->user1() | 0x02); }
+    bool hasExtRdRefs() const { return hasExtRdRefs(m_vscp); }
+    bool hasExtWrRefs() const { return hasExtWrRefs(m_vscp); }
     bool hasExtRefs() const { return hasExtRdRefs() || hasExtWrRefs(); }
+
+    // Variable referenced via READWRITE references
+    static bool hasRWRefs(const AstVarScope* nodep) { return nodep->user1() & 0x10; }
+    static void setHasRWRefs(AstVarScope* nodep) { nodep->user1(nodep->user1() | 0x10); }
 
     // True iff the value of this variable is read outside this DfgGraph
     bool isObserved() const {
         // A DfgVarVertex is written in exactly one DfgGraph, and might be read in an arbitrary
         // number of other DfgGraphs. If it's driven in this DfgGraph, it's read in others.
         if (hasDfgRefs()) return srcp() || defaultp();
-        return hasExtRdRefs() || hasModRdRefs();
+        return hasExtRdRefs();
     }
 
     // The value of this vertex might differ from what is defined by its drivers
     // 'srcp' and 'defaultp'. That is, it might be assigned, possibly partially,
     // or abruptly outside the graph, hence it is not equivalent to its 'srcp'.
-    static bool isVolatile(const AstNode* nodep) {
+    static bool isVolatile(const AstVarScope* nodep) {
         return hasModWrRefs(nodep) || hasExtWrRefs(nodep);
     }
-    bool isVolatile() const { return isVolatile(nodep()); }
+    bool isVolatile() const { return isVolatile(m_vscp); }
 };
 
 class DfgVarArray final : public DfgVertexVar {
@@ -162,10 +143,6 @@ class DfgVarArray final : public DfgVertexVar {
     friend class DfgVisitor;
 
 public:
-    DfgVarArray(DfgGraph& dfg, AstVar* varp)
-        : DfgVertexVar{dfg, dfgType(), varp} {
-        UASSERT_OBJ(isArray(), varp, "Non-array DfgVarArray");
-    }
     DfgVarArray(DfgGraph& dfg, AstVarScope* vscp)
         : DfgVertexVar{dfg, dfgType(), vscp} {
         UASSERT_OBJ(isArray(), vscp, "Non-array DfgVarArray");
@@ -178,15 +155,53 @@ class DfgVarPacked final : public DfgVertexVar {
     friend class DfgVisitor;
 
 public:
-    DfgVarPacked(DfgGraph& dfg, AstVar* varp)
-        : DfgVertexVar{dfg, dfgType(), varp} {
-        UASSERT_OBJ(isPacked(), varp, "Non-packed DfgVarPacked");
-    }
     DfgVarPacked(DfgGraph& dfg, AstVarScope* vscp)
         : DfgVertexVar{dfg, dfgType(), vscp} {
         UASSERT_OBJ(isPacked(), vscp, "Non-packed DfgVarPacked");
     }
     ASTGEN_MEMBERS_DfgVarPacked;
+};
+
+//------------------------------------------------------------------------------
+// Ast reference vertices
+
+class DfgVertexAst VL_NOT_FINAL : public DfgVertex {
+    // Represents a reference in the Ast
+
+    AstNodeExpr* m_exprp;  // The AstNodeExpr representing this reference
+
+public:
+    DfgVertexAst(DfgGraph& dfg, VDfgType type, AstNodeExpr* exprp)
+        : DfgVertex{dfg, type, exprp->fileline(), *DfgDataType::fromAst(exprp->dtypep())}
+        , m_exprp{exprp} {}
+    ASTGEN_MEMBERS_DfgVertexAst;
+
+    AstNodeExpr* exprp() const { return m_exprp; }
+    void exprp(AstNodeExpr* exprp) { m_exprp = exprp; }
+};
+
+class DfgAstRd final : public DfgVertexAst {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+    const bool m_inSenItem;  // Reference is in a sensitivity list
+    const bool m_inLoop;  // Reference is in a loop
+
+public:
+    DfgAstRd(DfgGraph& dfg, AstNodeExpr* exprp, bool inSenItem, bool inLoop)
+        : DfgVertexAst{dfg, dfgType(), exprp}
+        , m_inSenItem{inSenItem}
+        , m_inLoop{inLoop} {
+        // Allocate sources
+        newInput();
+    }
+    ASTGEN_MEMBERS_DfgAstRd;
+
+    DfgVertex* srcp() const { return inputp(0); }
+    void srcp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    std::string srcName(size_t) const override final { return ""; }
+    bool inSenItem() const { return m_inSenItem; }
+    bool inLoop() const { return m_inLoop; }
 };
 
 //------------------------------------------------------------------------------
@@ -248,6 +263,17 @@ public:
     DfgVertex* srcp() const { return inputp(0); }
     void srcp(DfgVertex* vtxp) { inputp(0, vtxp); }
     std::string srcName(size_t) const override final { return ""; }
+};
+
+class DfgRep final : public DfgVertexUnary {
+    // AstReplicate is binary, but 'countp' is always constant. Represented in
+    // Dfg as a unary vertex, with the count determined by the data type,
+    // similar to Extend/ExtendS.
+public:
+    DfgRep(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgRep;
+    uint32_t count() const { return width() / srcp()->width(); }
 };
 
 class DfgSel final : public DfgVertexUnary {
@@ -464,7 +490,7 @@ class DfgLogic final : public DfgVertexVariadic {
     std::vector<DfgVertex*> m_synth;  // Vertices this logic was synthesized into
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis
     bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
-    bool m_reverted = false;  // Logic was synthesized (in part if non synthesizable) then reverted
+    bool m_reverted = false;  // Logic was synthesized (in part if non-synthesizable) then reverted
     mutable uint8_t m_cachedPure = 0;  // Cached purity of the logic
 
 public:

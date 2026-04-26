@@ -13,45 +13,45 @@ module t (
     output reg o_3,
     output reg o_4,
     output reg o_5
-   );
+);
 
-    input clk;
+  input clk;
 
-    reg a = 0;
-    reg b = 0;
+  reg a = 0;
+  reg b = 0;
 
-    event e;
+  event e;
 
-    // We must not convert these blocks into combinational blocks
+  // We must not convert these blocks into combinational blocks
 
-    always @(i) begin
-      a <= ~a;
-      o_0 = i;
-    end
+  always @(i) begin
+    a <= ~a;
+    o_0 = i;
+  end
 
-    always @(i) begin
-      force b = 1;
-      o_1 = i;
-    end
+  always @(i) begin
+    force b = 1;
+    o_1 = i;
+  end
 
-    always @(i) begin
-      release b;
-      o_2 = i;
-    end
+  always @(i) begin
+    release b;
+    o_2 = i;
+  end
 
-    always @(i) begin
-      -> e;
-      o_3 = i;
-    end
+  always @(i) begin
+    ->e;
+    o_3 = i;
+  end
 
-    always @(i) begin
-      ->> e;
-      o_4 = i;
-    end
+  always @(i) begin
+    ->>e;
+    o_4 = i;
+  end
 
-    always @(i) begin
-      $display("Hello");
-      o_5 = i;
-    end
+  always @(i) begin
+    $display("Hello");
+    o_5 = i;
+  end
 
 endmodule

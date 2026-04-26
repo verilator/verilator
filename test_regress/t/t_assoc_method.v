@@ -4,10 +4,11 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
-
+// verilog_format: on
 
 module t;
   typedef struct {int x, y;} point;
@@ -51,7 +52,7 @@ module t;
     points_q[1] = point'{2, 4};
     points_q[5] = point'{1, 4};
 
-    points_qv   = points_q.unique(p) with (p.x);
+    points_qv = points_q.unique(p) with (p.x);
     `checkh(points_qv.size, 2);
     qi = points_q.unique_index (p) with (p.x + p.y);
     qi.sort;
@@ -189,7 +190,7 @@ module t;
     i = qe.xor();
     `checkh(i, 32'b0);
 
-    q  = '{10: 1, 11: 2};
+    q = '{10: 1, 11: 2};
     qe = '{10: 1, 11: 2};
     `checkh(q == qe, 1'b1);
     `checkh(q != qe, 1'b0);
@@ -206,6 +207,13 @@ module t;
     `checkh(b, 1'b0);
     b = points_q.sum with (vec_len_squared(item) inside {5, 17, 20});
     `checkh(b, 1'b1);
+
+    // Map method (IEEE 1800-2023 7.12.5)
+    q = '{1: 100, 2: 200, 3: 300};
+    qv = q.map(el) with (el / 100);
+    `checkp(qv, "'{'h1, 'h2, 'h3}");
+    qv = q.map(el) with (el.index * 10);
+    `checkp(qv, "'{'ha, 'h14, 'h1e}");
 
     $write("*-* All Finished *-*\n");
     $finish;

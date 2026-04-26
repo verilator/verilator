@@ -1,10 +1,10 @@
-%Error-UNSUPPORTED: t/t_interface_ar3.v:16:36: Unsupported: interface slices
+%Error-UNSUPPORTED: t/t_interface_ar3.v:18:18: Unsupported: interface slices
                                              : ... note: In instance 't'
-   16 |    sub sub01 [2] (.clk, .infc(iinst[0:1]));
-      |                                    ^
+   18 |       .infc(iinst[0:1])
+      |                  ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_interface_ar3.v:16:36: ../V3Inst.cpp:#: No interface varref under array
+%Error: Internal Error: t/t_interface_ar3.v:18:18: ../V3Inst.cpp:#: No interface varref under array
                                                  : ... note: In instance 't'
-   16 |    sub sub01 [2] (.clk, .infc(iinst[0:1]));
-      |                                    ^
+   18 |       .infc(iinst[0:1])
+      |                  ^
                         ... This fatal error may be caused by the earlier error(s); resolve those first.

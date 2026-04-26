@@ -306,7 +306,7 @@ List Of Warnings
         else
           array[address] <= data;
 
-   While this is supported in typical synthesizeable code (including the
+   While this is supported in typical synthesizable code (including the
    example above), some complicated cases are not supported. Namely:
 
    1. If the above loop is inside a suspendable process or fork statement.
@@ -837,6 +837,18 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FSMMULTI
+
+   Warns that the same always block contains multiple enum-typed case
+   statements that look like FSM candidates for native FSM coverage when
+   :vlopt:`--coverage-fsm` or :vlopt:`--coverage` is enabled.
+
+   Verilator's FSM coverage instruments only the first such candidate in
+   source order. Split the FSMs into separate always blocks, or explicitly
+   annotate the intended state variables and restructure the RTL for full
+   coverage of such multiple state machines.
+
+
 .. option:: FUNCTIMECTL
 
    Error that a function contains a time-controlling statement or call of a
@@ -854,6 +866,11 @@ List Of Warnings
    most cases Verilator treats functions and tasks identically and relies
    on analysis to determine what functions/tasks need to allow time to
    pass.
+
+
+.. option:: FUTURE
+
+   Warns that a feature is under development and not yet supported.
 
 
 .. option:: GENCLK
@@ -1519,7 +1536,12 @@ List Of Warnings
    ANSI-style `#(...)` declarations. IEEE 1800-2023 6.20.1 requires this
    error, but some simulators accept this syntax.
 
-   Faulty example:
+   Also issued with ANSI format where a parameter without default is
+   present in the top-level module, and as such Verilator cannot know how
+   to process that module. For such cases suggest adding a default so the
+   module can lint cleanly.
+
+   Faulty non-ANSI example:
 
    .. include:: ../../docs/gen/ex_PARAMNODEFAULT_faulty.rst
 
@@ -1529,8 +1551,8 @@ List Of Warnings
 
    To fix the issue, move to an ANSI-style declaration.
 
-   Suppressing this error will only suppress the IEEE-required check; it
-   will simulate correctly.
+   For the non-ANSI case, suppressing this error will only suppress the
+   IEEE-required check; it will simulate correctly.
 
 
 .. option:: PINCONNECTEMPTY
@@ -1850,8 +1872,12 @@ List Of Warnings
 
       and #(1,2,3) AND (out, a, b);
 
-   Warns that rising, falling, and turn-off delays are currently unsupported.
-   The first (rising) delay is used for all cases.
+   Warns that the third (turn-off) delay is currently unsupported and is
+   ignored. Rising and falling delays are supported.
+
+   In versions before 5.048, warned that rising, falling, and turn-off
+   delays were unsupported. The first (rising) delay was used for all
+   cases.
 
 
 .. option:: SELRANGE
@@ -2592,11 +2618,11 @@ List Of Warnings
    Since version 5.046:
 
    Issued if neither :vlopt:`--sched-zero-delay`, nor
-   :vlopt:`--sched-zero-delay` is used on the command line, and the input does
-   not contain a compile time known ``#0`` delay, but does contain a
-   ``#(expressin)`` where the delay value cannot be determined at compile time.
-   Passing :vlopt:`--no-sched-zero-delay` can improve runtime performance if
-   variable delays are all known to be non-zero at runtime.
+   :vlopt:`--sched-zero-delay` is used on the command line, and the input
+   does not contain a compile time known ``#0`` delay, but does contain a
+   ``#(expression)`` where the delay value cannot be determined at compile
+   time. Passing :vlopt:`--no-sched-zero-delay` can improve runtime
+   performance if variable delays are all known to be non-zero at runtime.
 
    Also issued if :vlopt:`--no-sched-zero-delay` is used on the command line,
    but the input contains a compile time known ``#0`` delay. This is safe to

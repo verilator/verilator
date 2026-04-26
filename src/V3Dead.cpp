@@ -173,6 +173,7 @@ class DeadVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
         checkAll(nodep);
         if (nodep->taskp()) nodep->taskp()->user1Inc();
         if (nodep->classOrPackagep()) {
@@ -328,8 +329,12 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
+        if (nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()) {
+            if (m_modp && !m_modp->dead() && !m_modp->verilatorLib())
+                m_modp->user1Inc();  // Keep container
+        } else {
             m_tasksp.push(nodep);
+        }
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
@@ -361,7 +366,7 @@ class DeadVisitor final : public VNVisitor {
             checkAll(typedefp);
         }
     }
-    bool shouldDeleteTypedef(const AstTypedef* typedefp) {
+    bool shouldDeleteTypedef(const AstTypedef* typedefp) const {
         if (const auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
             if (structp->user1() && !structp->packed()) return false;
         }

@@ -1,14 +1,14 @@
-%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:12:13: Pin not found: 'x'
-   12 | b b_inst1 (.x(1'b0));  
-      |             ^
+%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:11:19: Pin not found: 'x'
+   11 |       b b_inst1 (.x(1'b0));   
+      |                   ^
                                                     : ... Location of instance's module declaration
-   18 | module b;
+   17 | module b;
       |        ^
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:13:6: Parameter not found: 'PX'
-   13 | b #(.PX(1'b0)) b_inst2 ();  
-      |      ^~
-                                                   : ... Location of instance's module declaration
-   18 | module b;
+%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:12:12: Parameter not found: 'PX'
+   12 |       b #(.PX(1'b0)) b_inst2 ();   
+      |            ^~
+                                                    : ... Location of instance's module declaration
+   17 | module b;
       |        ^
 %Error: Exiting due to

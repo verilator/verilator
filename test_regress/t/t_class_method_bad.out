@@ -1,7 +1,7 @@
-%Error: t/t_class_method_bad.v:18:9: Class method 'meth3' not found in class 'Cls2'
+%Error: t/t_class_method_bad.v:20:7: Class method 'meth3' not found in class 'Cls2'
                                    : ... note: In instance 't'
                                    : ... Suggested alternative: 'meth2'
-   18 |       c.meth3();   
-      |         ^~~~~
+   20 |     c.meth3();   
+      |       ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -40,9 +40,14 @@ module t;
   chandle h;
 
   // To cover testing cases, this has non-zero LSB/LO
-  logic [31+8:8] exposed  /*verilator public*/;
+  logic [31+8:8] exposed  /*verilator public*/  /*verilator forceable*/;
   logic not_exposed;
-  logic exposed_not_forceable;
+  logic exposed_not_forceable  /*verilator public*/;
+  logic [31+8:8] exposedContinuously  /*verilator public*/  /*verilator forceable*/;
+  assign exposedContinuously = 32'h0;
+
+  real realSignal  /*verilator public*/  /*verilator forceable*/;
+  string stringSignal  /*verilator public*/;
 
   logic [83:4] wide_dec  /* verilator public*/;
   // verilator lint_off ASCRANGE
@@ -52,7 +57,14 @@ module t;
   logic [31:0] mem1d[1:2]  /* verilator public*/;
   logic [31:0] mem2d[1:2][3:4]  /* verilator public*/;
 
+  logic [2047:0] tooWide  /* verilator public*/  /* verilator forceable*/ = 2048'h0;
+
   uvm_hdl_data_t lval;
+
+  task releaseExposedContinuously(input logic [31:0] din, output int i);
+    // verilator no_inline_task
+    i = uvm_hdl_release("t.exposedContinuously");
+  endtask
 
   initial begin
     // TODO TEST:
@@ -178,7 +190,6 @@ module t;
       `checkh(wide_asc, 80'h1234_56789abc_dcb0ffe5);
     end
 
-`ifndef VERILATOR  // Unsupported
     begin : memory_1d
       $display("= uvm_hdl_read/deposit 1D memory");
       i = uvm_hdl_check_path("t.mem1d[0]");
@@ -221,7 +232,56 @@ module t;
       `checkh(i, 1);
       `checkh(mem2d[2][3], 32'h2300);
     end
+
+    begin : t_read_bad
+      $display("= uvm_hdl_read bad ranges");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[10:3]", lval);
+      `checkh(i, 0);
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[99:15]", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read empty name (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read not found (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.__READ_NOT_FOUND", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.exposed[15+8:8]", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read from real (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.realSignal", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read from string (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.stringSignal", lval);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_read producing error message larger than print buffer (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read(
+          "t.lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_lorem_ipsum_dolor_sit_amet_consetetur_sadipscing_elitr_sed_diam_nonumy_eirmod_tempor_invidunt_ut_labore_et_dolore_magna_aliquyam_erat_sed_diam_voluptua_at_vero_eos_et_accusam_et_justo_duo_dolores_et_ea_rebum_stet_clita_kasd_gubergren_no_sea_takimata_sanctus_est_lorem_ipsum_dolor_sit_amet_duis_autem_vel_eum_iriure_dolor_in_hendrerit_in_vulputate_velit_esse_molestie_consequat_vel_illum_dolore_eu_feugiat_nulla_facilisis_at_vero",
+          lval
+      );
+      `checkh(i, 0);
+
+`ifdef VERILATOR
+      $display("= uvm_hdl_read from not exposed (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_read("t.not_exposed", lval);
+      `checkh(i, 0);
 `endif
+    end
 
     begin : t_deposit_bad
       $display("= uvm_hdl_deposit bad ranges");
@@ -232,10 +292,39 @@ module t;
       i = uvm_hdl_deposit("t.exposed[99:15]", lval);
       `checkh(i, 0);
 
+      $display("= uvm_hdl_deposit empty name (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("", lval);
+      `checkh(i, 0);
+
       $display("= uvm_hdl_deposit not found (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_deposit("t.__DEPOSIT_NOT_FOUND", 12);
       `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.exposed[15+8:8]", 0);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit to real (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.realSignal", 0);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_deposit to string (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_deposit("t.stringSignal", 0);
+      `checkh(i, 0);
+
+      // lval is only 1024 bits, so if vpi_put_value is called on a 2048-bit
+      // signal, it would read out of bounds of lval if unchecked
+      $display("= Test uvm_hdl_deposit to signal wider than UVM_HDL_MAX_WIDTH (bad)");
+      $display("===\nUVM Report expected on next line:");
+      lval = 1024'hAAAA;
+      i = uvm_hdl_deposit("t.tooWide", lval);
+      `checkh(i, 0);
+      `checkh(tooWide, 2048'h0);
 
 `ifdef VERILATOR
       $display("= uvm_hdl_deposit to not exposed (bad)");
@@ -250,31 +339,192 @@ module t;
       i = uvm_hdl_read("t.exposed", lval);
       `checkh(i, 1);
       `checkh(lval[31:0], exposed);
-      // UNSUPPORTED: force/release via VPI
-      // If support, validate or throw unsupported on force/release part-selects
+
       $display("= uvm_hdl_force");
       i = uvm_hdl_force("t.exposed", 62);
       `checkh(i, 1);
+      exposed = 32'h0;  // should have no effect, since signal is being forced
+      `checkh(exposed, 32'd62);
 
       $display("= uvm_hdl_release");
       i = uvm_hdl_release("t.exposed");
       `checkh(i, 1);
+      // exposed is not assigned continuously, so return value is force value
+      `checkh(exposed, 32'd62);
+      exposed = 32'hFFFF_FFFF;
+      `checkh(exposed, 32'hFFFF_FFFF);
 
       $display("= uvm_hdl_release_and_read");
+      exposed = 32'hFFFF_FFFF;
+      force exposed[31+8:8] = 32'h0;
+      lval = 1024'hFFFF_FFFF;
       i = uvm_hdl_release_and_read("t.exposed", lval);
       `checkh(i, 1);
+      // exposed is not assigned continuously, so return value is force value
+      `checkh(lval[31:0], 32'h0);
+      `checkh(exposed, 32'h0);
+
     end
 
-    begin : t_force_expose_bad
+    begin : t_force_release_continuous
+      $display("= uvm_hdl_force continuously assigned signal");
+      i = uvm_hdl_force("t.exposedContinuously", 62);
+      `checkh(i, 1);
+      `checkh(exposedContinuously, 32'd62);
+
+      force exposedContinuously = 32'hFFFF_FFFF;
+      $display("= uvm_hdl_release continuously assigned signal");
+      releaseExposedContinuously(
+          exposedContinuously,
+          i);  // Need to wrap VPI call in task for Verilation to actually check the release value
+      `checkh(i, 1);
+      `checkh(exposedContinuously, 32'h0);
+
+      $display("= uvm_hdl_release_and_read continuously assigned signal");
+      force exposedContinuously[31+8:8] = 32'hFFFF_FFFF;
+      lval = 1024'hFFFF_FFFF;
+      i = uvm_hdl_release_and_read("t.exposedContinuously", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0);
+      `checkh(t.exposedContinuously, 32'h0);
+
+    end
+
+    begin : t_force_partial
+      // Partial force from SystemVerilog
+      $display("= uvm_hdl_read partially forced signal");
+      force exposed[15+8:8] = 16'h0;
+      exposed = 32'hFFFF_FFFF;  // Expect 16 LSBs to stay at 0
+      `checkh(exposed, 32'hFFFF_0000);
+      lval = 1024'hAAAA_AAAA;
+      i = uvm_hdl_read("t.exposed", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], exposed);
+
+      $display("= uvm_hdl_release partially forced signal");
+      i = uvm_hdl_release("t.exposed");
+      `checkh(i, 1);
+      `checkh(exposed, 32'hFFFF_0000);
+      exposed = 32'hFFFF_FFFF;
+      `checkh(exposed, 32'hFFFF_FFFF);
+
+      // Partial force through UVM
+      $display("= uvm_hdl_force multi-bit");
+      i = uvm_hdl_force("t.exposed[23:8]", 0);  // [15+8:8] is not valid syntax in Verilator
+      `checkh(i, 1);
+      exposed = 32'hFFFF_FFFF;  // Expect 16 LSBs to stay at 0
+      `checkh(exposed, 32'hFFFF_0000);
+
+      $display("= uvm_hdl_release_and_read partially forced signal");
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposed", lval);
+      `checkh(i, 1);
+      // exposed is not assigned continuously, so return value is force value
+      `checkh(lval[31:0], 32'hFFFF_0000);
+      `checkh(exposed, 32'hFFFF_0000);
+      exposed = 32'hFFFF_FFFF;
+      `checkh(exposed, 32'hFFFF_FFFF);
+    end
+
+    begin : t_force_partial_continuous
+      $display("= uvm_hdl_force multi-bit continuously assigned signal");
+      i = uvm_hdl_force("t.exposedContinuously[23:8]", 'hFFFF);
+      `checkh(i, 1);
+      `checkh(exposedContinuously, 32'h0000_FFFF);
+
+      $display("= uvm_hdl_release partially forced continuously assigned signal");
+      i = uvm_hdl_release("t.exposedContinuously");
+      `checkh(i, 1);
+      `checkh(exposedContinuously, 32'h0000_0000);
+
+      $display("= uvm_hdl_release_and_read partially forced continuously assigned signal");
+      force exposedContinuously[23:8] = 16'hFFFF;
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposedContinuously", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0000_0000);
+      `checkh(exposedContinuously, 32'h0000_0000);
+    end
+
+    begin : t_force_single_bit
+      $display("= uvm_hdl_force single bit");
+      exposed = 32'hAAAA_AAAA;
+      i = uvm_hdl_force("t.exposed[16]", 1);
+      `checkh(i, 1);
+      exposed = 32'h0;  // should have no effect on bit 16
+      `checkh(exposed, 32'h0000_0100);
+
+      $display("= uvm_hdl_release_and_read single bit");
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposed[16]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0000_0001);
+      exposed = 32'hFFFF_FFFF;
+      `checkh(exposed, 32'hFFFF_FFFF);
+
+      $display("= uvm_hdl_force single bit on continuously assigned signal");
+      i = uvm_hdl_force("t.exposedContinuously[16]", 1);
+      `checkh(i, 1);
+      `checkh(exposedContinuously, 32'h0000_0100);
+
+      $display("= uvm_hdl_release_and_read single bit on continuously assigned signal");
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposedContinuously[16]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0000_0000);
+      `checkh(exposedContinuously, 32'h0);
+    end
+
+    begin : t_partial_release
+      $display("= uvm_hdl_release_and_read lower 16 bits only");
+      force exposed = 32'h5555_5555;
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposed[23:8]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0000_5555);
+      exposed = 32'hFFFF_FFFF;
+      `checkh(exposed, 32'h5555_FFFF);
+      release exposed;
+
+      $display("= uvm_hdl_release upper 16 bits only of continuously assigned signal");
+      force exposedContinuously = 32'h5555_5555;
+      lval = 1024'h0;
+      i = uvm_hdl_release_and_read("t.exposedContinuously[39:24]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 32'h0000_0000);
+      `checkh(exposedContinuously, 32'h0000_5555);
+      release exposedContinuously;
+    end
+
+    begin : t_force_bad
       $display("= uvm_hdl_force to not exposed (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_force("t.not_exposed", 12);
       `checkh(i, 0);
 
+      exposed = 32'hFFFF_FFFF;
+      $display("= uvm_hdl_force with indexed part-select (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_force("t.exposed[15+8:8]", 0);
+      `checkh(i, 0);
+      `checkh(exposed, 32'hFFFF_FFFF);
+
       $display("= uvm_hdl_force to not forcable (bad)");
       $display("===\nUVM Report expected on next line:");
       i = uvm_hdl_force("t.exposed_not_forceable", 12);
       `checkh(i, 0);
+
+      $display("= uvm_hdl_force to real (bad)");
+      $display("===\nUVM Report expected on next line:");
+      i = uvm_hdl_force("t.realSignal", 0);
+      `checkh(i, 0);
+
+      $display("= uvm_hdl_force to signal wider than UVM_HDL_MAX_WIDTH (bad)");
+      $display("===\nUVM Report expected on next line:");
+      lval = 1024'hAAAA;
+      i = uvm_hdl_force("t.tooWide", lval);
+      `checkh(i, 0);
+      `checkh(tooWide, 2048'h0);
     end
 
     $write("*-* All Finished *-*\n");

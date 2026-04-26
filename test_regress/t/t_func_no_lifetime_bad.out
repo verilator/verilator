@@ -1,29 +1,29 @@
-%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:26:17: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:26:16: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
                                                          : ... Suggest use 'function automatic' or 'function static'
-   26 |    function int f_implicit_static();
-      |                 ^~~~~~~~~~~~~~~~~
-                         t/t_func_no_lifetime_bad.v:27:11: ... Location of implicit static variable
-                                                         : ... The initializer value will only be set once
-   27 |       int cnt = 0;
-      |           ^~~
+   26 |   function int f_implicit_static();
+      |                ^~~~~~~~~~~~~~~~~
+                         t/t_func_no_lifetime_bad.v:27:9: ... Location of implicit static variable
+                                                        : ... The initializer value will only be set once
+   27 |     int cnt = 0;
+      |         ^~~
                          ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
                          ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
-%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:31:9: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:31:8: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
                                                         : ... Suggest use 'task automatic' or 'task static'
-   31 |    task t_implicit_static();
-      |         ^~~~~~~~~~~~~~~~~
-                         t/t_func_no_lifetime_bad.v:32:11: ... Location of implicit static variable
-                                                         : ... The initializer value will only be set once
-   32 |       int cnt = 0;
-      |           ^~~
-%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:9:8: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
+   31 |   task t_implicit_static();
+      |        ^~~~~~~~~~~~~~~~~
+                         t/t_func_no_lifetime_bad.v:32:9: ... Location of implicit static variable
+                                                        : ... The initializer value will only be set once
+   32 |     int cnt = 0;
+      |         ^~~
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:9:7: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
                                                        : ... The initializer value will only be set once
                                                        : ... Suggest use 'static' before variable declaration'
-    9 |    int cnt = 0;   
-      |        ^~~
-%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:15:8: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
+    9 |   int cnt = 0;   
+      |       ^~~
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:15:7: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
                                                         : ... The initializer value will only be set once
                                                         : ... Suggest use 'static' before variable declaration'
-   15 |    int cnt = 0;   
-      |        ^~~
+   15 |   int cnt = 0;   
+      |       ^~~
 %Error: Exiting due to

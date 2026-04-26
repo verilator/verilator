@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (portwithoin);
-   input portwithin;
+module t (
+    portwithoin
+);
+  input portwithin;
 endmodule

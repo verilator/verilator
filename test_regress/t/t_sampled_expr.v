@@ -4,65 +4,64 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+// verilog_format: off
+module t (
+  input clk
+  );
 
-   reg [3:0] a, b;
+  reg [3:0] a, b;
 
-   Test1 t1(clk, a, b);
-   Test2 t2(clk, a, b);
-   Test3 t3(clk);
+  Test1 t1(clk, a, b);
+  Test2 t2(clk, a, b);
+  Test3 t3(clk);
 
-   initial begin
-      a = 0;
-      b = 0;
-   end
+  initial begin
+    a = 0;
+    b = 0;
+  end
 
-   always @(posedge clk) begin
-      a <= a + 1;
-      b = b + 1;
+  always @(posedge clk) begin
+    a <= a + 1;
+    b = b + 1;
 
-      $display("a = %0d, b = %0d, %0d == %0d", a, b, $sampled(a), $sampled(b));
+    $display("a = %0d, b = %0d, %0d == %0d", a, b, $sampled(a), $sampled(b));
 
-      if (b >= 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    if (b >= 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule
 
 module Test1(
-   clk, a, b
-   );
+  clk, a, b
+  );
 
-   input clk;
-   input [3:0] a, b;
+  input clk;
+  input [3:0] a, b;
 
-   assert property (@(posedge clk) $sampled(a == b) == ($sampled(a) == $sampled(b)));
+  assert property (@(posedge clk) $sampled(a == b) == ($sampled(a) == $sampled(b)));
 endmodule
 
 module Test2(
-   clk, a, b
-   );
+  clk, a, b
+  );
 
-   input clk;
-   input [3:0] a, b;
+  input clk;
+  input [3:0] a, b;
 
-   assert property (@(posedge clk) eq(a, b));
+  assert property (@(posedge clk) eq(a, b));
 
-   function [0:0] eq([3:0] x, y);
-      return x == y;
-   endfunction
+  function [0:0] eq([3:0] x, y);
+    return x == y;
+  endfunction
 endmodule
 
 module Test3(
-   clk
-   );
+  clk
+  );
 
-   input clk;
+  input clk;
 
-   assert property (@(posedge clk) $sampled($time) == $time);
+  assert property (@(posedge clk) $sampled($time) == $time);
 endmodule

@@ -4,21 +4,26 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module top(input wire clk);
+module top (
+    input wire clk
+);
 
-    logic [1:0][31:0] i;
-    logic o;
+  logic [1:0][31:0] i;
+  logic o;
 
-    always @(posedge clk) begin
-        force i = 64'hFFFFFFFF_FFFFFFFF;
-    end
+  always @(posedge clk) begin
+    force i = 64'hFFFFFFFF_FFFFFFFF;
+  end
 
-    sub sub_i(.i(i), .o(o));
+  sub sub_i (
+      .i(i),
+      .o(o)
+  );
 endmodule
 
 module sub (
-    input  logic [63:0] i,
+    input logic [63:0] i,
     output logic o
 );
-    assign o = |i;
+  assign o = |i;
 endmodule

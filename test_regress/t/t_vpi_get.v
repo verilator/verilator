@@ -23,19 +23,19 @@ import "DPI-C" function void dpi_print(input string somestring);
 `endif
 
 interface intf #(parameter int param `PUBLIC_FLAT_RD = 7);
-   localparam int lparam `PUBLIC_FLAT_RD = param + 1;
-   logic [7:0] bytesig `PUBLIC_FLAT_RD;
+  localparam int lparam `PUBLIC_FLAT_RD = param + 1;
+  logic [7:0] bytesig `PUBLIC_FLAT_RD;
 endinterface
 
 module t (/*AUTOARG*/
-   // Inputs
-   input clk                            `PUBLIC_FLAT_RD,
+  // Inputs
+  input clk                            `PUBLIC_FLAT_RD,
 
-   // test ports
-   input  [15:0]        testin          `PUBLIC_FLAT_RD,
-   output [23:0]        testout     `PUBLIC_FLAT_RW
+  // test ports
+  input  [15:0]        testin          `PUBLIC_FLAT_RD,
+  output [23:0]        testout     `PUBLIC_FLAT_RW
 
-   );
+  );
 
 `ifdef VERILATOR
 `systemc_header
@@ -43,51 +43,51 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   reg          onebit          `PUBLIC_FLAT_RW;
-   reg [2:1]    twoone          `PUBLIC_FLAT_RW;
-   reg          onetwo [1:2]    `PUBLIC_FLAT_RW;
-   reg [2:1]    fourthreetwoone[4:3] `PUBLIC_FLAT_RW;
-   reg [1:0] [1:0] twobytwo     `PUBLIC_FLAT_RW;
-   int          theint          `PUBLIC_FLAT_RW;
+  reg          onebit          `PUBLIC_FLAT_RW;
+  reg [2:1]    twoone          `PUBLIC_FLAT_RW;
+  reg          onetwo [1:2]    `PUBLIC_FLAT_RW;
+  reg [2:1]    fourthreetwoone[4:3] `PUBLIC_FLAT_RW;
+  reg [1:0] [1:0] twobytwo     `PUBLIC_FLAT_RW;
+  int          theint          `PUBLIC_FLAT_RW;
 
-   integer      status;
+  integer      status;
 
 `ifdef IVERILOG
-   // stop icarus optimizing signals away
-   wire         redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
+  // stop icarus optimizing signals away
+  wire         redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
 `endif
 
-   wire         subin  `PUBLIC_FLAT_RD;
-   wire         subout `PUBLIC_FLAT_RD;
-   sub sub(.*);
+  wire         subin  `PUBLIC_FLAT_RD;
+  wire         subout `PUBLIC_FLAT_RD;
+  sub sub(.*);
 
-   // Test loop
-   initial begin
-      dpi_print("foo");
+  // Test loop
+  initial begin
+    dpi_print("foo");
 `ifdef VERILATOR
-      status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `endif
 `ifdef IVERILOG
-     status = $mon_check();
+    status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-     status = mon_check();
+    status = mon_check();
 `endif
-      if (status!=0) begin
-         $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if (status!=0) begin
+      $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule : t
 
 module sub #(
-   parameter int subparam `PUBLIC_FLAT_RD = 2
+  parameter int subparam `PUBLIC_FLAT_RD = 2
 ) (
-   input  subin  `PUBLIC_FLAT_RD,
-   output subout `PUBLIC_FLAT_RD
+  input  subin  `PUBLIC_FLAT_RD,
+  output subout `PUBLIC_FLAT_RD
 );
-   intf the_intf();
+  intf the_intf();
 endmodule : sub

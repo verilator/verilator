@@ -5,22 +5,22 @@
 // SPDX-License-Identifier: CC0-1.0
 
 primitive t_gate(dout, a, b, c);
-output dout;
-input a, b, c;
+  output dout;
+  input a, b, c;
 
-    table
-        x 0 1  :   1;
-        0 ? 1  :   1;
-        (01) 1 0  :   0;
-        1 1 ?  :   1;
-        1 0 0  :   0;
-        0 0 0  :   1;
+  table
+    x 0 1  :   1;
+    0 ? 1  :   1;
+    (01) 1 0  :   0;
+    1 1 ?  :   1;
+    1 0 0  :   0;
+    0 0 0  :   1;
 
-    endtable
+  endtable
 endprimitive
 
 module top (o, a, b, c);
-    output o;
-    input a, b, c;
-    t_gate(o, a, b, c);
+  output o;
+  input a, b, c;
+  t_gate(o, a, b, c);
 endmodule

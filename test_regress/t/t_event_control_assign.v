@@ -8,14 +8,16 @@
 int evt_recv_cnt;
 int new_evt_recv_cnt;
 
-module t();
+module t;
 
   class Foo;
     event evt1;
 
     task automatic send_evt();
       fork
-        #10 begin ->evt1; end
+        #10 begin
+          ->evt1;
+        end
         begin
           event new_event;
           #20;
@@ -30,10 +32,12 @@ module t();
     endtask
 
     task wait_for_event();
-      fork begin
-        @evt1 $display("Received evt1");
-        evt_recv_cnt++;
-      end join_none
+      fork
+        begin
+          @evt1 $display("Received evt1");
+          evt_recv_cnt++;
+        end
+      join_none
     endtask
 
   endclass
@@ -51,16 +55,12 @@ module t();
       foo1.send_evt();
       #90;
       $display("- end of iteration -");
-      if (evt_recv_cnt != i + 1)
-        $stop;
-      if (new_evt_recv_cnt != i)
-        $stop;
+      if (evt_recv_cnt != i + 1) $stop;
+      if (new_evt_recv_cnt != i) $stop;
     end
 
-    if (evt_recv_cnt != 4)
-      $stop;
-    if (new_evt_recv_cnt != 3)
-      $stop;
+    if (evt_recv_cnt != 4) $stop;
+    if (new_evt_recv_cnt != 3) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

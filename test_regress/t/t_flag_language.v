@@ -6,12 +6,12 @@
 
 module t;
 
-   // See also t_preproc_kwd.v
+  // See also t_preproc_kwd.v
 
-   integer bit; initial bit = 1;
+  integer bit; initial bit = 1;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

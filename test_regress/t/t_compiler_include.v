@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t (input logic[31:0] in, output logic[31:0] out);
-   assign out = in;
+module t (
+    input logic [31:0] in,
+    output logic [31:0] out
+);
+  assign out = in;
 endmodule

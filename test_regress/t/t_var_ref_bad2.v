@@ -9,17 +9,17 @@
 
 module t;
 
-   task checkset(const ref int bad_const_set);
-      bad_const_set = 32'h4567;  // Bad setting const
-   endtask
+  task checkset(const ref int bad_const_set);
+    bad_const_set = 32'h4567;  // Bad setting const
+  endtask
 
-   task checkset2(ref int int_ref);
-   endtask
+  task checkset2(ref int int_ref);
+  endtask
 
-   initial begin
-      int i;
-      byte bad_non_int;
-      checkset(i);
-      checkset2(bad_non_int);  // Type mismatch
-   end
+  initial begin
+    int i;
+    byte bad_non_int;
+    checkset(i);
+    checkset2(bad_non_int);  // Type mismatch
+  end
 endmodule

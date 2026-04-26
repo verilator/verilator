@@ -104,7 +104,7 @@ public:
         m_classOrPackagep = reinterpret_cast<AstNodeModule*>(1);
 #endif
     }
-#if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
+#if (defined(VL_DEBUG) || defined(VL_ALLOC_RANDOM_CHECKS)) && !defined(VL_LEAK_CHECKS)
     // For testing, leak so above destructor 1 assignments work
     void* operator new(size_t size) { return std::malloc(size); }
     void operator delete(void* objp, size_t size) {}
@@ -195,7 +195,7 @@ private:
             reinsert(name, symp);
         }
     }
-    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) const {
+    void exportOneSymbol(VSymGraph* /*graphp*/, const string& name, const VSymEnt* srcp) const {
         if (srcp->exported()) {
             if (VSymEnt* const symp = findIdFlat(name)) {  // Should already exist in current table
                 if (!symp->exported()) symp->exported(true);
@@ -238,7 +238,7 @@ public:
             }
         }
     }
-    void exportStarStar(VSymGraph* graphp) {
+    void exportStarStar(VSymGraph* /*graphp*/) {
         // Export *:*: Export all tokens from imported packages
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             VSymEnt* const symp = it->second;

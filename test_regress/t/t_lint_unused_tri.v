@@ -4,23 +4,27 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module Receiver(in);
-   inout [31:0] in;
-   always @(in) $display(in);
+module Receiver (
+    in
+);
+  inout [31:0] in;
+  always @(in) $display(in);
 endmodule
 
-module Sender(out);
-   inout [31:0] out;
-   assign out = 12;
+module Sender (
+    out
+);
+  inout [31:0] out;
+  assign out = 12;
 endmodule
 
 module t;
-   // ports of submodule recv
-   tri [31 : 0] recvIn;
+  // ports of submodule recv
+  tri [31 : 0] recvIn;
 
-   // submodule recv
-   Receiver recv(.in(recvIn));
+  // submodule recv
+  Receiver recv (.in(recvIn));
 
-   // submodule send
-   Sender send(.out(recvIn));
+  // submodule send
+  Sender send (.out(recvIn));
 endmodule

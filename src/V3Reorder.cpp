@@ -16,7 +16,7 @@
 // V3Reorder transformations:
 //
 //  reorderAll() reorders statements within individual blocks to avoid
-//  shwdow variables use by non blocking assignments when possible.
+//  shwdow variables use by non-blocking assignments when possible.
 //  For exmaple, the left side needs a shadow variable for 'b', the
 //  right side does not:
 //      Bad:            Good:

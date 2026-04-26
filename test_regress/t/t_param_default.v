@@ -4,17 +4,19 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module m #(parameter int Foo);
+module m #(
+    parameter int Foo
+);
 endmodule
 
 module t;
 
-   m #(10) foo();
+  m #(10) foo ();
 
-   initial begin
+  initial begin
     if (foo.Foo != 10) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
-   end
+  end
 
 endmodule

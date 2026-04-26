@@ -8,26 +8,26 @@ class Base;
 endclass
 
 class Cls extends Base;
-   typedef int txn_type_t;  // Bad type
+  typedef int txn_type_t;  // Bad type
 
-   rand txn_type_t req_txn_type;
+  rand txn_type_t req_txn_type;
 
-   static function txn_type_t generate_txn();
-      txn_type_t txn = new;
-      txn_type_t copy = new txn;
-      return txn;
-   endfunction
+  static function txn_type_t generate_txn();
+    txn_type_t txn = new;
+    txn_type_t copy = new txn;
+    return txn;
+  endfunction
 
 endclass
 
 module t;
 
-   initial begin
-      automatic Base b = Cls::generate_txn();
-      $display("%p", b);
+  initial begin
+    automatic Base b = Cls::generate_txn();
+    $display("%p", b);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

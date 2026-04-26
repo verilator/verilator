@@ -6,34 +6,37 @@
 
 module t;
 
-   typedef enum logic [1:0] { ZERO, ONE } enum_t;
+  typedef enum logic [1:0] {
+    ZERO,
+    ONE
+  } enum_t;
 
-   typedef struct { bit a; } struct_unpacked_t;
-   typedef union { bit a; } union_unpacked_t;
+  typedef struct {bit a;} struct_unpacked_t;
+  typedef union {bit a;} union_unpacked_t;
 
-class Cls;
-   bit a;
-endclass
+  class Cls;
+    bit a;
+  endclass
 
-   // IEEE 1800-2023 7.2.1
-   typedef struct packed {
-      real        r;  // BAD
-      // verilator lint_off SHORTREAL
-      shortreal   sr; // BAD
-      realtime    rt; // BAD
-      chandle     ch; // BAD
-      string      s; // BAD
-      event       e; // BAD
-      struct_unpacked_t sp;  // BAD
-      union_unpacked_t up;   // BAD
-      int uarray[2];   // BAD
-      Cls c;  // BAd
-   } illegal_t;
+  // IEEE 1800-2023 7.2.1
+  typedef struct packed {
+    real r;  // BAD
+    // verilator lint_off SHORTREAL
+    shortreal sr;  // BAD
+    realtime rt;  // BAD
+    chandle ch;  // BAD
+    string s;  // BAD
+    event e;  // BAD
+    struct_unpacked_t sp;  // BAD
+    union_unpacked_t up;  // BAD
+    int uarray[2];  // BAD
+    Cls c;  // BAd
+  } illegal_t;
 
-   illegal_t s;
+  illegal_t s;
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

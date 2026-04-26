@@ -31,55 +31,54 @@ mod c has scope = top.t.b.gen[1].c
 mod c has tag   = top.t.tag
 */
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   integer      cyc = 0;
+module t (
+    input clk
+);
 
-   tag tag ();
-   b b ();
+  integer cyc = 0;
 
-   always @ (t.cyc) begin
-      if (t.cyc == 2) $display("mod a has scope = %m");
-      if (t.cyc == 2) $display("mod a has tag   = %0s", tag.scope);
-   end
+  tag tag ();
+  b b ();
 
-   always @(posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always @(t.cyc) begin
+    if (t.cyc == 2) $display("mod a has scope = %m");
+    if (t.cyc == 2) $display("mod a has tag   = %0s", tag.scope);
+  end
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule
 
 module b ();
-   genvar g;
-   generate
-      for (g=0; g<2; g++) begin : gen
-         tag tag ();
-         c c ();
-      end
-   endgenerate
-   always @ (t.cyc) begin
-      if (t.cyc == 3) $display("mod b has scope = %m");
-      if (t.cyc == 3) $display("mod b has tag   = %0s", tag.scope);
-   end
+  genvar g;
+  generate
+    for (g = 0; g < 2; g++) begin : gen
+      tag tag ();
+      c c ();
+    end
+  endgenerate
+  always @(t.cyc) begin
+    if (t.cyc == 3) $display("mod b has scope = %m");
+    if (t.cyc == 3) $display("mod b has tag   = %0s", tag.scope);
+  end
 endmodule
 
 module c ();
-   always @ (t.cyc) begin
-      if (t.cyc == 4) $display("mod c has scope = %m");
-      if (t.cyc == 4) $display("mod c has tag   = %0s", tag.scope);
-   end
+  always @(t.cyc) begin
+    if (t.cyc == 4) $display("mod c has scope = %m");
+    if (t.cyc == 4) $display("mod c has tag   = %0s", tag.scope);
+  end
 endmodule
 
 module tag ();
-   bit [100*8-1:0] scope;
-   initial begin
-      $sformat(scope,"%m");
-      $display("created tag with scope = %0s",scope);
-   end
+  bit [100*8-1:0] scope;
+  initial begin
+    $sformat(scope, "%m");
+    $display("created tag with scope = %0s", scope);
+  end
 endmodule

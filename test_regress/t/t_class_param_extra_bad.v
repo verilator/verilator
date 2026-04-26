@@ -6,10 +6,10 @@
 
 module t;
 
-   class Cls1;
-      typedef bit bool_t;
-   endclass
+  class Cls1;
+    typedef bit bool_t;
+  endclass
 
-   localparam Cls1#(123, integer, "text")::bool_t PARAM = 1;
+  localparam Cls1#(123, integer, "text")::bool_t PARAM = 1;
 
 endmodule

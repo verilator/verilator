@@ -4,18 +4,20 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class Cls#(type T = bit);
+class Cls #(
+    type T = bit
+);
 endclass
 
 module t;
 
-   Cls#(bit) cb;
+  Cls #(bit) cb;
 
-   Cls#(Cls#(bit)) ccb;
+  Cls #(Cls #(bit)) ccb;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

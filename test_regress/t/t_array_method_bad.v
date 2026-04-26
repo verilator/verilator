@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      int q[5];
+  initial begin
+    int q[5];
 
-      q.mex;
+    q.mex;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

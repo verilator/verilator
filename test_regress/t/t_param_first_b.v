@@ -4,19 +4,20 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t_param_first_b (/*AUTOARG*/
-   // Outputs
-   par, varwidth
-   );
+module t_param_first_b (  /*AUTOARG*/
+    // Outputs
+    par,
+    varwidth
+);
 
-   parameter X = 1;
-   parameter FIVE = 0; // Overridden
-   parameter TWO = 2;
+  parameter X = 1;
+  parameter FIVE = 0;  // Overridden
+  parameter TWO = 2;
 
-   output [4:0]         par;
-   output [X:0]         varwidth;
+  output [4:0] par;
+  output [X:0] varwidth;
 
-   wire [4:0]   par = X;
-   wire [X:0]   varwidth = (FIVE==5)?TWO:0;
+  wire [4:0] par = X;
+  wire [X:0] varwidth = (FIVE == 5) ? TWO : 0;
 
 endmodule

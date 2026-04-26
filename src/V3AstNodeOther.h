@@ -87,6 +87,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
+    string m_ifacePortName;  // Interface port name for out-of-block definition (IEEE 25.8)
     uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
@@ -179,6 +180,8 @@ public:
     void isExternProto(bool flag) { m_isExternProto = flag; }
     bool isExternDef() const { return m_isExternDef; }
     void isExternDef(bool flag) { m_isExternDef = flag; }
+    const string& ifacePortName() const { return m_ifacePortName; }
+    void ifacePortName(const string& name) { m_ifacePortName = name; }
     bool prototype() const { return m_prototype; }
     void prototype(bool flag) { m_prototype = flag; }
     bool dpiExport() const { return m_dpiExport; }
@@ -277,6 +280,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
+    bool m_ctorVarReset : 1;  // Ctor needs to call ctor_var_reset
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
@@ -285,6 +289,9 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
+    bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
+                                       // set by V3Param::deepCloneModule. Suppresses
+                                       // width/type errors on the unresolved template.
     bool m_verilatorLib : 1;  // Module is a stub for a Verilator produced --lib-create
 protected:
     AstNodeModule(VNType t, FileLine* fl, const string& name, const string& libname)
@@ -295,6 +302,7 @@ protected:
         , m_modPublic{false}
         , m_modTrace{false}
         , m_inLibrary{false}
+        , m_ctorVarReset{false}
         , m_dead{false}
         , m_hasGParam{false}
         , m_hasParameterList{false}
@@ -303,6 +311,7 @@ protected:
         , m_internal{false}
         , m_recursive{false}
         , m_recursiveClone{false}
+        , m_parameterizedTemplate{false}
         , m_verilatorLib{false} {}
 
 public:
@@ -329,6 +338,8 @@ public:
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modTrace() const { return m_modTrace; }
     void modTrace(bool flag) { m_modTrace = flag; }
+    bool ctorVarReset() const { return m_ctorVarReset; }
+    void ctorVarReset(bool flag) { m_ctorVarReset = flag; }
     bool dead() const { return m_dead; }
     void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }
@@ -345,6 +356,8 @@ public:
     void recursive(bool flag) { m_recursive = flag; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
+    bool parameterizedTemplate() const { return m_parameterizedTemplate; }
+    void parameterizedTemplate(bool flag) { m_parameterizedTemplate = flag; }
     void verilatorLib(bool flag) { m_verilatorLib = flag; }
     bool verilatorLib() const { return m_verilatorLib; }
     VLifetime lifetime() const { return m_lifetime; }
@@ -643,7 +656,8 @@ class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
-    // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
+    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
+    // via nextp()
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
@@ -667,7 +681,7 @@ public:
         , m_trace{true} {
         addPinsp(pinsp);
         addParamsp(paramsp);
-        this->rangep(rangep);
+        addRangep(rangep);
     }
     ASTGEN_MEMBERS_AstCell;
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -1011,19 +1025,18 @@ class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := pathp : AstNodeExpr
     string m_name;  // Name of variable getting set
-    string m_path;  // Dotted cellname to set parameter of
 public:
-    AstDefParam(FileLine* fl, const string& path, const string& name, AstNodeExpr* rhsp)
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name}
-        , m_path{path} {
+        , m_name{name} {
         this->rhsp(rhsp);
+        this->pathp(pathp);
     }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
-    string path() const { return m_path; }
 };
 class AstDefaultDisable final : public AstNode {
     // @astgen op1 := condp : AstNodeExpr
@@ -1377,6 +1390,7 @@ class AstPin final : public AstNode {
     // @astgen ptr := m_modPTypep : Optional[AstParamTypeDType]  // Param type connects to on sub
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
+    string m_paramPath;  // Original defparam cell path, if this pin came from a defparam
     bool m_param = false;  // Pin connects to parameter
     bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
     bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
@@ -1403,6 +1417,8 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    const string& paramPath() const { return m_paramPath; }
+    void paramPath(const string& path) { m_paramPath = path; }
     bool svDotName() const { return m_svDotName; }
     void svDotName(bool flag) { m_svDotName = flag; }
     bool svImplicit() const { return m_svImplicit; }
@@ -1481,7 +1497,7 @@ public:
     bool sameNode(const AstNode* samep) const override {
         return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
-    uint32_t direction() const { return (uint32_t)m_direction; }
+    uint32_t direction() const { return static_cast<uint32_t>(m_direction); }
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell
@@ -1772,6 +1788,15 @@ public:
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtp, bool underClass)
+        : ASTGEN_SUPER_Typedef(fl)
+        , m_name{name}
+        , m_declTokenNum{fl->tokenNum()}
+        , m_isHideLocal{false}
+        , m_isHideProtected{false}
+        , m_isUnderClass{underClass} {
+        dtypep(dtp);
+    }
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1909,6 +1934,9 @@ class AstVar final : public AstNode {
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
+    bool m_attrFsmState : 1;  // declared with fsm_state metacomment
+    bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
+    bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_isConst : 1;  // Table contains constant data
@@ -1927,20 +1955,24 @@ class AstVar final : public AstNode {
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
     bool m_isForcedByCode : 1;  // May be forced/released from AstAssignForce/AstRelease
+    bool m_isReadByDpi : 1;  // This variable can be read by a DPI Export
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
     bool m_ignorePostRead : 1;  // Ignore reads in 'Post' blocks during ordering
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
-    bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
+    bool m_dfgTriLowered : 1;  // Signal/temporary introduced by tristate lowering
+    bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
+    bool m_processQueue : 1;  // Process queue variable
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -1963,6 +1995,9 @@ class AstVar final : public AstNode {
         m_attrIsolateAssign = false;
         m_attrSFormat = false;
         m_attrSplitVar = false;
+        m_attrFsmState = false;
+        m_attrFsmResetArc = false;
+        m_attrFsmArcInclCond = false;
         m_fileDescr = false;
         m_gotNansiType = false;
         m_isConst = false;
@@ -1981,20 +2016,24 @@ class AstVar final : public AstNode {
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
+        m_sampled = false;
         m_substConstOnly = false;
         m_overridenParam = false;
         m_trace = false;
         m_isLatched = false;
         m_isForceable = false;
         m_isForcedByCode = false;
+        m_isReadByDpi = false;
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
         m_ignorePostRead = false;
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
-        m_dfgMultidriven = false;
+        m_dfgTriLowered = false;
+        m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
+        m_processQueue = false;
     }
 
 public:
@@ -2057,6 +2096,12 @@ public:
     }
     VDirection direction() const VL_MT_SAFE { return m_direction; }
     bool isIO() const VL_MT_SAFE { return m_direction != VDirection::NONE; }
+    bool isVLIO() const {
+        const AstBasicDType* const bdtypep = basicp();
+        return isPrimaryIO() && bdtypep && !bdtypep->isOpaque()
+               && !dtypep()->skipRefp()->isCompound()
+               && !VN_IS(dtypep()->skipRefp(), UnpackArrayDType);
+    }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
     void varType(VVarType type) { m_varType = type; }
@@ -2075,7 +2120,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const;
+                     bool asRef = false, bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2097,6 +2142,9 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
+    void attrFsmState(bool flag) { m_attrFsmState = flag; }
+    void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
+    void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -2142,6 +2190,10 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool processQueue() const { return m_processQueue; }
+    void processQueue(bool flag) { m_processQueue = flag; }
+    bool sampled() const { return m_sampled; }
+    void sampled(bool flag) { m_sampled = flag; }
     bool substConstOnly() const { return m_substConstOnly; }
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
     bool overriddenParam() const { return m_overridenParam; }
@@ -2152,6 +2204,8 @@ public:
     void setForceable() { m_isForceable = true; }
     void setForcedByCode() { m_isForcedByCode = true; }
     bool isForced() const { return m_isForceable || m_isForcedByCode; }
+    bool isReadByDpi() const { return m_isReadByDpi; }
+    void setReadByDpi() { m_isReadByDpi = true; }
     bool isWrittenByDpi() const { return m_isWrittenByDpi; }
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
     bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
@@ -2162,8 +2216,10 @@ public:
     void setIgnorePostWrite() { m_ignorePostWrite = true; }
     bool ignoreSchedWrite() const { return m_ignoreSchedWrite; }
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
-    bool dfgMultidriven() const { return m_dfgMultidriven; }
-    void setDfgMultidriven() { m_dfgMultidriven = true; }
+    bool dfgTriLowered() const { return m_dfgTriLowered; }
+    void setDfgTriLowered() { m_dfgTriLowered = true; }
+    bool dfgAllowMultidriveTri() const { return m_dfgAllowMultidriveTri; }
+    void setDfgAllowMultidriveTri() { m_dfgAllowMultidriveTri = true; }
     void globalConstrained(bool flag) { m_globalConstrained = flag; }
     bool globalConstrained() const { return m_globalConstrained; }
     bool isStdRandomizeArg() const { return m_isStdRandomizeArg; }
@@ -2252,6 +2308,9 @@ public:
     bool attrFileDescr() const { return m_fileDescr; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
+    bool attrFsmState() const { return m_attrFsmState; }
+    bool attrFsmResetArc() const { return m_attrFsmResetArc; }
+    bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VRandAttr rand() const { return m_rand; }
@@ -2337,12 +2396,22 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for other than toggle types of coverage
     string m_linescov;
+    string m_fsmVar;
+    string m_fsmFrom;
+    string m_fsmTo;
+    string m_fsmTag;
     int m_offset;  // Offset column numbers to uniq-ify IFs
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,
-                      const string& linescov, int offset)
+                      const string& linescov, int offset, const string& fsmVar = "",
+                      const string& fsmFrom = "", const string& fsmTo = "",
+                      const string& fsmTag = "")
         : ASTGEN_SUPER_CoverOtherDecl(fl, page, comment)
         , m_linescov{linescov}
+        , m_fsmVar{fsmVar}
+        , m_fsmFrom{fsmFrom}
+        , m_fsmTo{fsmTo}
+        , m_fsmTag{fsmTag}
         , m_offset{offset} {}
     ASTGEN_MEMBERS_AstCoverOtherDecl;
     void dump(std::ostream& str) const override;
@@ -2350,6 +2419,10 @@ public:
     int offset() const { return m_offset; }
     int size() const override { return 1; }
     const string& linescov() const { return m_linescov; }
+    const string& fsmVar() const { return m_fsmVar; }
+    const string& fsmFrom() const { return m_fsmFrom; }
+    const string& fsmTo() const { return m_fsmTo; }
+    const string& fsmTag() const { return m_fsmTag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
         return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
@@ -2424,7 +2497,9 @@ public:
 class AstSequence final : public AstNodeFTask {
     // A sequence inside a module
     // TODO when supported might not want to be a NodeFTask
-    bool m_referenced = false;  // Ever referenced (for unsupported check)
+    bool m_referenced = false;  // Set by V3LinkResolve when referenced; cleared by
+                                // V3AssertPre after inlining; if still set after
+                                // V3AssertPre, the reference is in an unsupported context
 public:
     AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}

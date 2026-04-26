@@ -5,12 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   reg foobar;
+  reg foobar;
 
-   task boobar; endtask
+  task boobar;
+  endtask
 
-   initial begin
-      if (foobat) $stop;
-      boobat;
-   end
+  initial begin
+    if (foobat) $stop;
+    boobat;
+  end
 endmodule

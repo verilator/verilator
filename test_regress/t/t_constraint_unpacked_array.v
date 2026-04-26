@@ -4,21 +4,23 @@
 // SPDX-FileCopyrightText: 2024 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define check_rand(cl, field) \
 begin \
-   longint prev_result; \
-   int ok = 0; \
-   void'(cl.randomize()); \
-   prev_result = longint'(field); \
-   repeat(9) begin \
-      longint result; \
-      void'(cl.randomize()); \
-      result = longint'(field); \
-      if (result != prev_result) ok = 1; \
-      prev_result = result; \
-   end \
-   if (ok != 1) $stop; \
+  longint prev_result; \
+  int ok = 0; \
+  void'(cl.randomize()); \
+  prev_result = longint'(field); \
+  repeat(9) begin \
+    longint result; \
+    void'(cl.randomize()); \
+    result = longint'(field); \
+    if (result != prev_result) ok = 1; \
+    prev_result = result; \
+  end \
+  if (ok != 1) $stop; \
 end
+// verilog_format: on
 
 class con_rand_1d_array_test;
   rand bit [7:0] data[5];

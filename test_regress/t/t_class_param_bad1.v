@@ -4,12 +4,14 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class Cls #(parameter PARAMB = 12);
+class Cls #(
+    parameter PARAMB = 12
+);
 endclass
 
 module t;
 
-   Cls #(.PARAMBAD(1)) c;  // Bad param name
-   Cls #(13, 1) cd;  // Bad param number
+  Cls #(.PARAMBAD(1)) c;  // Bad param name
+  Cls #(13, 1) cd;  // Bad param number
 
 endmodule

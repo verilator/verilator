@@ -9,33 +9,31 @@
 import "DPI-C" function void dpii_init();
 import "DPI-C" function void dpii_final();
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   reg [31:0]      count        /*verilator public_flat_rd */;
+  reg [31:0] count  /*verilator public_flat_rd */;
 
-   integer        status;
+  integer status;
 
-   // Test loop
-   initial begin
-      count = 0;
-      dpii_init();
-   end
+  // Test loop
+  initial begin
+    count = 0;
+    dpii_init();
+  end
 
-   always @(posedge clk) begin
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-      $display("[%0t] clk @ count %0d", $time, count);
+    $display("[%0t] clk @ count %0d", $time, count);
 `endif
-      count <= count + 2;
-      if (count == 200) begin
-         $display("Final section");
-         // See C++ code: $write("*-* All Finished *-*\n");
-         dpii_final();
-         $finish;
-      end
-   end
+    count <= count + 2;
+    if (count == 200) begin
+      $display("Final section");
+      // See C++ code: $write("*-* All Finished *-*\n");
+      dpii_final();
+      $finish;
+    end
+  end
 
 endmodule : t

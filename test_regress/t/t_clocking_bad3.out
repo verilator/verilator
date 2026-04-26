@@ -1,14 +1,14 @@
-%Error: t/t_clocking_bad3.v:14:14: Corresponding variable 'in' does not exist
-   14 |        input in;
-      |              ^~
+%Error: t/t_clocking_bad3.v:12:11: Corresponding variable 'in' does not exist
+   12 |     input in;
+      |           ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_clocking_bad3.v:15:15: Corresponding variable 'out' does not exist
-   15 |        output out;
-      |               ^~~
-%Error: t/t_clocking_bad3.v:18:13: Duplicate declaration of CLOCKING 'cb': 'cb'
-   18 |    clocking cb @(posedge clk);
-      |             ^~
-        t/t_clocking_bad3.v:13:13: ... Location of original declaration
-   13 |    clocking cb @(posedge clk);
-      |             ^~
+%Error: t/t_clocking_bad3.v:13:12: Corresponding variable 'out' does not exist
+   13 |     output out;
+      |            ^~~
+%Error: t/t_clocking_bad3.v:16:12: Duplicate declaration of CLOCKING 'cb': 'cb'
+   16 |   clocking cb @(posedge clk);
+      |            ^~
+        t/t_clocking_bad3.v:11:12: ... Location of original declaration
+   11 |   clocking cb @(posedge clk);
+      |            ^~
 %Error: Exiting due to

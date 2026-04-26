@@ -1,12 +1,12 @@
-%Error: t/t_cast_size_bad.v:14:15: Size-changing cast to zero or negative size
+%Error: t/t_cast_size_bad.v:14:13: Size-changing cast to zero or negative size: -1
                                  : ... note: In instance 't'
-   14 |       b = (-1)'(a);   
-      |               ^
+   14 |     b = (-1)'(a);   
+      |             ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Warning-WIDTHEXPAND: t/t_cast_size_bad.v:14:9: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_cast_size_bad.v:14:7: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
                                               : ... note: In instance 't'
-   14 |       b = (-1)'(a);   
-      |         ^
+   14 |     b = (-1)'(a);   
+      |       ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: Exiting due to

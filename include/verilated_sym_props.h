@@ -28,6 +28,8 @@
 
 #include "verilatedos.h"
 
+#include "verilated.h"
+
 #include <vector>
 
 //===========================================================================
@@ -168,12 +170,9 @@ public:
     const std::vector<VerilatedRange>& packedRanges() const VL_MT_SAFE { return m_packed; }
     const std::vector<VerilatedRange>& unpackedRanges() const VL_MT_SAFE { return m_unpacked; }
     const VerilatedRange* range(int dim) const VL_MT_SAFE {
-        if (dim < udims())
-            return &m_unpacked[dim];
-        else if (dim < dims())
-            return &m_packed[dim - udims()];
-        else
-            return nullptr;
+        if (dim < udims()) return &m_unpacked[dim];
+        if (dim < dims()) return &m_packed[dim - udims()];
+        return nullptr;
     }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
@@ -252,10 +251,14 @@ public:
 // Verilator variable
 // Thread safety: Assume is constructed only with model, then any number of readers
 
+struct VerilatedForceControlSignals;
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
     const char* const m_namep;  // Name - slowpath
+    std::unique_ptr<const VerilatedForceControlSignals>
+        m_forceControlSignals;  // Force control signals
+
 protected:
     const bool m_isParam;
     friend class VerilatedScope;
@@ -266,13 +269,34 @@ protected:
         , m_datap{datap}
         , m_namep{namep}
         , m_isParam{isParam} {}
+    VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
+                 std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals)
+        : VerilatedVarProps{vltype, vlflags, udims, pdims}
+        , m_datap{datap}
+        , m_namep{namep}
+        , m_forceControlSignals{std::move(forceControlSignals)}
+        , m_isParam{isParam} {}
 
 public:
     ~VerilatedVar() = default;
+    VerilatedVar(VerilatedVar&&) = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
+    const VerilatedForceControlSignals* forceControlSignals() const {
+        return m_forceControlSignals.get();
+    }
+};
+
+//===========================================================================
+// Force control signals of a VerilatedVar
+
+struct VerilatedForceControlSignals final {
+    const VerilatedVar* forceEnableSignalp{nullptr};  // __VforceEn signal
+    const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
+    const VerilatedVar forceReadSignal;  // __VforceRd signal
 };
 
 #endif  // Guard

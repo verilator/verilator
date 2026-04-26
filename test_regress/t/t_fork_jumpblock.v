@@ -5,19 +5,21 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class bar;
-    task foo(logic r);
-        int a, b;
-        if (r) return;
-        fork a = #1 b; join_none
-    endtask
+  task foo(logic r);
+    int a, b;
+    if (r) return;
+    fork
+      a = #1 b;
+    join_none
+  endtask
 endclass
 
 module t;
-    bar b = new;
+  bar b = new;
 
-    initial begin
-        b.foo(0);
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    b.foo(0);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

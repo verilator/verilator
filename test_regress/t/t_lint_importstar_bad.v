@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package defs;
-   localparam PAR = 1;
+  localparam PAR = 1;
 endpackage
 
 import defs::*;

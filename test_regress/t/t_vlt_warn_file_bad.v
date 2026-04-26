@@ -7,6 +7,6 @@
 `include "t_vlt_warn_file_bad_b.vh"
 
 module t;
-   sub sub();
-   int warn_t = 64'h1;
+  sub sub ();
+  int warn_t = 64'h1;
 endmodule

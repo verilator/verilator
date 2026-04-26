@@ -6,14 +6,18 @@
 
 module t;
 
-   enum logic [2:0] {S0, S1, S2} state;
+  enum logic [2:0] {
+    S0,
+    S1,
+    S2
+  } state;
 
-   initial begin
-      state = S1;
+  initial begin
+    state = S1;
 
-      unique case (state)
-        S0: $stop;
-        S2: $stop;
-      endcase
-   end
+    unique case (state)
+      S0: $stop;
+      S2: $stop;
+    endcase
+  end
 endmodule

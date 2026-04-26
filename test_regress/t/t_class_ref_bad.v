@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class ClsRight;
-   string m_s;
+  string m_s;
 endclass
 
 module t;
-   string s;
-   initial begin
-      // verilator lint_off PKGNODECL
-      s = ClsRigh::m_s;  // Bad typo, issue #5475
-   end
+  string s;
+  initial begin
+    // verilator lint_off PKGNODECL
+    s = ClsRigh::m_s;  // Bad typo, issue #5475
+  end
 endmodule

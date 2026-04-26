@@ -6,14 +6,14 @@
 
 module t;
 
-   parameter P = 32'b1000;
+  parameter P = 32'b1000;
 
-   generate
-      case (P)
-        32'b0:    initial begin end
-        32'b1xxx: initial begin end
-        default   initial begin end  // No ':' to cover parser
-      endcase
-   endgenerate
+  generate
+    case (P)
+      32'b0:    initial begin end
+      32'b1xxx: initial begin end
+      default   initial begin end  // No ':' to cover parser
+    endcase
+  endgenerate
 
 endmodule

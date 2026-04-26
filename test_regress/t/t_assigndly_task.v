@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input clk,
-  input [7:0] d,
-  input [2:0] a,
-  output [7:0] q
+    input clk,
+    input [7:0] d,
+    input [2:0] a,
+    output [7:0] q
 );
   always_ff @(posedge clk) tick(a);
 

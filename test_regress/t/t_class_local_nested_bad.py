@@ -9,8 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
-test.compile(fails=test.vlt_all, expect_filename=test.golden_filename)
+test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
 
 test.passes()

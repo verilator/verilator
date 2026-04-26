@@ -7,18 +7,18 @@
 
 module t;
 
-   class Cls;
+  class Cls;
 
-      static function int static_task();
-         return 42;
-      endfunction
+    static function int static_task();
+      return 42;
+    endfunction
 
-   endclass : Cls
+  endclass : Cls
 
-   initial begin
-      if (Cls::static_task() != 42) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (Cls::static_task() != 42) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

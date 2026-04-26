@@ -5,20 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub sub ();
+  sub sub ();
 endmodule
 
 module sub;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 // verilator lint_off MODDUP
 module sub;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
