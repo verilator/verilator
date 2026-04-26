@@ -324,6 +324,7 @@ class FsmDetectVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;
     std::unordered_map<const AstVarScope*, FsmRegisterCandidate> m_registerCandidates;
     std::vector<FsmComboAlways> m_comboAlwayss;
+    std::vector<FsmComboAlways> m_nonComboAlwayss;
     std::unordered_set<const AstVarScope*> m_comboPaired;
 
     // METHODS
@@ -393,8 +394,6 @@ class FsmDetectVisitor final : public VNVisitor {
     // walk nextp() here or we may accidentally consume the sibling else-arm.
     static AstNode* singleMeaningfulBranch(AstNode* branchp) {
         if (!branchp || isIgnorableStmt(branchp)) return nullptr;
-        if (AstBegin* const beginp = VN_CAST(branchp, Begin))
-            return singleMeaningfulStmt(beginp->stmtsp());
         return branchp;
     }
 
@@ -402,7 +401,6 @@ class FsmDetectVisitor final : public VNVisitor {
     // top-level scans focused on the real statement list inside that wrapper.
     static AstNode* unwrapBeginStmtList(AstNode* stmtp) {
         stmtp = skipLeadingIgnorableStmt(stmtp);
-        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) return beginp->stmtsp();
         return stmtp;
     }
 
@@ -416,6 +414,34 @@ class FsmDetectVisitor final : public VNVisitor {
             if (senp->edgeType() != VEdgeType::ET_CHANGED && !senp->isComboOrStar()) return false;
         }
         return true;
+    }
+
+    void warnUnsupportedComboAlways(const FsmComboAlways& combo) {
+        AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp()->stmtsp());
+        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            AstCase* const casep = VN_CAST(nodep, Case);
+            if (!casep) continue;
+            AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
+            if (!selp) continue;
+
+            for (const auto& it : m_registerCandidates) {
+                const FsmRegisterCandidate& reg = it.second;
+                if (reg.scopep() != combo.scopep()) continue;
+                if (selp->varScopep() == reg.nextVscp()) {
+                    if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
+                                                                reg.nextVscp())) {
+                        continue;
+                    }
+                } else if (selp->varScopep() != reg.stateVscp()) {
+                    continue;
+                }
+                if (!caseAssignsState(casep, reg.nextVscp(), reg.inclCond())) continue;
+                casep->v3warn(COVERIGN,
+                              "Ignoring unsupported: FSM coverage on plain always blocks "
+                              "requires a combinational sensitivity list or always_comb");
+                return;
+            }
+        }
     }
 
     // Case-item bodies are single subtrees like if/else arms, not statement
@@ -945,6 +971,8 @@ class FsmDetectVisitor final : public VNVisitor {
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB || isPlainComboSentree(nodep->sentreep())
             || (!nodep->sentreep() && nodep->keyword() == VAlwaysKwd::ALWAYS)) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
+        } else if (nodep->keyword() == VAlwaysKwd::ALWAYS && nodep->sentreep()) {
+            m_nonComboAlwayss.emplace_back(m_scopep, nodep);
         }
     }
 
@@ -959,6 +987,7 @@ public:
         : m_state{state} {
         iterate(rootp);
         for (const FsmComboAlways& combo : m_comboAlwayss) processComboAlways(combo);
+        for (const FsmComboAlways& combo : m_nonComboAlwayss) warnUnsupportedComboAlways(combo);
     }
 };
 
