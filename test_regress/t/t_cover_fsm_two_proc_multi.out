@@ -259,7 +259,14 @@
         
  000010   always_comb begin
  000010     state_d = state_q;
- 000010     case (state_q)
+~000010     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.ternary_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000000        // [fsm_arc t.ternary_u.state_q::S0->S1]
+%000004        // [fsm_arc t.ternary_u.state_q::S0->S2]
+%000003        // [fsm_state t.ternary_u.state_q::S0]
+%000000        // [fsm_state t.ternary_u.state_q::S1] *** UNCOVERED ***
+%000004        // [fsm_state t.ternary_u.state_q::S2]
 %000009       S0: state_d = sel ? S1 : S2;
 %000004       default: state_d = S0;
             endcase
