@@ -378,8 +378,6 @@ class FsmDetectVisitor final : public VNVisitor {
     // Normal Verilog begin/end wrappers should not affect the conservative
     // single-statement matching used by the Phase 1 detector.
     static AstNode* unwrapMeaningfulStmt(AstNode* nodep) {
-        if (AstBegin* const beginp = VN_CAST(nodep, Begin))
-            return singleMeaningfulStmt(beginp->stmtsp());
         return nodep;
     }
 
@@ -528,13 +526,6 @@ class FsmDetectVisitor final : public VNVisitor {
         if (assp) {
             int toValue = 0;
             if (exprConstValue(assp->rhsp(), toValue)) return true;
-            if (AstCond* const condp = VN_CAST(assp->rhsp(), Cond)) {
-                int thenValue = 0;
-                int elseValue = 0;
-                const bool simpleCond = exprConstValue(condp->thenp(), thenValue)
-                                        && exprConstValue(condp->elsep(), elseValue);
-                if (simpleCond || inclCond) return true;
-            }
         }
         int thenValue = 0;
         int elseValue = 0;
@@ -693,24 +684,6 @@ class FsmDetectVisitor final : public VNVisitor {
                                  assp->fileline());
                 }
                 return true;
-            }
-
-            if (AstCond* const condp = VN_CAST(assp->rhsp(), Cond)) {
-                int thenValue = 0;
-                int elseValue = 0;
-                const bool simpleCond = exprConstValue(condp->thenp(), thenValue)
-                                        && exprConstValue(condp->elsep(), elseValue);
-                if (simpleCond || inclCond) {
-                    if (!validateKnownStateValue(condp->thenp(), labels, thenValue)) return true;
-                    if (!validateKnownStateValue(condp->elsep(), labels, elseValue)) return true;
-                    for (const int branchValue : {thenValue, elseValue}) {
-                        for (const std::pair<string, int>& from : froms) {
-                            graph.addArc(from.second, branchValue, false, true, itemp->isDefault(),
-                                         assp->fileline());
-                        }
-                    }
-                    return true;
-                }
             }
         }
 

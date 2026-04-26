@@ -278,6 +278,70 @@
           end
         endmodule
         
+        module fsm_plain_always (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic go
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+ 000010   always @* begin
+ 000010     state_d = state_q;
+~000010     case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.plain_always_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.plain_always_u.state_q::S1->S2]
+%000001        // [fsm_state t.plain_always_u.state_q::S0]
+%000001        // [fsm_state t.plain_always_u.state_q::S1]
+%000001        // [fsm_state t.plain_always_u.state_q::S2]
+%000008       S0: if (go) state_d = S1;
+%000001       S1: state_d = S2;
+%000001       default: state_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_caseassigns_off (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic go
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1
+          } state_t;
+        
+%000001   logic out;
+%000000   state_t state_q;
+%000000   state_t state_d;
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+ 000010     out = 1'b0;
+ 000010     case (state_q)
+ 000010       S0: out = go;
+%000000       default: out = 1'b0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
         module fsm_seqmix_off (
 %000009     input logic clk,
 %000001     input logic rst
@@ -326,6 +390,8 @@
           fsm_nextstate_sel_off nextstate_sel_off_u (.clk(clk));
           fsm_nextstate_sel_ok nextstate_sel_ok_u (.clk(clk), .rst(rst), .start(start));
           fsm_ternary ternary_u (.clk(clk), .rst(rst), .sel(sel));
+          fsm_plain_always plain_always_u (.clk(clk), .rst(rst), .go(start));
+          fsm_caseassigns_off caseassigns_off_u (.clk(clk), .rst(rst), .go(start));
           fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
         
 %000001   initial begin
