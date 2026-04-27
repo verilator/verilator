@@ -12,9 +12,10 @@ package pkg;
 
     mailbox #(my_t) mb = new();
 
-    task run();
+    task run(output bit [7:0] got);
       my_t v;
       mb.get(v);
+      got = v.x;
     endtask
   endclass
 endpackage
