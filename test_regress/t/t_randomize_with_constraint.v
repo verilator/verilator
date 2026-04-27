@@ -49,6 +49,42 @@ function int func_unrestricted(Cls obj);
   };
 endfunction
 
+// IEEE 1800-2023 18.7.1: empty identifier_list 'with () {...}' means no name
+// binds into the class. Names in the constraint must resolve in the calling
+// scope. Here every name (lo, hi) is local, so the empty list still produces
+// a sound constraint.
+function automatic int func_empty(Cls obj, int lo, int hi);
+  // verilog_format: off
+  return obj.randomize() with () {
+    obj.m_x > lo;
+    obj.m_x < hi;
+  };
+  // verilog_format: on
+endfunction
+
+// IEEE 1800-2023 18.7.1: 'local::name' bypasses class scope inside the
+// constraint block. 'local::y' must resolve to the function argument and not
+// to obj.y, even though 'y' exists as a class member.
+function int func_local_qual(Cls obj, int y);
+  obj.y = -42;
+  // verilog_format: off
+  return obj.randomize() with {
+    m_x > 0;
+    m_x < local::y;
+  };
+  // verilog_format: on
+endfunction
+
+// IEEE 1800-2023 18.7.1: consecutive restricted blocks must not leak each
+// other's identifier set. After func_restricted returns, the m_currentWithp
+// state is restored via VL_RESTORER and the next call sees a fresh list.
+function automatic int func_sequential(Cls obj, int hi);
+  int rc = 1;
+  rc &= obj.randomize() with (m_x) { m_x > 0; m_x < hi; };
+  rc &= obj.randomize() with (m_z) { m_z > 0; m_z < hi; };
+  return rc;
+endfunction
+
 module t;
   initial begin
     Cls c;
@@ -66,6 +102,14 @@ module t;
       i = func_unrestricted(c);
       `checkd(i, 1);
       `check_range(c.m_x, 1, 9);
+      i = func_empty(c, 0, 9);
+      `checkd(i, 1);
+      `check_range(c.m_x, 1, 8);
+      i = func_local_qual(c, 8);
+      `checkd(i, 1);
+      `check_range(c.m_x, 1, 7);
+      i = func_sequential(c, 6);
+      `checkd(i, 1);
     end
     $write("*-* All Finished *-*\n");
     $finish;

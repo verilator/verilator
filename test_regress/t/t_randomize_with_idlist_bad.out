@@ -1,4 +1,4 @@
-%Error: t/t_randomize_with_idlist_bad.v:12:36: syntax error, unexpected '+', expecting ')' or ','
+%Error: t/t_randomize_with_idlist_bad.v:12:36: syntax error, unexpected '+', expecting ')'
    12 |   return obj.randomize() with (m_x + 1) {
       |                                    ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

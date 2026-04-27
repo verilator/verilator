@@ -2194,42 +2194,51 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
         // Type depends on the method used, let V3Width figure it out later
-        if (nodep->exprsp()
-            || nodep->constraintsp()) {  // Else empty expression and pretend no "with"
-            AstNode* exprOrConstraintsp = nullptr;
-            // IEEE 1800-2023 18.7: 'randomize() with (identifier_list) {constraint_block}'
-            // restricts name resolution to the listed identifiers for the target class
-            // scope; unlisted names resolve in the caller. The inlineConstraintIdList
-            // grammar guarantees each exprsp item is a simple AstParseRef. Non-randomize
-            // funcrefs with a constraint block are still rejected below.
-            bool restricted = false;
-            std::set<std::string> restrictedNames;
-            if (nodep->exprsp() && nodep->constraintsp()) {
-                if (funcrefp->name() != "randomize") {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: 'with (...) {...}' outside randomize()");
-                } else {
-                    restricted = true;
-                    for (AstNode* itemp = nodep->exprsp(); itemp; itemp = itemp->nextp()) {
-                        restrictedNames.insert(VN_AS(itemp, ParseRef)->name());
-                    }
+        // IEEE 1800-2023 18.7.1: AstWithParse::restricted() flags the
+        // 'with (identifier_list) {...}' form (including the empty list). Only
+        // randomize() may use that form; reject the syntax on any other funcref
+        // and drop the parenthesized list so the AST stays consistent if
+        // processing continues past the warning.
+        bool restrictedRandomize = false;
+        if (nodep->restricted()) {
+            if (funcrefp->name() == "randomize") {
+                restrictedRandomize = true;
+            } else {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: 'with (...) {...}' outside randomize()");
+                if (nodep->exprsp()) {
                     AstNode* const listp = nodep->exprsp()->unlinkFrBackWithNext();
                     VL_DO_DANGLING(pushDeletep(listp), listp);
                 }
             }
-            if (nodep->exprsp()) exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
-            if (nodep->constraintsp())
-                exprOrConstraintsp = AstNode::addNext(
-                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+        }
+        if (nodep->exprsp() || nodep->constraintsp()
+            || restrictedRandomize) {  // Else empty expression and pretend no "with"
             AstLambdaArgRef* const indexArgRefp
                 = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
-                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
-            if (restricted) {
+                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, nullptr};
+            // IEEE 1800-2023 18.7.1: in the restricted form, exprsp holds the
+            // identifier_list. Harvest names directly into AstWith and drop the
+            // parsed list. The inlineConstraintIdList grammar guarantees each
+            // item is a simple AstParseRef, so no defensive cast guard is
+            // needed here.
+            if (restrictedRandomize) {
                 newp->restricted(true);
-                for (const std::string& n : restrictedNames) newp->addRestrictedName(n);
+                while (AstNode* const itemp = nodep->exprsp()) {
+                    newp->addRestrictedName(VN_AS(itemp, ParseRef)->name());
+                    itemp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(itemp), itemp);
+                }
             }
+            AstNode* exprOrConstraintsp = nullptr;
+            if (nodep->exprsp())
+                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->constraintsp())
+                exprOrConstraintsp = AstNode::addNext(
+                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+            if (exprOrConstraintsp) newp->addExprp(exprOrConstraintsp);
             funcrefp->withp(newp);
         }
         funcrefp->addArgsp(argsp);

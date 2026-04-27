@@ -2818,6 +2818,12 @@ class AstWithParse final : public AstNodeExpr {
     // @astgen op1 := funcrefp : AstNodeExpr
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
     // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
+private:
+    // True for the IEEE 1800-2023 18.7.1 'with (identifier_list) {...}' form,
+    // including the empty list 'with () {...}'. A bare 'with {...}' or array
+    // method 'with (expr)' leaves this false.
+    bool m_restricted = false;
+
 public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
                  AstNode* constraintsp = nullptr)
@@ -2828,6 +2834,8 @@ public:
     }
     ASTGEN_MEMBERS_AstWithParse;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool restricted() const { return m_restricted; }
+    void restricted(bool flag) { m_restricted = flag; }
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
