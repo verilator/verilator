@@ -1,0 +1,34 @@
+%Error: t/t_prop_always_bad.v:13:20: always range low bound must be non-negative (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   13 |   assert property (always [-1:3] a);
+      |                    ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_prop_always_bad.v:14:20: always range high bound must be >= low bound (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   14 |   assert property (always [5:2] a);
+      |                    ^~~~~~
+%Error: t/t_prop_always_bad.v:15:28: Expecting expression to be constant, but variable isn't const: 'x'
+                                   : ... note: In instance 't'
+   15 |   assert property (always [x:3] a);
+      |                            ^
+%Error: t/t_prop_always_bad.v:15:20: always range low bound must be a constant expression (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   15 |   assert property (always [x:3] a);
+      |                    ^~~~~~
+%Error: t/t_prop_always_bad.v:16:30: Expecting expression to be constant, but variable isn't const: 'x'
+                                   : ... note: In instance 't'
+   16 |   assert property (always [1:x] a);
+      |                              ^
+%Error: t/t_prop_always_bad.v:16:20: always range high bound must be a constant expression (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   16 |   assert property (always [1:x] a);
+      |                    ^~~~~~
+%Error: t/t_prop_always_bad.v:17:20: s_always range must be bounded (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   17 |   assert property (s_always a);
+      |                    ^~~~~~~~
+%Error: t/t_prop_always_bad.v:18:20: s_always range must be bounded (IEEE 1800-2023 16.12.11)
+                                   : ... note: In instance 't'
+   18 |   assert property (s_always [1:$] a);
+      |                    ^~~~~~~~
+%Error: Exiting due to

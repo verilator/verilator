@@ -528,6 +528,30 @@ class SvaNfaBuilder final {
         return {currentp, nullptr, {}};
     }
 
+    // always[lo:hi] / s_always[lo:hi] (IEEE 1800-2023 16.12.11).
+    BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
+                                bool isTopLevelStep = false) {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const propp = nodep->propp();
+        const int lo = getConstInt(nodep->loBoundp());
+        const int hi = getConstInt(nodep->hiBoundp());
+        UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
+        for (int k = 0; k <= hi - lo; ++k) {
+            if (k > 0) {
+                SvaStateVertex* const nextp = scopedCreateVertex();
+                guardedEdge(currentp, nextp, flp);
+                currentp = nextp;
+            }
+            SvaStateVertex* const checkp = scopedCreateVertex();
+            SvaTransEdge* const linkp
+                = guardedLink(currentp, checkp, sampled(propp->cloneTreePure(false)), flp);
+            if (isTopLevelStep && !m_inUnboundedScope) linkp->m_rejectOnFail = true;
+            currentp = checkp;
+        }
+        return {currentp, nullptr, {}};
+    }
+
     BuildResult buildGotoRep(AstSGotoRep* repp, SvaStateVertex* entryVtxp) {
         FileLine* const flp = repp->fileline();
         AstNodeExpr* const exprp = repp->exprp();
@@ -733,6 +757,9 @@ public:
         }
         if (AstSConsRep* const repp = VN_CAST(nodep, SConsRep)) {
             return buildConsRep(repp, entryVtxp, isTopLevelStep);
+        }
+        if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
+            return buildPropAlways(alwaysp, entryVtxp, isTopLevelStep);
         }
         if (AstSGotoRep* const repp = VN_CAST(nodep, SGotoRep)) {
             return buildGotoRep(repp, entryVtxp);

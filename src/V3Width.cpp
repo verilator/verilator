@@ -1545,6 +1545,65 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstPropAlways* nodep) override {
+        // IEEE 1800-2023 16.12.11
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->propp(), WidthVP{SELF, BOTH}.p());
+            if (!VN_IS(nodep->loBoundp(), Unbounded)) {
+                userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->loBoundp());
+            }
+            if (!VN_IS(nodep->hiBoundp(), Unbounded)) {
+                userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->hiBoundp());
+            }
+            const bool loUnbounded = VN_IS(nodep->loBoundp(), Unbounded);
+            const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
+            if (loUnbounded || hiUnbounded) {
+                if (nodep->isStrong()) {
+                    nodep->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: unbounded always range (always [m:$])");
+                }
+                nodep->dtypeSetBit();
+                return;
+            }
+            const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
+            const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
+            if (!loConstp) {
+                nodep->v3error("always range low bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (!hiConstp) {
+                nodep->v3error("always range high bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && loConstp->toSInt() < 0) {
+                nodep->v3error("always range low bound must be non-negative"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
+                nodep->v3error("always range high bound must be >= low bound"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            bool hasPropertyOp = nodep->propp()->isMultiCycleSva();
+            if (!hasPropertyOp) {
+                nodep->propp()->foreach([&](const AstNode* np) {
+                    if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
+                        hasPropertyOp = true;
+                    }
+                });
+            }
+            if (hasPropertyOp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: property/sequence operator inside bounded"
+                              " always (IEEE 1800-2023 16.12.11)");
+            }
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

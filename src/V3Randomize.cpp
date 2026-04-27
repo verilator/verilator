@@ -2824,6 +2824,11 @@ class CaptureVisitor final : public VNVisitor {
             && varRefp->varp()->lifetime().isStatic())
             return CaptureMode::CAP_NO;
         if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;
+        // Static member of a different class: V3Width replaces AstMemberSel with a bare
+        // AstVarRef (classOrPackagep set). Capture current value as a function argument.
+        if (callerIsClass && varClassp && !varIsFieldOfCaller
+            && varRefp->varp()->lifetime().isStatic())
+            return CaptureMode::CAP_VALUE;
         UASSERT_OBJ(!callerIsClass, varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
     }
