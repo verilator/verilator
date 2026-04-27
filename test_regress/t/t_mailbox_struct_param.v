@@ -45,6 +45,6 @@ module top;
     if(got0 !== 8'hA5) $stop;
 
     $write("*-* All Finished *-*\n");
-    $finish
+    $finish;
   end
 endmodule
