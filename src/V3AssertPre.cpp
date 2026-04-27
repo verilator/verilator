@@ -23,6 +23,7 @@
 
 #include "V3AssertPre.h"
 
+#include "V3AssertNfa.h"
 #include "V3Const.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
@@ -1291,31 +1292,24 @@ private:
         VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
-        m_defaultClockingp = nullptr;
-        m_defaultClkEvtVarp = nullptr;
+        const V3AssertModuleDefaults defaults = V3AssertNfa::collectModuleDefaults(nodep);
+        m_defaultClockingp = defaults.defaultClockingp;
+        m_defaultDisablep = defaults.defaultDisablep;
+        // Cache event var before iterateChildren -- visit(AstClocking) unlinks it.
+        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         nodep->foreach([&](AstClocking* const clockingp) {
-            if (clockingp->isDefault()) {
-                if (m_defaultClockingp) {
-                    clockingp->v3error("Only one default clocking block allowed per module"
-                                       " (IEEE 1800-2023 14.12)");
-                }
-                m_defaultClockingp = clockingp;
+            if (clockingp->isDefault() && clockingp != m_defaultClockingp) {
+                clockingp->v3error("Only one default clocking block allowed per module"
+                                   " (IEEE 1800-2023 14.12)");
             }
         });
-        m_defaultDisablep = nullptr;
         nodep->foreach([&](AstDefaultDisable* const disablep) {
-            if (m_defaultDisablep) {
+            if (disablep != m_defaultDisablep) {
                 disablep->v3error("Only one 'default disable iff' allowed per module"
                                   " (IEEE 1800-2023 16.15)");
             }
-            m_defaultDisablep = disablep;
         });
         m_modp = nodep;
-        // Pre-create and cache the clocking event var before iterating children.
-        // visit(AstClocking) will unlink the event from the clocking node and place it
-        // in the module tree, then delete the clocking. After that, ensureEventp() would
-        // create an orphaned var. Caching here avoids this.
-        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {
