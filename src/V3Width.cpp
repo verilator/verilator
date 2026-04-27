@@ -6316,7 +6316,9 @@ class WidthVisitor final : public VNVisitor {
                     continue;
                 }
             }
-            if (dtypep->isSigned()) { formatAttr = VFormatAttr::SIGNED; }
+            if (formatAttr.isUnsigned() && dtypep->isSigned()) {
+                formatAttr = VFormatAttr::SIGNED;
+            }
             if (VN_IS(argp, SFormatArg)  // Already done
                 || formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
                 nodep->addExprsp(argp);
