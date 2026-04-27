@@ -34,12 +34,43 @@ class Class;
     } s2[2][3];
 endclass
 
+class Class2;
+    int x;
+endclass;
+
 class Base;
-    int a;
+    int base_a;
 endclass
 
 class Derived extends Base;
-    int b;
+    int derived_a;
+endclass
+
+class Base2;
+    int base2_a;
+endclass
+
+class Derived2 extends Base2;
+    int derived2_a;
+    Class2 c2;
+endclass;
+
+class Base3;
+    int base3_a;
+endclass
+
+interface class Iclass;
+endclass
+
+class Derived3 extends Base3 implements Iclass;
+    int derived3_a;
+endclass
+
+interface class Iclass2;
+endclass
+
+class Derived4 implements Iclass2;
+    int derived4_a;
 endclass
 
 module t;
@@ -48,17 +79,33 @@ module t;
     iface2 i2();
     Class c;
     Derived d;
+    Derived2 d2;
+    Base2 b2;
+    Derived3 d3;
+    Iclass iclass;
+    Derived4 d4;
+    Iclass2 iclass2;
 
   initial begin
     c = new;
     c.i1 = i1;
     c.i2[0][0] = i2;
     d = new;
+    d2 = new;
+    d2.c2 = new;
+    b2 = d2;
+    d3 = new;
+    iclass = d3;
+    d4 = new;
+    iclass2 = d4;
 
 `ifdef DISPLAY_OBJECTS
-    $display("'%p'", s);
-    $display("'%p'", c);
-    $display("'%p'", d);
+    $display("struct: '%p'", s);
+    $display("class: '%p'", c);
+    $display("class from subclass: '%p'", d);
+    $display("class from superclass: '%p'", b2);
+    $display("class from interface: '%p'", iclass);
+    $display("class from interface 2: '%p'", d4);
 `endif
 
     $write("*-* All Finished *-*\n");

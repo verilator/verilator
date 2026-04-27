@@ -162,28 +162,42 @@ void V3Common::commonAll() {
     VDouble0 m_statClassToString;
     VDouble0 m_statInterfaceToString;
     VDouble0 m_statStructUnionToString;
-    // Create common contents for each module
-    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
-        if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            if (classp->emitToString()) {
-                // Create ToString methods
-                makeToString(classp);
-                makeToStringMiddle(classp);
-                m_statClassToString++;
-            }
-        } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
-            if (ifacep->emitToString()) {
-                makeVlToString(ifacep);
-                m_statInterfaceToString++;
+    if (v3Global.hasPrintedObjects()) {
+        // In V3Width every class that was marked with markPrintedFrom() also marked their parents
+        // with markEmitToString(), but the reverse process wasn't performed, so here we are
+        // marking children that weren't yet marked with markEmitToString(), but their parents are
+        // printed (i.e. we are handling cases where only a parent in class hierarchy was used as
+        // format arg, to allow printing objects from their parent classes)
+        for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+            if (AstClass* const classp = VN_CAST(nodep, Class)) {
+                if (!classp->emitToString() && classp->hasPrintedFromParent()) {
+                    classp->markEmitToString();
+                }
             }
         }
-    }
-    for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
-         nodep = nodep->nextp()) {
-        if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
-            if (!dtypep->packed() && dtypep->emitToString()) {
-                makeVlToString(dtypep);
-                m_statStructUnionToString++;
+        // Create common contents for each module
+        for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+            if (AstClass* const classp = VN_CAST(nodep, Class)) {
+                if (classp->emitToString()) {
+                    // Create ToString methods
+                    makeToString(classp);
+                    makeToStringMiddle(classp);
+                    m_statClassToString++;
+                }
+            } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
+                if (ifacep->emitToString()) {
+                    makeVlToString(ifacep);
+                    m_statInterfaceToString++;
+                }
+            }
+        }
+        for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
+             nodep = nodep->nextp()) {
+            if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
+                if (!dtypep->packed() && dtypep->emitToString()) {
+                    makeVlToString(dtypep);
+                    m_statStructUnionToString++;
+                }
             }
         }
     }

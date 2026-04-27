@@ -131,6 +131,7 @@ class V3Global final {
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandSequence = false;  // Has `randsequence`
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
+    bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
 
     // Memory address to short string mapping (for debug)
@@ -215,6 +216,8 @@ public:
     void useRandSequence(bool flag) { m_useRandSequence = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
+    bool hasPrintedObjects() const { return m_hasPrintedObjects; }
+    void hasPrintedObjects(bool flag) { m_hasPrintedObjects = flag; }
     void saveJsonPtrFieldName(const std::string& fieldName);
     void ptrNamesDumpJson(std::ostream& os);
     void idPtrMapDumpJson(std::ostream& os);

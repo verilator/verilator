@@ -1934,19 +1934,18 @@ void AstClass::dumpJson(std::ostream& str) const {
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
-void AstClass::emitToString(bool flag) {
-    m_emitToString = flag;
-    if (flag) {
+void AstClass::markEmitToString() {
+    if (!m_emitToString) {
         // ToString() of a child class uses ToString() of a parent class, so when we
         // are enabling it for a child, we also have to enable it for its parent
-        if (extendsp() && extendsp()->classp()) { extendsp()->classp()->emitToString(true); }
+        if (extendsp() && extendsp()->classp()) { extendsp()->classp()->markEmitToString(); }
 
         // members that can generate ToString() have to be marked too
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 AstNodeDType* nodeDtypep = varp->dtypep();
                 if (AstIfaceRefDType* const ifaceRedDTypep = VN_CAST(nodeDtypep, IfaceRefDType)) {
-                    if (ifaceRedDTypep->ifacep()) { ifaceRedDTypep->ifacep()->emitToString(true); }
+                    if (ifaceRedDTypep->ifacep()) { ifaceRedDTypep->ifacep()->markEmitToString(); }
                 } else {
                     while (nodeDtypep && nodeDtypep->subDTypep()
                            && nodeDtypep->subDTypep()->skipRefp()) {
@@ -1954,17 +1953,38 @@ void AstClass::emitToString(bool flag) {
                         if (AstIfaceRefDType* const ifaceRedDTypep
                             = VN_CAST(nodeDtypep, IfaceRefDType)) {
                             if (ifaceRedDTypep->ifacep()) {
-                                ifaceRedDTypep->ifacep()->emitToString(true);
+                                ifaceRedDTypep->ifacep()->markEmitToString();
                             }
                         } else if (AstNodeUOrStructDType* const uOrStructDTypep
                                    = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
-                            uOrStructDTypep->emitToString(true);
+                            uOrStructDTypep->markEmitToString();
                         }
                     }
                 }
             }
         }
     }
+    m_emitToString = true;
+}
+void AstClass::markPrintedFrom() {
+    m_printedFrom = true;
+    markEmitToString();
+}
+bool AstClass::hasPrintedFromParent() const {
+    // Because V3Common might call hasPrintedFromParent() on every class we are
+    // caching the result to avoid going over class hierarchy multiple times
+    if (m_hasPrintedParent == PrintedParentCacheState::NOT_PRINTED) return false;
+    if (m_hasPrintedParent == PrintedParentCacheState::PRINTED) return true;
+    if (m_printedFrom) return true;
+    for (const AstClassExtends* extendp = extendsp(); extendp;
+         extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+        if (extendp->classp() && extendp->classp()->hasPrintedFromParent()) {
+            m_hasPrintedParent = PrintedParentCacheState::PRINTED;
+            return true;
+        }
+    }
+    m_hasPrintedParent = PrintedParentCacheState::NOT_PRINTED;
+    return false;
 }
 void AstClassExtends::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2578,28 +2598,27 @@ string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     result += "}" + prettyName();
     return result;
 }
-void AstNodeUOrStructDType::emitToString(bool flag) {
-    m_emitToString = flag;
-
-    if (flag) {
+void AstNodeUOrStructDType::markEmitToString() {
+    if (!m_emitToString) {
         // we have to mark union/struct members too
         for (AstMemberDType* memberp = membersp(); memberp;
              memberp = VN_AS(memberp->nextp(), MemberDType)) {
             AstNodeDType* nodeDtypep = memberp->dtypep();
             if (AstNodeUOrStructDType* const uOrStructDTypep
                 = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
-                uOrStructDTypep->emitToString(true);
+                uOrStructDTypep->markEmitToString();
             } else {
                 while (nodeDtypep && nodeDtypep->subDTypep()) {
                     nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
                     if (AstNodeUOrStructDType* const uOrStructDTypep
                         = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
-                        uOrStructDTypep->emitToString(true);
+                        uOrStructDTypep->markEmitToString();
                     }
                 }
             }
         }
     }
+    m_emitToString = true;
 }
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);

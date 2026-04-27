@@ -2615,7 +2615,12 @@ class AstClass final : public AstNodeModule {
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
-    bool m_emitToString = false;
+    bool m_emitToString = false;  // Generate to_string() for this class if set
+    bool m_printedFrom = false;  // This class is printed from i.e. is used as format arg. Used for
+                                 // reverse emitToString propagation (from parent to child)
+    // Cache for hasPrintedFromParent() to avoid going over class hierarchy multiple times
+    enum class PrintedParentCacheState : uint8_t { NOT_PRINTED, PRINTED, UNINIT };
+    mutable PrintedParentCacheState m_hasPrintedParent = PrintedParentCacheState::UNINIT;
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -2644,7 +2649,9 @@ public:
     bool useVirtualPublic() const { return m_useVirtualPublic; }
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     bool emitToString() const { return m_emitToString; }
-    void emitToString(bool flag);
+    void markEmitToString();
+    void markPrintedFrom();
+    bool hasPrintedFromParent() const;
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
@@ -2712,7 +2719,7 @@ public:
 class AstIface final : public AstNodeModule {
     // An interface declaration
     bool m_hasVirtualRef = false;  // There exists a virtual interface reference for this interface
-    bool m_emitToString = false;
+    bool m_emitToString = false;  // Generate to_string() for this interface if set
 
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
@@ -2725,7 +2732,7 @@ public:
     bool hasVirtualRef() const { return m_hasVirtualRef; }
     void setHasVirtualRef() { m_hasVirtualRef = true; }
     bool emitToString() const { return m_emitToString; }
-    void emitToString(bool flag) { m_emitToString = flag; }
+    void markEmitToString() { m_emitToString = true; }
 };
 class AstModule final : public AstNodeModule {
     // A module declaration

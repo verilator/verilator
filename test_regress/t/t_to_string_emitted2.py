@@ -15,9 +15,7 @@ test.compile(verilator_flags2=["--stats", "-DDISPLAY_OBJECTS"])
 
 test.execute()
 
-test.file_grep(test.stats, r"Optimizations, Struct/union ToString emitted\s+(\d+)", 5)
-test.file_grep(test.stats, r"Optimizations, Class ToString emitted\s+(\d+)", 10)
-test.file_grep(test.stats, r"Optimizations, Interface ToString emitted\s+(\d+)", 2)
+test.file_grep(test.stats, r"Optimizations, Class ToString emitted\s+(\d+)", 2)
 
 test.files_identical(test.obj_dir + "/vlt_sim.log", test.golden_filename, "logfile")
 

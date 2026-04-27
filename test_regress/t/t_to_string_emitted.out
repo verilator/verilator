@@ -1,4 +1,7 @@
-''{s1:'{a:'h0}, s2:'{'{'{b:'h0}, '{b:'h0}, '{b:'h0}}, '{'{b:'h0}, '{b:'h0}, '{b:'h0}}}, x:'h0}'
-''{z:'h0, i1:top.t.i1, i2:'{'{top.t.i2}}, s1:'{a:'h0}, s2:'{'{'{b:'h0}, '{b:'h0}, '{b:'h0}}, '{'{b:'h0}, '{b:'h0}, '{b:'h0}}}}'
-''{b:'h0, a:'h0}'
+struct: ''{s1:'{a:'h0}, s2:'{'{'{b:'h0}, '{b:'h0}, '{b:'h0}}, '{'{b:'h0}, '{b:'h0}, '{b:'h0}}}, x:'h0}'
+class: ''{z:'h0, i1:top.t.i1, i2:'{'{top.t.i2}}, s1:'{a:'h0}, s2:'{'{'{b:'h0}, '{b:'h0}, '{b:'h0}}, '{'{b:'h0}, '{b:'h0}, '{b:'h0}}}}'
+class from subclass: ''{derived_a:'h0, base_a:'h0}'
+class from superclass: ''{derived2_a:'h0, c2:$unit::Class2, base2_a:'h0}'
+class from interface: ''{derived3_a:'h0, base3_a:'h0}'
+class from interface 2: ''{derived4_a:'h0, }'
 *-* All Finished *-*

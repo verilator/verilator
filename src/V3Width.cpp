@@ -6305,7 +6305,10 @@ class WidthVisitor final : public VNVisitor {
                 if (AstVarRef* const varRefp = VN_CAST(argp, VarRef)) {
                     if (AstClassRefDType* const classRefp
                         = VN_CAST(varRefp->dtypep(), ClassRefDType)) {
-                        if (classRefp->classp()) { classRefp->classp()->emitToString(true); }
+                        if (classRefp->classp()) {
+                            classRefp->classp()->markPrintedFrom();
+                            v3Global.hasPrintedObjects(true);
+                        }
                     } else {
                         AstNodeDType* nodeDtypep = varRefp->dtypep();
                         while (nodeDtypep && nodeDtypep->subDTypep()
@@ -6313,7 +6316,8 @@ class WidthVisitor final : public VNVisitor {
                             nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
                             if (AstNodeUOrStructDType* const uOrStructDTypep
                                 = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
-                                uOrStructDTypep->emitToString(true);
+                                uOrStructDTypep->markEmitToString();
+                                v3Global.hasPrintedObjects(true);
                             }
                         }
                     }
