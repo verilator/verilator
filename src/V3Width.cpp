@@ -6311,14 +6311,12 @@ class WidthVisitor final : public VNVisitor {
                     nodep->addExprsp(new AstSFormatArg{argp->fileline(), VFormatAttr::ENUM, argp});
                     AstNodeExpr* const namep
                         = enumSelect(argp->cloneTreePure(false), enumDtp, VAttrType::ENUM_NAME);
-                    nodep->addExprsp(new AstSFormatArg{namep->fileline(), VFormatAttr::STRING,
-                                                       namep});
+                    nodep->addExprsp(
+                        new AstSFormatArg{namep->fileline(), VFormatAttr::STRING, namep});
                     continue;
                 }
             }
-            if (dtypep->isSigned()) {
-                formatAttr = VFormatAttr::SIGNED;
-            }
+            if (dtypep->isSigned()) { formatAttr = VFormatAttr::SIGNED; }
             if (VN_IS(argp, SFormatArg)  // Already done
                 || formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
                 nodep->addExprsp(argp);
