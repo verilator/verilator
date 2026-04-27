@@ -61,6 +61,7 @@ class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
     AstCFunc* m_cFuncp = nullptr;
+    bool m_needsNonInlineCFunc = false;  // Needs CFunc for selected non-inlined call sites
 
 public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
@@ -72,6 +73,8 @@ public:
     string dotColor() const override { return pure() ? "black" : "red"; }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
+    bool needsNonInlineCFunc() const { return m_needsNonInlineCFunc; }
+    void needsNonInlineCFunc(bool flag) { m_needsNonInlineCFunc = flag; }
 };
 
 class TaskCodeVertex final : public TaskBaseVertex {
@@ -119,6 +122,17 @@ class TaskStateVisitor final : public VNVisitor {
 
 public:
     // METHODS
+    static bool isVirtualIfaceMethodCall(const AstNodeFTaskRef* refp) {
+        const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall);
+        if (!mrefp) return false;
+        const AstNodeExpr* const fromp = mrefp->fromp();
+        if (!fromp || !fromp->dtypep()) return false;
+        const AstIfaceRefDType* const ifrefp = VN_CAST(fromp->dtypep()->skipRefp(), IfaceRefDType);
+        return ifrefp && ifrefp->isVirtual();
+    }
+    static bool isIfaceFTaskScope(const AstScope* scopep) {
+        return scopep && VN_IS(scopep->modp(), Iface);
+    }
     AstScope* getScope(AstNodeFTask* nodep) {
         AstScope* const scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
@@ -138,6 +152,9 @@ public:
         m_funcToClassMap[newp] = getClassp(nodep);
     }
     bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
+    bool ftaskNeedsNonInlineCFunc(AstNodeFTask* nodep) {
+        return getFTaskVertex(nodep)->needsNonInlineCFunc();
+    }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
@@ -229,6 +246,9 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
         new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
+        if (isVirtualIfaceMethodCall(nodep) && isIfaceFTaskScope(getScope(nodep->taskp()))) {
+            taskVtxp->needsNonInlineCFunc(true);
+        }
         // Do we have to disable inlining the function?
         const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         if (!taskVtxp->noInline()) {  // Else short-circuit below
@@ -251,13 +271,6 @@ private:
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         if (nodep->recursive()) m_curVxp->noInline(true);
-        // V3Scope resolves virtual-interface MethodCalls via user2p (last-wins),
-        // so inlining would bake in the wrong instance's VarScope refs.
-        if (v3Global.hasVirtIfaces()) {
-            if (const AstScope* const scopep = VN_CAST(nodep->user3p(), Scope)) {
-                if (VN_IS(scopep->modp(), Iface)) m_curVxp->noInline(true);
-            }
-        }
         if (nodep->isConstructor()) {
             m_curVxp->noInline(true);
             m_ctorp = nodep;
@@ -1495,8 +1508,10 @@ class TaskVisitor final : public VNVisitor {
         // Iterate into the FTask we are calling.  Note it may be under a different
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_insStmtp);
         m_scopep = m_statep->getScope(nodep);
+        m_modp = m_scopep->modp();
         iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -1526,6 +1541,16 @@ class TaskVisitor final : public VNVisitor {
             exprstmtp->stmtsp()->addNext(assignp);
             argp->exprp(exprstmtp);
         }
+    }
+
+    bool isIfaceLocalImpure(AstNodeFTask* nodep, AstNode* impurep) {
+        const AstScope* const scopep = m_statep->getScope(nodep);
+        if (!TaskStateVisitor::isIfaceFTaskScope(scopep)) return false;
+
+        const AstVarRef* const refp = VN_CAST(impurep, VarRef);
+        if (!refp || !refp->varScopep()) return false;
+
+        return refp->varScopep()->scopep() == scopep;
     }
 
     // VISITORS
@@ -1598,7 +1623,10 @@ class TaskVisitor final : public VNVisitor {
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
-        if (m_statep->ftaskNoInline(nodep->taskp())) {
+        const bool virtualIfaceCall
+            = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
+              && TaskStateVisitor::isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));
+        if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
@@ -1697,32 +1725,38 @@ class TaskVisitor final : public VNVisitor {
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
+            const bool needsNonInlineCFunc = m_statep->ftaskNeedsNonInlineCFunc(nodep);
             // Warn if not inlining an impure ftask (unless method, recursive,
-            // or interface function -- interface member access is not truly external).
+            // or interface-local member access, which is not truly external).
             // Will likely not schedule correctly.
             // TODO: Why not if recursive? It will not work ...
-            if (noInline && !nodep->classMethod() && !nodep->recursive()
-                && !VN_IS(m_modp, Iface)) {
+            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    nodep->v3warn(
-                        IMPURE,
-                        "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << impurep->warnOther() << "... Location of the external reference: "
-                            << impurep->prettyNameQ() << '\n'
-                            << impurep->warnContextSecondary());
+                    if (!isIfaceLocalImpure(nodep, impurep)) {
+                        nodep->v3warn(
+                            IMPURE,
+                            "Unsupported: External variable referenced by non-inlined function/task: "
+                                << nodep->prettyNameQ() << '\n'
+                                << nodep->warnContextPrimary() << '\n'
+                                << impurep->warnOther() << "... Location of the external reference: "
+                                << impurep->prettyNameQ() << '\n'
+                                << impurep->warnContextSecondary());
+                    }
                 }
             }
 
-            if (noInline || nodep->dpiImport() || nodep->dpiExport() || nodep->taskPublic()) {
+            if (noInline || needsNonInlineCFunc || nodep->dpiImport() || nodep->dpiExport()
+                || nodep->taskPublic()) {
                 // Clone it first, because we may have later FTaskRef's that still need
                 // the original version.
                 AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
-                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, noInline)) {
+                const bool makeNonInlineFunc = noInline || needsNonInlineCFunc;
+                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, makeNonInlineFunc)) {
                     nodep->addNextHere(cfuncp);
-                    if (nodep->dpiImport() || noInline) m_statep->ftaskCFuncp(nodep, cfuncp);
+                    if (nodep->dpiImport() || makeNonInlineFunc) {
+                        m_statep->ftaskCFuncp(nodep, cfuncp);
+                    }
                     iterateIntoFTask(clonedFuncp);  // Do the clone too
                 }
             }
