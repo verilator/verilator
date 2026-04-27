@@ -564,7 +564,7 @@ public:
     void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
     // True if 'name' binds into the randomize() target class.
     bool nameResolvesToTarget(const std::string& name) const {
-        return !m_restricted || m_restrictedNames.find(name) != m_restrictedNames.end();
+        return !m_restricted || m_restrictedNames.count(name);
     }
 };
 

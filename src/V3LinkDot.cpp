@@ -2194,20 +2194,17 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
         // Type depends on the method used, let V3Width figure it out later
-        // 'with (identifier_list)' is randomize-only (IEEE 1800-2023 18.7).
-        bool restrictedRandomize = false;
-        if (nodep->restricted()) {
-            if (funcrefp->name() == "randomize") {
-                restrictedRandomize = true;
-            } else {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: 'with (...) {...}' outside randomize()");
-                if (nodep->exprsp()) {
-                    AstNode* const listp = nodep->exprsp()->unlinkFrBackWithNext();
-                    VL_DO_DANGLING(pushDeletep(listp), listp);
-                }
-            }
+        // 'with (...) { ... }' constraint_block form is randomize-only
+        // (IEEE 1800-2023 7.12 vs. 18.7); array methods take 'with (expr)'.
+        if (nodep->restricted() && funcrefp->name() != "randomize") {
+            nodep->v3error("'with (...) { ... }' constraint block is only valid for"
+                           " randomize() (IEEE 1800-2023 18.7)");
+            funcrefp->addArgsp(argsp);
+            nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
         }
+        const bool restrictedRandomize = nodep->restricted();
         if (nodep->exprsp() || nodep->constraintsp()
             || restrictedRandomize) {  // Else empty expression and pretend no "with"
             AstLambdaArgRef* const indexArgRefp
@@ -2229,7 +2226,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (nodep->constraintsp())
                 exprOrConstraintsp = AstNode::addNext(
                     exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
-            if (exprOrConstraintsp) newp->addExprp(exprOrConstraintsp);
+            newp->addExprp(exprOrConstraintsp);  // addExprp() tolerates nullptr
             funcrefp->withp(newp);
         }
         funcrefp->addArgsp(argsp);
