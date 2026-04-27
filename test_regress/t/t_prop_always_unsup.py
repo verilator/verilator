@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.leak_check_disable()
-
-test.lint(expect_filename=test.golden_filename, verilator_flags2=['--assert'], fails=True)
+test.lint(expect_filename=test.golden_filename, fails=True)
 
 test.passes()

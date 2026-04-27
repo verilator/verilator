@@ -651,18 +651,16 @@ module Vt_debug_emitv_t;
         end
     end
     begin : assert_prop_always
-        assert property (@(posedge clk) 
-            ???? // PROPALWAYS
-            in'sh0'sh3
+        assert property (@(posedge clk) always ['sh0:
+                         'sh3] in
         ) begin
         end
         else begin
         end
     end
     begin : assert_prop_s_always
-        assert property (@(posedge clk) 
-            ???? // PROPALWAYS
-            in'sh1'sh2
+        assert property (@(posedge clk) s_always ['sh1:
+                         'sh2] in
         ) begin
         end
         else begin

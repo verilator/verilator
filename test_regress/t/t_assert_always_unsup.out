@@ -1,9 +1,9 @@
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:28:5: Unsupported: eventually[] (in property expression)
-   28 |     eventually [2:5] a;
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:20:5: Unsupported: eventually[] (in property expression)
+   20 |     eventually [2:5] a;
       |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_assert_always_unsup.v:32:18: syntax error, unexpected ']', expecting ':'
-   32 |     eventually [2] a;
+%Error: t/t_assert_always_unsup.v:24:18: syntax error, unexpected ']', expecting ':'
+   24 |     eventually [2] a;
       |                  ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Cannot continue
