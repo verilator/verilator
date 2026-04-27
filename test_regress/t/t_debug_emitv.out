@@ -882,7 +882,8 @@ package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
         int signed member;
         member = 'sh1;
-        int signed rmember;
+        int signed rmember1;
+        int signed rmember2;
         task method;
             if ((this != this)) begin
                 $stop;
@@ -903,7 +904,7 @@ package Vt_debug_emitv___024unit;
         begin : label7
             rand_restricted = randomize() with (
                 ???? // CONSTRAINTEXPR
-                (item.rmember < member)) ;
+                (item.rmember1 < member)) ;
             disable label7;
         end
     endfunction

@@ -5415,19 +5415,16 @@ exprList<nodeExprp>:
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
         ;
 
-// IEEE 1800-2023 18.7.1: identifier_list after 'with' in inline randomize constraints.
-// Only simple identifiers are permitted. Non-identifier expressions are rejected
-// at parse time, keeping the downstream AstWith consumer free of guards.
+// identifier_list for 'with' in inline randomize constraints (IEEE 1800-2023 18.7).
+// Only simple identifiers; non-identifier expressions are parse errors.
 inlineConstraintIdList<nodeExprp>:
                 id                                      { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         |       inlineConstraintIdList ',' id           { $$ = $1->addNext(
                                                              new AstParseRef{$<fl>3, *$3, nullptr, nullptr}); }
         ;
 
-// IEEE 1800-2023 18.7.1: identifier_list is optional. The empty form
-// 'with () { ... }' means no name binds into the target class -- every name in
-// the constraint resolves in the calling scope. Distinguished from the bare
-// 'with { ... }' form by AstWithParse::restricted().
+// Optional identifier_list. Empty 'with () {...}' differs from bare 'with {...}'
+// via AstWithParse::restricted().
 inlineConstraintIdListE<nodeExprp>:
                 /* empty */                             { $$ = nullptr; }
         |       inlineConstraintIdList                  { $$ = $1; }

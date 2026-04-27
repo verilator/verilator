@@ -21,14 +21,15 @@ endpackage
 
 class Cls;
   int member = 1;
-  rand int rmember;
+  rand int rmember1;
+  rand int rmember2;
   function void method;
     if (this != this) $stop;
   endfunction
 endclass
 
 function int rand_restricted(Cls obj, int member);
-  return obj.randomize() with (rmember) { rmember < member; };
+  return obj.randomize() with (rmember1, rmember2) { rmember1 < member; rmember2 < member; };
 endfunction
 
 interface Iface (

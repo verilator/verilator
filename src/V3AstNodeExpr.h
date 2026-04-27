@@ -538,11 +538,9 @@ class AstWith final : public AstNode {
     // @astgen op3 := exprp : List[AstNode]  // Pins, expression and constraints
     // TODO: Separate expression and constraints
 private:
-    // IEEE 1800-2023 18.7: 'randomize() with (identifier_list) { ... }' marks the
-    // constraint block as restricted -- only names in the list resolve into the
-    // randomize() target class; all other names resolve in the calling scope.
-    bool m_restricted = false;  // True if parenthesized identifier_list was given
-    std::set<std::string> m_restrictedNames;  // Names permitted to bind into target class
+    // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
+    bool m_restricted = false;
+    std::set<std::string> m_restrictedNames;
 
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
@@ -554,11 +552,7 @@ public:
     }
     ASTGEN_MEMBERS_AstWith;
     bool hasDType() const override { return true; }
-    bool sameNode(const AstNode* samep) const override {
-        const AstWith* const otherp = VN_DBG_AS(samep, With);
-        return m_restricted == otherp->m_restricted
-               && m_restrictedNames == otherp->m_restrictedNames;
-    }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
@@ -566,16 +560,12 @@ public:
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool restricted() const { return m_restricted; }
     void restricted(bool flag) { m_restricted = flag; }
     void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
-    // IEEE 1800-2023 18.7.1: true if 'name' should resolve into the randomize()
-    // target class. Unrestricted 'with' blocks resolve every name into the class
-    // first; restricted blocks only resolve names in the parenthesized list.
+    // True if 'name' binds into the randomize() target class.
     bool nameResolvesToTarget(const std::string& name) const {
         return !m_restricted || m_restrictedNames.find(name) != m_restrictedNames.end();
     }
-    const std::set<std::string>& restrictedNames() const { return m_restrictedNames; }
 };
 
 // === AstNodeExpr ===
@@ -2819,9 +2809,7 @@ class AstWithParse final : public AstNodeExpr {
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
     // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
 private:
-    // True for the IEEE 1800-2023 18.7.1 'with (identifier_list) {...}' form,
-    // including the empty list 'with () {...}'. A bare 'with {...}' or array
-    // method 'with (expr)' leaves this false.
+    // True for the 'with (identifier_list) {...}' form, including 'with () {...}'.
     bool m_restricted = false;
 
 public:

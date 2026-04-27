@@ -2194,11 +2194,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
         // Type depends on the method used, let V3Width figure it out later
-        // IEEE 1800-2023 18.7.1: AstWithParse::restricted() flags the
-        // 'with (identifier_list) {...}' form (including the empty list). Only
-        // randomize() may use that form; reject the syntax on any other funcref
-        // and drop the parenthesized list so the AST stays consistent if
-        // processing continues past the warning.
+        // 'with (identifier_list)' is randomize-only (IEEE 1800-2023 18.7).
         bool restrictedRandomize = false;
         if (nodep->restricted()) {
             if (funcrefp->name() == "randomize") {
@@ -2219,11 +2215,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
                 = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, nullptr};
-            // IEEE 1800-2023 18.7.1: in the restricted form, exprsp holds the
-            // identifier_list. Harvest names directly into AstWith and drop the
-            // parsed list. The inlineConstraintIdList grammar guarantees each
-            // item is a simple AstParseRef, so no defensive cast guard is
-            // needed here.
+            // Harvest the identifier_list into AstWith; grammar guarantees AstParseRef.
             if (restrictedRandomize) {
                 newp->restricted(true);
                 while (AstNode* const itemp = nodep->exprsp()) {
@@ -3108,10 +3100,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_modportNum = 0;  // Uniqueify modport numbers
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
-    // Current enclosing AstWith (nullptr outside a with block). Non-null implies
-    // "in with"; also carries the identifier list for IEEE 1800-2023 18.7.1
-    // restricted name resolution.
-    const AstWith* m_currentWithp = nullptr;
+    const AstWith* m_currentWithp = nullptr;  // Enclosing 'with' (nullptr if none)
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
@@ -4224,9 +4213,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
-            // IEEE 1800-2023 18.7.1: a restricted 'with (id_list) { ... }' only
-            // binds names in id_list into the target class; other names fall
-            // through to the caller scope.
+            // Restricted 'with (id_list)': only id_list names bind into target class.
             if (m_randSymp
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
@@ -5171,8 +5158,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
             }
-            // IEEE 1800-2023 18.7.1: restricted 'with (id_list)' only binds names
-            // in id_list into the target class (same rule applied to method refs).
+            // Restricted 'with (id_list)': only id_list names bind into target class.
             if (m_randSymp
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());

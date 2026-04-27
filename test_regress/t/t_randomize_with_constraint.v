@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 PlanV GmbH
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -17,10 +17,7 @@ class Cls;
   int lo = -100;  // class member named 'lo' intentionally shadows the caller arg
 endclass
 
-// IEEE 1800-2023 18.7.1: m_x is in the list -> class scope.
-// 'y' is NOT in the list -> must resolve in the caller scope (function arg = 10),
-// not the class member 'y = -1'. If the restriction did not apply, the constraint
-// 'm_x < y' would reduce to 'm_x < -1' which is unsatisfiable (m_x > 0).
+// 'y' is not in the list -> resolves to the caller arg (10), not class member (-1).
 function int func_restricted(Cls obj, int y);
   return obj.randomize() with (m_x) {
     m_x > 0;
@@ -28,9 +25,7 @@ function int func_restricted(Cls obj, int y);
   };
 endfunction
 
-// Multi-identifier list: both m_x and m_z bind into the class; 'lo' and 'hi' not
-// in the list resolve to the caller arguments, even though 'lo' also exists as
-// a class member.
+// Multi-id list: 'lo' is also a class member but resolves to caller arg.
 function int func_multi(Cls obj, int lo, int hi);
   return obj.randomize() with (m_x, m_z) {
     m_x > lo;
@@ -41,7 +36,7 @@ function int func_multi(Cls obj, int lo, int hi);
   };
 endfunction
 
-// Unrestricted form baseline: no identifier list, class scope first, then enclosing.
+// Unrestricted baseline: no id list.
 function int func_unrestricted(Cls obj);
   return obj.randomize() with {
     m_x > 0;
@@ -49,10 +44,7 @@ function int func_unrestricted(Cls obj);
   };
 endfunction
 
-// IEEE 1800-2023 18.7.1: empty identifier_list 'with () {...}' means no name
-// binds into the class. Names in the constraint must resolve in the calling
-// scope. Here every name (lo, hi) is local, so the empty list still produces
-// a sound constraint.
+// Empty id list: no name binds into the class; constraint references obj.* explicitly.
 function automatic int func_empty(Cls obj, int lo, int hi);
   // verilog_format: off
   return obj.randomize() with () {
@@ -62,9 +54,7 @@ function automatic int func_empty(Cls obj, int lo, int hi);
   // verilog_format: on
 endfunction
 
-// IEEE 1800-2023 18.7.1: 'local::name' bypasses class scope inside the
-// constraint block. 'local::y' must resolve to the function argument and not
-// to obj.y, even though 'y' exists as a class member.
+// 'local::y' bypasses class scope -> caller arg, not obj.y.
 function int func_local_qual(Cls obj, int y);
   obj.y = -42;
   // verilog_format: off
@@ -75,9 +65,7 @@ function int func_local_qual(Cls obj, int y);
   // verilog_format: on
 endfunction
 
-// IEEE 1800-2023 18.7.1: consecutive restricted blocks must not leak each
-// other's identifier set. After func_restricted returns, the m_currentWithp
-// state is restored via VL_RESTORER and the next call sees a fresh list.
+// Consecutive restricted blocks must not leak each other's id list.
 function automatic int func_sequential(Cls obj, int hi);
   int rc = 1;
   rc &= obj.randomize() with (m_x) { m_x > 0; m_x < hi; };
@@ -110,6 +98,9 @@ module t;
       `check_range(c.m_x, 1, 7);
       i = func_sequential(c, 6);
       `checkd(i, 1);
+      // Statement form: discards return value via void'.
+      void'(c.randomize() with (m_x) { m_x > 0; m_x < 5; });
+      `check_range(c.m_x, 1, 4);
     end
     $write("*-* All Finished *-*\n");
     $finish;
