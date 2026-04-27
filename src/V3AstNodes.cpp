@@ -1998,12 +1998,7 @@ bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
 bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
     if (m_packed != sp->m_packed) return false;
-    // Anonymous structs/unions fall back to nominal (pointer) identity to avoid
-    // treating two independently-declared anonymous types as equivalent.
-    if (m_name.empty() || sp->m_name.empty()) return this == samep;
-    if (m_name != sp->m_name) return false;
-    // Same-name typedef: structurally compare members. Two AstNodeUOrStructDType
-    // instances can arise from one source-level typedef via parameter specialization.
+    if (fileline()->tokenNum() != sp->fileline()->tokenNum()) return false;
     const AstMemberDType* lp = membersp();
     const AstMemberDType* rp = sp->membersp();
     while (lp && rp) {
