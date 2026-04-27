@@ -35,8 +35,8 @@ module top;
 
     s0.x = 8'hA5;
     s1.x = 8'h5A;
-    c0.mb.put(s0)
-    c1.mb.put(s1)
+    c0.mb.put(s0);
+    c1.mb.put(s1);
 
     c0.run(got0);
     c1.run(got1);
