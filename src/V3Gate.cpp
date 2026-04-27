@@ -47,6 +47,7 @@ class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
     bool m_consumed = false;  // Output goes to something meaningful
+    bool m_staticInit = false;  // True if this node is a static initializer
 public:
     explicit GateEitherVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -56,10 +57,12 @@ public:
     bool reducible() const { return m_reducible; }
     bool dedupable() const { return m_dedupable; }
     bool consumed() const { return m_consumed; }
+    bool staticInit() const { return m_staticInit; }
     void setConsumed(const char* /*consumedReason*/) {
         // if (!m_consumed) UINFO(0, "\t\tSetConsumed " << consumedReason << " " << this);
         m_consumed = true;
     }
+    void setStaticInit() { m_staticInit = true; }
     void clearReducible(const char* /*nonReducibleReason*/) {
         // UINFO(0, "     NR: " << nonReducibleReason << "  " << name());
         m_reducible = false;
@@ -196,6 +199,7 @@ class GateBuildVisitor final : public VNVisitorConst {
     const AstScope* m_scopep = nullptr;  // Current scope being processed
     AstActive* m_activep = nullptr;  // Current active
     bool m_inClockedActive = false;  // Underneath clocked active
+    bool m_inStaticActive = false;  // Underneath static active
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
 
     // METHODS
@@ -219,6 +223,8 @@ class GateBuildVisitor final : public VNVisitorConst {
             m_logicVertexp->clearReducibleAndDedupable(nonReducibleReason);
         } else if (m_inClockedActive) {
             m_logicVertexp->clearReducible("Clocked logic");  // but dedupable
+        } else if (m_inStaticActive) {
+            m_logicVertexp->setStaticInit();
         }
         if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
         checkNode(nodep);
@@ -242,8 +248,10 @@ class GateBuildVisitor final : public VNVisitorConst {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
         VL_RESTORER(m_inClockedActive);
+        VL_RESTORER(m_inStaticActive);
         m_activep = nodep;
         m_inClockedActive = nodep->hasClocked();
+        m_inStaticActive = nodep->hasStatic();
 
         // AstVarScope::user2 -> bool: Signal used in SenItem in *this* active block
         const VNUser2InUse user2InUse;
@@ -699,6 +707,9 @@ class GateInline final {
             if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (!VN_IS(substp, NodeVarRef)) continue;
             }
+
+            // Only inline static initializer if constant known at compile time
+            if (lVtxp->staticInit() && !VN_IS(substp, Const)) continue;
 
             // Process it
             ++m_statInlined;
