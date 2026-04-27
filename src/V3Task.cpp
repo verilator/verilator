@@ -99,21 +99,6 @@ public:
 
 //######################################################################
 
-static bool isVirtualIfaceMethodCall(const AstNodeFTaskRef* refp) {
-    const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall);
-    if (!mrefp) return false;
-    const AstNodeExpr* const fromp = mrefp->fromp();
-    if (!fromp || !fromp->dtypep()) return false;
-    const AstIfaceRefDType* const ifrefp = VN_CAST(fromp->dtypep()->skipRefp(), IfaceRefDType);
-    return ifrefp && ifrefp->isVirtual();
-}
-
-static bool isIfaceFTaskScope(const AstScope* scopep) {
-    return scopep && VN_IS(scopep->modp(), Iface);
-}
-
-//######################################################################
-
 class TaskStateVisitor final : public VNVisitor {
     // NODE STATE
     //  Output:
@@ -137,6 +122,17 @@ class TaskStateVisitor final : public VNVisitor {
 
 public:
     // METHODS
+    static bool isVirtualIfaceMethodCall(const AstNodeFTaskRef* refp) {
+        const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall);
+        if (!mrefp) return false;
+        const AstNodeExpr* const fromp = mrefp->fromp();
+        if (!fromp || !fromp->dtypep()) return false;
+        const AstIfaceRefDType* const ifrefp = VN_CAST(fromp->dtypep()->skipRefp(), IfaceRefDType);
+        return ifrefp && ifrefp->isVirtual();
+    }
+    static bool isIfaceFTaskScope(const AstScope* scopep) {
+        return scopep && VN_IS(scopep->modp(), Iface);
+    }
     AstScope* getScope(AstNodeFTask* nodep) {
         AstScope* const scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
@@ -1549,7 +1545,7 @@ class TaskVisitor final : public VNVisitor {
 
     bool isIfaceLocalImpure(AstNodeFTask* nodep, AstNode* impurep) {
         const AstScope* const scopep = m_statep->getScope(nodep);
-        if (!isIfaceFTaskScope(scopep)) return false;
+        if (!TaskStateVisitor::isIfaceFTaskScope(scopep)) return false;
 
         const AstVarRef* const refp = VN_CAST(impurep, VarRef);
         if (!refp || !refp->varScopep()) return false;
@@ -1627,8 +1623,9 @@ class TaskVisitor final : public VNVisitor {
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
-        const bool virtualIfaceCall = isVirtualIfaceMethodCall(nodep)
-                                      && isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));
+        const bool virtualIfaceCall
+            = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
+              && TaskStateVisitor::isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));
         if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
