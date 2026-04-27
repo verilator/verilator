@@ -11,8 +11,8 @@
 // verilog_format: on
 
 module t (
-  input clk
-  );
+    input clk
+);
 
   typedef enum [3:0] {
                 E01 = 1,
@@ -20,12 +20,18 @@ module t (
                 E04 = 4
                 } my_t;
 
-  integer    cyc = 0;
+  integer cyc = 0;
   my_t e;
 
-  int arrayfits [e.num];  // Check can use as constant
+  int arrayfits[e.num];  // Check can use as constant
 
-  string all;
+  typedef struct {
+    my_t m_a;
+    my_t m_b;
+  } mystr_t;
+  mystr_t mystr;
+
+  string s;
 
   // Check constification
   initial begin
@@ -48,25 +54,38 @@ module t (
     `checkh(e.num, 3);
     `checks(e.name, "E03");
     //
-    all = "";
+    s = "";
     for (my_t e = e.first; e != e.last; e = e.next) begin
-      all = {all, e.name};
+      s = {s, e.name};
     end
     e = e.last;
-    all = {all, e.name};
-    `checks(all, "E01E03E04");
+    s = {s, e.name};
+    `checks(s, "E01E03E04");
+    //
+    e = E04;
+    s = $sformatf("%p", e);
+    `checks(s, "E04");
+    s = $sformatf("%p", E03);
+    `checks(s, "E03");
+    s = $sformatf("%s", E03);  // Non-standard but majority
+    `checks(s, "E03");
+    //
+    mystr.m_a = E03;
+    mystr.m_b = E04;
+    s = $sformatf("%p", mystr);
+    `checks(s, "'{m_a:E03, m_b:E04}");
   end
 
   localparam THREE = 3;
 
   // Check runtime
-  always @ (posedge clk) begin
+  always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc==0) begin
+    if (cyc == 0) begin
       // Setup
       e <= E01;
     end
-    else if (cyc==1) begin
+    else if (cyc == 1) begin
       `checks(e.name, "E01");
       `checkh(e.next, E03);
       `checkh(e.next(1), E03);
@@ -76,7 +95,7 @@ module t (
       `checkh(e.prev(2), E03);
       e <= E03;
     end
-    else if (cyc==2) begin
+    else if (cyc == 2) begin
       `checks(e.name, "E03");
       `checkh(e.next, E04);
       `checkh(e.next(1), E04);
@@ -86,7 +105,7 @@ module t (
       `checkh(e.prev(2), E04);
       e <= E04;
     end
-    else if (cyc==3) begin
+    else if (cyc == 3) begin
       `checks(e.name, "E04");
       `checkh(e.next, E01);
       `checkh(e.next(1), E01);
@@ -95,8 +114,11 @@ module t (
       `checkh(e.prev(1), E03);
       `checkh(e.prev(2), E01);
       e <= E01;
+      //
+      s = $sformatf("%p", e);
+      `checks(s, "E04");
     end
-    else if (cyc==99) begin
+    else if (cyc == 99) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

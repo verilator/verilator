@@ -6,7 +6,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t;
+module t (
+    input string empty_no_opt
+);
   typedef enum logic [1:0] {
     E0 = 0,
     E1 = 1,
@@ -22,6 +24,7 @@ module t;
   endtask
 
   initial begin
+    string fmt;
     begin
       my_e it;
       string names_p;
@@ -120,6 +123,27 @@ module t;
     check($sformatf("%p", (1'b0 ? E0 : my_e'(3))), "3");
     $display("display-invalid:%s:%0d:%p", e, 7, e);
     $write("write-invalid:%s:%0d:%p\n", e, 8, e);
+    // Runtime-computed $sformatf formats should preserve enum mnemonic/fallback behavior.
+    e = E2;
+    fmt = {"%", "s", empty_no_opt};
+    check($sformatf(fmt, e), "E2");
+    fmt = {"%", "p", empty_no_opt};
+    check($sformatf(fmt, e), "E2");
+    fmt = {"%0d:%", "s", ":%0d", empty_no_opt};
+    check($sformatf(fmt, 9, e, 7), "9:E2:7");
+    fmt = {"%", "s", " %h %", "p", empty_no_opt};
+    check($sformatf(fmt, e, 4'hA, e), "E2 a E2");
+    e = my_e'(3);
+    fmt = {"%", "s", empty_no_opt};
+    check($sformatf(fmt, e), "3");
+    fmt = {"%", "p", empty_no_opt};
+    check($sformatf(fmt, e), "3");
+    fmt = {"%0", "p", empty_no_opt};
+    check($sformatf(fmt, e), "'h3");
+    fmt = {"%0d:%", "s", ":%0d", empty_no_opt};
+    check($sformatf(fmt, 9, e, 7), "9:3:7");
+    fmt = {"%", "s", " %h %", "p", empty_no_opt};
+    check($sformatf(fmt, e, 4'hA, e), "3 a 3");
 
     $write("*-* All Finished *-*\n");
     $finish;

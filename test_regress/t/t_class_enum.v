@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checks(gotv, expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
 
   class Cls;
@@ -12,11 +17,18 @@ module t;
       B = 20,
       C = 30
     } en_t;
+    en_t en;
   endclass
 
   initial begin
     Cls c;
+    string s;
     if (c.A != 10) $stop;
+    c = new;
+    c.en = c.B;
+    if (c.en != 20) $stop;
+    s = $sformatf("%p", c);
+    `checks(s, "'{en:B}");
     $write("*-* All Finished *-*\n");
     $finish;
   end
