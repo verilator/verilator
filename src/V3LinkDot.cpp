@@ -2233,8 +2233,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 }
             }
             AstNode* exprOrConstraintsp = nullptr;
-            if (nodep->exprsp())
-                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->exprsp()) exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
             if (nodep->constraintsp())
                 exprOrConstraintsp = AstNode::addNext(
                     exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
