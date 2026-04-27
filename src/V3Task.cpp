@@ -1733,14 +1733,14 @@ class TaskVisitor final : public VNVisitor {
             if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
                     if (!isIfaceLocalImpure(nodep, impurep)) {
-                        nodep->v3warn(
-                            IMPURE,
-                            "Unsupported: External variable referenced by non-inlined function/task: "
-                                << nodep->prettyNameQ() << '\n'
-                                << nodep->warnContextPrimary() << '\n'
-                                << impurep->warnOther() << "... Location of the external reference: "
-                                << impurep->prettyNameQ() << '\n'
-                                << impurep->warnContextSecondary());
+                        nodep->v3warn(IMPURE, "Unsupported: External variable referenced by "
+                                              "non-inlined function/task: "
+                                                  << nodep->prettyNameQ() << '\n'
+                                                  << nodep->warnContextPrimary() << '\n'
+                                                  << impurep->warnOther()
+                                                  << "... Location of the external reference: "
+                                                  << impurep->prettyNameQ() << '\n'
+                                                  << impurep->warnContextSecondary());
                     }
                 }
             }
