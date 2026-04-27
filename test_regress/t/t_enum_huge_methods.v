@@ -22,7 +22,7 @@ module t (
   integer cyc = 0;
   my_t e;
 
-  string all;
+  string s;
   int i_cast;
 
   // Check runtime
@@ -45,6 +45,10 @@ module t (
       `checkh(e.prev, E01);
       `checkh(e.next(0), ELARGE);
       `checkh(e.prev(0), ELARGE);
+      s = $sformatf("%p", e);
+      `checks(s, "ELARGE");
+      s = $sformatf("%s", e);  // Non-standard but majority
+      `checks(s, "ELARGE");
       e <= E01;
     end
     //
@@ -68,6 +72,8 @@ module t (
     end
     else if (cyc == 21) begin
       `checks(e.name, "");  // Unknown
+      s = $sformatf("%p", e);
+      `checks(s, "17");
     end
     else if (cyc == 99) begin
       $write("*-* All Finished *-*\n");
