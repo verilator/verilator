@@ -1547,6 +1547,16 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
+    bool isIfaceLocalImpure(AstNodeFTask* nodep, AstNode* impurep) {
+        const AstScope* const scopep = m_statep->getScope(nodep);
+        if (!isIfaceFTaskScope(scopep)) return false;
+
+        const AstVarRef* const refp = VN_CAST(impurep, VarRef);
+        if (!refp || !refp->varScopep()) return false;
+
+        return refp->varScopep()->scopep() == scopep;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -1720,20 +1730,21 @@ class TaskVisitor final : public VNVisitor {
             const bool noInline = m_statep->ftaskNoInline(nodep);
             const bool needsNonInlineCFunc = m_statep->ftaskNeedsNonInlineCFunc(nodep);
             // Warn if not inlining an impure ftask (unless method, recursive,
-            // or interface function -- interface member access is not truly external).
+            // or interface-local member access, which is not truly external).
             // Will likely not schedule correctly.
             // TODO: Why not if recursive? It will not work ...
-            if (noInline && !nodep->classMethod() && !nodep->recursive()
-                && !VN_IS(m_modp, Iface)) {
+            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    nodep->v3warn(
-                        IMPURE,
-                        "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << impurep->warnOther() << "... Location of the external reference: "
-                            << impurep->prettyNameQ() << '\n'
-                            << impurep->warnContextSecondary());
+                    if (!isIfaceLocalImpure(nodep, impurep)) {
+                        nodep->v3warn(
+                            IMPURE,
+                            "Unsupported: External variable referenced by non-inlined function/task: "
+                                << nodep->prettyNameQ() << '\n'
+                                << nodep->warnContextPrimary() << '\n'
+                                << impurep->warnOther() << "... Location of the external reference: "
+                                << impurep->prettyNameQ() << '\n'
+                                << impurep->warnContextSecondary());
+                    }
                 }
             }
 
