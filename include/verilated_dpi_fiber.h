@@ -53,10 +53,10 @@ static thread_local struct {
 namespace VerilatedDpi {
 // Run user C code in a fiber, wrapping it in a coroutine for scheduler integration
 // This allows the C code to call DPI exports with timing controls
-template <typename Callable>
-VlCoroutine callImportInFiber(Callable&& fn) {
+template <typename Callable, typename... Args>
+VlCoroutine callImportInFiber(Callable&& call, Args&&... args) {
     auto fiberp{
-        VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); })};
+        VlFiber::create([&call, &args...]() mutable { call(std::forward<Args>(args)...); })};
     while (!fiberp->isDone()) {
         fiberp->resume();
         co_await FiberAwaitable{*fiberp};
@@ -64,14 +64,14 @@ VlCoroutine callImportInFiber(Callable&& fn) {
     co_return;
 }
 
-template <bool isTask, typename Callable>
-constexpr void callImport(Callable&& fn, char* const filename, int lineno) {
+template <bool isTask, typename Callable, typename... Args>
+constexpr void callImport(char* const filename, int lineno, Callable&& fn, Args&&... args) {
     if VL_CONSTEXPR_CXX17 (!isTask) {
         s_fileline.m_filename = filename;
         s_fileline.m_lineno = lineno;
         s_fileline.m_inFuncContext = true;
     }
-    fn();
+    call(std::forward<Args>(args)...);
     if VL_CONSTEXPR_CXX17 (!isTask) { s_fileline.m_inFuncContext = false; }
 }
 

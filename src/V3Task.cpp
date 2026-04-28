@@ -1243,7 +1243,8 @@ class TaskVisitor final : public VNVisitor {
             // If timings are used, the DPI function has to be executed inside a fiber.
             // Functions do not need to be executed inside a fiber, because they are
             // indistinguishable from SV functions. (IEEE 35.2.1 Tasks and functions)
-            if (v3Global.opt.timing().isTrue() && !nodep->verilogFunction()) {
+            if (v3Global.opt.timing().isTrue() && nodep->verilogTask()) {
+                /*
                 AstCExpr* const callImportp
                     = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImportInFiber"};
                 AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
@@ -1252,7 +1253,19 @@ class TaskVisitor final : public VNVisitor {
                 callImportp->add("})");
                 cfuncp->addStmtsp(awaitp);
                 cfuncp->rtnType("VlCoroutine");
+                */
+                AstCFuncHard* const callImportFiberp
+                    = new AstCFuncHard{nodep->fileline(), VCFunction::CALL_IMPORT_IN_FIBER};
+                callImportFiberp->dtypeSetVoid();
+                AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportFiberp};
+                AstExprStmt* exprStmtp = new AstExprStmt{nodep->fileline(), cstmtp};
+                exprStmtp->dtypeSetVoid();
+                // Add arguments
+                callImportFiberp->addPinsp(exprStmtp);
+                cfuncp->addStmtsp(awaitp);
+                cfuncp->rtnType("VlCoroutine");
             } else {
+                /*
                 std::stringstream callImportFunc;
                 callImportFunc << "VerilatedDpi::callImport<"
                                << std::to_string(nodep->verilogTask()) << ">";
@@ -1266,6 +1279,23 @@ class TaskVisitor final : public VNVisitor {
                 callImportp->add("\n" + std::to_string(nodep->fileline()->lineno()));
                 callImportp->add(")");
                 cfuncp->addStmtsp(callImportp);
+                */
+                AstCFuncHard* const callImportFiberp
+                    = new AstCFuncHard{nodep->fileline(), VCFunction::CALL_IMPORT};
+                callImportFiberp->dtypeSetVoid();
+                AstExprStmt* exprStmtp = new AstExprStmt{nodep->fileline(), cstmtp};
+                exprStmtp->dtypeSetVoid();
+                // Add arguments
+                callImportFiberp->addPinsp(new AstConst{nodep->fileline(),
+                                                        AstConst::VerilogStringLiteral{},
+                                                        nodep->fileline()->filename()});
+                callImportFiberp->addPinsp(new AstConst{nodep->fileline(), AstConst::Signed32{},
+                                                        nodep->fileline()->lineno()});
+                callImportFiberp->addPinsp(exprStmtp);
+                // Add parameter to indicate that this is a task
+                callImportFiberp->addParamsp(
+                    new AstConst{nodep->fileline(), nodep->verilogTask()});
+                cfuncp->addStmtsp(callImportFiberp->makeStmt());
             }
         }
 
