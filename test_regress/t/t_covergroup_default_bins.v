@@ -6,7 +6,7 @@
 
 // Test default bins - catch-all for values not in other bins
 
-// Non-covergroup class in the same module — must not interfere with covergroup processing
+// Non-covergroup class in the same module - must not interfere with covergroup processing
 class DataHelper;
   bit [7:0] val;
   function new(bit [7:0] v); val = v; endfunction
@@ -30,14 +30,14 @@ module t;
     }
   endgroup
 
-  // Covergroup with default as the only bin — catches all sampled values
+  // Covergroup with default as the only bin - catches all sampled values
   covergroup cg2;
     cp_only_default: coverpoint data {
       bins all = default;
     }
   endgroup
 
-  // Covergroup with default + ignore + illegal bins — excluded values must not count toward coverage
+  // Covergroup with default + ignore + illegal bins - excluded values must not count toward coverage
   covergroup cg3;
     coverpoint data {
       ignore_bins  bad = {255};    // excluded from coverage
@@ -47,7 +47,7 @@ module t;
     }
   endgroup
 
-  // Auto-bins on a small range with one value excluded by ignore_bins —
+  // Auto-bins on a small range with one value excluded by ignore_bins -
   // when the range is small enough, one auto-bin per valid value is created; the excluded value is skipped.
   covergroup cg4;
     cp_idx: coverpoint idx {
@@ -65,7 +65,7 @@ module t;
     cp_data65: coverpoint data65 { bins lo = {[0:15]}; bins hi = {[100:200]}; }
   endgroup
 
-  // Unlabeled coverpoint — the signal name is used as the coverpoint name
+  // Unlabeled coverpoint - the signal name is used as the coverpoint name
   covergroup cg7;
     coverpoint data { bins lo = {[0:7]}; bins hi = {[8:15]}; }
   endgroup
@@ -93,7 +93,7 @@ module t;
     data = 2;
     cg_inst.sample();
     cg2_inst.sample();
-    `checkr(cg2_inst.get_inst_coverage(), 100.0);  // cg2 has 1 bin (default) → 100% after first sample
+    `checkr(cg2_inst.get_inst_coverage(), 100.0);  // cg2 has 1 bin (default) -> 100% after first sample
 
     // Hit high bin
     data = 14;

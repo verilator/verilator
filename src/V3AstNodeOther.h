@@ -1057,16 +1057,18 @@ class AstCoverBin final : public AstNode {
     const string m_name;  // Base name of the bin
     const VCoverBinsType m_type;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
     bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
+    bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
 
 public:
     AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
                 bool isWildcard = false)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_type{isWildcard ? VCoverBinsType::BINS_WILDCARD
-                            : (isIllegal ? VCoverBinsType::BINS_ILLEGAL
-                                         : (isIgnore ? VCoverBinsType::BINS_IGNORE
-                                                     : VCoverBinsType::BINS_USER))} {
+        , m_type{isIllegal ? VCoverBinsType::BINS_ILLEGAL
+                           : (isIgnore ? VCoverBinsType::BINS_IGNORE
+                                       : (isWildcard ? VCoverBinsType::BINS_WILDCARD
+                                                     : VCoverBinsType::BINS_USER))}
+        , m_isWildcard{isWildcard} {
         if (rangesp) addRangesp(rangesp);
     }
     // Constructor for automatic bins
@@ -1097,6 +1099,7 @@ public:
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     VCoverBinsType binsType() const { return m_type; }
+    bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
 };

@@ -25,7 +25,7 @@ module t (/*AUTOARG*/);
     }
   endgroup
 
-  // cg2: ignore_bins using a range — auto-bins are created only for values not in the range.
+  // cg2: ignore_bins using a range - auto-bins are created only for values not in the range.
   // Also tests range-boundary conditions: when lo==0 or hi==maxVal, the range check simplifies.
   // Also tests ignore_bins with a transition list.
   covergroup cg2;

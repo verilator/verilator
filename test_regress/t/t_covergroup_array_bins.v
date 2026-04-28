@@ -22,14 +22,14 @@ module t;
     }
   endgroup
 
-  // cg2: array bins using a range expression — one bin per value in the range
+  // cg2: array bins using a range expression - one bin per value in the range
   covergroup cg2;
     cp: coverpoint data {
       bins range_arr[] = {[0:3]};   // range expression: creates 4 separate bins
     }
   endgroup
 
-  // cg3: sized array bins — bins r[N] = {[lo:hi]} distributes range into N bins
+  // cg3: sized array bins - bins r[N] = {[lo:hi]} distributes range into N bins
   covergroup cg3;
     cp: coverpoint data {
       bins range_sized[4] = {[4:7]};  // explicit count: 4 bins covering [4:7]

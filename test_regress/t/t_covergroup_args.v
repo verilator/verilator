@@ -34,7 +34,7 @@ module t;
   cg cov1 = new(69, 77);
   cg cov2 = new(69);
   cg_clocked cov_clocked = new(10);
-  PlainClass plain_inst = new;  // Non-covergroup class instance — must not affect covergroup coverage
+  PlainClass plain_inst = new;  // Non-covergroup class instance - must not affect covergroup coverage
 
   function void x();
     cov1.set_inst_name("the_inst_name");

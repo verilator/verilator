@@ -48,9 +48,9 @@ module t;
     // Progressive coverage query via get_inst_coverage()
     cg_q = new;
     data = 0; cg_q.sample();
-    // 1/3 bins hit → 33.3% (not an exact binary fraction; validate progression, not exact value)
+    // 1/3 bins hit -> 33.3% (not an exact binary fraction; validate progression, not exact value)
     data = 2; cg_q.sample();
-    // 2/3 bins hit → 66.7%
+    // 2/3 bins hit -> 66.7%
     data = 4; cg_q.sample();
     `checkr(cg_q.get_inst_coverage(), 100.0);  // 3/3 bins hit
 

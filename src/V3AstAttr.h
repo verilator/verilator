@@ -1160,7 +1160,7 @@ public:
         NAME, CROSS_NUM_PRINT_MISSING, CROSS_RETAIN_AUTO_BINS, DETECT_OVERLAP, GET_INST_COVERAGE,
         // type_option.* only (IEEE 1800-2023 Table 19-3)
         STROBE, MERGE_INSTANCES, DISTRIBUTE_FIRST, REAL_INTERVAL,
-        // sentinel — should never appear after parse-time validation
+        // sentinel - should never appear after parse-time validation
         UNKNOWN
     };
     enum en m_e;
