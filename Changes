@@ -17,6 +17,7 @@ Verilator 5.049 devel
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
 * Fix generic interface port forwarded to a nested instance (#7454) (#7457). [Yilou Wang]
 * Fix internal error on multi-cycle SVA under default clocking (#7472) (#7506). [Yilou Wang]
+* Fix internal error instead of missing prototype error (#7485). [Alex Solomatnikov]
 * Fix mailbox#(packed_struct) type mismatch with parameterized class (#7494) (#7495). [Nikolai Kumar]
 * Fix std::randomize internal error on static member of different class (#7498) (#7499). [Alex Solomatnikov]
 * Fix virtual interface method call inlining and IMPURE suppression (#7505). [Nikolay Puzanov]
