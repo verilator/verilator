@@ -152,6 +152,7 @@ public:
     ~VlcCovergroups() = default;
 
     // METHODS
+    bool empty() const { return m_cgMap.empty(); }
     VlcCovergroupType& findNewCovergroupType(const string& typeName, const string& filename,
                                              int lineno) {
         const auto it = m_cgMap.find(typeName);
