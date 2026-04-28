@@ -23,6 +23,7 @@
 
 #include "verilated_random.h"
 
+#include <cassert>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -330,6 +331,30 @@ void VlRandomVar::emitExtract(std::ostream& s, int i) const {
     s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
 }
 void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+// Serialize the current runtime value as an SMT-LIB binary literal. Used by
+// randomize(null) to pin a var via `(assert (= var #b...))`. Binary (#b)
+// rather than hex (#x) sidesteps SMT-LIB's hex-width-multiple-of-4 rule.
+void VlRandomVar::emitConcreteValue(std::ostream& s) const {
+    const int w = width();
+    const void* const dp = datap(0);
+    s << "#b";
+    for (int i = w - 1; i >= 0; --i) {
+        int bit = 0;
+        if (w <= VL_BYTESIZE) {
+            bit = (*static_cast<const CData*>(dp) >> i) & 1;
+        } else if (w <= VL_SHORTSIZE) {
+            bit = (*static_cast<const SData*>(dp) >> i) & 1;
+        } else if (w <= VL_IDATASIZE) {
+            bit = (*static_cast<const IData*>(dp) >> i) & 1;
+        } else if (w <= VL_QUADSIZE) {
+            bit = (*static_cast<const QData*>(dp) >> i) & 1;
+        } else {
+            const EData* const wp = static_cast<const EData*>(dp);
+            bit = (wp[VL_BITWORD_E(i)] >> VL_BITBIT_E(i)) & 1;
+        }
+        s << (bit ? '1' : '0');
+    }
+}
 int VlRandomVar::totalWidth() const { return m_width; }
 static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     int i;
@@ -441,8 +466,16 @@ void VlRandomizer::recordRandcValues() {
     }
 }
 
+bool VlRandomizer::next_check_only(VlRNG& rngr) {
+    m_checkOnly = true;
+    const bool result = next(rngr);
+    m_checkOnly = false;
+    return result;
+}
+
 bool VlRandomizer::next(VlRNG& rngr) {
-    if (m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (!m_checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (m_checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
     for (const std::string& baseName : m_unique_arrays) {
         const auto it = m_vars.find(baseName);
         const uint32_t size = m_unique_array_sizes.at(baseName);
@@ -470,8 +503,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
     }
 
-    // If solve-before constraints are present, use phased solving
-    if (!m_solveBefore.empty()) return nextPhased(rngr);
+    // Pinned vars make phase ordering moot; skip phased path in check-only.
+    if (!m_checkOnly && !m_solveBefore.empty()) return nextPhased(rngr);
 
     // Randc retry: if unsat due to randc exhaustion, clear history and retry once
     const bool hasRandc = !m_randcVarNames.empty();
@@ -494,14 +527,24 @@ bool VlRandomizer::next(VlRNG& rngr) {
             os << "(declare-fun " << var.first << " () ";
             var.second->emitType(os);
             os << ")\n";
+            // Pin each var to its current value: SAT iff the current values
+            // satisfy the constraints. V3Randomize rejects non-scalar rand
+            // members upstream, hence the assert.
+            if (m_checkOnly) {
+                assert(var.second->dimension() == 0);
+                os << "(assert (= " << var.first << ' ';
+                var.second->emitConcreteValue(os);
+                os << "))\n";
+            }
         }
 
         for (const std::string& constraint : m_constraints) {
             os << "(assert (= #b1 " << constraint << "))\n";
         }
 
-        // Randc: exclude previously used values to enforce cyclic non-repetition
-        emitRandcExclusions(os);
+        // randc exclusions vs. a pinned current value would make every check
+        // trivially UNSAT after the first cycle.
+        if (!m_checkOnly) emitRandcExclusions(os);
 
         const size_t nSoft = m_softConstraints.size();
         bool sat = false;
@@ -544,6 +587,10 @@ bool VlRandomizer::next(VlRNG& rngr) {
                 m_randcUsedValues.clear();
                 continue;  // Retry without exclusions
             }
+            // Skip the unsat-core path in check-only: it re-declares vars
+            // without pinning, so parseSolution would clobber user state with
+            // the solver's free assignment.
+            if (m_checkOnly) return false;
             // Genuine unsat: report via unsat-core
             os << "(set-option :produce-unsat-cores true)\n";
             os << "(set-logic QF_ABV)\n";
@@ -569,17 +616,20 @@ bool VlRandomizer::next(VlRNG& rngr) {
             return false;
         }
 
-        for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-            os << "(assert ";
-            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-            os << ")\n";
-            os << "\n(check-sat)\n";
-            sat = parseSolution(os, false);
-            (void)sat;
+        // Pinned vars: salting cannot diversify, only burn solver calls.
+        if (!m_checkOnly) {
+            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                os << "(assert ";
+                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                os << ")\n";
+                os << "\n(check-sat)\n";
+                sat = parseSolution(os, false);
+                (void)sat;
+            }
         }
 
-        // Record solved randc values for future exclusion
-        recordRandcValues();
+        // Check-only must not advance randc cycle state.
+        if (!m_checkOnly) recordRandcValues();
 
         os << "(reset)\n";
         return true;

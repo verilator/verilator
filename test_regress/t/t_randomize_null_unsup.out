@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:45:14: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   45 |     void'(fq.randomize(null));
+      |              ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:46:14: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   46 |     void'(fu.randomize(null));
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:47:14: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   47 |     void'(fd.randomize(null));
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:48:14: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   48 |     void'(fa.randomize(null));
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:49:14: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   49 |     void'(fw.randomize(null));
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_null_unsup.v:50:13: Unsupported: 'randomize(null)' on class with rand container or class member
+                                                    : ... note: In instance 't'
+   50 |     void'(o.randomize(null));
+      |             ^~~~~~~~~
+%Error: Exiting due to
