@@ -12,14 +12,4 @@ import coverage_covergroup_common
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--coverage'])
-
-test.execute(expect_filename=test.golden_filename)
-
-# Verify coverage bins were sampled (option assignments tested inline in .v)
-coverage_covergroup_common.covergroup_coverage_report(test)
-test.file_grep(test.obj_dir + '/covergroup_report.txt', r'cg2\.cp\.')
-test.file_grep(test.obj_dir + '/covergroup_report.txt', r'cg3\.cp\.lo')
-test.file_grep(test.obj_dir + '/covergroup_report.txt', r'cg3\.cp\.hi')
-
-test.passes()
+coverage_covergroup_common.run(test)
