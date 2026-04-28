@@ -694,8 +694,12 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
-        if (m_randmodep && !varr.randModeIdxNone()) {
-            if (!m_randmodep->at(varr.randModeIdx())) continue;
+        if (!varr.randModeIdxNone()) {
+            // Static rand vars have their rand_mode in a class-package shared queue,
+            // not the per-instance one.
+            const VlQueue<CData>* const modep
+                = m_staticVars.count(name) ? m_static_randmodep : m_randmodep;
+            if (modep && !modep->at(varr.randModeIdx())) continue;
         }
         if (m_disabledVars.count(name)) continue;
         if (!indices.empty()) {
