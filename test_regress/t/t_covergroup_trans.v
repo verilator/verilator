@@ -35,8 +35,8 @@ module t;
     }
     // Repetition-type bins: goto ([->N]) and non-consecutive ([=N]) repetition
     cp_reptype: coverpoint state {
-      bins goto_bin = (0 => 1 [->2]);    // goto repetition — currently matched as simple (0=>1)
-      bins noncons_bin = (2 [=1] => 3);  // non-consecutive repetition — currently matched as simple (2=>3)
+      bins goto_bin = (0 => 1 [->2]);    // goto repetition - currently matched as simple (0=>1)
+      bins noncons_bin = (2 [=1] => 3);  // non-consecutive repetition - currently matched as simple (2=>3)
     }
   endgroup
 

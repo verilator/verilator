@@ -233,6 +233,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void extractValuesFromRange(AstNode* nodep, std::set<uint64_t>& values) {
         for (AstNode* np = nodep; np; np = np->nextp()) {
             if (AstConst* constp = VN_CAST(np, Const)) {
+                if (constp->num().isFourState()) continue;  // wildcard patterns can't be enumerated
                 values.insert(constp->toUQuad());
             } else if (AstInsideRange* rangep = VN_CAST(np, InsideRange)) {
                 AstNodeExpr* const lhsp = V3Const::constifyEdit(rangep->lhsp());
@@ -244,6 +245,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                     "range bounds must be constants");
                     continue;
                 }
+                if (loConstp->num().isFourState() || hiConstp->num().isFourState()) continue;
                 const uint64_t lo = loConstp->toUQuad();
                 const uint64_t hi = hiConstp->toUQuad();
                 for (uint64_t v = lo; v <= hi; v++) values.insert(v);
@@ -1132,7 +1134,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (!rangep) return nullptr;
 
         // Check if this is a wildcard bin
-        const bool isWildcard = (binp->binsType() == VCoverBinsType::BINS_WILDCARD);
+        const bool isWildcard = binp->isWildcard();
 
         // Build condition by OR-ing all ranges together
         AstNodeExpr* fullCondp = nullptr;

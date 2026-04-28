@@ -50,7 +50,7 @@ module t;
     automatic cg_4bit_excl cg4e_inst = new;
     automatic cg2      cg2_inst     = new;
 
-    // Sample 3-bit cg: one value per bin — 4 bins: [0:1],[2:3],[4:5],[6:7]
+    // Sample 3-bit cg: one value per bin - 4 bins: [0:1],[2:3],[4:5],[6:7]
     data = 0; cg_inst.sample();
     `checkr(cg_inst.get_inst_coverage(), 25.0);
     data = 2; cg_inst.sample();
@@ -60,7 +60,7 @@ module t;
     data = 7; cg_inst.sample();
     `checkr(cg_inst.get_inst_coverage(), 100.0);
 
-    // Sample 4-bit bins — 4 bins: [0:3],[4:7],[8:11],[12:15]
+    // Sample 4-bit bins - 4 bins: [0:3],[4:7],[8:11],[12:15]
     data4 = 0;  cg4_inst.sample();   // bin [0:3]
     `checkr(cg4_inst.get_inst_coverage(), 25.0);
     data4 = 7;  cg4_inst.sample();   // bin [4:7]
@@ -76,7 +76,7 @@ module t;
     data4 = 8;  cg4e_inst.sample();
     `checkr(cg4e_inst.get_inst_coverage(), 50.0);
 
-    // Sample 64-bit cg2 — SKIP checkr: Verilator 64-bit bin boundary bug causes 100% at first sample
+    // Sample 64-bit cg2 - SKIP checkr: Verilator 64-bit bin boundary bug causes 100% at first sample
     data64 = 64'd0;                     cg2_inst.sample();
     data64 = 64'hFFFF_FFFF_FFFF_FFFF;  cg2_inst.sample();
 

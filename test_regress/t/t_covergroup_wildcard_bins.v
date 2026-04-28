@@ -55,7 +55,7 @@ module t;
     // Verify another pattern match
     data = 8'b1010_1111;  // Should also match 'pattern' (10[1]0_11[1]1)
     cg_inst.sample();
-    `checkr(cg_inst.get_inst_coverage(), 80.0);  // 4/5 — same bin, no increase
+    `checkr(cg_inst.get_inst_coverage(), 80.0);  // 4/5 - same bin, no increase
 
     // Test mid_range bin: [0x40:0x4F]
     data = 8'h45;  // Should match 'mid_range'

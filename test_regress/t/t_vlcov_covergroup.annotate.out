@@ -229,7 +229,7 @@
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.lo_range_x_write
           endgroup
         
-          // Cross where one coverpoint has ignore_bins — ignored values must not appear in cross bins
+          // Cross where one coverpoint has ignore_bins - ignored values must not appear in cross bins
 ~000015   covergroup cg_ignore;
 +000015  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
@@ -328,7 +328,7 @@
             }
           endgroup
         
-          // Cross with an unsupported option (option.per_instance) — Verilator warns and ignores it
+          // Cross with an unsupported option (option.per_instance) - Verilator warns and ignores it
 %000004   covergroup cg_unsup_cross_opt;
 -000004  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
@@ -356,12 +356,12 @@
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_write
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_read
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_write
-%000001       option.per_instance = 1;  // unsupported for cross — expect COVERIGN warning
+%000001       option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
 -000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
             }
           endgroup
         
-          // Covergroup with an unnamed cross — the cross is reported under the default name "cross"
+          // Covergroup with an unnamed cross - the cross is reported under the default name "cross"
 %000004   covergroup cg_unnamed_cross;
 -000004  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
 -000001  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
@@ -432,7 +432,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample 3-way: hit 4 of 12 combinations
-            // cg3: 3+2+2+12=19 bins; 4 cross bins hit → 11/19=57.9% (not clean; no intermediate checkr)
+            // cg3: 3+2+2+12=19 bins; 4 cross bins hit -> 11/19=57.9% (not clean; no intermediate checkr)
 %000001     addr = 0; cmd = 0; mode = 0; cg3_inst.sample();  // addr0 x read x normal
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; mode = 0; cg3_inst.sample();  // addr1 x write x normal
@@ -443,7 +443,7 @@
 -000001  point: type=line comment=block hier=top.t
         
             // Sample 4-way: hit 4 of 16 combinations
-            // cg4: 2+2+2+2+16=24 bins; 4 cross bins hit → 12/24=50%
+            // cg4: 2+2+2+2+16=24 bins; 4 cross bins hit -> 12/24=50%
 %000001     addr = 0; cmd = 0; mode = 0; parity = 0; cg4_inst.sample();
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; mode = 0; parity = 1; cg4_inst.sample();
@@ -462,7 +462,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample cg5 (cross with option.weight=2; weight is ignored in flat bin count)
-            // cg5: 2+2+4=8 bins; 2 cross bins hit → 6/8=75%
+            // cg5: 2+2+4=8 bins; 2 cross bins hit -> 6/8=75%
 %000001     addr = 0; cmd = 0; cg5_inst.sample();
 -000001  point: type=line comment=block hier=top.t
 %000001     `checkr(cg5_inst.get_inst_coverage(), 37.5);  // 3/8: addr0, read, addr0_x_read
@@ -537,7 +537,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample cg_at_least (option.at_least in cross body; Verilator uses at_least=1 for bins)
-            // cg_at_least: 2+2+4=8 bins; 2 cross bins hit (count=1, at_least effectively 1) → 6/8=75%
+            // cg_at_least: 2+2+4=8 bins; 2 cross bins hit (count=1, at_least effectively 1) -> 6/8=75%
 %000001     addr = 0; cmd = 0; cg_at_least_inst.sample();  // addr0 x read
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; cg_at_least_inst.sample();  // addr1 x write
@@ -548,7 +548,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample cg_goal (option.goal in cross body; does not affect hit counting)
-            // cg_goal: 2+2+4=8 bins; 2 cross bins hit → 6/8=75%
+            // cg_goal: 2+2+4=8 bins; 2 cross bins hit -> 6/8=75%
 %000001     addr = 0; cmd = 0; cg_goal_inst.sample();  // addr0 x read
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; cg_goal_inst.sample();  // addr1 x write
@@ -559,7 +559,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample cg_unsup_cross_opt
-            // cg_unsup_cross_opt: 2+2+4=8 bins; 2 cross bins hit → 6/8=75%
+            // cg_unsup_cross_opt: 2+2+4=8 bins; 2 cross bins hit -> 6/8=75%
 %000001     addr = 0; cmd = 0; cg_unsup_cross_opt_inst.sample();  // addr0 x read
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; cg_unsup_cross_opt_inst.sample();  // addr1 x write
@@ -570,7 +570,7 @@
 -000001  point: type=line comment=else hier=top.t
         
             // Sample cg_unnamed_cross
-            // cg_unnamed_cross: 2+2+4=8 bins; 2 cross bins hit → 6/8=75%
+            // cg_unnamed_cross: 2+2+4=8 bins; 2 cross bins hit -> 6/8=75%
 %000001     addr = 0; cmd = 0; cg_unnamed_cross_inst.sample();  // a0 x read
 -000001  point: type=line comment=block hier=top.t
 %000001     addr = 1; cmd = 1; cg_unnamed_cross_inst.sample();  // a1 x write
