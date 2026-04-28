@@ -10,12 +10,12 @@ module t;
 
   int i_header;
   int i_len;
-  byte i_data[];
+  int i_data;
   int i_crc;
 
   int o_header;
   int o_len;
-  byte o_data[];
+  int o_data;
   int o_crc;
   //this will not compile without -fno-life
   //full compiler command: ~/verilator/bin/verilator_bin_dbg --cc ../t_stream_queue.v -CFLAGS "-g -O0" --main --exe --build --timing --debug -fno-const -fno-life --gdbbt --dump-tree-addrids --decorations node --Mdir trace_objs/ > failed.txt
@@ -25,9 +25,10 @@ module t;
     byte pkt2[$];
     i_header = 12;
     i_len = 5;
-    i_data = new[5];
+    i_data = 11;
     i_crc = 42;
 
+    //-------------------- STREAML ------------------------------------
     //test with IData
     pkt = {<<8{i_header}};
     o_header = {<<8{pkt}};
@@ -48,13 +49,18 @@ module t;
     `checks({i_header,i_len},{<<8{o_header,o_len}});
 
     pkt = {<<8{i_header,i_len,i_crc,i_data}};
+    // {<<8{o_header,o_len,o_crc,o_data}} = pkt; //todo fix this
     {<<8{pkt2}} = pkt;
     //pkt2 has the correct data but we can not compare
-    foreach(pkt2[i])
-      $display("%h",pkt2[i]);
+    // foreach(pkt2[i])
+    //   $display("%h",pkt2[i]);
     // `checks({>>{pkt2}},{<<8{i_header,i_len,i_crc,i_data}}); //this will not compile correctly
     // `checks({>>{o_header,o_len,o_crc,o_data}} ,{<<8{i_header,i_len,i_crc,i_data}});
 
+    //-------------------- STREAMR ------------------------------------
+    pkt = {>>{i_header,i_len,i_crc,i_data}};
+    foreach(pkt[i])
+      $display("%h",pkt[i]);
     // $display("%h o_header %h i_header",o_header,i_header);
     $finish;
   end

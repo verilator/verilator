@@ -132,15 +132,12 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 switch (pos[0]) {
                 case 'q':
                     putOut();
-                    if (nodep->isWide() && detailp->dtypep()) {
-                        AstNodeDType* base_type = detailp->backp()->dtypep()->skipRefp();
-                        if (AstQueueDType* q_dtype = VN_CAST(base_type, QueueDType)) {
+                    //if the node we are using dtype is a streamDtype or the node we are assigning to is queueDType
+                    //then we need to use the function for streaming queues
+                    if (VN_IS(detailp->dtypep()->skipRefp(), StreamDType)
+                    || (VN_IS(detailp->backp(), Assign) && VN_IS(detailp->backp()->dtypep()->skipRefp(), QueueDType))) {
                             puts("R"); // R for queue
                             usesQueue = true;
-                        }
-                        else {
-                            emitIQW(detailp);
-                        }
                     } else {
                         emitIQW(detailp);
                     }

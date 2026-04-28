@@ -1606,6 +1606,8 @@ static inline IData VL_STREAML_III(int lbits, IData ld, IData rd) VL_PURE {
 
 // Regular "slow" streaming operators for queues
 static inline IData VL_STREAML_III(int lbits, const VlQueue<CData>& q, IData rd) VL_PURE {
+    //lbits will always be zero because StreamDType width is always 0
+    lbits = q.size() * 8;
     IData ret = 0;
     IData ld = q.getFirst32Bits();
     // Slice size should never exceed the lhs width
@@ -1617,6 +1619,43 @@ static inline IData VL_STREAML_III(int lbits, const VlQueue<CData>& q, IData rd)
         ret |= ((ld >> istart) & mask) << ostart;
     }
     return ret;
+}
+
+static inline VlQueue<unsigned char> VL_STREAML_RII(int lbits, const VlQueue<CData> lwp,
+                                                    IData rd) VL_MT_SAFE {
+    // dynamicly make our "temp variable"
+    lbits = lwp.size() * 8;
+    std::vector<uint32_t> my_buffer(lbits / 32, 0);
+    WDataOutP owp = my_buffer.data();
+    VL_ZERO_W(lbits, owp);
+    const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
+    for (int istart = 0; istart < lbits; istart += rd) {
+        int ostart = lbits - rd - istart;
+        ostart = ostart > 0 ? ostart : 0;
+        for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
+            const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
+                              << VL_BITBIT_E(ostart + sbit);
+            owp[VL_BITWORD_E(ostart + sbit)] |= bit;
+        }
+    }
+
+    // 2. NEW LOGIC: Convert the 'owp' buffer into a VlQueue
+    VlQueue<unsigned char> out_queue;
+
+    // Figure out how many bytes we actually processed
+    int total_bytes = (lbits + 7) / 8;
+
+    // Read the owp buffer backwards to preserve Big-Endian byte order
+    for (int i = total_bytes - 1; i >= 0; --i) {
+        int word_idx = i / 4;  // Which 32-bit chunk is this byte in?
+        int byte_in_word = i % 4;  // Which of the 4 bytes is it?
+
+        // Extract the byte and push it
+        unsigned char byte_val = (owp[word_idx] >> (byte_in_word * 8)) & 0xFF;
+        out_queue.push_back(byte_val);
+    }
+
+    return out_queue;
 }
 
 static inline QData VL_STREAML_QQI(int lbits, QData ld, IData rd) VL_PURE {
@@ -1652,7 +1691,7 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 
 static inline VlQueue<unsigned char> VL_STREAML_RWI(int lbits, WDataInP const lwp,
                                                     IData rd) VL_MT_SAFE {
-    //dynamicly make our "temp variable"
+    // dynamicly make our "temp variable"
     std::vector<uint32_t> my_buffer(lbits / 32, 0);
     WDataOutP owp = my_buffer.data();
     VL_ZERO_W(lbits, owp);

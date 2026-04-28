@@ -1388,7 +1388,7 @@ class ConstVisitor final : public VNVisitor {
                 && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
                     || (VN_AS(nodep->rhsp(), Const)->toUInt()
                         >= static_cast<uint32_t>(nodep->lhsp()->width())))
-                && nodep->lhsp()->isPure());
+                && nodep->lhsp()->isPure() && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)));
     }
     bool operandIsTwo(const AstNode* nodep) {
         const AstConst* const constp = VN_CAST(nodep, Const);
