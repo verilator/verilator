@@ -10,6 +10,9 @@ module t (/*AUTOARG*/
   // Inputs
   clk
   );
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   input clk;
 
   int signed value;
@@ -45,6 +48,18 @@ module t (/*AUTOARG*/
     endcase
 
     cg_inst.sample();
+
+    // Coverage progression (NBA assignments committed before sample() within always block)
+    // cyc=0: value=-50 → hits 'negative' only → 1/4=25%
+    // cyc=1: value=0   → hits 'zero' + 'mixed' (both match) → 3/4=75%
+    // cyc=2: value=50  → hits 'positive' → 4/4=100%
+    // cyc=3: value=-5  → 'negative' + 'mixed' already hit → 4/4=100%
+    // cyc=4: value=5   → 'positive' + 'mixed' already hit → 4/4=100%
+    if (cyc == 0) begin `checkr(cg_inst.get_inst_coverage(), 25.0); end
+    if (cyc == 1) begin `checkr(cg_inst.get_inst_coverage(), 75.0); end
+    if (cyc == 2) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
+    if (cyc == 3) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
+    if (cyc == 4) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
 
     if (cyc > 10) begin
       $display("ERROR: Test timed out");

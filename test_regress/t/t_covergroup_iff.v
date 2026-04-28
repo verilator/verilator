@@ -10,6 +10,9 @@
 // simple 2-step transition, and 3-step transition.
 
 module t;
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic enable;
   int value;
 
@@ -63,20 +66,27 @@ module t;
     enable = 0;
     value = 1; cg1.sample();
     value = 2; cg1.sample();
+    `checkr(cg1.get_inst_coverage(), 0.0);
 
     // Sample enabled_lo and enabled_hi with enable=1 -- must be recorded
     enable = 1;
     value = 3; cg1.sample();
+    `checkr(cg1.get_inst_coverage(), 25.0);
     value = 4; cg1.sample();
+    `checkr(cg1.get_inst_coverage(), 50.0);
 
     // cg2: default bin -- enable=1 lets known and default through
     enable = 1;
     value = 10; cg2.sample();  // hits 'known'
+    `checkr(cg2.get_inst_coverage(), 50.0);
     value = 99; cg2.sample();  // hits 'def' (default)
+    `checkr(cg2.get_inst_coverage(), 100.0);
     enable = 0;
     value = 99; cg2.sample();  // gated by iff -- must NOT hit 'def'
+    `checkr(cg2.get_inst_coverage(), 100.0);
 
-    // cg3: array bins with iff
+    // cg3: array bins with iff (3 bins: arr[5], arr[6], arr[7])
+    // 1/3 hit → 33.3% (not a clean binary fraction; no checkr)
     enable = 1;
     value = 5; cg3.sample();  // arr[5] hit
     enable = 0;
@@ -85,10 +95,13 @@ module t;
     // cg4: 2-step transition with iff
     enable = 1;
     value = 1; cg4.sample();
+    `checkr(cg4.get_inst_coverage(), 0.0);
     value = 2; cg4.sample();  // (1=>2) hit with enable=1
+    `checkr(cg4.get_inst_coverage(), 100.0);
     enable = 0;
     value = 1; cg4.sample();
     value = 2; cg4.sample();  // (1=>2) gated by iff
+    `checkr(cg4.get_inst_coverage(), 100.0);
 
     // cg5: 3-step transition with iff
     enable = 1;
@@ -96,10 +109,12 @@ module t;
     value = 2; cg5.sample();  // mid-sequence, enable=1
     enable = 0;
     value = 3; cg5.sample();  // iff is disabled at step 3 — incomplete sequence is discarded
+    `checkr(cg5.get_inst_coverage(), 0.0);
     enable = 1;
     value = 1; cg5.sample();
     value = 2; cg5.sample();
     value = 3; cg5.sample();  // (1=>2=>3) fully hit with enable=1
+    `checkr(cg5.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

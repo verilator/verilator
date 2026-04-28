@@ -8,6 +8,9 @@
 // and multi-value items in transition steps.
 
 module t;
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic [2:0] state;
 
   covergroup cg;
@@ -42,10 +45,12 @@ module t;
   initial begin
     // Drive sequence 0->1->2->3->4 which hits all bins
     state = 0; cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
     state = 1; cg_inst.sample();  // 0=>1: trans1, seq_a pos1, arr[0=>1], multi
     state = 2; cg_inst.sample();  // 1=>2: trans2, seq_a done, arr[1=>2]
     state = 3; cg_inst.sample();  // 2=>3: trans3, seq_b pos1, arr[2=>3]
     state = 4; cg_inst.sample();  // 3=>4: seq_b done
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

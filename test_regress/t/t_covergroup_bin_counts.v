@@ -8,6 +8,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/);
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic [3:0] data;
   logic [7:0] opcode;
 
@@ -48,18 +51,27 @@ module t (/*AUTOARG*/);
     cg_db_inst    = new;
 
     data = 0; cg_inst.sample();    // zero: 1
+    `checkr(cg_inst.get_inst_coverage(), 50.0);
     data = 1; cg_inst.sample();    // low: 1
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
     data = 2; cg_inst.sample();    // low: 2
     data = 2; cg_inst.sample();    // low: 3
 
     opcode = 8'h00; cg_mixed_inst.sample();  // nop
+    `checkr(cg_mixed_inst.get_inst_coverage(), 20.0);
     opcode = 8'h02; cg_mixed_inst.sample();  // load
+    `checkr(cg_mixed_inst.get_inst_coverage(), 40.0);
     opcode = 8'h05; cg_mixed_inst.sample();  // store
+    `checkr(cg_mixed_inst.get_inst_coverage(), 60.0);
     opcode = 8'h15; cg_mixed_inst.sample();  // arith
+    `checkr(cg_mixed_inst.get_inst_coverage(), 80.0);
     opcode = 8'h80; cg_mixed_inst.sample();  // other
+    `checkr(cg_mixed_inst.get_inst_coverage(), 100.0);
 
     data = 1;  cg_db_inst.sample();  // low
+    `checkr(cg_db_inst.get_inst_coverage(), 50.0);
     data = 10; cg_db_inst.sample();  // high
+    `checkr(cg_db_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
