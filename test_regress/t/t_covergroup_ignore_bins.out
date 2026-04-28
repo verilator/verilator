@@ -4,7 +4,7 @@ cg.data.catch_all [ignore]: 0
 cg.data.high: 1
 cg.data.low: 1
 cg.data.reserved [ignore]: 1
-cg.data.wib: 0
+cg.data.wib [ignore]: 0
 cg2.cp_auto.auto_0: 1
 cg2.cp_auto.auto_1: 1
 cg2.cp_auto.ign [ignore]: 2

@@ -6,6 +6,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic [2:0] state;
 
   covergroup cg;
@@ -23,23 +26,23 @@ module t;
 
     state = 1;  // Start: position = 1
     cg_inst.sample();
-    $display("After state=1: seqpos should be 1");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     state = 2;  // Advance: position = 2
     cg_inst.sample();
-    $display("After state=2: seqpos should be 2");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     state = 1;  // Restart! Should go to position 1 (not 0)
     cg_inst.sample();
-    $display("After state=1 (restart): seqpos should be 1");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     state = 2;  // Advance: position = 2
     cg_inst.sample();
-    $display("After state=2: seqpos should be 2");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     state = 3;  // Complete! Bin should increment
     cg_inst.sample();
-    $display("After state=3: bin should have incremented, seqpos reset to 0");
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -9,6 +9,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic [1:0] data;
   logic [3:0] data4;
 
@@ -53,13 +56,17 @@ module t;
     data = 0; cg_inst.sample();
     data = 1; cg_inst.sample();
     data = 2; cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     // Sample cg2 - only safe values, never triggering illegal bins
     data4 = 0; cg2_inst.sample();
+    `checkr(cg2_inst.get_inst_coverage(), 100.0);
 
     // Sample cg3 - values that only hit ignore_bins, never illegal_bins
     data = 0; cg3_inst.sample();
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);
     data = 1; cg3_inst.sample();
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

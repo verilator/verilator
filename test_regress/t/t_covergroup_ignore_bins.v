@@ -7,6 +7,9 @@
 // Test ignore_bins - excluded from coverage
 
 module t (/*AUTOARG*/);
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   logic [3:0] data;
   logic [1:0] data2;  // 2-bit signal for range-boundary tests
 
@@ -47,13 +50,18 @@ module t (/*AUTOARG*/);
     cg2_inst = new;
 
     data = 13; cg_inst.sample();   // reserved - ignored
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
     data = 1;  cg_inst.sample();   // low
+    `checkr(cg_inst.get_inst_coverage(), 50.0);
     data = 10; cg_inst.sample();   // high
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     data2 = 0; cg2_inst.sample();  // auto_0, lo, all
     data2 = 1; cg2_inst.sample();  // auto_1, lo, all
     data2 = 2; cg2_inst.sample();  // ign, hi, all
+    `checkr(cg2_inst.get_inst_coverage(), 100.0);
     data2 = 3; cg2_inst.sample();  // ign, hi, all
+    `checkr(cg2_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

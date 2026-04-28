@@ -7,6 +7,9 @@
 // Test array bins - separate bin per value, including range expressions
 
 module t;
+  `define stop $stop
+  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
   bit [7:0] data;
 
   covergroup cg;
@@ -45,32 +48,43 @@ module t;
     // Hit first array bin value (1)
     data = 1;
     cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 25.0);
 
     // Hit second array bin value (5)
     data = 5;
     cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 50.0);
 
     // Hit the grouped bin (covers all of 2, 6, 10)
     data = 6;
     cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 75.0);
 
     // Hit third array bin value (9)
     data = 9;
     cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     // Verify hitting other values in grouped bin doesn't increase coverage
     data = 2;
     cg_inst.sample();
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     // Hit range_arr bins ([0:3])
     data = 0; cg2_inst.sample();
+    `checkr(cg2_inst.get_inst_coverage(), 25.0);
     data = 1; cg2_inst.sample();
+    `checkr(cg2_inst.get_inst_coverage(), 50.0);
     data = 2; cg2_inst.sample();
+    `checkr(cg2_inst.get_inst_coverage(), 75.0);
 
     // Hit range_sized bins ([4:7])
     data = 4; cg3_inst.sample();
+    `checkr(cg3_inst.get_inst_coverage(), 25.0);
     data = 5; cg3_inst.sample();
+    `checkr(cg3_inst.get_inst_coverage(), 50.0);
     data = 6; cg3_inst.sample();
+    `checkr(cg3_inst.get_inst_coverage(), 75.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
