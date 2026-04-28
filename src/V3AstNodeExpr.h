@@ -1695,11 +1695,15 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
+    // LCOV_EXCL_START -- AstImplication is lowered to NFA in V3AssertNfa before any
+    // AST CSE pass runs, so sameNode is never invoked; override exists for defense
+    // so a future caller cannot conflate operator variants via the base default.
     bool sameNode(const AstNode* samep) const override {
         const AstImplication* const asamep = VN_DBG_AS(samep, Implication);
         return m_isOverlapped == asamep->m_isOverlapped
                && m_isFollowedBy == asamep->m_isFollowedBy;
     }
+    // LCOV_EXCL_STOP
     // Followed-by requires multi-cycle NFA lowering for non-vacuous-fail semantics.
     // Plain implication stays on the V3AssertPre boolean path.
     bool isMultiCycleSva() const override { return m_isFollowedBy; }

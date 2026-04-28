@@ -817,12 +817,14 @@ public:
 
         // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
         // the attempt-start cycle; true multi-cycle sequence LHS is unsupported.
-        if (isFollowedBy && (antResult.termVertexp != entryVtxp || !antResult.finalCondp)) {
+        if (isFollowedBy && antResult.termVertexp != entryVtxp) {
             errorNodep->v3error(
                 "Unsupported: sequence expression as antecedent of followed-by (#-# / #=#)"
                 " (IEEE 1800-2023 16.12.9)");
             return BuildResult::failWithError();
         }
+        UASSERT_OBJ(!isFollowedBy || antResult.finalCondp, errorNodep,
+                    "followed-by antecedent terminal at entry must carry finalCondp");
 
         // Use raw createStateVertex() so trigVtxp starts without liveness --
         // reaching the antecedent terminal is a definitive event.
