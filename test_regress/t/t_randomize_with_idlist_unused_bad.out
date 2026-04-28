@@ -1,0 +1,6 @@
+%Warning-UNUSED: t/t_randomize_with_idlist_unused_bad.v:14:26: Identifier 'm_y' in 'with (...)' identifier list is not referenced in the constraint block
+   14 |   return obj.randomize() with (m_x, m_y) { m_x > 0; };
+      |                          ^~~~
+                 ... For warning description see https://verilator.org/warn/UNUSED?v=latest
+                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -3098,6 +3098,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
     const AstWith* m_currentWithp = nullptr;  // Enclosing 'with' (nullptr if none)
+    std::set<std::string>
+        m_restrictedNamesUsed;  // Names from current 'with (id_list)' that resolved into target
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
@@ -4215,6 +4217,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp) {
+                    if (m_currentWithp && m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
                     if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
@@ -5160,6 +5165,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp && m_currentWithp) {
+                    if (m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstArg* argsp = nullptr;
                     if (nodep->argsp()) {
@@ -5553,10 +5561,44 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_currentWithp);
+        VL_RESTORER(m_restrictedNamesUsed);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
             m_currentWithp = nodep;
+            // Validate the identifier_list once per AstWith (m_validated travels
+            // with cloneTree, so cloned witnesses skip the redundant check).
+            const bool firstVisit = !nodep->validated();
+            if (firstVisit) {
+                nodep->validated(true);
+                m_restrictedNamesUsed.clear();
+                // IEEE 1800-2023 18.7: each name in the identifier_list must designate
+                // a member of the randomize() target class.
+                if (nodep->restricted() && m_randSymp) {
+                    for (const std::string& n : nodep->restrictedNames()) {
+                        if (!m_randSymp->findIdFlat(n)) {
+                            nodep->v3error("Identifier '"
+                                           << n
+                                           << "' in 'with (...)' identifier list is not a"
+                                              " member of the randomize() target class"
+                                              " (IEEE 1800-2023 18.7)");
+                            m_restrictedNamesUsed.insert(n);
+                        }
+                    }
+                }
+            }
             iterateChildren(nodep);
+            // Flag names that the user listed but never referenced in the constraint.
+            if (firstVisit && nodep->restricted()) {
+                for (const std::string& n : nodep->restrictedNames()) {
+                    if (!m_restrictedNamesUsed.count(n)) {
+                        nodep->v3warn(UNUSED, "Identifier '"
+                                                  << n
+                                                  << "' in 'with (...)' identifier list is"
+                                                     " not referenced in the constraint"
+                                                     " block");
+                    }
+                }
+            }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }

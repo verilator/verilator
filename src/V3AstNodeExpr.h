@@ -540,6 +540,7 @@ class AstWith final : public AstNode {
 private:
     // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
     bool m_restricted = false;
+    bool m_validated = false;  // identifier_list typo / unused checks already run
     std::set<std::string> m_restrictedNames;
 
 public:
@@ -561,7 +562,11 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     void restricted(bool flag) { m_restricted = flag; }
+    bool restricted() const { return m_restricted; }
+    bool validated() const { return m_validated; }
+    void validated(bool flag) { m_validated = flag; }
     void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
+    const std::set<std::string>& restrictedNames() const { return m_restrictedNames; }
     // True if 'name' binds into the randomize() target class.
     bool nameResolvesToTarget(const std::string& name) const {
         return !m_restricted || m_restrictedNames.count(name);

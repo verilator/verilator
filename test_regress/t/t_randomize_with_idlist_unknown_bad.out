@@ -1,0 +1,5 @@
+%Error: t/t_randomize_with_idlist_unknown_bad.v:13:26: Identifier 'm_z' in 'with (...)' identifier list is not a member of the randomize() target class (IEEE 1800-2023 18.7)
+   13 |   return obj.randomize() with (m_x, m_z) { m_x > 0; };
+      |                          ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
