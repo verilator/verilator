@@ -71,6 +71,7 @@ private:
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
@@ -403,6 +404,7 @@ private:
         }
     }
     void visit(AstDelay* nodep) override {
+        m_hasCycleDelay = true;
         // Only cycle delays are relevant in this stage; also only process once
         if (!nodep->isCycleDelay()) {
             if (m_inSynchDrive) {
@@ -836,6 +838,7 @@ private:
     }
     void visit(AstSEventually* nodep) override {
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {
             VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
@@ -843,8 +846,6 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-
-        iterateChildren(nodep);
 
         FileLine* const flp = nodep->fileline();
 
@@ -903,8 +904,21 @@ private:
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
 
-        AstPExpr* const pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
-        nodep->replaceWith(pexprp);
+        m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
+        VL_RESTORER(m_hasCycleDelay);
+        m_hasCycleDelay = false;
+        iterate(bodyp);
+        iterate(finalp);
+
+        if (m_hasCycleDelay) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
+            return;
+        }
+
+        nodep->replaceWith(m_pexprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstStable* nodep) override {
