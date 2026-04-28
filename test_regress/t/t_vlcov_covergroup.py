@@ -20,7 +20,6 @@ test.execute()
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--covergroup",
     test.obj_dir + "/coverage.dat",
 ],
          logfile=test.obj_dir + "/covergroup.log",

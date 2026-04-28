@@ -218,6 +218,7 @@ void VlcTop::rank() {
 void VlcTop::covergroup() {
     UINFO(2, "covergroup...");
     covergroupCalc();
+    if (m_covergroups.empty()) return;
     m_covergroups.dump(std::cout);
 }
 
