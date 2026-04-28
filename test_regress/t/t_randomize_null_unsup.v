@@ -35,12 +35,12 @@ endclass
 
 module t;
   initial begin
-    automatic FooQ  fq = new;
-    automatic FooU  fu = new;
-    automatic FooD  fd = new;
-    automatic FooA  fa = new;
-    automatic FooW  fw = new;
-    automatic Outer o  = new;
+    automatic FooQ fq = new;
+    automatic FooU fu = new;
+    automatic FooD fd = new;
+    automatic FooA fa = new;
+    automatic FooW fw = new;
+    automatic Outer o = new;
     o.inner = new;
     void'(fq.randomize(null));
     void'(fu.randomize(null));

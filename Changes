@@ -11,7 +11,16 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.049 devel
 ==========================
 
-* TBD
+* Support `always` / `always[m:n]` / `s_always[m:n]` property operators (#7482). [Yilou Wang]
+* Support `randomize() with (identifier_list) {constraint_block}` (#7486) (#7507). [Yilou Wang]
+* Support `obj.randomize(null)` (#7487) (#7509). [Yilou Wang]
+* Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
+* Fix generic interface port forwarded to a nested instance (#7454) (#7457). [Yilou Wang]
+* Fix internal error on multi-cycle SVA under default clocking (#7472) (#7506). [Yilou Wang]
+* Fix mailbox#(packed_struct) type mismatch with parameterized class (#7494) (#7495). [Nikolai Kumar]
+* Fix std::randomize internal error on static member of different class (#7498) (#7499). [Alex Solomatnikov]
+* Fix virtual interface method call inlining and IMPURE suppression (#7505). [Nikolay Puzanov]
+* Fix expression coverage in loops (#7511). [Todd Strader]
 
 
 Verilator 5.048 2026-04-26

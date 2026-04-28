@@ -21,7 +21,10 @@ class Multi;
   rand int y;
   int lo;
   int hi;
-  constraint c_x {x >= lo; x <= hi;}
+  constraint c_x {
+    x >= lo;
+    x <= hi;
+  }
   constraint c_y {y > x;}
 
   function int self_check;
@@ -50,7 +53,10 @@ class Wide;
   rand bit [95:0] w96;
   bit [64:0] lo65;
   bit [95:0] lo96;
-  constraint c_wide {w65 >= lo65; w96 >= lo96;}
+  constraint c_wide {
+    w65 >= lo65;
+    w96 >= lo96;
+  }
 endclass
 
 // Cover the 16-bit (SData) and 64-bit (QData) tiers of
@@ -58,10 +64,13 @@ endclass
 // pinned current values are serialized to the SMT solver.
 class Widths;
   rand shortint s16;
-  rand longint  l64;
+  rand longint l64;
   shortint s_lo;
-  longint  l_lo;
-  constraint c_widths {s16 >= s_lo; l64 >= l_lo;}
+  longint l_lo;
+  constraint c_widths {
+    s16 >= s_lo;
+    l64 >= l_lo;
+  }
 endclass
 
 class Cyc;
@@ -78,8 +87,12 @@ class Cb;
   int pre_count;
   int post_count;
   constraint c_lt {x < v;}
-  function void pre_randomize; pre_count = pre_count + 1; endfunction
-  function void post_randomize; post_count = post_count + 1; endfunction
+  function void pre_randomize;
+    pre_count = pre_count + 1;
+  endfunction
+  function void post_randomize;
+    post_count = post_count + 1;
+  endfunction
 endclass
 
 module t;
@@ -98,13 +111,15 @@ module t;
   initial begin
     // 1. Original issue reproducer: unsat keeps values, sat preserves them.
     a = new;
-    a.x = 2; a.v = 1;
+    a.x = 2;
+    a.v = 1;
     i = a.randomize(null);
     `checkd(i, 0);
     `checkd(a.x, 2);
     `checkd(a.v, 1);
 
-    a.x = 1; a.v = 2;
+    a.x = 1;
+    a.v = 2;
     i = a.randomize(null);
     `checkd(i, 1);
     `checkd(a.x, 1);
@@ -112,23 +127,35 @@ module t;
 
     // 2. Multiple rand members, multiple constraints, plus implicit-this path.
     m = new;
-    m.x = 5; m.y = 7; m.lo = 0; m.hi = 10;
+    m.x = 5;
+    m.y = 7;
+    m.lo = 0;
+    m.hi = 10;
     i = m.randomize(null);
     `checkd(i, 1);
     `checkd(m.x, 5);
     `checkd(m.y, 7);
 
-    m.x = -1; m.y = 7; m.lo = 0; m.hi = 10;
+    m.x = -1;
+    m.y = 7;
+    m.lo = 0;
+    m.hi = 10;
     i = m.randomize(null);
     `checkd(i, 0);
     `checkd(m.x, -1);
 
-    m.x = 5; m.y = 5; m.lo = 0; m.hi = 10;
+    m.x = 5;
+    m.y = 5;
+    m.lo = 0;
+    m.hi = 10;
     i = m.randomize(null);
     `checkd(i, 0);
     `checkd(m.y, 5);
 
-    m.x = 3; m.y = 9; m.lo = 0; m.hi = 10;
+    m.x = 3;
+    m.y = 9;
+    m.lo = 0;
+    m.hi = 10;
     i = m.self_check();
     `checkd(i, 1);
 
@@ -143,18 +170,24 @@ module t;
 
     // 4. Inheritance: base and derived constraints validated together.
     d = new;
-    d.x = 2; d.y = 5; d.v = 10;
+    d.x = 2;
+    d.y = 5;
+    d.v = 10;
     i = d.randomize(null);
     `checkd(i, 1);
     `checkd(d.x, 2);
     `checkd(d.y, 5);
 
-    d.x = 11; d.y = 20; d.v = 10;
+    d.x = 11;
+    d.y = 20;
+    d.v = 10;
     i = d.randomize(null);
     `checkd(i, 0);
     `checkd(d.x, 11);
 
-    d.x = 3; d.y = 1; d.v = 10;
+    d.x = 3;
+    d.y = 1;
+    d.v = 10;
     i = d.randomize(null);
     `checkd(i, 0);
     `checkd(d.y, 1);
@@ -203,23 +236,27 @@ module t;
       `checkd(i, 1);
     end
 
-    cyc.c = 2'd0; cyc.lo = 2'd0;
+    cyc.c = 2'd0;
+    cyc.lo = 2'd0;
     i = cyc.randomize(null);
     `checkd(i, 1);
     `checkd(cyc.c, 2'd0);
 
-    cyc.c = 2'd3; cyc.lo = 2'd0;
+    cyc.c = 2'd3;
+    cyc.lo = 2'd0;
     i = cyc.randomize(null);
     `checkd(i, 1);
     `checkd(cyc.c, 2'd3);
 
-    cyc.c = 2'd0; cyc.lo = 2'd1;
+    cyc.c = 2'd0;
+    cyc.lo = 2'd1;
     i = cyc.randomize(null);
     `checkd(i, 0);
     `checkd(cyc.c, 2'd0);
 
     cyc.lo = 2'd0;
-    ok0 = 0; ok1 = 0;
+    ok0 = 0;
+    ok1 = 0;
     repeat (20) begin
       i = cyc.randomize();
       `checkd(i, 1);
@@ -233,13 +270,17 @@ module t;
     //    IEEE 1800-2023 18.6.2: pre is always called.
     //    IEEE 1800-2023 18.6.3: post is called iff randomize() returned 1.
     cb = new;
-    cb.x = 1; cb.v = 2; cb.pre_count = 0; cb.post_count = 0;
+    cb.x = 1;
+    cb.v = 2;
+    cb.pre_count = 0;
+    cb.post_count = 0;
     i = cb.randomize(null);  // sat: pre + post
     `checkd(i, 1);
     `checkd(cb.pre_count, 1);
     `checkd(cb.post_count, 1);
 
-    cb.x = 5; cb.v = 1;
+    cb.x = 5;
+    cb.v = 1;
     i = cb.randomize(null);  // unsat: pre only, no post
     `checkd(i, 0);
     `checkd(cb.pre_count, 2);

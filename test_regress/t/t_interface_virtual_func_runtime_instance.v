@@ -21,8 +21,8 @@ class Driver;
 endclass
 
 module t;
-  iface a();
-  iface b();
+  iface a ();
+  iface b ();
 
   initial begin
     automatic Driver d = new;

@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package pkg;
-  class C #(parameter P = 0);
-  typedef struct packed {
-    bit [7:0] x;
-    } my_t;
+  class C #(
+      parameter P = 0
+  );
+    typedef struct packed {bit [7:0] x;} my_t;
 
     mailbox #(my_t) mb = new();
 
@@ -26,8 +26,8 @@ module top;
   initial begin
     C #(0) c0;
     C #(1) c1;
-    C#(0)::my_t s0;
-    C#(1)::my_t s1;
+    C #(0)::my_t s0;
+    C #(1)::my_t s1;
     bit [7:0] got0;
     bit [7:0] got1;
 
@@ -42,8 +42,8 @@ module top;
     c0.run(got0);
     c1.run(got1);
 
-    if(got0 !== 8'hA5) $stop;
-    if(got0 !== 8'hA5) $stop;
+    if (got0 !== 8'hA5) $stop;
+    if (got0 !== 8'hA5) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;
