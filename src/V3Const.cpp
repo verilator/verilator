@@ -1388,7 +1388,7 @@ class ConstVisitor final : public VNVisitor {
                 && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
                     || (VN_AS(nodep->rhsp(), Const)->toUInt()
                         >= static_cast<uint32_t>(nodep->lhsp()->width())))
-                && nodep->lhsp()->isPure());
+                && nodep->lhsp()->isPure() && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)));
     }
     bool operandIsTwo(const AstNode* nodep) {
         const AstConst* const constp = VN_CAST(nodep, Const);
@@ -2354,7 +2354,7 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(conp), conp);
             // Further reduce, either node may have more reductions.
             return true;
-        } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)) {
+        } else if (m_doV && VN_IS(nodep->rhsp(), StreamR) && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
             // The right-streaming operator on rhs of assignment does not
             // change the order of bits. Eliminate stream but keep its lhsp.
             // Add a cast if needed.
@@ -2449,7 +2449,7 @@ class ConstVisitor final : public VNVisitor {
             nodep->rhsp(streamp);
             nodep->dtypep(dstDTypep);
             return true;
-        } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), StreamR) ) {
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
@@ -2517,12 +2517,17 @@ class ConstVisitor final : public VNVisitor {
                     // Source narrower than destination: left-justify by shifting left.
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.2).
-                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-                    extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
-                    srcp = new AstShiftL{
-                        srcp->fileline(), extendp,
-                        new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
-                        dWidth};
+                    if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)){
+                            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
+                        extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                        srcp = new AstShiftL{
+                            srcp->fileline(), extendp,
+                            new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
+                            dWidth};
+                    }
+                    else{ // if it is a queue we dont need do do a shiftL
+                        srcp = new AstExtend{srcp->fileline(), srcp};
+                    }
                 }
             }
             nodep->lhsp(dstp);

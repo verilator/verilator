@@ -123,8 +123,14 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     out += m_wideTempRefp->varp()->nameProtect();
                     m_wideTempRefp = nullptr;
                     needComma = true;
+                } else if (usesQueue){
+                    commaOut();
+                    putOut();
+                    iterateAndNextConstNull(nodep->backp()->op2p());
+                    needComma = true;
                 }
-                break;
+
+                    break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
             if (detail) {
@@ -133,22 +139,19 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 switch (pos[0]) {
                 case 'q':
                     putOut();
-                    if (nodep->isWide() && detailp->dtypep()) {
-                        AstNodeDType* base_type = detailp->backp()->dtypep()->skipRefp();
-                        if (AstQueueDType* q_dtype = VN_CAST(base_type, QueueDType)) {
-                            puts("R"); // R for queue
-                            usesQueue = true;
-                        }
-                        else {
-                            emitIQW(detailp);
-                        }
+                    //if we are assigning this to a queue we need to get the return type
+                    if (VN_IS(detailp->backp(), Assign) && VN_IS(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
+                        AstQueueDType* qtypep = VN_CAST(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType);
+                        AstNodeDType* child_type = qtypep->subDTypep();
+                        int width = child_type->width();
+                        puts("R");  // R for queue
+                        usesQueue = true;
+                    } else if (VN_IS(detailp->dtypep()->skipRefp(), QueueDType)
+                               || VN_IS(detailp->dtypep()->skipRefp(), StreamDType)) {
+                        puts("R");  // R for queue
                     } else {
                         emitIQW(detailp);
                     }
-                    // if (nodep->isWide())
-                    //     emitRU(detailp);
-                    // else
-                    //     emitIQW(detailp);
                     break;
                 case 'w':
                     commaOut();
@@ -159,6 +162,10 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     if (lhsp->isWide()) {
                         commaOut();
                         out += cvtToStr(lhsp->widthWords());
+                        needComma = true;
+                    }else if(VN_IS(lhsp, StreamR)){
+                        commaOut();
+                        out += cvtToStr(rhsp->widthWords());
                         needComma = true;
                     }
                     break;
@@ -340,7 +347,10 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
         puts(",");
         if (addrof) puts("&(");
-        iterateConst(subargp);
+        if (VN_IS(subargp, StreamR))
+            emitStreamR(VN_CAST(subargp,StreamR),nodep); //this has to be done here because streamR doesn't know what it returns
+        else
+            iterateConst(subargp);
         if (addrof) puts(")");
         if (!addrof) emitDatap(argp);
         ofp()->indentDec();
