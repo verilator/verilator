@@ -233,7 +233,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void extractValuesFromRange(AstNode* nodep, std::set<uint64_t>& values) {
         for (AstNode* np = nodep; np; np = np->nextp()) {
             if (AstConst* constp = VN_CAST(np, Const)) {
-                if (constp->num().isFourState()) continue;  // wildcard patterns can't be enumerated
+                if (constp->num().isFourState())
+                    continue;  // wildcard patterns can't be enumerated
                 values.insert(constp->toUQuad());
             } else if (AstInsideRange* rangep = VN_CAST(np, InsideRange)) {
                 AstNodeExpr* const lhsp = V3Const::constifyEdit(rangep->lhsp());

@@ -1358,7 +1358,7 @@ class LinkParseVisitor final : public VNVisitor {
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             const VCoverOptionType optType = optp->optionType();
             optp->v3warn(COVERIGN,
-                             "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
+                         "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             // Always preserve the option node so V3Coverage can track its source line
             // for coverage annotation, even when the option itself is unsupported.
             nodep->addOptionsp(
