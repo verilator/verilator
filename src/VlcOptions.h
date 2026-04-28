@@ -40,7 +40,6 @@ class VlcOptions final {
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
     bool m_annotatePoints = false;  // main switch: --annotate-points
     bool m_includeResetArcs = false;  // main switch: --include-reset-arcs
-    bool m_covergroup = false;  // main switch: --covergroup
     string m_filterType = "*";  // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
     int m_reportLevels = -1;    // main switch: --levels, negative means all depths
@@ -79,7 +78,6 @@ public:
     bool reportSpecified() const { return !m_report.empty(); }
     bool reportSummary() const { return m_reportSummary; }
     bool reportHierarchy() const { return m_reportHierarchy; }
-    bool covergroup() const { return m_covergroup; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }

@@ -1,5 +1,5 @@
 Coverage Summary:
-  line       : 67.4% ( 31/ 46)
+  line       : 67.0% ( 73/109)
   toggle     : 40.0% (  4/ 10)
   branch     : 0.0% (  0/  2)
   covergroup : 72.2% ( 78/108)
@@ -10,7 +10,7 @@ TOTAL: 77/107 bins covered (71.96%)
        (1 ignored, 0 illegal)
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg2  [t/t_covergroup_cross.v:18]
+Covergroup Type: cg2  [t/t_covergroup_cross.v:21]
   Type Coverage: 8/8 bins (100.00%)
 
   Coverpoint: cp_addr
@@ -34,7 +34,7 @@ Covergroup Type: cg2  [t/t_covergroup_cross.v:18]
       COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg3  [t/t_covergroup_cross.v:31]
+Covergroup Type: cg3  [t/t_covergroup_cross.v:34]
   Type Coverage: 11/19 bins (57.89%)
 
   Coverpoint: cp_addr
@@ -73,7 +73,7 @@ Covergroup Type: cg3  [t/t_covergroup_cross.v:31]
       ZERO     addr2_x_write_x_normal  0 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg4  [t/t_covergroup_cross.v:49]
+Covergroup Type: cg4  [t/t_covergroup_cross.v:52]
   Type Coverage: 12/24 bins (50.00%)
 
   Coverpoint: cp_addr
@@ -121,7 +121,7 @@ Covergroup Type: cg4  [t/t_covergroup_cross.v:49]
       COVERED  addr1_x_write_x_normal_x_odd   1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg5  [t/t_covergroup_cross.v:70]
+Covergroup Type: cg5  [t/t_covergroup_cross.v:73]
   Type Coverage: 6/8 bins (75.00%)
 
   Coverpoint: cp_addr
@@ -145,7 +145,7 @@ Covergroup Type: cg5  [t/t_covergroup_cross.v:70]
       COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_at_least  [t/t_covergroup_cross.v:113]
+Covergroup Type: cg_at_least  [t/t_covergroup_cross.v:115]
   Type Coverage: 6/8 bins (75.00%)
 
   Coverpoint: cp_addr
@@ -169,7 +169,7 @@ Covergroup Type: cg_at_least  [t/t_covergroup_cross.v:113]
       COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_goal  [t/t_covergroup_cross.v:128]
+Covergroup Type: cg_goal  [t/t_covergroup_cross.v:130]
   Type Coverage: 6/8 bins (75.00%)
 
   Coverpoint: cp_addr
@@ -193,15 +193,15 @@ Covergroup Type: cg_goal  [t/t_covergroup_cross.v:128]
       COVERED  addr1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_ignore  [t/t_covergroup_cross.v:100]
+Covergroup Type: cg_ignore  [t/t_covergroup_cross.v:101]
   Type Coverage: 8/8 bins (100.00%)
 
   Coverpoint: cp_addr
     Coverage: 2/2 bins (100.00%)
     Bins:
+      IGNORE   ign  1 hits
       COVERED  a0   2 hits
       COVERED  a1   2 hits
-      IGNORE   ign  1 hits
 
   Coverpoint: cp_cmd
     Coverage: 2/2 bins (100.00%)
@@ -218,7 +218,7 @@ Covergroup Type: cg_ignore  [t/t_covergroup_cross.v:100]
       COVERED  a1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_range  [t/t_covergroup_cross.v:85]
+Covergroup Type: cg_range  [t/t_covergroup_cross.v:88]
   Type Coverage: 8/8 bins (100.00%)
 
   Coverpoint: cp_addr
@@ -242,7 +242,7 @@ Covergroup Type: cg_range  [t/t_covergroup_cross.v:85]
       COVERED  lo_range_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_unnamed_cross  [t/t_covergroup_cross.v:157]
+Covergroup Type: cg_unnamed_cross  [t/t_covergroup_cross.v:159]
   Type Coverage: 6/8 bins (75.00%)
 
   Coverpoint: cp_a
@@ -266,7 +266,7 @@ Covergroup Type: cg_unnamed_cross  [t/t_covergroup_cross.v:157]
       COVERED  a1_x_write  1 hits
 
 ------------------------------------------------------------------------------
-Covergroup Type: cg_unsup_cross_opt  [t/t_covergroup_cross.v:143]
+Covergroup Type: cg_unsup_cross_opt  [t/t_covergroup_cross.v:145]
   Type Coverage: 6/8 bins (75.00%)
 
   Coverpoint: cp_addr
