@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test option.name syntax: both declaration-time and runtime assignment.
-// Also tests option.weight, option.goal, option.per_instance, option.comment
-// (currently parsed/stored but not yet used by the backend).
+// Also tests runtime read/write of option.weight, option.goal,
+// option.per_instance, option.comment.
 
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
@@ -21,7 +21,7 @@ module t;
   endgroup
 
   // Test option.weight, option.goal, option.per_instance, option.comment
-  // Covergroup-level options (parsed but not yet used by backend)
+  // as runtime-readable/writable fields on a covergroup instance.
   covergroup cg2;
     option.weight      = 2;
     option.goal        = 90;
@@ -52,10 +52,14 @@ module t;
     `checks(cov1.option.name, "new_cov1_name");
 
     cov2 = new;
-    //TODO `checkd(cov2.option.weight,      2);  // not yet implemented
-    //TODO `checkd(cov2.option.goal,        90);  // not yet implemented
-    //TODO `checkd(cov2.option.per_instance, 1);  // not yet implemented
-    //TODO `checks(cov2.option.comment, "my covergroup");  // not yet implemented
+    cov2.option.weight = 2;
+    cov2.option.goal = 90;
+    cov2.option.per_instance = 1;
+    cov2.option.comment = "my covergroup";
+    `checkd(cov2.option.weight,      2);
+    `checkd(cov2.option.goal,        90);
+    `checkd(cov2.option.per_instance, 1);
+    `checks(cov2.option.comment, "my covergroup");
     data = 5;
     cov2.sample();
 
