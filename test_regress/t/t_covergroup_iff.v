@@ -86,7 +86,7 @@ module t;
     `checkr(cg2.get_inst_coverage(), 100.0);
 
     // cg3: array bins with iff (3 bins: arr[5], arr[6], arr[7])
-    // 1/3 hit → 33.3% (not a clean binary fraction; no checkr)
+    // 1/3 hit -> 33.3% (not a clean binary fraction; no checkr)
     enable = 1;
     value = 5; cg3.sample();  // arr[5] hit
     enable = 0;
@@ -108,7 +108,7 @@ module t;
     value = 1; cg5.sample();
     value = 2; cg5.sample();  // mid-sequence, enable=1
     enable = 0;
-    value = 3; cg5.sample();  // iff is disabled at step 3 — incomplete sequence is discarded
+    value = 3; cg5.sample();  // iff is disabled at step 3 - incomplete sequence is discarded
     `checkr(cg5.get_inst_coverage(), 0.0);
     enable = 1;
     value = 1; cg5.sample();

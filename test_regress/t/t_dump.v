@@ -155,7 +155,7 @@ module Test(/*AUTOARG*/
   logic [1:0] cg_v2;
   covergroup cg @(posedge clk);
     option.at_least = 2;
-    cp1: coverpoint cg_v1 { option.weight = 1; bins lo = {0}; }
+    cp1: coverpoint cg_v1 { bins lo = {0}; }
     cp2: coverpoint cg_v2;
     cx: cross cp1, cp2;
   endgroup
