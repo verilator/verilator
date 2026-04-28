@@ -1042,11 +1042,7 @@ package Vt_debug_emitv_std;
         } state;
         VlProcessRef m_process;
         function self;
-
-            ???? // CLASSREFDTYPE 'process'
-             p
-            ???? // CLASSREFDTYPE 'process'
-            ;
+            Vt_debug_emitv_process pVt_debug_emitv_process;
             begin : label5
                 self = /*CRESET*/;
                 p = new();
@@ -1081,11 +1077,7 @@ package Vt_debug_emitv_std;
                   (status() == process::KILLED)));
         endtask
         task killQueue;
-            ref 
-            ???? // CLASSREFDTYPE 'process'
-             processQueue[$]
-            ???? // CLASSREFDTYPE 'process'
-            ;
+            ref Vt_debug_emitv_process processQueue[$]Vt_debug_emitv_process;
             begin : unnamedblk1_1
                 int signed __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
@@ -1271,11 +1263,7 @@ package Vt_debug_emitv___024unit;
         endfunction
     endclass
     function rand_restricted;
-        input 
-        ???? // CLASSREFDTYPE 'Cls'
-         obj
-        ???? // CLASSREFDTYPE 'Cls'
-        ;
+        input Vt_debug_emitv_Cls objVt_debug_emitv_Cls;
         input int signed member;
         begin : label8
             rand_restricted = randomize() with (
