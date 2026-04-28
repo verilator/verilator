@@ -852,8 +852,6 @@ inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
 #define V3AST_VCFUNCTION_ITEMDATA_DECL \
     VCFunction::Item VCFunction::s_itemData[] = { \
         {_NONE, "_none", false}, \
-        {CALL_IMPORT_IN_FIBER, "VerilatedDPI::CallImportInFiber", false}, \
-        {CALL_IMPORT, "VerilatedDpi::CallImport", false}, \
         {_ENUM_MAX, "_ENUM_MAX", false}};
 
 class VCMethod final {

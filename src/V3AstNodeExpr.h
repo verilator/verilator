@@ -732,12 +732,12 @@ class AstCFuncHard final : public AstNodeExpr {
     // @astgen op1 := pinsp : List[AstNodeExpr] // Arguments
     // @astgen op2 := paramsp : List[AstNodeExpr] // Template parameters
     bool m_pure = false;  // Pure optimizable
-    VCFunction m_function;  // Which function to call 
+    VCFunction m_function;  // Which function to call
 public:
-    AstCFuncHard(FileLine* fl, VCFunction function,
+    AstCFuncHard(FileLine* fl, VCFunction function = VCFunction::_NONE,
                  AstNodeExpr* paramsp = nullptr, AstNodeExpr* pinsp = nullptr)
-        : ASTGEN_SUPER_CFuncHard(fl), 
-        m_function{function} {
+        : ASTGEN_SUPER_CFuncHard(fl)
+        , m_function{function} {
         addPinsp(pinsp);
         addParamsp(paramsp);
     }

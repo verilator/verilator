@@ -849,6 +849,27 @@ public:
         }
         puts(")");
     }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        bool comma = false;
+        if (nodep->paramsp()) {
+            puts("<");
+            for (AstNode* subnodep = nodep->paramsp(); subnodep; subnodep = subnodep->nextp()) {
+                if (comma) puts(", ");
+                iterateConst(subnodep);
+                comma = true;
+            }
+            puts(">");
+        }
+        comma = false;
+        puts("(");
+        for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterateConst(subnodep);
+            comma = true;
+        }
+        puts(")");
+    }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
