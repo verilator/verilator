@@ -1467,6 +1467,8 @@ public:
 class AssertNfaVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module being processed
+    AstClocking* m_defaultClockingp = nullptr;  // Default clocking
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
@@ -1815,6 +1817,13 @@ class AssertNfaVisitor final : public VNVisitor {
         bool senTreeOwned = false;  // True if we created senTreep locally
         AstPropSpec* const propSpecp = VN_CAST(assertp->propp(), PropSpec);
         UASSERT_OBJ(propSpecp, assertp, "Concurrent assertion must have PropSpec");
+        // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
+        if (!propSpecp->sensesp() && m_defaultClockingp) {
+            propSpecp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
+        }
+        if (!propSpecp->disablep() && m_defaultDisablep) {
+            propSpecp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
+        }
         if (!senTreep && propSpecp->sensesp()) {
             senTreep
                 = new AstSenTree{propSpecp->fileline(), propSpecp->sensesp()->cloneTree(true)};
@@ -1886,10 +1895,21 @@ class AssertNfaVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_loweringp);
+        VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_defaultDisablep);
         m_modp = nodep;
+        m_defaultClockingp = nullptr;
+        m_defaultDisablep = nullptr;
         SvaNfaLowering lowering{nodep};
         m_loweringp = &lowering;
         iterateChildren(nodep);
+    }
+    void visit(AstClocking* nodep) override {
+        if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        if (!m_defaultDisablep) m_defaultDisablep = nodep;
     }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }

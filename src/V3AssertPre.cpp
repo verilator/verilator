@@ -240,6 +240,15 @@ private:
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
         UINFO(8, "   CLOCKING" << nodep);
+        if (nodep->isDefault()) {
+            if (m_defaultClockingp) {
+                nodep->v3error("Only one default clocking block allowed per module"
+                               " (IEEE 1800-2023 14.12)");
+            } else {
+                m_defaultClockingp = nodep;
+                m_defaultClkEvtVarp = nodep->ensureEventp();
+            }
+        }
         iterateChildren(nodep);
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -1182,7 +1191,12 @@ private:
     }
 
     void visit(AstDefaultDisable* nodep) override {
-        // Done with these
+        if (m_defaultDisablep) {
+            nodep->v3error("Only one 'default disable iff' allowed per module"
+                           " (IEEE 1800-2023 16.15)");
+        } else {
+            m_defaultDisablep = nodep;
+        }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstInferredDisable* nodep) override {
@@ -1293,29 +1307,8 @@ private:
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
         m_defaultClkEvtVarp = nullptr;
-        nodep->foreach([&](AstClocking* const clockingp) {
-            if (clockingp->isDefault()) {
-                if (m_defaultClockingp) {
-                    clockingp->v3error("Only one default clocking block allowed per module"
-                                       " (IEEE 1800-2023 14.12)");
-                }
-                m_defaultClockingp = clockingp;
-            }
-        });
         m_defaultDisablep = nullptr;
-        nodep->foreach([&](AstDefaultDisable* const disablep) {
-            if (m_defaultDisablep) {
-                disablep->v3error("Only one 'default disable iff' allowed per module"
-                                  " (IEEE 1800-2023 16.15)");
-            }
-            m_defaultDisablep = disablep;
-        });
         m_modp = nodep;
-        // Pre-create and cache the clocking event var before iterating children.
-        // visit(AstClocking) will unlink the event from the clocking node and place it
-        // in the module tree, then delete the clocking. After that, ensureEventp() would
-        // create an orphaned var. Caching here avoids this.
-        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {
