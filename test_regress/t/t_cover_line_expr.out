@@ -285,6 +285,16 @@
 -000000  point: type=branch comment=if hier=top.t
               end
             end
+~000144     for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
+-000009  point: type=line comment=block hier=top.t
++000144  point: type=line comment=block hier=top.t
+~000131       if (cyc[loop_var_2] | cyc[loop_var_2 + 1]) $write("");
+-000006  point: type=expr comment=(cyc[(loop_var_2 + 32'sh1)[4:0]+:1]==1) => 1 hier=top.t
++000131  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==0 && cyc[(loop_var_2 + 32'sh1)[4:0]+:1]==0) => 0 hier=top.t
+-000009  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==1) => 1 hier=top.t
++000013  point: type=branch comment=if hier=top.t
++000131  point: type=branch comment=else hier=top.t
+            end
             // stop at the first layer even if there's more to find
 %000007     if ((cyc[3+32'(t1&&t2)+:2] == cyc[5+32'(t3||t4)+:2]) || cyc[31]) $write("");
 -000007  point: type=branch comment=if hier=top.t
@@ -411,8 +421,8 @@
 %000003     while (ta || tb || tc) begin
 -000001  point: type=expr comment=(ta==0 && tb==0 && tc==0) => 0 hier=top.t
 -000000  point: type=expr comment=(ta==1) => 1 hier=top.t
--000000  point: type=expr comment=(tb==1) => 1 hier=top.t
--000000  point: type=expr comment=(tc==1) => 1 hier=top.t
+-000001  point: type=expr comment=(tb==1) => 1 hier=top.t
+-000001  point: type=expr comment=(tc==1) => 1 hier=top.t
 -000003  point: type=line comment=block hier=top.t
 %000003       tc = tb;
 -000003  point: type=line comment=block hier=top.t
