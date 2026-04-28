@@ -27,6 +27,21 @@ use vars qw($Debug @Opt_Verilator_Sw);
 autoflush STDOUT 1;
 autoflush STDERR 1;
 
+# Guard against unbounded recursive re-entry. Hierarchical / --build flows
+# legitimately re-enter the wrapper a few levels deep (wrapper -> verilator_bin
+# -> make -> wrapper -> ...); a misconfigured VERILATOR_BIN, VERILATOR_GDB or
+# VERILATOR_VALGRIND that points back at this wrapper, however, recurses
+# without bound and exhausts the OS PID table. Use VERILATOR_RUNNING as a
+# depth counter and cap it well above any real nesting.
+my $verilator_running_max = 16;
+my $verilator_running_depth = ($ENV{VERILATOR_RUNNING} || 0) + 1;
+if ($verilator_running_depth > $verilator_running_max) {
+    die "%Error: verilator: re-entered $verilator_running_depth levels deep"
+        . " via \$VERILATOR_RUNNING; check that VERILATOR_BIN, VERILATOR_GDB"
+        . " and VERILATOR_VALGRIND do not resolve back to this wrapper script.\n";
+}
+$ENV{VERILATOR_RUNNING} = $verilator_running_depth;
+
 $Debug = 0;
 my $opt_aslr;
 my $opt_gdb;
@@ -358,6 +373,7 @@ detailed descriptions of these arguments.
     --coverage                  Enable all coverage
     --coverage-expr             Enable expression coverage
     --coverage-expr-max <value>     Maximum permutations allowed for an expression
+    --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
@@ -379,6 +395,7 @@ detailed descriptions of these arguments.
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
+    --dump-dfg-patterns         Enable dumping Dfg pattern statistics
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files

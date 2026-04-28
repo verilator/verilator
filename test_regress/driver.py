@@ -7,7 +7,6 @@ import collections
 import ctypes
 import glob
 import hashlib
-import json
 import logging
 import multiprocessing
 import os
@@ -2511,104 +2510,19 @@ class VlTest:
             print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
             shutil.copy(fn1, fn2)
 
-    def vcd_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
-        """Test if two VCD files have logically-identical contents"""
-        # vcddiff to check transitions, if installed
-        cmd = "vcddiff --help"
-        out = test.run_capture(cmd, check=True)
-        cmd = 'vcddiff ' + fn1 + ' ' + fn2
-        out = test.run_capture(cmd, check=True)
-        if out != "":
-            cmd = 'vcddiff ' + fn2 + " " + fn1  # Reversed arguments
-            out = VtOs.run_capture(cmd, check=False)
-            if out != "":
-                print(out)
-                self.copy_if_golden(fn1, fn2)
-                self.error("VCD miscompares " + fn2 + " " + fn1)
-
-        # vcddiff doesn't check module and variable scope, so check that
-        # Also provides backup if vcddiff not installed
-        h1 = self._vcd_read(fn1)
-        h2 = self._vcd_read(fn2)
-        if ignore_attr:
-            h1 = {k: v for k, v in h1.items() if "$attr" not in v}
-            h2 = {k: v for k, v in h2.items() if "$attr" not in v}
-        a = json.dumps(h1, sort_keys=True, indent=1)
-        b = json.dumps(h2, sort_keys=True, indent=1)
-        if a != b:
+    def vcd_identical(self, fn1: str, fn2: str) -> None:
+        """Test if two VCD/FST files have logically-identical contents"""
+        cmd = VtOs.getenv_def('WAVEDIFF', 'wavediff') + ' --epsilon 0.0000001 ' + fn1 + ' ' + fn2
+        proc = subprocess.run([cmd], capture_output=True, text=True, shell=True, check=False)
+        if proc.returncode:
+            print(proc.stderr)
+            print(proc.stdout)
             self.copy_if_golden(fn1, fn2)
-            self.error("VCD hier miscompares " + fn1 + " " + fn2 + "\nGOT=" + a + "\nEXP=" + b +
-                       "\n")
+            self.error("VCD miscompares " + fn1 + " " + fn2)
 
-    def fst2vcd(self, fn1: str, fn2: str) -> None:
-        cmd = "fst2vcd -h"
-        out = VtOs.run_capture(cmd, check=False)
-        if out == "" or not re.search(r'Usage:', out):
-            self.skip("No fst2vcd installed")
-            return
-
-        cmd = 'fst2vcd -e -f "' + fn1 + '" -o "' + fn2 + '"'
-        print("\t " + cmd + "\n")  # Always print to help debug race cases
-        out = VtOs.run_capture(cmd, check=False)
-        print(out)
-
-        # Post-process file and fix up to match upcoming fst2vcd output
-        # also reindent for readability
-
-        # Slurp whole file
-        with open(fn2, 'r', encoding='latin-1') as fd:
-            lines = fd.readlines()
-
-        # Process line by line
-        new_lines = []
-        fixup_array_scope = False
-        indent = ""
-        for line in lines:
-            line = line.strip()
-            # Change "$attrbegin class" to "$attrbegin pack"
-            if match := re.match(r'^(\$attrbegin\s+)class(.*)', line):
-                line = indent + match.group(1) + "pack" + match.group(2)
-            # Check for "$attrbegin array"
-            elif re.search(r'^\$attrbegin\s+array', line):
-                line = indent + line
-                fixup_array_scope = True
-            # Check for "$scope"
-            elif match := re.match(r'(\$scope\s)(\S+)(.*)', line.lstrip('\r\n')):
-                if not indent:
-                    indent = " "
-                # Fix up array scope
-                if (match.group(2) == "module") and fixup_array_scope:
-                    line = indent + match.group(1) + "sv_array" + match.group(3)
-                    fixup_array_scope = False
-                else:
-                    line = indent + line
-                indent += " "
-            # Check for "$upscope"
-            elif re.search(r'^\$upscope', line):
-                indent = indent[0:-1]
-                line = indent + line
-                if len(indent) == 1:
-                    indent = ""
-            # Just reindent
-            else:
-                line = indent + line
-            new_lines.append(line + "\n")
-
-        # Write back to file
-        with open(fn2, 'w', encoding='latin-1') as fd:
-            fd.writelines(new_lines)
-
-    def fst_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
+    def fst_identical(self, fn1: str, fn2: str) -> None:
         """Test if two FST files have logically-identical contents"""
-        if fn1.endswith(".fst"):
-            tmp = fn1 + ".vcd"
-            self.fst2vcd(fn1, tmp)
-            fn1 = tmp
-        if fn2.endswith(".fst"):
-            tmp = fn2 + ".vcd"
-            self.fst2vcd(fn2, tmp)
-            fn2 = tmp
-        self.vcd_identical(fn1, fn2, ignore_attr)
+        self.vcd_identical(fn1, fn2)
 
     def saif_identical(self, fn1: str, fn2: str) -> None:
         """Test if two SAIF files have logically-identical contents"""
@@ -2621,95 +2535,16 @@ class VlTest:
             self.copy_if_golden(fn1, fn2)
             self.error("SAIF files miscompare")
 
-    def trace_identical(self, traceFn: str, goldenFn: str, ignore_attr: bool = False) -> None:
+    def trace_identical(self, traceFn: str, goldenFn: str) -> None:
         match traceFn.rpartition(".")[-1]:
             case "vcd":
-                self.vcd_identical(traceFn, goldenFn, ignore_attr)
+                self.vcd_identical(traceFn, goldenFn)
             case "fst":
-                self.fst_identical(traceFn, goldenFn, ignore_attr)
+                self.fst_identical(traceFn, goldenFn)
             case "saif":
                 self.saif_identical(traceFn, goldenFn)
             case _:
                 self.error("Unknown trace file format " + traceFn)
-
-    @staticmethod
-    def _vcd_parse_header(filename: str, root_scope: 'str | None' = None) -> 'tuple[dict, dict]':
-        """Parse VCD header into hierarchy data and signal-code mapping.
-
-        Returns (hier_data, var_codes) where:
-          hier_data: dict used by _vcd_read for hierarchy comparison
-                     (scope paths -> scope description, var paths -> $var prefix,
-                      attr paths -> $attrbegin text)
-          var_codes: dict mapping 'scope.signal' -> VCD code identifier
-        """
-        hier_data: dict = {}
-        var_codes: dict = {}
-        hier_stack = [root_scope] if root_scope else []
-        attr: list = []
-        with open(filename, 'r', encoding='latin-1') as fh:
-            for line in fh:
-                m_scope = re.search(r'\$scope\s+(\S*)\s+(\S+)', line)
-                m_var = re.search(r'(\$var\s+\S+\s+\d+\s+)(\S+)\s+(.+)\s+\$end', line)
-                m_attr = re.search(r'(\$attrbegin .* \$end)', line)
-                if m_scope:
-                    scope_type = m_scope.group(1)
-                    name = m_scope.group(2)
-                    hier_stack.append(name)
-                    scope = '.'.join(hier_stack)
-                    hier_data[scope] = scope_type + " " + name
-                    if attr:
-                        hier_data[scope + "#"] = " ".join(attr)
-                        attr = []
-                elif m_var:
-                    scope = '.'.join(hier_stack)
-                    decl_prefix = m_var.group(1)
-                    code = m_var.group(2)
-                    var_name = m_var.group(3)
-                    hier_data[scope + "." + var_name] = decl_prefix
-                    if attr:
-                        hier_data[scope + "." + var_name + "#"] = " ".join(attr)
-                        attr = []
-                    bare_name = var_name.split()[0]
-                    var_codes[scope + "." + bare_name] = code
-                elif m_attr:
-                    attr.append(m_attr.group(1))
-                elif re.search(r'\$enddefinitions', line):
-                    break
-                n = len(re.findall(r'\$upscope', line))
-                if n:
-                    for _i in range(0, n):
-                        hier_stack.pop()
-        return hier_data, var_codes
-
-    def _vcd_read(self, filename: str) -> dict:
-        data, _ = self._vcd_parse_header(filename, root_scope="TOP")
-        return data
-
-    def vcd_extract_codes(self, filename: str) -> dict:
-        _, codes = self._vcd_parse_header(filename)
-        return codes
-
-    def vcd_check_aliased(self, codes: dict, sig_a: str, sig_b: str) -> None:
-        code_a = codes.get(sig_a)
-        code_b = codes.get(sig_b)
-        if code_a is None:
-            self.error(f"Signal '{sig_a}' not found in VCD")
-        if code_b is None:
-            self.error(f"Signal '{sig_b}' not found in VCD")
-        if code_a != code_b:
-            self.error(f"Expected '{sig_a}' (code {code_a}) to alias "
-                       f"'{sig_b}' (code {code_b})")
-
-    def vcd_check_not_aliased(self, codes: dict, sig_a: str, sig_b: str) -> None:
-        code_a = codes.get(sig_a)
-        code_b = codes.get(sig_b)
-        if code_a is None:
-            self.error(f"Signal '{sig_a}' not found in VCD")
-        if code_b is None:
-            self.error(f"Signal '{sig_b}' not found in VCD")
-        if code_a == code_b:
-            self.error(f"Expected '{sig_a}' and '{sig_b}' to have different codes, "
-                       f"both have code {code_a}")
 
     def inline_checks(self) -> None:
         covfn = self.coverage_filename

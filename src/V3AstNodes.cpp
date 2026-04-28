@@ -456,6 +456,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
+void AstPropAlways::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isStrong()) str << " [strong]";
+}
+void AstPropAlways::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonGen(str);
+}
 void AstConsQueue::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";
@@ -3004,6 +3012,9 @@ void AstVar::dump(std::ostream& str) const {
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
     if (attrIsolateAssign()) str << " [aISO]";
+    if (attrFsmState()) str << " [aFSMSTATE]";
+    if (attrFsmResetArc()) str << " [aFSMRESETARC]";
+    if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
         str << " [FUNCRTN]";
@@ -3036,6 +3047,9 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
     dumpJsonBoolFuncIf(str, attrIsolateAssign);
+    dumpJsonBoolFuncIf(str, attrFsmState);
+    dumpJsonBoolFuncIf(str, attrFsmResetArc);
+    dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
@@ -3283,10 +3297,18 @@ void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
 void AstCoverOtherDecl::dump(std::ostream& str) const {
     this->AstNodeCoverDecl::dump(str);
     if (!linescov().empty()) str << " lc=" << linescov();
+    if (!fsmVar().empty()) str << " fv=" << fsmVar();
+    if (!fsmFrom().empty()) str << " ff=" << fsmFrom();
+    if (!fsmTo().empty()) str << " ft=" << fsmTo();
+    if (!fsmTag().empty()) str << " fg=" << fsmTag();
 }
 void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
     this->AstNodeCoverDecl::dumpJson(str);
     dumpJsonStrFunc(str, linescov);
+    dumpJsonStrFunc(str, fsmVar);
+    dumpJsonStrFunc(str, fsmFrom);
+    dumpJsonStrFunc(str, fsmTo);
+    dumpJsonStrFunc(str, fsmTag);
 }
 void AstCoverToggleDecl::dump(std::ostream& str) const {
     this->AstNodeCoverDecl::dump(str);

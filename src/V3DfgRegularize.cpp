@@ -195,24 +195,35 @@ class DfgRegularize final {
         // Scope cache for below
         DfgVertex::ScopeCache scopeCache;
 
-        // Ensure intermediate values used multiple times are written to variables
+        // Build map from fanout to list of vertices with that fanout
+        std::vector<std::vector<DfgVertex*>> fanout2Vtxps;
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             // LValue vertices feed into variables eventually and need no temporaries
             if (vtx.is<DfgVertexSplice>()) continue;
             if (vtx.is<DfgUnitArray>()) continue;
+            // Add to map
+            const uint32_t fanout = vtx.fanout();
+            if (!fanout) continue;
+            if (fanout >= fanout2Vtxps.size()) fanout2Vtxps.resize(2 * fanout);
+            fanout2Vtxps[fanout].push_back(&vtx);
+        }
+        if (fanout2Vtxps.empty()) return;
 
-            if (!needsTemporary(vtx, vtx)) continue;
-
-            // Need to create an intermediate variable
-            ++m_ctx.m_temporariesIntroduced;
-            const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
-            FileLine* const flp = vtx.fileline();
-            AstScope* const scopep = vtx.scopep(scopeCache);
-            DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtype(), scopep);
-            ++m_nTmps;
-            // Replace vertex with the variable, make it drive the variable
-            vtx.replaceWith(newp);
-            newp->srcp(&vtx);
+        // Ensure intermediate values used multiple times are written to variables
+        for (size_t fanout = fanout2Vtxps.size() - 1; fanout > 0; --fanout) {
+            for (DfgVertex* const vtxp : fanout2Vtxps[fanout]) {
+                if (!needsTemporary(*vtxp, *vtxp)) continue;
+                // Need to create an intermediate variable
+                ++m_ctx.m_temporariesIntroduced;
+                const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
+                FileLine* const flp = vtxp->fileline();
+                AstScope* const scopep = vtxp->scopep(scopeCache);
+                DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
+                ++m_nTmps;
+                // Replace vertex with the variable, make it drive the variable
+                vtxp->replaceWith(newp);
+                newp->srcp(vtxp);
+            }
         }
     }
 

@@ -226,6 +226,7 @@ private:
     bool m_build = false;           // main switch: --build
     bool m_context = true;          // main switch: --Wcontext
     bool m_coverageExpr = false;    // main switch: --coverage-expr
+    bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -447,7 +448,7 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
-        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageUser = flag;
+        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser = flag;
     }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
@@ -508,9 +509,19 @@ public:
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
+        // Any enabled coverage kind, including FSM coverage. Code generation
+        // and runtime support should generally query this accessor.
+        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser
+               || m_coverageFsm;
+    }
+    bool coverageNonFsm() const VL_MT_SAFE {
+        // The broad line/toggle/expr/user coverage transforms use this
+        // accessor. FSM coverage shares the overall coverage umbrella, but its
+        // extraction still happens through a separate early-recognition path.
         return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
     }
     bool coverageExpr() const { return m_coverageExpr; }
+    bool coverageFsm() const { return m_coverageFsm; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -534,6 +545,9 @@ public:
     bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
+    bool dumpDfgPatterns() const {
+        return m_dumpLevel.count("dfg-patterns") && m_dumpLevel.at("dfg-patterns");
+    }
     bool dumpTreeDot() const {
         return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
     }

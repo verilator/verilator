@@ -7,10 +7,10 @@ Copyright
 
 The latest version of Verilator is available from https://verilator.org.
 
-Copyright 2003-2026 by Wilson Snyder. Verilator is free software; you
-can redistribute it and/or modify the Verilator internals under the terms
-of either the GNU Lesser General Public License Version 3 or the Perl
-Artistic License Version 2.0.
+Copyright 2003-2026 by Wilson Snyder. Verilator is free software; you can
+redistribute it and/or modify the Verilator internals under the terms of
+either the GNU Lesser General Public License Version 3 or the Perl Artistic
+License Version 2.0.
 
 All Verilog and C++/SystemC code quoted within this documentation file is
 released as Creative Commons Public Domain (CC0). Many example files and

@@ -432,6 +432,7 @@ public:
     // METHODS
     inline bool hasClocked() const;
     inline bool hasCombo() const;
+    inline bool hasStatic() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
@@ -656,7 +657,8 @@ class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
-    // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
+    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
+    // via nextp()
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
@@ -680,7 +682,7 @@ public:
         , m_trace{true} {
         addPinsp(pinsp);
         addParamsp(paramsp);
-        this->rangep(rangep);
+        addRangep(rangep);
     }
     ASTGEN_MEMBERS_AstCell;
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -1933,6 +1935,9 @@ class AstVar final : public AstNode {
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
+    bool m_attrFsmState : 1;  // declared with fsm_state metacomment
+    bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
+    bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_isConst : 1;  // Table contains constant data
@@ -1991,6 +1996,9 @@ class AstVar final : public AstNode {
         m_attrIsolateAssign = false;
         m_attrSFormat = false;
         m_attrSplitVar = false;
+        m_attrFsmState = false;
+        m_attrFsmResetArc = false;
+        m_attrFsmArcInclCond = false;
         m_fileDescr = false;
         m_gotNansiType = false;
         m_isConst = false;
@@ -2135,6 +2143,9 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
+    void attrFsmState(bool flag) { m_attrFsmState = flag; }
+    void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
+    void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -2298,6 +2309,9 @@ public:
     bool attrFileDescr() const { return m_fileDescr; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
+    bool attrFsmState() const { return m_attrFsmState; }
+    bool attrFsmResetArc() const { return m_attrFsmResetArc; }
+    bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VRandAttr rand() const { return m_rand; }
@@ -2383,12 +2397,22 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for other than toggle types of coverage
     string m_linescov;
+    string m_fsmVar;
+    string m_fsmFrom;
+    string m_fsmTo;
+    string m_fsmTag;
     int m_offset;  // Offset column numbers to uniq-ify IFs
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,
-                      const string& linescov, int offset)
+                      const string& linescov, int offset, const string& fsmVar = "",
+                      const string& fsmFrom = "", const string& fsmTo = "",
+                      const string& fsmTag = "")
         : ASTGEN_SUPER_CoverOtherDecl(fl, page, comment)
         , m_linescov{linescov}
+        , m_fsmVar{fsmVar}
+        , m_fsmFrom{fsmFrom}
+        , m_fsmTo{fsmTo}
+        , m_fsmTag{fsmTag}
         , m_offset{offset} {}
     ASTGEN_MEMBERS_AstCoverOtherDecl;
     void dump(std::ostream& str) const override;
@@ -2396,6 +2420,10 @@ public:
     int offset() const { return m_offset; }
     int size() const override { return 1; }
     const string& linescov() const { return m_linescov; }
+    const string& fsmVar() const { return m_fsmVar; }
+    const string& fsmFrom() const { return m_fsmFrom; }
+    const string& fsmTo() const { return m_fsmTo; }
+    const string& fsmTag() const { return m_fsmTag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
         return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();

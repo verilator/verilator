@@ -299,6 +299,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSAnd* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSIntersect* nodep) override { visit_log_and_or(nodep); }
     void visit(AstSOr* nodep) override { visit_log_and_or(nodep); }
+    void visit(AstSWithin* nodep) override { visit_log_and_or(nodep); }
     void visit(AstLogEq* nodep) override {
         // Conversion from real not in IEEE, but a fallout
         visit_log_and_or(nodep);
@@ -1540,6 +1541,65 @@ class WidthVisitor final : public VNVisitor {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*N:0] consecutive repetition"
                                                  " with zero max count");
                 }
+            }
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstPropAlways* nodep) override {
+        // IEEE 1800-2023 16.12.11
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->propp(), WidthVP{SELF, BOTH}.p());
+            if (!VN_IS(nodep->loBoundp(), Unbounded)) {
+                userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->loBoundp());
+            }
+            if (!VN_IS(nodep->hiBoundp(), Unbounded)) {
+                userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsEdit(nodep->hiBoundp());
+            }
+            const bool loUnbounded = VN_IS(nodep->loBoundp(), Unbounded);
+            const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
+            if (loUnbounded || hiUnbounded) {
+                if (nodep->isStrong()) {
+                    nodep->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: unbounded always range (always [m:$])");
+                }
+                nodep->dtypeSetBit();
+                return;
+            }
+            const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
+            const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
+            if (!loConstp) {
+                nodep->v3error("always range low bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (!hiConstp) {
+                nodep->v3error("always range high bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && loConstp->toSInt() < 0) {
+                nodep->v3error("always range low bound must be non-negative"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            if (loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
+                nodep->v3error("always range high bound must be >= low bound"
+                               " (IEEE 1800-2023 16.12.11)");
+            }
+            bool hasPropertyOp = nodep->propp()->isMultiCycleSva();
+            if (!hasPropertyOp) {
+                nodep->propp()->foreach([&](const AstNode* np) {
+                    if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
+                        hasPropertyOp = true;
+                    }
+                });
+            }
+            if (hasPropertyOp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: property/sequence operator inside bounded"
+                              " always (IEEE 1800-2023 16.12.11)");
             }
             nodep->dtypeSetBit();
         }
@@ -7155,7 +7215,9 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
-                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                    // Output args: at return caller = callee, reverse direction.
+                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
+                                     portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
@@ -8511,14 +8573,19 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
-                          AstNodeDType* const lhsDTypep) {
+                          AstNodeDType* const lhsDTypep, bool isOutputArg = false) {
         UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
         const AstNodeDType* const lhsRawDTypep = lhsDTypep->skipRefp();
         const AstNodeDType* const rhsRawDTypep = rhsp->dtypep()->skipRefp();
         if (const AstClassRefDType* const lhsClassRefp = VN_CAST(lhsRawDTypep, ClassRefDType)) {
             if (const AstClassRefDType* const rhsClassRefp
                 = VN_CAST(rhsRawDTypep, ClassRefDType)) {
-                if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
+                // Output arg swaps sides: caller actual = callee formal at return.
+                const AstClass* const dstp
+                    = isOutputArg ? rhsClassRefp->classp() : lhsClassRefp->classp();
+                const AstClass* const srcp
+                    = isOutputArg ? lhsClassRefp->classp() : rhsClassRefp->classp();
+                if (isBaseClassRecurse(dstp, srcp)) return;
             } else if (rhsp->isNull()) {
                 return;
             }

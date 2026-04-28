@@ -524,17 +524,19 @@ public:
     void insertIfaceVarSym(VSymEnt* symp) {  // Where sym is for a VAR of dtype IFACEREFDTYPE
         m_ifaceVarSyms.push_back(symp);
     }
-    // Iface for a raw or arrayed iface
+    // Iface for a raw or arrayed iface; peels nested array layers for multi-dim arrays.
     static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
-        AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
-        if (!ifacerefp) {
+        while (nodep) {
+            if (AstIfaceRefDType* const ifp = VN_CAST(nodep, IfaceRefDType)) return ifp;
             if (const AstBracketArrayDType* const arrp = VN_CAST(nodep, BracketArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
             } else if (const AstUnpackArrayDType* const arrp = VN_CAST(nodep, UnpackArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
+            } else {
+                return nullptr;
             }
         }
-        return ifacerefp;
+        return nullptr;
     }
     // Given a pin expression, resolve it to a live AstIface* (or nullptr).
     // Handles both simple VarRef and dotted VarXRef pin connections.
@@ -770,10 +772,16 @@ public:
             if (forPrearray()) {
                 // GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
                 // but presently should be just "foo".
-                // Likewise cell foo__[array] before we've expanded arrays is just foo
-                if ((pos = ident.rfind("__BRA__")) != string::npos) {
-                    altIdent = ident.substr(0, pos);
+                // Likewise cell foo__[array] before we've expanded arrays is just foo.
+                // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them
+                // all.
+                altIdent = ident;
+                while (VString::endsWith(altIdent, "__KET__")) {
+                    const auto braPos = altIdent.rfind("__BRA__");
+                    if (braPos == string::npos) break;
+                    altIdent = altIdent.substr(0, braPos);
                 }
+                if (altIdent == ident) altIdent.clear();
             }
             UINFO(8, "         id " << ident << " alt " << altIdent << " left " << leftname
                                     << " at se" << lookupSymp);
@@ -3601,7 +3609,36 @@ class LinkDotResolveVisitor final : public VNVisitor {
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
             }
-            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+            // Resolve pin expression to the enclosing module's port Var. At primary
+            // LinkDot the expression may still be an AstParseRef, so also look up by name.
+            AstVar* enclosingVarp = nullptr;
+            const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
+            if (varRefp) {
+                enclosingVarp = varRefp->varp();
+            } else if (const AstParseRef* const parseRefp = VN_CAST(exprp, ParseRef)) {
+                if (m_modp) {
+                    if (VSymEnt* const symp
+                        = m_statep->getNodeSym(m_modp)->findIdFlat(parseRefp->name())) {
+                        enclosingVarp = VN_CAST(symp->nodep(), Var);
+                    }
+                }
+            }
+            if (enclosingVarp && enclosingVarp->varType() == VVarType::IFACEREF
+                && VN_IS(enclosingVarp->childDTypep()->skipRefp(), IfaceGenericDType)) {
+                // Nested generic-iface forwarding (#7454): enclosing port is itself still
+                // generic, so emit a placeholder __VGIfaceParam pin carrying a VarRef to
+                // the outer port. V3Param rewrites it to the concrete IfaceRefDType once
+                // the enclosing module is specialized (see
+                // ParamProcessor::resolveGenericIfaceForwardingPins for the ordering
+                // constraint that keeps the rewrite inside V3Param).
+                AstVarRef* const fwdRefp
+                    = new AstVarRef{exprp->fileline(), enclosingVarp, VAccess::READ};
+                AstPin* const newPinp = new AstPin{
+                    pinp->fileline(), paramNum, "__VGIfaceParam" + modIfaceVarp->name(), fwdRefp};
+                newPinp->param(true);
+                visit(newPinp);
+                nodep->addParamsp(newPinp);
+            } else if (varRefp) {
                 const AstVar* const varp = varRefp->varp();
                 if (const AstIfaceRefDType* const refp
                     = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
@@ -4323,6 +4360,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
+            } else if (allowScope && !allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+                // Function/task used as scope for static variable access (IEEE std 1800-2017 6.21)
+                // Don't set m_dotText so the static variable resolves as a VarRef rather than
+                // VarXRef. This is so that V3Begin won't move it out of the function/task's scope.
+                ok = true;
+                m_ds.m_dotSymp = foundp;
+                m_ds.m_dotPos = DP_SCOPE;
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
                 AstNodeFTaskRef* taskrefp;
                 if (VN_IS(foundp->nodep(), Task)) {
@@ -5316,10 +5360,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         symIterateNull(nodep->attrp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
-            AstCellArrayRef* const newp
-                = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
+                // Multi-dim iface array access: append this select to the existing chain
+                fromArrRefp->addSelp(exprp);
+                AstCellArrayRef* const movedp = fromArrRefp->unlinkFrBack();
+                nodep->replaceWith(movedp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else {
+                AstCellArrayRef* const newp
+                    = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
     }
     void visit(AstNodePreSel* nodep) override {

@@ -250,10 +250,10 @@ module t (
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR_COMMON, rand_a[23:4] ^ rand_a[39:20]);
   `signal(REUSE_ASSOC_LHS_WITH_RHS_OF_RHS_XOR, rand_a[23:4] ^ (~rand_b[24:5] ^ rand_a[39:20]));
 
-  `signal(REPLACE_COND_CONST_ONE_ZERO, rand_a[0] ? 8'b1 : 8'b0);
-  `signal(REPLACE_COND_CONST_ZERO_ONE, rand_a[0] ? 8'b0 : 8'b1);
-  `signal(REPLACE_COND_CONST_ONES_ZERO, rand_a[0] ? 8'hff : 8'b0);
-  `signal(REPLACE_COND_CONST_ZERO_ONAE, rand_a[0] ? 8'b0 : 8'hff);
+  `signal(REPLACE_COND_CONST_ONE_ZERO, rand_a[0] ? 80'b1 : 80'b0);
+  `signal(REPLACE_COND_CONST_ZERO_ONE, rand_a[0] ? 80'b0 : 80'b1);
+  `signal(REPLACE_COND_CONST_ONES_ZERO, rand_a[0] ? -80'b1 : 80'b0);
+  `signal(REPLACE_COND_CONST_ZERO_ONAE, rand_a[0] ?  80'b0 : -80'b1);
   `signal(REPLACE_COND_CAT_LHS_CONST_ONE_ZERO, rand_a[0] ? {8'b1, rand_b[0]} : {8'b0, rand_b[1]});
   `signal(REPLACE_COND_CAT_LHS_CONST_ZERO_ONE, rand_a[0] ? {8'b0, rand_b[0]} : {8'b1, rand_b[1]});
   `signal(REPLACE_COND_SAME_CAT_LHS, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
@@ -325,6 +325,8 @@ module t (
   `signal(REMOVE_EQ_BIT_1, 1'b1 == rand_a[0]);
   `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
   `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
+  `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
+  `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);

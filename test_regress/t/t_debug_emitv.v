@@ -330,6 +330,9 @@ module t (/*AUTOARG*/
   cover_concurrent: cover property(prop);
   cover_concurrent_stmt: cover property(prop) $display("pass");
 
+  assert_prop_always: assert property (@(posedge clk) always [0:3] in);
+  assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
+
 
   int a;
   int ao;

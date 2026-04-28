@@ -269,10 +269,10 @@ core. If there is no affinity already set, on Linux only, Verilator
 attempts to set thread-to-processor affinity in a reasonable way.
 
 Some newer Linux kernels handle thread assignment well. If running
-Verilator on such a system, automatic thread affinity may not be
-beneficial and may even reduce performance. In this case, environment
-variable :vlopt:`VERILATOR_NUMA_STRATEGY` may be set to ``none`` to
-disable automatic thread affinity. For more information, refer to
+Verilator on such a system, automatic thread affinity may not be beneficial
+and may even reduce performance. In this case, environment variable
+:vlopt:`VERILATOR_NUMA_STRATEGY` may be set to ``none`` to disable
+automatic thread affinity. For more information, refer to
 :ref:`Environment`.
 
 For best performance, use the :command:`numactl` program to (when the
@@ -505,7 +505,7 @@ include directories and link to the SystemC libraries.
 
    Deprecated and has no effect.
 
-   Before Verialtor 5.048: Optional. Enable multithreaded FST trace; see
+   In versions before 5.048: Optional. Enable multithreaded FST trace; see
    :vlopt:`--trace-threads`.
 
 .. describe:: TRACE_VCD

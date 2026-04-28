@@ -47,6 +47,7 @@
 #include "V3UniqueNames.h"
 
 #include <limits>
+#include <map>
 #include <set>
 #include <unordered_map>
 
@@ -216,6 +217,9 @@ class TraceVisitor final : public VNVisitor {
     using ActCodeSet = std::set<uint32_t>;
     // For activity set, what traces apply
     using TraceVec = std::multimap<ActCodeSet, TraceTraceVertex*>;
+    // Candidate interface-member VarScopes keyed by (interface type, member name)
+    std::map<std::pair<const AstIface*, std::string>, std::vector<AstVarScope*>>
+        m_ifaceMemberVscps;
 
     // METHODS
 
@@ -1125,6 +1129,13 @@ class TraceVisitor final : public VNVisitor {
         if (nodep->isTop()) m_topModp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstVarScope* nodep) override {
+        if (!m_finding) {
+            if (const AstIface* const ifacep = nodep->varp()->sensIfacep()) {
+                m_ifaceMemberVscps[{ifacep, nodep->varp()->name()}].push_back(nodep);
+            }
+        }
+    }
     void visit(AstStmtExpr* nodep) override {
         if (!m_finding && !nodep->user2()) {
             if (AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
@@ -1213,6 +1224,27 @@ class TraceVisitor final : public VNVisitor {
                 }
             }
         }
+    }
+    void visit(AstMemberSel* nodep) override {
+        if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
+            AstIfaceRefDType* const dtypep
+                = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->isVirtual()) {
+                const auto it = m_ifaceMemberVscps.find({dtypep->ifacep(), nodep->varp()->name()});
+                if (it != m_ifaceMemberVscps.end()) {
+                    V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
+                    for (AstVarScope* const vscp : it->second) {
+                        V3GraphVertex* varVtxp = vscp->user1u().toGraphVertex();
+                        if (!varVtxp) {
+                            varVtxp = new TraceVarVertex{&m_graph, vscp};
+                            vscp->user1p(varVtxp);
+                        }
+                        new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
+                    }
+                }
+            }
+        }
+        iterateChildren(nodep);
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
