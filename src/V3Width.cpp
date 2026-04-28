@@ -8334,8 +8334,7 @@ class WidthVisitor final : public VNVisitor {
                                 if (widthSet && width == 0) fallbackFormat = "'h%0h";
                             }
                             AstNodeExpr* const newp = new AstCond{
-                                subargp->fileline(),
-                                enumTestValid(subargp->cloneTreePure(false), enumDtp),
+                                subargp->fileline(), enumTestValid(subargp, enumDtp),
                                 enumSelect(subargp->cloneTreePure(false), enumDtp,
                                            VAttrType::ENUM_NAME),
                                 new AstSFormatF{subargp->fileline(), fallbackFormat, true,
