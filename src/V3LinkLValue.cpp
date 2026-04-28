@@ -271,6 +271,7 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
     void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
     void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+
     // Nodes that change LValue state
     void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
@@ -370,15 +371,9 @@ void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, dumpTreeEitherLevel() >= 6);
 }
-void V3LinkLValue::linkLValueSet(AstNode* nodep) {
+void V3LinkLValue::linkLValueSet(AstNode* nodep, bool isLValue) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
     UINFO(9, __FUNCTION__ << ": ");
-    { LinkLValueVisitor{nodep, VAccess::WRITE}; }
-}
-void V3LinkLValue::linkLValueUnset(AstNode* nodep) {
-    // Called by later link functions when it is known a node needs
-    // to be converted to an rvalue.
-    UINFO(9, __FUNCTION__ << ": ");
-    { LinkLValueVisitor{nodep, VAccess::READ}; }
+    { LinkLValueVisitor{nodep, isLValue ? VAccess::WRITE : VAccess::READ}; }
 }

@@ -28,8 +28,7 @@ class AstNode;
 class V3LinkLValue final {
 public:
     static void linkLValue(AstNetlist* nodep) VL_MT_DISABLED;
-    static void linkLValueSet(AstNode* nodep) VL_MT_DISABLED;
-    static void linkLValueUnset(AstNode* nodep) VL_MT_DISABLED;
+    static void linkLValueSet(AstNode* nodep, bool isLValue = true) VL_MT_DISABLED;
 };
 
 #endif  // Guard
