@@ -1,4 +1,4 @@
-[4] stmt, s_eventually before final, fileline:         23
+[4] stmt, s_eventually before final
 *-* All Finished *-*
-[5] else, s_eventually during final, fileline:         25
-[5] else, s_eventually after final, fileline:         27
+[5] else, s_eventually during final
+[5] else, s_eventually after final

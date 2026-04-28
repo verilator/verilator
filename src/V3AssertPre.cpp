@@ -845,12 +845,8 @@ private:
         }
 
         iterateChildren(nodep);
-        FileLine* const flp = nodep->fileline();
 
-        const auto readRef
-            = [flp](AstVar* varp) { return new AstVarRef{flp, varp, VAccess::READ}; };
-        const auto writeRef
-            = [flp](AstVar* varp) { return new AstVarRef{flp, varp, VAccess::WRITE}; };
+        FileLine* const flp = nodep->fileline();
 
         // Track active assertions
         AstVar* const activep = new AstVar{flp, VVarType::MODULETEMP, m_activeNames.get(""),
@@ -865,10 +861,12 @@ private:
         loopp->addStmtsp(new AstEventControl{flp, sentreep, nullptr});
 
         // Add assertion to the active set
-        AstAssocSel* const selp = new AstAssocSel{flp, writeRef(activep), getProcessSelf(flp)};
+        AstAssocSel* const selp = new AstAssocSel{flp, new AstVarRef{flp, activep, VAccess::WRITE},
+                                                  getProcessSelf(flp)};
         AstAssign* const incrementp = new AstAssign{flp, selp, new AstConst{flp, 1}};
         AstPExprClause* const clausep = new AstPExprClause{flp};
-        AstStmtExpr* const deletep = getProcessAssocArrayDelete(writeRef(activep));
+        AstStmtExpr* const deletep
+            = getProcessAssocArrayDelete(new AstVarRef{flp, activep, VAccess::WRITE});
 
         // Main assertion block
         AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
@@ -882,18 +880,22 @@ private:
                                                 nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         activeCountp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-        AstAssign* const initActiveCountp = new AstAssign{
-            flp, writeRef(activeCountp), getProcessAssocArraySize(readRef(activep))};
+        AstAssign* const initActiveCountp
+            = new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                            getProcessAssocArraySize(new AstVarRef{flp, activep, VAccess::READ})};
         AstLoop* const finalLoopp = new AstLoop{flp};
         AstIf* const finalBodypCondp
             = new AstIf{flp, condp->cloneTreePure(false), new AstPExprClause{flp},
                         new AstPExprClause{flp, false}};
-        finalLoopp->addStmtsp(new AstLoopTest{
-            flp, finalLoopp, new AstNeq{flp, readRef(activeCountp), new AstConst{flp, 0}}});
+        finalLoopp->addStmtsp(
+            new AstLoopTest{flp, finalLoopp,
+                            new AstNeq{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                       new AstConst{flp, 0}}});
         finalLoopp->addStmtsp(finalBodypCondp);
         finalLoopp->addStmtsp(
-            new AstAssign{flp, writeRef(activeCountp),
-                          new AstSub{flp, readRef(activeCountp), new AstConst{flp, 1}}});
+            new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                          new AstSub{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                     new AstConst{flp, 1}}});
 
         // Final assertion block
         AstBegin* const finalp = new AstBegin{flp, "", nullptr, true};
