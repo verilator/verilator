@@ -644,6 +644,7 @@ class EmitCModel final : public EmitCFunc {
                                 "Model implementation (design independent parts)");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
+        if (v3Global.dpi()) puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
         for (const string& base : v3Global.opt.traceSourceLangs())
             puts("#include \"" + base + ".h\"\n");
 

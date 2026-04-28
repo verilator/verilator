@@ -605,7 +605,7 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (funcp->dpiImportPrototype())  // Declared in __Dpi.h
-                    continue;
+                   continue;
                 if (funcp->dpiExportDispatcher())  // Declared in __Dpi.h
                     continue;
                 if (funcp->isMethod() != inClassBody)  // Only methods go inside class

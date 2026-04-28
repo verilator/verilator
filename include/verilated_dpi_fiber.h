@@ -53,10 +53,13 @@ static thread_local struct {
 namespace VerilatedDpi {
 // Run user C code in a fiber, wrapping it in a coroutine for scheduler integration
 // This allows the C code to call DPI exports with timing controls
+// Callable has void return type because it is a task.
 template <typename Callable, typename... Args>
 VlCoroutine callImportInFiber(Callable&& call, Args&&... args) {
+    static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
+                  "Functions called inside a fiber should have 'int' return type");
     auto fiberp{
-        VlFiber::create([&call, &args...]() mutable { call(std::forward<Args>(args)...); })};
+        VlFiber::create([&call, &args...]() mutable { std::ignore = call(std::forward<Args>(args)...); })};
     while (!fiberp->isDone()) {
         fiberp->resume();
         co_await FiberAwaitable{*fiberp};
@@ -64,21 +67,20 @@ VlCoroutine callImportInFiber(Callable&& call, Args&&... args) {
     co_return;
 }
 
-template <bool isTask, typename Callable, typename... Args>
-constexpr void callImport(char* const filename, int lineno, Callable&& fn, Args&&... args) {
-    if VL_CONSTEXPR_CXX17 (!isTask) {
-        s_fileline.m_filename = filename;
-        s_fileline.m_lineno = lineno;
-        s_fileline.m_inFuncContext = true;
-    }
-    call(std::forward<Args>(args)...);
-    if VL_CONSTEXPR_CXX17 (!isTask) { s_fileline.m_inFuncContext = false; }
+template <typename Callable, typename... Args>
+decltype(auto) callImport(char* const filename, int lineno, Callable&& fn, Args&&... args) {
+    s_fileline.m_filename = filename;
+    s_fileline.m_lineno = lineno;
+    s_fileline.m_inFuncContext = true;
+    auto ret = call(std::forward<Args>(args)...);
+    s_fileline.m_inFuncContext = false;
+    return ret;
 }
 
 // Suspend the current fiber until the DPI export coroutine completes
 // Must be called from within a fiber context (i.e., from C code called via DPI import)
 template <bool isTask, typename Callable, typename... Args>
-void awaitExport(Callable&& call, Args&&... args) {
+decltype(auto) awaitExport(Callable&& call, Args&&... args) {
     if VL_CONSTEXPR_CXX17 (isTask) {
         if (s_fileline.m_inFuncContext) {
             VL_FATAL_MT(s_fileline.m_filename, s_fileline.m_lineno, "",
@@ -98,7 +100,7 @@ void awaitExport(Callable&& call, Args&&... args) {
         while (!local.await_ready()) { VlFiber::yield(); }
     } else {
         // Might be a task without timings or a function
-        call(std::forward<Args>(args)...);
+        return call(std::forward<Args>(args)...);
     }
 }
 };  //namespace VerilatedDpi
