@@ -7,8 +7,4 @@
                                                                 : ... note: In instance 't'
    21 |     void'(foo.randomize(foos[0].x));
       |                                ^
-%Error-UNSUPPORTED: t/t_randomize_inline_var_ctl_unsup_1.v:22:25: Unsupported: 'randomize(null)'
-                                                                : ... note: In instance 't'
-   22 |     void'(foo.randomize(null));
-      |                         ^~~~
 %Error: Exiting due to

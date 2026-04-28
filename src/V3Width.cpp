@@ -4681,13 +4681,12 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
             }
         }
-        if (nullp) {
-            if (hasNonNullArgs) {
-                nullp->v3error("Cannot pass more arguments to 'randomize(null)'");
-            } else {
-                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize(null)'");
-            }
+        if (nullp && hasNonNullArgs) {
+            nullp->v3error("Cannot pass more arguments to 'randomize(null)'");
         }
+        // A solo 'null' arg is left in place; V3Randomize lowers it into a
+        // check-only solve so constraints are validated against the current
+        // values of every rand member (IEEE 1800-2023 18.11).
     }
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
