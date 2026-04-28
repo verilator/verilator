@@ -1898,12 +1898,18 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultClockingp);
         VL_RESTORER(m_defaultDisablep);
         m_modp = nodep;
-        const V3AssertModuleDefaults defaults = V3AssertNfa::collectModuleDefaults(nodep);
-        m_defaultClockingp = defaults.defaultClockingp;
-        m_defaultDisablep = defaults.defaultDisablep;
+        m_defaultClockingp = nullptr;
+        m_defaultDisablep = nullptr;
         SvaNfaLowering lowering{nodep};
         m_loweringp = &lowering;
         iterateChildren(nodep);
+    }
+    void visit(AstClocking* nodep) override {
+        if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        if (!m_defaultDisablep) m_defaultDisablep = nodep;
     }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }
@@ -1926,16 +1932,4 @@ void V3AssertNfa::assertNfaAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":" << endl);
     { AssertNfaVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("assertnfa", 0, dumpTreeEitherLevel() >= 3);
-}
-
-V3AssertModuleDefaults V3AssertNfa::collectModuleDefaults(AstNodeModule* modp) {
-    // Pure read; first-found wins. ensureEventp() is V3AssertPre's job.
-    V3AssertModuleDefaults out;
-    modp->foreach([&](AstClocking* const clockingp) {
-        if (clockingp->isDefault() && !out.defaultClockingp) out.defaultClockingp = clockingp;
-    });
-    modp->foreach([&](AstDefaultDisable* const disablep) {
-        if (!out.defaultDisablep) out.defaultDisablep = disablep;
-    });
-    return out;
 }

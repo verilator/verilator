@@ -20,22 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-class AstClocking;
-class AstDefaultDisable;
 class AstNetlist;
-class AstNodeModule;
 
-// Module defaults shared with V3AssertPre. First-found wins; multi-default
-// diagnostics and event-var creation live in V3AssertPre.
-struct V3AssertModuleDefaults final {
-    AstClocking* defaultClockingp = nullptr;
-    AstDefaultDisable* defaultDisablep = nullptr;
-};
+//============================================================================
 
 class V3AssertNfa final {
 public:
     static void assertNfaAll(AstNetlist* nodep) VL_MT_DISABLED;
-    static V3AssertModuleDefaults collectModuleDefaults(AstNodeModule* modp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

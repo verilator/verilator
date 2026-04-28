@@ -23,7 +23,6 @@
 
 #include "V3AssertPre.h"
 
-#include "V3AssertNfa.h"
 #include "V3Const.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
@@ -241,6 +240,15 @@ private:
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
         UINFO(8, "   CLOCKING" << nodep);
+        if (nodep->isDefault()) {
+            if (m_defaultClockingp) {
+                nodep->v3error("Only one default clocking block allowed per module"
+                               " (IEEE 1800-2023 14.12)");
+            } else {
+                m_defaultClockingp = nodep;
+                m_defaultClkEvtVarp = nodep->ensureEventp();
+            }
+        }
         iterateChildren(nodep);
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -1183,7 +1191,12 @@ private:
     }
 
     void visit(AstDefaultDisable* nodep) override {
-        // Done with these
+        if (m_defaultDisablep) {
+            nodep->v3error("Only one 'default disable iff' allowed per module"
+                           " (IEEE 1800-2023 16.15)");
+        } else {
+            m_defaultDisablep = nodep;
+        }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstInferredDisable* nodep) override {
@@ -1292,23 +1305,9 @@ private:
         VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
-        const V3AssertModuleDefaults defaults = V3AssertNfa::collectModuleDefaults(nodep);
-        m_defaultClockingp = defaults.defaultClockingp;
-        m_defaultDisablep = defaults.defaultDisablep;
-        // Cache event var before iterateChildren -- visit(AstClocking) unlinks it.
-        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
-        nodep->foreach([&](AstClocking* const clockingp) {
-            if (clockingp->isDefault() && clockingp != m_defaultClockingp) {
-                clockingp->v3error("Only one default clocking block allowed per module"
-                                   " (IEEE 1800-2023 14.12)");
-            }
-        });
-        nodep->foreach([&](AstDefaultDisable* const disablep) {
-            if (disablep != m_defaultDisablep) {
-                disablep->v3error("Only one 'default disable iff' allowed per module"
-                                  " (IEEE 1800-2023 16.15)");
-            }
-        });
+        m_defaultClockingp = nullptr;
+        m_defaultClkEvtVarp = nullptr;
+        m_defaultDisablep = nullptr;
         m_modp = nodep;
         iterateChildren(nodep);
     }
