@@ -537,6 +537,12 @@ class AstWith final : public AstNode {
     // @astgen op2 := valueArgRefp : AstLambdaArgRef
     // @astgen op3 := exprp : List[AstNode]  // Pins, expression and constraints
     // TODO: Separate expression and constraints
+private:
+    // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
+    bool m_restricted = false;
+    bool m_validated = false;  // identifier_list typo / unused checks already run
+    std::set<std::string> m_restrictedNames;
+
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
             AstNode* exprp)
@@ -552,6 +558,18 @@ public:
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
         return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void restricted(bool flag) { m_restricted = flag; }
+    bool restricted() const { return m_restricted; }
+    bool validated() const { return m_validated; }
+    void validated(bool flag) { m_validated = flag; }
+    void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
+    const std::set<std::string>& restrictedNames() const { return m_restrictedNames; }
+    // True if 'name' binds into the randomize() target class.
+    bool nameResolvesToTarget(const std::string& name) const {
+        return !m_restricted || m_restrictedNames.count(name);
     }
 };
 
@@ -2821,6 +2839,10 @@ class AstWithParse final : public AstNodeExpr {
     // @astgen op1 := funcrefp : AstNodeExpr
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
     // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
+private:
+    // True for the 'with (identifier_list) {...}' form, including 'with () {...}'.
+    bool m_restricted = false;
+
 public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
                  AstNode* constraintsp = nullptr)
@@ -2831,6 +2853,8 @@ public:
     }
     ASTGEN_MEMBERS_AstWithParse;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool restricted() const { return m_restricted; }
+    void restricted(bool flag) { m_restricted = flag; }
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

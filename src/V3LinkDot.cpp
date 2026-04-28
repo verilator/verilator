@@ -2194,24 +2194,39 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
         // Type depends on the method used, let V3Width figure it out later
-        if (nodep->exprsp()
-            || nodep->constraintsp()) {  // Else empty expression and pretend no "with"
-            AstNode* exprOrConstraintsp = nullptr;
-            if (nodep->exprsp() && nodep->constraintsp()) {
-                // When support this probably should change AstWith to separate out
-                // the expr from the constraint equation using separate op2/op3 similar
-                // to AstWithParse
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize with (...) {...}'");
-            } else if (nodep->exprsp())
-                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
-            if (nodep->constraintsp())
-                exprOrConstraintsp = AstNode::addNext(
-                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+        // 'with (...) { ... }' constraint_block form is randomize-only
+        // (IEEE 1800-2023 7.12 vs. 18.7); array methods take 'with (expr)'.
+        if (nodep->restricted() && funcrefp->name() != "randomize") {
+            nodep->v3error("'with (...) { ... }' constraint block is only valid for"
+                           " randomize() (IEEE 1800-2023 18.7)");
+            funcrefp->addArgsp(argsp);
+            nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        const bool restrictedRandomize = nodep->restricted();
+        if (nodep->exprsp() || nodep->constraintsp()
+            || restrictedRandomize) {  // Else empty expression and pretend no "with"
             AstLambdaArgRef* const indexArgRefp
                 = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
-                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
+                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, nullptr};
+            // Harvest the identifier_list into AstWith; grammar guarantees AstParseRef.
+            if (restrictedRandomize) {
+                newp->restricted(true);
+                while (AstNode* const itemp = nodep->exprsp()) {
+                    newp->addRestrictedName(VN_AS(itemp, ParseRef)->name());
+                    itemp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(itemp), itemp);
+                }
+            }
+            AstNode* exprOrConstraintsp = nullptr;
+            if (nodep->exprsp()) exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->constraintsp())
+                exprOrConstraintsp = AstNode::addNext(
+                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+            newp->addExprp(exprOrConstraintsp);  // addExprp() tolerates nullptr
             funcrefp->withp(newp);
         }
         funcrefp->addArgsp(argsp);
@@ -3082,7 +3097,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_modportNum = 0;  // Uniqueify modport numbers
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
-    bool m_inWith = false;  // True if in with
+    const AstWith* m_currentWithp = nullptr;  // Enclosing 'with' (nullptr if none)
+    std::set<std::string>
+        m_restrictedNamesUsed;  // Names from current 'with (id_list)' that resolved into target
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
@@ -3911,7 +3928,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
-                if (m_randSymp && m_inWith) classSymp = m_randSymp;
+                if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
                 if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
@@ -4224,11 +4241,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
-            if (m_randSymp) {
+            // Restricted 'with (id_list)': only id_list names bind into target class.
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp) {
+                    if (m_currentWithp && m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
-                    if (!m_inWith) {
+                    if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
                         // This will start failing once complex expressions are allowed on the LHS
                         // of randomize() with args
@@ -5174,9 +5196,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
             }
-            if (m_randSymp) {
+            // Restricted 'with (id_list)': only id_list names bind into target class.
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
-                if (foundp && m_inWith) {
+                if (foundp && m_currentWithp) {
+                    if (m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstArg* argsp = nullptr;
                     if (nodep->argsp()) {
@@ -5569,11 +5596,45 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
-        VL_RESTORER(m_inWith);
+        VL_RESTORER(m_currentWithp);
+        VL_RESTORER(m_restrictedNamesUsed);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            m_inWith = true;
+            m_currentWithp = nodep;
+            // Validate the identifier_list once per AstWith (m_validated travels
+            // with cloneTree, so cloned witnesses skip the redundant check).
+            const bool firstVisit = !nodep->validated();
+            if (firstVisit) {
+                nodep->validated(true);
+                m_restrictedNamesUsed.clear();
+                // IEEE 1800-2023 18.7: each name in the identifier_list must designate
+                // a member of the randomize() target class.
+                if (nodep->restricted() && m_randSymp) {
+                    for (const std::string& n : nodep->restrictedNames()) {
+                        if (!m_randSymp->findIdFlat(n)) {
+                            nodep->v3error("Identifier '"
+                                           << n
+                                           << "' in 'with (...)' identifier list is not a"
+                                              " member of the randomize() target class"
+                                              " (IEEE 1800-2023 18.7)");
+                            m_restrictedNamesUsed.insert(n);
+                        }
+                    }
+                }
+            }
             iterateChildren(nodep);
+            // Flag names that the user listed but never referenced in the constraint.
+            if (firstVisit && nodep->restricted()) {
+                for (const std::string& n : nodep->restrictedNames()) {
+                    if (!m_restrictedNamesUsed.count(n)) {
+                        nodep->v3warn(UNUSED, "Identifier '"
+                                                  << n
+                                                  << "' in 'with (...)' identifier list is"
+                                                     " not referenced in the constraint"
+                                                     " block");
+                    }
+                }
+            }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }

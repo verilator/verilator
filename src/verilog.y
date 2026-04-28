@@ -4194,7 +4194,11 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4211,7 +4215,11 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -5405,6 +5413,21 @@ exprListE<nodeExprp>:
 exprList<nodeExprp>:
                 expr                                    { $$ = $1; }
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
+        ;
+
+// identifier_list for 'with' in inline randomize constraints (IEEE 1800-2023 18.7).
+// Only simple identifiers; non-identifier expressions are parse errors.
+inlineConstraintIdList<nodeExprp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       inlineConstraintIdList ',' id           { $$ = $1->addNext(
+                                                             new AstParseRef{$<fl>3, *$3, nullptr, nullptr}); }
+        ;
+
+// Optional identifier_list. Empty 'with () {...}' differs from bare 'with {...}'
+// via AstWithParse::restricted().
+inlineConstraintIdListE<nodeExprp>:
+                /* empty */                             { $$ = nullptr; }
+        |       inlineConstraintIdList                  { $$ = $1; }
         ;
 
 exprEListE<nodep>:  // expression list with empty commas allowed

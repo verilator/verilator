@@ -682,10 +682,224 @@ module Vt_debug_emitv_t;
     restrict (@(posedge clk) ##1 a[0]
     );
 endmodule
+package Vt_debug_emitv_std;
+    class Vt_debug_emitv_semaphore;
+        int signed m_keyCount;
+        function new;
+            input int signed keyCount;
+            m_keyCount = keyCount;
+        endfunction
+        task put;
+            input int signed keyCount;
+            m_keyCount = (m_keyCount + keyCount);
+        endtask
+        task get;
+            input int signed keyCount;
+            while ((m_keyCount < keyCount)) begin
+                begin
+
+                    ???? // WAIT
+                    (m_keyCount >= keyCount)end
+            end
+            m_keyCount = (m_keyCount - keyCount);
+        endtask
+        function try_get;
+            input int signed keyCount;
+            begin : label3
+                try_get = /*CRESET*/;
+                if ((m_keyCount >= keyCount)) begin
+                    begin
+                        m_keyCount = (m_keyCount - 
+                                      keyCount);
+                        try_get = 'sh1;
+                        disable label3;
+                    end
+                end
+                try_get = 'sh0;
+                disable label3;
+            end
+        endfunction
+    endclass
+    class Vt_debug_emitv_process;
+        typedef enum int signed{
+            FINISHED = 32'h0,
+            RUNNING = 32'h1,
+            WAITING = 32'h2,
+            SUSPENDED = 32'h3,
+            KILLED = 32'h4
+        } state;
+        VlProcessRef m_process;
+        function self;
+
+            ???? // CLASSREFDTYPE 'process'
+             p
+            ???? // CLASSREFDTYPE 'process'
+            ;
+            begin : label4
+                self = /*CRESET*/;
+                p = new();
+                $c(p.m_process = vlProcess;);
+                self = p;
+                disable label4;
+            end
+        endfunction
+        task set_status;
+            input int signed s;
+            $c(m_process->state(s););
+        endtask
+        function status;
+            begin : label5
+                status = /*CRESET*/;
+                status = ($c(m_process->state()));
+                disable label5;
+            end
+        endfunction
+        task kill;
+            set_status(process::KILLED);
+        endtask
+        task suspend;
+            $error("std::process::suspend() not supported");
+            $stop;
+        endtask
+        task resume;
+            set_status(process::RUNNING);
+        endtask
+        task await;
+
+            ???? // WAIT
+            ((status() == process::FINISHED) || (status() 
+                                                 == 
+                                                 process::
+                                                 KILLED))endtask
+        task killQueue;
+            ref 
+            ???? // CLASSREFDTYPE 'process'
+             processQueue[$]
+            ???? // CLASSREFDTYPE 'process'
+            ;
+            begin : unnamedblk1_1
+                integer signed __Vrepeat0;
+                __Vrepeat0 = processQueue.size();
+                while ((__Vrepeat0 > 32'h0)) begin
+                    begin
+                        kill();
+                    end
+                    __Vrepeat0 = (__Vrepeat0 - 32'h1);
+                end
+            end
+        endtask
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+        function get_randstate;
+            string s;
+            begin : label6
+                get_randstate = /*CRESET*/;
+                s = string'($c(0));
+                $c(s = m_process->randstate(););
+                get_randstate = s;
+                disable label6;
+            end
+        endfunction
+        task set_randstate;
+            input string s;
+            $c(m_process->randstate(s););
+        endtask
+        function new;
+        endfunction
+        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+    function randomize;
+        randomize = 'sh0;
+    endfunction
+    typedef struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } vl_covergroup_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } vl_coverpoint_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } vl_cross_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } vl_covergroup_type_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        real real_interval;
+    } vl_coverpoint_type_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+    } vl_cross_type_options_t;
+endpackage
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
         int signed member;
         member = 'sh1;
+        int signed rmember1;
+        int signed rmember2;
         task method;
             if ((this != this)) begin
                 $stop;
@@ -693,7 +907,23 @@ package Vt_debug_emitv___024unit;
         endtask
         function new;
         endfunction
+        function randomize;
+        endfunction
     endclass
+    function rand_restricted;
+        input 
+        ???? // CLASSREFDTYPE 'Cls'
+         obj
+        ???? // CLASSREFDTYPE 'Cls'
+        ;
+        input int signed member;
+        begin : label7
+            rand_restricted = randomize() with (
+                ???? // CONSTRAINTEXPR
+                (item.rmember1 < member)) ;
+            disable label7;
+        end
+    endfunction
 endpackage
 interface Vt_debug_emitv_Iface;
     input logic clk;
@@ -712,13 +942,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label3
+        begin : label8
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label3;
+                disable label8;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label3;
+            disable label8;
         end
     endfunction
     real r;

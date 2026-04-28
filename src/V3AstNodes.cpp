@@ -3558,3 +3558,30 @@ const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
 }
+void AstWith::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (m_restricted) {
+        str << " [RESTRICTED={";
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) str << ",";
+            str << n;
+            first = false;
+        }
+        str << "}]";
+    }
+}
+void AstWith::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "restricted", m_restricted);
+    if (m_restricted) {
+        std::string joined;
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) joined += ",";
+            joined += n;
+            first = false;
+        }
+        dumpJsonStr(str, "restrictedNames", joined);
+    }
+    dumpJsonGen(str);
+}

@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_randomize_with_constraint.v:13:26: Unsupported: 'randomize with (...) {...}'
-   13 |   return obj.randomize() with (
-      |                          ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randomize_with_constraint.v:21:26: Unsupported: 'randomize with (...) {...}'
-   21 |   return obj.randomize() with (
-      |                          ^~~~
-%Error: Exiting due to
