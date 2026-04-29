@@ -1027,18 +1027,15 @@ class TaskVisitor final : public VNVisitor {
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
 
-        // used
         if (v3Global.opt.timing().isTrue() && nodep->verilogTask()) {
             callExportp->function(VCFunction::AWAIT_EXPORT_IN_FIBER);
-            callExportp->addPinsp(args);
-            callExportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});
-            funcp->addStmtsp(callExportp->makeStmt());
         } else {
             callExportp->function(VCFunction::AWAIT_EXPORT);
-            callExportp->addPinsp(args);
             callExportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});
-            funcp->addStmtsp(callExportp->makeStmt());
         }
+
+        callExportp->addPinsp(args);
+        funcp->addStmtsp(callExportp->makeStmt());
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
