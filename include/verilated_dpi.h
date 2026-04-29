@@ -29,12 +29,14 @@
 #include "verilatedos.h"
 
 #include "verilated.h"  // Also presumably included by caller
-#ifdef VM_TIMING
+
+#if VM_TIMING == 1
 #include "verilated_fiber.h"
 #include "verilated_timing.h"
 
 #include <coroutine>
 #endif
+
 #include "verilated_sym_props.h"
 
 #include "svdpi.h"
@@ -157,7 +159,7 @@ decltype(auto) awaitExport(Callable&& call, Args&&... args) {
     }
 }
 
-#ifdef VM_TIMING
+#if VM_TIMING == 1
 
 namespace {
 class FiberAwaitable final {
