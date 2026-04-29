@@ -36,9 +36,7 @@ endclass
 
 class Derived extends Base;
   rand bit [3:0] der_dy;
-  constraint der_c {
-    der_dy > 0;
-  }
+  constraint der_c {der_dy > 0;}
 endclass
 
 // Class with ONLY static rand members; exercises class-level rand_mode() with
@@ -46,7 +44,10 @@ endclass
 class StaticOnly;
   static rand bit [3:0] sa;
   static rand bit [3:0] sb;
-  constraint c { sa > 0; sb > 0; }
+  constraint c {
+    sa > 0;
+    sb > 0;
+  }
 endclass
 
 // Base with two static rand vars exercises non-zero index in the shared static array.
@@ -54,12 +55,16 @@ class BaseTwo;
   static rand bit [3:0] base2_a;
   static rand bit [3:0] base2_b;
   rand bit [3:0] base2_dy;
-  constraint c { base2_a > 0; base2_b > 0; base2_dy > 0; }
+  constraint c {
+    base2_a > 0;
+    base2_b > 0;
+    base2_dy > 0;
+  }
 endclass
 
 class DerivedTwo extends BaseTwo;
   rand bit [3:0] der2_dy;
-  constraint dc { der2_dy > 0; }
+  constraint dc {der2_dy > 0;}
 endclass
 
 // No constraint blocks: inline randomize-with must still flush static rand_mode.
@@ -71,12 +76,12 @@ endclass
 // Base + Derived each declare a static rand var; per-root max-count init must size for both.
 class BaseS;
   static rand bit [3:0] base_s;
-  constraint c { base_s > 0; }
+  constraint c {base_s > 0;}
 endclass
 
 class DerivedS extends BaseS;
   static rand bit [3:0] der_s;
-  constraint c2 { der_s > 0; }
+  constraint c2 {der_s > 0;}
 endclass
 
 module t;
@@ -270,14 +275,17 @@ module t;
       rok = dt1.randomize();
       `checkd(rok, 1);
       `checkd(BaseTwo::base2_b, saved_base2_b);  // disabled - unchanged
-      if (BaseTwo::base2_a == 0) $stop;          // still randomizing
+      if (BaseTwo::base2_a == 0) $stop;  // still randomizing
     end
 
     // ---- Test 11: inline randomize-with on class with static rand and no class-level constraints.
     snc1 = new;
     snc1.snc_s.rand_mode(1);  // ensure static rand-mode array exists
     repeat (10) begin
-      rok = snc1.randomize() with { snc_d > 5; snc_d < 13; };
+      rok = snc1.randomize() with {
+        snc_d > 5;
+        snc_d < 13;
+      };
       `checkd(rok, 1);
       `check_range(snc1.snc_d, 6, 12);
     end
