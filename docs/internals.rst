@@ -1701,7 +1701,7 @@ can have significant variance. Experience shows that a ~20% time difference
 can be reliably measured on GitHub hosted runners, and smaller differences
 are noticeable over a few days of reruns as trends emerge from the noise.
 
-Code coverage
+Code Coverage
 -------------
 
 Code coverage for developing Verilator itself can be collected using
@@ -1749,6 +1749,25 @@ example, to see coverage of changes compared to upstream, use:
 .. code-block:: shell
 
    make coverage-view COVERAGE_BASE=origin/master
+
+
+Code Coverage Results
+---------------------
+
+When code coverage is complete, line coverage should be at 100%. Branch
+coverage is not required to be at 100%, but all uncovered branches should
+be understood as to why.
+
+For lines which are impossible, use ``// LCOV_EXCL_LINE``, or ``//
+LCOV_EXCL_START`` and ``// LCOV_EXCL_STOP`` regions.
+
+For branches which are impossible, use the ``VL_UNCOVERABLE(condition)``
+macro around uncoverable conditions, otherwise use ``//
+LCOV_EXCL_BR_LINE``.
+
+The assertions ``UASSERT`` and similar are automatically excluded from
+coverage, and as such should not require exclusion meta comments.
+
 
 Fuzzing
 -------
