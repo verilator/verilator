@@ -1154,6 +1154,18 @@ class TaskVisitor final : public VNVisitor {
         return allOk;
     }
 
+    static void addDebugInfo(AstCFuncHard* funcp) {
+        FileLine* const flp = funcp->fileline();
+        const bool protectIds = v3Global.opt.protectIds();
+        AstCExpr* const ap
+            = new AstCExpr{flp, protectIds ? "VL_UNKNOWN" : '"' + flp->filenameEsc() + '"'};
+        ap->dtypeSetString();
+        funcp->addPinsp(ap);
+        AstCExpr* const bp = new AstCExpr{flp, protectIds ? "0" : cvtToStr(flp->lineno())};
+        bp->dtypeSetString();
+        funcp->addPinsp(bp);
+    }
+
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
@@ -1229,7 +1241,7 @@ class TaskVisitor final : public VNVisitor {
             AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportFiberp};
             // Add arguments
             callImportFiberp->addPinsp(new AstCExpr{nodep->fileline(), dpiFuncp->name()});
-            callImportFiberp->addPinsp(new AstCExpr{nodep->fileline(), args});
+            if (!args.empty()) callImportFiberp->addPinsp(new AstCExpr{nodep->fileline(), args});
             cfuncp->addStmtsp(awaitp);
             cfuncp->rtnType("VlCoroutine");
         } else {
@@ -1237,13 +1249,10 @@ class TaskVisitor final : public VNVisitor {
                 = new AstCFuncHard{nodep->fileline(), VCFunction::CALL_IMPORT};
             callImportp->dtypeSetVoid();
             // Add arguments
-            callImportp->addPinsp(new AstConst{nodep->fileline(),
-                                                    AstConst::VerilogStringLiteral{},
-                                                    nodep->fileline()->filename()});
-            callImportp->addPinsp(new AstConst{nodep->fileline(), AstConst::Signed32{},
-                                                    nodep->fileline()->lineno()});
+            addDebugInfo(callImportp);
+            // Pass name of the DPI imported function to call
             callImportp->addPinsp(new AstCExpr{nodep->fileline(), dpiFuncp->name()});
-            callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
+            if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
             // Add parameter to indicate that this is a task
             callImportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});
 
@@ -1251,10 +1260,12 @@ class TaskVisitor final : public VNVisitor {
                 // If it has a return value, capture it
                 cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
                 const std::string sel = rtnvscp->varp()->basicp()->isDpiPrimitive() ? "" : "[0]";
-                cfuncp->addStmtsp(new AstAssign{
-                    nodep->fileline(),
-                    new AstCExpr{nodep->fileline(), rtnvscp->varp()->name() + tmpSuffixp + sel},
-                    callImportp});
+                AstCStmt* const funcAssignp = new AstCStmt{nodep->fileline()};
+                funcAssignp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
+                funcAssignp->add(" = ");
+                funcAssignp->add(callImportp);  // RHS
+                funcAssignp->add(";");
+                cfuncp->addStmtsp(funcAssignp);
             } else {
                 cfuncp->addStmtsp(callImportp->makeStmt());
             }

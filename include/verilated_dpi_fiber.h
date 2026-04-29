@@ -41,13 +41,6 @@ public:
     void await_suspend(std::coroutine_handle<> waiter) const { m_fiber.addWaiter(waiter); }
     void await_resume() const noexcept {}
 };
-
-static thread_local struct {
-    char* m_filename;
-    int m_lineno;
-    bool m_inFuncContext;
-} s_fileline;
-
 };  //namespace
 
 namespace VerilatedDpi {
@@ -55,11 +48,11 @@ namespace VerilatedDpi {
 // This allows the C code to call DPI exports with timing controls
 // Callable has void return type because it is a task.
 template <typename Callable, typename... Args>
-VlCoroutine callImportInFiber(Callable&& call, Args&&... args) {
+VlCoroutine callImportFiber(Callable&& call, Args&&... args) {
     static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
                   "Functions called inside a fiber should have 'int' return type");
-    auto fiberp{
-        VlFiber::create([&call, &args...]() mutable { std::ignore = call(std::forward<Args>(args)...); })};
+    auto fiberp{VlFiber::create(
+        [&call, &args...]() mutable { std::ignore = call(std::forward<Args>(args)...); })};
     while (!fiberp->isDone()) {
         fiberp->resume();
         co_await FiberAwaitable{*fiberp};
@@ -67,41 +60,21 @@ VlCoroutine callImportInFiber(Callable&& call, Args&&... args) {
     co_return;
 }
 
-template <typename Callable, typename... Args>
-decltype(auto) callImport(char* const filename, int lineno, Callable&& fn, Args&&... args) {
-    s_fileline.m_filename = filename;
-    s_fileline.m_lineno = lineno;
-    s_fileline.m_inFuncContext = true;
-    auto ret = call(std::forward<Args>(args)...);
-    s_fileline.m_inFuncContext = false;
-    return ret;
-}
-
 // Suspend the current fiber until the DPI export coroutine completes
 // Must be called from within a fiber context (i.e., from C code called via DPI import)
-template <bool isTask, typename Callable, typename... Args>
-decltype(auto) awaitExport(Callable&& call, Args&&... args) {
-    if VL_CONSTEXPR_CXX17 (isTask) {
-        if (s_fileline.m_inFuncContext) {
-            VL_FATAL_MT(s_fileline.m_filename, s_fileline.m_lineno, "",
-                        "DPI exported task called from function context");
-        }
+template <typename Callable, typename... Args>
+decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
+    static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), VlCoroutine>::value,
+                  "Expected the exported function to be a VlCoroutine");
+    VlFiber* const fiberp = VlFiber::current();
+    if (VL_UNLIKELY(!fiberp)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "DPI export with timing invoked outside of a fiber context");
     }
-    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
-                                        VlCoroutine>::value) {
-        VlFiber* const fiberp = VlFiber::current();
-        if (VL_UNLIKELY(!fiberp)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "DPI export with timing invoked outside of a fiber context");
-        }
-        // Call will return on first delay/event encountered
-        VlCoroutine local{call(std::forward<Args>(args)...)};
-        local.setFiberContinuation(fiberp);
-        while (!local.await_ready()) { VlFiber::yield(); }
-    } else {
-        // Might be a task without timings or a function
-        return call(std::forward<Args>(args)...);
-    }
+    // Call will return on first delay/event encountered
+    VlCoroutine local{call(std::forward<Args>(args)...)};
+    local.setFiberContinuation(fiberp);
+    while (!local.await_ready()) { VlFiber::yield(); }
 }
 };  //namespace VerilatedDpi
 

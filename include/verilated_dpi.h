@@ -107,6 +107,47 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     owp[1].bval = 0;
 }
 
+namespace VerilatedDpi {
+
+namespace {
+static thread_local struct {
+    std::string m_filename;
+    int m_lineno;
+    bool m_inFuncContext;
+} s_fileline;
+};  //namespace
+
+template <bool isTask, typename Callable, typename... Args>
+decltype(auto) callImport(const char* const filename, int lineno, Callable&& call,
+                          Args&&... args) {
+    s_fileline.m_filename = std::string{filename};
+    s_fileline.m_lineno = lineno;
+    s_fileline.m_inFuncContext = true;
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        void>::value) {
+        call(std::forward<Args>(args)...);
+        s_fileline.m_inFuncContext = false;
+    } else {
+        auto ret = call(std::forward<Args>(args)...);
+        s_fileline.m_inFuncContext = false;
+        return ret;
+    }
+}
+
+template <bool isTask, typename Callable, typename... Args>
+decltype(auto) awaitExport(Callable&& call, Args&&... args) {
+    if VL_CONSTEXPR_CXX17 (isTask) {
+        if (s_fileline.m_inFuncContext) {
+            VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
+                        "DPI exported task called from function context");
+        }
+    }
+    // Might be a task without timings or a function
+    return call(std::forward<Args>(args)...);
+}
+
+};  //namespace VerilatedDpi
+
 //======================================================================
 
 #endif  // Guard
