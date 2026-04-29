@@ -834,6 +834,8 @@ public:
         RANDOMIZER_WRITE_VAR,
         RANDOMIZER_SET_VAR_DISABLED,
         RANDOMIZER_CLEAR_VAR_DISABLED,
+        RANDOMIZER_MARK_VAR_STATIC,
+        RANDOMIZER_SET_STATIC_RANDMODE,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -985,6 +987,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
            {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
+           {RANDOMIZER_MARK_VAR_STATIC, "mark_var_static", false}, \
+           {RANDOMIZER_SET_STATIC_RANDMODE, "set_static_randmode", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
