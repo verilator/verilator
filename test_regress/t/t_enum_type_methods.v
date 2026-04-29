@@ -73,7 +73,7 @@ module t (
     mystr.m_a = E03;
     mystr.m_b = E04;
     s = $sformatf("%p", mystr);
-    `checks(s, "'{m_a:E03, m_b:E04}");
+    `checks(s, "'{m_a:'h3, m_b:'h4}");
   end
 
   localparam THREE = 3;

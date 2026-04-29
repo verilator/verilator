@@ -2309,9 +2309,6 @@ std::string VL_TO_STRING(IData lhs) {
 std::string VL_TO_STRING(QData lhs) {
     return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, 64, lhs);
 }
-std::string VL_ENUM_NAME_OR_NUMBER(IData lbits, QData lhs, const std::string& name) {
-    return name.empty() ? VL_SFORMATF_N_NX("%0d", 1, VL_VFORMATATTR_UNSIGNED, lbits, lhs) : name;
-}
 std::string VL_TO_STRING(double lhs) {
     return VL_SFORMATF_N_NX("%g", 1, VL_VFORMATATTR_DOUBLE, lhs);
 }

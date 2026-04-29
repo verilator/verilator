@@ -31,37 +31,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Common component builders
 
-// Build a generated expression that returns the enum name or "" if the value is invalid.
-// Numeric fallback is intentionally delegated to VL_ENUM_NAME_OR_NUMBER at runtime.
-static string makeEnumNameOrEmptyExpr(const AstEnumDType* nodep, const std::string& lhs) {
-    if (nodep->width() > 64) return "";
-
-    std::vector<std::pair<std::string, std::string>> cases;
-    for (const AstEnumItem* itemp = nodep->itemsp(); itemp;
-         itemp = VN_AS(itemp->nextp(), EnumItem)) {
-        const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
-        if (!constp || constp->num().isAnyXZ()) continue;
-        cases.emplace_back(cvtToStr(constp->toUQuad()) + "ULL", itemp->name());
-    }
-    if (cases.empty()) return "";
-
-    std::string stmt;
-    for (const auto& entry : cases) {
-        stmt += "(((" + lhs + ") == " + entry.first + ") ? \"" + entry.second + "\"s : ";
-    }
-    stmt += "\"\"s";
-    stmt.append(cases.size(), ')');
-    return stmt;
-}
-
 string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
-    if (const AstEnumDType* const enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
-        const std::string nameExpr = makeEnumNameOrEmptyExpr(enump, lhs);
-        if (!nameExpr.empty()) {
-            return "VL_ENUM_NAME_OR_NUMBER(" + cvtToStr(enump->width()) + ", static_cast<QData>("
-                   + lhs + "), " + nameExpr + ")";
-        }
-    }
     std::string stmt;
     if (VN_IS(nodep->skipRefp(), BasicDType) && nodep->isWide()) {
         stmt += "VL_TO_STRING_W(";

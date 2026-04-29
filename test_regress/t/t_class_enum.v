@@ -20,15 +20,29 @@ module t;
     en_t en;
   endclass
 
+  class WideCls;
+    typedef enum logic [95:0] {
+      A = 96'h1,
+      B = 96'h2
+    } en_t;
+    en_t en;
+  endclass
+
   initial begin
     Cls c;
+    WideCls w;
     string s;
     if (c.A != 10) $stop;
     c = new;
     c.en = c.B;
     if (c.en != 20) $stop;
     s = $sformatf("%p", c);
-    `checks(s, "'{en:B}");
+    `checks(s, "'{en:'h14}");
+
+    w = new;
+    w.en = w.B;
+    s = $sformatf("%p", w);
+    `checks(s, "'{en:'h2}");
     $write("*-* All Finished *-*\n");
     $finish;
   end
