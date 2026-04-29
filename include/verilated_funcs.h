@@ -2365,6 +2365,68 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
     return owp;
 }
 
+static inline VlQueue<unsigned char> VL_SEL_RWII(int obits, int lbits, WDataInP const lwp,
+                                    IData lsb, IData width) VL_MT_SAFE
+{
+    //TODO have verilator make a temp var for this case
+    // dynamicly make our "temp variable"
+    std::vector<uint32_t> my_buffer(width / 32, 0);
+    WDataOutP owp = my_buffer.data();
+
+    const int msb = lsb + width - 1;
+    const int word_shift = VL_BITWORD_E(lsb);
+    if (VL_UNLIKELY(msb > lbits))
+    { // Outside bounds,
+        for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i)
+            owp[i] = ~0;
+        owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
+    }
+    else if (VL_BITBIT_E(lsb) == 0)
+    {
+        // Just a word extract
+        for (int i = 0; i < VL_WORDS_I(obits); ++i)
+            owp[i] = lwp[i + word_shift];
+    }
+    else
+    {
+        // Not a _vl_insert because the bits come from any bit number and goto bit 0
+        const int loffset = lsb & VL_SIZEBITS_E;
+        const int nbitsfromlow = VL_EDATASIZE - loffset; // bits that end up in lword (know
+                                                         // loffset!=0) Middle words
+        const int words = VL_WORDS_I(msb - lsb + 1);
+        for (int i = 0; i < words; ++i)
+        {
+            owp[i] = lwp[i + word_shift] >> loffset;
+            const int upperword = i + word_shift + 1;
+            if (upperword <= static_cast<int>(VL_BITWORD_E(msb)))
+            {
+                owp[i] |= lwp[upperword] << nbitsfromlow;
+            }
+        }
+        for (int i = words; i < VL_WORDS_I(obits); ++i)
+            owp[i] = 0;
+    }
+
+    //TODO this needs to be done on our original VlQueue. meaning we need to change the verilator emit
+    VlQueue<unsigned char> out_queue;
+
+    // Figure out how many bytes we actually processed
+    int total_bytes = (width + 7) / 8;
+
+    // Read the owp buffer backwards to preserve Big-Endian byte order
+    for (int i = total_bytes - 1; i >= 0; --i)
+    {
+        int word_idx = i / 4;     // Which 32-bit chunk is this byte in?
+        int byte_in_word = i % 4; // Which of the 4 bytes is it?
+
+        // Extract the byte and push it
+        unsigned char byte_val = (owp[word_idx] >> (byte_in_word * 8)) & 0xFF;
+        out_queue.push_back(byte_val);
+    }
+
+    return out_queue;
+}
+
 template <typename T>
 static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from, int lbits, int srcElementBits,
                                     int dstElementBits) {
@@ -2477,6 +2539,77 @@ static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*
             VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
                              VL_GET_QUEUE_BIT(srcCopy, srcElementBits, bitIndex));
         }
+    }
+}
+
+template <typename TargetType>
+void VL_COPY_Q(VlQueue<TargetType> &dst_q, const VlQueue<CData> &src_q, int /*lbits*/,
+               int srcElementBits, int dstElementBits)
+{
+    //TODO use scrElementBits and dstElementBits
+    constexpr size_t byteNeeded = sizeof(TargetType);
+    TargetType temp = 0;
+    size_t byteCount = byteNeeded - 1;
+
+    for (CData byte_val : src_q)
+    {
+        // Shift the byte into the correct position and merge
+        temp |= (static_cast<TargetType>(byte_val) << (byteCount * 8));
+        byteCount--;
+
+        // If we've collected enough bytes for the target type, push and reset
+        if (byteCount == -1)
+        {
+            dst_q.push_back(temp);
+            temp = 0;
+            byteCount = byteNeeded - 1;
+        }
+    }
+
+    // Push any remaining leftover bytes (upper bits will remain zero-padded)
+    if (byteCount > 0)
+    {
+        dst_q.push_back(temp);
+    }
+}
+
+template <std::size_t N_Words>
+void VL_COPY_Q(VlQueue<VlWide<N_Words>> &dst_q, const VlQueue<CData> &src_q, int /*lbits*/,
+               int srcElementBits, int dstElementBits)
+{
+    //TODO use scrElementBits and dstElementBits
+    constexpr size_t byteNeeded = sizeof(EData);
+    VlWide<N_Words> queElem;
+    EData temp = 0;
+    size_t byteCount = byteNeeded - 1;
+    size_t VlWideCount = N_Words - 1;
+    bool tempHasData = false;
+    for (CData byte_val : src_q)
+    {
+        // Shift the byte into the correct position and merge
+        temp |= (static_cast<EData>(byte_val) << (byteCount * 8));
+        byteCount--;
+        tempHasData = true;
+            // If we've collected enough bytes for the target type, push and reset
+        if (byteCount == -1)
+        {
+            queElem.m_storage[VlWideCount] = temp;
+            temp = 0;
+            VlWideCount--;
+            byteCount = byteNeeded - 1;
+        }
+        if(VlWideCount == -1){
+            dst_q.push_back(queElem);
+            VlWideCount = N_Words - 1;
+            tempHasData = false;
+        }
+    }
+
+    // Push any remaining leftover bytes (upper bits will remain zero-padded)
+    if (tempHasData)
+    {
+        queElem.m_storage[VlWideCount] = temp;
+        dst_q.push_back(queElem);
     }
 }
 

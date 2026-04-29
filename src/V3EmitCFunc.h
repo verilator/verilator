@@ -627,7 +627,22 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else {
+        } else if(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType) && VN_IS(nodep->rhsp(), And)){
+            //if we are doing an "AND" operator on a queue it is indicative that we are sizing the rhs of this operation. casting makes sure it is correct
+            paren = false;
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(" ");
+            ofp()->blockInc();
+            decind = true;
+            if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
+            putns(nodep, "= ");
+            puts(nodep->rhsp()->dtypep()->cType("", false, false, false));
+            if (unpackDtp && VN_IS(nodep->rhsp(), InitArray)) {
+                // Emit "VlUnpacked<type, depth>{{...InitArray...}}"
+                puts(unpackDtp->cType("", false, false, false));
+            }
+        }
+        else {
             paren = false;
             iterateAndNextConstNull(nodep->lhsp());
             puts(" ");
