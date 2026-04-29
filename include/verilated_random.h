@@ -33,6 +33,7 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <unordered_set>
 
 //=============================================================================
 
@@ -217,7 +218,7 @@ class VlRandomizer VL_NOT_FINAL {
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     const VlQueue<CData>* m_static_randmodep = nullptr;  // Static rand_mode state (shared)
-    std::set<std::string> m_staticVars;  // Names of static rand vars
+    std::unordered_set<std::string> m_staticVars;  // Names of static rand vars
     int m_index = 0;  // Internal counter for key generation
     std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
     std::map<std::string, std::set<uint64_t>>
