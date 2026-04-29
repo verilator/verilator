@@ -877,8 +877,8 @@ class ParamProcessor final {
             }
         } else if (!entry.cloneCellPath.empty()) {
             // Clone entry has no paramTypep stored; look up the type by name.
-            if (AstParamTypeDType* const ptp = V3LinkDotIfaceCapture::findParamTypeInModule(
-                    targetModp, entry.refp->name())) {
+            if (AstParamTypeDType* const ptp
+                = V3LinkDotIfaceCapture::findParamTypeInModule(targetModp, entry.refp->name())) {
                 entry.refp->refDTypep(ptp);
                 entry.refp->dtypep(ptp);
                 for (AstRefDType* const xrefp : entry.extraRefps) {
