@@ -8320,8 +8320,7 @@ class WidthVisitor final : public VNVisitor {
                     // Keep enum `%p`/`%s` behavior aligned with enum.name():
                     // valid enum values print the mnemonic; invalid values print numeric fallback.
                     if (subargp) {
-                        AstEnumDType* const enumDtp = formatEnumDType(subargp);
-                        if (enumDtp) {
+                        if (AstEnumDType* const enumDtp = formatEnumDType(subargp)) {
                             string fallbackFormat = "%0d";
                             if (ch == 'p') {
                                 bool widthSet = false;
