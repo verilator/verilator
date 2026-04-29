@@ -1,6 +1,9 @@
 %Warning-COVERIGN: t/t_cover_fsm_combo_same_warn_bad.v:27:5: Ignoring unsupported: FSM coverage on multiple supported case statements found in the same combinational always block. Only the first candidate will be instrumented.
    27 |     case (state_q)
       |     ^~~~
+                   t/t_cover_fsm_combo_same_warn_bad.v:23:5: ... Location of first supported candidate for 't.state_q'
+   23 |     case (state_q)
+      |     ^~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Error: Exiting due to

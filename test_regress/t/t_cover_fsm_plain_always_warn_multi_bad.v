@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage warns on plain always near-FSM shapes
+// DESCRIPTION: Verilator: FSM coverage warns on non-clocked always near-FSM shapes
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder

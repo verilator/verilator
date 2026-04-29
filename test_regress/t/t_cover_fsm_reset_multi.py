@@ -15,8 +15,6 @@ test.scenarios('vlt')
 # not a realistic reset style to model as distinct reset arcs. Warn and ignore
 # reset-arc extraction for that branch instead of inventing multiple ANY->state
 # coverage edges.
-test.lint(verilator_flags2=["--coverage-fsm"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

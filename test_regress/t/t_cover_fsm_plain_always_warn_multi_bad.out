@@ -1,12 +1,12 @@
-%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:25:5: Ignoring unsupported: FSM coverage on plain always blocks requires a combinational sensitivity list or always_comb
+%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:25:5: Ignoring unsupported: FSM coverage on non-clocked always blocks requires a combinational sensitivity list or always_comb
    25 |     case (state_q)
       |     ^~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:55:5: Ignoring unsupported: FSM coverage on plain always blocks requires a combinational sensitivity list or always_comb
+%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:55:5: Ignoring unsupported: FSM coverage on non-clocked always blocks requires a combinational sensitivity list or always_comb
    55 |     case (state_d)
       |     ^~~~
-%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:86:5: Ignoring unsupported: FSM coverage on plain always blocks requires a combinational sensitivity list or always_comb
+%Warning-COVERIGN: t/t_cover_fsm_plain_always_warn_multi_bad.v:86:5: Ignoring unsupported: FSM coverage on non-clocked always blocks requires a combinational sensitivity list or always_comb
    86 |     case (state_q)
       |     ^~~~
 %Error: Exiting due to

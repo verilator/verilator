@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM conditional transition rejects unknown enum constants on either ternary arm
+// DESCRIPTION: Verilator: FSM rejects unknown enum constants in direct and conditional transitions
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -58,8 +58,35 @@ module unknown_else (
   end
 endmodule
 
+module unknown_direct (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      /* verilator lint_off ENUMVALUE */
+      S0: state_d = 2'd3;
+      /* verilator lint_on ENUMVALUE */
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
 module t;
   logic clk;
   unknown_then unknown_then_u(.clk(clk));
   unknown_else unknown_else_u(.clk(clk));
+  unknown_direct unknown_direct_u(.clk(clk));
 endmodule
