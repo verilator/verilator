@@ -107,8 +107,8 @@ public:
 };
 
 class FsmComboAlways final {
-    AstScope* m_scopep = nullptr;  // Owning scope for the combinational process.
-    AstAlways* m_alwaysp = nullptr;  // Candidate transition process.
+    AstScope* const m_scopep = nullptr;  // Owning scope for the combinational process.
+    AstAlways* const m_alwaysp = nullptr;  // Candidate transition process.
 
 public:
     FsmComboAlways() = default;
@@ -299,7 +299,7 @@ struct DetectedFsm final {
 using DetectedFsmMap = std::map<const AstVarScope*, DetectedFsm>;
 
 struct FsmCaseCandidate final {
-    AstCase* casep = nullptr;  // Source case statement accepted as the first supported candidate.
+    AstNode* warnNodep = nullptr;  // Transition node that made the candidate supported.
     AstVarScope* stateVscp = nullptr;  // FSM state variable associated with that candidate.
 };
 
@@ -339,13 +339,141 @@ class FsmDetectVisitor final : public VNVisitor {
         return dtypep->skipRefToEnump();
     }
 
-    static string candidateConflictContext(AstCase* laterCasep,
+    static string candidateConflictContext(AstNode* laterNodep,
                                            const FsmCaseCandidate& firstCand) {
-        return '\n' + laterCasep->warnContextPrimary() + firstCand.casep->warnOther()
+        return '\n' + laterNodep->warnContextPrimary() + firstCand.warnNodep->warnOther()
                + "... Location of first supported candidate for "
                + firstCand.stateVscp->prettyNameQ() + '\n'
-               + firstCand.casep->warnContextSecondary();
+               + firstCand.warnNodep->warnContextSecondary();
     }
+
+    class RegisterAlwaysAnalyzer final {
+        AstScope* const m_scopep;
+
+    public:
+        explicit RegisterAlwaysAnalyzer(AstScope* scopep)
+            : m_scopep{scopep} {}
+
+        std::vector<std::pair<AstCase*, AstNodeExpr*>> oneBlockCandidates(AstAlways* alwaysp) const {
+            std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
+            AstNode* const stmtsp = alwaysp->stmtsp();
+            AstIf* const firstIfp = VN_CAST(stmtsp, If);
+            if (firstIfp) {
+                if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
+                    candidates.emplace_back(
+                        casep, FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
+                                   ? firstIfp->condp()
+                                   : nullptr);
+                }
+            }
+            for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+                if (AstCase* const casep = VN_CAST(nodep, Case))
+                    candidates.emplace_back(casep, nullptr);
+            }
+            return candidates;
+        }
+
+        bool matchRegisterCandidate(AstAlways* alwaysp, FsmRegisterCandidate& cand) const {
+            return FsmDetectVisitor::matchRegisterAlways(alwaysp, m_scopep, cand);
+        }
+
+        void buildOneBlockCandidate(AstAlways* alwaysp, AstVarScope* vscp,
+                                    AstNodeExpr* resetCondp, FsmRegisterCandidate& reg) const {
+            reg.scopep(m_scopep);
+            reg.alwaysp(alwaysp);
+            reg.stateVscp(vscp);
+            reg.nextVscp(vscp);
+            reg.senses() = FsmDetectVisitor::describeSenTree(alwaysp->sentreep());
+            reg.resetCond() = FsmDetectVisitor::describeResetCond(resetCondp);
+            reg.hasResetCond(reg.resetCond().varScopep != nullptr);
+            reg.resetInclude(vscp->varp()->attrFsmResetArc());
+            reg.inclCond(vscp->varp()->attrFsmArcInclCond());
+            AstIf* const firstIfp = VN_CAST(alwaysp->stmtsp(), If);
+            if (firstIfp && reg.hasResetCond()) {
+                AstVarScope* resetStateVscp = nullptr;
+                const ResetAssignStatus resetStatus = FsmDetectVisitor::collectConstStateAssigns(
+                    firstIfp->thensp(), resetStateVscp, reg.resetArcs());
+                if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
+                    reg.resetArcs().clear();
+                    int resetValue = 0;
+                    AstNode* const thenNodep
+                        = FsmDetectVisitor::singleMeaningfulBranch(firstIfp->thensp());
+                    UASSERT_OBJ(thenNodep, firstIfp,
+                                "one-block reset fallback requires a non-empty reset branch");
+                    if (FsmDetectVisitor::directConstStateAssignNode(thenNodep, resetStateVscp,
+                                                                     resetValue)
+                        && resetStateVscp == vscp) {
+                        reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
+                    }
+                } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
+                    reg.resetArcs().clear();
+                }
+            }
+        }
+    };
+
+    class ComboAlwaysAnalyzer final {
+    public:
+        struct ComboMatch final {
+            const FsmRegisterCandidate* matchedp = nullptr;
+            AstNode* warnNodep = nullptr;
+        };
+
+    private:
+        const std::unordered_map<const AstVarScope*, FsmRegisterCandidate>& m_registerCandidates;
+
+    public:
+        explicit ComboAlwaysAnalyzer(
+            const std::unordered_map<const AstVarScope*, FsmRegisterCandidate>& registerCandidates)
+            : m_registerCandidates{registerCandidates} {}
+
+        ComboMatch matchCase(AstNode* stmtsp, AstCase* casep) const {
+            ComboMatch match;
+            AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
+            if (!selp) return match;
+            for (const auto& it : m_registerCandidates) {
+                const FsmRegisterCandidate& reg = it.second;
+                if (selp->varScopep() == reg.nextVscp()) {
+                    if (!FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
+                            stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
+                        continue;
+                    }
+                } else if (selp->varScopep() != reg.stateVscp()) {
+                    continue;
+                }
+                AstNode* const warnNodep
+                    = FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
+                                                                   reg.inclCond());
+                if (!warnNodep) continue;
+                match.matchedp = &reg;
+                match.warnNodep = warnNodep;
+            }
+            return match;
+        }
+
+        bool shouldWarnUnsupported(AstNode* stmtsp, AstCase* casep) const {
+            const AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
+            if (!selp) return false;
+
+            const auto isRecognizedFsm = [&](const auto& entry) -> bool {
+                const FsmRegisterCandidate& reg = entry.second;
+                const bool matchesNext = selp->varScopep() == reg.nextVscp();
+                const bool matchesState = selp->varScopep() == reg.stateVscp();
+
+                if (!matchesNext && !matchesState) return false;
+                if (matchesNext
+                    && !FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
+                        stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
+                    return false;
+                }
+                return FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
+                                                                     reg.inclCond());
+            };
+
+            return std::any_of(m_registerCandidates.begin(), m_registerCandidates.end(),
+                               isRecognizedFsm);
+        }
+    };
 
     // Reset arcs are only modeled for the simple signal form that survives to
     // this pass after earlier normalization.
@@ -410,13 +538,6 @@ class FsmDetectVisitor final : public VNVisitor {
         return branchp;
     }
 
-    // Some user code wraps the entire always body in a single begin/end; keep
-    // top-level scans focused on the real statement list inside that wrapper.
-    static AstNode* unwrapBeginStmtList(AstNode* stmtp) {
-        stmtp = skipLeadingIgnorableStmt(stmtp);
-        return stmtp;
-    }
-
     // By fsm-detect time, non-clocked always @* blocks are already admitted through
     // a missing sentree. This helper therefore only needs to recognize
     // explicit changed-sensitivity lists such as always @(a or b); clocked and
@@ -432,30 +553,17 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     void warnUnsupportedComboAlways(const FsmComboAlways& combo) {
-        AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp()->stmtsp());
+        const ComboAlwaysAnalyzer analyzer{m_registerCandidates};
+        AstNode* const stmtsp = skipLeadingIgnorableStmt(combo.alwaysp()->stmtsp());
         bool warned = false;
         for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
             AstCase* const casep = VN_CAST(nodep, Case);
             if (!casep) continue;
-            AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
-            if (!selp) continue;
-
-            for (const auto& it : m_registerCandidates) {
-                const FsmRegisterCandidate& reg = it.second;
-                if (selp->varScopep() == reg.nextVscp()) {
-                    if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
-                                                                reg.nextVscp())) {
-                        continue;
-                    }
-                } else if (selp->varScopep() != reg.stateVscp()) {
-                    continue;
-                }
-                if (!caseAssignsState(casep, reg.nextVscp(), reg.inclCond())) continue;
+            if (analyzer.shouldWarnUnsupported(stmtsp, casep)) {
                 casep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-clocked always "
                                         "blocks requires a combinational sensitivity list or "
                                         "always_comb");
                 warned = true;
-                break;
             }
             if (warned) break;
         }
@@ -529,7 +637,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // reset transitions for an odd but legal coding style.
     static ResetAssignStatus collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
                                                       std::vector<FsmResetArcDesc>& resetArcs) {
-        AstNode* nodep = unwrapBeginStmtList(stmtp);
+        AstNode* nodep = skipLeadingIgnorableStmt(stmtp);
         UASSERT_OBJ(nodep, stmtp, "Empty reset branch unexpectedly survived to FSM detection");
         for (;; nodep = nodep->nextp()) {
             AstVarScope* assignStateVscp = nullptr;
@@ -552,7 +660,7 @@ class FsmDetectVisitor final : public VNVisitor {
     static bool hasCanonicalNextStateDefaultBeforeCase(AstNode* stmtsp, AstCase* casep,
                                                        AstVarScope* stateVscp,
                                                        AstVarScope* nextVscp) {
-        AstNode* const bodyp = unwrapBeginStmtList(stmtsp);
+        AstNode* const bodyp = skipLeadingIgnorableStmt(stmtsp);
         bool sawCanonicalDefault = false;
         for (AstNode* nodep = bodyp;; nodep = nodep->nextp()) {
             UASSERT_OBJ(nodep, casep,
@@ -612,30 +720,37 @@ class FsmDetectVisitor final : public VNVisitor {
                && exprConstValue(condp->elsep(), elseValue);
     }
 
-    static bool caseItemHasSupportedArc(AstCaseItem* itemp, AstVarScope* stateVscp,
-                                        bool inclCond) {
+    static AstNode* caseItemSupportedArcNode(AstCaseItem* itemp, AstVarScope* stateVscp,
+                                             bool inclCond) {
         if (itemp->isDefault()) {
-            if (!inclCond) return false;
+            if (!inclCond) return nullptr;
         }
         AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp);
         if (assp) {
             int toValue = 0;
-            if (exprConstValue(assp->rhsp(), toValue)) return true;
+            if (exprConstValue(assp->rhsp(), toValue)) return assp;
         }
         int thenValue = 0;
         int elseValue = 0;
-        return directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
-               || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue);
+        if (directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
+            return assp;
+        }
+        if (ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
+            return singleMeaningfulBranch(itemp->stmtsp());
+        }
+        return nullptr;
     }
 
     // Combinational transition blocks are paired only through supported case
     // items that assign to the recorded next-state variable.
-    static bool caseAssignsState(AstCase* casep, AstVarScope* stateVscp, bool inclCond) {
+    static AstNode* caseSupportedTransitionNode(AstCase* casep, AstVarScope* stateVscp,
+                                                bool inclCond) {
         for (AstCaseItem* itemp = casep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            if (caseItemHasSupportedArc(itemp, stateVscp, inclCond)) return true;
+            if (AstNode* const nodep = caseItemSupportedArcNode(itemp, stateVscp, inclCond))
+                return nodep;
         }
-        return false;
+        return nullptr;
     }
 
     // Prefer enum labels in reports; fall back to synthetic labels for forced
@@ -674,7 +789,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                     FsmRegisterCandidate& cand) {
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return false;
 
-        AstNode* const stmtsp = unwrapBeginStmtList(alwaysp->stmtsp());
+        AstNode* const stmtsp = skipLeadingIgnorableStmt(alwaysp->stmtsp());
         AstNode* const nodep = singleMeaningfulStmt(stmtsp);
         if (!nodep) return false;
 
@@ -862,20 +977,10 @@ class FsmDetectVisitor final : public VNVisitor {
     // and expand detection in a later PR rather than over-infer coverage from
     // forms we do not yet model confidently.
     void processOneBlockAlways(AstAlways* alwaysp) {
+        const RegisterAlwaysAnalyzer analyzer{m_scopep};
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return;
-        std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
-        AstNode* stmtsp = alwaysp->stmtsp();
-        AstIf* const firstIfp = VN_CAST(stmtsp, If);
-        if (firstIfp) {
-            if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
-                candidates.emplace_back(
-                    casep, isSimpleResetCond(firstIfp->condp()) ? firstIfp->condp() : nullptr);
-            }
-        }
-        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
-            if (AstCase* const casep = VN_CAST(nodep, Case))
-                candidates.emplace_back(casep, nullptr);
-        }
+        const std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates
+            = analyzer.oneBlockCandidates(alwaysp);
         if (candidates.empty()) return;
 
         FsmCaseCandidate firstCand;
@@ -884,36 +989,10 @@ class FsmDetectVisitor final : public VNVisitor {
             AstVarScope* const vscp = selp ? selp->varScopep() : nullptr;
             if (!vscp) continue;
             if (!firstCand.stateVscp) {
-                firstCand.casep = cand.first;
+                firstCand.warnNodep = cand.first;
                 firstCand.stateVscp = vscp;
                 FsmRegisterCandidate reg;
-                reg.scopep(m_scopep);
-                reg.alwaysp(alwaysp);
-                reg.stateVscp(vscp);
-                reg.nextVscp(vscp);
-                reg.senses() = describeSenTree(alwaysp->sentreep());
-                reg.resetCond() = describeResetCond(cand.second);
-                reg.hasResetCond(reg.resetCond().varScopep != nullptr);
-                reg.resetInclude(vscp->varp()->attrFsmResetArc());
-                reg.inclCond(vscp->varp()->attrFsmArcInclCond());
-                if (firstIfp && reg.hasResetCond()) {
-                    AstVarScope* resetStateVscp = nullptr;
-                    const ResetAssignStatus resetStatus = collectConstStateAssigns(
-                        firstIfp->thensp(), resetStateVscp, reg.resetArcs());
-                    if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
-                        reg.resetArcs().clear();
-                        int resetValue = 0;
-                        AstNode* const thenNodep = singleMeaningfulBranch(firstIfp->thensp());
-                        UASSERT_OBJ(thenNodep, firstIfp,
-                                    "one-block reset fallback requires a non-empty reset branch");
-                        if (directConstStateAssignNode(thenNodep, resetStateVscp, resetValue)
-                            && resetStateVscp == vscp) {
-                            reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
-                        }
-                    } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
-                        reg.resetArcs().clear();
-                    }
-                }
+                analyzer.buildOneBlockCandidate(alwaysp, vscp, cand.second, reg);
                 processCase(cand.first, vscp, reg);
             } else if (vscp != firstCand.stateVscp) {
                 cand.first->v3warn(FSMMULTI,
@@ -934,62 +1013,55 @@ class FsmDetectVisitor final : public VNVisitor {
     // Phase 1 two-process pairing scans combinational always blocks only after
     // all strict register candidates have been collected, so source order does
     // not matter.
-    static void warnComboSameAlways(AstCase* casep, const FsmCaseCandidate& firstCand) {
-        casep->v3warn(FSMMULTI, "FSM coverage: multiple supported transition candidates found in "
-                                "the same combinational always block. Only the first candidate "
-                                "will be instrumented."
-                                    << candidateConflictContext(casep, firstCand));
+    static void warnComboSameAlways(AstNode* warnNodep, const FsmCaseCandidate& firstCand) {
+        warnNodep->v3warn(FSMMULTI,
+                          "FSM coverage: multiple supported transition candidates found in "
+                          "the same combinational always block. Only the first candidate "
+                          "will be instrumented."
+                              << candidateConflictContext(warnNodep, firstCand));
     }
 
     void processComboAlways(const FsmComboAlways& combo) {
-        AstNode* const stmtsp = unwrapBeginStmtList(combo.alwaysp()->stmtsp());
+        const ComboAlwaysAnalyzer analyzer{m_registerCandidates};
+        AstNode* const stmtsp = skipLeadingIgnorableStmt(combo.alwaysp()->stmtsp());
         FsmCaseCandidate firstCand;
         for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
             AstCase* const casep = VN_CAST(nodep, Case);
             if (!casep) continue;
-            AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
-            if (!selp) continue;
-
-            const FsmRegisterCandidate* matchedp = nullptr;
-            for (const auto& it : m_registerCandidates) {
-                const FsmRegisterCandidate& reg = it.second;
-                if (selp->varScopep() == reg.nextVscp()) {
-                    if (!hasCanonicalNextStateDefaultBeforeCase(stmtsp, casep, reg.stateVscp(),
-                                                                reg.nextVscp())) {
-                        continue;
-                    }
-                } else if (selp->varScopep() != reg.stateVscp()) {
-                    continue;
-                }
-                if (!caseAssignsState(casep, reg.nextVscp(), reg.inclCond())) continue;
-                matchedp = &reg;
-            }
+            const ComboAlwaysAnalyzer::ComboMatch match = analyzer.matchCase(stmtsp, casep);
+            const FsmRegisterCandidate* const matchedp = match.matchedp;
+            AstNode* const matchedWarnNodep = match.warnNodep;
             if (!matchedp) continue;
             if (!firstCand.stateVscp) {
                 const auto insertPair = m_comboPaired.emplace(
-                    matchedp->stateVscp(),
-                    FsmCaseCandidate{casep, const_cast<AstVarScope*>(matchedp->stateVscp())});
+                    matchedp->stateVscp(), FsmCaseCandidate{matchedWarnNodep,
+                                                            const_cast<AstVarScope*>(
+                                                                matchedp->stateVscp())});
                 if (!insertPair.second) {
-                    casep->v3warn(
+                    matchedWarnNodep->v3warn(
                         FSMMULTI,
                         "FSM coverage: multiple supported transition candidates found "
                         "for the same FSM in combinational always blocks. Only the "
                         "first candidate will be instrumented."
-                            << candidateConflictContext(casep, insertPair.first->second));
+                            << candidateConflictContext(matchedWarnNodep, insertPair.first->second));
                     continue;
                 }
-                firstCand.casep = casep;
+                firstCand.warnNodep = matchedWarnNodep;
                 firstCand.stateVscp = const_cast<AstVarScope*>(matchedp->stateVscp());
                 processCase(casep, matchedp->nextVscp(), *matchedp);
-            } else if (matchedp->stateVscp() != firstCand.stateVscp) {
-                warnComboSameAlways(casep, firstCand);
-            } else {
-                casep->v3warn(COVERIGN,
-                              "Ignoring unsupported: FSM coverage on multiple supported case "
-                              "statements found in the same combinational always block. Only "
-                              "the first candidate will be instrumented."
-                                  << candidateConflictContext(casep, firstCand));
+                continue;
             }
+            if (matchedp->stateVscp() != firstCand.stateVscp) {
+                warnComboSameAlways(matchedWarnNodep, firstCand);
+                continue;
+            }
+            matchedWarnNodep->v3warn(COVERIGN,
+                                     "Ignoring unsupported: FSM coverage on multiple "
+                                     "supported case statements found in the same "
+                                     "combinational always block. Only the first "
+                                     "candidate will be instrumented."
+                                         << candidateConflictContext(matchedWarnNodep,
+                                                                     firstCand));
         }
     }
 
@@ -1006,9 +1078,11 @@ class FsmDetectVisitor final : public VNVisitor {
     // scan.
     void visit(AstAlways* nodep) override {
         processOneBlockAlways(nodep);
+        const RegisterAlwaysAnalyzer analyzer{m_scopep};
         FsmRegisterCandidate reg;
-        if (matchRegisterAlways(nodep, m_scopep, reg))
+        if (analyzer.matchRegisterCandidate(nodep, reg)) {
             m_registerCandidates.emplace(reg.stateVscp(), reg);
+        }
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
         } else if (nodep->keyword() == VAlwaysKwd::ALWAYS) {

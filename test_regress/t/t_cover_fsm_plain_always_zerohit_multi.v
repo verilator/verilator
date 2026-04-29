@@ -1,32 +1,30 @@
-// DESCRIPTION: Verilator: FSM coverage keeps grouped canonical case(state_d) forms
+// DESCRIPTION: Verilator: FSM coverage keeps zero-hit records for near-miss plain always shapes
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Group accepted canonical case(state_d) forms so supported next-state
-// defaults stay separate from the rejected wrong-RHS and tail-mismatch shapes.
+// Group plain-always near misses that still recover enough structure to leave
+// zero-hit FSM records behind, but must not warn or model a supported FSM.
 
-module fsm_case_next_other_assign_ok (
+module near_canonical_state_d_case (
     input logic clk,
     input logic rst,
     input logic start
 );
   typedef enum logic [1:0] {
-    S0 = 2'b00,
-    S1 = 2'b01,
-    S2 = 2'b10
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
   } state_t;
 
-  logic [1:0] aux;
   state_t state_q /*verilator fsm_reset_arc*/;
   state_t state_d;
 
-  initial aux = 2'b00;
-
-  always_comb begin
-    aux[0] = start;
-    state_d = state_q;
+  // Unsupported for the plain-always warning scan: case(state_d) is only
+  // near-supported when it follows the canonical state_d = state_q default.
+  always @(posedge clk) begin
+    state_d = S1;
     case (state_d)
       S0: state_d = start ? S1 : S2;
       default: state_d = S0;
@@ -34,44 +32,40 @@ module fsm_case_next_other_assign_ok (
   end
 
   always_ff @(posedge clk) begin
-    if (rst) begin
-      state_q <= S0;
-    end else begin
-      state_q <= state_d;
-    end
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
   end
 endmodule
 
-module fsm_case_next_other_lhs_ok (
+module selector_matches_noassign (
     input logic clk,
     input logic rst,
     input logic start
 );
   typedef enum logic [1:0] {
-    S0 = 2'b00,
-    S1 = 2'b01,
-    S2 = 2'b10
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
   } state_t;
 
+  logic other;
   state_t state_q /*verilator fsm_reset_arc*/;
   state_t state_d;
-  state_t other_d;
 
-  always_comb begin
-    other_d = state_q;
+  // The selector matches the FSM state, but the case body never assigns
+  // state_d, so the warning scan should ignore it while leaving zero-hit
+  // state points behind.
+  always @(posedge clk) begin
     state_d = state_q;
-    case (state_d)
-      S0: state_d = start ? S1 : S2;
-      default: state_d = S0;
+    case (state_q)
+      S0: other = start;
+      default: other = 1'b0;
     endcase
   end
 
   always_ff @(posedge clk) begin
-    if (rst) begin
-      state_q <= S0;
-    end else begin
-      state_q <= state_d;
-    end
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
   end
 endmodule
 
@@ -82,10 +76,8 @@ module t (
   logic start;
   integer cyc;
 
-  fsm_case_next_other_assign_ok case_next_other_assign_ok_u (
-      .clk(clk), .rst(rst), .start(start));
-  fsm_case_next_other_lhs_ok case_next_other_lhs_ok_u (
-      .clk(clk), .rst(rst), .start(start));
+  near_canonical_state_d_case near_canonical_state_d_case_u(.*);
+  selector_matches_noassign selector_matches_noassign_u(.*);
 
   initial begin
     rst = 1'b1;

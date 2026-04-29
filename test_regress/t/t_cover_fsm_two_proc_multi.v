@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Group supported multi-process and nearby supported-core variants so the
+// main two-process / three-block extraction family stays in one place.
+
 module fsm_basic (
     input logic clk,
     input logic rst,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage ignores forced non-enum state variables that are too wide
+# DESCRIPTION: Verilator: FSM coverage keeps zero-hit records for near-miss plain always shapes
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage-fsm'])
+test.compile(verilator_flags2=['--cc --coverage-fsm', '-Werror-COVERIGN'])
 
 test.execute()
 

@@ -5,6 +5,9 @@
         // SPDX-FileCopyrightText: 2026 Wilson Snyder
         // SPDX-License-Identifier: CC0-1.0
         
+        // Group accepted canonical case(state_d) forms so supported next-state
+        // defaults stay separate from the rejected wrong-RHS and tail-mismatch shapes.
+        
         module fsm_case_next_other_assign_ok (
             input logic clk,
             input logic rst,

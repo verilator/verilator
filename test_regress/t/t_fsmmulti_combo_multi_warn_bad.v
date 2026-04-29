@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Group the combo-family multi-candidate warnings where two supported
+// transition sites compete and the detector must keep only the first one.
+
 module same_always_warn (
     input logic clk
 );

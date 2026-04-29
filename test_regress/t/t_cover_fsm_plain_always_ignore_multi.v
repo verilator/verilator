@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Group plain-always warning-scan shapes that should be ignored silently
+// before the detector ever decides an FSM candidate is present.
+
 module ignore_sel_expr (
     input logic clk,
     input logic rst,

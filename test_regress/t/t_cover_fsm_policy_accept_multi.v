@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Group accepted policy-driven forms that should stay inferred, even though
+// they exercise different coverage attributes or non-enum state policies.
+
 module fsm_style_incl (
     input logic clk,
     input logic rst,

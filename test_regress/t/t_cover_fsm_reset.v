@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Group accepted simulator-style reset semantics, including reset include /
+// exclude behavior and nearby fallback cases that should still preserve FSMs.
+
 module fsm_reset_policy (
     input logic clk,
     input logic rst
