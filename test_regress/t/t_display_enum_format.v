@@ -15,7 +15,13 @@ module t (
     E2 = 2
   } my_e;
 
+  typedef enum logic [63:0] {
+    W64A = 64'h1,
+    W64B = 64'h0000_0001_0000_0001
+  } wide64_e;
+
   my_e e;
+  wide64_e e64;
 `define check(got, exp) do if ((got) != (exp)) begin \
       $write("%%Error: %s:%0d: got='%s' exp='%s'\n", `__FILE__, `__LINE__, got, exp); \
       $stop; \
@@ -92,6 +98,13 @@ module t (
     `check($sformatf("pre %% %s post", e), "pre % E2 post");
     // Complex enum expressions (non-var-ref) in format args.
     `check($sformatf("%s", (1'b1 ? E2 : E0)), "E2");
+    // 64-bit enums should preserve bits above 32 in both named and numeric cases.
+    e64 = W64B;
+    `check($sformatf("%p", e64), "W64B");
+    `check($sformatf("%s", e64), "W64B");
+    e64 = wide64_e'(64'h0000_0002_0000_0001);
+    `check($sformatf("%p", e64), "8589934593");
+    `check($sformatf("%s", e64), "8589934593");
     // Exercise display/write-family formatting path in addition to $sformatf checks.
     $display("display-valid:%s:%0d:%p", e, 7, e);
     $write("write-valid:%s:%0d:%p\n", e, 8, e);
@@ -142,6 +155,8 @@ module t (
     `check($sformatf(fmt, 9, e, 7), "9:3:7");
     fmt = {"%", "s", " %h %", "p", empty_no_opt};
     `check($sformatf(fmt, e, 4'hA, e), "3 a 3");
+    fmt = {"%", "p", empty_no_opt};
+    `check($sformatf(fmt, e64), "8589934593");
 
     $write("*-* All Finished *-*\n");
     $finish;
