@@ -980,6 +980,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout DPI arguments to Internal types, and construct the call
         AstCExpr* const callp = new AstCExpr{flp};
+        AstVarRef* const args{};
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -988,8 +989,11 @@ class TaskVisitor final : public VNVisitor {
             portp->protect(false);
             // Add argument to call
             const VAccess access = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
-            callp->add(", ");
-            callp->add(new AstVarRef{portp->fileline(), vscp, access});
+            if (args) {
+                args->addNext(new AstVarRef{portp->fileline(), vscp, access});
+            } else {
+                args = new AstVarRef{portp->fileline(), vscp, access};
+            }
             return vscp;
         };
 
@@ -1288,29 +1292,6 @@ class TaskVisitor final : public VNVisitor {
         if (v3Global.opt.profExec()) {
             cfuncp->addStmtsp(AstCStmt::profExecSectionPop(nodep->fileline(), "dpiimports"));
         }
-    }
-
-    AstVarScope* getDpiImportTrigger() {
-        AstNetlist* const netlistp = v3Global.rootp();
-        AstVarScope* dpiImportTriggerp = netlistp->dpiImportTriggerp();
-        if (!dpiImportTriggerp) {
-            FileLine* const fl = m_topScopep->fileline();
-            const string name{"__Vdpi_import_trigger"};
-            AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
-            m_topScopep->scopep()->modp()->addStmtsp(varp);
-            dpiImportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
-            m_topScopep->scopep()->addVarsp(dpiImportTriggerp);
-            netlistp->dpiImportTriggerp(dpiImportTriggerp);
-        }
-        return dpiImportTriggerp;
-    }
-
-    AstNode* createFuncImportCheck(FileLine* const flp) {
-        AstCStmt* const stmtp = new AstCStmt{flp};
-        stmtp->add("VL_FATAL_MT(\"\", 0 , \"\", \"RuntimeError: Exported task called from "
-                   "function context.\");");
-        AstVarRef* const varRefp = new AstVarRef{flp, getDpiImportTrigger(), VAccess::READ};
-        return new AstIf{flp, varRefp, stmtp, nullptr};
     }
 
     AstVarScope* getDpiExportTrigger() {
