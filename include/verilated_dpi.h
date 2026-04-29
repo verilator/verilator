@@ -142,8 +142,13 @@ decltype(auto) awaitExport(Callable&& call, Args&&... args) {
                         "DPI exported task called from function context");
         }
     }
-    // Might be a task without timings or a function
-    return call(std::forward<Args>(args)...);
+
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        void>::value) {
+        call(std::forward<Args>(args)...);
+    } else {
+        return call(std::forward<Args>(args)...);
+    }
 }
 
 };  //namespace VerilatedDpi

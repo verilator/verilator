@@ -64,17 +64,22 @@ VlCoroutine callImportFiber(Callable&& call, Args&&... args) {
 // Must be called from within a fiber context (i.e., from C code called via DPI import)
 template <typename Callable, typename... Args>
 decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
-    static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), VlCoroutine>::value,
-                  "Expected the exported function to be a VlCoroutine");
-    VlFiber* const fiberp = VlFiber::current();
-    if (VL_UNLIKELY(!fiberp)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "DPI export with timing invoked outside of a fiber context");
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        VlCoroutine>::value) {
+        VlFiber* const fiberp = VlFiber::current();
+        if (VL_UNLIKELY(!fiberp)) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",
+                        "DPI export with timing invoked outside of a fiber context");
+        }
+        // Call will return on first delay/event encountered
+        VlCoroutine local{call(std::forward<Args>(args)...)};
+        local.setFiberContinuation(fiberp);
+        while (!local.await_ready()) { VlFiber::yield(); }
+    } else if (std::is_same<decltype(call(std::forward<Args>(args)...)), void>::value) {
+        return call(std::forward<Args>(args)...);
+    } else {
+        call(std::forward<Args>(args)...);
     }
-    // Call will return on first delay/event encountered
-    VlCoroutine local{call(std::forward<Args>(args)...)};
-    local.setFiberContinuation(fiberp);
-    while (!local.await_ready()) { VlFiber::yield(); }
 }
 };  //namespace VerilatedDpi
 

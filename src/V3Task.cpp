@@ -979,8 +979,9 @@ class TaskVisitor final : public VNVisitor {
                   + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
 
         // Convert input/inout DPI arguments to Internal types, and construct the call
-        AstCExpr* const callp = new AstCExpr{flp};
-        AstVarRef* const args{};
+        AstCFuncHard* const callExportp = new AstCFuncHard{nodep->fileline()};
+        callExportp->dtypeSetVoid();
+        AstVarRef* args{};
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -997,14 +998,11 @@ class TaskVisitor final : public VNVisitor {
             return vscp;
         };
 
-        if (v3Global.opt.timing().isTrue()) {
-            callp->add("__Vcb, ");
-        } else {
-            callp->add("(*__Vcb)(");
-        }
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "__Vcb"});
 
         // First argument is the Syms
-        callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "(" + EmitCUtil::symClassName()
+                                                                  + "*)(__Vscopep->symsp())"});
         // The function has to be called by returning from fiber context first, if the timings are
 
         // Add function arguments
@@ -1030,19 +1028,16 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) addFuncArg(rtnvarp);
 
         // used
-        if (v3Global.opt.timing().isTrue()) {
-            std::stringstream awaitExportFunc;
-            awaitExportFunc << "VerilatedDpi::awaitExport<" << std::to_string(nodep->verilogTask())
-                            << ">";
-            AstCStmt* const awaitExportp = new AstCStmt{nodep->fileline(), awaitExportFunc.str()};
-            awaitExportp->add("(");
-            awaitExportp->add(callp);
-            awaitExportp->add(");");
-            funcp->addStmtsp(awaitExportp);
+        if (v3Global.opt.timing().isTrue() && nodep->verilogTask()) {
+            callExportp->function(VCFunction::AWAIT_EXPORT_IN_FIBER);
+            callExportp->addPinsp(args);
+            callExportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});
+            funcp->addStmtsp(callExportp->makeStmt());
         } else {
-            callp->add(");");
-            AstStmtExpr* const stmtp = new AstStmtExpr{nodep->fileline(), callp};
-            funcp->addStmtsp(stmtp);
+            callExportp->function(VCFunction::AWAIT_EXPORT);
+            callExportp->addPinsp(args);
+            callExportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});
+            funcp->addStmtsp(callExportp->makeStmt());
         }
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
