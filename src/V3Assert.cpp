@@ -429,6 +429,11 @@ class AssertVisitor final : public VNVisitor {
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
         if (passsp) passsp->unlinkFrBackWithNext();
+        if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            failsp = assertp->failsp();
+        } else if (AstAssertIntrinsic* const assertp = VN_CAST(nodep, AssertIntrinsic)) {
+            failsp = assertp->failsp();
+        }
         if (failsp) failsp->unlinkFrBackWithNext();
 
         bool selfDestruct = false;
