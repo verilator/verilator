@@ -10,9 +10,12 @@ class myClass;
   endgroup
 
   function new();
+    real cov_result;
     embeddedCg = new();
     embeddedCg.sample();
-    void'(embeddedCg.get_coverage());
+    cov_result = embeddedCg.get_coverage();
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_coverage() out of range: %f", cov_result);
   endfunction
 endclass
 
@@ -22,9 +25,12 @@ class secondClass;
   endgroup
 
   function new();
+    real cov_result;
     embeddedCg = new();
     embeddedCg.sample();
-    void'(embeddedCg.get_coverage());
+    cov_result = embeddedCg.get_coverage();
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_coverage() out of range: %f", cov_result);
   endfunction
 endclass
 

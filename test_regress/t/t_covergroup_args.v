@@ -37,20 +37,35 @@ module t;
   PlainClass plain_inst = new;  // Non-covergroup class instance - must not affect covergroup coverage
 
   function void x();
+    real cov_result;
     cov1.set_inst_name("the_inst_name");
     cov1.start();
     cov1.sample();
     cov1.stop();
 
-    void'(cov2.get_coverage());
-    void'(cov2.get_coverage(i, j));
+    cov_result = cov2.get_coverage();
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_coverage() out of range: %f", cov_result);
+
+    cov_result = cov2.get_coverage(i, j);
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_coverage(i,j) return out of range: %f", cov_result);
+
     // verilator lint_off IGNOREDRETURN
     cov2.get_inst_coverage();
     // verilator lint_on IGNOREDRETURN
-    void'(cov2.get_inst_coverage(i, j));
 
-    void'(cg::get_coverage());
-    void'(cg::get_coverage(i, j));
+    cov_result = cov2.get_inst_coverage(i, j);
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_inst_coverage(i,j) return out of range: %f", cov_result);
+
+    cov_result = cg::get_coverage();
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: cg::get_coverage() out of range: %f", cov_result);
+
+    cov_result = cg::get_coverage(i, j);
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: cg::get_coverage(i,j) return out of range: %f", cov_result);
   endfunction
 
   initial begin
