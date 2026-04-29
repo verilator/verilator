@@ -59,6 +59,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <limits>
 #include <list>
@@ -80,6 +81,7 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/time.h>
 # include <sys/resource.h>
+# include <unistd.h>
 # define _VL_HAVE_GETRLIMIT
 #endif
 
@@ -443,6 +445,19 @@ static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Used only to construct seed for Verilator's PRNG.
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};  // Otherwise rand is unsafe
+    // Seed the system RNG once with a non-deterministic value, since
+    // lrand48()/rand() otherwise default to a fixed seed of 0 and would
+    // make every "unseeded" simulation run produce identical output.
+    static const bool s_seeded = []() {
+        const uint64_t now = static_cast<uint64_t>(std::time(nullptr));
+#if defined(_WIN32) && !defined(__CYGWIN__)
+        std::srand(static_cast<unsigned>(now));
+#else
+        srand48(static_cast<long>(now) ^ static_cast<long>(getpid()));
+#endif
+        return true;
+    }();
+    (void)s_seeded;
 #if defined(_WIN32) && !defined(__CYGWIN__)
     // Windows doesn't have lrand48(), although Cygwin does.
     return (std::rand() << 16) ^ std::rand();
