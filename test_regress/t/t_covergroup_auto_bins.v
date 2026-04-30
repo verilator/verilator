@@ -11,7 +11,6 @@ module t;
   `define stop $stop
   `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
-  /* verilator lint_off CMPCONST */
   logic [2:0] data;   // 3-bit: 0-7
   logic [3:0] data4;  // 4-bit signal
   logic [63:0] data64;  // 64-bit signal
@@ -42,7 +41,6 @@ module t;
     option.auto_bin_max = 2;
     coverpoint data64;
   endgroup
-  /* verilator lint_on CMPCONST */
 
   initial begin
     automatic cg       cg_inst      = new;

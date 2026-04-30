@@ -13,7 +13,6 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t;
-  // verilator lint_off COVERIGN
   logic [3:0] data;
 
   covergroup cg();

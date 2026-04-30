@@ -5,7 +5,6 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-/* verilator lint_off COVERIGN */
 module t;
   covergroup cg_with_sample(int init) with function sample (int addr, bit is_read = 1'b0);
   endgroup

@@ -34,7 +34,6 @@ class secondClass;
   endfunction
 endclass
 
-// verilator lint_off COVERIGN
 module t;
   myClass mc;
   secondClass sc;
@@ -44,4 +43,3 @@ module t;
     $finish;
   end
 endmodule
-// verilator lint_on COVERIGN
