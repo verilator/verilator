@@ -44,11 +44,20 @@ module t (
     end
     else begin
       case (state)
-        S0:
-        if (sel) state <= S1;
-        else state <= S2;
-        S1: state <= S0;
-        default: state <= S0;
+        S0: begin
+          if (sel) begin
+            state <= S1;
+          end
+          else begin
+            state <= S2;
+          end
+        end
+        S1: begin
+          state <= S0;
+        end
+        default: begin
+          state <= S0;
+        end
       endcase
     end
   end

@@ -26,7 +26,7 @@
             else
 %000001       case (state_incl)
         // [FSM coverage]
-%000001        // [fsm_arc t.reset_policy_u.state_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.reset_policy_u.state_incl::ANY->S0[reset_include]]
 %000001        // [fsm_arc t.reset_policy_u.state_incl::S0->S1]
 %000000        // [fsm_state t.reset_policy_u.state_incl::S0] *** UNCOVERED ***
 %000001        // [fsm_state t.reset_policy_u.state_incl::S1]
@@ -40,7 +40,7 @@
             else
 %000001       case (state_excl)
         // [FSM coverage]
-%000001        // [fsm_arc t.reset_policy_u.state_excl::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.reset_policy_u.state_excl::ANY->S0[reset]]
 %000001        // [fsm_arc t.reset_policy_u.state_excl::S0->S1]
 %000000        // [fsm_state t.reset_policy_u.state_excl::S0] *** UNCOVERED ***
 %000001        // [fsm_state t.reset_policy_u.state_excl::S1]
@@ -83,7 +83,7 @@
             state_d = state_q;
 %000002     case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.reset_other_assign_ok_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.reset_other_assign_ok_u.state_q::ANY->S0[reset]]
 %000002        // [fsm_arc t.reset_other_assign_ok_u.state_q::S0->S1]
 %000000        // [fsm_arc t.reset_other_assign_ok_u.state_q::S0->S2]
 %000002        // [fsm_state t.reset_other_assign_ok_u.state_q::S0]

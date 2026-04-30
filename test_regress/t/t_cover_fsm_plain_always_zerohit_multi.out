@@ -1,0 +1,9 @@
+# SystemC::Coverage-3
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl28n5tfsm_arcpagev_fsm_arc/$rootot.near_canonical_state_d_case_u.state_d::S0->S1Fvt.near_canonical_state_d_case_u.state_dFfS0FtS1htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl28n5tfsm_arcpagev_fsm_arc/$rootot.near_canonical_state_d_case_u.state_d::S0->S2Fvt.near_canonical_state_d_case_u.state_dFfS0FtS2htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl28n5tfsm_statepagev_fsm_state/$rootot.near_canonical_state_d_case_u.state_d::S0Fvt.near_canonical_state_d_case_u.state_dFtS0htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl28n5tfsm_statepagev_fsm_state/$rootot.near_canonical_state_d_case_u.state_d::S1Fvt.near_canonical_state_d_case_u.state_dFtS1htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl28n5tfsm_statepagev_fsm_state/$rootot.near_canonical_state_d_case_u.state_d::S2Fvt.near_canonical_state_d_case_u.state_dFtS2htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl60n5tfsm_statepagev_fsm_state/$rootot.selector_matches_noassign_u.state_q::S0Fvt.selector_matches_noassign_u.state_qFtS0htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl60n5tfsm_statepagev_fsm_state/$rootot.selector_matches_noassign_u.state_q::S1Fvt.selector_matches_noassign_u.state_qFtS1htop.TOP' 0
+C 'ft/t_cover_fsm_plain_always_zerohit_multi.vl60n5tfsm_statepagev_fsm_state/$rootot.selector_matches_noassign_u.state_q::S2Fvt.selector_matches_noassign_u.state_qFtS2htop.TOP' 0
