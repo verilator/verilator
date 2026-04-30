@@ -8338,9 +8338,8 @@ class WidthVisitor final : public VNVisitor {
                                            VAttrType::ENUM_NAME),
                                 new AstSFormatF{subargp->fileline(), fallbackFormat, true,
                                                 subargp->cloneTreePure(false)}};
-                            subargp->replaceWith(
-                                new AstSFormatArg{subargp->fileline(), VFormatAttr::COMPLEX,
-                                                  newp});
+                            subargp->replaceWith(new AstSFormatArg{subargp->fileline(),
+                                                                   VFormatAttr::COMPLEX, newp});
                             VL_DO_DANGLING(pushDeletep(subargp), subargp);
                         }
                     }
