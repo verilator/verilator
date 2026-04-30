@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile(timing_loop=True, verilator_flags2=['--timing'])
+test.top_filename = "t/t_property_pexpr_unsup.v"
 
-test.execute()
+test.lint(expect_filename=test.golden_filename,
+          verilator_flags2=['-DPARSING_TIME', '--assert', '--timing', '--error-limit 1000'],
+          fails=True)
 
 test.passes()

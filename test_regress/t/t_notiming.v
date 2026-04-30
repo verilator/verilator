@@ -26,15 +26,16 @@ module t;
   initial #1 ->e;
   initial #2 $stop; // timeout
 
-  mailbox#(int) m = new;
-  semaphore s = new;
-  initial begin
-     int i;
-     m.put(i);
-     m.get(i);
-     m.peek(i);
-     s.get();
-  end
+   mailbox#(int) m = new;
+   semaphore s = new;
+   initial begin
+       int i;
+       m.put(i);
+       m.get(i);
+       m.peek(i);
+       s.get();
+   end
+   assert property (@(e) s_eventually 1'h1);
 endmodule
 
 `ifdef VERILATOR_TIMING
