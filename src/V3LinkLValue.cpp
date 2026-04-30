@@ -267,10 +267,10 @@ class LinkLValueVisitor final : public VNVisitor {
         m_setRefLvalue = VAccess::WRITE;
         iterateAndNextNull(nodep->lhsp());
     }
-    void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
-    void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
-    void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
-    void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreInc* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostInc* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreDec* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostDec* nodep) override { prepost_visit(nodep); }
 
     // Nodes that change LValue state
     void visit(AstSel* nodep) override {

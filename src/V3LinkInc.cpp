@@ -16,20 +16,20 @@
 // V3LinkInc's Transformations:
 //
 //      prepost_expr_visit
-//        PREADD/PRESUB
+//        PREINC/PREDEC
 //          Create a temporary __VIncrementX variable, assign the value of
 //          the current variable value to it, substitute the current
 //          variable with the temporary one in the statement.
 //          Increment/decrement the original variable with by the given
 //          value.
-//        POSTADD/POSTSUB
+//        POSTINC/POSTDEC
 //          Increment/decrement the current variable by the given value.
 //          Create a temporary __VIncrementX variable, assign the value of
 //          of the current variable (after the operation) to it. Substitute
 //          The original variable with the temporary one in the statement.
 //
 //      prepost_stmt_visit
-//        PREADD/PRESUB/POSTADD/POSTSUB
+//        PREINC/PREDEC/POSTINC/POSTDEC
 //          Increment/decrement the current variable by the given value.
 //          The order (pre/post) doesn't matter outside statements thus
 //          the pre/post operations are treated equally and there is no
@@ -177,8 +177,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void visit(AstStmtExpr* nodep) override {
         AstNodeExpr* const exprp = nodep->exprp();
-        if (VN_IS(exprp, PostAdd) || VN_IS(exprp, PostSub) || VN_IS(exprp, PreAdd)
-            || VN_IS(exprp, PreSub)) {
+        if (VN_IS(exprp, PostInc) || VN_IS(exprp, PostDec) || VN_IS(exprp, PreInc)
+            || VN_IS(exprp, PreDec)) {
             // Repalce this StmtExpr with the expression, visiting it will turn it into a NodeStmt
             nodep->replaceWith(exprp->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -222,10 +222,10 @@ class LinkIncVisitor final : public VNVisitor {
     }
     AstNodeExpr* getOperationp(AstNode* const nodep, AstNodeExpr* const lhsp,
                                AstNodeExpr* const rhsp) {
-        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
+        if (VN_IS(nodep, PreDec) || VN_IS(nodep, PostDec)) {
             return new AstSub{nodep->fileline(), lhsp, rhsp};
         }
-        if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PostAdd)) {
+        if (VN_IS(nodep, PreInc) || VN_IS(nodep, PostInc)) {
             return new AstAdd{nodep->fileline(), lhsp, rhsp};
         }
         if (AstAssignCompound* assignp = VN_CAST(nodep, AssignCompound)) {
@@ -367,8 +367,8 @@ class LinkIncVisitor final : public VNVisitor {
         // Define what operation will we be doing
         AstNodeExpr* const operp = getOperationp(nodep, readp->cloneTreePure(true), newconstp);
 
-        if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
-            // PreAdd/PreSub operations
+        if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
+            // PreInc/PreDec operations
             // Immediately after declaration - increment it by one
             AstAssign* const assignp
                 = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
@@ -376,7 +376,7 @@ class LinkIncVisitor final : public VNVisitor {
             assignp->addNext(new AstAssign{fl, writep, new AstVarRef{fl, varp, VAccess::READ}});
             insertBeforeStmt(nodep, assignp);
         } else {
-            // PostAdd/PostSub operations
+            // PostInc/PostDec operations
             // Assign the original variable to the temporary one
             AstAssign* const assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
                                                      readp->cloneTreePure(true)};
@@ -389,10 +389,10 @@ class LinkIncVisitor final : public VNVisitor {
         nodep->replaceWith(new AstVarRef{readp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
-    void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
-    void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
-    void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreInc* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostInc* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreDec* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostDec* nodep) override { prepost_visit(nodep); }
     void visit(AstAssignCompound* nodep) override {
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)

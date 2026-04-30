@@ -3783,40 +3783,40 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Add, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Add, $2, $1, $3}; }
         |       fexprLvalue yP_MINUSEQ   expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Sub, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Sub, $2, $1, $3}; }
         |       fexprLvalue yP_TIMESEQ   expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Mul, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Mul, $2, $1, $3}; }
         |       fexprLvalue yP_DIVEQ     expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Div, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Div, $2, $1, $3}; }
         |       fexprLvalue yP_MODEQ     expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ModDiv, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ModDiv, $2, $1, $3}; }
         |       fexprLvalue yP_ANDEQ     expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::And, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::And, $2, $1, $3}; }
         |       fexprLvalue yP_OREQ      expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Or, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Or, $2, $1, $3}; }
         |       fexprLvalue yP_XOREQ     expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::Xor, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Xor, $2, $1, $3}; }
         |       fexprLvalue yP_SLEFTEQ   expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftL, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftL, $2, $1, $3}; }
         |       fexprLvalue yP_SRIGHTEQ  expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftR, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftR, $2, $1, $3}; }
         |       fexprLvalue yP_SSRIGHTEQ expr
-                        { $$ = new AstAssignCompound{AstAssignCompound::Operation::ShiftRS, $2, $1, $3}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftRS, $2, $1, $3}; }
         ;
 
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
         //                      // Need fexprScope instead of variable_lvalue to prevent conflict
                 ~l~exprScope yP_PLUSPLUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, $1}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostInc{$2, $1}; }
         |       ~l~exprScope yP_MINUSMINUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostSub{$2, $1}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostDec{$2, $1}; }
         //                      // Need expr instead of variable_lvalue to prevent conflict
         |       yP_PLUSPLUS     expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreAdd{$1, $2}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreInc{$1, $2}; }
         |       yP_MINUSMINUS   expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, $2}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreDec{$1, $2}; }
         ;
 
 finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
