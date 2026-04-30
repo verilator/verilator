@@ -1,21 +1,18 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain
-// SPDX-FileCopyrightText: 2024 Antmicro
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-function bit get_1_or_0(bit get_1);
-  return get_1 ? 1'b1 : 1'b0;
-endfunction
-
 module t;
-
   initial begin
-    if (get_1_or_0(0) ==? get_1_or_0(1)) $stop;
-    if (!(get_1_or_0(0) !=? get_1_or_0(1))) $stop;
-
+    if (('bxz10 ==? 'bxxx0) !== 1) $stop;
+    if (('bxz10 ==? 'bxxx1) !== 0) $stop;
+    if (('bxz10 ==? 'bx1xx) !== 'x) $stop;
+    if (('bxz10 !=? 'bxxx1) !== 1) $stop;
+    if (('bxz10 !=? 'bxxx0) !== 0) $stop;
+    if (('bxz10 !=? 'b1xx0) !== 'x) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
-
 endmodule

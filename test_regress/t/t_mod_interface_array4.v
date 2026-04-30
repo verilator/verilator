@@ -10,7 +10,7 @@
 // verilog_format: on
 
 interface intf ();
-  integer index;
+  int index;
 endinterface
 
 module t (

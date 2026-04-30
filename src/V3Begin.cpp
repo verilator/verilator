@@ -584,11 +584,11 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    firstp->dtypeSetSigned32();
+    firstp->dtypeSetInteger();
     AstNodeExpr* const nextp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    nextp->dtypeSetSigned32();
+    nextp->dtypeSetInteger();
 
     // _Vmore = array.first(__Vnext)
     loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
@@ -693,7 +693,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                         : subfromp->cloneTreePure(false),
                     VCMethod::DYN_SIZE};
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                rightp->dtypeSetSigned32();
+                rightp->dtypeSetInt();
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp, leftp,
                                           rightp, VNType::Lt);
