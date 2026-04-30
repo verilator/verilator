@@ -205,6 +205,12 @@ VK_OBJS_SLOW = $(addsuffix .o, $(VM_SLOW))
 
 VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
 
+ifneq ($(VM_TRACE_FST),0)
+ifneq ($(VM_TRACE_FST),)
+    LDLIBS += -llz4 -lz
+endif
+endif
+
 # Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
 # run-time library. In practice everything is actually in VM_GLOBAL_FAST,
 # but keeping the distinction for compatibility for now.
