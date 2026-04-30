@@ -296,7 +296,9 @@ class SvaNfaBuilder final {
     AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, int cloneCount) {
         constexpr int kHoistThreshold = 2;
         if (cloneCount < kHoistThreshold) return nullptr;
-        if (!exprp->isPure()) return nullptr;
+        // IEEE 1800-2023 16.4 disallows side effects in sequence boolean exprs;
+        // defensive fallback if V3Width missed an impure expression.
+        if (!exprp->isPure()) return nullptr;  // LCOV_EXCL_LINE
         AstVar* const tempVarp = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp),
                                             m_modp->findBitDType()};
         AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
@@ -599,9 +601,9 @@ class SvaNfaBuilder final {
         const int n = getConstInt(repp->countp());
         if (n <= 0) return BuildResult::fail();
 
-        // Wait + match per iter -> 2n sites. NOT($sampled(x)) is the
-        // value-level identity of $sampled(NOT(x)) since pure-x is enforced
-        // by tryHoistSampled (IEEE 1800-2023 16.9.9).
+        // Wait + match per iter -> 2n sites. NOT($sampled(x)) matches
+        // $sampled(NOT(x)) at the value level (IEEE 1800-2023 16.9.9);
+        // purity is enforced uniformly via cloneTreePure inside sampledRefOrClone.
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, 2 * n);
         SvaStateVertex* currentp = entryVtxp;
         for (int i = 0; i < n; ++i) {
@@ -611,9 +613,7 @@ class SvaNfaBuilder final {
             // and was discarded by Phase 2 (waitNode has a self-loop Edge).
             guardedEdge(currentp, waitVtxp, flp);
             AstNodeExpr* const waitCondp
-                = hoistVarp ? static_cast<AstNodeExpr*>(
-                                  new AstNot{flp, new AstVarRef{flp, hoistVarp, VAccess::READ}})
-                            : sampled(new AstNot{flp, exprp->cloneTreePure(false)});
+                = new AstNot{flp, sampledRefOrClone(hoistVarp, exprp, flp)};
             guardedEdge(waitVtxp, waitVtxp, waitCondp, flp);
             SvaStateVertex* const matchVtxp = scopedCreateVertex();
             guardedLink(waitVtxp, matchVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
@@ -807,10 +807,13 @@ public:
     }
 
     // Call on build failure so V3AssertPre fallback sees an unmodified module.
+    // LCOV_EXCL_START -- only fires when a hoist-using build later fails,
+    // a rare interleaving not exercised by the regression suite.
     void discardHoists() {
         for (AstNode* const np : m_pendingHoistedNodes) { VL_DO_DANGLING(np->deleteTree(), np); }
         m_pendingHoistedNodes.clear();
     }
+    // LCOV_EXCL_STOP
 
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                           bool isTopLevelStep = false) {
