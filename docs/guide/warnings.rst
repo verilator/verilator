@@ -439,6 +439,24 @@ List Of Warnings
    in decreased performance.
 
 
+.. option:: CASTFOURSTATE
+
+   Warns about not supported four-state logic feature.
+   When two-state logic variant of a feature is fully supported,
+   an implicit cast to two-state type is made
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 5
+
+      module t;
+        integer fd;
+        initial begin
+         $fflush(fd);  // <- implicit conversion to two-state value
+        end
+      endmodule
+
+
 .. option:: CDCRSTLOGIC
 
    Historical, never issued since version 5.008.
@@ -1273,12 +1291,6 @@ List Of Warnings
    interpretation of little endian. It was therefore renamed to
    :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
    backwards compatibility, new projects should use :option:`ASCRANGE`.
-
-.. option:: LOGICCAST
-
-   Warns about not supported four-state logic feature.
-   When two-state logic variant of a feature is fully supported,
-   an implicit cast to two-state type is made
 
 .. option:: MINTYPMAXDLY
 

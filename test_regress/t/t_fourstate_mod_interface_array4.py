@@ -13,7 +13,7 @@ test.scenarios('simulator')
 
 test.top_filename = "t/t_mod_interface_array4.v"
 
-test.compile(v_flags2=["--fourstate", "--Wno-FUTURE", "-Wno-LOGICCAST"])
+test.compile(v_flags2=["--fourstate", "--Wno-FUTURE", "-Wno-CASTFOURSTATE"])
 
 test.execute()
 

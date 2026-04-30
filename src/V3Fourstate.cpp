@@ -1960,7 +1960,7 @@ class FourstateVisitor final : public VNVisitor {
         m_currentStmtp = nodep;
         if (nodep->filep() && isFourstate(nodep->filep())) {
             nodep->filep()->v3warn(
-                LOGICCAST,
+                CASTFOURSTATE,
                 "Some features are not supported with four-state values - cast it to two-state "
                 "logic or suppress this warning and it will be done implicitly");
             AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
@@ -1975,7 +1975,7 @@ class FourstateVisitor final : public VNVisitor {
         m_currentStmtp = nodep;
         if (isFourstate(nodep->filep())) {
             nodep->filep()->v3warn(
-                LOGICCAST,
+                CASTFOURSTATE,
                 "Some features are not supported with four-state values - cast it to two-state "
                 "logic or suppress this warning and it will be done implicitly");
             AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
@@ -1990,7 +1990,7 @@ class FourstateVisitor final : public VNVisitor {
         m_currentStmtp = nodep;
         if (nodep->filep() && isFourstate(nodep->filep())) {
             nodep->filep()->v3warn(
-                LOGICCAST,
+                CASTFOURSTATE,
                 "Some features are not supported with four-state values - cast it to two-state "
                 "logic or suppress this warning and it will be done implicitly");
             AstNodeExpr* const newp = getTwoStateCast(nodep->filep());
@@ -2005,7 +2005,7 @@ class FourstateVisitor final : public VNVisitor {
             if (AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
                 if (isFourstate(exprp)) {
                     exprp->v3warn(
-                        LOGICCAST,
+                        CASTFOURSTATE,
                         "Some features are not supported with four-state values - cast it to "
                         "two-state "
                         "logic or suppress this warning and it will be done implicitly");
@@ -2032,7 +2032,7 @@ class FourstateVisitor final : public VNVisitor {
              exprp = VN_AS(exprp->nextp(), NodeExpr)) {
             if (isFourstate(exprp)) {
                 exprp->v3warn(
-                    LOGICCAST,
+                    CASTFOURSTATE,
                     "Some features are not supported with four-state values - cast it to "
                     "two-state logic or suppress this warning and it will be done implicitly");
                 if (AstSFormatArg* const sformatArgp = VN_CAST(exprp, SFormatArg)) {
