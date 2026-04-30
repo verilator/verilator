@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(expect_filename=test.golden_filename,
-             verilator_flags2=['--assert', '--timing'],
+             verilator_flags2=['--timing'],
              fails=test.vlt_all)
 
 test.passes()

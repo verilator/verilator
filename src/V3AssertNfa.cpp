@@ -816,11 +816,12 @@ public:
         if (!antResult.valid()) return antResult;
 
         // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
-        // the attempt-start cycle; true multi-cycle sequence LHS is unsupported.
+        // the attempt-start cycle. IEEE 1800-2023 16.12.9 permits a multi-cycle
+        // sequence LHS, so this is an implementation gap rather than illegal SV.
         if (isFollowedBy && antResult.termVertexp != entryVtxp) {
-            errorNodep->v3error(
-                "Unsupported: sequence expression as antecedent of followed-by (#-# / #=#)"
-                " (IEEE 1800-2023 16.12.9)");
+            errorNodep->v3warn(E_UNSUPPORTED,
+                               "Unsupported: sequence expression as antecedent of followed-by"
+                               " (#-# / #=#) (IEEE 1800-2023 16.12.9)");
             return BuildResult::failWithError();
         }
         UASSERT_OBJ(!isFollowedBy || antResult.finalCondp, errorNodep,
@@ -830,20 +831,16 @@ public:
         // reaching the antecedent terminal is a definitive event.
         SvaStateVertex* const trigVtxp = m_graph.createStateVertex();
         if (antResult.finalCondp) {
-            AstSampled* const sampp
-                = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
-            sampp->dtypeFrom(antResult.finalCondp);
-            m_graph.addLink(antResult.termVertexp, trigVtxp, sampp);
+            m_graph.addLink(antResult.termVertexp, trigVtxp,
+                            sampled(antResult.finalCondp->cloneTreePure(false)));
             // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
             // is live (termVtx reachable) and sampled(antecedent) is false.
             if (isFollowedBy) {
                 SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
                 sinkVtxp->m_isRejectSink = true;
-                AstSampled* const rejSampp
-                    = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
-                rejSampp->dtypeFrom(antResult.finalCondp);
                 SvaTransEdge* const ep
-                    = m_graph.addLink(antResult.termVertexp, sinkVtxp, rejSampp);
+                    = m_graph.addLink(antResult.termVertexp, sinkVtxp,
+                                      sampled(antResult.finalCondp->cloneTreePure(false)));
                 ep->m_rejectOnFail = true;
             }
             // finalCondp is cloned into the Sampled nodes; if the original is

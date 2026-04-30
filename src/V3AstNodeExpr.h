@@ -1667,18 +1667,16 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog Implication and Followed-By Operators
-    // Implication: overlapped "|->", non-overlapped "|=>" (IEEE 1800-2023 16.12.6)
-    // Followed-by: overlapped "#-#", non-overlapped "#=#" (IEEE 1800-2023 16.12.9)
-    // Antecedent-miss polarity differs: implication vacuously passes, followed-by
-    // non-vacuously fails.
+    // Implication |-> |=> (IEEE 1800-2023 16.12.6) and followed-by #-# #=#
+    // (IEEE 1800-2023 16.12.9). Antecedent-miss is vacuous-pass for implication
+    // and non-vacuous-fail for followed-by, hence the separate flag.
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
 private:
-    const bool m_isOverlapped;  // True if overlapped (|-> / #-#)
-    const bool m_isFollowedBy;  // True if followed-by (#-# / #=#)
+    const bool m_isOverlapped;
+    const bool m_isFollowedBy;
 
 public:
     AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped,
@@ -1695,17 +1693,14 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    // LCOV_EXCL_START -- AstImplication is lowered to NFA in V3AssertNfa before any
-    // AST CSE pass runs, so sameNode is never invoked; override exists for defense
-    // so a future caller cannot conflate operator variants via the base default.
+    // LCOV_EXCL_START -- AstImplication is lowered before any AST CSE pass; this
+    // override exists so the default (== returns true) cannot conflate variants.
     bool sameNode(const AstNode* samep) const override {
         const AstImplication* const asamep = VN_DBG_AS(samep, Implication);
         return m_isOverlapped == asamep->m_isOverlapped
                && m_isFollowedBy == asamep->m_isFollowedBy;
     }
     // LCOV_EXCL_STOP
-    // Followed-by requires multi-cycle NFA lowering for non-vacuous-fail semantics.
-    // Plain implication stays on the V3AssertPre boolean path.
     bool isMultiCycleSva() const override { return m_isFollowedBy; }
     bool isOverlapped() const { return m_isOverlapped; }
     bool isFollowedBy() const { return m_isFollowedBy; }
