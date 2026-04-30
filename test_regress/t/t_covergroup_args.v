@@ -10,13 +10,10 @@ class PlainClass;
 endclass
 
 // Top-level (file-scope) covergroup declared outside any module
-// verilator lint_off COVERIGN
 covergroup cg_toplevel;
   cp_tl: coverpoint 0;
 endgroup
-// verilator lint_on COVERIGN
 
-// verilator lint_off COVERIGN
 module t;
 
   int i, j;
@@ -51,9 +48,9 @@ module t;
     if (!(cov_result >= 0.0 && cov_result <= 100.0))
       $error("%m: get_coverage(i,j) return out of range: %f", cov_result);
 
-    // verilator lint_off IGNOREDRETURN
-    cov2.get_inst_coverage();
-    // verilator lint_on IGNOREDRETURN
+    cov_result = cov2.get_inst_coverage();
+    if (!(cov_result >= 0.0 && cov_result <= 100.0))
+      $error("%m: get_inst_coverage() out of range: %f", cov_result);
 
     cov_result = cov2.get_inst_coverage(i, j);
     if (!(cov_result >= 0.0 && cov_result <= 100.0))
