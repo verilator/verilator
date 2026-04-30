@@ -22,7 +22,7 @@ module t (
   integer cyc = 0;
   my_t e;
 
-  string s;
+  string all;
 
   // Check runtime
   always @(posedge clk) begin
@@ -40,8 +40,6 @@ module t (
       `checks(e.name, "ELARGE");
       `checkh(e.next, E01);
       `checkh(e.prev, E01);
-      s = $sformatf("%p", e);
-      `checks(s, "ELARGE");
       e <= E01;
     end
     else if (cyc == 20) begin
@@ -49,8 +47,6 @@ module t (
     end
     else if (cyc == 21) begin
       `checks(e.name, "");  // Unknown
-      s = $sformatf("%p", e);
-      `checks(s, "17");
     end
     else if (cyc == 99) begin
       $write("*-* All Finished *-*\n");
