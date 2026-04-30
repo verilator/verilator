@@ -758,8 +758,9 @@ public:
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
+    void dtypeSetInt() { dtypep(findIntDType()); }
+    void dtypeSetInteger() { dtypep(findIntegerDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
-    void dtypeSetSigned32() { dtypep(findIntegerDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
