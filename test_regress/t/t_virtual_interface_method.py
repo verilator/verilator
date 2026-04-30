@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(v_flags2=["--binary", '-Wno-IMPLICITSTATIC'], verilator_make_gmake=False)
+test.compile(v_flags2=["--binary"], verilator_make_gmake=False)
 
 test.execute()
 

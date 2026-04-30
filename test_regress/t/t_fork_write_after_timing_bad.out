@@ -1,8 +1,3 @@
-%Warning-IMPLICITSTATIC: t/t_fork_write_after_timing_bad.v:12:19: Variable's lifetime implicitly set to static because in static task with timing control.
-   12 |   task t1(ref int x);
-      |                   ^
-                         ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
-                         ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
 %Error: t/t_fork_write_after_timing_bad.v:12:19: It is illegal to use argument passing by reference for subroutines with a lifetime of static (IEEE 1800-2023 13.5.2)
                                                : ... note: In instance 't'
    12 |   task t1(ref int x);
