@@ -5426,7 +5426,7 @@ class AstCLog2 final : public AstNodeUniop {
 public:
     AstCLog2(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CLog2(fl, lhsp) {
-        dtypeSetInteger();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstCLog2;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
@@ -5817,7 +5817,7 @@ class AstRToIS final : public AstNodeUniop {
 public:
     AstRToIS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIS(fl, lhsp) {
-        dtypeSetInteger();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstRToIS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIS(lhs); }
