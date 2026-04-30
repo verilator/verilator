@@ -20,7 +20,6 @@ module t;
   task t2(inout int x);
     #5 `checkd(x, expected);
   endtask
-    
 
   task factorial1 (input [31:0] x, output [31:0] out);
     if (x >= 2) begin
@@ -37,7 +36,7 @@ module t;
     else
       factorial2 = 1;
   endfunction
-  
+
   int result;
   initial begin
     // t1
@@ -50,14 +49,14 @@ module t;
     `checkd(result, 3);
     t1(result);
     `checkd(result, 4);
-    
+
     factorial1(1, result);
     `checkd(result, 1);
     factorial1(3, result);
     `checkd(result, 6);
     factorial1(5, result);
     `checkd(result, 120);
-    
+
     `checkd(factorial2(1), 1);
     `checkd(factorial2(3), 6);
     `checkd(factorial2(5), 120);
