@@ -2061,16 +2061,15 @@ class FourstateVisitor final : public VNVisitor {
                     // something like:
                     //   Pin(foo())
                     // will turn into:
-                    //   func helper()
-                    //     if (called) return;
-                    //     called = true;
-                    //     foo(tmpValue, tmpXZ)
-                    //   Pin((helper(), tmpValue), (helper(), tmpXZ))
+                    //   wire tmp;
+                    //   always assign tmp = foo;  // <-- AstNodeAssign visitor will handle this
+                    //   Pin(tmp, tmp__Vxz)
                     exprp->v3warn(E_UNSUPPORTED,
                                   "Cells with pins that are not a variable reference or a "
                                   "constant are not supported with  --fourstate");
                     return;
-                } else if (needsSplitting(varp->dtypep())) {
+                }
+                if (needsSplitting(varp->dtypep())) {
                     AstPin* const newp
                         = new AstPin{nodep->fileline(), nodep->pinNum(),
                                      nodep->name().empty() ? "" : nodep->name() + XZ_SUFFIX,
