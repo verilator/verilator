@@ -230,26 +230,26 @@ class LinkIncVisitor final : public VNVisitor {
         }
         if (AstAssignCompound* assignp = VN_CAST(nodep, AssignCompound)) {
             switch (assignp->operation()) {
-            case AstAssignCompound::Operation::Add:
+            case AstAssignCompound::operation::Add:
                 return new AstAdd{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::And:
+            case AstAssignCompound::operation::And:
                 return new AstAnd{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Div:
+            case AstAssignCompound::operation::Div:
                 return new AstDiv{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::ModDiv:
+            case AstAssignCompound::operation::ModDiv:
                 return new AstModDiv{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Mul:
+            case AstAssignCompound::operation::Mul:
                 return new AstMul{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Or: return new AstOr{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::ShiftL:
+            case AstAssignCompound::operation::Or: return new AstOr{nodep->fileline(), lhsp, rhsp};
+            case AstAssignCompound::operation::ShiftL:
                 return new AstShiftL{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::ShiftR:
+            case AstAssignCompound::operation::ShiftR:
                 return new AstShiftR{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::ShiftRS:
+            case AstAssignCompound::operation::ShiftRS:
                 return new AstShiftRS{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Sub:
+            case AstAssignCompound::operation::Sub:
                 return new AstSub{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Xor:
+            case AstAssignCompound::operation::Xor:
                 return new AstXor{nodep->fileline(), lhsp, rhsp};
             }
         }

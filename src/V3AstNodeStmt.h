@@ -1409,7 +1409,7 @@ public:
 class AstAssignCompound final : public AstNodeAssign {
     // Compound assignments (+=, -=, *=, ...)
 public:
-    enum class Operation {
+    enum operation : uint8_t {
         Add,
         And,
         Div,
@@ -1424,10 +1424,10 @@ public:
     };
 
 private:
-    Operation m_operation;
+    enum operation m_operation;
 
 public:
-    AstAssignCompound(AstAssignCompound::Operation operation, FileLine* fl, AstNodeExpr* lhsp,
+    AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,
                       AstNodeExpr* rhsp, AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignCompound(fl, lhsp, rhsp, timingControlp) {
         this->m_operation = operation;
@@ -1438,7 +1438,7 @@ public:
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignCompound{operation(), fileline(), lhsp, rhsp, controlp};
     }
-    Operation operation() { return m_operation; }
+    operation operation() { return m_operation; }
 };
 class AstAssignCont final : public AstNodeAssign {
     // Continuous procedural 'assign'.  See AstAssignW for non-procedural version.
