@@ -1422,6 +1422,7 @@ public:
         Sub,
         Xor,
     };
+
 private:
     Operation m_operation;
 

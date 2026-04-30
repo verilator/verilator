@@ -240,8 +240,7 @@ class LinkIncVisitor final : public VNVisitor {
                 return new AstModDiv{nodep->fileline(), lhsp, rhsp};
             case AstAssignCompound::Operation::Mul:
                 return new AstMul{nodep->fileline(), lhsp, rhsp};
-            case AstAssignCompound::Operation::Or:
-                return new AstOr{nodep->fileline(), lhsp, rhsp};
+            case AstAssignCompound::Operation::Or: return new AstOr{nodep->fileline(), lhsp, rhsp};
             case AstAssignCompound::Operation::ShiftL:
                 return new AstShiftL{nodep->fileline(), lhsp, rhsp};
             case AstAssignCompound::Operation::ShiftR:
@@ -274,10 +273,10 @@ class LinkIncVisitor final : public VNVisitor {
 
         prepost_stmt_sel_visit(nodep, nodep->lhsp(), exprp);
     }
-    void prepost_stmt_sel_visit(AstNode* const nodep, AstNodeExpr* const lhsp, AstNodeExpr* const exprp) {
+    void prepost_stmt_sel_visit(AstNode* const nodep, AstNodeExpr* const lhsp,
+                                AstNodeExpr* const exprp) {
         AstSelBit* const rdSelbitp = VN_AS(lhsp, SelBit);
-        AstNodeVarRef* const rdFromp
-            = VN_AS(rdSelbitp->fromp()->cloneTreePure(true), NodeVarRef);
+        AstNodeVarRef* const rdFromp = VN_AS(rdSelbitp->fromp()->cloneTreePure(true), NodeVarRef);
         rdFromp->access(VAccess::READ);
         AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
         AstSelBit* const wrSelbitp = VN_CAST(lhsp, SelBit);
@@ -331,8 +330,8 @@ class LinkIncVisitor final : public VNVisitor {
 
         prepost_stmt_visit(nodep, exprp, storeTop, valuep);
     }
-    void prepost_stmt_visit(AstNode* const nodep, AstNodeExpr* const exprp, AstNodeExpr* const storeTop,
-                            AstNodeExpr* const valuep) {
+    void prepost_stmt_visit(AstNode* const nodep, AstNodeExpr* const exprp,
+                            AstNodeExpr* const storeTop, AstNodeExpr* const valuep) {
         V3LinkLValue::linkLValueSet(valuep, false);
         AstAssign* const assignp
             = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
