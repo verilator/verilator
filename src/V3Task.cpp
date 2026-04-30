@@ -1236,7 +1236,7 @@ class TaskVisitor final : public VNVisitor {
             callImportFiberp->dtypeSetVoid();
             AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportFiberp};
             // Add arguments
-            callImportFiberp->addPinsp(new AstCExpr{nodep->fileline(), dpiFuncp->name()});
+            callImportFiberp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
             if (!args.empty()) callImportFiberp->addPinsp(new AstCExpr{nodep->fileline(), args});
             cfuncp->addStmtsp(awaitp);
             cfuncp->rtnType("VlCoroutine");
@@ -1247,7 +1247,7 @@ class TaskVisitor final : public VNVisitor {
             // Add arguments
             addDebugInfo(callImportp);
             // Pass name of the DPI imported function to call
-            callImportp->addPinsp(new AstCExpr{nodep->fileline(), dpiFuncp->name()});
+            callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
             if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
             // Add parameter to indicate that this is a task
             callImportp->addParamsp(new AstConst{nodep->fileline(), nodep->verilogTask()});

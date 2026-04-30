@@ -1809,9 +1809,13 @@ public:
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
         const AstCFunc* const funcp = nodep->funcp();
-        UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
-        putns(nodep, "&");
-        puts(funcNameProtect(funcp));
+        if (funcp->dpiImportPrototype()) {
+            puts(funcNameProtect(funcp));
+        } else {
+            UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
+            putns(nodep, "&");
+            puts(funcNameProtect(funcp));
+        }
     }
     void visit(AstConst* nodep) override {  //
         if (m_wideTempRefp && nodep->isWide()) {
