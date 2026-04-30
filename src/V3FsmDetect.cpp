@@ -354,16 +354,17 @@ class FsmDetectVisitor final : public VNVisitor {
         explicit RegisterAlwaysAnalyzer(AstScope* scopep)
             : m_scopep{scopep} {}
 
-        std::vector<std::pair<AstCase*, AstNodeExpr*>> oneBlockCandidates(AstAlways* alwaysp) const {
+        std::vector<std::pair<AstCase*, AstNodeExpr*>>
+        oneBlockCandidates(AstAlways* alwaysp) const {
             std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
             AstNode* const stmtsp = alwaysp->stmtsp();
             AstIf* const firstIfp = VN_CAST(stmtsp, If);
             if (firstIfp) {
                 if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
-                    candidates.emplace_back(
-                        casep, FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
-                                   ? firstIfp->condp()
-                                   : nullptr);
+                    candidates.emplace_back(casep,
+                                            FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
+                                                ? firstIfp->condp()
+                                                : nullptr);
                 }
             }
             for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
@@ -377,8 +378,8 @@ class FsmDetectVisitor final : public VNVisitor {
             return FsmDetectVisitor::matchRegisterAlways(alwaysp, m_scopep, cand);
         }
 
-        void buildOneBlockCandidate(AstAlways* alwaysp, AstVarScope* vscp,
-                                    AstNodeExpr* resetCondp, FsmRegisterCandidate& reg) const {
+        void buildOneBlockCandidate(AstAlways* alwaysp, AstVarScope* vscp, AstNodeExpr* resetCondp,
+                                    FsmRegisterCandidate& reg) const {
             reg.scopep(m_scopep);
             reg.alwaysp(alwaysp);
             reg.stateVscp(vscp);
@@ -441,9 +442,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 } else if (selp->varScopep() != reg.stateVscp()) {
                     continue;
                 }
-                AstNode* const warnNodep
-                    = FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
-                                                                   reg.inclCond());
+                AstNode* const warnNodep = FsmDetectVisitor::caseSupportedTransitionNode(
+                    casep, reg.nextVscp(), reg.inclCond());
                 if (!warnNodep) continue;
                 match.matchedp = &reg;
                 match.warnNodep = warnNodep;
@@ -1034,16 +1034,16 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!matchedp) continue;
             if (!firstCand.stateVscp) {
                 const auto insertPair = m_comboPaired.emplace(
-                    matchedp->stateVscp(), FsmCaseCandidate{matchedWarnNodep,
-                                                            const_cast<AstVarScope*>(
-                                                                matchedp->stateVscp())});
+                    matchedp->stateVscp(),
+                    FsmCaseCandidate{matchedWarnNodep,
+                                     const_cast<AstVarScope*>(matchedp->stateVscp())});
                 if (!insertPair.second) {
                     matchedWarnNodep->v3warn(
-                        FSMMULTI,
-                        "FSM coverage: multiple supported transition candidates found "
-                        "for the same FSM in combinational always blocks. Only the "
-                        "first candidate will be instrumented."
-                            << candidateConflictContext(matchedWarnNodep, insertPair.first->second));
+                        FSMMULTI, "FSM coverage: multiple supported transition candidates found "
+                                  "for the same FSM in combinational always blocks. Only the "
+                                  "first candidate will be instrumented."
+                                      << candidateConflictContext(matchedWarnNodep,
+                                                                  insertPair.first->second));
                     continue;
                 }
                 firstCand.warnNodep = matchedWarnNodep;
@@ -1060,8 +1060,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                      "supported case statements found in the same "
                                      "combinational always block. Only the first "
                                      "candidate will be instrumented."
-                                         << candidateConflictContext(matchedWarnNodep,
-                                                                     firstCand));
+                                         << candidateConflictContext(matchedWarnNodep, firstCand));
         }
     }
 
