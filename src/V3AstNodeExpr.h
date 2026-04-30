@@ -2742,7 +2742,7 @@ class AstTimePrecision final : public AstNodeExpr {
 public:
     explicit AstTimePrecision(FileLine* fl)
         : ASTGEN_SUPER_TimePrecision(fl) {
-        dtypeSetInt();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstTimePrecision;
     string emitVerilog() override { return "$timeprecision"; }
@@ -2759,7 +2759,7 @@ class AstTimeUnit final : public AstNodeExpr {
 public:
     explicit AstTimeUnit(FileLine* fl)
         : ASTGEN_SUPER_TimeUnit(fl) {
-        dtypeSetInt();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstTimeUnit;
     string emitVerilog() override { return "$timeunit"; }
@@ -5447,7 +5447,7 @@ class AstCLog2 final : public AstNodeUniop {
 public:
     AstCLog2(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CLog2(fl, lhsp) {
-        dtypeSetInteger();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstCLog2;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
@@ -5839,7 +5839,7 @@ class AstRToIS final : public AstNodeUniop {
 public:
     AstRToIS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIS(fl, lhsp) {
-        dtypeSetInteger();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstRToIS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIS(lhs); }

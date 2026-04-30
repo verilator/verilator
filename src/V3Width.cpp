@@ -514,8 +514,8 @@ class WidthVisitor final : public VNVisitor {
     // Widths: Constant, terminal
     void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
-    void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInteger(); }
-    void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetInteger(); }
+    void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInteger2State(); }
+    void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetInt(); }
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});
@@ -1723,7 +1723,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->urandom()) {
                 nodep->dtypeSetUInt32();  // Says the spec
             } else {
-                nodep->dtypeSetInteger();  // Says the spec
+                nodep->dtypeSetInt();  // Says the spec
             }
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
@@ -6474,7 +6474,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFGetS* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetInteger();  // Spec says integer return
+            nodep->dtypeSetInteger2State();  // Spec says integer return
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
             userIterateAndNext(nodep->strgp(), WidthVP{SELF, BOTH}.p());
         }
@@ -6490,7 +6490,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFRead* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetInteger();  // Spec says integer return
+            nodep->dtypeSetInteger2State();  // Spec says integer return
             userIterateAndNext(nodep->memp(), WidthVP{SELF, BOTH}.p());
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
             if (nodep->startp()) {
@@ -6504,7 +6504,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFScanF* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetInteger();  // Spec says integer return
+            nodep->dtypeSetInteger2State();  // Spec says integer return
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
             userIterateAndNext(nodep->exprsp(), WidthVP{SELF, BOTH}.p());
         }
@@ -6512,7 +6512,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSScanF* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetInteger();  // Spec says integer return
+            nodep->dtypeSetInteger2State();  // Spec says integer return
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->exprsp(), WidthVP{SELF, BOTH}.p());
         }
@@ -6525,7 +6525,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
-            nodep->dtypeSetInteger();  // Spec says integer return
+            nodep->dtypeSetInteger2State();  // Spec says integer return
         }
     }
     void visit(AstSystemT* nodep) override {

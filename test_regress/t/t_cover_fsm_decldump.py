@@ -12,7 +12,7 @@ from pathlib import Path
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_cover_fsm_styles.v"
+test.top_filename = "t/t_cover_fsm_policy_accept_multi.v"
 
 # Dump the lowered AST so AstCoverOtherDecl::dump() sees FSM metadata-bearing
 # coverage declarations directly. This avoids JSON/schema coupling while still
@@ -22,7 +22,7 @@ test.lint(v_flags=["--coverage-fsm", "--dump-tree"])
 tree_files = [Path(filename) for filename in test.glob_some(test.obj_dir + "/*.tree")]
 tree_texts = [filename.read_text(encoding="utf8") for filename in tree_files]
 
-assert any("COVEROTHERDECL" in text and " fv=t.state" in text for text in tree_texts)
+assert any("COVEROTHERDECL" in text and " fv=t.style_u.state" in text for text in tree_texts)
 assert any(
     "COVEROTHERDECL" in text and " ff=ANY" in text and " ft=S0" in text and " fg=reset" in text
     for text in tree_texts)

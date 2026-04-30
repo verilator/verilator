@@ -760,6 +760,8 @@ public:
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
+    // TODO: add a type to handle 4-state integers with 2-state domain
+    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
