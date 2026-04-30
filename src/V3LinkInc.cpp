@@ -232,42 +232,29 @@ class LinkIncVisitor final : public VNVisitor {
             switch (assignp->operation()) {
             case AstAssignCompound::Operation::Add:
                 return new AstAdd{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::And:
                 return new AstAnd{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::Div:
                 return new AstDiv{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::ModDiv:
                 return new AstModDiv{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::Mul:
                 return new AstMul{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::Or:
                 return new AstOr{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::ShiftL:
                 return new AstShiftL{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::ShiftR:
                 return new AstShiftR{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::ShiftRS:
                 return new AstShiftRS{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::Sub:
                 return new AstSub{nodep->fileline(), lhsp, rhsp};
-                break;
             case AstAssignCompound::Operation::Xor:
                 return new AstXor{nodep->fileline(), lhsp, rhsp};
-                break;
-            default: nodep->v3fatalSrc("Unhandled compound assignment operation");
             }
-        } else {
-            nodep->v3fatalSrc("Unhandled compound assignment operation");
         }
+        nodep->v3fatalSrc("Unhandled compound assignment operation");
     }
     void prepost_stmt_sel_visit(AstNodeUniop* const nodep) {
         // Special case array[something]++, see comments at file top
