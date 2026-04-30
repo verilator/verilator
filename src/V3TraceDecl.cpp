@@ -142,6 +142,7 @@ class TraceDeclVisitor final : public VNVisitor {
     uint32_t m_offset = std::numeric_limits<uint32_t>::max();  // Offset for types
     int m_topFuncSize = 0;  // Size of the top function currently being built
     int m_subFuncSize = 0;  // Size of the sub function currently being built
+    bool m_forceNewLeaf = false;  // Force next addToSubFunc to start a fresh leaf
     size_t m_topScopeRootFuncCount = 0;  // Top-scope init functions used only for wrapper IOs
     bool m_topScopeRootPhase = false;  // Emitting top-scope wrapper IO declarations
     const int m_funcSizeLimit  // Maximum size of a function
@@ -304,7 +305,8 @@ class TraceDeclVisitor final : public VNVisitor {
             return;
         }
         // Defer trace splitting until V3Trace
-        if (m_subFuncps.empty()) {
+        if (m_subFuncps.empty() || m_forceNewLeaf) {
+            m_forceNewLeaf = false;
             FileLine* const flp = m_currScopep->fileline();
             const string n = cvtToStr(m_subFuncps.size());
             const string name
@@ -713,7 +715,17 @@ class TraceDeclVisitor final : public VNVisitor {
                 m_topScopeRootPhase = false;
                 pathAdjustor.unwind();
                 m_topScopeRootFuncCount = m_subFuncps.size();
-                if (m_topScopeRootFuncCount) m_subFuncSize = m_funcSizeLimit + 1;
+                if (m_topScopeRootFuncCount) {
+                    // Force the next addToSubFunc to start a fresh leaf so
+                    // root-phase decls and top-phase decls live in separate
+                    // functions. Without this, both phases land in the same
+                    // leaf and `trace_init_top` ends up emitting both the
+                    // $rootio-prefixed IOs and the regular-scope decls, so
+                    // each IO gets traced twice when the lib is consumed
+                    // via initLib(name).
+                    m_subFuncSize = 0;
+                    m_forceNewLeaf = true;
+                }
             }
             for (const TraceEntry& entry : m_entries) {
                 AstVarScope* const vscp = entry.vscp();
