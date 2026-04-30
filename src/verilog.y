@@ -3596,9 +3596,9 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
         //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
         |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
-                        { $$ = new AstAssignCont{$1, $2, $5, $4}; }
+                        { $$ = new AstAssignCont{$1, $2, $5, $4}; v3Global.setHasAssignDeassign(); }
         |       yDEASSIGN variable_lvalue ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); DEL($2); }
+                        { $$ = new AstDeassign{$1, $2}; v3Global.setHasAssignDeassign(); }
         |       yFORCE variable_lvalue '=' expr ';'
                         { $$ = new AstAssignForce{$1, $2, $4}; v3Global.setHasForceableSignals(); }
         |       yRELEASE variable_lvalue ';'
