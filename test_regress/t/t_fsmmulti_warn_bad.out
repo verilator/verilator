@@ -1,0 +1,9 @@
+%Warning-FSMMULTI: t/t_fsmmulti_warn_bad.v:29:5: FSM coverage: multiple enum-typed case statements found in the same always block. Only the first candidate will be instrumented.
+   29 |     case (state_b)
+      |     ^~~~
+                   t/t_fsmmulti_warn_bad.v:25:5: ... Location of first supported candidate for 't.state_a'
+   25 |     case (state_a)
+      |     ^~~~
+                   ... For warning description see https://verilator.org/warn/FSMMULTI?v=latest
+                   ... Use "/* verilator lint_off FSMMULTI */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -46,6 +46,7 @@ public:
         //
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
+        ENUM = VL_VFORMATATTR_ENUM,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
         TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
@@ -62,6 +63,7 @@ public:
     char ascii() const { return m_e; }
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
+    bool isEnum() const { return m_e == ENUM; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
@@ -665,6 +667,7 @@ public:
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
     bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
     bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
+    bool isOpaque() const VL_MT_SAFE { return isDouble() || isString(); }
     bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;

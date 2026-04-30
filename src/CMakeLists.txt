@@ -42,8 +42,8 @@ set(HEADERS
     V3Active.h
     V3ActiveTop.h
     V3Assert.h
+    V3AssertNfa.h
     V3AssertPre.h
-    V3AssertProp.h
     V3Ast.h
     V3AstAttr.h
     V3AstInlines.h
@@ -82,7 +82,6 @@ set(HEADERS
     V3DfgDataType.h
     V3DfgOptimizer.h
     V3DfgPasses.h
-    V3DfgPatternStats.h
     V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
@@ -101,6 +100,7 @@ set(HEADERS
     V3File.h
     V3FileLine.h
     V3Force.h
+    V3FsmDetect.h
     V3Fork.h
     V3FuncOpt.h
     V3FunctionTraits.h
@@ -132,6 +132,7 @@ set(HEADERS
     V3LinkLevel.h
     V3LinkParse.h
     V3LinkResolve.h
+    V3LinkWith.h
     V3List.h
     V3Localize.h
     V3MemberMap.h
@@ -213,8 +214,8 @@ set(COMMON_SOURCES
     V3Active.cpp
     V3ActiveTop.cpp
     V3Assert.cpp
+    V3AssertNfa.cpp
     V3AssertPre.cpp
-    V3AssertProp.cpp
     V3Ast.cpp
     V3AstNodes.cpp
     V3Begin.cpp
@@ -249,6 +250,7 @@ set(COMMON_SOURCES
     V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
+    V3DfgDumpPatterns.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
@@ -276,6 +278,7 @@ set(COMMON_SOURCES
     V3File.cpp
     V3FileLine.cpp
     V3Force.cpp
+    V3FsmDetect.cpp
     V3Fork.cpp
     V3FuncOpt.cpp
     V3Gate.cpp
@@ -306,6 +309,7 @@ set(COMMON_SOURCES
     V3LinkLevel.cpp
     V3LinkParse.cpp
     V3LinkResolve.cpp
+    V3LinkWith.cpp
     V3Localize.cpp
     V3MergeCond.cpp
     V3Name.cpp

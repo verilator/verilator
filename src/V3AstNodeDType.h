@@ -125,6 +125,8 @@ public:
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual AstNodeDType* subDType2p() const VL_MT_STABLE { return nullptr; }
     virtual bool isAggregateType() const { return false; }
+    // True for unpacked, dynamic, queue, and associative arrays (not packed arrays)
+    bool isNonPackedArray() const;
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
@@ -273,9 +275,7 @@ public:
     int widthAlignBytes() const override;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     int widthTotalBytes() const override;
-    bool similarDTypeNode(const AstNodeDType* samep) const override {
-        return this == samep;  // We don't compare members, require exact equivalence
-    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool packed() const VL_MT_SAFE { return m_packed; }
@@ -582,11 +582,7 @@ public:
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
-    bool similarDTypeNode(const AstNodeDType* samep) const override {
-        // Doesn't need to compare m_classOrPackagep
-        const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
-        return m_classp == asamep->m_classp;
-    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

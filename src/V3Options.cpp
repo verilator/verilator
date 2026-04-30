@@ -1039,14 +1039,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
         v3Global.opt.m_timing.setTrueOrFalse(true);
 
-    if (trace()) {
-        // With --trace-vcd, --trace-threads is ignored
-        if (traceEnabledVcd()) m_traceThreads = 1;
-    }
-
-    UASSERT(!(useTraceParallel() && useTraceOffload()),
-            "Cannot use both parallel and offloaded tracing");
-
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
     if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
@@ -1360,6 +1352,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
+    DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
@@ -1455,11 +1448,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
-    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
-        m_fDfgPreInline = flag;
-        m_fDfgPostInline = flag;
-        m_fDfgScoped = flag;
-    });
+    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
@@ -1468,11 +1457,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fno-dfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.emplace(optp);
     });
-    DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
-    DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdfg-pre-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-pre-inline' is deprecated and has no effect");
+    });
+    DECL_OPTION("-fdfg-post-inline", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-post-inline' is deprecated and has no effect");
+    });
     DECL_OPTION("-fdfg-push-down-sels", FOnOff, &m_fDfgPushDownSels);
-    DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
     DECL_OPTION("-fdfg-synthesize-all", FOnOff, &m_fDfgSynthesizeAll);
+    DECL_OPTION("-fdfg-scoped", CbFOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-scoped' is deprecated, use '-fno-dfg' instead.");
+        m_fDfg = flag;
+    });
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -1819,22 +1815,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_traceEnabledFst = true;
         addLdLibs("-lz");
     });
-    DECL_OPTION("-trace-fst-thread", CbCall, [this, fl]() {
-        m_traceEnabledFst = true;
-        addLdLibs("-lz");
-        fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
-                               "Use --trace-fst with --trace-threads > 0.");
-        if (m_traceThreads == 0) m_traceThreads = 1;
+    DECL_OPTION("-trace-fst-thread", CbCall, [fl]() {
+        fl->v3warn(DEPRECATED, "Option '--trace-fst-thread' is deprecated and has no effect.");
     }).undocumented();
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
     DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
-    DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
-        m_trace = true;
-        m_traceThreads = std::atoi(valp);
-        if (m_traceThreads < 1) fl->v3fatal("--trace-threads must be >= 1: " << valp);
-    });
+    DECL_OPTION("-trace-threads", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--trace-threads' is deprecated and has no effect.");
+    }).undocumented();
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
     DECL_OPTION("-trace-vcd", CbCall, [this]() { m_traceEnabledVcd = true; });
@@ -2306,7 +2296,10 @@ void V3Options::setDebugMode(int level) {
     if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
-    if (level) cout << "Starting " << version() << "\n";
+    if (level) {
+        cout << "- Starting " << version() << "\n";
+        UINFO(1, "Current working directory (CWD) is " << V3Os::cwd());
+    }
 }
 
 unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
@@ -2351,9 +2344,7 @@ void V3Options::optimize(int level) {
     m_fConst = flag;
     m_fConstBitOpTree = flag;
     m_fDedupe = flag;
-    m_fDfgPreInline = flag;
-    m_fDfgPostInline = flag;
-    m_fDfgScoped = flag;
+    m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fExpand = flag;

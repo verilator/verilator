@@ -226,6 +226,7 @@ private:
     bool m_build = false;           // main switch: --build
     bool m_context = true;          // main switch: --Wcontext
     bool m_coverageExpr = false;    // main switch: --coverage-expr
+    bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -351,7 +352,6 @@ private:
     int         m_traceDepth = 0;   // main switch: --trace-depth
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
     int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
-    int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollLimit = 16384;  // main switch: --unroll-limit
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
@@ -399,10 +399,8 @@ private:
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
     bool m_fDfgBreakCycles = true; // main switch: -fno-dfg-break-cycles
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
-    bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
-    bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fDfgPushDownSels = true; // main switch: -fno-dfg-push-down-sels
-    bool m_fDfgScoped;       // main switch: -fno-dfg-scoped and -fno-dfg
+    bool m_fDfg;         // main switch: -fno-dfg
     bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
@@ -450,7 +448,7 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
-        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageUser = flag;
+        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser = flag;
     }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
@@ -511,9 +509,19 @@ public:
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
+        // Any enabled coverage kind, including FSM coverage. Code generation
+        // and runtime support should generally query this accessor.
+        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser
+               || m_coverageFsm;
+    }
+    bool coverageNonFsm() const VL_MT_SAFE {
+        // The broad line/toggle/expr/user coverage transforms use this
+        // accessor. FSM coverage shares the overall coverage umbrella, but its
+        // extraction still happens through a separate early-recognition path.
         return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
     }
     bool coverageExpr() const { return m_coverageExpr; }
+    bool coverageFsm() const { return m_coverageFsm; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -537,6 +545,9 @@ public:
     bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
+    bool dumpDfgPatterns() const {
+        return m_dumpLevel.count("dfg-patterns") && m_dumpLevel.at("dfg-patterns");
+    }
     bool dumpTreeDot() const {
         return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
     }
@@ -636,12 +647,9 @@ public:
     int traceDepth() const { return m_traceDepth; }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
-    int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffload() const { return trace() && traceEnabledFst() && traceThreads() > 1; }
     bool useTraceParallel() const {
         return trace() && traceEnabledVcd() && (threads() > 1 || hierChild() > 1);
     }
-    bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     int unrollCount() const { return m_unrollCount; }
     int unrollLimit() const { return m_unrollLimit; }
     int unrollStmts() const { return m_unrollStmts; }
@@ -718,12 +726,10 @@ public:
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfg() const { return m_fDfg; }
     bool fDfgBreakCycles() const { return m_fDfgBreakCycles; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
-    bool fDfgPreInline() const { return m_fDfgPreInline; }
-    bool fDfgPostInline() const { return m_fDfgPostInline; }
     bool fDfgPushDownSels() const { return m_fDfgPushDownSels; }
-    bool fDfgScoped() const { return m_fDfgScoped; }
     bool fDfgSynthesizeAll() const { return m_fDfgSynthesizeAll; }
     bool fDfgPeepholeEnabled(const std::string& name) const {
         return !m_fDfgPeepholeDisabled.count(name);

@@ -39,6 +39,7 @@ class VlcOptions final {
     bool m_annotateAll = false;  // main switch: --annotate-all
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
     bool m_annotatePoints = false;  // main switch: --annotate-points
+    bool m_includeResetArcs = false;  // main switch: --include-reset-arcs
     string m_filterType = "*";  // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
     bool m_rank = false;        // main switch: --rank
@@ -67,6 +68,7 @@ public:
     int annotateMin() const { return m_annotateMin; }
     bool countOk(uint64_t count) const { return count >= static_cast<uint64_t>(m_annotateMin); }
     bool annotatePoints() const { return m_annotatePoints; }
+    bool includeResetArcs() const { return m_includeResetArcs; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }

@@ -1,5 +1,9 @@
 $date
-Sat Mar 14 09:17:04 2026
+<<<<<<< HEAD
+Tue Apr 14 15:20:40 2026
+=======
+Tue Mar 31 17:14:42 2026
+>>>>>>> 8895f96e4 (CR)
 
 $end
 $version
@@ -24,150 +28,157 @@ $end
     $var bit 1 % b0 $end
    $upscope $end
    $attrbegin pack packed members 2 $end
+   $scope struct v_strp2 $end
+    $var bit 1 & b1 $end
+    $var bit 1 ' b0 $end
+   $upscope $end
+   $attrbegin pack packed members 2 $end
    $scope struct v_strp_strp $end
     $attrbegin pack packed members 2 $end
     $scope struct x1 $end
-     $var bit 1 & b1 $end
-     $var bit 1 ' b0 $end
+     $var bit 1 ( b1 $end
+     $var bit 1 ) b0 $end
     $upscope $end
     $attrbegin pack packed members 2 $end
     $scope struct x0 $end
-     $var bit 1 ( b1 $end
-     $var bit 1 ) b0 $end
+     $var bit 1 * b1 $end
+     $var bit 1 + b0 $end
     $upscope $end
    $upscope $end
    $attrbegin pack packed members 2 $end
    $scope union v_unip_strp $end
     $attrbegin pack packed members 2 $end
     $scope struct x1 $end
-     $var bit 1 * b1 $end
-     $var bit 1 + b0 $end
+     $var bit 1 , b1 $end
+     $var bit 1 - b0 $end
     $upscope $end
     $attrbegin pack packed members 2 $end
     $scope struct x0 $end
-     $var bit 1 * b1 $end
-     $var bit 1 + b0 $end
+     $var bit 1 , b1 $end
+     $var bit 1 - b0 $end
     $upscope $end
    $upscope $end
-   $var bit 2 , v_arrp [2:1] $end
+   $var bit 2 . v_arrp [2:1] $end
    $attrbegin array packed bounds 17179869187 $end
    $scope sv_array v_arrp_arrp $end
-    $var bit 2 - v_arrp_arrp[4] [2:1] $end
-    $var bit 2 . v_arrp_arrp[3] [2:1] $end
+    $var bit 2 / v_arrp_arrp[4] [2:1] $end
+    $var bit 2 0 v_arrp_arrp[3] [2:1] $end
    $upscope $end
    $attrbegin array packed bounds 17179869187 $end
    $scope sv_array v_arrp_strp $end
     $attrbegin pack packed members 2 $end
     $scope struct [4] $end
-     $var bit 1 / b1 $end
-     $var bit 1 0 b0 $end
+     $var bit 1 1 b1 $end
+     $var bit 1 2 b0 $end
     $upscope $end
     $attrbegin pack packed members 2 $end
     $scope struct [3] $end
-     $var bit 1 1 b1 $end
-     $var bit 1 2 b0 $end
+     $var bit 1 3 b1 $end
+     $var bit 1 4 b0 $end
     $upscope $end
    $upscope $end
    $attrbegin array unpacked bounds 8589934593 $end
    $scope sv_array v_arru $end
-    $var bit 1 3 v_arru[2] $end
-    $var bit 1 4 v_arru[1] $end
+    $var bit 1 5 v_arru[2] $end
+    $var bit 1 6 v_arru[1] $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_arru $end
     $attrbegin array unpacked bounds 8589934593 $end
     $scope sv_array [4] $end
-     $var bit 1 5 v_arru_arru[4][2] $end
-     $var bit 1 6 v_arru_arru[4][1] $end
+     $var bit 1 7 v_arru_arru[4][2] $end
+     $var bit 1 8 v_arru_arru[4][1] $end
     $upscope $end
     $attrbegin array unpacked bounds 8589934593 $end
     $scope sv_array [3] $end
-     $var bit 1 7 v_arru_arru[3][2] $end
-     $var bit 1 8 v_arru_arru[3][1] $end
+     $var bit 1 9 v_arru_arru[3][2] $end
+     $var bit 1 : v_arru_arru[3][1] $end
     $upscope $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_arrp $end
-    $var bit 2 9 v_arru_arrp[4] [2:1] $end
-    $var bit 2 : v_arru_arrp[3] [2:1] $end
+    $var bit 2 ; v_arru_arrp[4] [2:1] $end
+    $var bit 2 < v_arru_arrp[3] [2:1] $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_strp $end
     $attrbegin pack packed members 2 $end
     $scope struct [4] $end
-     $var bit 1 ; b1 $end
-     $var bit 1 < b0 $end
-    $upscope $end
-    $attrbegin pack packed members 2 $end
-    $scope struct [3] $end
      $var bit 1 = b1 $end
      $var bit 1 > b0 $end
     $upscope $end
+    $attrbegin pack packed members 2 $end
+    $scope struct [3] $end
+     $var bit 1 ? b1 $end
+     $var bit 1 @ b0 $end
+    $upscope $end
    $upscope $end
-   $var real 64 ? v_real $end
+   $var real 64 A v_real $end
    $attrbegin array unpacked bounds 1 $end
    $scope sv_array v_arr_real $end
-    $var real 64 @ v_arr_real[0] $end
-    $var real 64 A v_arr_real[1] $end
+    $var real 64 B v_arr_real[0] $end
+    $var real 64 C v_arr_real[1] $end
    $upscope $end
-   $var longint 64 B v_chandle [63:0] $end
+   $var longint 64 D v_chandle [63:0] $end
    $attrbegin array packed bounds 4294967296 $end
    $scope sv_array v_str32x2 $end
     $attrbegin pack packed members 1 $end
     $scope struct [1] $end
-     $var logic 32 C data [31:0] $end
+     $var logic 32 E data [31:0] $end
     $upscope $end
     $attrbegin pack packed members 1 $end
     $scope struct [0] $end
-     $var logic 32 D data [31:0] $end
+     $var logic 32 F data [31:0] $end
     $upscope $end
    $upscope $end
    $attrbegin misc 07 "" 1 $end
-   $var int 32 E v_enumed [31:0] $end
+   $var int 32 G v_enumed [31:0] $end
    $attrbegin misc 07 "" 1 $end
-   $var int 32 F v_enumed2 [31:0] $end
+   $var int 32 H v_enumed2 [31:0] $end
    $attrbegin misc 07 "" 2 $end
-   $var logic 3 G v_enumb [2:0] $end
+   $var logic 3 I v_enumb [2:0] $end
    $attrbegin pack packed members 2 $end
    $scope struct v_enumb2_str $end
     $attrbegin misc 07 "" 2 $end
-    $var logic 3 H a [2:0] $end
+    $var logic 3 J a [2:0] $end
     $attrbegin misc 07 "" 2 $end
-    $var logic 3 I b [2:0] $end
+    $var logic 3 K b [2:0] $end
    $upscope $end
    $attrbegin array unpacked bounds -8589934592 $end
    $scope sv_array unpacked_array $end
-    $var logic 8 J unpacked_array[-2] [7:0] $end
-    $var logic 8 K unpacked_array[-1] [7:0] $end
-    $var logic 8 L unpacked_array[0] [7:0] $end
+    $var logic 8 L unpacked_array[-2] [7:0] $end
+    $var logic 8 M unpacked_array[-1] [7:0] $end
+    $var logic 8 N unpacked_array[0] [7:0] $end
    $upscope $end
-   $var bit 1 M LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
+   $var bit 1 O LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
   $upscope $end
  $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-0M
+0O
+b00000000 N
+b00000000 M
 b00000000 L
-b00000000 K
-b00000000 J
+b000 K
+b000 J
 b000 I
-b000 H
-b000 G
-b00000000000000000000000000000000 F
+b00000000000000000000000000000000 H
+b00000000000000000000000000000000 G
+b00000000000000000000000011111111 F
 b00000000000000000000000000000000 E
-b00000000000000000000000011111111 D
-b00000000000000000000000000000000 C
-b0000000000000000000000000000000000000000000000000000000000000000 B
+b0000000000000000000000000000000000000000000000000000000000000000 D
+r0 C
+r0 B
 r0 A
-r0 @
-r0 ?
+0@
+0?
 0>
 0=
-0<
-0;
-b00 :
-b00 9
+b00 <
+b00 ;
+0:
+09
 08
 07
 06
@@ -176,11 +187,11 @@ b00 9
 03
 02
 01
-00
-0/
+b00 0
+b00 /
 b00 .
-b00 -
-b00 ,
+0-
+0,
 0+
 0*
 0)
@@ -204,52 +215,56 @@ b00000000000000000000000000000001 #
 1)
 1*
 1+
-b11 ,
-b11 -
+1,
+1-
 b11 .
-1/
-10
+b11 /
+b11 0
 11
 12
-b11 9
-b11 :
-1;
-1<
+13
+14
+b11 ;
+b11 <
 1=
 1>
-r0.1 ?
-r0.2 @
-r0.3 A
-b00000000000000000000000000000001 C
-b00000000000000000000000011111110 D
+1?
+1@
+r0.1 A
+r0.2 B
+r0.3 C
 b00000000000000000000000000000001 E
-b00000000000000000000000000000010 F
-b111 G
+b00000000000000000000000011111110 F
+b00000000000000000000000000000001 G
+b00000000000000000000000000000010 H
+b111 I
 #15
 0!
 #20
 1!
-b110 G
-b00000000000000000000000000000100 F
+b110 I
+b00000000000000000000000000000100 H
+b00000000000000000000000000000010 G
+b00000000000000000000000011111101 F
 b00000000000000000000000000000010 E
-b00000000000000000000000011111101 D
-b00000000000000000000000000000010 C
-r0.6 A
-r0.4 @
-r0.2 ?
+r0.6 C
+r0.4 B
+r0.2 A
+0@
+0?
 0>
 0=
-0<
-0;
-b00 :
-b00 9
+b00 <
+b00 ;
+04
+03
 02
 01
-00
-0/
+b00 0
+b00 /
 b00 .
-b00 -
-b00 ,
+0-
+0,
 0+
 0*
 0)
@@ -259,14 +274,14 @@ b00 ,
 0%
 0$
 b00000000000000000000000000000010 #
-b111 H
-b111 I
+b111 J
+b111 K
 #25
 0!
 #30
 1!
-b110 I
-b110 H
+b110 K
+b110 J
 b00000000000000000000000000000011 #
 1$
 1%
@@ -276,52 +291,56 @@ b00000000000000000000000000000011 #
 1)
 1*
 1+
-b11 ,
-b11 -
+1,
+1-
 b11 .
-1/
-10
+b11 /
+b11 0
 11
 12
-b11 9
-b11 :
-1;
-1<
+13
+14
+b11 ;
+b11 <
 1=
 1>
-r0.3 ?
-r0.6000000000000001 @
-r0.8999999999999999 A
-b00000000000000000000000000000011 C
-b00000000000000000000000011111100 D
+1?
+1@
+r0.3 A
+r0.6000000000000001 B
+r0.8999999999999999 C
 b00000000000000000000000000000011 E
-b00000000000000000000000000000110 F
-b101 G
+b00000000000000000000000011111100 F
+b00000000000000000000000000000011 G
+b00000000000000000000000000000110 H
+b101 I
 #35
 0!
 #40
 1!
-b100 G
-b00000000000000000000000000001000 F
+b100 I
+b00000000000000000000000000001000 H
+b00000000000000000000000000000100 G
+b00000000000000000000000011111011 F
 b00000000000000000000000000000100 E
-b00000000000000000000000011111011 D
-b00000000000000000000000000000100 C
-r1.2 A
-r0.8 @
-r0.4 ?
+r1.2 C
+r0.8 B
+r0.4 A
+0@
+0?
 0>
 0=
-0<
-0;
-b00 :
-b00 9
+b00 <
+b00 ;
+04
+03
 02
 01
-00
-0/
+b00 0
+b00 /
 b00 .
-b00 -
-b00 ,
+0-
+0,
 0+
 0*
 0)
@@ -331,14 +350,14 @@ b00 ,
 0%
 0$
 b00000000000000000000000000000100 #
-b101 H
-b101 I
+b101 J
+b101 K
 #45
 0!
 #50
 1!
-b100 I
-b100 H
+b100 K
+b100 J
 b00000000000000000000000000000101 #
 1$
 1%
@@ -348,52 +367,56 @@ b00000000000000000000000000000101 #
 1)
 1*
 1+
-b11 ,
-b11 -
+1,
+1-
 b11 .
-1/
-10
+b11 /
+b11 0
 11
 12
-b11 9
-b11 :
-1;
-1<
+13
+14
+b11 ;
+b11 <
 1=
 1>
-r0.5 ?
-r1 @
-r1.5 A
-b00000000000000000000000000000101 C
-b00000000000000000000000011111010 D
+1?
+1@
+r0.5 A
+r1 B
+r1.5 C
 b00000000000000000000000000000101 E
-b00000000000000000000000000001010 F
-b011 G
+b00000000000000000000000011111010 F
+b00000000000000000000000000000101 G
+b00000000000000000000000000001010 H
+b011 I
 #55
 0!
 #60
 1!
-b010 G
-b00000000000000000000000000001100 F
+b010 I
+b00000000000000000000000000001100 H
+b00000000000000000000000000000110 G
+b00000000000000000000000011111001 F
 b00000000000000000000000000000110 E
-b00000000000000000000000011111001 D
-b00000000000000000000000000000110 C
-r1.8 A
-r1.2 @
-r0.6 ?
+r1.8 C
+r1.2 B
+r0.6 A
+0@
+0?
 0>
 0=
-0<
-0;
-b00 :
-b00 9
+b00 <
+b00 ;
+04
+03
 02
 01
-00
-0/
+b00 0
+b00 /
 b00 .
-b00 -
-b00 ,
+0-
+0,
 0+
 0*
 0)
@@ -403,5 +426,5 @@ b00 ,
 0%
 0$
 b00000000000000000000000000000110 #
-b011 H
-b011 I
+b011 J
+b011 K

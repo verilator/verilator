@@ -99,15 +99,23 @@ enum class Direction : uint8_t {
 };
 
 #ifndef IVERILOG
-const std::array<TestSignal, 35> TestSignals = {
+const std::array<TestSignal, 37> TestSignals = {
 #else  // Multidimensional packed arrays aren't tested in Icarus
-const std::array<TestSignal, 16> TestSignals = {
+const std::array<TestSignal, 18> TestSignals = {
 #endif
     TestSignal{"onebit",
                vpiIntVal,
                {},
                {.integer = 1},
                {.integer = 0},
+               false,
+               {},  // Can't partially force just one bit
+               {}},  // Can't index into a single bit
+    TestSignal{"scalarbit",
+               vpiScalarVal,
+               {},
+               {.integer = vpi1},
+               {.integer = vpi0},
                false,
                {},  // Can't partially force just one bit
                {}},  // Can't index into a single bit
@@ -130,6 +138,26 @@ const std::array<TestSignal, 16> TestSignals = {
                 0}},
 
     TestSignal{"vectorC",
+               vpiVectorVal,
+               {},
+               // NOLINTBEGIN (cppcoreguidelines-avoid-c-arrays)
+               {.vector = (t_vpi_vecval[]){{0b10101010, 0}}},
+               {.vector = (t_vpi_vecval[]){{0b01010101, 0}}},
+               true,
+               {{.vector = (t_vpi_vecval[]){{0b10100101, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b01011010, 0}}},
+                {.vector = (t_vpi_vecval[]){{0x5, 0}}},
+                {.vector = (t_vpi_vecval[]){{0xA, 0}}},
+                {.lo = 0, .hi = 3}},
+               {{.vector = (t_vpi_vecval[]){{0b10101011, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b01010100, 0}}},
+                vpiVectorVal,
+                {.vector = (t_vpi_vecval[]){{0b1, 0}}},
+                {.vector = (t_vpi_vecval[]){{0b0, 0}}},
+                0}},
+    // NOLINTEND (cppcoreguidelines-avoid-c-arrays)
+
+    TestSignal{"forcedNonForceable",
                vpiVectorVal,
                {},
                // NOLINTBEGIN (cppcoreguidelines-avoid-c-arrays)
@@ -690,6 +718,7 @@ bool vpiValuesEqual(const std::size_t bitCount, const s_vpi_value& first,
     if (first.format != second.format) return false;
     switch (first.format) {
     case vpiIntVal: return first.value.integer == second.value.integer; break;
+    case vpiScalarVal: return first.value.scalar == second.value.scalar; break;
     case vpiVectorVal: {
         const t_vpi_vecval* const firstVecval = first.value.vector;
         const t_vpi_vecval* const secondVecval = second.value.vector;
@@ -726,6 +755,7 @@ std::unique_ptr<s_vpi_value> vpiValueWithFormat(const PLI_INT32 signalFormat,
 
     switch (signalFormat) {
     case vpiIntVal: value_sp->value = {.integer = value.integer}; break;
+    case vpiScalarVal: value_sp->value = {.scalar = value.integer}; break;
     case vpiVectorVal: value_sp->value = {.vector = const_cast<p_vpi_vecval>(value.vector)}; break;
     case vpiRealVal: value_sp->value = {.real = value.real}; break;
     case vpiStringVal:

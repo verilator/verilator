@@ -36,9 +36,12 @@ void VlCoroutineHandle::resume() {
                 m_coro.destroy();
             } else {
                 m_process->state(VlProcess::RUNNING);
+                VlProcess::currentp(m_process.get());
                 m_coro();
+                VlProcess::currentp(nullptr);
             }
         } else {
+            VlProcess::currentp(nullptr);
             m_coro();
         }
         m_coro = nullptr;
@@ -58,6 +61,12 @@ void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
+    if (VL_UNLIKELY(m_context.gotFinish())) {
+        m_queue.clear();
+        m_zeroDelayed.clear();
+        m_zeroDelayesSwap.clear();
+        return;
+    }
     bool resumed = false;
 
     while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
@@ -80,6 +89,11 @@ void VlDelayScheduler::resume() {
 }
 
 void VlDelayScheduler::resumeZeroDelay() {
+    if (VL_UNLIKELY(m_context.gotFinish())) {
+        m_zeroDelayed.clear();
+        m_zeroDelayesSwap.clear();
+        return;
+    }
     m_zeroDelayesSwap.swap(m_zeroDelayed);
     for (VlCoroutineHandle& handle : m_zeroDelayesSwap) handle.resume();
     m_zeroDelayesSwap.clear();
@@ -120,6 +134,12 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_toResume.clear();
+        m_fired.clear();
+        m_awaiting.clear();
+        return;
+    }
     for (VlCoroutineHandle& coro : m_toResume) coro.resume();
     m_toResume.clear();
 }
@@ -136,6 +156,11 @@ void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
                     });
     }
 #endif
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_toResume.clear();
+        m_fired.clear();
+        return;
+    }
     std::swap(m_fired, m_toResume);
 }
 
@@ -151,6 +176,11 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
             });
     }
 #endif
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_fired.clear();
+        m_awaiting.clear();
+        return;
+    }
     const size_t expectedSize = m_fired.size() + m_awaiting.size();
     if (m_fired.capacity() < expectedSize) m_fired.reserve(expectedSize * 2);
     m_fired.insert(m_fired.end(), std::make_move_iterator(m_awaiting.begin()),
@@ -190,6 +220,14 @@ void VlTriggerScheduler::dump(const char* eventDescription) const {
 // VlDynamicTriggerScheduler:: Methods
 
 bool VlDynamicTriggerScheduler::evaluate() {
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_anyTriggered = false;
+        m_suspended.clear();
+        m_evaluated.clear();
+        m_triggered.clear();
+        m_post.clear();
+        return false;
+    }
     m_anyTriggered = false;
     VL_DEBUG_IF(dump(););
     std::swap(m_suspended, m_evaluated);
@@ -206,6 +244,10 @@ void VlDynamicTriggerScheduler::doPostUpdates() {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_post.clear();
+        return;
+    }
     for (auto& coro : m_post) coro.resume();
     m_post.clear();
 }
@@ -217,6 +259,10 @@ void VlDynamicTriggerScheduler::resume() {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
+    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+        m_triggered.clear();
+        return;
+    }
     for (auto& coro : m_triggered) coro.resume();
     m_triggered.clear();
 }

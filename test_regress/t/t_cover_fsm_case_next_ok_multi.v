@@ -1,0 +1,106 @@
+// DESCRIPTION: Verilator: FSM coverage keeps grouped canonical case(state_d) forms
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+// Group accepted canonical case(state_d) forms so supported next-state
+// defaults stay separate from the rejected wrong-RHS and tail-mismatch shapes.
+
+module fsm_case_next_other_assign_ok (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S0 = 2'b00,
+    S1 = 2'b01,
+    S2 = 2'b10
+  } state_t;
+
+  logic [1:0] aux;
+  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_d;
+
+  initial aux = 2'b00;
+
+  always_comb begin
+    aux[0] = start;
+    state_d = state_q;
+    case (state_d)
+      S0: state_d = start ? S1 : S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state_q <= S0;
+    end else begin
+      state_q <= state_d;
+    end
+  end
+endmodule
+
+module fsm_case_next_other_lhs_ok (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S0 = 2'b00,
+    S1 = 2'b01,
+    S2 = 2'b10
+  } state_t;
+
+  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_d;
+  state_t other_d;
+
+  always_comb begin
+    other_d = state_q;
+    state_d = state_q;
+    case (state_d)
+      S0: state_d = start ? S1 : S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state_q <= S0;
+    end else begin
+      state_q <= state_d;
+    end
+  end
+endmodule
+
+module t (
+    input logic clk
+);
+  logic rst;
+  logic start;
+  integer cyc;
+
+  fsm_case_next_other_assign_ok case_next_other_assign_ok_u (
+      .clk(clk), .rst(rst), .start(start));
+  fsm_case_next_other_lhs_ok case_next_other_lhs_ok_u (
+      .clk(clk), .rst(rst), .start(start));
+
+  initial begin
+    rst = 1'b1;
+    start = 1'b0;
+    cyc = 0;
+  end
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) rst <= 1'b0;
+    if (cyc == 2) start <= 1'b1;
+    if (cyc == 3) start <= 1'b0;
+    if (cyc == 8) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+endmodule

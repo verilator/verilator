@@ -232,8 +232,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Active.o \
   V3ActiveTop.o \
   V3Assert.o \
+  V3AssertNfa.o \
   V3AssertPre.o \
-  V3AssertProp.o \
   V3Begin.o \
   V3Branch.o \
   V3CCtors.o \
@@ -263,6 +263,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DfgDataType.o \
   V3DfgDecomposition.o \
   V3DfgDfgToAst.o \
+  V3DfgDumpPatterns.o \
   V3DfgOptimizer.o \
   V3DfgPasses.o \
   V3DfgPeephole.o \
@@ -279,6 +280,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3ExecGraph.o \
   V3Expand.o \
   V3Force.o \
+  V3FsmDetect.o \
   V3Fork.o \
   V3Gate.o \
   V3HierBlock.o \
@@ -300,6 +302,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3LinkLevel.o \
   V3LinkParse.o \
   V3LinkResolve.o \
+  V3LinkWith.o \
   V3Localize.o \
   V3MergeCond.o \
   V3Name.o \

@@ -24,9 +24,11 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
-# Not deleted e.g. parsed --no-unlink properlytest.files_identical(test.t_dir + "/t_vlcov_data_a.dat", test.t_dir + "/t_vlcov_data_a.dat")
+# Not deleted e.g. parsed --no-unlink properly
+test.files_identical(test.t_dir + "/t_vlcov_data_a.dat", test.t_dir + "/t_vlcov_data_a.dat")
 
 # Older clib's didn't properly sort maps, but the coverage data doesn't
-# really care about ordering. So avoid false failures by sorting.test.files_identical_sorted(test.obj_dir + "/coverage.dat", test.golden_filename)
+# really care about ordering. So avoid false failures by sorting.
+test.files_identical_sorted(test.obj_dir + "/coverage.dat", test.golden_filename)
 
 test.passes()

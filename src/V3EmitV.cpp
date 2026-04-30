@@ -1058,6 +1058,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("\n");
     }
     void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }
+    void visit(AstPropAlways* nodep) override {
+        puts(nodep->isStrong() ? "s_always" : "always");
+        if (!VN_IS(nodep->loBoundp(), Unbounded) || !VN_IS(nodep->hiBoundp(), Unbounded)) {
+            puts(" [");
+            iterateConst(nodep->loBoundp());
+            puts(":");
+            iterateConst(nodep->hiBoundp());
+            puts("]");
+        }
+        puts(" ");
+        iterateConst(nodep->propp());
+    }
     void visit(AstSExpr* nodep) override {
         iterateConstNull(nodep->preExprp());
         {
@@ -1067,7 +1079,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateConst(nodep->exprp());
     }
-
     // Terminals
     void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {
@@ -1128,7 +1139,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         VL_RESTORER(m_prefixed);
         m_prefixed = false;
-        iterateConst(nodep->lhsp());
+        if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
+            puts("(");
+            iterateConst(nodep->lhsp());
+            puts(", ");
+            iterateConst(fallDelayp);
+            puts(")");
+        } else {
+            iterateConst(nodep->lhsp());
+        }
         if (!m_suppressSemi) {
             puts(";\n");
         } else {

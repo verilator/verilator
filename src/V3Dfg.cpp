@@ -18,6 +18,7 @@
 
 #include "V3Dfg.h"
 
+#include "V3Ast.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 
@@ -26,18 +27,16 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //------------------------------------------------------------------------------
 // DfgGraph
 
-DfgGraph::DfgGraph(AstModule* modulep, const string& name)
-    : m_modulep{modulep}
-    , m_name{name} {}
+DfgGraph::DfgGraph(const string& name)
+    : m_name{name} {}
 
 DfgGraph::~DfgGraph() {
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
 }
 
 std::unique_ptr<DfgGraph> DfgGraph::clone() const {
-    const bool scoped = !modulep();
-
-    DfgGraph* const clonep = new DfgGraph{modulep(), name()};
+    // Create the new graph
+    DfgGraph* const clonep = new DfgGraph{name()};
 
     // Map from original vertex to clone
     std::unordered_map<const DfgVertex*, DfgVertex*> vtxp2clonep(size() * 2);
@@ -54,20 +53,12 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
 
         switch (vtx.type()) {
         case VDfgType::VarArray: {
-            if (scoped) {
-                cp = new DfgVarArray{*clonep, vp->varScopep()};
-            } else {
-                cp = new DfgVarArray{*clonep, vp->varp()};
-            }
+            cp = new DfgVarArray{*clonep, vp->vscp()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::VarPacked: {
-            if (scoped) {
-                cp = new DfgVarPacked{*clonep, vp->varScopep()};
-            } else {
-                cp = new DfgVarPacked{*clonep, vp->varp()};
-            }
+            cp = new DfgVarPacked{*clonep, vp->vscp()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
@@ -78,8 +69,24 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         }
         }
 
-        if (AstNode* const tmpForp = vp->tmpForp()) cp->tmpForp(tmpForp);
+        if (AstVarScope* const tmpForp = vp->tmpForp()) cp->tmpForp(tmpForp);
     }
+    // Clone ast reference vertices
+    for (const DfgVertexAst& vtx : m_astVertices) {  // LCOV_EXCL_START
+        switch (vtx.type()) {
+        case VDfgType::AstRd: {
+            const DfgAstRd* const vp = vtx.as<DfgAstRd>();
+            DfgAstRd* const cp = new DfgAstRd{*clonep, vp->exprp(), vp->inSenItem(), vp->inLoop()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled ast reference vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }  // LCOV_EXCL_STOP
     // Clone operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
         switch (vtx.type()) {
@@ -87,6 +94,11 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         case VDfgType::Sel: {
             DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtype()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::Rep: {
+            DfgRep* const cp = new DfgRep{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
@@ -136,6 +148,22 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         if (const DfgVertex* const srcp = vtx.srcp()) cp->srcp(vtxp2clonep.at(srcp));
         if (const DfgVertex* const defp = vtx.defaultp()) cp->defaultp(vtxp2clonep.at(defp));
     }
+    // Hook up inputs of cloned ast references
+    for (const DfgVertexAst& vtx : m_astVertices) {  // LCOV_EXCL_START
+        switch (vtx.type()) {
+        case VDfgType::AstRd: {
+            const DfgAstRd* const vp = vtx.as<DfgAstRd>();
+            DfgAstRd* const cp = vtxp2clonep.at(&vtx)->as<DfgAstRd>();
+            if (const DfgVertex* const srcp = vp->srcp()) cp->srcp(vtxp2clonep.at(srcp));
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled DfgVertexAst sub type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }  // LCOV_EXCL_STOP
     // Hook up inputs of cloned operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
         if (vtx.is<DfgVertexVariadic>()) {
@@ -171,18 +199,18 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
     if (otherps.empty()) return;
 
     // NODE STATE
-    // AstVar/AstVarScope::user2p() -> corresponding DfgVertexVar* in 'this' graph
+    // AstVarScope::user2p() -> corresponding DfgVertexVar* in 'this' graph
     const VNUser2InUse user2InUse;
 
     // Set up Ast Variable -> DfgVertexVar map for 'this' graph
-    for (DfgVertexVar& vtx : m_varVertices) vtx.nodep()->user2p(&vtx);
+    for (DfgVertexVar& vtx : m_varVertices) vtx.vscp()->user2p(&vtx);
 
     // Merge in each of the other graphs
     for (const std::unique_ptr<DfgGraph>& otherp : otherps) {
         // Process variables
         for (DfgVertexVar* const vtxp : otherp->m_varVertices.unlinkable()) {
             // Variabels that are present in 'this', make them use the DfgVertexVar in 'this'.
-            if (DfgVertexVar* const altp = vtxp->nodep()->user2u().to<DfgVertexVar*>()) {
+            if (DfgVertexVar* const altp = vtxp->vscp()->user2u().to<DfgVertexVar*>()) {
                 DfgVertex* const srcp = vtxp->srcp();
                 DfgVertex* const defaultp = vtxp->defaultp();
                 UASSERT_OBJ(!(srcp || defaultp) || (!altp->srcp() && !altp->defaultp()), vtxp,
@@ -194,13 +222,21 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
                 continue;
             }
             // Otherwise they will be moved
-            vtxp->nodep()->user2p(vtxp);
+            vtxp->vscp()->user2p(vtxp);
             vtxp->m_userGeneration = 0;
 #ifdef VL_DEBUG
             vtxp->m_dfgp = this;
 #endif
         }
         m_varVertices.splice(m_varVertices.end(), otherp->m_varVertices);
+        // Process Ast references
+        for (DfgVertexAst* const vtxp : otherp->m_astVertices.unlinkable()) {
+            vtxp->m_userGeneration = 0;
+#ifdef VL_DEBUG
+            vtxp->m_dfgp = this;
+#endif
+        }
+        m_astVertices.splice(m_astVertices.end(), otherp->m_astVertices);
         // Process constants
         for (DfgConst& vtx : otherp->m_constVertices) {
             vtx.m_userGeneration = 0;
@@ -239,29 +275,17 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
 
 DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    UASSERT_OBJ(!!scopep != !!modulep(), flp,
-                "makeNewVar scopep should only be provided for a scoped DfgGraph");
-
     // Create AstVar
     AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtype.astDtypep()};
-
-    if (scopep) {
-        // Add AstVar to the scope's module
-        scopep->modp()->addStmtsp(varp);
-        // Create AstVarScope
-        AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
-        // Add to scope
-        scopep->addVarsp(vscp);
-        // Create and return the corresponding variable vertex
-        if (dtype.isArray()) return new DfgVarArray{*this, vscp};
-        return new DfgVarPacked{*this, vscp};
-    } else {
-        // Add AstVar to containing module
-        modulep()->addStmtsp(varp);
-        // Create and return the corresponding variable vertex
-        if (dtype.isArray()) return new DfgVarArray{*this, varp};
-        return new DfgVarPacked{*this, varp};
-    }
+    // Add AstVar to the scope's module
+    scopep->modp()->addStmtsp(varp);
+    // Create AstVarScope
+    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+    // Add to scope
+    scopep->addVarsp(vscp);
+    // Create and return the corresponding variable vertex
+    if (dtype.isArray()) return new DfgVarArray{*this, vscp};
+    return new DfgVarPacked{*this, vscp};
 }
 
 static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
@@ -269,20 +293,19 @@ static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (const DfgVertexVar* const varVtxp = vtx.cast<DfgVertexVar>()) {
-        const AstNode* const nodep = varVtxp->nodep();
-        const AstVar* const varp = varVtxp->varp();
+        const AstVarScope* const vscp = varVtxp->vscp();
         os << toDotId(vtx);
         // Begin attributes
         os << " [";
         // Begin 'label'
         os << "label=\"";
         // Name
-        os << nodep->prettyName();
+        os << vscp->prettyName();
         // Address
         os << '\n' << cvtToHex(varVtxp);
         // Original variable, if any
-        if (const AstNode* const tmpForp = varVtxp->tmpForp()) {
-            if (tmpForp != nodep) os << "\ntemporary for: " << tmpForp->prettyName();
+        if (const AstVarScope* const tmpForp = varVtxp->tmpForp()) {
+            if (tmpForp != vscp) os << "\ntemporary for: " << tmpForp->prettyName();
         }
         // Type and fanout
         os << '\n';
@@ -292,7 +315,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << " / ";
         static const char* const rwmn[2][2] = {{"_", "W"}, {"R", "M"}};
         os << rwmn[varVtxp->hasExtRdRefs()][varVtxp->hasExtWrRefs()];
-        os << rwmn[varVtxp->hasModRdRefs()][varVtxp->hasModWrRefs()];
+        os << rwmn[false][varVtxp->hasModWrRefs()];
         os << (varVtxp->hasDfgRefs() ? "D" : "_");
         // End 'label'
         os << '"';
@@ -305,21 +328,13 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
             varVtxp->v3fatalSrc("Unhandled DfgVertexVar sub-type");
         }
         // Color
-        if (varp->direction() == VDirection::INPUT) {
-            os << ", style=filled, fillcolor=chartreuse2";  // Green
-        } else if (varp->direction() == VDirection::OUTPUT) {
-            os << ", style=filled, fillcolor=cyan2";  // Cyan
-        } else if (varp->direction() == VDirection::INOUT) {
-            os << ", style=filled, fillcolor=darkorchid2";  // Purple
-        } else if (varVtxp->hasExtRefs()) {
-            os << ", style=filled, fillcolor=firebrick2";  // Red
-        } else if (varVtxp->hasModRefs()) {
-            os << ", style=filled, fillcolor=darkorange1";  // Orange
-        } else if (varVtxp->hasDfgRefs()) {
-            os << ", style=filled, fillcolor=gold2";  // Yellow
-        } else if (varVtxp->tmpForp()) {
-            os << ", style=filled, fillcolor=gray95";
-        }
+        const char* const colorp = varVtxp->hasExtRefs()     ? "firebrick2"  // Red
+                                   : varVtxp->hasModWrRefs() ? "darkorange1"  // Orange
+                                   : varVtxp->hasDfgRefs()   ? "gold2"  // Yellow
+                                   : varVtxp->tmpForp()      ? "gray95"  // Gray
+                                                             : "white";
+        os << ", style=filled";
+        os << ", fillcolor=\"" << colorp << "\"";
         // End attributes
         os << "]\n";
         return;
@@ -379,7 +394,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << toDotId(vtx);
         std::stringstream ss;
         V3EmitV::debugVerilogForTree(logicp->nodep(), ss);
-        std::string str = ss.str();
+        std::string str = "AstNode: " + cvtToHex(logicp->nodep()) + "\n" + ss.str();
         str = VString::quoteBackslash(str);
         str = VString::quoteAny(str, '"', '\\');
         str = VString::replaceSubstr(str, "\n", "\\l");
@@ -390,7 +405,32 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
         os << " [label=\"";
         os << str;
-        os << "\\n" << cvtToHex(&vtx);
+        os << '\n' << vtx.typeName() << '\n' << cvtToHex(&vtx);
+        os << "\"\n";
+        os << ", shape=box, style=\"rounded,filled\", nojustify=true";
+        os << ", fillcolor=\"" << colorp << "\"";
+        os << "]\n";
+        return;
+    }
+
+    if (const DfgVertexAst* const astVtxp = vtx.cast<DfgVertexAst>()) {
+        os << toDotId(vtx);
+        std::stringstream ss;
+        V3EmitV::debugVerilogForTree(astVtxp->exprp(), ss);
+        std::string str = "AstNode: " + cvtToHex(astVtxp->exprp()) + "\n" + ss.str() + "\n";
+        str = VString::quoteBackslash(str);
+        str = VString::quoteAny(str, '"', '\\');
+        str = VString::replaceSubstr(str, "\n", "\\l");
+        const DfgAstRd* const astRdVtxp = astVtxp->cast<DfgAstRd>();
+        const char* const colorp = astRdVtxp ? "#80ff80"  // Green
+                                             : "#ffff80";  // Yellow
+        os << " [label=\"";
+        os << str;
+        os << '\n' << vtx.typeName() << '\n' << cvtToHex(&vtx) << '\n';
+        vtx.dtype().astDtypep()->dumpSmall(os);
+        os << " / ";
+        os << "_S"[astRdVtxp->inSenItem()];
+        os << "_L"[astRdVtxp->inLoop()];
         os << "\"\n";
         os << ", shape=box, style=\"rounded,filled\", nojustify=true";
         os << ", fillcolor=\"" << colorp << "\"";
@@ -529,6 +569,34 @@ DfgGraph::sinkCone(const std::vector<const DfgVertex*>& vtxps) const {
     return dfgGraphCollectCone<true>(vtxps);
 }
 
+std::unique_ptr<std::unordered_set<const DfgVertex*>>
+DfgGraph::neighborhood(const std::vector<const DfgVertex*>& vtxps, size_t n) const {
+    // Neighborhood
+    std::vector<const DfgVertex*> vec = vtxps;
+    // Set of already visited vertices
+    std::unordered_set<const DfgVertex*> res{vec.begin(), vec.end()};
+    // Expand neihborhood by 'n' hops
+    size_t begin = 0;
+    size_t end = vec.size();
+    for (size_t hops = 1; hops <= n; ++hops) {
+        for (size_t i = begin; i < end; ++i) {
+            const DfgVertex* const vtxp = vec[i];
+            vtxp->foreachSink([&](const DfgVertex& dst) {
+                if (res.insert(&dst).second) vec.push_back(&dst);
+                return false;
+            });
+            vtxp->foreachSource([&](const DfgVertex& src) {
+                if (res.insert(&src).second) vec.push_back(&src);
+                return false;
+            });
+        }
+        begin = end;
+        end = vec.size();
+    }
+    // Move out the results
+    return std::make_unique<std::unordered_set<const DfgVertex*>>(std::move(res));
+}
+
 //------------------------------------------------------------------------------
 // DfgVertex
 
@@ -548,6 +616,11 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     switch (type()) {
     case VDfgType::Const: {
         CHECK(isPacked(), "Should be Packed type");
+        return;
+    }
+    case VDfgType::AstRd: {
+        const DfgAstRd& v = *as<DfgAstRd>();
+        CHECK(v.isPacked() || v.isArray(), "Should be Packed or Array type");
         return;
     }
     case VDfgType::VarArray:
@@ -604,7 +677,6 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
 
     case VDfgType::Add:
     case VDfgType::And:
-    case VDfgType::BufIf1:
     case VDfgType::Div:
     case VDfgType::DivS:
     case VDfgType::ModDiv:
@@ -645,12 +717,10 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         return;
     }
 
-    case VDfgType::Replicate: {
-        // TODO: model DfgReplicate without an explicit 'countp' which is always constant
-        const DfgReplicate& v = *as<DfgReplicate>();
+    case VDfgType::Rep: {
+        const DfgRep& v = *as<DfgRep>();
         CHECK(v.isPacked(), "Should be Packed type");
         CHECK(v.srcp()->isPacked(), "'srcp' should be same type");
-        CHECK(v.countp()->isPacked(), "'countp' should be Packed type");
         CHECK(v.size() % v.srcp()->size() == 0, "Not a replicate");
         return;
     }
@@ -690,9 +760,6 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(inputp(0)->size() < size(), "Operand should be narrower");
         return;
     }
-
-    case VDfgType::SAnd:
-    case VDfgType::SOr: UASSERT_OBJ(false, this, "SAnd/SOr should be removed before DFG"); return;
 
     case VDfgType::LogAnd:
     case VDfgType::LogEq:
@@ -781,16 +848,19 @@ DfgVertexVar* DfgVertex::getResultVar() {
             if (!resp->hasDfgRefs()) resp = varp;
             return false;
         }
-        // Prefer those that already have module references
-        if (resp->hasModRdRefs() != varp->hasModRdRefs()) {
-            if (!resp->hasModRdRefs()) resp = varp;
+
+        // Prefer real variables over temporaries
+        const bool resIsTemp = resp->vscp()->varp()->isTemp();
+        const bool varIsTemp = varp->vscp()->varp()->isTemp();
+        if (resIsTemp != varIsTemp) {
+            if (resIsTemp) resp = varp;
             return false;
         }
-        // Prefer real variabels over temporaries
         if (!resp->tmpForp() != !varp->tmpForp()) {
             if (resp->tmpForp()) resp = varp;
             return false;
         }
+
         // Prefer the earlier one in source order
         const FileLine& oldFlp = *(resp->fileline());
         const FileLine& newFlp = *(varp->fileline());
@@ -799,7 +869,7 @@ DfgVertexVar* DfgVertex::getResultVar() {
             return false;
         }
         // Prefer the one with the lexically smaller name
-        if (const int cmp = resp->nodep()->name().compare(varp->nodep()->name())) {
+        if (const int cmp = resp->vscp()->name().compare(varp->vscp()->name())) {
             if (cmp > 0) resp = varp;
             return false;
         }
@@ -812,13 +882,13 @@ DfgVertexVar* DfgVertex::getResultVar() {
 AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED {
     // If this is a variable, we are done
     if (const DfgVertexVar* const varp = this->cast<DfgVertexVar>()) {
-        return varp->varScopep()->scopep();
+        return varp->vscp()->scopep();
     }
 
     // Try the result var first if instructed (usully only in the recursive case)
     if (tryResultVar) {
         if (const DfgVertexVar* const varp = this->getResultVar()) {
-            return varp->varScopep()->scopep();
+            return varp->vscp()->scopep();
         }
     }
 
@@ -856,6 +926,160 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     dfg.removeVertex(*this);
     // Delete - this will unlink sources
     delete this;
+}
+
+class DfgPatternString final {
+    std::ostream& m_os;
+
+    std::map<std::string, std::string> m_internedConsts;  // Interned constants
+    std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects
+    std::map<uint32_t, std::string> m_internedWordWidths;  // Interned widths
+    std::map<uint32_t, std::string> m_internedWideWidths;  // Interned widths
+    std::map<const DfgVertex*, std::string> m_internedVertices;  // Interned vertices
+    // Multiplicity and depth of vertices
+    std::map<const DfgVertex*, std::pair<uint32_t, uint32_t>> m_multiplicityAndDepth;
+
+    static std::string toLetters(size_t value, bool lowerCase = false) {
+        const char base = lowerCase ? 'a' : 'A';
+        std::string s;
+        do { s += static_cast<char>(base + value % 26); } while (value /= 26);
+        return s;
+    }
+
+    const std::string& internConst(const DfgConst& vtx) {
+        const auto pair = m_internedConsts.emplace(vtx.num().ascii(false), "");
+        if (pair.second) pair.first->second += toLetters(m_internedConsts.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internSelLsb(uint32_t value) {
+        const auto pair = m_internedSelLsbs.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedSelLsbs.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internWordWidth(uint32_t value) {
+        const auto pair = m_internedWordWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWordWidths.size() - 1, true);
+        return pair.first->second;
+    }
+
+    const std::string& internWideWidth(uint32_t value) {
+        const auto pair = m_internedWideWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWideWidths.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internVertex(const DfgVertex& vtx) {
+        const auto pair = m_internedVertices.emplace(&vtx, "");
+        if (pair.second) pair.first->second += toLetters(m_internedVertices.size() - 1);
+        return pair.first->second;
+    }
+
+    void recordMultiplicityAndDepth(const DfgVertex& vtx, uint32_t depth) {
+        std::pair<uint32_t, uint32_t>& value = m_multiplicityAndDepth
+                                                   .emplace(std::piecewise_construct,  //
+                                                            std::forward_as_tuple(&vtx),  //
+                                                            std::forward_as_tuple(0, depth))
+                                                   .first->second;
+        value.first += 1;
+        value.second = std::max(value.second, depth);
+        if (!depth) return;
+        vtx.foreachSource([&](const DfgVertex& src) {
+            recordMultiplicityAndDepth(src, depth - 1);
+            return false;
+        });
+    }
+
+    // Render the vertx into ss, and return true if the recursion reached the given depth,
+    // meaning an S-expression with that nesting level has been rendered.
+    void render(const DfgVertex& vtx, uint32_t depth, bool isRoot = true) {
+        if (const DfgConst* const constp = vtx.cast<DfgConst>()) {
+            // Base case 1: constant
+            if (constp->isZero()) {
+                m_os << "(CONST ZERO)";
+            } else if (constp->isOnes()) {
+                m_os << "(CONST ONES)";
+            } else {
+                m_os << "(CONST #" << internConst(*constp) << ')';
+            }
+        } else if (!isRoot && m_multiplicityAndDepth.at(&vtx).first > 1) {
+            // Base case 2: vertex appearing multiple times
+            m_os << internVertex(vtx);
+        } else if (!vtx.foreachSource([&](const DfgVertex&) { return true; })) {
+            // Base case 3: vertex with no inputs (input variable)
+            m_os << '(' << vtx.typeName() << ')';
+        } else if (depth == 0) {
+            // Base case 4: deep vertex (apperaing only once)
+            m_os << "_";
+        } else {
+            // Recursively print an S-expression for the vertex
+            m_os << '(';
+            // Name
+            m_os << vtx.typeName();
+            // Specials
+            if (const DfgSel* const selp = vtx.cast<DfgSel>()) {
+                m_os << '@';
+                if (selp->lsb() == 0) {
+                    m_os << '0';
+                } else {
+                    m_os << internSelLsb(selp->lsb());
+                }
+            }
+            // Operands
+            vtx.foreachSource([&](const DfgVertex& src) {
+                m_os << ' ';
+                render(src, depth - 1, false);
+                return false;
+            });
+            // S-expression end
+            m_os << ')';
+        }
+
+        // Annotate type
+        m_os << ':';
+        if (!vtx.dtype().isPacked()) {
+            vtx.dtype().astDtypep()->dumpSmall(m_os);
+        } else {
+            const uint32_t width = vtx.size();
+            if (width == 1) {
+                m_os << '1';
+            } else if (width <= VL_QUADSIZE) {
+                m_os << internWordWidth(width);
+            } else {
+                m_os << internWideWidth(width);
+            }
+        }
+
+        // Mark it if it has multiple sinks
+        if (vtx.hasMultipleSinks()) m_os << '*';
+    }
+
+public:
+    DfgPatternString(std::ostream& os, const DfgVertex& vtx, uint32_t depth)
+        : m_os{os} {
+        recordMultiplicityAndDepth(vtx, depth);
+        render(vtx, depth, false);
+        using Pair = std::pair<std::string, const DfgVertex*>;
+        std::vector<Pair> vertices;
+        for (const auto& pair : m_multiplicityAndDepth) {
+            if (pair.second.first == 1) continue;
+            vertices.emplace_back(internVertex(*pair.first), pair.first);
+        }
+        std::sort(vertices.begin(), vertices.end(), [](const Pair& a, const Pair& b) {  //
+            return a.first < b.first;
+        });
+        for (const Pair& pair : vertices) {
+            m_os << " | " << pair.first << " is ";
+            render(*pair.second, m_multiplicityAndDepth.at(pair.second).second);
+        }
+    }
+};
+
+std::string DfgVertex::patternString(uint32_t depth) const {
+    std::ostringstream oss;
+    DfgPatternString{oss, *this, depth};
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------

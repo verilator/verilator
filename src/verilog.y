@@ -27,6 +27,7 @@
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
+#define YYNEWLINE "\n"
 
 // Pick up new lexer
 #define yylex PARSEP->tokenToBison
@@ -37,8 +38,7 @@
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 #define RISEFALLDLYUNSUP(nodep) \
     if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
-        nodep->v3warn(RISEFALLDLY, \
-                      "Unsupported: rising/falling/turn-off delays. Using the first delay"); \
+        nodep->v3warn(RISEFALLDLY, "Unsupported: turn-off delays. Ignoring the third delay"); \
     }
 #define MINTYPMAXDLYUNSUP(nodep) \
     if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
@@ -804,6 +804,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
+%token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
+%token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
 %token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
@@ -3042,9 +3045,10 @@ delay_control<delayp>:   //== IEEE: delay_control
         |       '#' '(' minTypMax ')'
                         { $$ = new AstDelay{$<fl>1, $3, false}; }
         |       '#' '(' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); }
+                        { $$ = new AstDelay{$<fl>1, $3, false};
+                          $$->fallDelay($5); }
         |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $5, false}; RISEFALLDLYUNSUP($5); DEL($3); DEL($7); }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; $$->fallDelay($5); RISEFALLDLYUNSUP($7); DEL($7); }
         ;
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
@@ -3122,6 +3126,9 @@ sigAttr<nodep>:
         |       yVL_SC_BV                               { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BV}; }
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
         |       yVL_SPLIT_VAR                           { $$ = new AstAttrOf{$1, VAttrType::VAR_SPLIT_VAR}; }
+        |       yVL_FSM_ARC_INCL_COND                   { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND}; }
+        |       yVL_FSM_RESET_ARC                       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_RESET_ARC}; }
+        |       yVL_FSM_STATE                           { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE}; }
         ;
 
 rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
@@ -4179,7 +4186,11 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4196,7 +4207,11 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -5051,8 +5066,14 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr '|' ~r~expr                     { $$ = new AstOr{$2, $1, $3}; }
         |       ~l~expr '^' ~r~expr                     { $$ = new AstXor{$2, $1, $3}; }
         |       ~l~expr yP_XNOR ~r~expr                 { $$ = new AstNot{$2, new AstXor{$2, $1, $3}}; }
-        |       ~l~expr yP_NOR ~r~expr                  { $$ = new AstNot{$2, new AstOr{$2, $1, $3}}; }
-        |       ~l~expr yP_NAND ~r~expr                 { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}}; }
+        |       ~l~expr yP_NOR ~r~expr
+                        { $$ = new AstNot{$2, new AstOr{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~|' is not a 'nor' binary operator, but a unary '~ |'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... | ...)'"); }
+        |       ~l~expr yP_NAND ~r~expr
+                        { $$ = new AstNot{$2, new AstAnd{$2, $1, $3}};
+                          $2->v3error("Syntax error: '~&' is not a 'nand' binary operator, but a unary '~ &'"
+                                      << YYNEWLINE << $<fl>1->warnMore() << "... Suggest '~ (... & ...)'"); }
         |       ~l~expr yP_SLEFT ~r~expr                { $$ = new AstShiftL{$2, $1, $3}; }
         |       ~l~expr yP_SRIGHT ~r~expr               { $$ = new AstShiftR{$2, $1, $3}; }
         |       ~l~expr yP_SSRIGHT ~r~expr              { $$ = new AstShiftRS{$2, $1, $3}; }
@@ -5064,11 +5085,11 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       type_referenceEq yP_EQUAL type_referenceBoth         { $$ = new AstEqT{$2, $1, $3}; }
         |       type_referenceEq yP_NOTEQUAL type_referenceBoth      { $$ = new AstNeqT{$2, $1, $3}; }
         //                      // IEEE: expr yP_MINUSGT expr  (1800-2009)
-        //                      // Conflicts with constraint_expression:"expr yP_MINUSGT constraint_set"
-        //                      // To duplicating expr for constraints, just allow the more general form
-        //                      // Later Ast processing must ignore constraint terms where inappropriate
-        //UNSUP ~l~expr yP_MINUSGT constraint_set               { $<fl>$ = $<fl>1; $$ = $1 + $2 + $3; }
-        //UNSUP remove line below
+        //                      // Full IEEE 1800-2023 18.7.2 "expr ->
+        //                      // constraint_set" is split: this rule handles
+        //                      // the bare-expression RHS as a boolean
+        //                      // (AstLogIf), constraint_expression has one
+        //                      // production per non-expression RHS shape.
         |       ~l~expr yP_MINUSGT ~r~expr              { $$ = new AstLogIf{$2, $1, $3}; }
         //
         //                      // <= is special, as we need to disambiguate it with <= assignment
@@ -5384,6 +5405,21 @@ exprListE<nodeExprp>:
 exprList<nodeExprp>:
                 expr                                    { $$ = $1; }
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
+        ;
+
+// identifier_list for 'with' in inline randomize constraints (IEEE 1800-2023 18.7).
+// Only simple identifiers; non-identifier expressions are parse errors.
+inlineConstraintIdList<nodeExprp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       inlineConstraintIdList ',' id           { $$ = $1->addNext(
+                                                             new AstParseRef{$<fl>3, *$3, nullptr, nullptr}); }
+        ;
+
+// Optional identifier_list. Empty 'with () {...}' differs from bare 'with {...}'
+// via AstWithParse::restricted().
+inlineConstraintIdListE<nodeExprp>:
+                /* empty */                             { $$ = nullptr; }
+        |       inlineConstraintIdList                  { $$ = $1; }
         ;
 
 exprEListE<nodep>:  // expression list with empty commas allowed
@@ -6732,11 +6768,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_NEXTTIME '[' constExpr ']' pexpr %prec yS_NEXTTIME
                         { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); DEL($3); }
         |       yALWAYS pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: always (in property expression)"); }
-        |       yALWAYS anyrange pexpr  %prec yALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); DEL($2); }
-        |       yS_ALWAYS anyrange pexpr  %prec yS_ALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); DEL($2); }
+                        { $$ = $2; }
+        |       yALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yALWAYS
+                        { $$ = new AstPropAlways{$1, $7, $3, $5, false}; }
+        |       yS_ALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yS_ALWAYS
+                        { $$ = new AstPropAlways{$1, $7, $3, $5, true}; }
+        |       yS_ALWAYS pexpr
+                        { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
         |       yS_EVENTUALLY pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
@@ -6744,13 +6782,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($2); }
         |       ~o~pexpr yUNTIL pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: until (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, false, false}; }
         |       ~o~pexpr yS_UNTIL pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, true, false}; }
         |       ~o~pexpr yUNTIL_WITH pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: until_with (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, false, true}; }
         |       ~o~pexpr yS_UNTIL_WITH pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until_with (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3, true, true}; }
         |       ~o~pexpr yIMPLIES pexpr
                         { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
         //                      // yIFF also used by event_expression
@@ -6797,18 +6835,37 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!
         //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
-        //                      // Consecutive repetition [*N] (IEEE 1800-2023 16.9.2)
-        //                      // Creates AstConsRep; lowered by V3AssertPre
+        //                      // Consecutive repetition (IEEE 1800-2023 16.9.2)
+        //                      // [*N] exact count
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
-                        { $$ = new AstConsRep{$<fl>2, $1, $3}; }
+                        { $$ = new AstSConsRep{$<fl>2, $1, $3}; }
+        //                      // [*N:M] range
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
+                        { $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
+        //                      // [+] = [*1:$]
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
+                        { $$ = new AstSConsRep{$<fl>2, $1,
+                              new AstConst{$<fl>2, 1u}, nullptr, true}; }
+        //                      // [*] = [*0:$]
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR ']'
+                        { $$ = new AstSConsRep{$<fl>2, $1,
+                              new AstConst{$<fl>2, 0u}, nullptr, true}; }
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
-                        { $$ = new AstSExprGotoRep{$<fl>2, $1, $3}; }
+                        { $$ = new AstSGotoRep{$<fl>2, $1, $3}; }
         //                      // IEEE: goto_repetition (range form -- unsupported)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
                         { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
-        |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev
-                        { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: boolean abbrev (in sequence expression)"); DEL($2); }
+        //                      // IEEE: nonconsecutive_repetition (single count form)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ']'
+                        { $$ = new AstSNonConsRep{$<fl>2, $1, $3}; }
+        //                      // IEEE: nonconsecutive_repetition (range form -- unsupported)
+        |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ':' constExpr ']'
+                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [= range nonconsecutive repetition"); DEL($3); DEL($5); }
+        //                      // All boolean_abbrev forms are now handled above:
+        //                      // [*N], [*N:M], [+], [*] via AstSConsRep
+        //                      // [->N], [->M:N] via AstSGotoRep
+        //                      // [=N], [=M:N] via AstSNonConsRep
         //
         //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
         //                      // version without sequence_abbrev looks just like normal function call
@@ -6834,18 +6891,18 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                         { $$ = new AstSOr{$2, $1, $3}; }
         //                      // Intersect always has an sexpr rhs
         |       ~p~sexpr yINTERSECT sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSIntersect{$2, $1, $3}; }
         //
         |       yFIRST_MATCH '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); }
+                        { $$ = $3; }  // IEEE 16.9.8: no-op in deterministic DFA model
         |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); DEL($5); }
+                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match with sequence_match_items"); DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSThroughout{$2, $1, $3}; }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
         //                      // IEEE: sexpr yWITHIN sexpr
         |       ~p~sexpr yWITHIN sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: within (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSWithin{$2, $1, $3}; }
         //                      // Note concurrent_assertion had duplicate rule for below
         //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
         //
@@ -6868,13 +6925,13 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND '[' constExpr ':' constExpr ']'
                         { $$ = new AstDelay{$1, $3, true};
-                          $$->rhsp($5); }
+                                                                                                        $$->rhsp($5); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 0}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         |       yP_POUNDPOUND yP_BRAPLUSKET
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, 1}, true};
+                          $$->rhsp(new AstUnbounded{$1}); }
         ;
 
 sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
@@ -6890,26 +6947,10 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
                 for_step_assignment                     { $$ = $1; }
         ;
 
-boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
-        //                      // IEEE: consecutive_repetition
-        //                      // [*N] exact count handled directly in sexpr rule
-                yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); DEL($4); }
-        |       yP_BRASTAR ']'
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
-        |       yP_BRAPLUSKET
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: [+] boolean abbrev expression"); }
-        //                      // IEEE: nonconsecutive_repetition/non_consecutive_repetition
-        |       yP_BRAEQ constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); }
-        |       yP_BRAEQ constExpr ':' constExpr ']'
-                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); DEL($4); }
-        //                      // IEEE: goto_repetition
-        //                      // Goto repetition [->N] handled in sexpr rule (AstSExprGotoRep)
-        //                      // Range form [->M:N] also handled there (unsupported)
-        ;
+//      boolean_abbrev -- all forms now handled directly in sexpr rule:
+//                      // IEEE: consecutive_repetition -- [*N], [*N:M], [+], [*] via AstSConsRep
+//                      // IEEE: goto_repetition -- [->N] via AstSGotoRep, [->M:N] unsupported
+//                      // IEEE: nonconsecutive_repetition -- [=N] via AstSNonConsRep, [=M:N] unsupported
 
 //************************************************
 // Covergroup
@@ -7886,8 +7927,37 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yUNIQUE '{' range_list '}' ';'
                         { $$ = new AstConstraintUnique{$1, $3}; }
         //                      // IEEE: expr yP_MINUSGT constraint_set
-        //                      // Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
-        //
+        //                      // The bare-expression case "expr -> expr ;"
+        //                      // arrives via the general expr rule above
+        //                      // (AstLogIf) and matches "expr ';'".  Each
+        //                      // production below covers one constraint_set
+        //                      // shape that is not a plain expression and
+        //                      // builds an outer AstConstraintIf wrapping the
+        //                      // statement V3Randomize already knows how to
+        //                      // lower (with disable-soft hoisted by the
+        //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT '{' constraint_expressionList '}'
+                        { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, nullptr}, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set yELSE constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, $9}, nullptr}; }
+        |       expr yP_MINUSGT yFOREACH '(' idClassSelForeach ')' constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintForeach{$3, $5, $7}, nullptr}; }
+        |       expr yP_MINUSGT yUNIQUE '{' range_list '}' ';'
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintUnique{$3, $5}, nullptr}; }
+        |       expr yP_MINUSGT ySOFT expr ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $4};
+                          innerp->isSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
+        |       expr yP_MINUSGT yDISABLE ySOFT constraint_primary ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $5};
+                          innerp->isDisableSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
         |       yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
                         { $$ = new AstConstraintIf{$1, $3, $5, nullptr}; }
         |       yIF '(' expr ')' constraint_set yELSE constraint_set
@@ -7896,7 +7966,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yFOREACH '(' idClassSelForeach ')' constraint_set
                         { $$ = new AstConstraintForeach{$1, $3, $5}; }
         //                      // soft is 1800-2012
-        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'
+        |       yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }

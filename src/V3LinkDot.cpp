@@ -193,6 +193,7 @@ public:
     void dumpSelf(const string& nameComment, bool force = false) {
         if (debug() >= 6 || dumpLevel() >= 6 || force) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
+            UINFO(4, "Dumping " << filename);
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write file: " << filename);
             std::ostream& os = *logp;
@@ -524,17 +525,19 @@ public:
     void insertIfaceVarSym(VSymEnt* symp) {  // Where sym is for a VAR of dtype IFACEREFDTYPE
         m_ifaceVarSyms.push_back(symp);
     }
-    // Iface for a raw or arrayed iface
+    // Iface for a raw or arrayed iface; peels nested array layers for multi-dim arrays.
     static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
-        AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
-        if (!ifacerefp) {
+        while (nodep) {
+            if (AstIfaceRefDType* const ifp = VN_CAST(nodep, IfaceRefDType)) return ifp;
             if (const AstBracketArrayDType* const arrp = VN_CAST(nodep, BracketArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
             } else if (const AstUnpackArrayDType* const arrp = VN_CAST(nodep, UnpackArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                nodep = arrp->subDTypep();
+            } else {
+                return nullptr;
             }
         }
-        return ifacerefp;
+        return nullptr;
     }
     // Given a pin expression, resolve it to a live AstIface* (or nullptr).
     // Handles both simple VarRef and dotted VarXRef pin connections.
@@ -770,10 +773,16 @@ public:
             if (forPrearray()) {
                 // GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
                 // but presently should be just "foo".
-                // Likewise cell foo__[array] before we've expanded arrays is just foo
-                if ((pos = ident.rfind("__BRA__")) != string::npos) {
-                    altIdent = ident.substr(0, pos);
+                // Likewise cell foo__[array] before we've expanded arrays is just foo.
+                // Multi-dim iface arrays append multiple __BRA__..__KET__ suffixes; strip them
+                // all.
+                altIdent = ident;
+                while (VString::endsWith(altIdent, "__KET__")) {
+                    const auto braPos = altIdent.rfind("__BRA__");
+                    if (braPos == string::npos) break;
+                    altIdent = altIdent.substr(0, braPos);
                 }
+                if (altIdent == ident) altIdent.clear();
             }
             UINFO(8, "         id " << ident << " alt " << altIdent << " left " << leftname
                                     << " at se" << lookupSymp);
@@ -2186,24 +2195,39 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
         // Type depends on the method used, let V3Width figure it out later
-        if (nodep->exprsp()
-            || nodep->constraintsp()) {  // Else empty expression and pretend no "with"
-            AstNode* exprOrConstraintsp = nullptr;
-            if (nodep->exprsp() && nodep->constraintsp()) {
-                // When support this probably should change AstWith to separate out
-                // the expr from the constraint equation using separate op2/op3 similar
-                // to AstWithParse
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize with (...) {...}'");
-            } else if (nodep->exprsp())
-                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
-            if (nodep->constraintsp())
-                exprOrConstraintsp = AstNode::addNext(
-                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+        // 'with (...) { ... }' constraint_block form is randomize-only
+        // (IEEE 1800-2023 7.12 vs. 18.7); array methods take 'with (expr)'.
+        if (nodep->restricted() && funcrefp->name() != "randomize") {
+            nodep->v3error("'with (...) { ... }' constraint block is only valid for"
+                           " randomize() (IEEE 1800-2023 18.7)");
+            funcrefp->addArgsp(argsp);
+            nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        const bool restrictedRandomize = nodep->restricted();
+        if (nodep->exprsp() || nodep->constraintsp()
+            || restrictedRandomize) {  // Else empty expression and pretend no "with"
             AstLambdaArgRef* const indexArgRefp
                 = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
-                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
+                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, nullptr};
+            // Harvest the identifier_list into AstWith; grammar guarantees AstParseRef.
+            if (restrictedRandomize) {
+                newp->restricted(true);
+                while (AstNode* const itemp = nodep->exprsp()) {
+                    newp->addRestrictedName(VN_AS(itemp, ParseRef)->name());
+                    itemp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(itemp), itemp);
+                }
+            }
+            AstNode* exprOrConstraintsp = nullptr;
+            if (nodep->exprsp()) exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->constraintsp())
+                exprOrConstraintsp = AstNode::addNext(
+                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
+            newp->addExprp(exprOrConstraintsp);  // addExprp() tolerates nullptr
             funcrefp->withp(newp);
         }
         funcrefp->addArgsp(argsp);
@@ -3074,7 +3098,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_modportNum = 0;  // Uniqueify modport numbers
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
-    bool m_inWith = false;  // True if in with
+    const AstWith* m_currentWithp = nullptr;  // Enclosing 'with' (nullptr if none)
+    std::set<std::string>
+        m_restrictedNamesUsed;  // Names from current 'with (id_list)' that resolved into target
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
@@ -3406,7 +3432,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
                     const bool existsInDerived = foundp && !foundp->imported();
                     if (m_statep->forPrimary() && !existsInDerived
-                        && !derivedClassp->isInterfaceClass()) {
+                        && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
                             "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
@@ -3601,7 +3627,36 @@ class LinkDotResolveVisitor final : public VNVisitor {
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
             }
-            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+            // Resolve pin expression to the enclosing module's port Var. At primary
+            // LinkDot the expression may still be an AstParseRef, so also look up by name.
+            AstVar* enclosingVarp = nullptr;
+            const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
+            if (varRefp) {
+                enclosingVarp = varRefp->varp();
+            } else if (const AstParseRef* const parseRefp = VN_CAST(exprp, ParseRef)) {
+                if (m_modp) {
+                    if (VSymEnt* const symp
+                        = m_statep->getNodeSym(m_modp)->findIdFlat(parseRefp->name())) {
+                        enclosingVarp = VN_CAST(symp->nodep(), Var);
+                    }
+                }
+            }
+            if (enclosingVarp && enclosingVarp->varType() == VVarType::IFACEREF
+                && VN_IS(enclosingVarp->childDTypep()->skipRefp(), IfaceGenericDType)) {
+                // Nested generic-iface forwarding (#7454): enclosing port is itself still
+                // generic, so emit a placeholder __VGIfaceParam pin carrying a VarRef to
+                // the outer port. V3Param rewrites it to the concrete IfaceRefDType once
+                // the enclosing module is specialized (see
+                // ParamProcessor::resolveGenericIfaceForwardingPins for the ordering
+                // constraint that keeps the rewrite inside V3Param).
+                AstVarRef* const fwdRefp
+                    = new AstVarRef{exprp->fileline(), enclosingVarp, VAccess::READ};
+                AstPin* const newPinp = new AstPin{
+                    pinp->fileline(), paramNum, "__VGIfaceParam" + modIfaceVarp->name(), fwdRefp};
+                newPinp->param(true);
+                visit(newPinp);
+                nodep->addParamsp(newPinp);
+            } else if (varRefp) {
                 const AstVar* const varp = varRefp->varp();
                 if (const AstIfaceRefDType* const refp
                     = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
@@ -3874,7 +3929,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
-                if (m_randSymp && m_inWith) classSymp = m_randSymp;
+                if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
                 if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
@@ -4187,11 +4242,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
-            if (m_randSymp) {
+            // Restricted 'with (id_list)': only id_list names bind into target class.
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp) {
+                    if (m_currentWithp && m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
-                    if (!m_inWith) {
+                    if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
                         // This will start failing once complex expressions are allowed on the LHS
                         // of randomize() with args
@@ -4323,6 +4383,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
+            } else if (allowScope && !allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+                // Function/task used as scope for static variable access (IEEE std 1800-2017 6.21)
+                // Don't set m_dotText so the static variable resolves as a VarRef rather than
+                // VarXRef. This is so that V3Begin won't move it out of the function/task's scope.
+                ok = true;
+                m_ds.m_dotSymp = foundp;
+                m_ds.m_dotPos = DP_SCOPE;
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
                 AstNodeFTaskRef* taskrefp;
                 if (VN_IS(foundp->nodep(), Task)) {
@@ -5067,6 +5134,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotPos = DP_MEMBER;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""
+            // Only flag FTaskRefs under generate-if/case blocks that may be
+            // pruned.  GenFor and plain begin-blocks won't be pruned by V3Param.
+            // VarXRef uses the broader m_genBlk flag (set for all GenBlocks)
+            // because genfor unrolling also removes variables.
+            if (m_ds.m_genBlk && m_ds.m_dotSymp) {
+                const AstNode* const blkp = m_ds.m_dotSymp->nodep();
+                if (VN_IS(blkp, GenBlock)
+                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCase))) {
+                    nodep->containsGenBlock(true);
+                }
+            }
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
@@ -5119,9 +5197,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
             }
-            if (m_randSymp) {
+            // Restricted 'with (id_list)': only id_list names bind into target class.
+            if (m_randSymp
+                && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
-                if (foundp && m_inWith) {
+                if (foundp && m_currentWithp) {
+                    if (m_currentWithp->restricted()) {
+                        m_restrictedNamesUsed.insert(nodep->name());
+                    }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstArg* argsp = nullptr;
                     if (nodep->argsp()) {
@@ -5137,8 +5220,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 }
             }
-            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)
+                && !VN_IS(nodep->classOrPackagep(), Package)) {
                 // need special handling to avoid falling back to std::randomize
+                // Skip if classOrPackagep is a Package (i.e. std::randomize resolved earlier)
                 VMemberMap memberMap;
                 AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
                     memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
@@ -5220,7 +5305,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
-                        nodep->classOrPackagep(classp);
+                        // Don't overwrite if already resolved to a package (e.g. std::randomize)
+                        if (!VN_IS(nodep->classOrPackagep(), Package))
+                            nodep->classOrPackagep(classp);
                     } else if (nodep->name() == "randomize") {
                         // A std::randomize resolved in V3Width
                         nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
@@ -5301,10 +5388,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         symIterateNull(nodep->attrp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
-            AstCellArrayRef* const newp
-                = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
+                // Multi-dim iface array access: append this select to the existing chain
+                fromArrRefp->addSelp(exprp);
+                AstCellArrayRef* const movedp = fromArrRefp->unlinkFrBack();
+                nodep->replaceWith(movedp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else {
+                AstCellArrayRef* const newp
+                    = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
     }
     void visit(AstNodePreSel* nodep) override {
@@ -5502,11 +5597,45 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
-        VL_RESTORER(m_inWith);
+        VL_RESTORER(m_currentWithp);
+        VL_RESTORER(m_restrictedNamesUsed);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            m_inWith = true;
+            m_currentWithp = nodep;
+            // Validate the identifier_list once per AstWith (m_validated travels
+            // with cloneTree, so cloned witnesses skip the redundant check).
+            const bool firstVisit = !nodep->validated();
+            if (firstVisit) {
+                nodep->validated(true);
+                m_restrictedNamesUsed.clear();
+                // IEEE 1800-2023 18.7: each name in the identifier_list must designate
+                // a member of the randomize() target class.
+                if (nodep->restricted() && m_randSymp) {
+                    for (const std::string& n : nodep->restrictedNames()) {
+                        if (!m_randSymp->findIdFlat(n)) {
+                            nodep->v3error("Identifier '"
+                                           << n
+                                           << "' in 'with (...)' identifier list is not a"
+                                              " member of the randomize() target class"
+                                              " (IEEE 1800-2023 18.7)");
+                            m_restrictedNamesUsed.insert(n);
+                        }
+                    }
+                }
+            }
             iterateChildren(nodep);
+            // Flag names that the user listed but never referenced in the constraint.
+            if (firstVisit && nodep->restricted()) {
+                for (const std::string& n : nodep->restrictedNames()) {
+                    if (!m_restrictedNamesUsed.count(n)) {
+                        nodep->v3warn(UNUSED, "Identifier '"
+                                                  << n
+                                                  << "' in 'with (...)' identifier list is"
+                                                     " not referenced in the constraint"
+                                                     " block");
+                    }
+                }
+            }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
@@ -5577,7 +5706,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp();
                 if (AstClassRefDType* const classRefp = VN_CAST(unwrappedp, ClassRefDType)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
-                    if (paramsp) {
+                    if (!paramsp && classRefp->paramsp()) {
+                        // No explicit #(...) on extends clause; carry over the
+                        // typedef's type-parameter pins so V3Param sees them.
+                        paramsp = classRefp->paramsp()->cloneTree(true);
+                        nodep->parameterized(true);
+                    } else if (paramsp) {
                         paramsp = paramsp->cloneTree(true);
                         nodep->parameterized(true);
                     }

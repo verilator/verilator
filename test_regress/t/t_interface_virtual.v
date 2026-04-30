@@ -36,15 +36,19 @@ module t;
   initial begin
     if (va != null) $stop;
     if (null != va) $stop;
+    if (va) $stop;
     va = null;
     if (va != null) $stop;
     if (null != va) $stop;
+    if (va) $stop;
     va = ia;
     if (va == null) $stop;
     if (null == va) $stop;
+    if (!va) $stop;
     va = null;
     if (va != null) $stop;
     if (null != va) $stop;
+    if (va) $stop;
     va = ia;
     if (va != ia) $stop;
 

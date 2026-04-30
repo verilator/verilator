@@ -78,11 +78,14 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 //=========================================================================
 // Declare net data types
 
+#ifndef VL_NO_LEGACY
 #define VL_SIG8(name, msb, lsb) CData name  ///< Declare signal, 1-8 bits
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
 #define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+#endif
+
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
@@ -107,6 +110,30 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
     return lhs <= 1 ? 0 : VL_CLOG2_CE_Q((lhs + 1) >> 1ULL) + 1;
 }
 
+//===================================================================
+// Random
+
+// Random Number Generator with internal state
+class VlRNG final {
+    std::array<uint64_t, 2> m_state;
+
+public:
+    // The default constructor simply sets state, to avoid vl_rand64()
+    // having to check for construction at each call
+    // Alternative: seed with zero and check on rand64() call
+    VlRNG() VL_MT_SAFE;
+    explicit VlRNG(uint64_t seed) VL_PURE;
+    void srandom(uint64_t n) VL_MT_UNSAFE;
+    std::string get_randstate() const VL_MT_UNSAFE;
+    void set_randstate(const std::string& state) VL_MT_UNSAFE;
+    uint64_t rand64() VL_MT_UNSAFE;
+    // Threadsafe, but requires use on vl_thread_rng or vl_current_rng
+    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
+    static uint64_t vl_current_rng_rand64() VL_MT_SAFE;
+    static VlRNG& vl_thread_rng() VL_MT_SAFE;
+};
+
+//===================================================================
 // Metadata of processes
 using VlProcessRef = std::shared_ptr<VlProcess>;
 class VlForkSync;
@@ -120,6 +147,10 @@ class VlProcess final {
     VlForkSyncState* m_forkSyncOnKillp
         = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
+    VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
+
+    // Thread-local current process pointer for hierarchical object seeding
+    static thread_local VlProcess* t_currentp;
 
 public:
     // TYPES
@@ -169,11 +200,22 @@ public:
         return true;
     }
 
+    // Random state (IEEE 1800-2023 9.7, 18.14)
+    void srandom(uint64_t seed) VL_MT_UNSAFE { m_rng.srandom(seed); }
     std::string randstate() const VL_MT_UNSAFE;
     void randstate(const std::string& state) VL_MT_UNSAFE;
+
+    // Current process tracking for hierarchical object seeding
+    static VlProcess* currentp() VL_MT_UNSAFE { return t_currentp; }
+    static void currentp(VlProcess* processp) VL_MT_UNSAFE { t_currentp = processp; }
+    // Return process RNG if in a process, else thread RNG
+    static VlRNG& currentRng() VL_MT_SAFE;
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef&) { return std::string("process"); }
+
+// Use process RNG if in a process, else thread RNG (IEEE 1800-2023 18.14)
+inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_current_rng_rand64(); }
 
 //===================================================================
 // SystemVerilog event type
@@ -240,30 +282,6 @@ inline std::string VL_TO_STRING(const VlEventBase& e) {
     }
     return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
-
-//===================================================================
-// Random
-
-// Random Number Generator with internal state
-class VlRNG final {
-    std::array<uint64_t, 2> m_state;
-
-public:
-    // The default constructor simply sets state, to avoid vl_rand64()
-    // having to check for construction at each call
-    // Alternative: seed with zero and check on rand64() call
-    VlRNG() VL_MT_SAFE;
-    explicit VlRNG(uint64_t seed) VL_PURE;
-    void srandom(uint64_t n) VL_MT_UNSAFE;
-    std::string get_randstate() const VL_MT_UNSAFE;
-    void set_randstate(const std::string& state) VL_MT_UNSAFE;
-    uint64_t rand64() VL_MT_UNSAFE;
-    // Threadsafe, but requires use on vl_thread_rng
-    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
-    static VlRNG& vl_thread_rng() VL_MT_SAFE;
-};
-
-inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_thread_rng_rand64(); }
 
 // RNG for shuffle()
 class VlURNG final {

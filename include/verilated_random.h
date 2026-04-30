@@ -33,6 +33,7 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <unordered_set>
 
 //=============================================================================
 
@@ -82,6 +83,9 @@ public:
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
+    // Emit the current runtime value as an SMT bit-vector literal (#b...).
+    // Used by randomize(null) to pin a var to its existing value.
+    virtual void emitConcreteValue(std::ostream& s) const;
     virtual int totalWidth() const;
     mutable std::shared_ptr<const ArrayInfoMap> m_arrVarsRefp;
     void setArrayInfo(const std::shared_ptr<const ArrayInfoMap>& arrVarsRefp) const {
@@ -216,6 +220,8 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<std::string> m_unique_arrays;
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
+    const VlQueue<CData>* m_static_randmodep = nullptr;  // Static rand_mode state (shared)
+    std::unordered_set<std::string> m_staticVars;  // Names of static rand vars
     int m_index = 0;  // Internal counter for key generation
     std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
     std::map<std::string, std::set<uint64_t>>
@@ -223,6 +229,7 @@ class VlRandomizer VL_NOT_FINAL {
     size_t m_randcConstraintHash = 0;  // Hash of constraints when history was valid
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
+    bool m_checkOnly = false;  // Set for randomize(null)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
@@ -241,6 +248,9 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
+    // Validate the constraints against the current runtime values of every
+    // registered rand variable without picking new ones.
+    bool next_check_only(VlRNG& rngr);
 
     // ---  Process the key for associative array  ---
 
@@ -640,6 +650,10 @@ public:
     void solveBefore(const std::string& beforeName,
                      const std::string& afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
+    // Shared across all instances; consulted instead of m_randmodep for vars marked via
+    // mark_var_static().
+    void set_static_randmode(const VlQueue<CData>& randmode) { m_static_randmodep = &randmode; }
+    void mark_var_static(const char* const name) { m_staticVars.insert(name); }
 #ifdef VL_DEBUG
     void dump() const;
 #endif

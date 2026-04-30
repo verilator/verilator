@@ -2,7 +2,4 @@
    19 |     cls.take_ref(a);
       |                  ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_readwrite_unsup.v:20:18: Unsupported: Signals used via read-write reference cannot be forced
-   20 |     cls.take_ref(b);
-      |                  ^
 %Error: Exiting due to

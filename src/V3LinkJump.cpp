@@ -236,20 +236,24 @@ class LinkJumpVisitor final : public VNVisitor {
         m_taskDisableBegins.emplace(taskp, taskBodyp);
         return taskBodyp;
     }
-    AstVar* getOrCreateTaskDisableQueuep(AstTask* const taskp, FileLine* const fl) {
-        const auto it = m_taskDisableQueues.find(taskp);
-        if (it != m_taskDisableQueues.end()) return it->second;
-
+    AstVar* getProcessQueuep(AstNode* const nodep, FileLine* const fl) {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
         AstClass* const processClassp
             = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         AstVar* const processQueuep = new AstVar{
-            fl, VVarType::VAR, m_queueNames.get(taskp->name()), VFlagChildDType{},
+            fl, VVarType::VAR, m_queueNames.get(nodep->name()), VFlagChildDType{},
             new AstQueueDType{fl, VFlagChildDType{},
                               new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
+        processQueuep->processQueue(true);
         topPkgp->addStmtsp(processQueuep);
+        return processQueuep;
+    }
+    AstVar* getOrCreateTaskDisableQueuep(AstTask* const taskp, FileLine* const fl) {
+        const auto it = m_taskDisableQueues.find(taskp);
+        if (it != m_taskDisableQueues.end()) return it->second;
 
+        AstVar* const processQueuep = getProcessQueuep(taskp, fl);
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(fl, processQueuep);
         AstBegin* const taskBodyp = getOrCreateTaskDisableBeginp(taskp, fl);
         prependStmtsp(taskBodyp, pushCurrentProcessp);
@@ -274,16 +278,7 @@ class LinkJumpVisitor final : public VNVisitor {
         const auto it = m_beginDisableQueues.find(beginp);
         if (it != m_beginDisableQueues.end()) return it->second;
 
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        AstVar* const processQueuep = new AstVar{
-            fl, VVarType::VAR, m_queueNames.get(beginp->name()), VFlagChildDType{},
-            new AstQueueDType{fl, VFlagChildDType{},
-                              new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
-        processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
-        topPkgp->addStmtsp(processQueuep);
-
+        AstVar* const processQueuep = getProcessQueuep(beginp, fl);
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(fl, processQueuep);
         AstBegin* const beginBodyp = getOrCreateBeginDisableBeginp(beginp, fl);
         prependStmtsp(beginBodyp, pushCurrentProcessp);
@@ -315,17 +310,9 @@ class LinkJumpVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
             }
         }
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        // Declare queue of processes (as a global variable for simplicity)
-        AstVar* const processQueuep = new AstVar{
-            fl, VVarType::VAR, m_queueNames.get(targetp->name()), VFlagChildDType{},
-            new AstQueueDType{fl, VFlagChildDType{},
-                              new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
-        processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
-        topPkgp->addStmtsp(processQueuep);
 
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstVar* const processQueuep = getProcessQueuep(targetp, fl);
         AstVarRef* const queueWriteRefp
             = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
         AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);

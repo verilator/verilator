@@ -1,5 +1,4 @@
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_coverage_bad.v:13:15: Bit [0] of signal 'w' have multiple combinational drivers. This can cause performance degradation.
-                                                               : ... note: In instance 't'
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_coverage_bad.v:13:15: Bit [0] of signal 't.w' have multiple combinational drivers. This can cause performance degradation.
                       t/t_lint_multidriven_coverage_bad.v:15:15: ... Location of offending driver
    15 |   assign w[0] = a;   
       |               ^

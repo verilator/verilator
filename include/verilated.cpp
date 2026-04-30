@@ -330,11 +330,13 @@ static size_t _vl_snprintf_string(std::string& str, const char* format,
 //===========================================================================
 // Process -- parts of std::process implementation
 
-std::string VlProcess::randstate() const VL_MT_UNSAFE {
-    return VlRNG::vl_thread_rng().get_randstate();
-}
-void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
-    VlRNG::vl_thread_rng().set_randstate(state);
+thread_local VlProcess* VlProcess::t_currentp = nullptr;
+
+std::string VlProcess::randstate() const VL_MT_UNSAFE { return m_rng.get_randstate(); }
+void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE { m_rng.set_randstate(state); }
+VlRNG& VlProcess::currentRng() VL_MT_SAFE {
+    if (t_currentp) return t_currentp->m_rng;
+    return VlRNG::vl_thread_rng();
 }
 
 //===========================================================================
@@ -380,7 +382,8 @@ vl_rng_compute_new_state(const std::array<uint64_t, 2>& current_state) VL_PURE {
 }
 
 VlRNG::VlRNG() VL_MT_SAFE {
-    VlRNG& fromr = vl_thread_rng();
+    // Seed from process RNG if in a process, else thread RNG (IEEE 1800-2023 18.14.1)
+    VlRNG& fromr = VlProcess::currentRng();
 
     const uint64_t s0 = vl_rng_result(fromr.m_state);
     fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
@@ -401,6 +404,12 @@ uint64_t VlRNG::rand64() VL_MT_UNSAFE {
 }
 uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
     VlRNG& fromr = vl_thread_rng();
+    const uint64_t result = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+    return result;
+}
+uint64_t VlRNG::vl_current_rng_rand64() VL_MT_SAFE {
+    VlRNG& fromr = VlProcess::currentRng();
     const uint64_t result = vl_rng_result(fromr.m_state);
     fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
     return result;
@@ -935,6 +944,20 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define VL_VA_ARG_Q_(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
 
+static void _vl_vsformat_read_qint(va_list app, int lbits, QData& ld, std::vector<EData>& strwide,
+                                   WDataInP& lwp, int& lsb) VL_MT_SAFE {
+    if (lbits <= VL_QUADSIZE) {
+        ld = VL_VA_ARG_Q_(app, lbits);
+        strwide.resize(2);
+        VL_SET_WQ(strwide, ld);
+        lwp = strwide.data();
+    } else {
+        lwp = va_arg(app, WDataInP);
+        ld = 0;  // Consume the arg; enums > 64 bits wide are unsupported.
+    }
+    lsb = lbits - 1;
+}
+
 void _vl_vsformat(std::string& output, const std::string& format, int argc,
                   va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
@@ -1069,6 +1092,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             // Similar code flow in V3Number::displayed
             int lbits = 0;
             void* thingp = nullptr;
+            const std::string* enump = nullptr;
             QData ld = 0;
             std::vector<EData> strwide;
             WDataInP lwp = nullptr;
@@ -1088,17 +1112,31 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             } else if (formatAttr == VL_VFORMATATTR_STRING) {
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
+            } else if (formatAttr == VL_VFORMATATTR_ENUM) {
+                lbits = va_arg(ap, int);
+                _vl_vsformat_read_qint(ap, lbits, ld, strwide, lwp, lsb);
+                ++argn;  // Internal ABI: runtime enum args are followed by generated name string
+                static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
+                enump = va_arg(ap, std::string*);
+                if (enump && !enump->empty()) {
+                    formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    thingp = const_cast<std::string*>(enump);
+                } else if (fmt == 'p' && widthSet && width == 0) {
+                    output += "'h";
+                    fmt = 'h';
+                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                } else {
+                    if (fmt == 'p') width = 0;
+                    widthSet = true;
+                    fmt = 'd';
+                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                }
+                if (widthSet && width == 0) {
+                    while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
+                }
             } else {  // Numeric
                 lbits = va_arg(ap, int);
-                if (lbits <= VL_QUADSIZE) {
-                    ld = VL_VA_ARG_Q_(ap, lbits);
-                    strwide.resize(2);
-                    VL_SET_WQ(strwide, ld);
-                    lwp = strwide.data();
-                } else {
-                    lwp = va_arg(ap, WDataInP);
-                    ld = lwp[0];
-                }
+                _vl_vsformat_read_qint(ap, lbits, ld, strwide, lwp, lsb);
                 if (fmt == 'p') {
                     if (widthSet && width == 0) {  // For %0p, IEEE our choice, use 'h%0h
                         output += "'h";
@@ -1109,7 +1147,6 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                         fmt = 'd';
                     }
                 }
-                lsb = lbits - 1;
                 if (widthSet && width == 0) {
                     while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
                 }
@@ -3001,6 +3038,14 @@ std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
 }
+void VerilatedContext::solverLogFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_solverLogFilename = flag;
+}
+std::string VerilatedContext::solverLogFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_solverLogFilename;
+}
 void VerilatedContext::solverProgram(const std::string& flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_ns.m_solverProgram = flag;
@@ -3016,6 +3061,12 @@ void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
 void VerilatedContext::randReset(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_randReset = val;
+}
+
+std::string VerilatedContext::timeWithUnitString() const VL_MT_SAFE {
+    const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
+                                  * vl_time_multiplier(timeprecision() - timeunit());
+    return vl_timescaled_double(simtimeInUnits);
 }
 void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
@@ -3233,6 +3284,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+solver+file+", str)) {
+            solverLogFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {
             warnUnsatConstr(u64 == 0);  // wno means disable, so invert
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
@@ -3326,7 +3379,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     const std::string endwhy = gotError() ? "$stop" : gotFinish() ? "$finish" : "end";
     const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
                                   * vl_time_multiplier(timeprecision() - timeunit());
-    const std::string simtime = vl_timescaled_double(simtimeInUnits);
+    const std::string simtime = timeWithUnitString();
     const double walltime = statWallTimeSinceStart();
     const double cputime = statCpuTimeSinceStart();
     const std::string simtimePerf
@@ -3769,20 +3822,49 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
 
 VerilatedVar*
 VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
-                                   VerilatedVarType vltype, int vlflags,
+                                   VerilatedVarType vltype, int vlflags, void* forceReadSignalData,
+                                   const char* const forceReadSignalName,
                                    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                    int udims, int pdims...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
 
+    // TODO: While the force read signal would be *expected* to have the same vltype and vlflags
+    // (except for forceable and public flags) as the base signal, this is not guaranteed. It would
+    // be a safer solution to adapt V3EmitCSyms to find the __VforceRd signal and give its vltype
+    // and vlflags to this function as arguments.
+
+    // Use same flags as base signal, but remove forceable and public flags
+    const VerilatedVarFlags forceReadValueVlflags
+        = static_cast<VerilatedVarFlags>(vlflags & ~VLVF_FORCEABLE & ~VLVF_PUB_RW & ~VLVF_PUB_RD);
+
+    VerilatedVar forceReadSignal{forceReadSignalName,
+                                 forceReadSignalData,
+                                 vltype,
+                                 forceReadValueVlflags,
+                                 udims,
+                                 pdims,
+                                 isParam};
+
+    va_list ap;
+    va_start(ap, pdims);
+    assert(udims == 0);  // Forcing unpacked arrays is unsupported (#4735) and should have been
+                         // checked in V3Force already.
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        forceReadSignal.m_packed[i].m_left = msb;
+        forceReadSignal.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
     std::unique_ptr<VerilatedForceControlSignals> verilatedForceControlSignalsp
-        = std::make_unique<VerilatedForceControlSignals>(
-            VerilatedForceControlSignals{forceControlSignals.first, forceControlSignals.second});
+        = std::unique_ptr<VerilatedForceControlSignals>(new VerilatedForceControlSignals{
+            forceControlSignals.first, forceControlSignals.second, std::move(forceReadSignal)});
 
     VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
                      isParam, std::move(verilatedForceControlSignalsp));
     verilatedForceControlSignalsp = nullptr;
 
-    va_list ap;
     va_start(ap, pdims);
     assert(udims == 0);  // Forcing unpacked arrays is unsupported (#4735) and should have been
                          // checked in V3Force already.

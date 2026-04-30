@@ -116,6 +116,12 @@ Options:
    simulation runtime random seed value. If zero or not specified picks a
    value from the system random number generator.
 
+.. option:: +verilator+solver+file+<filename>
+
+   If specified, when the randomization solver is used, open the given
+   filename for writing, and log all random solver commands and responses
+   to it.
+
 .. option:: +verilator+V
 
    Shows the verbose version, including configuration information.

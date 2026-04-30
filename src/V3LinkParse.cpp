@@ -611,6 +611,18 @@ class LinkParseVisitor final : public VNVisitor {
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmArcInclCond(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_RESET_ARC) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmResetArc(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmState(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_SC_BIGUINT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBigUint(true);
@@ -917,6 +929,17 @@ class LinkParseVisitor final : public VNVisitor {
         }
         cleanFileline(nodep);
         iterateChildren(nodep);
+    }
+    void visit(AstCaseItem* nodep) override {
+        // Move default caseItems to the bottom of the list
+        // That saves us from having to search each case list twice, for non-defaults and defaults
+        iterateChildren(nodep);
+        if (!nodep->user2() && nodep->isDefault() && nodep->nextp()) {
+            nodep->user2(true);
+            AstNode* const nextp = nodep->nextp();
+            nodep->unlinkFrBack();
+            nextp->addNext(nodep);
+        }
     }
     void visit(AstDot* nodep) override {
         cleanFileline(nodep);

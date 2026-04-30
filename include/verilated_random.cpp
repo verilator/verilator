@@ -23,6 +23,8 @@
 
 #include "verilated_random.h"
 
+#include <cassert>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -61,6 +63,9 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
 
+    std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
+    uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
+
 public:
     typedef std::streambuf::traits_type traits_type;
 
@@ -69,8 +74,8 @@ protected:
         const char c2 = static_cast<char>(c);
         if (pbase() == pptr()) return 0;
         const size_t size = pptr() - pbase();
+        log("  ", std::string(pbase(), size));
         const ssize_t n = ::write(m_writeFd, pbase(), size);
-        // VL_PRINTF_MT("solver-write '%s'\n", std::string(pbase(), size).c_str());
         if (VL_UNLIKELY(n == -1)) perror("write");
         if (n <= 0) {
             wait_report();
@@ -91,6 +96,7 @@ protected:
             wait_report();
             return traits_type::eof();
         }
+        log("< ", std::string(m_readBuf, n));
         setg(m_readBuf, m_readBuf, m_readBuf + n);
         return traits_type::to_int_type(m_readBuf[0]);
     }
@@ -104,6 +110,7 @@ public:
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
+        logOpen();
         open(cmd);
     }
 
@@ -175,6 +182,7 @@ public:
             return false;
         }
 
+        log("", "# Open: "s + cmd[0]);
         const pid_t pid = fork();
         if (VL_UNLIKELY(pid < 0)) {
             perror("VlRProcess::open: fork");
@@ -211,6 +219,35 @@ public:
 #else
         return false;
 #endif
+    }
+
+private:
+    void logOpen() {
+        const std::string filename = Verilated::threadContextp()->solverLogFilename();
+        if (filename.empty()) return;
+        m_logfp = std::make_unique<std::ofstream>(filename);
+        if (m_logfp.get() && m_logfp.get()->fail()) m_logfp = nullptr;
+        if (!m_logfp) {
+            const std::string msg = "%Error: Can't write '"s + filename + "'";
+            VL_FATAL_MT("", 0, "", msg.c_str());
+            return;
+        }
+        *m_logfp << "# Verilator solver log\n";
+    }
+    void log(const std::string& prefix, const std::string& text) {
+        if (VL_LIKELY(!m_logfp.get()) || text.empty()) return;
+        if (m_logLastTime != Verilated::threadContextp()->time()) {
+            m_logLastTime = Verilated::threadContextp()->time();
+            *m_logfp << "# [" << Verilated::threadContextp()->timeWithUnitString() << "]\n";
+        }
+        std::size_t startPos = 0;
+        while (1) {
+            const std::size_t endPos = text.find('\n', startPos);
+            if (endPos == std::string::npos) break;
+            *m_logfp << prefix << text.substr(startPos, endPos - startPos) << '\n';
+            startPos = endPos + 1;
+        }
+        if (startPos < text.length()) *m_logfp << prefix << text.substr(startPos) << '\n';
     }
 };
 
@@ -294,6 +331,30 @@ void VlRandomVar::emitExtract(std::ostream& s, int i) const {
     s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
 }
 void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+// Serialize the current runtime value as an SMT-LIB binary literal. Used by
+// randomize(null) to pin a var via `(assert (= var #b...))`. Binary (#b)
+// rather than hex (#x) sidesteps SMT-LIB's hex-width-multiple-of-4 rule.
+void VlRandomVar::emitConcreteValue(std::ostream& s) const {
+    const int w = width();
+    const void* const dp = datap(0);
+    s << "#b";
+    for (int i = w - 1; i >= 0; --i) {
+        int bit = 0;
+        if (w <= VL_BYTESIZE) {
+            bit = (*static_cast<const CData*>(dp) >> i) & 1;
+        } else if (w <= VL_SHORTSIZE) {
+            bit = (*static_cast<const SData*>(dp) >> i) & 1;
+        } else if (w <= VL_IDATASIZE) {
+            bit = (*static_cast<const IData*>(dp) >> i) & 1;
+        } else if (w <= VL_QUADSIZE) {
+            bit = (*static_cast<const QData*>(dp) >> i) & 1;
+        } else {
+            const EData* const wp = static_cast<const EData*>(dp);
+            bit = (wp[VL_BITWORD_E(i)] >> VL_BITBIT_E(i)) & 1;
+        }
+        s << (bit ? '1' : '0');
+    }
+}
 int VlRandomVar::totalWidth() const { return m_width; }
 static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     int i;
@@ -405,8 +466,16 @@ void VlRandomizer::recordRandcValues() {
     }
 }
 
+bool VlRandomizer::next_check_only(VlRNG& rngr) {
+    m_checkOnly = true;
+    const bool result = next(rngr);
+    m_checkOnly = false;
+    return result;
+}
+
 bool VlRandomizer::next(VlRNG& rngr) {
-    if (m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (!m_checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (m_checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
     for (const std::string& baseName : m_unique_arrays) {
         const auto it = m_vars.find(baseName);
         const uint32_t size = m_unique_array_sizes.at(baseName);
@@ -434,8 +503,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
     }
 
-    // If solve-before constraints are present, use phased solving
-    if (!m_solveBefore.empty()) return nextPhased(rngr);
+    // Pinned vars make phase ordering moot; skip phased path in check-only.
+    if (!m_checkOnly && !m_solveBefore.empty()) return nextPhased(rngr);
 
     // Randc retry: if unsat due to randc exhaustion, clear history and retry once
     const bool hasRandc = !m_randcVarNames.empty();
@@ -458,14 +527,24 @@ bool VlRandomizer::next(VlRNG& rngr) {
             os << "(declare-fun " << var.first << " () ";
             var.second->emitType(os);
             os << ")\n";
+            // Pin each var to its current value: SAT iff the current values
+            // satisfy the constraints. V3Randomize rejects non-scalar rand
+            // members upstream, hence the assert.
+            if (m_checkOnly) {
+                assert(var.second->dimension() == 0);
+                os << "(assert (= " << var.first << ' ';
+                var.second->emitConcreteValue(os);
+                os << "))\n";
+            }
         }
 
         for (const std::string& constraint : m_constraints) {
             os << "(assert (= #b1 " << constraint << "))\n";
         }
 
-        // Randc: exclude previously used values to enforce cyclic non-repetition
-        emitRandcExclusions(os);
+        // randc exclusions vs. a pinned current value would make every check
+        // trivially UNSAT after the first cycle.
+        if (!m_checkOnly) emitRandcExclusions(os);
 
         const size_t nSoft = m_softConstraints.size();
         bool sat = false;
@@ -508,6 +587,10 @@ bool VlRandomizer::next(VlRNG& rngr) {
                 m_randcUsedValues.clear();
                 continue;  // Retry without exclusions
             }
+            // Skip the unsat-core path in check-only: it re-declares vars
+            // without pinning, so parseSolution would clobber user state with
+            // the solver's free assignment.
+            if (m_checkOnly) return false;
             // Genuine unsat: report via unsat-core
             os << "(set-option :produce-unsat-cores true)\n";
             os << "(set-logic QF_ABV)\n";
@@ -533,17 +616,20 @@ bool VlRandomizer::next(VlRNG& rngr) {
             return false;
         }
 
-        for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-            os << "(assert ";
-            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-            os << ")\n";
-            os << "\n(check-sat)\n";
-            sat = parseSolution(os, false);
-            (void)sat;
+        // Pinned vars: salting cannot diversify, only burn solver calls.
+        if (!m_checkOnly) {
+            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                os << "(assert ";
+                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                os << ")\n";
+                os << "\n(check-sat)\n";
+                sat = parseSolution(os, false);
+                (void)sat;
+            }
         }
 
-        // Record solved randc values for future exclusion
-        recordRandcValues();
+        // Check-only must not advance randc cycle state.
+        if (!m_checkOnly) recordRandcValues();
 
         os << "(reset)\n";
         return true;
@@ -658,8 +744,12 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
-        if (m_randmodep && !varr.randModeIdxNone()) {
-            if (!m_randmodep->at(varr.randModeIdx())) continue;
+        if (!varr.randModeIdxNone()) {
+            // Static rand vars have their rand_mode in a class-package shared queue,
+            // not the per-instance one.
+            const VlQueue<CData>* const modep
+                = m_staticVars.count(name) ? m_static_randmodep : m_randmodep;
+            if (modep && !modep->at(varr.randModeIdx())) continue;
         }
         if (m_disabledVars.count(name)) continue;
         if (!indices.empty()) {

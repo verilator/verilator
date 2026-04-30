@@ -30,10 +30,6 @@ module t (
     a;
   endsequence
 
-  sequence s_within;
-    a within(b);
-  endsequence
-
   sequence s_and;
     a and b;
   endsequence
@@ -92,10 +88,13 @@ module t (
     a [+];
   endsequence
   sequence s_booleanabbrev_eq;
-    a [= 1];
+    a [= 1];  // Now supported (AstSNonConsRep)
   endsequence
   sequence s_booleanabbrev_eq_range;
     a [= 1:2];
+  endsequence
+  sequence s_booleanabbrev_eq_unbounded;
+    a [= 1:$];
   endsequence
   sequence s_booleanabbrev_minusgt;
     a [-> 1];

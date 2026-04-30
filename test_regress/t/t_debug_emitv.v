@@ -21,10 +21,16 @@ endpackage
 
 class Cls;
   int member = 1;
+  rand int rmember1;
+  rand int rmember2;
   function void method;
     if (this != this) $stop;
   endfunction
 endclass
+
+function int rand_restricted(Cls obj, int member);
+  return obj.randomize() with (rmember1, rmember2) { rmember1 < member; rmember2 < member; };
+endfunction
 
 interface Iface (
    input clk
@@ -329,6 +335,9 @@ module t (/*AUTOARG*/
 
   cover_concurrent: cover property(prop);
   cover_concurrent_stmt: cover property(prop) $display("pass");
+
+  assert_prop_always: assert property (@(posedge clk) always [0:3] in);
+  assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
 
 
   int a;

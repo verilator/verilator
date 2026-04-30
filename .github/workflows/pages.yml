@@ -48,7 +48,7 @@ jobs:
           ls -lsha
           tree -L 3 pages
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: pages
 
@@ -61,7 +61,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   notify:
     name: Notify
@@ -74,7 +74,7 @@ jobs:
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.0.0
+        uses: actions/create-github-app-token@v3.1.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

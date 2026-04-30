@@ -31,6 +31,7 @@ class Node:
         self._arity = -1  # Arity of node
         self._ops = {}  # Operands of node
         self._ptrs = []  # Pointer members of node (name, types)
+        self._makeDfgVertex = False  # Create a corresponding DfgVertex sub-class
 
     @property
     def name(self):
@@ -68,6 +69,10 @@ class Node:
         assert self.isCompleted
         return self._ptrs
 
+    @property
+    def makeDfgVertex(self):
+        return self._makeDfgVertex
+
     # Pre completion methods
     def addSubClass(self, subClass):
         assert not self.isCompleted
@@ -90,6 +95,9 @@ class Node:
     def addPtr(self, name, monad, kind, legals):
         name = re.sub(r'^m_', '', name)
         self._ptrs.append({'name': name, 'monad': monad, 'kind': kind, 'legals': legals})
+
+    def setMakeDfgVertex(self):
+        self._makeDfgVertex = True
 
     # Computes derived properties over entire class hierarchy.
     # No more changes to the hierarchy are allowed once this was called
@@ -609,9 +617,12 @@ def read_types(filename, Nodes, prefix):
             if prefix != "Ast":
                 continue
 
-            match = re.match(r'^\s*//\s*@astgen\s+(.*)$', line)
-            if match:
+            if match := re.match(r'^\s*//\s*@astgen\s+(.*)$', line):
                 decl = re.sub(r'//.*$', '', match.group(1))
+                if decl == "makeDfgVertex":
+                    node.setMakeDfgVertex()
+                    continue
+
                 what, sep, rest = partitionAndStrip(decl, ":=")
                 what = re.sub(r'\s+', ' ', what)
                 if not sep:
@@ -668,10 +679,12 @@ def read_types(filename, Nodes, prefix):
                     error(
                         lineno, "Malformed @astgen what (expecting 'op1'..'op4'," +
                         " 'alias op1'.., 'ptr'): " + what)
-            else:
-                line = re.sub(r'//.*$', '', line)
-                if re.match(r'.*[Oo]p[1-9].*', line):
-                    error(lineno, "Use generated accessors to access op<N> operands")
+                continue
+
+            line = re.sub(r'//.*$', '', line)
+
+            if re.match(r'.*[Oo]p[1-9].*', line):
+                error(lineno, "Use generated accessors to access op<N> operands")
 
             if re.match(r'^\s*Ast[A-Z][A-Za-z0-9_]+\s*\*(\s*const)?\s+m_[A-Za-z0-9_]+\s*;', line):
                 error(lineno, "Use '@astgen ptr' for Ast pointer members: " + line)
@@ -1407,116 +1420,6 @@ check_types(AstNodeList, "Ast", "Node")
 # These are standalone so we don't need to parse the sources for this.
 DfgVertices["Vertex"] = Node("Vertex", None)
 
-# AstNodeExpr that are not representable in Dfg
-DfgIgnored = (
-    # Floating point operations
-    "AcosD",
-    "AcoshD",
-    "AddD",
-    "AsinD",
-    "AsinhD",
-    "Atan2D",
-    "AtanD",
-    "AtanhD",
-    "BitsToRealD",
-    "CeilD",
-    "CosD",
-    "CoshD",
-    "DivD",
-    "EqD",
-    "ExpD",
-    "FloorD",
-    "GtD",
-    "GteD",
-    "HypotD",
-    "ISToRD",
-    "IToRD",
-    "Log10D",
-    "LogD",
-    "LtD",
-    "LteD",
-    "MulD",
-    "NegateD",
-    "NeqD",
-    "PowD",
-    "RealToBits",
-    "RToIRoundS",
-    "RToIS",
-    "SinD",
-    "SinhD",
-    "SqrtD",
-    "SubD",
-    "TanD",
-    "TanhD",
-    # String operations
-    "AtoN",
-    "CompareNN",
-    "ConcatN",
-    "CvtPackString",
-    "EqN",
-    "GetcN",
-    "GetcRefN",
-    "GteN",
-    "GtN",
-    "LenN",
-    "LteN",
-    "LtN",
-    "NeqN",
-    "NToI",
-    "PutcN",
-    "ReplicateN",
-    "SubstrN",
-    "ToLowerN",
-    "ToStringN",
-    "ToUpperN",
-    # Effectful
-    "PostInc",
-    "PostDec",
-    "PreInc",
-    "PreDec",
-    # Only used after DFG
-    "ShiftLOvr",
-    "ShiftROvr",
-    "ShiftRSOvr",
-    "WordSel",
-    # File operations
-    "FEof",
-    "FGetC",
-    "FGetS",
-    "FUngetC",
-    # Dynamic array operations
-    "AssocSel",
-    "IsUnbounded",
-    "WildcardSel",
-    # Type comparison
-    "EqT",
-    "NeqT",
-    # Distributions
-    "DistChiSquare",
-    "DistErlang",
-    "DistExponential",
-    "DistNormal",
-    "DistPoisson",
-    "DistT",
-    "DistUniform",
-    # Specials
-    "CastDynamic",
-    "CastWrap",
-    "CAwait",
-    "CCast",
-    "CLog2",
-    "IsUnknown",
-    "NullCheck",
-    "OneHot",
-    "OneHot0",
-    "ResizeLValue",
-    "Signed",
-    "SliceSel",
-    "TimeImport",
-    "Unsigned",
-    "URandomRange",
-)
-
 # Read DfgVertex definitions
 for filename in Args.dfgdef:
     read_types(os.path.join(Args.I, filename), DfgVertices, "Dfg")
@@ -1527,12 +1430,8 @@ for node in AstNodeList:
     if not node.isLeaf:
         continue
 
-    # Ignore any explicitly defined vertex
-    if node.name in DfgVertices:
-        continue
-
-    # Ignore expressions types that DFG cannot handle
-    if node.name in DfgIgnored:
+    # Only create vertices for explcitly marked AstNode sub-types
+    if not node.makeDfgVertex:
         continue
 
     if node.isSubClassOf(AstNodes["NodeUniop"]):
@@ -1542,7 +1441,9 @@ for node in AstNodeList:
     elif node.isSubClassOf(AstNodes["NodeTriop"]):
         base = DfgVertices["VertexTernary"]
     else:
-        continue
+        sys.exit(
+            "%Error: cannot create DfgVertex for node not derived from AstNodeUnary, AstNodeBinary, or AstNodeTernary: "
+            + node.name)
 
     vertex = Node(node.name, base)
     DfgVertices[node.name] = vertex

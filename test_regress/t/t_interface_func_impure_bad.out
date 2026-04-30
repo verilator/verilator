@@ -1,0 +1,9 @@
+%Error-IMPURE: t/t_interface_func_impure_bad.v:21:8: Unsupported: External variable referenced by non-inlined function/task: 'external_write'
+                                                   : ... note: In instance 't.i'
+   21 |   task external_write;
+      |        ^~~~~~~~~~~~~~
+               t/t_interface_func_impure_bad.v:23:5: ... Location of the external reference: 'external_sig'
+   23 |     external_sig = 1'b1;
+      |     ^~~~~~~~~~~~
+               ... For error description see https://verilator.org/warn/IMPURE?v=latest
+%Error: Exiting due to

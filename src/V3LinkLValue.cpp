@@ -69,6 +69,13 @@ class LinkLValueVisitor final : public VNVisitor {
             }
             if (m_setForcedByCode) {
                 nodep->varp()->setForcedByCode();
+                // If a public signal is being forced in SystemVerilog and VPI
+                // is enabled, mark it as forceable to ensure that the VPI
+                // functions read the forced value correctly
+                if (v3Global.opt.vpi()
+                    && (nodep->varp()->isSigPublic() || nodep->varp()->isSigModPublic())) {
+                    nodep->varp()->setForceable();
+                }
             } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {
                 // This is allowed with IEEE 1800-2009 module input with default value.
                 // the checking now happens in V3Width::visit(AstNodeVarRef*)

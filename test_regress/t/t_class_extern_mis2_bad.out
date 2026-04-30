@@ -1,0 +1,5 @@
+%Error-PROTOTYPEMIS: t/t_class_extern_mis2_bad.v:15:21: Definition not found for extern prototype 'new'
+   15 |     extern function new();   
+      |                     ^~~
+                     ... For error description see https://verilator.org/warn/PROTOTYPEMIS?v=latest
+%Error: Exiting due to

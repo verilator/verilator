@@ -311,6 +311,9 @@ public:
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
+        VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
+        VAR_FSM_RESET_ARC,              // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
@@ -336,10 +339,10 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
-            "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT",
-            "VAR_SPLIT_VAR"
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
+            "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW", "VAR_ISOLATE_ASSIGNMENTS",
+            "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];
@@ -809,6 +812,11 @@ public:
         EVENT_FIRE,
         EVENT_IS_FIRED,
         EVENT_IS_TRIGGERED,
+        FORCE_ADD,
+        FORCE_READ,
+        FORCE_READ_INDEX,
+        FORCE_RELEASE,
+        FORCE_TOUCH,
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
@@ -826,6 +834,8 @@ public:
         RANDOMIZER_WRITE_VAR,
         RANDOMIZER_SET_VAR_DISABLED,
         RANDOMIZER_CLEAR_VAR_DISABLED,
+        RANDOMIZER_MARK_VAR_STATIC,
+        RANDOMIZER_SET_STATIC_RANDMODE,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -955,6 +965,11 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {EVENT_FIRE, "fire", false}, \
            {EVENT_IS_FIRED, "isFired", true}, \
            {EVENT_IS_TRIGGERED, "isTriggered", true}, \
+           {FORCE_ADD, "addForce", false}, \
+           {FORCE_READ, "read", true}, \
+           {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_RELEASE, "release", false}, \
+           {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
@@ -972,6 +987,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
            {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
+           {RANDOMIZER_MARK_VAR_STATIC, "mark_var_static", false}, \
+           {RANDOMIZER_SET_STATIC_RANDMODE, "set_static_randmode", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
@@ -1139,6 +1156,16 @@ public:
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
+    string traceSigDirection() const {
+        if (isInout()) {
+            return "VerilatedTraceSigDirection::INOUT";
+        } else if (isWritable()) {
+            return "VerilatedTraceSigDirection::OUTPUT";
+        } else if (isNonOutput()) {
+            return "VerilatedTraceSigDirection::INPUT";
+        }
+        return "VerilatedTraceSigDirection::NONE";
+    }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;
@@ -1796,6 +1823,10 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
+        return names[m_e];
+    }
+    const char* func_prefix() const {
+        static const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
         return names[m_e];
     }
 };

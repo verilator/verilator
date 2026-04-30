@@ -197,7 +197,9 @@ class EmitCHeader final : public EmitCConstInit {
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp);\n");
+                 "linescovp,\n");
+            puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
+                 "fsmTagp);\n");
         }
 
         if (v3Global.opt.coverageToggle() && !VN_IS(modp, Class)) {
@@ -280,9 +282,7 @@ class EmitCHeader final : public EmitCConstInit {
     enum class AttributeType { Width, Dimension };
     // Get member attribute based on type
     int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
-        const bool isArrayType
-            = VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType)
-              || VN_IS(itemp->dtypep(), QueueDType) || VN_IS(itemp->dtypep(), AssocArrayDType);
+        const bool isArrayType = itemp->dtypep()->isNonPackedArray();
         switch (type) {
         case AttributeType::Width: {
             if (isArrayType) {
@@ -665,6 +665,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
         if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
+        if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 
         std::set<string> cuse_set;
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
