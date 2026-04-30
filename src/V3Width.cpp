@@ -6364,7 +6364,17 @@ class WidthVisitor final : public VNVisitor {
                 AstNodeExpr* const newp = new AstToStringN{argp->fileline(), argp};
                 formatAttr = VFormatAttr::COMPLEX;
                 argp = newp;
-            } else if (dtypep->isSigned()) {
+            } else if (nodep->exprFormat()) {
+                if (AstEnumDType* const enumDtp = formatEnumDType(argp)) {
+                    nodep->addExprsp(new AstSFormatArg{argp->fileline(), VFormatAttr::ENUM, argp});
+                    AstNodeExpr* const namep
+                        = enumSelect(argp->cloneTreePure(false), enumDtp, VAttrType::ENUM_NAME);
+                    nodep->addExprsp(
+                        new AstSFormatArg{namep->fileline(), VFormatAttr::STRING, namep});
+                    continue;
+                }
+            }
+            if (formatAttr.isUnsigned() && dtypep->isSigned()) {
                 formatAttr = VFormatAttr::SIGNED;
             }
             if (VN_IS(argp, SFormatArg)  // Already done
@@ -8231,13 +8241,16 @@ class WidthVisitor final : public VNVisitor {
         // For sformatf's with constant format, iterate/check arguments
         UASSERT_OBJ(!nodep->exprFormat(), nodep, "Assumes constant format");
         bool inPct = false;
+        string fmtMods;
         AstNodeExpr* argp = nodep->exprsp();
         string newFormat;
         for (char ch : nodep->text()) {
             if (!inPct && ch == '%') {
                 inPct = true;
+                fmtMods = "";
                 newFormat += ch;
             } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
+                fmtMods += ch;
                 newFormat += ch;
             } else if (!inPct) {  // Normal text
                 newFormat += ch;
@@ -8245,7 +8258,7 @@ class WidthVisitor final : public VNVisitor {
                 inPct = false;
                 AstNodeExpr* const nextp = argp ? VN_AS(argp->nextp(), NodeExpr) : nullptr;
                 AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);  // May not exist yet
-                AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
+                AstNodeExpr* subargp = fargp ? fargp->exprp() : argp;
                 const AstNodeDType* const dtypep
                     = subargp ? subargp->dtypep()->skipRefp() : nullptr;
                 ch = std::tolower(ch);
@@ -8302,7 +8315,35 @@ class WidthVisitor final : public VNVisitor {
                     }
                     break;
                 case 'p':  // FALLTHRU
-                case 's':  // FALLTHRU
+                case 's':
+                    // Keep enum `%p`/`%s` behavior aligned with enum.name():
+                    // valid enum values print the mnemonic; invalid values print numeric fallback.
+                    if (subargp) {
+                        if (AstEnumDType* const enumDtp = formatEnumDType(subargp)) {
+                            string fallbackFormat = "%0d";
+                            if (ch == 'p') {
+                                bool widthSet = false;
+                                size_t width = 0;
+                                for (const char mod : fmtMods) {
+                                    if (!std::isdigit(mod)) continue;
+                                    widthSet = true;
+                                    width = width * 10 + (mod - '0');
+                                }
+                                if (widthSet && width == 0) fallbackFormat = "'h%0h";
+                            }
+                            AstNodeExpr* const newp = new AstCond{
+                                subargp->fileline(), enumTestValid(subargp, enumDtp),
+                                enumSelect(subargp->cloneTreePure(false), enumDtp,
+                                           VAttrType::ENUM_NAME),
+                                new AstSFormatF{subargp->fileline(), fallbackFormat, true,
+                                                subargp->cloneTreePure(false)}};
+                            subargp->replaceWith(new AstSFormatArg{subargp->fileline(),
+                                                                   VFormatAttr::COMPLEX, newp});
+                            VL_DO_DANGLING(pushDeletep(subargp), subargp);
+                        }
+                    }
+                    argp = nextp;
+                    break;
                 default:  // Most operators, just move to next argument
                     argp = nextp;
                     break;
@@ -8311,6 +8352,16 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         nodep->text(newFormat);
+    }
+
+    static AstEnumDType* formatEnumDType(AstNodeExpr* subargp) {
+        AstEnumDType* enumDtp = VN_CAST(subargp->dtypep()->skipRefToEnump(), EnumDType);
+        if (!enumDtp) {
+            if (const AstVarRef* const varrefp = VN_CAST(subargp, VarRef)) {
+                enumDtp = VN_CAST(varrefp->varp()->dtypep()->skipRefToEnump(), EnumDType);
+            }
+        }
+        return enumDtp;
     }
 
     //----------------------------------------------------------------------
