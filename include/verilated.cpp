@@ -953,7 +953,7 @@ static void _vl_vsformat_read_qint(va_list app, int lbits, QData& ld, std::vecto
         lwp = strwide.data();
     } else {
         lwp = va_arg(app, WDataInP);
-        ld = lwp[0];
+        ld = 0;  // Consume the arg; enums > 64 bits wide are unsupported.
     }
     lsb = lbits - 1;
 }
@@ -1118,7 +1118,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 ++argn;  // Internal ABI: runtime enum args are followed by generated name string
                 static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
                 enump = va_arg(ap, std::string*);
-                if (enump && !enump->empty() && (fmt == 'p' || fmt == 's')) {
+                if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
@@ -1127,10 +1127,8 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     formatAttr = VL_VFORMATATTR_UNSIGNED;
                 } else {
                     if (fmt == 'p') width = 0;
-                    if (fmt == 'p' || fmt == 's') {
-                        widthSet = true;
-                        fmt = 'd';
-                    }
+                    widthSet = true;
+                    fmt = 'd';
                     formatAttr = VL_VFORMATATTR_UNSIGNED;
                 }
                 if (widthSet && width == 0) {

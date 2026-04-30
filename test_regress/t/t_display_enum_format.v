@@ -22,6 +22,7 @@ module t (
 
   my_e e;
   wide64_e e64;
+  logic [63:0] n64;
 `define check(got, exp) do if ((got) != (exp)) begin \
       $write("%%Error: %s:%0d: got='%s' exp='%s'\n", `__FILE__, `__LINE__, got, exp); \
       $stop; \
@@ -105,6 +106,8 @@ module t (
     e64 = wide64_e'(64'h0000_0002_0000_0001);
     `check($sformatf("%p", e64), "8589934593");
     `check($sformatf("%s", e64), "8589934593");
+    n64 = 64'h0000_0000_0000_0001;
+    `check($sformatf("%0p", n64), "'h1");
     // Exercise display/write-family formatting path in addition to $sformatf checks.
     $display("display-valid:%s:%0d:%p", e, 7, e);
     $write("write-valid:%s:%0d:%p\n", e, 8, e);
