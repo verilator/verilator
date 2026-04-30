@@ -130,7 +130,7 @@ class AstNodeDistBiop VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeDistBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        dtypeSetSigned32();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstNodeDistBiop;
     bool cleanOut() const override { return false; }
@@ -403,7 +403,7 @@ public:
     AstNodeDistTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                      AstNodeExpr* thsp)
         : AstNodeTriop{t, fl, lhsp, rhsp, thsp} {
-        dtypeSetSigned32();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstNodeDistTriop;
     bool cleanOut() const override { return false; }
@@ -1671,7 +1671,7 @@ class AstGetInitialRandomSeed final : public AstNodeExpr {
 public:
     explicit AstGetInitialRandomSeed(FileLine* fl)
         : ASTGEN_SUPER_GetInitialRandomSeed(fl) {
-        dtypeSetSigned32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstGetInitialRandomSeed;
     string emitVerilog() override { return "$get_initial_random_seed()"; }
@@ -2721,7 +2721,7 @@ class AstTimePrecision final : public AstNodeExpr {
 public:
     explicit AstTimePrecision(FileLine* fl)
         : ASTGEN_SUPER_TimePrecision(fl) {
-        dtypeSetSigned32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstTimePrecision;
     string emitVerilog() override { return "$timeprecision"; }
@@ -2738,7 +2738,7 @@ class AstTimeUnit final : public AstNodeExpr {
 public:
     explicit AstTimeUnit(FileLine* fl)
         : ASTGEN_SUPER_TimeUnit(fl) {
-        dtypeSetSigned32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstTimeUnit;
     string emitVerilog() override { return "$timeunit"; }
@@ -2753,11 +2753,11 @@ public:
 };
 class AstUnbounded final : public AstNodeExpr {
     // A $ in the parser, used for unbounded and queues
-    // Due to where is used, treated as Signed32
+    // Due to where is used, treated as int
 public:
     explicit AstUnbounded(FileLine* fl)
         : ASTGEN_SUPER_Unbounded(fl) {
-        dtypeSetSigned32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstUnbounded;
     string emitVerilog() override { return "$"; }
@@ -2917,7 +2917,7 @@ public:
     AstCompareNN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool ignoreCase)
         : ASTGEN_SUPER_CompareNN(fl, lhsp, rhsp)
         , m_ignoreCase{ignoreCase} {
-        dtypeSetUInt32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstCompareNN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -5341,7 +5341,7 @@ public:
     AstAtoN(FileLine* fl, AstNodeExpr* lhsp, FmtType fmt)
         : ASTGEN_SUPER_AtoN(fl, lhsp)
         , m_fmt{fmt} {
-        fmt == ATOREAL ? dtypeSetDouble() : dtypeSetSigned32();
+        fmt == ATOREAL ? dtypeSetDouble() : dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstAtoN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAtoN(lhs, m_fmt); }
@@ -5426,7 +5426,7 @@ class AstCLog2 final : public AstNodeUniop {
 public:
     AstCLog2(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CLog2(fl, lhsp) {
-        dtypeSetSigned32();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstCLog2;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
@@ -5647,7 +5647,7 @@ class AstLenN final : public AstNodeUniop {
 public:
     AstLenN(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_LenN(fl, lhsp) {
-        dtypeSetSigned32();
+        dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstLenN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLenN(lhs); }
@@ -5798,7 +5798,7 @@ class AstRToIRoundS final : public AstNodeUniop {
 public:
     AstRToIRoundS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIRoundS(fl, lhsp) {
-        dtypeSetSigned32();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstRToIRoundS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIRoundS(lhs); }
@@ -5817,7 +5817,7 @@ class AstRToIS final : public AstNodeUniop {
 public:
     AstRToIS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIS(fl, lhsp) {
-        dtypeSetSigned32();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstRToIS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIS(lhs); }
