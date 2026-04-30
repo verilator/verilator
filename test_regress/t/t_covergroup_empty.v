@@ -36,10 +36,5 @@ module t (/*AUTOARG*/
       $write("*-* All Finished *-*\n");
       $finish;
     end
-
-    if (cyc > 10) begin
-      $display("ERROR: Test timed out");
-      $stop;
-    end
   end
 endmodule

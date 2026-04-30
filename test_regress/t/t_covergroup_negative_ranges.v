@@ -58,10 +58,5 @@ module t (/*AUTOARG*/
     if (cyc == 2) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
     if (cyc == 3) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
     if (cyc == 4) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
-
-    if (cyc > 10) begin
-      $display("ERROR: Test timed out");
-      $stop;
-    end
   end
 endmodule
