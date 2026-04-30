@@ -389,8 +389,6 @@ class LinkParseVisitor final : public VNVisitor {
             // Variables in static tasks with timing control can be used after the task has ended
             // with use of join..fork_none, so they need to be static
             if (m_ftaskp->lifetime().isStatic() && m_hasTimingControl) {
-                nodep->v3warn(IMPLICITSTATIC, "Variable's lifetime implicitly set to static "
-                                              "because in static task with timing control.");
                 nodep->lifetime(VLifetime::STATIC_IMPLICIT);
             } else {
                 nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
