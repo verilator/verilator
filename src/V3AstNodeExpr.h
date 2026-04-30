@@ -2721,7 +2721,7 @@ class AstTimePrecision final : public AstNodeExpr {
 public:
     explicit AstTimePrecision(FileLine* fl)
         : ASTGEN_SUPER_TimePrecision(fl) {
-        dtypeSetInt();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstTimePrecision;
     string emitVerilog() override { return "$timeprecision"; }
@@ -2738,7 +2738,7 @@ class AstTimeUnit final : public AstNodeExpr {
 public:
     explicit AstTimeUnit(FileLine* fl)
         : ASTGEN_SUPER_TimeUnit(fl) {
-        dtypeSetInt();
+        dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstTimeUnit;
     string emitVerilog() override { return "$timeunit"; }

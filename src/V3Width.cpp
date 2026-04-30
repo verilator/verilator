@@ -514,7 +514,7 @@ class WidthVisitor final : public VNVisitor {
     // Widths: Constant, terminal
     void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
-    void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInt(); }
+    void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInteger(); }
     void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetInt(); }
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
