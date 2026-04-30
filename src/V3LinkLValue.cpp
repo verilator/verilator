@@ -371,7 +371,7 @@ void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, dumpTreeEitherLevel() >= 6);
 }
-void V3LinkLValue::linkLValueSet(AstNode* nodep, bool isLValue) {
+void V3LinkLValue::linkLValueSet(AstNode* const nodep, const bool isLValue) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
     UINFO(9, __FUNCTION__ << ": ");
