@@ -1246,8 +1246,7 @@ class TraceVisitor final : public VNVisitor {
             //   verilated_saif_c.cpp: Activity must be declared earlier
             //   verilated_vcd_c.cpp: finishLine: suffixp[0] failed
             // (cf. t_lib, t_trace_hier_block_*).
-            if (m_cfuncp
-                && VString::startsWith(m_cfuncp->name(), "trace_init_leaf_root__")) {
+            if (m_cfuncp && VString::startsWith(m_cfuncp->name(), "trace_init_leaf_root__")) {
                 return;
             }
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
