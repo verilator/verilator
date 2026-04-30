@@ -141,13 +141,14 @@ class RandSequenceVisitor final : public VNVisitor {
         taskp->addStmtsp(breakVarp);
 
         // Call the start production's task
-        taskp->addStmtsp(newProdFuncRef(nodep, m_startProdp, breakVarp));
+        taskp->addStmtsp(newProdFuncRef(nodep, m_startProdp, breakVarp, nullptr));
 
         UINFOTREE(9, taskp, "newStart", "");
         return taskp;
     }
 
-    AstNode* newProdFuncRef(AstNode* nodep, AstRSProd* prodp, AstVar* breakVarp) {
+    AstNode* newProdFuncRef(AstNode* nodep, AstRSProd* prodp, AstVar* breakVarp,
+                            AstArg* userArgsp) {
         auto it = m_prodFuncps.find(prodp);
         UASSERT_OBJ(it != m_prodFuncps.end(), nodep, "No production function made");
         AstNodeFTask* const prodFuncp = it->second;
@@ -161,6 +162,7 @@ class RandSequenceVisitor final : public VNVisitor {
             argsp->addNext(new AstArg{nodep->fileline(), "__Vrsarg_" + lvarp->name(),
                                       new AstVarRef{fl, iovarp, VAccess::READWRITE}});
         }
+        if (userArgsp) argsp->addNext(userArgsp);
         AstNode* const newp
             = new AstStmtExpr{fl, new AstTaskRef{fl, VN_AS(prodFuncp, Task), argsp}};
         return newp;
@@ -480,6 +482,19 @@ class RandSequenceVisitor final : public VNVisitor {
         m_breakVarp = newBreakVar(nodep->fileline(), true);
         m_prodFuncp->addStmtsp(m_breakVarp);
 
+        // Production formal ports become real input ports on the generated task.
+        // Must be added after m_breakVarp / localize ports so positional argument
+        // order in newProdFuncRef stays consistent: [break, localize..., user...].
+        if (AstNode* const portsp = nodep->portsp()) {
+            portsp->unlinkFrBackWithNext();
+            m_prodFuncp->addStmtsp(portsp);
+            for (AstNode* itp = portsp; itp; itp = itp->nextp()) {
+                AstVar* const portVarp = VN_AS(itp, Var);
+                portVarp->funcLocal(true);
+                portVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            }
+        }
+
         // Put JumpBlock immediately under the new function to support
         // a future break/return.  V3Const will rip it out if unneeded.
         VL_RESTORER(m_jumpBlockp);
@@ -489,9 +504,6 @@ class RandSequenceVisitor final : public VNVisitor {
         if (nodep->fvarp())
             nodep->fvarp()->v3warn(E_UNSUPPORTED,
                                    "Unsupported: randsequence production function variable");
-        if (nodep->portsp())
-            nodep->portsp()->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: randsequence production function ports");
 
         // Move children into m_prodFuncp, and iterate there
         if (!nodep->rulesp()) {  // Nothing to do
@@ -579,8 +591,11 @@ class RandSequenceVisitor final : public VNVisitor {
         UASSERT_OBJ(m_prodFuncp, nodep, "RSProdItem not under production");
         AstRSProd* const foundp = nodep->prodp();
         UASSERT_OBJ(foundp, nodep, "Unlinked production reference");
+        // Pass through caller-side argument list (IEEE 1800-2023 18.17.7).
+        AstArg* const userArgsp
+            = nodep->argsp() ? nodep->argsp()->unlinkFrBackWithNext() : nullptr;
         // Convert to task call
-        AstNode* const newp = newProdFuncRef(nodep, foundp, m_breakVarp);
+        AstNode* const newp = newProdFuncRef(nodep, foundp, m_breakVarp, userArgsp);
         // The production might have done a "break;", skip other steps if so
         newp->addNext(new AstIf{nodep->fileline(),
                                 new AstVarRef{nodep->fileline(), m_breakVarp, VAccess::READ},

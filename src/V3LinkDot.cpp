@@ -2163,9 +2163,12 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (nodep->fvarp())
             nodep->fvarp()->v3warn(E_UNSUPPORTED,
                                    "Unsupported: randsequence production function variable");
-        if (nodep->portsp())
-            nodep->portsp()->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: randsequence production function ports");
+        // Mark formal ports as port-checked so the primary resolve pass does not
+        // flag them with "does not appear in port list" -- V3RandSequence will
+        // later move them onto the generated task as real input ports.
+        for (AstNode* itp = nodep->portsp(); itp; itp = itp->nextp()) {
+            if (AstVar* const portVarp = VN_CAST(itp, Var)) portVarp->user4(true);
+        }
         iterateChildren(nodep);
     }
 
