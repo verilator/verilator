@@ -2167,7 +2167,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // flag them with "does not appear in port list" -- V3RandSequence will
         // later move them onto the generated task as real input ports.
         for (AstNode* itp = nodep->portsp(); itp; itp = itp->nextp()) {
-            if (AstVar* const portVarp = VN_CAST(itp, Var)) portVarp->user4(true);
+            VN_AS(itp, Var)->user4(true);
         }
         iterateChildren(nodep);
     }
