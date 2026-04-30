@@ -1235,6 +1235,21 @@ class TraceVisitor final : public VNVisitor {
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep);
         if (!m_finding && !nodep->inDtypeFunc()) {
+            // Skip decls inside trace_init_leaf_root__* functions: these are
+            // duplicates of decls in trace_init_leaf_top__* (root vs regular
+            // scope path) and should share the top decl's code via the
+            // sameRootInitAlias post-pass at createTraceFunctions(). Putting
+            // them in the dedup graph would allocate distinct trace codes for
+            // them, growing nTraceCodes past what trace_init_top actually
+            // declares -- so the parent's full callback writes to codes the
+            // SAIF/VCD runtime never registered, tripping
+            //   verilated_saif_c.cpp: Activity must be declared earlier
+            //   verilated_vcd_c.cpp: finishLine: suffixp[0] failed
+            // (cf. t_lib, t_trace_hier_block_*).
+            if (m_cfuncp
+                && VString::startsWith(m_cfuncp->name(), "trace_init_leaf_root__")) {
+                return;
+            }
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
 
