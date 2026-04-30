@@ -1165,8 +1165,9 @@ void V3Force::assignAll(AstNetlist* nodep) {
     std::vector<AstAssignCont*> assignContps;
     nodep->foreach([&](AstAssignCont* assignp) { assignContps.push_back(assignp); });
     for (AstAssignCont* const assignp : assignContps) {
-        assignp->replaceWith(new AstAssignForce{
-            assignp->fileline(), assignp->lhsp()->unlinkFrBack(), assignp->rhsp()->unlinkFrBack()});
+        assignp->replaceWith(new AstAssignForce{assignp->fileline(),
+                                                assignp->lhsp()->unlinkFrBack(),
+                                                assignp->rhsp()->unlinkFrBack()});
         assignp->deleteTree();
     }
 
