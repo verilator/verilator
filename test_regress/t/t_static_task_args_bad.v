@@ -10,6 +10,6 @@ module t;
     $finish;
   end
   task t1(ref int x);
-    x = 1;
+    x = #1 1;
   endtask
 endmodule
