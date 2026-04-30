@@ -43,8 +43,10 @@
                                            : ... note: In instance 't'
    43 |       ignore_bins ign = {size_var};       
       |                          ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:51:25: option.at_least must be a constant expression
-                                           : ... note: In instance 't'
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:51:25: Ignoring unsupported: non-constant 'option.at_least'; using default value
+                                                      : ... note: In instance 't'
    51 |       option.at_least = size_var;   
       |                         ^~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Error: Exiting due to

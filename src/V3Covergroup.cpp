@@ -207,8 +207,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverOption* const optp = VN_AS(optionp, CoverOption);
             AstConst* const constp = VN_CAST(optp->valuep(), Const);
             if (!constp) {
-                optp->valuep()->v3error("option." << optp->optionType().ascii()
-                                                  << " must be a constant expression");
+                optp->valuep()->v3warn(COVERIGN,
+                                       "Ignoring unsupported: non-constant 'option."
+                                           << optp->optionType().ascii()
+                                           << "'; using default value");
                 continue;
             }
             if (optp->optionType() == VCoverOptionType::AT_LEAST) {

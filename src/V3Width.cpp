@@ -1908,7 +1908,8 @@ class WidthVisitor final : public VNVisitor {
                 UINFO(6, "  Covergroup " << m_cgClassp->name()
                                          << " option.auto_bin_max = " << constp->toSInt() << endl);
             } else {
-                nodep->valuep()->v3error("option.auto_bin_max must be a constant expression");
+                nodep->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant "
+                                                  "'option.auto_bin_max'; using default value");
             }
         }
         // Add more options here as needed (weight, goal, at_least, per_instance, comment)
