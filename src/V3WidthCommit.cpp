@@ -570,7 +570,7 @@ void V3WidthCommit::widthCommitClean(AstNetlist* nodep) {
         });
         for (AstCastWrap* const nodep : castWrapsToDelete) {
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     V3Global::dumpCheckGlobalTree("widthcommit_clean", 0, dumpTreeEitherLevel() >= 6);
