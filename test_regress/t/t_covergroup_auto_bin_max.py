@@ -12,4 +12,4 @@ import coverage_covergroup_common
 
 test.scenarios('vlt')
 
-coverage_covergroup_common.run(test, verilator_flags2=['-Wno-UNSIGNED', '-Wno-CMPCONST'])
+coverage_covergroup_common.run(test)
