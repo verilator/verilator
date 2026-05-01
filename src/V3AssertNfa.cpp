@@ -187,9 +187,6 @@ class SvaNfaBuilder final {
     SvaGraph& m_graph;  // NFA graph being built
     AstNodeModule* const m_modp;  // Module to receive hoisted sampled-prop temps
     V3UniqueNames& m_propTempNames;  // Module-shared temp-var name source
-    // Staged until build succeeds (mirrors createDisableCounterMechanism;
-    // failed builds must not pollute the module AST).
-    std::vector<AstNode*> m_pendingHoistedNodes;
     std::vector<AstNodeExpr*> m_throughoutStack;  // Active throughout guards (IEEE 16.9.9)
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
 
@@ -290,22 +287,20 @@ class SvaNfaBuilder final {
     }
 
     // Cuts AST size from O(N * sizeof(exprp)) to O(N) + O(sizeof(exprp)) by
-    // sharing a single `VarRef` across N check edges. Created nodes are
-    // staged; the orchestrator commits or discards them based on build
-    // success (IEEE 1800-2023 16.9.9: $sampled value is per-clock).
+    // sharing a single `VarRef` across N check edges. Hoist also matches the
+    // IEEE 1800-2023 16.9.9 "single preponed-region snapshot" semantic for
+    // any exprp -- even an impure one would now evaluate exactly once per
+    // clock instead of N times. Orphan temps from failed builds are unused
+    // MODULETEMPs and are removed by V3Dead.
     AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, int cloneCount) {
         constexpr int kHoistThreshold = 2;
         if (cloneCount < kHoistThreshold) return nullptr;
-        // IEEE 1800-2023 16.4 disallows side effects in sequence boolean exprs;
-        // defensive fallback if V3Width missed an impure expression.
-        if (!exprp->isPure()) return nullptr;  // LCOV_EXCL_LINE
         AstVar* const tempVarp = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp),
                                             m_modp->findBitDType()};
+        m_modp->addStmtsp(tempVarp);
         AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
                                                  sampled(exprp->cloneTreePure(false))};
-        AstAlways* const drvp = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp};
-        m_pendingHoistedNodes.push_back(tempVarp);
-        m_pendingHoistedNodes.push_back(drvp);
+        m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp});
         return tempVarp;
     }
 
@@ -799,21 +794,6 @@ public:
         m_inUnboundedScope = false;
         m_throughoutStack.clear();
     }
-
-    // Call after the NFA build is known to have succeeded.
-    void commitHoists() {
-        for (AstNode* const np : m_pendingHoistedNodes) m_modp->addStmtsp(np);
-        m_pendingHoistedNodes.clear();
-    }
-
-    // Call on build failure so V3AssertPre fallback sees an unmodified module.
-    // LCOV_EXCL_START -- only fires when a hoist-using build later fails,
-    // a rare interleaving not exercised by the regression suite.
-    void discardHoists() {
-        for (AstNode* const np : m_pendingHoistedNodes) { VL_DO_DANGLING(np->deleteTree(), np); }
-        m_pendingHoistedNodes.clear();
-    }
-    // LCOV_EXCL_STOP
 
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                           bool isTopLevelStep = false) {
@@ -1907,14 +1887,14 @@ class AssertNfaVisitor final : public VNVisitor {
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);
         if (!result.valid()) {
-            builder.discardHoists();
             // Fall through to V3AssertPre for unsupported constructs; only
-            // replace the body on real semantic errors.
+            // replace the body on real semantic errors. Any hoisted temps
+            // from this attempt become orphan MODULETEMPs; V3Dead removes
+            // them along with the dead always_comb driver.
             replaceBodyOnBuildError(flp, propSpecp, result.errorEmitted);
             if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
             return;
         }
-        builder.commitHoists();
 
         // Build succeeded. Now create snapshot mechanism for disable iff if needed.
         // Done here (not before build) so failed builds don't pollute the AST.
