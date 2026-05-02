@@ -1,0 +1,5 @@
+%Error: t/t_trace_dumpvars.v:260:5: $dumpvars target not found: missing_module
+  260 |     $dumpvars(0, missing_module);
+      |     ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

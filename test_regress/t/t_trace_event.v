@@ -26,7 +26,7 @@ module t;
 
   initial begin
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-    $dumpvars(0, top);
+    $dumpvars(0);
     for (i = 0; i < 10; i++) begin
       @(posedge clk);
 

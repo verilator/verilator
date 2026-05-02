@@ -85,6 +85,7 @@ set(HEADERS
     V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
+    V3DumpVars.h
     V3DupFinder.h
     V3EmitC.h
     V3EmitCBase.h

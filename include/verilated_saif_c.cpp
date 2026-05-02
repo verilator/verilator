@@ -539,8 +539,9 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
+    const auto dumpvarsPath = Super::dumpvarsPath(m_prefixStack, name);
 
-    if (!Super::declCode(code, hierarchicalName, bits)) return;
+    if (!Super::declCode(code, dumpvarsPath, bits)) return;
 
     std::string variableName = lastWord(hierarchicalName);
     m_currentScope->addActivityVar(code, variableName);
