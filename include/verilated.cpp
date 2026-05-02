@@ -953,7 +953,7 @@ static void _vl_vsformat_read_qint(va_list app, int lbits, QData& ld, std::vecto
         lwp = strwide.data();
     } else {
         lwp = va_arg(app, WDataInP);
-        ld = 0;  // Consume the arg; enums > 64 bits wide are unsupported.
+        ld = VL_SET_QW(lwp);  // Keep the low 64 bits for time/numeric fallback paths.
     }
     lsb = lbits - 1;
 }

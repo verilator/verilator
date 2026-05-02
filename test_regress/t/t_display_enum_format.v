@@ -19,10 +19,12 @@ module t (
     W64A = 64'h1,
     W64B = 64'h0000_0001_0000_0001
   } wide64_e;
+  typedef logic signed [4095:0] uvm_bitstream_t;
 
   my_e e;
   wide64_e e64;
   logic [63:0] n64;
+  uvm_bitstream_t bitstream_value;
 `define check(got, exp) do if ((got) != (exp)) begin \
       $write("%%Error: %s:%0d: got='%s' exp='%s'\n", `__FILE__, `__LINE__, got, exp); \
       $stop; \
@@ -160,6 +162,14 @@ module t (
     `check($sformatf(fmt, e, 4'hA, e), "3 a 3");
     fmt = {"%", "p", empty_no_opt};
     `check($sformatf(fmt, e64), "8589934593");
+    bitstream_value = 30;
+    `check($sformatf("%0s%0t", "", bitstream_value), "30");
+    bitstream_value = '0;
+    bitstream_value[32] = 1'b1;
+    `check($sformatf("%0s%0t", "", bitstream_value), "4294967296");
+    bitstream_value = '0;
+    bitstream_value[63:0] = 64'h0000_0001_0000_0001;
+    `check($sformatf("%0s%0t", "", bitstream_value), "4294967297");
 
     $write("*-* All Finished *-*\n");
     $finish;
