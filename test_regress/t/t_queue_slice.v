@@ -68,6 +68,9 @@ module t;
     `checkp(q, "'{\"d\", \"e\", \"f\"}");
     q = q[$:$];
     `checkp(q, "'{\"f\"}");
+    q = q[1:$];
+    `checkp("'{}");
+
 
     // Similar using implied notation
     q = '{"f"};

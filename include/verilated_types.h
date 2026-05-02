@@ -650,8 +650,14 @@ public:
     // Return slice q[lsb:msb]
     VlQueue slice(int32_t lsb, int32_t msb) const {
         VlQueue out;
+        if (VL_UNLIKELY(lsb > msb)) return out;
+        if (VL_UNLIKELY(lsb == msb)) {
+            if (lsb > 0 && lsb < m_deque.size()) {
+                out.push_back(m_deque[lsb]);
+            }
+            return out;
+        }
         if (VL_UNLIKELY(lsb < 0)) lsb = 0;
-        if (VL_UNLIKELY(lsb >= m_deque.size())) lsb = m_deque.size() - 1;
         if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
         for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
         return out;
