@@ -56,6 +56,7 @@ class LinkParseVisitor final : public VNVisitor {
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstRSProd* m_rsProdp = nullptr;  // Current randsequence production
     AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
     AstNodeStmt* m_blockAddAutomaticStmtp = nullptr;  // Initial statements to add to block
     AstNodeStmt* m_blockAddStaticStmtp = nullptr;  // Initial statements to add to block
@@ -498,8 +499,10 @@ class LinkParseVisitor final : public VNVisitor {
                 // Earlier moved any valuep() under the duplicate to the IO declaration
                 UINFO(9, "VarInit case0 " << nodep);
             } else if (nodep->isParam() || nodep->isGenVar()
-                       || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))) {
-                // 1. Parameters and function inputs: It's a default to use if not overridden
+                       || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))
+                       || (m_rsProdp && nodep->isNonOutput())) {
+                // 1. Parameters, function inputs, and randsequence production formal
+                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden
                 UINFO(9, "VarInit case1 " << nodep);
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
                        && !nodep->isInput()) {
@@ -887,6 +890,11 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->name(newName);
             nodep->origName(newName);
         }
+        iterateChildren(nodep);
+    }
+    void visit(AstRSProd* nodep) override {
+        VL_RESTORER(m_rsProdp);
+        m_rsProdp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNodeBlock* nodep) override {
