@@ -65,20 +65,23 @@
 class VerilatedSaifActivityBit final {
     // MEMBERS
     bool m_lastVal = false;  // Last emitted activity bit value
+    bool m_lastValXZ = false;  // Last emitted activity bit value
     uint64_t m_highTime = 0;  // Total time when bit was high
     size_t m_transitions = 0;  // Total number of bit transitions
 
 public:
     // METHODS
     VL_ATTR_ALWINLINE
-    void aggregateVal(uint64_t dt, bool newVal) {
-        m_transitions += newVal != m_lastVal ? 1 : 0;
+    void aggregateVal(uint64_t dt, bool newVal, bool newValXZ = false) {
+        m_transitions += (newVal != m_lastVal || m_lastValXZ != newValXZ) ? 1 : 0;
         m_highTime += m_lastVal ? dt : 0;
         m_lastVal = newVal;
+        m_lastValXZ = newValXZ;
     }
 
     // ACCESSORS
     VL_ATTR_ALWINLINE bool bitValue() const { return m_lastVal; }
+    VL_ATTR_ALWINLINE bool bitValueXZ() const { return m_lastValXZ; }
     VL_ATTR_ALWINLINE uint64_t highTime() const { return m_highTime; }
     VL_ATTR_ALWINLINE uint64_t toggleCount() const { return m_transitions; }
 };
@@ -104,6 +107,7 @@ public:
 
     // METHODS
     VL_ATTR_ALWINLINE void emitBit(uint64_t time, CData newval);
+    VL_ATTR_ALWINLINE void emitLogic(uint64_t time, CData newval, CData newvalXZ);
 
     template <typename DataType>
     VL_ATTR_ALWINLINE void emitData(uint64_t time, DataType newval, uint32_t bits) {
@@ -117,7 +121,24 @@ public:
         updateLastTime(time);
     }
 
+    template <typename DataType>
+    VL_ATTR_ALWINLINE void emitFourstateData(uint64_t time, DataType newval, DataType newvalXZ,
+                                             uint32_t bits) {
+        static_assert(std::is_integral<DataType>::value,
+                      "The emitted value must be of integral type");
+
+        const uint64_t dt = time - m_lastTime;
+        for (size_t i = 0; i < std::min(m_width, bits); ++i) {
+            m_bits[i].aggregateVal(dt, newval & 1, newvalXZ & 1);
+            newval >>= 1;
+            newvalXZ >>= 1;
+        }
+        updateLastTime(time);
+    }
+
     VL_ATTR_ALWINLINE void emitWData(uint64_t time, const WData* newvalp, uint32_t bits);
+    VL_ATTR_ALWINLINE void emitFourstateWData(uint64_t time, const WData* newvalp,
+                                              const WData* newvalXZp, uint32_t bits);
     VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
 
     // ACCESSORS
@@ -229,6 +250,14 @@ void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) 
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedSaifActivityVar::emitLogic(const uint64_t time, const CData newval,
+                                         const CData newvalXZ) {
+    assert(m_lastTime <= time);
+    m_bits[0].aggregateVal(time - m_lastTime, newval, newvalXZ);
+    updateLastTime(time);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WData* newvalp,
                                          const uint32_t bits) {
     assert(m_lastTime <= time);
@@ -236,6 +265,20 @@ void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WData* newva
     for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
         const size_t wordIndex = i / VL_EDATASIZE;
         m_bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
+    }
+
+    updateLastTime(time);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifActivityVar::emitFourstateWData(const uint64_t time, const WData* newvalp,
+                                                  const WData* newvalXZp, const uint32_t bits) {
+    assert(m_lastTime <= time);
+    const uint64_t dt = time - m_lastTime;
+    for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
+        const size_t wordIndex = i / VL_EDATASIZE;
+        m_bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1,
+                               (newvalXZp[wordIndex] >> VL_BITBIT_E(i)) & 1);
     }
 
     updateLastTime(time);
@@ -634,12 +677,31 @@ void VerilatedSaifBuffer::emitBit(const uint32_t code, const CData newval) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitLogic(uint32_t code, CData newval, CData newvalXZ) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitLogic(m_owner.currentTime(), newval, newvalXZ);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(const uint32_t code, const CData newval, const int bits) {
     assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
            && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity
         = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
     activity.emitData<CData>(m_owner.currentTime(), newval, bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                             int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitFourstateData<CData>(m_owner.currentTime(), newval, newvalXZ, bits);
 }
 
 VL_ATTR_ALWINLINE
@@ -652,12 +714,32 @@ void VerilatedSaifBuffer::emitSData(const uint32_t code, const SData newval, con
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                             int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitFourstateData<SData>(m_owner.currentTime(), newval, newvalXZ, bits);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(const uint32_t code, const IData newval, const int bits) {
     assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
            && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity
         = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
     activity.emitData<IData>(m_owner.currentTime(), newval, bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                             int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitFourstateData<IData>(m_owner.currentTime(), newval, newvalXZ, bits);
 }
 
 VL_ATTR_ALWINLINE
@@ -670,12 +752,32 @@ void VerilatedSaifBuffer::emitQData(const uint32_t code, const QData newval, con
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                             int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitFourstateData<QData>(m_owner.currentTime(), newval, newvalXZ, bits);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(const uint32_t code, const WData* newvalp, const int bits) {
     assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
            && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity
         = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
     activity.emitWData(m_owner.currentTime(), newvalp, bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFourstateWData(const uint32_t code, const WData* newvalp,
+                                             const WData* newvalXZp, const int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitFourstateWData(m_owner.currentTime(), newvalp, newvalXZp, bits);
 }
 
 VL_ATTR_ALWINLINE

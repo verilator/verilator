@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_fourstate_dtype_unsup.v:8:9: Variables of type: 'logic$[$]' are unsupported with --fourstate
+                                                   : ... note: In instance 't'
+    8 |   logic q[$];
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

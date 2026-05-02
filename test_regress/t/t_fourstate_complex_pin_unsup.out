@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_fourstate_complex_pin_unsup.v:13:8: Cells with pins that are not a variable reference or a constant are not supported with  --fourstate
+                                                          : ... note: In instance 't'
+   13 |   y h(x[0]);
+      |        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

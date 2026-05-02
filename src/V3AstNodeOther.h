@@ -1904,6 +1904,8 @@ class AstVar final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
+    // @astgen ptr := m_fourstateComplementp : Optional[AstVar]  // Set in four-state value part -
+    //                                                             points to an xz part
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -1913,6 +1915,8 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
+    VBasicDTypeKwd
+        m_fourstateOriginalDTypeKwd;  // Original dtype of a four-state var - before splitting
     int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
@@ -1974,7 +1978,9 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
+    bool m_isFourstateComplement : 1;  // Set in four-state xz part
     void init() {
+        m_fourstateOriginalDTypeKwd = VBasicDTypeKwd::UNKNOWN;
         m_ansi = false;
         m_declTyped = false;
         m_tristate = false;
@@ -2035,6 +2041,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_processQueue = false;
+        m_isFourstateComplement = false;
     }
 
 public:
@@ -2137,6 +2144,19 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
+    void fourstateComplementp(AstVar* const varp) {
+        UASSERT_OBJ(!isFourstateComplement(), this, "Varp is four-state complement i");
+        UASSERT_OBJ(!m_fourstateComplementp, this, "Varp already has a complement");
+        UASSERT_OBJ(!varp->isFourstateComplement(), varp, "It is already a four-state complement");
+        varp->m_isFourstateComplement = true;
+        m_fourstateComplementp = varp;
+    }
+    AstVar* fourstateComplementp() const { return m_fourstateComplementp; }
+    VBasicDTypeKwd fourstateOriginalDTypeKwd() const { return m_fourstateOriginalDTypeKwd; }
+    void fourstateOriginalDTypeKwd(const VBasicDTypeKwd dtypeKwd) {
+        m_fourstateOriginalDTypeKwd = dtypeKwd;
+    }
+    bool isFourstateComplement() const { return m_isFourstateComplement; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }

@@ -224,8 +224,11 @@ class TraceDeclVisitor final : public VNVisitor {
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
+    std::map<const AstVar*, AstVarScope*>
+        m_varxzToVscp;  // Map from variable with xz part to its variable scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
     AstNodeExpr* m_traValuep = nullptr;  // Value expression for current signal
+    AstNodeExpr* m_traValueXZp = nullptr;  // ValueXZ expression for current signal
     string m_traName;  // Name component for current signal
 
     VDouble0 m_statSigs;  // Statistic tracking
@@ -323,6 +326,10 @@ class TraceDeclVisitor final : public VNVisitor {
         }
         FileLine* const flp = m_traVscp->fileline();
         AstNodeExpr* valuep = m_traValuep->cloneTree(false);
+        if (m_traValueXZp) {
+            valuep = new AstFourstateExpr{m_traVscp->fileline(), valuep,
+                                          m_traValueXZp->cloneTree(false)};
+        }
         const bool validOffset = m_offset != std::numeric_limits<uint32_t>::max();
         AstTraceDecl* const newp
             = new AstTraceDecl{flp,      m_traName,  m_traVscp->varp(), valuep,
@@ -673,6 +680,12 @@ class TraceDeclVisitor final : public VNVisitor {
                         // traversal.
                         m_traValuep
                             = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
+                        if (AstVar* const complementp
+                            = m_traVscp->varp()->fourstateComplementp()) {
+                            m_traValueXZp
+                                = new AstVarRef{m_traVscp->fileline(),
+                                                m_varxzToVscp.at(complementp), VAccess::READ};
+                        }
                         // Recurse into data type of the signal. The visit methods will add
                         // AstTraceDecls.
                         iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
@@ -682,6 +695,10 @@ class TraceDeclVisitor final : public VNVisitor {
                             // Note: Sometimes VL_DANGLING is a no-op, but we have assertions
                             // on m_traValuep being nullptr, so make sure it is.
                             m_traValuep = nullptr;
+                            if (m_traValueXZp) {
+                                VL_DO_DANGLING(m_traValueXZp->deleteTree(), m_traValueXZp);
+                                m_traValueXZp = nullptr;
+                            }
                         }
                     }
                 } else {
@@ -758,8 +775,12 @@ class TraceDeclVisitor final : public VNVisitor {
             if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
         }
 
-        // Add to traced signal list
-        m_entries.emplace_back(m_currScopep, nodep);
+        if (nodep->varp()->isFourstateComplement()) {
+            m_varxzToVscp.emplace(nodep->varp(), nodep);
+        } else {
+            // Add to traced signal list
+            m_entries.emplace_back(m_currScopep, nodep);
+        }
     }
 
     // VISITORS - Data types when tracing

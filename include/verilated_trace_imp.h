@@ -549,6 +549,16 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullLogic(uint32_t* oldp, CData newval, CData newvalXZ) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    CData* oldcp = reinterpret_cast<CData*>(oldp);
+    oldcp[0] = newval;  // Still copy even if not tracing so chg doesn't call full
+    oldcp[1] = newvalXZ;
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitLogic(code, newval, newvalXZ);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     // No need to update *oldp
@@ -571,11 +581,33 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullCData(uint32_t* oldp, CData newval, int
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateCData(uint32_t* oldp, CData newval,
+                                                        CData newvalXZ, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    CData* oldcp = reinterpret_cast<CData*>(oldp);
+    oldcp[0] = newval;  // Still copy even if not tracing so chg doesn't call full
+    oldcp[1] = newvalXZ;
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateCData(code, newval, newvalXZ, bits);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullSData(uint32_t* oldp, SData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     emitSData(code, newval, bits);
+}
+
+template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateSData(uint32_t* oldp, SData newval,
+                                                        SData newvalXZ, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    SData* oldcp = reinterpret_cast<SData*>(oldp);
+    oldcp[0] = newval;  // Still copy even if not tracing so chg doesn't call full
+    oldcp[1] = newvalXZ;
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateSData(code, newval, newvalXZ, bits);
 }
 
 template <>
@@ -587,6 +619,17 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullIData(uint32_t* oldp, IData newval, int
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateIData(uint32_t* oldp, IData newval,
+                                                        IData newvalXZ, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    IData* oldcp = reinterpret_cast<IData*>(oldp);
+    oldcp[0] = newval;  // Still copy even if not tracing so chg doesn't call full
+    oldcp[1] = newvalXZ;
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateIData(code, newval, newvalXZ, bits);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     std::memcpy(oldp, &newval, sizeof(newval));
@@ -595,11 +638,35 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateQData(uint32_t* oldp, QData newval,
+                                                        QData newvalXZ, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    QData* oldcp = reinterpret_cast<QData*>(oldp);
+    oldcp[0] = newval;  // Still copy even if not tracing so chg doesn't call full
+    oldcp[1] = newvalXZ;
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateQData(code, newval, newvalXZ, bits);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newvalp, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     emitWData(code, newvalp, bits);
+}
+
+template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFourstateWData(uint32_t* oldp, const WData* newvalp,
+                                                        const WData* newvalXZp, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) {
+        const int oldIdx = i << 1;
+        oldp[oldIdx] = newvalp[i];
+        oldp[oldIdx | 1] = newvalXZp[i];
+    }
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitFourstateWData(code, newvalp, newvalXZp, bits);
 }
 
 template <>
