@@ -424,6 +424,10 @@ static void process() {
             // forcing.
             V3Force::forceAll(v3Global.rootp());
 
+            // Convert assign/deassign statements to forces on generated variables, so they can be
+            // handled by the same logic as regular force/release statements.
+            V3Force::assignAll(v3Global.rootp());
+
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 

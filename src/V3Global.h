@@ -128,6 +128,7 @@ class V3Global final {
     bool m_usesForce = false;  // Design uses force/release statements
     bool m_usesZeroDelay = false;  // Design uses #0 delay (or non-constant delay)
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
+    bool m_hasAssignDeassign = false;  // Need to apply V3Force pass for assign/deassign statements
     bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandSequence = false;  // Has `randsequence`
@@ -206,6 +207,8 @@ public:
     void setUsesZeroDelay() { m_usesZeroDelay = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
+    bool hasAssignDeassign() const { return m_hasAssignDeassign; }
+    void setHasAssignDeassign() { m_hasAssignDeassign = true; }
     bool usesForce() const { return m_usesForce; }
     void setUsesForce() { m_usesForce = true; }
     bool hasSystemCSections() const VL_MT_SAFE { return m_hasSystemCSections; }
