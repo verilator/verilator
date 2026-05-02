@@ -343,11 +343,15 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()), getSuspendDepVtx(m_procp),
-                        P_CALL};
+        AstCFunc* const funcp = nodep->funcp();
+        UASSERT_OBJ(funcp, nodep, "AstNodeCCall must have non-null funcp post-link");
+        UASSERT_OBJ(m_procp, nodep, "AstNodeCCall must be inside a procedure/CFunc/Begin");
 
-        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
-                        getNeedsProcDepVtx(m_procp), P_CALL};
+        UINFO(9, "V3Timing: Processing CCall to " << funcp->name() << " in dependency graph\n");
+        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(funcp), getSuspendDepVtx(m_procp), P_CALL};
+
+        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(funcp), getNeedsProcDepVtx(m_procp),
+                        P_CALL};
 
         iterateChildren(nodep);
     }
@@ -961,8 +965,16 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (nodep->funcp()->needProcess()) m_hasProcess = true;
-        if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
+        AstCFunc* const funcp = nodep->funcp();
+
+        // Skip automatic covergroup sampling calls
+        if (funcp->isCovergroupSample()) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        if (funcp->needProcess()) m_hasProcess = true;
+        if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
             stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});

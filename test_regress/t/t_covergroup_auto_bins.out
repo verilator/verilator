@@ -1,0 +1,15 @@
+cg.data.auto[0]: 1
+cg.data.auto[1]: 1
+cg.data.auto[2]: 1
+cg.data.auto[3]: 1
+cg2.data64.auto_0: 1
+cg2.data64.auto_1: 1
+cg_4bit.data4.auto[0]: 1
+cg_4bit.data4.auto[1]: 1
+cg_4bit.data4.auto[2]: 1
+cg_4bit.data4.auto[3]: 1
+cg_4bit_excl.data4.auto[0]: 1
+cg_4bit_excl.data4.auto[1]: 0
+cg_4bit_excl.data4.auto[2]: 1
+cg_4bit_excl.data4.auto[3]: 0
+cg_4bit_excl.data4.bad [ignore]: 0

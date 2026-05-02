@@ -1,8 +1,17 @@
-%Error: t/t_covergroup_option_bad.v:14:5: Syntax error; expected 'option' or 'type_option': 'bad_cg_non_option'
-   14 |     bad_cg_non_option.name = "xx";   
-      |     ^~~~~~~~~~~~~~~~~
+%Error: t/t_covergroup_option_bad.v:12:5: Unknown coverage option name 'option.auto_bin_ma'; not a valid option per IEEE 1800-2023 Table 19-1
+   12 |     option.auto_bin_ma = 4;
+      |     ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_covergroup_option_bad.v:20:7: Syntax error; expected 'option' or 'type_option': 'bad_cross_non_option'
-   20 |       bad_cross_non_option.name = "xx";   
-      |       ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_covergroup_option_bad.v:19:7: Unknown coverage option name 'option.at_lest'; not a valid option per IEEE 1800-2023 Table 19-1
+   19 |       option.at_lest = 2;
+      |       ^~~~~~
+%Error: t/t_covergroup_option_bad.v:25:5: 'type_option.auto_bin_max' is not valid; use 'option.auto_bin_max' instead
+   25 |     type_option.auto_bin_max = 4;
+      |     ^~~~~~~~~~~
+%Error: t/t_covergroup_option_bad.v:32:7: 'type_option.at_least' is not valid; use 'option.at_least' instead
+   32 |       type_option.at_least = 2;
+      |       ^~~~~~~~~~~
+%Error: t/t_covergroup_option_bad.v:38:5: Unknown coverage type option name 'type_option.bogus'; not a valid type option per IEEE 1800-2023 Table 19-3
+   38 |     type_option.bogus = 1;
+      |     ^~~~~~~~~~~
 %Error: Exiting due to

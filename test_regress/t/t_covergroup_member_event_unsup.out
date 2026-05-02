@@ -1,0 +1,7 @@
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:11:5: Unsupported: 'covergroup' clocking event on member variable
+                                                           : ... note: In instance 't'
+   11 |     covergroup cov1 @m_z;
+      |     ^~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

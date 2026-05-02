@@ -113,6 +113,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_verilogTask : 1;  // Declared by user as task (versus internal-made)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    bool m_isCovergroupSample : 1;  // Covergroup sample() method
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
     VIsCached m_purity;  // Pure state
@@ -144,7 +145,8 @@ protected:
         , m_verilogFunction{false}
         , m_verilogTask{false}
         , m_virtual{false}
-        , m_needProcess{false} {
+        , m_needProcess{false}
+        , m_isCovergroupSample{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -218,6 +220,8 @@ public:
     void isVirtual(bool flag) { m_virtual = flag; }
     bool needProcess() const { return m_needProcess; }
     void setNeedProcess() { m_needProcess = true; }
+    bool isCovergroupSample() const { return m_isCovergroupSample; }
+    void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
     VBaseOverride baseOverride() const { return m_baseOverride; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -252,6 +256,19 @@ public:
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
+    // Base class for functional coverage items (coverpoints, crosses)
+protected:
+    string m_name;
+
+public:
+    AstNodeFuncCovItem(VNType t, FileLine* fl, const string& name)
+        : AstNode{t, fl}
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstNodeFuncCovItem;
+    string name() const override VL_MT_STABLE { return m_name; }
+    bool maybePointedTo() const override { return true; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct
@@ -514,6 +531,7 @@ class AstCFunc final : public AstNode {
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
                         // state
+    bool m_isCovergroupSample : 1;  // Automatic covergroup sample() function
     int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
@@ -544,6 +562,7 @@ public:
         m_dpiImportWrapper = false;
         m_recursive = false;
         m_noLife = false;
+        m_isCovergroupSample = false;
         m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
@@ -619,6 +638,8 @@ public:
     bool recursive() const { return m_recursive; }
     void noLife(bool flag) { m_noLife = flag; }
     bool noLife() const { return m_noLife; }
+    bool isCovergroupSample() const { return m_isCovergroupSample; }
+    void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
@@ -760,13 +781,16 @@ public:
 class AstCgOptionAssign final : public AstNode {
     // A covergroup set of option
     // Parents: CLASS(covergroup) or cross
-    string m_name;  // Option name
+    const VCoverOptionType m_optType;  // Option type
+    const string m_rawName;  // Original option name (for diagnostics on unknown options)
     const bool m_typeOption;  // type_option vs option
     // @astgen op1 := valuep : AstNodeExpr
 public:
-    AstCgOptionAssign(FileLine* fl, bool typeOption, const string& name, AstNodeExpr* valuep)
+    AstCgOptionAssign(FileLine* fl, bool typeOption, VCoverOptionType optType,
+                      const string& rawName, AstNodeExpr* valuep)
         : ASTGEN_SUPER_CgOptionAssign(fl)
-        , m_name{name}
+        , m_optType{optType}
+        , m_rawName{rawName}
         , m_typeOption{typeOption} {
         this->valuep(valuep);
     }
@@ -774,7 +798,8 @@ public:
     // ACCESSORS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Bind Target name
+    string name() const override VL_MT_STABLE { return m_rawName; }
+    VCoverOptionType optionType() const { return m_optType; }
     bool typeOption() const { return m_typeOption; }
 };
 class AstClassExtends final : public AstNode {
@@ -1021,6 +1046,145 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+
+class AstCoverBin final : public AstNode {
+    // Captures data for a coverpoint 'bins' declaration
+    // @astgen op1 := rangesp : List[AstNode]
+    // @astgen op2 := iffp : Optional[AstNodeExpr]
+    // @astgen op3 := arraySizep : Optional[AstNodeExpr]
+    // @astgen op4 := transp : List[AstCoverTransSet]
+    const string m_name;  // Base name of the bin
+    const VCoverBinsType m_type;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
+    bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
+    bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
+
+public:
+    AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
+                bool isWildcard = false)
+        : ASTGEN_SUPER_CoverBin(fl)
+        , m_name{name}
+        , m_type{isIllegal ? VCoverBinsType::BINS_ILLEGAL
+                           : (isIgnore ? VCoverBinsType::BINS_IGNORE
+                                       : (isWildcard ? VCoverBinsType::BINS_WILDCARD
+                                                     : VCoverBinsType::BINS_USER))}
+        , m_isWildcard{isWildcard} {
+        if (rangesp) addRangesp(rangesp);
+    }
+    // Constructor for automatic bins
+    AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep)
+        : ASTGEN_SUPER_CoverBin(fl)
+        , m_name{name}
+        , m_type{VCoverBinsType::BINS_AUTO}
+        , m_isArray{true} {
+        this->arraySizep(arraySizep);
+    }
+    // Constructor for default bins (catch-all)
+    AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type)
+        : ASTGEN_SUPER_CoverBin(fl)
+        , m_name{name}
+        , m_type{type} {}
+    // Constructor for transition bins
+    AstCoverBin(FileLine* fl, const string& name, AstCoverTransSet* transp,
+                VCoverBinsType type = VCoverBinsType::BINS_TRANSITION, bool isArrayBin = false)
+        : ASTGEN_SUPER_CoverBin(fl)
+        , m_name{name}
+        , m_type{type}
+        , m_isArray{isArrayBin} {
+        UASSERT(transp, "AstCoverBin transition constructor requires non-null transp");
+        addTransp(transp);
+    }
+    ASTGEN_MEMBERS_AstCoverBin;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
+    VCoverBinsType binsType() const { return m_type; }
+    bool isWildcard() const { return m_isWildcard; }
+    bool isArray() const { return m_isArray; }
+    void isArray(bool flag) { m_isArray = flag; }
+};
+class AstCoverOption final : public AstNode {
+    // Coverage-option assignment
+    // @astgen op1 := valuep : AstNodeExpr
+    const VCoverOptionType m_type;  // Option being assigned
+
+public:
+    AstCoverOption(FileLine* fl, VCoverOptionType type, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_CoverOption(fl)
+        , m_type{type} {
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstCoverOption;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VCoverOptionType optionType() const { return m_type; }
+};
+class AstCoverTransItem final : public AstNode {
+    // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
+    // @astgen op1 := valuesp : List[AstNode]
+    // @astgen op2 := repMinp : Optional[AstNodeExpr]
+    // @astgen op3 := repMaxp : Optional[AstNodeExpr]
+    const VTransRepType m_repType;
+
+public:
+    AstCoverTransItem(FileLine* fl, AstNode* valuesp, VTransRepType repType = VTransRepType::NONE)
+        : ASTGEN_SUPER_CoverTransItem(fl)
+        , m_repType{repType} {
+        if (valuesp) addValuesp(valuesp);
+    }
+    ASTGEN_MEMBERS_AstCoverTransItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstCoverTransSet final : public AstNode {
+    // Represents a transition set: value1 => value2 => value3
+    // @astgen op1 := itemsp : List[AstCoverTransItem]
+public:
+    AstCoverTransSet(FileLine* fl, AstCoverTransItem* itemsp)
+        : ASTGEN_SUPER_CoverTransSet(fl) {
+        if (itemsp) addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstCoverTransSet;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstCovergroup final : public AstNode {
+    // Represents a covergroup declaration. V3LinkParse transforms this
+    // into an AstClass with isCovergroup==true and attaches the clocking
+    // event as a new AstCovergroup sentinel in class membersp.
+    // @astgen op1 := argsp : List[AstVar]
+    // @astgen op2 := membersp : List[AstNode]
+    // @astgen op3 := eventp : Optional[AstSenTree]
+    // @astgen op4 := sampleArgsp : List[AstVar]
+    string m_name;  // covergroup name
+
+public:
+    AstCovergroup(FileLine* fl, const string& name, AstVar* argsp, AstVar* sampleArgsp,
+                  AstNode* membersp, AstSenTree* eventp)
+        : ASTGEN_SUPER_Covergroup(fl)
+        , m_name{name} {
+        if (argsp) addArgsp(argsp);
+        if (sampleArgsp) addSampleArgsp(sampleArgsp);
+        if (membersp) addMembersp(membersp);
+        this->eventp(eventp);
+    }
+    ASTGEN_MEMBERS_AstCovergroup;
+    string name() const override VL_MT_STABLE { return m_name; }
+    void name(const string& name) override { m_name = name; }
+    bool maybePointedTo() const override { return true; }
+};
+class AstCoverpointRef final : public AstNode {
+    // Reference to a coverpoint used in a cross
+    const string m_name;  // coverpoint name
+
+public:
+    AstCoverpointRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_CoverpointRef(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstCoverpointRef;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstDefParam final : public AstNode {
     // A defparam assignment
@@ -2561,6 +2725,39 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
+class AstCoverCross final : public AstNodeFuncCovItem {
+    // @astgen op1 := itemsp   : List[AstCoverpointRef]
+    // @astgen op2 := optionsp : List[AstCoverOption]     // post-LinkParse only
+    // @astgen op3 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
+    //                                          // post-LinkParse: empty
+public:
+    AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)
+        : ASTGEN_SUPER_CoverCross(fl, name) {
+        UASSERT(itemsp, "AstCoverCross requires at least one coverpoint reference");
+        addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstCoverCross;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstCoverpoint final : public AstNodeFuncCovItem {
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := binsp : List[AstNode]  // Parse: mixed AstCoverBin/AstCgOptionAssign;
+    // post-LinkParse: AstCoverBin only
+    // @astgen op3 := iffp : Optional[AstNodeExpr]
+    // @astgen op4 := optionsp : List[AstCoverOption]
+public:
+    AstCoverpoint(FileLine* fl, const string& name, AstNodeExpr* exprp,
+                  AstNodeExpr* iffp = nullptr, AstNode* binsp = nullptr)
+        : ASTGEN_SUPER_Coverpoint(fl, name) {
+        this->exprp(exprp);
+        this->iffp(iffp);
+        if (binsp) addBinsp(binsp);
+    }
+    ASTGEN_MEMBERS_AstCoverpoint;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
 
 // === AstNodeGen ===
 class AstGenBlock final : public AstNodeGen {
@@ -2643,6 +2840,8 @@ class AstClass final : public AstNodeModule {
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
+    // Covergroup options (when m_covergroup is true)
+    int m_cgAutoBinMax = -1;  // option.auto_bin_max value (-1 = not set, use default 64)
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -2670,6 +2869,9 @@ public:
     void needRNG(bool flag) { m_needRNG = flag; }
     bool useVirtualPublic() const { return m_useVirtualPublic; }
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
+    // Covergroup options accessors
+    int cgAutoBinMax() const { return m_cgAutoBinMax; }
+    void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);

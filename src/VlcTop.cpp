@@ -25,8 +25,10 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -210,6 +212,46 @@ void VlcTop::rank() {
         } else {
             break;  // No test covering more stuff found
         }
+    }
+}
+
+void VlcTop::covergroup() {
+    UINFO(2, "covergroup...");
+    covergroupCalc();
+    if (m_covergroups.empty()) return;
+    m_covergroups.dump(std::cout);
+}
+
+void VlcTop::covergroupCalc() {
+    // Collect covergroup points from all loaded coverage data into m_covergroups
+    for (const auto& nameNum : m_points) {
+        const VlcPoint& pt = m_points.pointNumber(nameNum.second);
+        if (pt.type() != "covergroup") continue;
+
+        const std::string page = pt.page();
+        // Page format: "v_covergroup/<cgTypeName>"
+        const std::string pagePrefix = "v_covergroup/";
+        if (page.size() <= pagePrefix.size()) continue;
+        const std::string cgTypeName = page.substr(pagePrefix.size());
+
+        // Parse hier: "<cg_type>.<cp_name>.<bin_name>"
+        const std::string hier = pt.hier();
+        const size_t dot1 = hier.find('.');
+        if (dot1 == std::string::npos) continue;
+        const size_t dot2 = hier.find('.', dot1 + 1);
+        if (dot2 == std::string::npos) continue;
+        const std::string cpName = hier.substr(dot1 + 1, dot2 - dot1 - 1);
+        const std::string binName = hier.substr(dot2 + 1);
+
+        VlcCovergroupType& cg
+            = m_covergroups.findNewCovergroupType(cgTypeName, pt.filename(), pt.lineno());
+        VlcCgCoverpoint& cp = cg.findNewCoverpoint(cpName, pt.isCross());
+
+        // Threshold: use per-bin thresh key (option.at_least) if present, else 1 (SV default)
+        const std::string threshStr = pt.thresh();
+        const uint64_t binThresh = threshStr.empty() ? 1 : std::stoull(threshStr);
+        const uint64_t count = pt.count();
+        cp.addBin(binName, pt.binType(), count >= binThresh, count);
     }
 }
 
