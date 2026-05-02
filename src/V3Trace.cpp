@@ -221,7 +221,37 @@ class TraceVisitor final : public VNVisitor {
     std::map<std::pair<const AstIface*, std::string>, std::vector<AstVarScope*>>
         m_ifaceMemberVscps;
 
+    class TraceInitDeclCollector final : public VNVisitor {
+        std::vector<AstTraceDecl*>& m_declps;
+        std::set<const AstCFunc*> m_seenFuncps;
+
+        void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }
+        void visit(AstCCall* nodep) override {
+            if (AstCFunc* const funcp = nodep->funcp()) collect(funcp);
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    public:
+        explicit TraceInitDeclCollector(std::vector<AstTraceDecl*>& declps)
+            : m_declps{declps} {}
+        void collect(AstCFunc* funcp) {
+            if (funcp && m_seenFuncps.insert(funcp).second) iterate(funcp);
+        }
+    };
+
     // METHODS
+
+    static bool sameRootInitAlias(const AstTraceDecl* rootDeclp, const AstTraceDecl* topDeclp) {
+        const VNumRange& rootBitRange = rootDeclp->bitRange();
+        const VNumRange& topBitRange = topDeclp->bitRange();
+        return rootDeclp->showname() == topDeclp->showname()
+               && rootDeclp->declDirection() == topDeclp->declDirection()
+               && rootDeclp->widthMin() == topDeclp->widthMin()
+               && rootBitRange.ranged() == topBitRange.ranged()
+               && (!rootBitRange.ranged()
+                   || (rootBitRange.left() == topBitRange.left()
+                       && rootBitRange.right() == topBitRange.right()));
+    }
 
     void detectDuplicates() {
         UINFO(9, "Finding duplicates");
@@ -1076,6 +1106,32 @@ class TraceVisitor final : public VNVisitor {
         // Create the full and incremental dump functions
         createNonConstTraceFunctions(traces, nNonConstCodes, m_parallelism);
 
+        // Root-traced libraries alias wrapper IOs onto the existing top-module codes.
+        if (!v3Global.opt.libCreate().empty()) {
+            std::vector<AstTraceDecl*> rootDeclps;
+            std::vector<AstTraceDecl*> topDeclps;
+            TraceInitDeclCollector rootCollector{rootDeclps};
+            TraceInitDeclCollector topCollector{topDeclps};
+            for (AstNode* blockp = m_topScopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                AstCFunc* const funcp = VN_CAST(blockp, CFunc);
+                if (funcp && VString::startsWith(funcp->name(), "trace_init_leaf_root__")) {
+                    rootCollector.collect(funcp);
+                } else if (funcp && VString::startsWith(funcp->name(), "trace_init_leaf_top__")) {
+                    topCollector.collect(funcp);
+                }
+            }
+
+            std::vector<bool> used(topDeclps.size(), false);
+            for (AstTraceDecl* const rootDeclp : rootDeclps) {
+                for (size_t i = 0; i < topDeclps.size(); ++i) {
+                    if (used[i] || !sameRootInitAlias(rootDeclp, topDeclps[i])) continue;
+                    rootDeclp->code(topDeclps[i]->code());
+                    used[i] = true;
+                    break;
+                }
+            }
+        }
+
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc
         for (const auto& i : traces) {
@@ -1179,6 +1235,20 @@ class TraceVisitor final : public VNVisitor {
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep);
         if (!m_finding && !nodep->inDtypeFunc()) {
+            // Skip decls inside trace_init_leaf_root__* functions: these are
+            // duplicates of decls in trace_init_leaf_top__* (root vs regular
+            // scope path) and should share the top decl's code via the
+            // sameRootInitAlias post-pass at createTraceFunctions(). Putting
+            // them in the dedup graph would allocate distinct trace codes for
+            // them, growing nTraceCodes past what trace_init_top actually
+            // declares -- so the parent's full callback writes to codes the
+            // SAIF/VCD runtime never registered, tripping
+            //   verilated_saif_c.cpp: Activity must be declared earlier
+            //   verilated_vcd_c.cpp: finishLine: suffixp[0] failed
+            // (cf. t_lib, t_trace_hier_block_*).
+            if (m_cfuncp && VString::startsWith(m_cfuncp->name(), "trace_init_leaf_root__")) {
+                return;
+            }
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
 
