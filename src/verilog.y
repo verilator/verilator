@@ -3790,48 +3790,40 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
-                        { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Add, $2, $1, $3}; }
         |       fexprLvalue yP_MINUSEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Sub, $2, $1, $3}; }
         |       fexprLvalue yP_TIMESEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Mul, $2, $1, $3}; }
         |       fexprLvalue yP_DIVEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Div, $2, $1, $3}; }
         |       fexprLvalue yP_MODEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ModDiv, $2, $1, $3}; }
         |       fexprLvalue yP_ANDEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::And, $2, $1, $3}; }
         |       fexprLvalue yP_OREQ      expr
-                        { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Or, $2, $1, $3}; }
         |       fexprLvalue yP_XOREQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Xor, $2, $1, $3}; }
         |       fexprLvalue yP_SLEFTEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftL, $2, $1, $3}; }
         |       fexprLvalue yP_SRIGHTEQ  expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftR, $2, $1, $3}; }
         |       fexprLvalue yP_SSRIGHTEQ expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftRS, $2, $1, $3}; }
         ;
 
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
         //                      // Need fexprScope instead of variable_lvalue to prevent conflict
                 ~l~exprScope yP_PLUSPLUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostInc{$2, $1}; }
         |       ~l~exprScope yP_MINUSMINUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostSub{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostDec{$2, $1}; }
         //                      // Need expr instead of variable_lvalue to prevent conflict
         |       yP_PLUSPLUS     expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreAdd{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreInc{$1, $2}; }
         |       yP_MINUSMINUS   expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreDec{$1, $2}; }
         ;
 
 finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression

@@ -1427,6 +1427,40 @@ public:
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
 };
+class AstAssignCompound final : public AstNodeAssign {
+    // Compound assignments (+=, -=, *=, ...)
+public:
+    enum operation : uint8_t {
+        Add,
+        And,
+        Div,
+        ModDiv,
+        Mul,
+        Or,
+        ShiftL,
+        ShiftR,
+        ShiftRS,
+        Sub,
+        Xor,
+    };
+
+private:
+    enum operation m_operation;
+
+public:
+    AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,
+                      AstNodeExpr* rhsp, AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompound(fl, lhsp, rhsp, timingControlp) {
+        this->m_operation = operation;
+        dtypeFrom(lhsp);
+    }
+    ASTGEN_MEMBERS_AstAssignCompound;
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignCompound{operation(), fileline(), lhsp, rhsp, controlp};
+    }
+    operation operation() { return m_operation; }
+};
 class AstAssignCont final : public AstNodeAssign {
     // Continuous procedural 'assign'.  See AstAssignW for non-procedural version.
 public:

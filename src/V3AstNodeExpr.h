@@ -5126,102 +5126,6 @@ public:
     bool sizeMattersThs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
 };
-class AstPostAdd final : public AstNodeTriop {
-    // Post-increment/add
-    // Children: lhsp: AstConst (1) as currently support only ++ not +=
-    // Children: rhsp: tree with AstVarRef that is value to read before operation
-    // Children: thsp: tree with AstVarRef LValue that is stored after operation
-public:
-    AstPostAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
-        : ASTGEN_SUPER_PostAdd(fl, lhsp, rhsp, thsp) {}
-    ASTGEN_MEMBERS_AstPostAdd;
-    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                       const V3Number& ths) override {
-        V3ERROR_NA;  // Need to modify lhs
-    }
-    string emitVerilog() override { return "%k(%r++)"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanRhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanThs() const override { V3ERROR_NA_RETURN(false); }
-    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersRhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersThs() const override { V3ERROR_NA_RETURN(true); }
-};
-class AstPostSub final : public AstNodeTriop {
-    // Post-decrement/subtract
-    // Children: lhsp: AstConst (1) as currently support only -- not -=
-    // Children: rhsp: tree with AstVarRef that is value to read before operation
-    // Children: thsp: tree with AstVarRef LValue that is stored after operation
-public:
-    AstPostSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
-        : ASTGEN_SUPER_PostSub(fl, lhsp, rhsp, thsp) {}
-    ASTGEN_MEMBERS_AstPostSub;
-    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                       const V3Number& ths) override {
-        V3ERROR_NA;  // Need to modify lhs
-    }
-    string emitVerilog() override { return "%k(%r--)"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanRhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanThs() const override { V3ERROR_NA_RETURN(false); }
-    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersRhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersThs() const override { V3ERROR_NA_RETURN(true); }
-};
-class AstPreAdd final : public AstNodeTriop {
-    // Pre-increment/add
-    // Children: lhsp: AstConst (1) as currently support only ++ not +=
-    // Children: rhsp: tree with AstVarRef that is value to read before operation
-    // Children: thsp: tree with AstVarRef LValue that is stored after operation
-public:
-    AstPreAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
-        : ASTGEN_SUPER_PreAdd(fl, lhsp, rhsp, thsp) {}
-    ASTGEN_MEMBERS_AstPreAdd;
-    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                       const V3Number& ths) override {
-        V3ERROR_NA;  // Need to modify lhs
-    }
-    string emitVerilog() override { return "%k(++%r)"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanRhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanThs() const override { V3ERROR_NA_RETURN(false); }
-    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersRhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersThs() const override { V3ERROR_NA_RETURN(true); }
-};
-class AstPreSub final : public AstNodeTriop {
-    // Pre-decrement/subtract
-    // Children: lhsp: AstConst (1) as currently support only -- not -=
-    // Children: rhsp: tree with AstVarRef that is value to read before operation
-    // Children: thsp: tree with AstVarRef LValue that is stored after operation
-public:
-    AstPreSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
-        : ASTGEN_SUPER_PreSub(fl, lhsp, rhsp, thsp) {}
-    ASTGEN_MEMBERS_AstPreSub;
-    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                       const V3Number& ths) override {
-        V3ERROR_NA;  // Need to modify lhs
-    }
-    string emitVerilog() override { return "%k(--%r)"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanRhs() const override { V3ERROR_NA_RETURN(false); }
-    bool cleanThs() const override { V3ERROR_NA_RETURN(false); }
-    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersRhs() const override { V3ERROR_NA_RETURN(true); }
-    bool sizeMattersThs() const override { V3ERROR_NA_RETURN(true); }
-};
 class AstPutcN final : public AstNodeTriop {
     // Verilog string.putc()
 public:
@@ -5792,6 +5696,74 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 3; }
     bool isSystemFunc() const override { return true; }
+};
+class AstPostDec final : public AstNodeUniop {
+    // Post-decrement/subtract
+    // Children: lhsp: tree with AstVarRef to be decremented
+public:
+    AstPostDec(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_PostDec(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstPostDec;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    string emitVerilog() override { return "%k(%l--)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
+    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
+    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
+};
+class AstPostInc final : public AstNodeUniop {
+    // Post-increment/add
+    // Children: lhsp: tree with AstVarRef to be incremented
+public:
+    AstPostInc(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_PostInc(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstPostInc;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    string emitVerilog() override { return "%k(%l++)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
+    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
+    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
+};
+class AstPreDec final : public AstNodeUniop {
+    // Pre-decrement/subtract
+    // Children: lhsp: tree with AstVarRef to be decremented
+public:
+    AstPreDec(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_PreDec(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstPreDec;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    string emitVerilog() override { return "%k(--%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
+    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
+    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
+};
+class AstPreInc final : public AstNodeUniop {
+    // Pre-increment/add
+    // Children: lhsp: tree with AstVarRef to be incremented
+public:
+    AstPreInc(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_PreInc(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstPreInc;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    string emitVerilog() override { return "%k(++%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
+    bool cleanLhs() const override { V3ERROR_NA_RETURN(false); }
+    bool sizeMattersLhs() const override { V3ERROR_NA_RETURN(true); }
 };
 class AstRToIRoundS final : public AstNodeUniop {
     // Convert real to integer, with arbitrary sized output (not just "integer" format)
