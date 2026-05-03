@@ -613,7 +613,9 @@ class FsmDetectVisitor final : public VNVisitor {
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp) return nullptr;
         AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
-        if (!elsep || !exprConstValue(rhsp->thenp(), resetValue)) return nullptr;
+        if (!elsep || constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) {
+            return nullptr;
+        }
         stateVscp = lhsp->varScopep();
         fromVscp = elsep->varScopep();
         condp = rhsp->condp();
@@ -627,7 +629,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
         UASSERT_OBJ(lhsp, assp,
                     "direct constant state assignment lhs should be normalized to a VarRef");
-        if (!exprConstValue(assp->rhsp(), value)) return nullptr;
+        if (constValueStatus(assp->rhsp(), value) != ConstValueStatus::OK) return nullptr;
         stateVscp = lhsp->varScopep();
         return assp;
     }
@@ -723,8 +725,8 @@ class FsmDetectVisitor final : public VNVisitor {
         if (!assp) return false;
         AstCond* const condp = VN_CAST(assp->rhsp(), Cond);
         if (!condp) return false;
-        return exprConstValue(condp->thenp(), thenValue)
-               && exprConstValue(condp->elsep(), elseValue);
+        return constValueStatus(condp->thenp(), thenValue) == ConstValueStatus::OK
+               && constValueStatus(condp->elsep(), elseValue) == ConstValueStatus::OK;
     }
 
     static AstNode* caseItemSupportedArcNode(AstCaseItem* itemp, AstVarScope* stateVscp,
@@ -735,7 +737,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp);
         if (assp) {
             int toValue = 0;
-            if (exprConstValue(assp->rhsp(), toValue)) return assp;
+            if (constValueStatus(assp->rhsp(), toValue) == ConstValueStatus::OK) return assp;
         }
         int thenValue = 0;
         int elseValue = 0;
@@ -769,25 +771,18 @@ class FsmDetectVisitor final : public VNVisitor {
 
     // The extractor only models constant-valued state transitions, and by the
     // time detect runs those values have already been constant-folded.
-    enum class ConstValueStatus : uint8_t { OK, NOT_CONST, XZ };
+    enum class ConstValueStatus : uint8_t { OK, NOT_CONST, XZ, WIDE };
 
-    static ConstValueStatus exprConstValueStatus(AstNodeExpr* exprp, int& value) {
+    static ConstValueStatus constValueStatus(AstNodeExpr* exprp, int& value) {
         const AstConst* const constp = VN_CAST(exprp, Const);
         if (!constp) return ConstValueStatus::NOT_CONST;
         const V3Number& num = constp->num();
         if (num.isAnyXZ()) return ConstValueStatus::XZ;
-        value = constp->toSInt();
-        return ConstValueStatus::OK;
-    }
-
-    static bool exprConstValue(AstNodeExpr* exprp, int& value) {
-        const AstConst* const constp = VN_CAST(exprp, Const);
-        if (!constp) return false;
         // Some callers are still only probing candidate shapes, so wide constants
         // should reject the candidate instead of reporting a V3Number error.
-        if (constp->width() > 32) return false;
+        if (constp->width() > 32) return ConstValueStatus::WIDE;
         value = constp->toSInt();
-        return true;
+        return ConstValueStatus::OK;
     }
 
     // Enum-backed FSMs should only transition to values that were interned as
@@ -895,7 +890,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // Returns true on success, false if the state space is invalid.
     static bool addCondToStateSpace(AstNodeExpr* condp, FsmStateSpace& stateSpace) {
         int value = 0;
-        const ConstValueStatus status = exprConstValueStatus(condp, value);
+        const ConstValueStatus status = constValueStatus(condp, value);
         if (status == ConstValueStatus::NOT_CONST) return false;
         if (status == ConstValueStatus::XZ) {
             condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
@@ -1000,7 +995,7 @@ class FsmDetectVisitor final : public VNVisitor {
             for (AstNodeExpr* condp = itemp->condsp(); condp;
                  condp = VN_AS(condp->nextp(), NodeExpr)) {
                 int value = 0;
-                if (!exprConstValue(condp, value)) continue;
+                if (constValueStatus(condp, value) != ConstValueStatus::OK) continue;
                 froms.emplace_back(labelForValue(stateSpace.labels, value), value);
             }
             if (froms.empty()) return false;
@@ -1008,7 +1003,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
         if (AstNodeAssign* const assp = directStateAssign(itemp->stmtsp(), stateVscp)) {
             int toValue = 0;
-            const ConstValueStatus status = exprConstValueStatus(assp->rhsp(), toValue);
+            const ConstValueStatus status = constValueStatus(assp->rhsp(), toValue);
             if (status == ConstValueStatus::OK) {
                 if (!validateKnownStateValue(assp, stateSpace, toValue)) return true;
                 for (const std::pair<string, int>& from : froms) {
