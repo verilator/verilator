@@ -891,12 +891,13 @@ class FsmDetectVisitor final : public VNVisitor {
     static bool addCondToStateSpace(AstNodeExpr* condp, FsmStateSpace& stateSpace) {
         int value = 0;
         const ConstValueStatus status = constValueStatus(condp, value);
-        if (status == ConstValueStatus::NOT_CONST) return false;
-        if (status == ConstValueStatus::XZ) {
-            condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
-                                    "state variable "
-                                        + stateSpace.stateVarName
-                                        + " with X/Z state encoding values");
+        if (status != ConstValueStatus::OK) {
+            if (status == ConstValueStatus::XZ) {
+                condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
+                                        "state variable "
+                                            + stateSpace.stateVarName
+                                            + " with X/Z state encoding values");
+            }
             return false;
         }
         AstConst* const constp = VN_AS(condp, Const);
