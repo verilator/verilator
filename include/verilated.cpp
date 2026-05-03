@@ -3229,7 +3229,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
 // MurmurHash3 finalizer (32-bit). Avalanches the input bits so a
 // monotonically-incrementing source like a clock counter produces seeds
 // that look unrelated across closely-spaced invocations.
-static uint32_t murmurmix32(uint32_t h) {
+static uint32_t murmurmix32(uint32_t h) VL_MT_SAFE {
     h ^= h >> 16;
     h *= 0x85ebca6b;
     h ^= h >> 13;
