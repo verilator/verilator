@@ -5,12 +5,6 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:27:9: Unsupported: weak (in property expression)
    27 |     weak(a);
       |         ^
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:43:7: Unsupported: #-# (in property expression)
-   43 |     a #-# b;
-      |       ^~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:47:7: Unsupported: #=# (in property expression)
-   47 |     a #=# b;
-      |       ^~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:51:5: Unsupported: nexttime (in property expression)
    51 |     nexttime a;
       |     ^~~~~~~~

@@ -6755,10 +6755,12 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE-2012: yIF and yCASE
         |       property_exprCaseIf                     { $$ = $1; }
         //
+        //                      // IEEE: "sequence_expr yP_POUNDMINUSPD pexpr" (followed-by #-#/#=#)
+        //                      // Reuses AstImplication with m_isFollowedBy to carry non-vacuous-fail polarity
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, true, true}; }
         |       ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #=# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, false, true}; }
         |       yNEXTTIME pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: nexttime (in property expression)"); }
         |       yS_NEXTTIME pexpr

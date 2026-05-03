@@ -1685,20 +1685,23 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog Implication Operator
-    // Nonoverlapped "|=>"
-    // Overlapped "|->"
+    // Implication |-> |=> (IEEE 1800-2023 16.12.6) and followed-by #-# #=#
+    // (IEEE 1800-2023 16.12.9). Antecedent-miss is vacuous-pass for implication
+    // and non-vacuous-fail for followed-by, hence the separate flag.
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
 private:
-    const bool m_isOverlapped;  // True if overlapped
+    const bool m_isOverlapped;
+    const bool m_isFollowedBy;
 
 public:
-    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped)
+    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped,
+                   bool isFollowedBy = false)
         : ASTGEN_SUPER_Implication(fl)
-        , m_isOverlapped{isOverlapped} {
+        , m_isOverlapped{isOverlapped}
+        , m_isFollowedBy{isFollowedBy} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -1708,8 +1711,17 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    // LCOV_EXCL_START -- AstImplication is lowered before any AST CSE pass; this
+    // override exists so the default (== returns true) cannot conflate variants.
+    bool sameNode(const AstNode* samep) const override {
+        const AstImplication* const asamep = VN_DBG_AS(samep, Implication);
+        return m_isOverlapped == asamep->m_isOverlapped
+               && m_isFollowedBy == asamep->m_isFollowedBy;
+    }
+    // LCOV_EXCL_STOP
+    bool isMultiCycleSva() const override { return m_isFollowedBy; }
     bool isOverlapped() const { return m_isOverlapped; }
+    bool isFollowedBy() const { return m_isFollowedBy; }
 };
 class AstInitArray final : public AstNodeExpr {
     // This is also used as an array value in V3Simulate/const prop.

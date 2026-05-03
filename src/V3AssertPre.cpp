@@ -1002,6 +1002,18 @@ private:
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
+        // Top-level followed-by is claimed by V3AssertNfa; anything reaching here
+        // is nested inside iff/implies/or. IEEE 1800-2023 16.12.9 permits the
+        // composition, but silent lowering would drop non-vacuous-fail semantics.
+        if (nodep->isFollowedBy()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: followed-by (#-# / #=#) nested inside property operator"
+                          " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
         // Handle goto repetition as antecedent before iterateChildren,
         // so the standalone AstSGotoRep visitor doesn't process it
         if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
