@@ -58,6 +58,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -445,19 +446,6 @@ static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Used only to construct seed for Verilator's PRNG.
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};  // Otherwise rand is unsafe
-    // Seed the system RNG once with a non-deterministic value, since
-    // lrand48()/rand() otherwise default to a fixed seed of 0 and would
-    // make every "unseeded" simulation run produce identical output.
-    static const bool s_seeded = []() {
-        const uint64_t now = static_cast<uint64_t>(std::time(nullptr));
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        std::srand(static_cast<unsigned>(now));
-#else
-        srand48(static_cast<long>(now) ^ static_cast<long>(getpid()));
-#endif
-        return true;
-    }();
-    (void)s_seeded;
 #if defined(_WIN32) && !defined(__CYGWIN__)
     // Windows doesn't have lrand48(), although Cygwin does.
     return (std::rand() << 16) ^ std::rand();
@@ -3238,6 +3226,35 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
     return std::make_pair(s_argc, s_argvp);
 }
 
+// MurmurHash3 finalizer (32-bit). Avalanches the input bits so a
+// monotonically-incrementing source like a clock counter produces seeds
+// that look unrelated across closely-spaced invocations.
+static uint32_t murmurmix32(uint32_t h) {
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+}
+
+// Derive a non-deterministic non-zero positive seed value from the
+// high-resolution clock. Used to implement +verilator+seed+0, which means
+// "pick a random seed". Returning the actual picked value lets
+// $get_initial_random_seed() expose it so the user can reproduce the run
+// later by passing +verilator+seed+<that_value>.
+static uint64_t pickRandomSeed() VL_MT_SAFE {
+    using namespace std::chrono;
+    const uint64_t t = static_cast<uint64_t>(
+        high_resolution_clock::now().time_since_epoch().count());
+    const uint32_t folded = static_cast<uint32_t>(t >> 32) ^ static_cast<uint32_t>(t);
+    const uint32_t mixed = murmurmix32(folded);
+    // Keep within [1, INT_MAX] so it round-trips through the int seed field.
+    uint64_t seed = static_cast<uint64_t>(mixed) & 0x7fffffffULL;
+    if (seed == 0) seed = 1;
+    return seed;
+}
+
 void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
         std::string str;
@@ -3277,6 +3294,12 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             warnUnsatConstr(u64 == 0);  // wno means disable, so invert
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 0,
                                       std::numeric_limits<int>::max())) {
+            // +verilator+seed+0 means "pick a random seed". Replace the
+            // user-supplied 0 with a non-deterministic non-zero value derived
+            // from the high-resolution clock and store that as the actual
+            // seed, so $get_initial_random_seed() returns the picked value
+            // and the run can be reproduced by passing +verilator+seed+<that_value>.
+            if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
