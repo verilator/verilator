@@ -56,21 +56,129 @@ module t;
     `checks(v, "ins2");
     `checkp(q, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"}");
 
-    // Slicing
-    q = '{"q", "b", "c", "d", "e", "f"};
-    q = q[-1:0];
-    `checkp(q, "'{\"q\"}");
+    // Slicing.
+
+    // The simple cases:
     q = '{"q", "b", "c", "d", "e", "f"};
     q = q[2:3];
     `checkp(q, "'{\"c\", \"d\"}");
     q = '{"q", "b", "c", "d", "e", "f"};
     q = q[3:$];
     `checkp(q, "'{\"d\", \"e\", \"f\"}");
+
+    // These are all the special cases straight from the LRM.  We
+    // repeat tests for queues with size 1 specially because they are
+    // tricky.
+
+    // If a > b, then Q[a:b] yields the empty queue {}.
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[4:0];
+    `checkp(q, "'{}");
+    // FIX!
+    // q = '{"q", "b", "c", "d", "e", "f"};
+    // q = q[$:0];
+    // `checkp(q, "'{}");
+    q = '{"q"};
+    q = q[1:0];
+    `checkp(q, "'{}");
+    // Or another way of writing the above (this case is specifically
+    // described under section 7.10.4, Updating a queue using
+    // assignment)
+    q = '{"q"};
+    q = q[1:$];
+    `checkp(q, "'{}");
+
+
+    // Q[ n : n ] yields a queue with one item, the one at position n
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[1:1];
+    `checkp(q, "'{\"b\"}");
+    q = '{"q", "b", "c", "d", "e", "f"};
     q = q[$:$];
     `checkp(q, "'{\"f\"}");
-    q = q[1:$];
-    `checkp("'{}");
+    // FIX!
+    // q = '{"q"};
+    // q = q[0:0];
+    // `checkp(q, "'{\"q\"}");
+    // FIX!
+    // q = '{"q"};
+    // q = q[0:$];
+    // `checkp(q, "'{\"q\"}");
+    // FIX!
+    // q = '{"q"};
+    // q = q[$:$];
+    // `checkp(q, "'{\"q\"}");
 
+    // If n lies outside Q’s range (n < 0 or n > $), then Q[n:n]
+    // yields the empty queue {}
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[7:7];
+    `checkp(q, "'{}");
+    q = '{"q"};
+    q = q[7:7];
+    `checkp(q, "'{}");
+
+    // If either a or b are 4-state expressions containing X or Z
+    // values, it yields the empty queue {}
+    // TODO: z not supported?
+    // q = '{"q", "b", "c", "d", "e", "f"};
+    // q = q['hz:3];
+    // `checkp(q, "'{}");
+    // TODO: z not supported?
+    // q = '{"q", "b", "c", "d", "e", "f"};
+    // q = q[3:'hz];
+    // `checkp(q, "'{}");
+    // FIX!
+    // q = '{"q", "b", "c", "d", "e", "f"};
+    // Q = q['hx:3];
+    // `checkp(q, "'{}");
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[3:'hx];
+    `checkp(q, "'{}");
+    // TODO: z not supported?
+    // q = '{"q"};
+    // q = q['hz:0];
+    // `checkp(q, "'{}");
+    // TODO: z not supported?
+    // q = '{"q"};
+    // q = q[0:'hz];
+    // `checkp(q, "'{}");
+    q = '{"q"};
+    q = q['bx:0];
+    `checkp(q, "'{}");
+    q = '{"q"};
+    q = q[0:'bx];
+    `checkp(q, "'{}");
+
+    //  Q[ a : b ] where a < 0 is the same as Q[ 0 : b ]
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[-1:0];
+    `checkp(q, "'{\"q\"}");
+    q = '{"q"};
+    q = q[-1:0];
+    `checkp(q, "'{\"q\"}");
+
+    // Q[ a : b ] where b > $ is the same as Q[ a : $ ]
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[3:7];
+    `checkp(q, "'{\"d\", \"e\", \"f\"}");
+    q = '{"q"};
+    q = q[0:3];
+    `checkp(q, "'{\"q\"}");
+
+    // There isn't actually a clear statement in the LRM for when a >
+    // $ and b > $, but in the same section as all the above rules it
+    // says, "An invalid index value (i.e., a 4-state expression whose
+    // value has one or more x or z bits, or a value that lies outside
+    // 0...$) shall cause a read operation to return the value
+    // appropriate for a nonexistent array entry of the queue’s
+    // element type (as described in Table 7-1 in 7.4.6)"
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[6:8];
+    `checkp(q, "'{}");
+    q = '{"q"};
+    q = q[6:8];
+    `checkp(q, "'{}");
 
     // Similar using implied notation
     q = '{"f"};
