@@ -1,0 +1,6 @@
+%Error: t/t_class_localparam_dotref_bad.v:17:33: Can't find definition of scope/variable/func: 'nonexistent'
+                                               : ... note: In instance 't'
+   17 |   localparam int LP_BAD = inst::nonexistent;
+      |                                 ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

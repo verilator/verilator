@@ -183,6 +183,7 @@ static void process() {
         V3Param::param(v3Global.rootp());
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+        V3Param::finalizeDeferredParams();
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         // Link cleanup of 'with' as final link phase before V3Width
