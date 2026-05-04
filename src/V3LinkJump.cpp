@@ -167,12 +167,6 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return false;
     }
-    static AstNode* getMemberp(const AstNodeModule* const nodep, const std::string& name) {
-        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (itemp->name() == name) return itemp;
-        }
-        return nullptr;
-    }
     static AstStmtExpr* getQueuePushProcessSelfp(AstVarRef* const queueRefp) {
         // Constructs queue.push_back(std::process::self()) statement
         FileLine* const flp = queueRefp->fileline();
@@ -190,9 +184,16 @@ class LinkJumpVisitor final : public VNVisitor {
     static AstStmtExpr* getQueueKillStmtp(FileLine* const fl, AstVar* const processQueuep) {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
         AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
-        AstTaskRef* const killQueueCall = new AstTaskRef{
-            fl, VN_AS(getMemberp(v3Global.rootp()->stdPackageClassp(), "killQueue"), Task),
-            new AstArg{fl, "", queueRefp}};
+        AstTaskRef* killQueueCall = nullptr;
+        for (AstNode* itemp = v3Global.rootp()->stdPackageClassp()->stmtsp(); itemp;
+             itemp = itemp->nextp()) {
+            if (itemp->name() == "killQueue") {
+                killQueueCall
+                    = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
+                break;
+            }
+        }
+        UASSERT(killQueueCall, "Should be found");
         killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageClassp());
         return new AstStmtExpr{fl, killQueueCall};
     }
