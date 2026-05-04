@@ -1819,6 +1819,15 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+void AstConst::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (hasOrigParamName()) str << " origParamName=" << origParamName();
+}
+void AstConst::dumpJson(std::ostream& str) const {
+    if (hasOrigParamName()) dumpJsonStrFunc(str, origParamName);
+    dumpJsonGen(str);
+}
+
 bool AstNodeExpr::isLValue() const {
     if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
         return varrefp->access().isWriteOrRW();
