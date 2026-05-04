@@ -795,51 +795,31 @@ private:
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    static AstNode* getMemberp(const AstNodeModule* const nodep, const std::string& name) {
-        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (itemp->name() == name) return itemp;
-        }
-        return nullptr;
-    }
     static AstAssocArrayDType* getProcessAssocArrayType(FileLine* const flp) {
         // Type of __VassertsActive___x[std::process]
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         AstNodeDType* valp
             = v3Global.rootp()->typeTablep()->findBasicDType(flp, VBasicDTypeKwd::BIT);
-        AstClassRefDType* keyp = new AstClassRefDType{flp, processClassp, nullptr};
-        keyp->classOrPackagep(processClassp);
+        AstClassRefDType* keyp
+            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageClassp(), nullptr};
+        keyp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
         v3Global.rootp()->typeTablep()->addTypesp(keyp);
         AstAssocArrayDType* const typep = new AstAssocArrayDType{flp, valp, keyp};
         typep->dtypep(typep);
         v3Global.rootp()->typeTablep()->addTypesp(typep);
         return typep;
     }
-    static AstNodeExpr* getProcessSelf(FileLine* const flp) {
-        // Constructs std::process::self() expression
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
-        AstFuncRef* const processSelfp = new AstFuncRef{flp, selfMethodp};
-        processSelfp->classOrPackagep(processClassp);
-        return processSelfp;
-    }
     static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
         // Constructs refp.delete(std::process::self()) statement
         FileLine* const flp = refp->fileline();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        refp->classOrPackagep(processClassp);
-        AstCMethodHard* const deletep
-            = new AstCMethodHard{flp, refp, VCMethod::ASSOC_ERASE, getProcessSelf(flp)};
+        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        AstCMethodHard* const deletep = new AstCMethodHard{
+            flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
         deletep->dtypep(refp->findVoidDType());
         return new AstStmtExpr{flp, deletep};
     }
     static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
         // Constructs refp.size() statement
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        refp->classOrPackagep(processClassp);
+        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
         AstCMethodHard* const sizep
             = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
@@ -872,7 +852,7 @@ private:
 
         // Add assertion to the active set
         AstAssocSel* const selp = new AstAssocSel{flp, new AstVarRef{flp, activep, VAccess::WRITE},
-                                                  getProcessSelf(flp)};
+                                                  v3Global.rootp()->stdPackageProcessSelfp(flp)};
         AstAssign* const incrementp = new AstAssign{flp, selp, new AstConst{flp, 1}};
         AstPExprClause* const clausep = new AstPExprClause{flp};
         AstStmtExpr* const deletep
