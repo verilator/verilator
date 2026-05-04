@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import time
-
 import vltest_bootstrap
 
 # +verilator+seed+0 should pick a non-zero random seed at startup, expose it
@@ -27,9 +25,6 @@ for i in range(3):
     if match is None:
         test.error("Could not parse 'seed=NNN' from " + logfile)
     seeds.append(int(match[0]))
-    # Sleep enough to make sure time() advances at least once between runs,
-    # so we don't depend solely on getpid() for entropy.
-    time.sleep(1.1)
 
 if any(s == 0 for s in seeds):
     test.error("+verilator+seed+0 produced a zero seed: " + repr(seeds))
