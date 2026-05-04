@@ -2161,6 +2161,16 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
 }
+void AstImplication::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isOverlapped()) str << " [overlapped]";
+    if (isFollowedBy()) str << " [followed-by]";
+}
+void AstImplication::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isOverlapped);
+    dumpJsonBoolFuncIf(str, isFollowedBy);
+}
 void AstInitArray::dumpInitList(std::ostream& str) const {
     int n = 0;
     const auto& mapr = map();

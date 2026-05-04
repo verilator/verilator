@@ -1685,31 +1685,37 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog Implication Operator
-    // Nonoverlapped "|=>"
-    // Overlapped "|->"
+    // Implication |-> |=> (IEEE 1800-2023 16.12.6) and followed-by #-# #=#
+    // (IEEE 1800-2023 16.12.9). Antecedent-miss is vacuous-pass for implication
+    // and non-vacuous-fail for followed-by, hence the separate flag.
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
 private:
-    const bool m_isOverlapped;  // True if overlapped
+    const bool m_isOverlapped;  // True if overlapped form (|-> / #-#)
+    const bool m_isFollowedBy;  // True if followed-by (#-# / #=#) rather than implication
 
 public:
-    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped)
+    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped,
+                   bool isFollowedBy = false)
         : ASTGEN_SUPER_Implication(fl)
-        , m_isOverlapped{isOverlapped} {
+        , m_isOverlapped{isOverlapped}
+        , m_isFollowedBy{isFollowedBy} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstImplication;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isMultiCycleSva() const override { return m_isFollowedBy; }
     bool isOverlapped() const { return m_isOverlapped; }
+    bool isFollowedBy() const { return m_isFollowedBy; }
 };
 class AstInitArray final : public AstNodeExpr {
     // This is also used as an array value in V3Simulate/const prop.
