@@ -1022,6 +1022,7 @@ public:
 class AstConst final : public AstNodeExpr {
     // A constant
     V3Number m_num;  // Constant value
+    string m_origParamName;  // Originating parameter/localparam name, when substituted
     void initWithNumber() {
         if (m_num.isDouble()) {
             dtypeSetDouble();
@@ -1159,12 +1160,17 @@ public:
     string name() const override VL_MT_STABLE { return num().ascii(); }  // * = Value
     const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
+    const string& origParamName() const { return m_origParamName; }
+    void origParamName(const string& name) { m_origParamName = name; }
+    bool hasOrigParamName() const { return !m_origParamName.empty(); }
     uint32_t toUInt() const { return num().toUInt(); }
     int32_t toSInt() const VL_MT_SAFE { return num().toSInt(); }
     uint64_t toUQuad() const { return num().toUQuad(); }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* samep) const override {
         const AstConst* const sp = VN_DBG_AS(samep, Const);
         return num().isCaseEq(sp->num());
