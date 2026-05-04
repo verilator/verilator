@@ -3226,31 +3226,23 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
     return std::make_pair(s_argc, s_argvp);
 }
 
-// MurmurHash3 finalizer (32-bit). Avalanches the input bits so a
-// monotonically-incrementing source like a clock counter produces seeds
-// that look unrelated across closely-spaced invocations.
-static uint32_t murmurmix32(uint32_t h) VL_MT_SAFE {
-    h ^= h >> 16;
-    h *= 0x85ebca6b;
-    h ^= h >> 13;
-    h *= 0xc2b2ae35;
-    h ^= h >> 16;
-    return h;
-}
-
-// Derive a non-deterministic non-zero positive seed value from the
-// high-resolution clock. Used to implement +verilator+seed+0, which means
-// "pick a random seed". Returning the actual picked value lets
-// $get_initial_random_seed() expose it so the user can reproduce the run
-// later by passing +verilator+seed+<that_value>.
+// Derive a non-deterministic non-zero positive seed value from the system
+// clocks. Used to implement +verilator+seed+0, which means "pick a random
+// seed". Returning the actual picked value lets $get_initial_random_seed()
+// expose it so the user can reproduce the run later by passing
+// +verilator+seed+<that_value>.
 static uint64_t pickRandomSeed() VL_MT_SAFE {
     using namespace std::chrono;
-    const uint64_t t = static_cast<uint64_t>(
-        high_resolution_clock::now().time_since_epoch().count());
-    const uint32_t folded = static_cast<uint32_t>(t >> 32) ^ static_cast<uint32_t>(t);
-    const uint32_t mixed = murmurmix32(folded);
+    // Combine steady_clock and system_clock to get entropy even when one has
+    // low resolution (e.g. high_resolution_clock aliases system_clock on MSVC).
+    const uint64_t t1 = static_cast<uint64_t>(
+        duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count());
+    const uint64_t t2 = static_cast<uint64_t>(
+        duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
+    // vl_splitmix64 avalanches bits so closely-spaced timestamps look unrelated.
+    uint64_t seed = vl_splitmix64(t1 ^ t2).second;
     // Keep within [1, INT_MAX] so it round-trips through the int seed field.
-    uint64_t seed = static_cast<uint64_t>(mixed) & 0x7fffffffULL;
+    seed &= 0x7fffffffULL;
     if (seed == 0) seed = 1;
     return seed;
 }
