@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 from pathlib import Path
+import re
 
 import vltest_bootstrap
 
@@ -16,14 +17,14 @@ test.scenarios('vlt')
 test.lint(v_flags=["--dump-tree"])
 
 tree_filenames = test.glob_some(test.obj_dir + "/*.tree")
-tree_files = [Path(filename) for filename in tree_filenames]
+tree_text = "\n".join(Path(filename).read_text(encoding="utf8") for filename in tree_filenames)
+orig_param_names = sorted(set(re.findall(r"\bCONST\b.*\borigParamName=([A-Za-z_][A-Za-z0-9_$]*)",
+                                         tree_text)))
 
-test.file_grep_any(tree_filenames, r"CONST .*origParamName=S_IDLE")
-test.file_grep_any(tree_filenames, r"CONST .*origParamName=S_EXEC")
+out_filename = test.obj_dir + "/" + test.name + ".out"
+with open(out_filename, "w", encoding="utf8") as fh:
+    for name in orig_param_names:
+        fh.write(f"origParamName: {name}\n")
 
-clean_tree = Path(test.glob_one(test.obj_dir + "/V*_clean.tree"))
-clean_text = clean_tree.read_text(encoding="utf8")
-
-assert "origParamName=S_FETCH" not in clean_text
-
+test.files_identical(out_filename, test.golden_filename)
 test.passes()
