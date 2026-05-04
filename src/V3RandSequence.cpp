@@ -153,14 +153,18 @@ class RandSequenceVisitor final : public VNVisitor {
         UASSERT_OBJ(it != m_prodFuncps.end(), nodep, "No production function made");
         AstNodeFTask* const prodFuncp = it->second;
         FileLine* const fl = nodep->fileline();
-        AstArg* const argsp
-            = new AstArg{fl, breakVarp->name(), new AstVarRef{fl, breakVarp, VAccess::WRITE}};
+        // V3Width already ran before V3RandSequence, so VarRefs we create here
+        // need dtype set explicitly, V3Broken later checks width == widthMin.
+        AstVarRef* const breakRefp = new AstVarRef{fl, breakVarp, VAccess::WRITE};
+        breakRefp->dtypeFrom(breakVarp);
+        AstArg* const argsp = new AstArg{fl, breakVarp->name(), breakRefp};
         for (const auto& itr : m_localizeNames) {
             const AstVar* const lvarp = itr.second;
             AstVar* const iovarp = m_localizeRemaps[lvarp];
             UASSERT_OBJ(iovarp, nodep, "No new port variable for local variable" << lvarp);
-            argsp->addNext(new AstArg{nodep->fileline(), "__Vrsarg_" + lvarp->name(),
-                                      new AstVarRef{fl, iovarp, VAccess::READWRITE}});
+            AstVarRef* const refp = new AstVarRef{fl, iovarp, VAccess::READWRITE};
+            refp->dtypeFrom(iovarp);
+            argsp->addNext(new AstArg{nodep->fileline(), "__Vrsarg_" + lvarp->name(), refp});
         }
         if (userArgsp) argsp->addNext(userArgsp);
         AstNode* const newp
