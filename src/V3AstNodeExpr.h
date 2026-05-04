@@ -1675,8 +1675,8 @@ class AstImplication final : public AstNodeExpr {
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
 private:
-    const bool m_isOverlapped;
-    const bool m_isFollowedBy;
+    const bool m_isOverlapped;  // True if overlapped form (|-> / #-#)
+    const bool m_isFollowedBy;  // True if followed-by (#-# / #=#) rather than implication
 
 public:
     AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped,
@@ -1688,19 +1688,13 @@ public:
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstImplication;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    // LCOV_EXCL_START -- AstImplication is lowered before any AST CSE pass; this
-    // override exists so the default (== returns true) cannot conflate variants.
-    bool sameNode(const AstNode* samep) const override {
-        const AstImplication* const asamep = VN_DBG_AS(samep, Implication);
-        return m_isOverlapped == asamep->m_isOverlapped
-               && m_isFollowedBy == asamep->m_isFollowedBy;
-    }
-    // LCOV_EXCL_STOP
     bool isMultiCycleSva() const override { return m_isFollowedBy; }
     bool isOverlapped() const { return m_isOverlapped; }
     bool isFollowedBy() const { return m_isFollowedBy; }

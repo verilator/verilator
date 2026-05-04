@@ -666,6 +666,42 @@ module Vt_debug_emitv_t;
         else begin
         end
     end
+    begin : assert_prop_overlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_overlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin
