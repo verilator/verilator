@@ -10,7 +10,7 @@ module t;
 
   localparam MAX = 3;
   integer cyc = 1;
-  
+
   assert property (s_eventually ##1 1);
   assert property (@(negedge clk) s_eventually ##1 1);
 
