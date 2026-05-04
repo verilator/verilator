@@ -184,7 +184,7 @@ Verilog, put in our.v:
 
    initial begin
      $display("%x + %x = %x", 1, 2, add(1,2));
-   endtask
+   end
 
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
 prototype to call this function:
