@@ -1271,8 +1271,7 @@ class ParamProcessor final {
             }
         }
         // Typedef-aliased paramed class (e.g., typedef C#(7) my_c; my_c::b).
-        if (AstClassRefDType* const crp
-            = classRefDTypeOfNode(classRefp->classOrPackageNodep())) {
+        if (AstClassRefDType* const crp = classRefDTypeOfNode(classRefp->classOrPackageNodep())) {
             if (AstClass* const srcClassp = crp->classp()) {
                 if (srcClassp->hasGParam() && crp->paramsp()) {
                     classRefDeparam(crp, srcClassp);
@@ -1289,7 +1288,8 @@ class ParamProcessor final {
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
         } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
-            // Param/lparam member: substitute its constant value so the caller's constify can succeed.
+            // Param/lparam member: substitute its constant value so the caller's constify can
+            // succeed.
             if (varp->isParam() && varp->valuep()) {
                 if (!VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
                 if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
@@ -2198,8 +2198,7 @@ public:
         // Resolve `class::member` Dots in pin values so constify sees Consts.
         // Gate the full walk on a short-circuiting exists() (most cells have no class Dots);
         // collect-then-reverse-iterate so inner Dots resolve before outer.
-        if (nodep->exists(
-                [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
+        if (nodep->exists([](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
             std::vector<AstDot*> dotps;
             nodep->foreach([&](AstDot* dotp) { dotps.push_back(dotp); });
             for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
