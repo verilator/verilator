@@ -9,11 +9,20 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+int x = 0;
+
 module t;
 
   int a;
   int b;
   int i;
+  int arr[5];
+
+  // function with side effects
+  function int foo();
+    x += 1;
+    return 1;
+  endfunction;
 
   // verilator lint_off ASSIGNEQEXPR
   initial begin
@@ -89,6 +98,22 @@ module t;
     `checkd(a, 18);
     `checkd(i, 18);
     `checkd(b, 7);
+
+    arr[0] = 3;
+    arr[0] += 4;
+    `checkd(arr[0], 7);
+
+    arr[foo()] = 1;
+    `checkd(x, 1);
+    arr[foo()] += 2;
+    `checkd(arr[1], 3);
+    `checkd(x, 2);
+
+    arr[foo() + 1] = 6;
+    `checkd(x, 3);
+    arr[foo() + 1] -= 5;
+    `checkd(arr[2], 1);
+    `checkd(x, 4);
 
     $write("*-* All Finished *-*\n");
     $finish;

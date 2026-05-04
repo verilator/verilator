@@ -401,7 +401,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, true};
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
-            = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
+            = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findIntDType()};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         varp->usedLoopIdx(true);
         beginp->addStmtsp(varp);

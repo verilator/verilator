@@ -16,7 +16,7 @@ class Holder;
 endclass
 
 module t;
-  iface i();
+  iface i ();
 
   initial begin
     automatic Holder h = new;

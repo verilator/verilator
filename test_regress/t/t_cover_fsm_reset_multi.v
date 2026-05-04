@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage reset pseudo-vertex reuse test
+// DESCRIPTION: Verilator: FSM coverage multi-reset assignment warning test
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -32,10 +32,9 @@ module t (
     end
   end
 
-  // This reset block is intentionally non-idiomatic. The detector only collects
-  // reset arcs from top-level direct assignments in the reset branch, so two
-  // sequential assignments are the narrowest way to force multiple reset arcs
-  // into one FSM graph and exercise reuse of the synthetic ANY reset source.
+  // This reset block is intentionally non-idiomatic. Multiple assignments to
+  // the FSM state variable in the reset branch should warn and be ignored for
+  // reset-arc extraction rather than inventing multiple reset transitions.
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;

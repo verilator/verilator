@@ -695,6 +695,8 @@ class EmitCTrace final : public EmitCFunc {
 
         // Type
         puts(", VerilatedTraceSigType::");
+        UASSERT_OBJ(nodep->dtypep()->basicp()->keyword() != VBasicDTypeKwd::UNKNOWN, nodep,
+                    "DType is unknown");
         puts(nodep->dtypep()->basicp()->keyword().traceSigType());
 
         // Array range

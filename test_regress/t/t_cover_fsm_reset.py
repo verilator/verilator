@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage reset policy test
+# DESCRIPTION: Verilator: FSM coverage grouped reset semantics test
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -13,20 +13,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage'])
+test.compile(verilator_flags2=['--cc --coverage-fsm'])
 
 test.execute()
-
-test.run(cmd=[
-    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--include-reset-arcs",
-    test.obj_dir + "/coverage.dat",
-],
-         logfile=test.obj_dir + "/summary.log",
-         tee=False,
-         verilator_run=True)
-
-test.files_identical(test.obj_dir + "/summary.log", "t/" + test.name + "_summary.out")
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
@@ -36,6 +25,17 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    "--include-reset-arcs",
+    "--annotate",
+    test.obj_dir + "/annotated-incl",
+    test.obj_dir + "/coverage.dat",
+],
+         verilator_run=True)
+
 test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
+test.files_identical(test.obj_dir + "/annotated-incl/" + test.name + ".v",
+                     "t/" + test.name + "_incl.out")
 
 test.passes()

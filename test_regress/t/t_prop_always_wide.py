@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM enum transition bad-value test
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,9 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# When an enum-backed FSM assigns a constant that is not one of the declared
-# enum items, FSM coverage should warn and skip the unsupported edge rather
-# than turning optional coverage into a hard compile failure.
-test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
+test.compile()
+
+test.execute()
 
 test.passes()

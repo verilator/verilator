@@ -25,7 +25,7 @@ interface iface;
 endinterface
 
 module t;
-  iface i();
+  iface i ();
 
   initial begin
     i.local_write();

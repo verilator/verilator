@@ -13,6 +13,6 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=["--binary"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

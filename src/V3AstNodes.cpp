@@ -2003,6 +2003,21 @@ bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
     }
     return !lp && !rp;
 }
+bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
+    if (m_packed != sp->m_packed) return false;
+    if (fileline()->tokenNum() != sp->fileline()->tokenNum()) return false;
+    const AstMemberDType* lp = membersp();
+    const AstMemberDType* rp = sp->membersp();
+    while (lp && rp) {
+        if (lp->name() != rp->name()) return false;
+        if (lp->width() != rp->width()) return false;
+        if (!lp->subDTypep()->similarDType(rp->subDTypep())) return false;
+        lp = VN_CAST(lp->nextp(), MemberDType);
+        rp = VN_CAST(rp->nextp(), MemberDType);
+    }
+    return !lp && !rp;
+}
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " ["s + this->userType().ascii() + "]";
@@ -3557,4 +3572,31 @@ const char* AstXor::widthMismatch() const VL_MT_STABLE {
 const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
+}
+void AstWith::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (m_restricted) {
+        str << " [RESTRICTED={";
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) str << ",";
+            str << n;
+            first = false;
+        }
+        str << "}]";
+    }
+}
+void AstWith::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "restricted", m_restricted);
+    if (m_restricted) {
+        std::string joined;
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) joined += ",";
+            joined += n;
+            first = false;
+        }
+        dumpJsonStr(str, "restrictedNames", joined);
+    }
+    dumpJsonGen(str);
 }

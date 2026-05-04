@@ -10,36 +10,38 @@
 // in V3Randomize ("Invalid reference?").
 
 package tlogy_m_pkg;
-class v_cfg;
-  static int num_of_ds = 0;
-endclass
+  class v_cfg;
+    static int num_of_ds = 0;
+  endclass
 
-class tlogy_m;
-  v_cfg v[$];
-endclass
+  class tlogy_m;
+    v_cfg v[$];
+  endclass
 endpackage
 
 package s_pkg;
-import tlogy_m_pkg::*;
-class s_cfg;
-  tlogy_m t_m;
-  bit t_mode;
-  int a_d_idx;
+  import tlogy_m_pkg::*;
+  class s_cfg;
+    tlogy_m t_m;
+    bit t_mode;
+    int a_d_idx;
 
-  function void setup_h_iw_cfg();
-    if (t_mode) begin
-      foreach (t_m.v[i]) begin
-        if (std::randomize(a_d_idx) with {
-               if (t_m.v[i].num_of_ds > 1) {
-                 a_d_idx inside {[0:(t_m.v[i].num_of_ds - 1)]};
-                 a_d_idx != 0;
-               }
-             } == 0)
-          $stop;
+    function void setup_h_iw_cfg();
+      if (t_mode) begin
+        foreach (t_m.v[i]) begin
+          if (std::randomize(
+                  a_d_idx
+              ) with {
+                if (t_m.v[i].num_of_ds > 1) {
+                  a_d_idx inside {[0 : (t_m.v[i].num_of_ds - 1)]};
+                  a_d_idx != 0;
+                }
+              } == 0)
+            $stop;
+        end
       end
-    end
-  endfunction
-endclass
+    endfunction
+  endclass
 endpackage
 
 module t;
