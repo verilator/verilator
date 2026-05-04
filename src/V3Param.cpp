@@ -82,16 +82,6 @@ static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
     return dtp ? VN_CAST(dtp->skipRefOrNullp(), ClassRefDType) : nullptr;
 }
 
-static bool isParamedClassRef(AstNode* nodep) {
-    AstClassOrPackageRef* const refp = VN_CAST(nodep, ClassOrPackageRef);
-    if (!refp) return false;
-    if (refp->paramsp()) return true;
-    AstNode* const classp = refp->classOrPackageNodep();
-    if (VN_IS(classp, ParamTypeDType)) return true;
-    AstClassRefDType* const crp = classRefDTypeOfNode(classp);
-    return crp && crp->paramsp();
-}
-
 //######################################################################
 // Hierarchical block and parameter db (modules without parameters are also handled)
 
@@ -2205,9 +2195,11 @@ public:
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
-        // Resolve `paramedclass::lparam` Dots in pin values so constify sees Consts.
-        // Collect-then-reverse-iterate so inner Dots resolve before outer.
-        {
+        // Resolve `class::member` Dots in pin values so constify sees Consts.
+        // Gate the full walk on a short-circuiting exists() (most cells have no class Dots);
+        // collect-then-reverse-iterate so inner Dots resolve before outer.
+        if (nodep->exists(
+                [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
             std::vector<AstDot*> dotps;
             nodep->foreach([&](AstDot* dotp) { dotps.push_back(dotp); });
             for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
@@ -2801,9 +2793,10 @@ class ParamVisitor final : public VNVisitor {
                     }
                 });
                 if (hasUnresolvedLparamXRef) return;
-                // Defer if value contains class::member where the class needs parameterizing.
+                // Defer if value contains a class::member Dot. By V3Param time the only
+                // surviving such Dots are paramed-class refs awaiting linkDotParamed.
                 if (nodep->valuep()->exists(
-                        [](AstDot* dotp) { return isParamedClassRef(dotp->lhsp()); })) {
+                        [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
                     s_deferredParamVars.push_back(nodep);
                     return;
                 }
@@ -3305,6 +3298,7 @@ public:
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
+    s_deferredParamVars.clear();  // Defensive: drop any stragglers from a prior invocation
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
