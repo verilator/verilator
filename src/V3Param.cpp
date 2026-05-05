@@ -3256,6 +3256,14 @@ public:
         // appropriate sibling, so we use those local typedefs as ground truth
         // to disambiguate which sibling each REFDTYPE should point at.
         netlistp->foreach([&](AstNodeModule* ownerModp) {
+            // Skip bare/generic templates: their bodies are not authoritative
+            // for any particular specialization, and their self-typedefs
+            // (e.g. `typedef cls#(P,Q) this_type;` inside a parameterized
+            // class) would otherwise be treated as ground truth and cause
+            // REFDTYPEs in the body to be retargeted at the bare template.
+            if (AstClass* const ownerClassp = VN_CAST(ownerModp, Class)) {
+                if (ownerClassp->hasGParam()) return;
+            }
             // Build map: origName-of-target-class -> unique resolved sibling
             // clone in this module/class. If two locally-resolved typedefs
             // point at different specializations of the same template, mark
@@ -3269,6 +3277,10 @@ public:
                 AstClassRefDType* const crdtp = VN_CAST(tdp->subDTypep(), ClassRefDType);
                 if (!crdtp || !crdtp->classp()) continue;
                 AstClass* const targetp = crdtp->classp();
+                // A typedef pointing at a still-generic template is a
+                // forward declaration / unresolved reference, not a useful
+                // ground truth for which specialization to bind to.
+                if (targetp->hasGParam()) continue;
                 const std::string origName
                     = targetp->origName().empty() ? targetp->name() : targetp->origName();
                 const auto pair = origNameToClone.emplace(origName, targetp);
@@ -3276,6 +3288,11 @@ public:
             }
             if (origNameToClone.empty()) return;
             ownerModp->foreach([&](AstRefDType* refp) {
+                // foreach() recurses into nested AstNodeModules (e.g. classes
+                // inside a package). Each such inner module is iterated as
+                // its own ownerModp, so skip REFDTYPEs that don't live
+                // directly in the current ownerModp's body.
+                if (V3LinkDotIfaceCapture::findOwnerModule(refp) != ownerModp) return;
                 AstTypedef* const oldTdp = refp->typedefp();
                 if (!oldTdp) return;
                 AstClass* const oldOwnerp
