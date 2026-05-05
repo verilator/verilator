@@ -6836,15 +6836,15 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
                         { $$ = new AstSGotoRep{$<fl>2, $1, $3}; }
-        //                      // IEEE: goto_repetition (range form -- unsupported)
+        //                      // IEEE: goto_repetition (range form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
-                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
+                        { $$ = new AstSGotoRep{$<fl>2, $1, $3, $5}; }
         //                      // IEEE: nonconsecutive_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ']'
                         { $$ = new AstSNonConsRep{$<fl>2, $1, $3}; }
-        //                      // IEEE: nonconsecutive_repetition (range form -- unsupported)
+        //                      // IEEE: nonconsecutive_repetition (range form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ':' constExpr ']'
-                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [= range nonconsecutive repetition"); DEL($3); DEL($5); }
+                        { $$ = new AstSNonConsRep{$<fl>2, $1, $3, $5}; }
         //                      // All boolean_abbrev forms are now handled above:
         //                      // [*N], [*N:M], [+], [*] via AstSConsRep
         //                      // [->N], [->M:N] via AstSGotoRep
@@ -6932,8 +6932,8 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
 
 //      boolean_abbrev -- all forms now handled directly in sexpr rule:
 //                      // IEEE: consecutive_repetition -- [*N], [*N:M], [+], [*] via AstSConsRep
-//                      // IEEE: goto_repetition -- [->N] via AstSGotoRep, [->M:N] unsupported
-//                      // IEEE: nonconsecutive_repetition -- [=N] via AstSNonConsRep, [=M:N] unsupported
+//                      // IEEE: goto_repetition -- [->N], [->M:N] via AstSGotoRep
+//                      // IEEE: nonconsecutive_repetition -- [=N], [=M:N] via AstSNonConsRep
 
 //************************************************
 // Covergroup

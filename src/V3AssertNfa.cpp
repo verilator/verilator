@@ -531,11 +531,15 @@ class SvaNfaBuilder final {
     BuildResult buildGotoRep(AstSGotoRep* repp, SvaStateVertex* entryVtxp) {
         FileLine* const flp = repp->fileline();
         AstNodeExpr* const exprp = repp->exprp();
-        const int n = getConstInt(repp->countp());
-        if (n <= 0) return BuildResult::fail();
+        const int minN = getConstInt(repp->countp());
+        if (minN <= 0) return BuildResult::fail();
+        const bool hasMax = repp->maxCountp() != nullptr;
+        const int maxN = hasMax ? getConstInt(repp->maxCountp()) : minN;
+        UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
 
         SvaStateVertex* currentp = entryVtxp;
-        for (int i = 0; i < n; ++i) {
+        // Build minN match-wait chains to reach the first accept point.
+        for (int i = 0; i < minN; ++i) {
             SvaStateVertex* const waitVtxp = scopedCreateVertex();
             // Edge (not Link) for all iterations: IEEE expansion ##1 before each
             // match. A Link at i==0 was wrong -- it allowed same-cycle matching
@@ -547,9 +551,29 @@ class SvaNfaBuilder final {
             guardedLink(waitVtxp, matchVtxp, sampled(exprp->cloneTreePure(false)), flp);
             currentp = matchVtxp;
         }
-        currentp->m_isUnbounded = true;  // [->N] waits unboundedly
+        if (!hasMax) {
+            currentp->m_isUnbounded = true;  // [->N] waits unboundedly
+            m_inUnboundedScope = true;
+            return {currentp, nullptr, {}};
+        }
+        // [->M:N]: every match in [M..N] feeds a shared merge vertex so the
+        // property can accept at any count in that range. Mirrors
+        // buildConsRep's range fan-out.
+        SvaStateVertex* const mergeVtxp = scopedCreateVertex();
+        guardedLink(currentp, mergeVtxp, flp);  // accept at match_M
+        for (int i = minN; i < maxN; ++i) {
+            SvaStateVertex* const waitVtxp = scopedCreateVertex();
+            guardedEdge(currentp, waitVtxp, flp);
+            AstNodeExpr* const notExprp = new AstNot{flp, exprp->cloneTreePure(false)};
+            guardedEdge(waitVtxp, waitVtxp, sampled(notExprp), flp);
+            SvaStateVertex* const matchVtxp = scopedCreateVertex();
+            guardedLink(waitVtxp, matchVtxp, sampled(exprp->cloneTreePure(false)), flp);
+            guardedLink(matchVtxp, mergeVtxp, flp);  // accept at match_(i+1)
+            currentp = matchVtxp;
+        }
+        mergeVtxp->m_isUnbounded = true;  // [->M:N] still has unbounded waits between matches
         m_inUnboundedScope = true;
-        return {currentp, nullptr, {}};
+        return {mergeVtxp, nullptr, {}};
     }
 
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.

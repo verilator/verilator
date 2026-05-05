@@ -2304,15 +2304,27 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstSGotoRep final : public AstNodeExpr {
-    // Goto repetition: expr [-> count]
+    // Goto repetition: expr [-> count] or [-> count : maxCount]
     // IEEE 1800-2023 16.9.2
+    // op1 := exprp -- the repeated expression
+    // op2 := countp -- min repetition count (M); positive constant after V3Width
+    // op3 := maxCountp -- max repetition count (N); nullptr for exact [->N]
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := countp : AstNodeExpr
+    // @astgen op3 := maxCountp : Optional[AstNodeExpr]
 public:
-    explicit AstSGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+    // Exact [->N]
+    AstSGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
         : ASTGEN_SUPER_SGotoRep(fl) {
         this->exprp(exprp);
         this->countp(countp);
+    }
+    // Range [->M:N]
+    AstSGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp)
+        : ASTGEN_SUPER_SGotoRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+        this->maxCountp(maxCountp);
     }
     ASTGEN_MEMBERS_AstSGotoRep;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2321,15 +2333,27 @@ public:
     bool isMultiCycleSva() const override { return true; }
 };
 class AstSNonConsRep final : public AstNodeExpr {
-    // Nonconsecutive repetition: expr [= count]
+    // Nonconsecutive repetition: expr [= count] or [= count : maxCount]
     // IEEE 1800-2023 16.9.2
+    // op1 := exprp -- the repeated expression
+    // op2 := countp -- min repetition count (M); positive constant after V3Width
+    // op3 := maxCountp -- max repetition count (N); nullptr for exact [=N]
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := countp : AstNodeExpr
+    // @astgen op3 := maxCountp : Optional[AstNodeExpr]
 public:
-    explicit AstSNonConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
+    // Exact [=N]
+    AstSNonConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
         : ASTGEN_SUPER_SNonConsRep(fl) {
         this->exprp(exprp);
         this->countp(countp);
+    }
+    // Range [=M:N]
+    AstSNonConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp)
+        : ASTGEN_SUPER_SNonConsRep(fl) {
+        this->exprp(exprp);
+        this->countp(countp);
+        this->maxCountp(maxCountp);
     }
     ASTGEN_MEMBERS_AstSNonConsRep;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }

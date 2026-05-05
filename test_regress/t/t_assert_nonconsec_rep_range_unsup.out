@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_nonconsec_rep_range_unsup.v:16:27: Unsupported: [=M:N] nonconsecutive range repetition (IEEE 1800-2023 16.9.2)
+                                                                : ... note: In instance 't'
+   16 |     @(posedge clk) a |-> b[=1:2];
+      |                           ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
