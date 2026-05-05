@@ -1277,6 +1277,7 @@ class AstNetlist final : public AstNode {
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
     std::vector<AstVar*> m_deferredParamVarps;
+
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
