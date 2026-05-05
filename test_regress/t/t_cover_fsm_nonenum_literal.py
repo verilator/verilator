@@ -60,7 +60,7 @@ assert any(
     for text in tree_texts)
 
 assert any(
-    "COVEROTHERDECL" in text and " fv=t.duplicate_expr_first_state" in text and " ft=2'h0" in text
+    "COVEROTHERDECL" in text and " fv=t.duplicate_expr_first_state" in text and " ft=IDLE" in text
     for text in tree_texts)
 assert any(
     "COVEROTHERDECL" in text and " fv=t.duplicate_expr_first_state" in text and " ft=BUSY" in text

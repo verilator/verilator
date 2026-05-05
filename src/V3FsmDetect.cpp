@@ -303,9 +303,15 @@ struct FsmCaseCandidate final {
     AstVarScope* stateVscp = nullptr;  // FSM state variable associated with that candidate.
 };
 
+struct StateConstLabel final {
+    string text;
+    bool fromParam = false;
+    size_t stateIndex = 0;
+};
+
 struct FsmStateSpace final {
     std::vector<std::pair<string, int>> states;  // User label and encoded value.
-    std::unordered_map<int, string> labels;  // Encoded value to user label.
+    std::unordered_map<int, StateConstLabel> labels;  // Encoded value to user label.
     string stateVarName;  // Pretty tracked FSM state variable name.
     bool enumBacked = false;  // Whether states came from an enum declaration.
 };
@@ -762,11 +768,10 @@ class FsmDetectVisitor final : public VNVisitor {
         return nullptr;
     }
 
-    // Prefer enum labels in reports; fall back to synthetic labels for forced
-    // non-enum FSMs so coverage points remain human-readable.
-    static string labelForValue(const std::unordered_map<int, string>& labels, int value) {
-        const std::unordered_map<int, string>::const_iterator it = labels.find(value);
-        return it == labels.end() ? ("S" + cvtToStr(value)) : it->second;
+    // Prefer user labels in reports. Forced non-enum FSMs prepopulate synthetic
+    // labels, so all emitted arcs should already have a known label here.
+    static string labelForValue(const std::unordered_map<int, StateConstLabel>& labels, int value) {
+        return labels.at(value).text;
     }
 
     // The extractor only models constant-valued state transitions, and by the
@@ -805,29 +810,16 @@ class FsmDetectVisitor final : public VNVisitor {
         return false;
     }
 
-    static bool isSimpleIdentifier(const string& text) {
-        if (text.empty()) return false;
-        const unsigned char first = text[0];
-        return std::isalpha(first) || first == '_';
+    static StateConstLabel stateLabelForConst(AstConst* constp) {
+        if (constp->hasOrigParamName()) {
+            return StateConstLabel{AstNode::prettyName(constp->origParamName()), true, 0};
+        }
+        return StateConstLabel{constp->name(), false, 0};
     }
 
-    static string sourceIdentifierLabel(FileLine* flp) {
-        const string source = flp->source();
-        const int firstColumn = flp->firstColumn();
-
-        const size_t start
-            = std::min(static_cast<size_t>(std::max(firstColumn, 1) - 1), source.size());
-        constexpr const char* identifierChars
-            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
-        const size_t end = source.find_first_not_of(identifierChars, start);
-        const string label = source.substr(start, end - start);
-        return isSimpleIdentifier(label) ? label : "";
-    }
-
-    static string stateLabelForConst(AstConst* constp) {
-        const string sourceLabel = sourceIdentifierLabel(constp->fileline());
-        if (!sourceLabel.empty()) return sourceLabel;
-        return constp->name();
+    static void updateStateLabel(FsmStateSpace& stateSpace, int value,
+                                 const StateConstLabel& label) {
+        stateSpace.states.at(stateSpace.labels.at(value).stateIndex).first = label.text;
     }
 
     // Strict Phase 1 matcher for register processes: either a bare state
@@ -901,22 +893,29 @@ class FsmDetectVisitor final : public VNVisitor {
             return false;
         }
         AstConst* const constp = VN_AS(condp, Const);
-        const string label = stateLabelForConst(constp);
+        const StateConstLabel label = stateLabelForConst(constp);
         const auto labelIt = stateSpace.labels.find(value);
         if (labelIt != stateSpace.labels.end()) {
-            if (labelIt->second != label && isSimpleIdentifier(labelIt->second)
-                && isSimpleIdentifier(label)) {
+            StateConstLabel& existingLabel = labelIt->second;
+            if (existingLabel.text != label.text && existingLabel.fromParam && label.fromParam) {
                 condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
                                         "state variable "
                                             + stateSpace.stateVarName
                                             + " with multiple labels for the same value "
-                                            + cvtToStr(value) + ": " + labelIt->second + " and "
-                                            + label);
+                                            + cvtToStr(value) + ": " + existingLabel.text + " and "
+                                            + label.text);
                 return false;
             }
+            if (!existingLabel.fromParam && label.fromParam) {
+                existingLabel.text = label.text;
+                existingLabel.fromParam = label.fromParam;
+                updateStateLabel(stateSpace, value, label);
+            }
         } else {
-            stateSpace.states.emplace_back(label, value);
-            stateSpace.labels.emplace(value, label);
+            StateConstLabel storedLabel = label;
+            storedLabel.stateIndex = stateSpace.states.size();
+            stateSpace.states.emplace_back(label.text, value);
+            stateSpace.labels.emplace(value, storedLabel);
         }
         return true;
     }
@@ -945,8 +944,9 @@ class FsmDetectVisitor final : public VNVisitor {
                  itemp = VN_AS(itemp->nextp(), EnumItem)) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const int value = constp->toSInt();
+                const size_t stateIndex = stateSpace.states.size();
                 stateSpace.states.emplace_back(itemp->name(), value);
-                stateSpace.labels.emplace(value, itemp->name());
+                stateSpace.labels.emplace(value, StateConstLabel{itemp->name(), false, stateIndex});
             }
             return stateSpace.states.size() >= 2;
         }
@@ -957,8 +957,10 @@ class FsmDetectVisitor final : public VNVisitor {
             const unsigned stateCount = 1U << width;
             for (unsigned value = 0; value < stateCount; ++value) {
                 const string label = "S" + cvtToStr(value);
+                const size_t stateIndex = stateSpace.states.size();
                 stateSpace.states.emplace_back(label, static_cast<int>(value));
-                stateSpace.labels.emplace(static_cast<int>(value), label);
+                stateSpace.labels.emplace(static_cast<int>(value),
+                                          StateConstLabel{label, false, stateIndex});
             }
             return true;
         }
