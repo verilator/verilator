@@ -19,7 +19,7 @@ module fsm_case_next_other_assign_ok (
   } state_t;
 
   logic [1:0] aux;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   initial aux = 2'b00;
@@ -36,7 +36,8 @@ module fsm_case_next_other_assign_ok (
   always_ff @(posedge clk) begin
     if (rst) begin
       state_q <= S0;
-    end else begin
+    end
+    else begin
       state_q <= state_d;
     end
   end
@@ -53,7 +54,7 @@ module fsm_case_next_other_lhs_ok (
     S2 = 2'b10
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
   state_t other_d;
 
@@ -69,7 +70,8 @@ module fsm_case_next_other_lhs_ok (
   always_ff @(posedge clk) begin
     if (rst) begin
       state_q <= S0;
-    end else begin
+    end
+    else begin
       state_q <= state_d;
     end
   end
@@ -83,9 +85,15 @@ module t (
   integer cyc;
 
   fsm_case_next_other_assign_ok case_next_other_assign_ok_u (
-      .clk(clk), .rst(rst), .start(start));
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
   fsm_case_next_other_lhs_ok case_next_other_lhs_ok_u (
-      .clk(clk), .rst(rst), .start(start));
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
 
   initial begin
     rst = 1'b1;

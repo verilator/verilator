@@ -161,12 +161,6 @@ class LinkJumpVisitor final : public VNVisitor {
         if (AstNode* const refp = nodep->op4p()) addPrefixToBlocksRecurse(prefix, refp);
         if (AstNode* const refp = nodep->nextp()) addPrefixToBlocksRecurse(prefix, refp);
     }
-    static AstNode* getMemberp(const AstNodeModule* const nodep, const std::string& name) {
-        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (itemp->name() == name) return itemp;
-        }
-        return nullptr;
-    }
     bool existsBlockAbove(const std::string& name) const {
         for (const AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
             if (stackp->name() == name) return true;
@@ -175,14 +169,11 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     static AstStmtExpr* getQueuePushProcessSelfp(AstVarRef* const queueRefp) {
         // Constructs queue.push_back(std::process::self()) statement
-        FileLine* const fl = queueRefp->fileline();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-        AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
-        AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp};
-        processSelfp->classOrPackagep(processClassp);
+        FileLine* const flp = queueRefp->fileline();
         return new AstStmtExpr{
-            fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
+            flp,
+            new AstMethodCall{flp, queueRefp, "push_back",
+                              new AstArg{flp, "", v3Global.rootp()->stdPackageProcessSelfp(flp)}}};
     }
     static AstStmtExpr* getQueuePushProcessSelfp(FileLine* const fl, AstVar* const processQueuep) {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
@@ -192,13 +183,18 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     static AstStmtExpr* getQueueKillStmtp(FileLine* const fl, AstVar* const processQueuep) {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
-        AstTaskRef* const killQueueCall
-            = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
-                             new AstArg{fl, "", queueRefp}};
-        killQueueCall->classOrPackagep(processClassp);
+        AstTaskRef* killQueueCall = nullptr;
+        for (AstNode* itemp = v3Global.rootp()->stdPackageClassp()->stmtsp(); itemp;
+             itemp = itemp->nextp()) {
+            if (itemp->name() == "killQueue") {
+                killQueueCall
+                    = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
+                break;
+            }
+        }
+        UASSERT(killQueueCall, "Should be found");
+        killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageClassp());
         return new AstStmtExpr{fl, killQueueCall};
     }
     static void prependStmtsp(AstNodeFTask* const nodep, AstNode* const stmtp) {
@@ -238,12 +234,11 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     AstVar* getProcessQueuep(AstNode* const nodep, FileLine* const fl) {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstClass* const processClassp
-            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         AstVar* const processQueuep = new AstVar{
             fl, VVarType::VAR, m_queueNames.get(nodep->name()), VFlagChildDType{},
-            new AstQueueDType{fl, VFlagChildDType{},
-                              new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
+            new AstQueueDType{
+                fl, VFlagChildDType{},
+                new AstClassRefDType{fl, v3Global.rootp()->stdPackageClassp(), nullptr}, nullptr}};
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
         processQueuep->processQueue(true);
         topPkgp->addStmtsp(processQueuep);

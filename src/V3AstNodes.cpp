@@ -2170,6 +2170,16 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
 }
+void AstImplication::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isOverlapped()) str << " [overlapped]";
+    if (isFollowedBy()) str << " [followed-by]";
+}
+void AstImplication::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isOverlapped);
+    dumpJsonBoolFuncIf(str, isFollowedBy);
+}
 void AstInitArray::dumpInitList(std::ostream& str) const {
     int n = 0;
     const auto& mapr = map();
@@ -2701,6 +2711,18 @@ AstVarScope* AstNetlist::stlFirstIterationp() {
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
     return vscp;
+}
+AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
+    UASSERT(v3Global.rootp()->stdPackageClassp(), "'std' should be imported");
+    AstFunc* selfp = nullptr;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageClassp()->stmtsp(); itemp;
+         itemp = itemp->nextp()) {
+        if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
+    }
+    UASSERT(selfp, "'std::process::self' should be found");
+    AstFuncRef* const processSelfp = new AstFuncRef{flp, selfp};
+    processSelfp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+    return processSelfp;
 }
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);

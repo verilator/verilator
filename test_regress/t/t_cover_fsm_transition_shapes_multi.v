@@ -19,7 +19,7 @@ module fsm_caseitem_varrhs_bad (
 
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t other_d;
 
@@ -59,7 +59,7 @@ module fsm_caseitem_then_nonconst_bad (
 
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t other_d;
 
@@ -100,7 +100,7 @@ module fsm_caseitem_else_nonconst_bad (
 
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t other_d;
 
@@ -143,7 +143,7 @@ module fsm_oneblock_then_bad (
   logic rst;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin
@@ -186,7 +186,7 @@ module fsm_oneblock_else_bad (
   logic rst;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin
@@ -229,7 +229,7 @@ module fsm_combo_sel_expr_bad (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   initial begin
@@ -256,7 +256,8 @@ module fsm_combo_sel_expr_bad (
   always_ff @(posedge clk) begin
     if (rst) begin
       state_q <= S0;
-    end else begin
+    end
+    else begin
       state_q <= state_d;
     end
   end
@@ -265,11 +266,15 @@ endmodule
 module fsm_normalized_if_noelse_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   initial begin
@@ -286,7 +291,9 @@ module fsm_normalized_if_noelse_bad (
   always_comb begin
     state_d = state_q;
     case (state_q)
-      S0: if (start) ; else state_d = S1;
+      S0:
+      if (start);
+      else state_d = S1;
       default: state_d = S0;
     endcase
   end
@@ -299,10 +306,14 @@ endmodule
 module fsm_normalized_if_then_nonconst_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
   state_t tmp_b;
@@ -337,10 +348,14 @@ endmodule
 module fsm_normalized_if_else_nonconst_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
   state_t tmp_b;
@@ -375,10 +390,14 @@ endmodule
 module fsm_normalized_if_temp_mismatch_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
   state_t tmp_b;
@@ -411,10 +430,14 @@ endmodule
 module fsm_normalized_if_then_state_else_other_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
 
@@ -446,11 +469,15 @@ endmodule
 module fsm_normalized_if_same_temp_nofollow_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   logic aux;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
 
@@ -470,7 +497,8 @@ module fsm_normalized_if_same_temp_nofollow_bad (
         if (sel) begin
           tmp_a = S1;
           aux = 1'b1;
-        end else begin
+        end
+        else begin
           tmp_a = S2;
           aux = 1'b0;
         end
@@ -486,11 +514,15 @@ endmodule
 module fsm_normalized_if_follow_nonvar_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   logic aux;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
 
@@ -510,7 +542,8 @@ module fsm_normalized_if_follow_nonvar_bad (
         if (sel) begin
           tmp_a = S1;
           aux = 1'b1;
-        end else begin
+        end
+        else begin
           tmp_a = S2;
           aux = 1'b0;
         end
@@ -528,11 +561,15 @@ endmodule
 module fsm_normalized_if_follow_wrongfrom_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   logic aux;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
   state_t other_d;
@@ -553,7 +590,8 @@ module fsm_normalized_if_follow_wrongfrom_bad (
         if (sel) begin
           tmp_a = S1;
           aux = 1'b1;
-        end else begin
+        end
+        else begin
           tmp_a = S2;
           aux = 1'b0;
         end
@@ -571,11 +609,15 @@ endmodule
 module fsm_normalized_if_follow_wronglhs_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic sel;
   logic aux;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t tmp_a;
   state_t other_d;
@@ -596,7 +638,8 @@ module fsm_normalized_if_follow_wronglhs_bad (
         if (sel) begin
           tmp_a = S1;
           aux = 1'b1;
-        end else begin
+        end
+        else begin
           tmp_a = S2;
           aux = 1'b0;
         end
@@ -614,11 +657,15 @@ endmodule
 module fsm_case_next_wrongrhs_bad (
     input logic clk
 );
-  typedef enum logic [1:0] { S0 = 2'd0, S1 = 2'd1, S2 = 2'd2 } state_t;
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
   state_t other_d;
 
@@ -672,7 +719,8 @@ module fsm_forced_wide_bad (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= 31'd0;
-    end else begin
+    end
+    else begin
       case (state)
         31'd0: state <= 31'd1;
         31'd1: state <= 31'd2;
@@ -696,7 +744,7 @@ module fsm_reset_commit_mismatch_bad (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t other_q;
   state_t state_d;
 
@@ -745,7 +793,7 @@ module fsm_reset_then_bad (
   logic rst;
   logic sel;
   integer cyc;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin

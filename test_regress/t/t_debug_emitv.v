@@ -338,6 +338,10 @@ module t (/*AUTOARG*/
 
   assert_prop_always: assert property (@(posedge clk) always [0:3] in);
   assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
+  assert_prop_overlap_impl: assert property (@(posedge clk) in |-> in);
+  assert_prop_nonoverlap_impl: assert property (@(posedge clk) in |=> in);
+  assert_prop_overlap_fb: assert property (@(posedge clk) in #-# in);
+  assert_prop_nonoverlap_fb: assert property (@(posedge clk) in #=# in);
 
 
   int a;

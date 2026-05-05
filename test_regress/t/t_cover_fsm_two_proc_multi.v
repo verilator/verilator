@@ -14,12 +14,12 @@ module fsm_basic (
 );
   typedef enum logic [1:0] {
     S_IDLE = 2'd0,
-    S_RUN  = 2'd1,
+    S_RUN = 2'd1,
     S_DONE = 2'd2,
-    S_ERR  = 2'd3
+    S_ERR = 2'd3
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   always_comb begin
@@ -124,7 +124,7 @@ module fsm_reset_policy (
     S1 = 1'b1
   } state_t;
 
-  state_t state_incl_q /*verilator fsm_reset_arc*/;
+  state_t state_incl_q  /*verilator fsm_reset_arc*/;
   state_t state_incl_d;
   state_t state_excl_q;
   state_t state_excl_d;
@@ -364,17 +364,56 @@ module t (
   logic bit_done;
   logic sel;
 
-  fsm_basic basic_u (.clk(clk), .rst(rst), .start(start));
-  fsm_three_block three_block_u (.clk(clk), .rst(rst), .start(start));
-  fsm_mealy mealy_u (.clk(clk), .rst(rst), .start(start), .bit_done(bit_done));
-  fsm_reset_policy reset_u (.clk(clk), .rst(rst));
+  fsm_basic basic_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_three_block three_block_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_mealy mealy_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start),
+      .bit_done(bit_done)
+  );
+  fsm_reset_policy reset_u (
+      .clk(clk),
+      .rst(rst)
+  );
   fsm_nextstate_sel_off nextstate_sel_off_u (.clk(clk));
-  fsm_nextstate_sel_ok nextstate_sel_ok_u (.clk(clk), .rst(rst), .start(start));
-  fsm_ternary ternary_u (.clk(clk), .rst(rst), .sel(sel));
-  fsm_plain_always plain_always_u (.clk(clk), .rst(rst), .go(start));
-  fsm_plain_always_list plain_always_list_u (.clk(clk), .rst(rst), .go(start));
-  fsm_caseassigns_off caseassigns_off_u (.clk(clk), .rst(rst), .go(start));
-  fsm_seqmix_off seqmix_off_u (.clk(clk), .rst(rst));
+  fsm_nextstate_sel_ok nextstate_sel_ok_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_ternary ternary_u (
+      .clk(clk),
+      .rst(rst),
+      .sel(sel)
+  );
+  fsm_plain_always plain_always_u (
+      .clk(clk),
+      .rst(rst),
+      .go(start)
+  );
+  fsm_plain_always_list plain_always_list_u (
+      .clk(clk),
+      .rst(rst),
+      .go(start)
+  );
+  fsm_caseassigns_off caseassigns_off_u (
+      .clk(clk),
+      .rst(rst),
+      .go(start)
+  );
+  fsm_seqmix_off seqmix_off_u (
+      .clk(clk),
+      .rst(rst)
+  );
 
   initial begin
     cyc = 0;

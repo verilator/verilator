@@ -12,7 +12,7 @@
 %Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:126:15: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_reset_u.state_q': assigned value 3 is not present in the declared enum
   126 |       state_q <= 2'd3;
       |               ^~
-%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:149:7: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_source_u.state_q': case item value 3 is not present in the declared enum
-  149 |       2'd3: state_d = S0;
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:150:7: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_source_u.state_q': case item value 3 is not present in the declared enum
+  150 |       2'd3: state_d = S0;
       |       ^~~~
 %Error: Exiting due to

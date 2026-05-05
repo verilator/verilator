@@ -1263,6 +1263,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_constPoolp : AstConstPool  // Reference to constant pool, for faster lookup
     // @astgen ptr := m_dollarUnitPkgp : Optional[AstPackage]  // $unit
     // @astgen ptr := m_stdPackagep : Optional[AstPackage]  // SystemVerilog std package
+    // @astgen ptr := m_stdPackageClassp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_evalp : Optional[AstCFunc]  // The '_eval' function
     // @astgen ptr := m_evalNbap : Optional[AstCFunc]  // The '_eval__nba' function
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
@@ -1304,6 +1305,9 @@ public:
     void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
+    void stdPackageClassp(AstClass* const classp) { m_stdPackageClassp = classp; }
+    AstClass* stdPackageClassp() const { return m_stdPackageClassp; }
+    AstFuncRef* stdPackageProcessSelfp(FileLine*) const;
     AstTopScope* topScopep() const { return m_topScopep; }
     void createTopScope(AstScope* scopep);
     VTimescale timeunit() const { return m_timeunit; }
