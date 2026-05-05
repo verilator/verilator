@@ -1842,17 +1842,9 @@ const string* AstConst::origParamNamep() const {
 }
 
 void AstConst::origParamName(const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
     AstConstOrigParamNameMap& names = astConstOrigParamNames();
-    if (name.empty()) {
-        names.erase(this);
-    } else {
-        names[this] = name;
-    }
-}
-
-bool AstConst::hasOrigParamName() const {
-    const AstConstOrigParamNameMap& names = astConstOrigParamNames();
-    return names.find(this) != names.end();
+    names[this] = name;
 }
 
 void AstConst::cloneRelink() {
