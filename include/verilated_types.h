@@ -517,9 +517,38 @@ public:
         if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
         return *this;
     }
+
+    template <class T_Other>
+    VlQueue& operator=(const VlQueue<T_Other>& rhs) {
+        this->m_deque.clear();
+
+        constexpr size_t otherSize = sizeof(T_Other);
+        constexpr size_t sizeOfThis = sizeof(T_Value);
+
+        T_Other temp = 0;
+        size_t byteCount = otherSize - 1;
+
+        for (auto val : rhs) {
+            // Shift the byte into the correct position and merge
+            temp |= (static_cast<T_Other>(val) << (byteCount * 8 * otherSize));
+            byteCount--;
+
+            // If we've collected enough bytes for the target type, push and reset
+            if (byteCount == -1) {
+                this->push_back(temp);
+                temp = 0;
+                byteCount = otherSize - 1;
+            }
+        }
+
+        // Push any remaining leftover bytes (upper bits will remain zero-padded)
+        if (byteCount > 0) { this->push_back(temp); }
+
+        return *this;
+    }
+
     VlQueue& operator=(QData rhs) {
         m_deque.clear();  // Empty the queue first
-
         // If this is a queue of bytes (unsigned char)
         if constexpr (sizeof(T_Value) == 1) {
             // Push all 8 bytes of the 64-bit integer, MSB first (Big-Endian)
@@ -532,8 +561,13 @@ public:
             m_deque.push_back(static_cast<T_Value>((rhs >> 8) & 0xFF));
             m_deque.push_back(static_cast<T_Value>(rhs & 0xFF));
         } else {
-            // If it is a queue of larger types (like ints), just push the whole number
-            m_deque.push_back(static_cast<T_Value>(rhs));
+            int numQData = 8 / sizeof(T_Value);
+            int debugtemp = 0;
+
+            for (int ii = 0; ii < numQData; ii++) {
+                debugtemp = (ii * sizeof(T_Value) * 8);
+                m_deque.push_back(static_cast<T_Value>(rhs >> (ii * sizeof(T_Value) * 8)));
+            }
         }
         return *this;
     }
@@ -544,20 +578,13 @@ public:
         return *this;
     }
 
-    VlQueue& operator=(SData rhs) {
-        m_deque.clear();  // Empty the queue first
-        if constexpr (sizeof(T_Value) == 1) {
-            // Push all 2 bytes of the 32-bit integer, MSB first (Big-Endian)
-            m_deque.push_back(static_cast<T_Value>((rhs >> 8) & 0xFF));
-            m_deque.push_back(static_cast<T_Value>(rhs & 0xFF));
-        } else {
-            // If it is a queue of larger types (like ints), just push the whole number
-            m_deque.push_back(static_cast<T_Value>(rhs));
-        }
-        return *this;
-    }
-
     operator IData() const { return getFirst32Bits(); }
+
+    operator QData() const { return getFirst64Bits(); }
+
+    bool operator!=(QData rhs) const { return this->getFirst64Bits() != rhs; }
+
+    bool operator!=(IData rhs) const { return this->getFirst32Bits() != rhs; }
 
     friend bool operator!=(QData lhs, const VlQueue& rhs) { return getFirst64Bits() == lhs; }
 
@@ -584,8 +611,25 @@ public:
     friend QData operator|(QData lhs, const VlQueue& rhs) { return rhs.getFirst64Bits() | lhs; }
 
     VlQueue operator>>(IData shift_amt) const {
-        IData val = this->operator IData();
-        val >>= shift_amt;
+        //TODO make this work with more than just vlqueue<cdata>
+        IData val = 0;
+        if (shift_amt < 32) {
+            val = this->operator IData();
+            val >>= shift_amt;
+        } else {
+            int shiftLeftOver = shift_amt % 32;
+
+            if (sizeof(T_Value) == 1) {
+                int offset = this->size() * sizeof(T_Value) / 4 - shift_amt / 32 - 1;
+                val |= static_cast<IData>(m_deque[offset * 4 + 3]);
+                val |= static_cast<IData>(m_deque[offset * 4 + 2]) << 8;
+                val |= static_cast<IData>(m_deque[offset * 4 + 1]) << 16;
+                val |= static_cast<IData>(m_deque[offset * 4]) << 24;
+            } else if (sizeof(T_Value) == 4) {
+                int offset = this->size() * sizeof(T_Value) / 4 - shift_amt / 32;
+                val |= static_cast<IData>(m_deque[offset]);
+            }
+        }
 
         VlQueue result;
         result = val;
