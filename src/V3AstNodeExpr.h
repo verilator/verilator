@@ -1022,7 +1022,6 @@ public:
 class AstConst final : public AstNodeExpr {
     // A constant
     V3Number m_num;  // Constant value
-    string m_origParamName;  // Originating parameter/localparam name, when substituted
     void initWithNumber() {
         if (m_num.isDouble()) {
             dtypeSetDouble();
@@ -1039,6 +1038,7 @@ class AstConst final : public AstNodeExpr {
     }
 
 public:
+    ~AstConst() override;
     AstConst(FileLine* fl, const V3Number& num)
         : ASTGEN_SUPER_Const(fl)
         , m_num{num} {
@@ -1160,9 +1160,9 @@ public:
     string name() const override VL_MT_STABLE { return num().ascii(); }  // * = Value
     const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
-    const string& origParamName() const { return m_origParamName; }
-    void origParamName(const string& name) { m_origParamName = name; }
-    bool hasOrigParamName() const { return !m_origParamName.empty(); }
+    const string* origParamNamep() const;
+    void origParamName(const string& name);
+    bool hasOrigParamName() const;
     uint32_t toUInt() const { return num().toUInt(); }
     int32_t toSInt() const VL_MT_SAFE { return num().toSInt(); }
     uint64_t toUQuad() const { return num().toUQuad(); }
@@ -1175,7 +1175,7 @@ public:
         const AstConst* const sp = VN_DBG_AS(samep, Const);
         return num().isCaseEq(sp->num());
     }
-    void cloneRelink() override { m_num.nodep(this); }
+    void cloneRelink() override;
     const char* broken() const override {
         BROKEN_RTN(m_num.nodep() && m_num.nodep() != this);
         return nullptr;
