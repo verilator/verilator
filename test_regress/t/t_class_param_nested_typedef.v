@@ -1,16 +1,15 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Regression test capturing a parameterized-class typedef-chain bug.
-// This SystemVerilog is well-formed and other simulators accept it; once
-// the bug is fixed, this test should be converted into a passing
-// `test.compile()` test.
+// Regression test for a parameterized-class typedef-chain bug.
 //
-// Trigger: a parameterized class M re-typedefs a nested type that comes from
-// a *different* parameterized class D (M::beat_t = M::driver_t::beat_t).
-// When M is instantiated with two distinct parameter values, Verilator
-// resolves a M::beat_t local at one call site to the *other* specialization
-// of beat, producing a spurious type-mismatch on a method argument that
-// matches by construction.
+// A parameterized class M re-typedefs a nested type from another
+// parameterized class D (M::beat_t = M::driver_t::beat_t). When M and D
+// are each instantiated with two distinct parameter values, the type of
+// an M::beat_t local must resolve to the matching specialization of beat
+// for the enclosing M instantiation. Previously the second sibling clone
+// stomped the typedefp binding on the first sibling's REFDTYPE, producing
+// a spurious "Function Argument expects ... beat__I5, got ... beat__I6"
+// error.
 //
 // Reduced from axi_test::axi_rand_master usage in pulp-platform/axi
 // (tb_axi_xbar with NumMasters>1 or NumSlaves>1).

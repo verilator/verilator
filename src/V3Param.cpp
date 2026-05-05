@@ -3244,6 +3244,55 @@ public:
 
         const ParamClassRefDTypeRelinkVisitor paramClassDTypeRelinkVisitor{netlistp};
 
+        // Post-cloning fixup: re-resolve REFDTYPE.typedefp/refDTypep using the
+        // containing class's own resolved typedef chain.
+        //
+        // The eager retargeting in deepCloneModule blindly retargets every
+        // matching captured entry to whichever sibling clone is being created,
+        // so when a referenced parameterized class is cloned more than once
+        // (e.g. driver -> driver__I5 + driver__I6), the second sibling stomps
+        // the bindings made by the first. By this point each owner class's
+        // own typedefs have been correctly bound (via classRefDeparam) to the
+        // appropriate sibling, so we use those local typedefs as ground truth
+        // to disambiguate which sibling each REFDTYPE should point at.
+        netlistp->foreach([&](AstClass* ownerClassp) {
+            std::unordered_map<std::string, AstClass*> origNameToClone;
+            for (AstNode* sp = ownerClassp->stmtsp(); sp; sp = sp->nextp()) {
+                AstTypedef* const tdp = VN_CAST(sp, Typedef);
+                if (!tdp) continue;
+                AstClassRefDType* const crdtp = VN_CAST(tdp->subDTypep(), ClassRefDType);
+                if (!crdtp || !crdtp->classp()) continue;
+                AstClass* const targetp = crdtp->classp();
+                if (targetp->hasGParam()) continue;
+                const std::string origName
+                    = targetp->origName().empty() ? targetp->name() : targetp->origName();
+                origNameToClone[origName] = targetp;
+            }
+            if (origNameToClone.empty()) return;
+            ownerClassp->foreach([&](AstRefDType* refp) {
+                AstTypedef* const oldTdp = refp->typedefp();
+                if (!oldTdp) return;
+                AstClass* const oldOwnerp
+                    = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
+                if (!oldOwnerp) return;
+                const std::string origName
+                    = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
+                const auto it = origNameToClone.find(origName);
+                if (it == origNameToClone.end()) return;
+                AstClass* const correctClassp = it->second;
+                if (correctClassp == oldOwnerp) return;
+                AstTypedef* const newTdp
+                    = V3LinkDotIfaceCapture::findTypedefInModule(correctClassp, refp->name());
+                if (!newTdp) return;
+                refp->typedefp(newTdp);
+                refp->classOrPackagep(correctClassp);
+                if (newTdp->subDTypep()) refp->refDTypep(newTdp->subDTypep());
+                UINFO(9, "post-param REFDTYPE re-resolve: " << refp << " from "
+                                                            << oldOwnerp->name() << " to "
+                                                            << correctClassp->name());
+            });
+        });
+
         relinkDots();
 
         resortNetlistModules(netlistp);
