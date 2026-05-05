@@ -543,6 +543,13 @@ AstNetlist::AstNetlist()
     addMiscsp(m_constPoolp);
 }
 
+const char* AstNetlist::broken() const {
+    for (const AstVar* const varp : m_deferredParamVarps) {
+        BROKEN_RTN(!varp || !varp->brokeExists());
+    }
+    return nullptr;
+}
+
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
     const VTimescale prec = v3Global.opt.timeComputePrec(value);
     if (prec.isNone() || prec == m_timeprecision) {

@@ -1275,9 +1275,15 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
+    // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
+    std::vector<AstVar*> m_deferredParamVarps;
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
+    const char* broken() const override;
+    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.push_back(varp); }
+    const std::vector<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
+    void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     string name() const override VL_MT_STABLE { return "$root"; }

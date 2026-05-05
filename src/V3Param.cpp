@@ -72,9 +72,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Params whose constify was deferred until V3LinkDot resolves their class::member RHS.
-static std::vector<AstVar*> s_deferredParamVars;
-
 // Walk a class-typed node through typedef/RefDType chains to its ClassRefDType, or null.
 static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
     while (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) nodep = tdp->subDTypep();
@@ -2196,13 +2193,13 @@ public:
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
         // Resolve `class::member` Dots in pin values so constify sees Consts.
-        // Gate the full walk on a short-circuiting exists() (most cells have no class Dots);
-        // collect-then-reverse-iterate so inner Dots resolve before outer.
-        if (nodep->exists([](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
-            std::vector<AstDot*> dotps;
-            nodep->foreach([&](AstDot* dotp) { dotps.push_back(dotp); });
-            for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
-        }
+        // Single-pass: filter-collect class-scoped Dots, then reverse-iterate so inner
+        // Dots resolve before outer (vector stays empty for cells with no class Dots).
+        std::vector<AstDot*> dotps;
+        nodep->foreach([&](AstDot* dotp) {
+            if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
+        });
+        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
@@ -2796,7 +2793,7 @@ class ParamVisitor final : public VNVisitor {
                 // surviving such Dots are paramed-class refs awaiting linkDotParamed.
                 if (nodep->valuep()->exists(
                         [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
-                    s_deferredParamVars.push_back(nodep);
+                    v3Global.rootp()->pushDeferredParamVarp(nodep);
                     return;
                 }
                 V3Const::constifyParamsEdit(nodep);
@@ -3297,7 +3294,7 @@ public:
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
-    s_deferredParamVars.clear();  // Defensive: drop any stragglers from a prior invocation
+    rootp->clearDeferredParamVarps();  // Defensive: drop any stragglers from a prior invocation
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
@@ -3307,10 +3304,10 @@ void V3Param::param(AstNetlist* rootp) {
     V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 3);
 }
 
-void V3Param::finalizeDeferredParams() {
+void V3Param::finalizeDeferredParams(AstNetlist* rootp) {
     // Constify params whose Dot RHS was resolved by V3LinkDot::linkDotParamed.
-    for (AstVar* const varp : s_deferredParamVars) {
+    for (AstVar* const varp : rootp->deferredParamVarps()) {
         if (varp->valuep() && !VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
     }
-    s_deferredParamVars.clear();
+    rootp->clearDeferredParamVarps();
 }
