@@ -1,0 +1,6 @@
+%Error: t/t_class_param_nested_typedef_bad.v:43:11: Function Argument expects a CLASSREFDTYPE 'beat__I5', got CLASSREFDTYPE 'beat__I6'
+                                                  : ... note: In instance 't'
+   43 |       drv.send(b);
+      |           ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
