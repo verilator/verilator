@@ -1162,7 +1162,6 @@ public:
     V3Number& num() { return m_num; }  // * = Value
     const string* origParamNamep() const;
     void origParamName(const string& name);
-    bool hasOrigParamName() const;
     uint32_t toUInt() const { return num().toUInt(); }
     int32_t toSInt() const VL_MT_SAFE { return num().toSInt(); }
     uint64_t toUQuad() const { return num().toUQuad(); }
