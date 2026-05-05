@@ -770,7 +770,8 @@ class FsmDetectVisitor final : public VNVisitor {
 
     // Prefer user labels in reports. Forced non-enum FSMs prepopulate synthetic
     // labels, so all emitted arcs should already have a known label here.
-    static string labelForValue(const std::unordered_map<int, StateConstLabel>& labels, int value) {
+    static string labelForValue(const std::unordered_map<int, StateConstLabel>& labels,
+                                int value) {
         return labels.at(value).text;
     }
 
@@ -790,22 +791,24 @@ class FsmDetectVisitor final : public VNVisitor {
         return ConstValueStatus::OK;
     }
 
-    // Enum-backed FSMs should only transition to values that were interned as
-    // known states. If a constant transition targets some other encoding, warn
-    // and skip FSM instrumentation for that edge rather than silently dropping
-    // it or turning optional coverage into a hard compile failure.
-    static bool validateKnownStateValue(AstNode* nodep, const FsmStateSpace& stateSpace,
-                                        int value) {
+    // Enum-backed FSMs should only use values that were interned as known states.
+    // If a constant transition references some other encoding, warn and skip FSM
+    // instrumentation for that edge rather than silently dropping it or turning
+    // optional coverage into a hard compile failure.
+    static bool validateKnownStateValue(AstNode* nodep, const FsmStateSpace& stateSpace, int value,
+                                        const string& role) {
         if (stateSpace.labels.find(value) != stateSpace.labels.end()) return true;
         if (stateSpace.enumBacked) {
+            const string enumRole = role == "source" ? "case item value" : "assigned value";
             nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on enum state variable "
-                                        + stateSpace.stateVarName + ": assigned value "
+                                        + stateSpace.stateVarName + ": " + enumRole + " "
                                         + cvtToStr(value)
                                         + " is not present in the declared enum");
             return false;
         }
         nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum state variable "
-                                    + stateSpace.stateVarName + ": target value " + cvtToStr(value)
+                                    + stateSpace.stateVarName + ": " + role + " value "
+                                    + cvtToStr(value)
                                     + " is not present in the inferred state space");
         return false;
     }
@@ -946,7 +949,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 const int value = constp->toSInt();
                 const size_t stateIndex = stateSpace.states.size();
                 stateSpace.states.emplace_back(itemp->name(), value);
-                stateSpace.labels.emplace(value, StateConstLabel{itemp->name(), false, stateIndex});
+                stateSpace.labels.emplace(value,
+                                          StateConstLabel{itemp->name(), false, stateIndex});
             }
             return stateSpace.states.size() >= 2;
         }
@@ -999,6 +1003,7 @@ class FsmDetectVisitor final : public VNVisitor {
                  condp = VN_AS(condp->nextp(), NodeExpr)) {
                 int value = 0;
                 if (constValueStatus(condp, value) != ConstValueStatus::OK) continue;
+                if (!validateKnownStateValue(condp, stateSpace, value, "source")) return true;
                 froms.emplace_back(labelForValue(stateSpace.labels, value), value);
             }
             if (froms.empty()) return false;
@@ -1008,7 +1013,7 @@ class FsmDetectVisitor final : public VNVisitor {
             int toValue = 0;
             const ConstValueStatus status = constValueStatus(assp->rhsp(), toValue);
             if (status == ConstValueStatus::OK) {
-                if (!validateKnownStateValue(assp, stateSpace, toValue)) return true;
+                if (!validateKnownStateValue(assp, stateSpace, toValue, "target")) return true;
                 for (const std::pair<string, int>& from : froms) {
                     graph.addArc(from.second, toValue, false, false, itemp->isDefault(),
                                  assp->fileline());
@@ -1021,8 +1026,10 @@ class FsmDetectVisitor final : public VNVisitor {
         int elseValue = 0;
         if (directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
             || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
-            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, thenValue)) return true;
-            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, elseValue)) return true;
+            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, thenValue, "target"))
+                return true;
+            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, elseValue, "target"))
+                return true;
             for (const int branchValue : {thenValue, elseValue}) {
                 for (const std::pair<string, int>& from : froms) {
                     graph.addArc(from.second, branchValue, false, true, itemp->isDefault(),
@@ -1040,7 +1047,8 @@ class FsmDetectVisitor final : public VNVisitor {
     static void addResetArcs(FsmGraph& graph, const std::vector<FsmResetArcDesc>& resetArcs,
                              const FsmStateSpace& stateSpace) {
         for (const FsmResetArcDesc& resetArc : resetArcs) {
-            if (!validateKnownStateValue(resetArc.nodep(), stateSpace, resetArc.toValue()))
+            if (!validateKnownStateValue(resetArc.nodep(), stateSpace, resetArc.toValue(),
+                                         "target"))
                 continue;
             graph.addArc(0, resetArc.toValue(), true, false, false, resetArc.nodep()->fileline());
         }

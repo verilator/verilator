@@ -18,8 +18,8 @@ test.lint(v_flags=["--dump-tree"])
 
 tree_filenames = test.glob_some(test.obj_dir + "/*.tree")
 tree_text = "\n".join(Path(filename).read_text(encoding="utf8") for filename in tree_filenames)
-orig_param_names = sorted(set(re.findall(r"\bCONST\b.*\borigParamName=([A-Za-z_][A-Za-z0-9_$]*)",
-                                         tree_text)))
+orig_param_names = sorted(
+    set(re.findall(r"\bCONST\b.*\borigParamName=([A-Za-z_][A-Za-z0-9_$]*)", tree_text)))
 
 out_filename = test.obj_dir + "/" + test.name + ".out"
 with open(out_filename, "w", encoding="utf8") as fh:
