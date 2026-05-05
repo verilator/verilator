@@ -654,6 +654,24 @@ public:
     }
 };
 
+// Split deassign concat LHS before converting to release internals.
+static void splitDeassign(AstDeassign* nodep) {
+    AstConcat* const concatp = VN_CAST(nodep->lhsp(), Concat);
+    if (!concatp) return;
+
+    FileLine* const flp = nodep->fileline();
+    AstDeassign* const newLp = new AstDeassign{flp, concatp->lhsp()->unlinkFrBack()};
+    AstDeassign* const newRp = new AstDeassign{flp, concatp->rhsp()->unlinkFrBack()};
+    AstNodeExpr* const conp = concatp->unlinkFrBack();
+    nodep->replaceWith(newLp);
+    newLp->addNextHere(newRp);
+    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    VL_DO_DANGLING(conp->deleteTree(), conp);
+
+    splitDeassign(newLp);
+    splitDeassign(newRp);
+}
+
 //######################################################################
 // ForceDiscoveryVisitor - Discover force statements
 
@@ -1227,12 +1245,15 @@ void V3Force::assignAll(AstNetlist* nodep) {
     nodep->foreach([&](AstAssignCont* assignp) { assignContps.push_back(assignp); });
     for (AstAssignCont* const assignp : assignContps) {
         assignp->replaceWith(new AstAssignForce{assignp->fileline(),
-                                                assignp->lhsp()->cloneTreePure(true),
-                                                assignp->rhsp()->cloneTreePure(true)});
+                                                assignp->lhsp()->unlinkFrBack(),
+                                                assignp->rhsp()->unlinkFrBack()});
         assignp->deleteTree();
     }
 
     std::vector<AstDeassign*> deassignps;
+    nodep->foreach([&](AstDeassign* deassignp) { deassignps.push_back(deassignp); });
+    for (AstDeassign* const deassignp : deassignps) splitDeassign(deassignp);
+    deassignps.clear();
     nodep->foreach([&](AstDeassign* deassignp) { deassignps.push_back(deassignp); });
     for (AstDeassign* const deassignp : deassignps) {
         deassignp->replaceWith(

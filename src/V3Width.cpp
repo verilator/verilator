@@ -6306,6 +6306,12 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
         checkForceReleaseLhs(nodep, nodep->lhsp());
     }
+    void visit(AstDeassign* nodep) override {
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+        UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "L-value is untyped");
+        UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "L-value width is unsized");
+        checkForceReleaseLhs(nodep, nodep->lhsp());
+    }
 
     static bool isFormatNonNumericArg(const AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();

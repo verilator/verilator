@@ -169,6 +169,13 @@ class LinkLValueVisitor final : public VNVisitor {
         m_setForcedByCode = true;
         iterateAndNextNull(nodep->lhsp());
     }
+    void visit(AstDeassign* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        VL_RESTORER(m_setContinuously);
+        m_setRefLvalue = VAccess::WRITE;
+        m_setContinuously = false;
+        iterateAndNextNull(nodep->lhsp());
+    }
     void visit(AstFireEvent* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         m_setRefLvalue = VAccess::WRITE;

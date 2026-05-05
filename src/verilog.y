@@ -3595,7 +3595,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       fexprLvalue yP_LTE cycle_delay expr ';'
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
         //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
-        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
+        |       yASSIGN variable_lvalue '=' delay_or_event_controlE expr ';'
                         { $$ = new AstAssignCont{$1, $2, $5, $4}; v3Global.setHasAssignDeassign(); }
         |       yDEASSIGN variable_lvalue ';'
                         { $$ = new AstDeassign{$1, $2}; v3Global.setHasAssignDeassign(); }
