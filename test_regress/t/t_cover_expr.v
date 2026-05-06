@@ -21,6 +21,7 @@ module t (
   integer some_int;
   integer other_int;
   logic some_bool;
+  logic [1:0] assign_lhs;
 
   wire t1 = cyc[0];
   wire t2 = cyc[1];
@@ -119,6 +120,9 @@ module t (
   always_comb begin
     if (t1 && t2) $write("");
   end
+
+  assign assign_lhs[0] = t1 && t2;
+  assign assign_lhs[1] = (t1 && t2) || (t3 && t4);
 
   logic ta, tb, tc;
   initial begin
