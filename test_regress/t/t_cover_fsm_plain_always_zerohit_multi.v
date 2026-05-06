@@ -18,7 +18,7 @@ module near_canonical_state_d_case (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   // Unsupported for the plain-always warning scan: case(state_d) is only
@@ -49,7 +49,7 @@ module selector_matches_noassign (
   } state_t;
 
   logic other;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   // The selector matches the FSM state, but the case body never assigns
@@ -76,8 +76,8 @@ module t (
   logic start;
   integer cyc;
 
-  near_canonical_state_d_case near_canonical_state_d_case_u(.*);
-  selector_matches_noassign selector_matches_noassign_u(.*);
+  near_canonical_state_d_case near_canonical_state_d_case_u (.*);
+  selector_matches_noassign selector_matches_noassign_u (.*);
 
   initial begin
     rst = 1'b1;

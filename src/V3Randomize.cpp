@@ -2331,7 +2331,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             const bool randArr = nodep->fromp()->user1();
 
             AstVar* const newVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findSigned32DType()};
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findIntDType()};
             AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
@@ -2397,7 +2397,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             // Create loop variable and header
             AstVar* const loopVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findSigned32DType()};
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findIntDType()};
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), loopVarp};
 
@@ -5263,8 +5263,8 @@ class RandomizeVisitor final : public VNVisitor {
                 if (!arrVarp->rand().isRandomizable()) continue;
                 FileLine* const fl = methodp->fileline();
                 bool wasCreated = false;
-                AstVar* const sizeVarp = createOrGetSizeVar(
-                    classp, arrVarp, fl, methodp->findSigned32DType(), wasCreated);
+                AstVar* const sizeVarp
+                    = createOrGetSizeVar(classp, arrVarp, fl, methodp->findIntDType(), wasCreated);
                 if (wasCreated) {
                     // Generate resize for dynamic arrays/queues (not assoc arrays)
                     if (!VN_IS(arrVarp->dtypep()->skipRefp(), AssocArrayDType)) {
@@ -5352,8 +5352,8 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstVar* const queueVarp = queueVarRefp->varp();
             bool wasCreated = false;
-            AstVar* const sizeVarp = createOrGetSizeVar(classp, queueVarp, fl,
-                                                        nodep->findSigned32DType(), wasCreated);
+            AstVar* const sizeVarp
+                = createOrGetSizeVar(classp, queueVarp, fl, nodep->findIntDType(), wasCreated);
             if (wasCreated) {
                 // Associative arrays have no resize(); only generate resize
                 // for dynamic arrays and queues

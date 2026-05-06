@@ -113,8 +113,11 @@ Options:
 .. option:: +verilator+seed+<value>
 
    For $random and :vlopt:`--x-initial unique <--x-initial>`, set the
-   simulation runtime random seed value. If zero or not specified picks a
-   value from the system random number generator.
+   simulation runtime random seed value. If not specified, the seed
+   defaults to 1. If specified as 0, a non-zero seed is generated at
+   startup; the picked value is exposed through ``$get_initial_random_seed``
+   so the run can be reproduced later by passing
+   ``+verilator+seed+<that_value>``.
 
 .. option:: +verilator+solver+file+<filename>
 

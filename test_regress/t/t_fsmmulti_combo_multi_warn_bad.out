@@ -1,15 +1,15 @@
-%Warning-FSMMULTI: t/t_fsmmulti_combo_multi_warn_bad.v:34:21: FSM coverage: multiple supported transition candidates found in the same combinational always block. Only the first candidate will be instrumented.
-   34 |       B0: state_b_d = B1;
+%Warning-FSMMULTI: t/t_fsmmulti_combo_multi_warn_bad.v:36:21: FSM coverage: multiple supported transition candidates found in the same combinational always block. Only the first candidate will be instrumented.
+   36 |       B0: state_b_d = B1;
       |                     ^
-                   t/t_fsmmulti_combo_multi_warn_bad.v:30:21: ... Location of first supported candidate for 't.same_u.state_a_q'
-   30 |       A0: state_a_d = A1;
+                   t/t_fsmmulti_combo_multi_warn_bad.v:32:21: ... Location of first supported candidate for 't.same_u.state_a_q'
+   32 |       A0: state_a_d = A1;
       |                     ^
                    ... For warning description see https://verilator.org/warn/FSMMULTI?v=latest
                    ... Use "/* verilator lint_off FSMMULTI */" and lint_on around source to disable this message.
-%Warning-FSMMULTI: t/t_fsmmulti_combo_multi_warn_bad.v:70:19: FSM coverage: multiple supported transition candidates found for the same FSM in combinational always blocks. Only the first candidate will be instrumented.
-   70 |       S0: state_d = S1;
+%Warning-FSMMULTI: t/t_fsmmulti_combo_multi_warn_bad.v:73:19: FSM coverage: multiple supported transition candidates found for the same FSM in combinational always blocks. Only the first candidate will be instrumented.
+   73 |       S0: state_d = S1;
       |                   ^
-                   t/t_fsmmulti_combo_multi_warn_bad.v:62:19: ... Location of first supported candidate for 't.split_u.state_q'
-   62 |       S0: state_d = S1;
+                   t/t_fsmmulti_combo_multi_warn_bad.v:65:19: ... Location of first supported candidate for 't.split_u.state_q'
+   65 |       S0: state_d = S1;
       |                   ^
 %Error: Exiting due to

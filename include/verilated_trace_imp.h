@@ -327,7 +327,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         if (!preChangeDump()) return;
     }
 
-    uint32_t* bufferp = nullptr;
     // Update time point
     emitTimeChange(timeui);
 
@@ -355,7 +354,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
 
-    const bool firstModel = m_models.empty();
     const bool newModel = m_models.insert(modelp).second;
     VerilatedContext* const contextp = modelp->contextp();
 

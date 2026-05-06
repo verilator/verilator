@@ -16,7 +16,7 @@ module unknown_then (
   } state_t;
 
   logic sel;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -43,7 +43,7 @@ module unknown_else (
   } state_t;
 
   logic sel;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -69,7 +69,7 @@ module unknown_direct (
     S1 = 2'd1
   } state_t;
 
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -97,7 +97,7 @@ module unknown_reset (
 
   logic rst;
   integer cyc;
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   initial begin
@@ -125,7 +125,8 @@ module unknown_reset (
       /* verilator lint_off ENUMVALUE */
       state_q <= 2'd3;
       /* verilator lint_on ENUMVALUE */
-    end else begin
+    end
+    else begin
       state_q <= state_d;
     end
   end
@@ -133,8 +134,8 @@ endmodule
 
 module t;
   logic clk;
-  unknown_then unknown_then_u(.clk(clk));
-  unknown_else unknown_else_u(.clk(clk));
-  unknown_direct unknown_direct_u(.clk(clk));
-  unknown_reset unknown_reset_u(.clk(clk));
+  unknown_then unknown_then_u (.clk(clk));
+  unknown_else unknown_else_u (.clk(clk));
+  unknown_direct unknown_direct_u (.clk(clk));
+  unknown_reset unknown_reset_u (.clk(clk));
 endmodule

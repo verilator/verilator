@@ -351,7 +351,7 @@ module Vt_debug_emitv_t;
             end
             force sum = 'sha;
             begin : unnamedblk1_1
-                integer signed __Vrepeat0;
+                int signed __Vrepeat0;
                 __Vrepeat0 = 'sh2;
                 while ((__Vrepeat0 > 32'h0)) begin
                     if ((sum != 'sha)) begin
@@ -666,6 +666,42 @@ module Vt_debug_emitv_t;
         else begin
         end
     end
+    begin : assert_prop_overlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_overlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin
@@ -778,7 +814,7 @@ package Vt_debug_emitv_std;
             ???? // CLASSREFDTYPE 'process'
             ;
             begin : unnamedblk1_1
-                integer signed __Vrepeat0;
+                int signed __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
                 while ((__Vrepeat0 > 32'h0)) begin
                     begin

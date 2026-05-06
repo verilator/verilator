@@ -150,6 +150,7 @@ class AssertVisitor final : public VNVisitor {
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
     AstNode* m_failsp = nullptr;  // Current fail statement
+    AstFinal* m_finalp = nullptr;  // Current final block
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -302,6 +303,14 @@ class AssertVisitor final : public VNVisitor {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
             forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
+            if (AstNodeStmt* const finalp = pexprp->finalp()) {
+                if (!m_finalp) {
+                    m_finalp = new AstFinal{m_modp->fileline(), finalp->unlinkFrBack()};
+                    m_modp->addStmtsp(m_finalp);
+                } else {
+                    m_finalp->addStmtsp(finalp->unlinkFrBack());
+                }
+            }
             VL_DO_DANGLING2(pushDeletep(pexprp), pexprp, propp);
             bodyp = forkp;
         } else {

@@ -1768,6 +1768,12 @@ LCOV_EXCL_BR_LINE``.
 The assertions ``UASSERT`` and similar are automatically excluded from
 coverage, and as such should not require exclusion meta comments.
 
+As getting to complete code coverage typically takes many passes,
+developers should please iterate coverage improvements using a personal
+machine, or a personal branch on GitHub with personal action runners,
+rather than the Verilator GitHub runners, to avoid lots of mail to watchers
+and CI queue blockage.
+
 
 Fuzzing
 -------
@@ -2261,9 +2267,6 @@ IEEE 1800-2023 31 Timing checks
 
 IEEE 1800-2023 32 SDF annotation
    No longer relevant with static timing analysis tools.
-
-IEEE 1800-2023 33 Config
-   Little industry use.
 
 
 Test Driver

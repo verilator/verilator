@@ -10,20 +10,30 @@
 // passes $bits(struct) to a width-parameterized child.  All widths
 // must use the override value, not the template default.
 
-interface inner_if #(parameter int N = 1) ();
+interface inner_if #(
+    parameter int N = 1
+) ();
   typedef logic [$clog2(N)-1:0] id_t;
 endinterface
 
-interface mid_if #(parameter int N = 1) ();
-  inner_if #(.N(N)) inner();
+interface mid_if #(
+    parameter int N = 1
+) ();
+  inner_if #(.N(N)) inner ();
   typedef inner.id_t id_t;
 endinterface
 
-module sink #(parameter int W = 1) (input logic [W-1:0] dat_i);
+module sink #(
+    parameter int W = 1
+) (
+    input logic [W-1:0] dat_i
+);
 endmodule
 
-module dut #(parameter int N = 1) ();
-  mid_if #(.N(N)) m();
+module dut #(
+    parameter int N = 1
+) ();
+  mid_if #(.N(N)) m ();
   typedef m.id_t id_t;
   typedef struct packed {
     id_t id;
@@ -31,12 +41,12 @@ module dut #(parameter int N = 1) ();
   } pkt_t;
   pkt_t pkt_var;
   localparam int W = $bits(pkt_t);
-  sink #(.W(W)) s(.dat_i(pkt_var));
+  sink #(.W(W)) s (.dat_i(pkt_var));
 endmodule
 
 module t;
   // N=8 gives id_t = 3 bits, so pkt_t = 3 + 8 = 11 bits.
-  dut #(.N(8)) u();
+  dut #(.N(8)) u ();
 
   initial begin
     if (u.W !== 11) begin

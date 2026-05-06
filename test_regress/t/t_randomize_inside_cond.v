@@ -24,11 +24,11 @@ module t;
       assert((std::randomize(x) with {x inside {40, 50}; }) == 1)
       fail_count++;
 
-    if(pass_count != 1) begin
+    if (pass_count != 1) begin
       $display("FAIL: pass_count=%0d expected 1", pass_count);
       $stop;
     end
-    if(fail_count != 1) begin
+    if (fail_count != 1) begin
       $display("FAIL: fail_count=%0d expected 1", fail_count);
       $stop;
     end
