@@ -128,9 +128,11 @@ static thread_local struct {
 template <bool isTask, typename Callable, typename... Args>
 decltype(auto) callImport(const char* const filename, int lineno, Callable&& call,
                           Args&&... args) {
-    s_fileline.m_filename = std::string{filename};
-    s_fileline.m_lineno = lineno;
-    s_fileline.m_inFuncContext = true;
+    if VL_CONSTEXPR_CXX17 (!isTask) {
+        s_fileline.m_inFuncContext = true;
+        s_fileline.m_filename = std::string{filename};
+        s_fileline.m_lineno = lineno;
+    }
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         void>::value) {
         call(std::forward<Args>(args)...);
