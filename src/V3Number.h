@@ -134,6 +134,7 @@ public:
     bool m_isNull : 1;  // True if "null" versus normal 0
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
+    bool m_hasOrigParamName : 1;  // AstConst has originating parameter-name metadata
 
     // CONSTRUCTORS
     V3NumberData()
@@ -143,7 +144,8 @@ public:
         , m_is1Step{false}
         , m_isNull{false}
         , m_fromString{false}
-        , m_autoExtend{false} {}
+        , m_autoExtend{false}
+        , m_hasOrigParamName{false} {}
 
     ~V3NumberData() { destroyStoredValue(); }
 
@@ -155,7 +157,8 @@ public:
         , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
-        , m_autoExtend{other.m_autoExtend} {
+        , m_autoExtend{other.m_autoExtend}
+        , m_hasOrigParamName{other.m_hasOrigParamName} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -184,6 +187,7 @@ public:
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
+        m_hasOrigParamName = other.m_hasOrigParamName;
         return *this;
     }
 
@@ -195,7 +199,8 @@ public:
         , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
-        , m_autoExtend{other.m_autoExtend} {
+        , m_autoExtend{other.m_autoExtend}
+        , m_hasOrigParamName{other.m_hasOrigParamName} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -225,6 +230,7 @@ public:
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
+        m_hasOrigParamName = other.m_hasOrigParamName;
         other.m_type = V3NumberDataType::UNINITIALIZED;
         return *this;
     }
@@ -648,6 +654,8 @@ public:
     bool sized() const VL_MT_SAFE { return m_data.m_sized; }
     bool autoExtend() const VL_MT_SAFE { return m_data.m_autoExtend; }
     bool isFromString() const { return m_data.m_fromString; }
+    bool hasOrigParamName() const { return m_data.m_hasOrigParamName; }
+    void hasOrigParamName(bool flag) { m_data.m_hasOrigParamName = flag; }
     V3NumberDataType dataType() const VL_MT_SAFE { return m_data.type(); }
     void dataType(V3NumberDataType newType) {
         if (dataType() == newType) return;

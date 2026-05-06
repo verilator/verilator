@@ -1160,7 +1160,7 @@ public:
     string name() const override VL_MT_STABLE { return num().ascii(); }  // * = Value
     const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
-    const string* origParamNamep() const;
+    string origParamName() const;
     void origParamName(const string& name);
     uint32_t toUInt() const { return num().toUInt(); }
     int32_t toSInt() const VL_MT_SAFE { return num().toSInt(); }

@@ -31,7 +31,6 @@
 #include <iterator>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
@@ -542,6 +541,22 @@ AstNetlist::AstNetlist()
     , m_constPoolp{new AstConstPool{fileline()}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
+}
+
+string AstNetlist::astConstOrigParamName(const AstConst* nodep) const {
+    if (!nodep->num().hasOrigParamName()) return "";
+    const auto it = m_constOrigParamNames.find(nodep);
+    UASSERT_OBJ(it != m_constOrigParamNames.end(), nodep, "Missing originating parameter name");
+    return it->second;
+}
+
+void AstNetlist::astConstOrigParamName(const AstConst* nodep, const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
+    m_constOrigParamNames[nodep] = name;
+}
+
+void AstNetlist::astConstOrigParamNameErase(const AstConst* nodep) {
+    m_constOrigParamNames.erase(nodep);
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
@@ -1820,48 +1835,43 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
-namespace {
-// Sparse metadata for constants produced from named parameters/localparams.  Keep this off
-// AstConst itself, as AstConst is a very common node and only a small fraction carry this name.
-using AstConstOrigParamNameMap = std::unordered_map<const AstConst*, string>;
-
-AstConstOrigParamNameMap& astConstOrigParamNames() {
-    // Keep alive through global teardown, as AstConst destructors erase from this table.
-    static AstConstOrigParamNameMap* const s_namesp = new AstConstOrigParamNameMap;
-    return *s_namesp;
+AstConst::~AstConst() {
+    // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
+    // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit is
+    // set, erase the entry before this AstConst address can be reused by a different node.
+    if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
 }
-}  // namespace
 
-// Remove side-table metadata before the AstConst address can be reused by another node.
-AstConst::~AstConst() { astConstOrigParamNames().erase(this); }
-
-const string* AstConst::origParamNamep() const {
-    const AstConstOrigParamNameMap& names = astConstOrigParamNames();
-    const auto it = names.find(this);
-    return it == names.end() ? nullptr : &it->second;
+string AstConst::origParamName() const {
+    if (!m_num.hasOrigParamName()) return "";
+    return v3Global.rootp()->astConstOrigParamName(this);
 }
 
 void AstConst::origParamName(const string& name) {
     UASSERT(!name.empty(), "Empty originating parameter name");
-    AstConstOrigParamNameMap& names = astConstOrigParamNames();
-    names[this] = name;
+    v3Global.rootp()->astConstOrigParamName(this, name);
+    m_num.hasOrigParamName(true);
 }
 
 void AstConst::cloneRelink() {
-    // Preserve parameter-origin metadata across AST clones; V3Number's back-pointer still needs
-    // relinking to the new AstConst instance.
+    // The cloned V3Number may have copied the "has metadata" bit, but the side-table key still
+    // needs to be this new AstConst. Re-stamp only when the original node actually has a name.
     if (const AstConst* const oldp = clonep()) {
-        if (const string* const namep = oldp->origParamNamep()) origParamName(*namep);
+        const string name = oldp->origParamName();
+        m_num.hasOrigParamName(false);
+        if (!name.empty()) origParamName(name);
     }
     m_num.nodep(this);
 }
 
 void AstConst::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
-    if (const string* const namep = origParamNamep()) str << " origParamName=" << *namep;
+    const string name = origParamName();
+    if (!name.empty()) str << " origParamName=" << name;
 }
 void AstConst::dumpJson(std::ostream& str) const {
-    if (const string* const namep = origParamNamep()) dumpJsonStr(str, "origParamName", *namep);
+    const string name = origParamName();
+    if (!name.empty()) dumpJsonStr(str, "origParamName", name);
     dumpJsonGen(str);
 }
 
