@@ -18,6 +18,11 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 package pkg;
 
   class beat #(parameter int IW = 8);
@@ -26,7 +31,10 @@ package pkg;
 
   class driver #(parameter int IW = 8);
     typedef beat #(.IW(IW)) beat_t;
+    // Verify the beat handed to us has the IW we were specialized for.
     task send(input beat_t b);
+      `checkd($bits(b.id), IW);
+      `checkd(b.id, IW'(IW));
     endtask
   endclass
 
@@ -39,6 +47,11 @@ package pkg;
 
     task run();
       automatic beat_t b = new;
+      // The width of beat_t.id must follow this master's IW. If the
+      // typedefp on the M::beat_t REFDTYPE is stomped by a sibling clone,
+      // $bits here will not match IW (or compilation will fail outright).
+      `checkd($bits(b.id), IW);
+      b.id = IW'(IW);
       drv.send(b);
     endtask
   endclass
