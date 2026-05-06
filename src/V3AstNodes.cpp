@@ -31,7 +31,6 @@
 #include <iterator>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in

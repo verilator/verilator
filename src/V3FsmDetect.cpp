@@ -814,9 +814,8 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     static StateConstLabel stateLabelForConst(AstConst* constp) {
-        if (const string* const namep = constp->origParamNamep()) {
-            return StateConstLabel{AstNode::prettyName(*namep), true, 0};
-        }
+        const string name = constp->origParamName();
+        if (!name.empty()) return StateConstLabel{AstNode::prettyName(name), true, 0};
         return StateConstLabel{constp->name(), false, 0};
     }
 
