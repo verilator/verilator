@@ -202,16 +202,6 @@ public:
     static bool isNotReplaceable(const AstVarRef* const nodep) { return nodep->user1(); }
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user1SetOnce(); }
 
-    static void appendStmt(AstNode*& headp, AstNode*& tailp, AstNode* stmtp) {
-        if (!stmtp) return;
-        if (tailp) {
-            tailp->addNextHere(stmtp);
-        } else {
-            headp = stmtp;
-        }
-        tailp = stmtp;
-    }
-
     static std::vector<ForceInfo*> forceInfosInIdOrder(VarForceInfo& info) {
         std::vector<ForceInfo*> forceps;
         forceps.reserve(info.m_forces.size());
@@ -247,10 +237,6 @@ public:
         if (AstSampled* sampledp = VN_CAST(basep, Sampled))
             if (AstNodeExpr* exprp = VN_CAST(sampledp->exprp(), NodeExpr))
                 return getOneVarRef(exprp);
-        if (AstCCast* const ccastp = VN_CAST(basep, CCast)) return getOneVarRef(ccastp->lhsp());
-        if (AstCMethodHard* const callp = VN_CAST(basep, CMethodHard)) {
-            if (callp->pinsp()) return getOneVarRef(callp->pinsp());
-        }
         AstVarRef* const varRefp = VN_CAST(basep, VarRef);
         UASSERT_OBJ(varRefp, forceStmtp, "`force` assignment has no VarRef on LHS");
         return varRefp;
@@ -606,7 +592,12 @@ public:
             AstAssign* const updatep
                 = new AstAssign{flp, new AstVarRef{flp, finfop->m_rhsVarVscp, VAccess::WRITE},
                                 finfop->m_rhsExprp->cloneTreePure(false)};
-            appendStmt(headp, tailp, updatep);
+            if (tailp) {
+                tailp->addNextHere(updatep);
+            } else {
+                headp = updatep;
+            }
+            tailp = updatep;
         }
         return headp;
     }
