@@ -35,6 +35,10 @@
 #include "verilated_timing.h"
 
 #include <coroutine>
+#else
+
+#define VL_UNKNOWN "<unknown>"
+
 #endif
 
 #include "verilated_sym_props.h"
