@@ -134,7 +134,7 @@ public:
     bool m_isNull : 1;  // True if "null" versus normal 0
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
-    bool m_hasOrigParamName : 1;  // AstConst has originating parameter-name metadata
+    bool m_hasOrigParamName : 1;  // Owning AstConst has originating parameter-name metadata
 
     // CONSTRUCTORS
     V3NumberData()
@@ -149,6 +149,8 @@ public:
 
     ~V3NumberData() { destroyStoredValue(); }
 
+    // m_hasOrigParamName is ownership bookkeeping for an AstConst side-table entry, not part of
+    // the numeric value. Copies/moves of V3NumberData must not claim the destination has metadata.
     V3NumberData(const V3NumberData& other)
         : m_width{other.m_width}
         , m_type{other.m_type}
@@ -158,7 +160,7 @@ public:
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend}
-        , m_hasOrigParamName{other.m_hasOrigParamName} {
+        , m_hasOrigParamName{false} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -187,7 +189,6 @@ public:
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
-        m_hasOrigParamName = other.m_hasOrigParamName;
         return *this;
     }
 
@@ -200,7 +201,7 @@ public:
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend}
-        , m_hasOrigParamName{other.m_hasOrigParamName} {
+        , m_hasOrigParamName{false} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -230,7 +231,6 @@ public:
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
-        m_hasOrigParamName = other.m_hasOrigParamName;
         other.m_type = V3NumberDataType::UNINITIALIZED;
         return *this;
     }

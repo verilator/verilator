@@ -1854,8 +1854,8 @@ void AstConst::origParamName(const string& name) {
 }
 
 void AstConst::cloneRelink() {
-    // The cloned V3Number may have copied the "has metadata" bit, but the side-table key still
-    // needs to be this new AstConst. Re-stamp only when the original node actually has a name.
+    // Preserve parameter-origin metadata across AST clones; the side-table key must be this
+    // new AstConst, not the original node.
     if (const AstConst* const oldp = clonep()) {
         const string name = oldp->origParamName();
         m_num.hasOrigParamName(false);
