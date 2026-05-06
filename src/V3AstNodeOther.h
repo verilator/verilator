@@ -28,6 +28,8 @@
 #define VL_NOT_FINAL  // This #define fixes broken code folding in the CLion IDE
 #endif
 
+#include <unordered_map>
+
 // === Abstract base node types (AstNode*) =====================================
 
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
@@ -1276,6 +1278,9 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
+    // Sparse metadata for constants produced from named parameters/localparams. Keep this off
+    // AstConst itself, as AstConst is a very common node and only a small fraction carry this name.
+    std::unordered_map<const AstConst*, string> m_constOrigParamNames;
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
@@ -1289,6 +1294,9 @@ public:
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     AstConstPool* constPoolp() { return m_constPoolp; }
+    string astConstOrigParamName(const AstConst* nodep) const;
+    void astConstOrigParamName(const AstConst* nodep, const string& name);
+    void astConstOrigParamNameErase(const AstConst* nodep);
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp();
     AstCFunc* evalp() const { return m_evalp; }
