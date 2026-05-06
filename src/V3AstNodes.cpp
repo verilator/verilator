@@ -1838,8 +1838,8 @@ void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
 AstConst::~AstConst() {
     // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
-    // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit is
-    // set, erase the entry before this AstConst address can be reused by a different node.
+    // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit
+    // is set, erase the entry before this AstConst address can be reused by a different node.
     if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
 }
 

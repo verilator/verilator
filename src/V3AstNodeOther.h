@@ -1279,8 +1279,10 @@ class AstNetlist final : public AstNode {
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // Sparse metadata for constants produced from named parameters/localparams. Keep this off
-    // AstConst itself, as AstConst is a very common node and only a small fraction carry this name.
+    // AstConst itself, as AstConst is a very common node and only a small fraction carry this
+    // name.
     std::unordered_map<const AstConst*, string> m_constOrigParamNames;
+
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
