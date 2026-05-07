@@ -693,7 +693,9 @@ class GateInline final {
                     for (V3GraphEdge& edge : vVtxp->outEdges()) {
                         const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
                         // Ignore slow code, or if the destination is not used
-                        if (!dstVtxp->slow() && !dstVtxp->outEmpty()) n += edge.weight();
+                        if (dstVtxp->slow()) continue;
+                        if (dstVtxp->outEmpty() && !dstVtxp->consumed()) continue;
+                        n += edge.weight();
                         if (n > 1) break;
                     }
                     if (n > 1) continue;
@@ -1307,6 +1309,10 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         // the same logic block will have and edge to the logic block with weight 2
         graphp->removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_simp");
+
+        // Remove unused logic
+        GateUnused::apply(*graphp);
+        if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_unused");
 
         // Inline variables
         GateInline::apply(*graphp);
