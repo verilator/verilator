@@ -115,6 +115,12 @@ module t;
     `checkd(arr[2], 1);
     `checkd(x, 4);
 
+    i = 0;
+    arr[i++] -= 2;
+    `checkd(arr[0], 5);
+    arr[++i] += 5;
+    `checkd(arr[2], 6);
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
