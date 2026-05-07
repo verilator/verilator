@@ -16,6 +16,7 @@ module t (
   } state_t;
 
   state_t state;
+  state_t state_if;
 
   // This is intentionally non-idiomatic RTL. The detector sees one supported
   // candidate in the reset-if else branch and a second supported top-level
@@ -34,6 +35,14 @@ module t (
       S1: state <= S2;
       default: ;
     endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (state_if == S0) state_if <= S1;
+    else if (state_if == S1) state_if <= S0;
+
+    if (state_if == S1) state_if <= S2;
+    else if (state_if == S2) state_if <= S1;
   end
 
 endmodule
