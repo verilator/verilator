@@ -1,4 +1,4 @@
-%Warning-COVERIGN: t/t_cover_fsm_enumwide_bad.v:26:7: Ignoring unsupported: FSM coverage on enum-typed state variables wider than 32 bits
+%Warning-COVERIGN: t/t_cover_fsm_enumwide_bad.v:26:7: Ignoring unsupported: FSM coverage on enum-typed state variable 't.state' with width 33 wider than 32 bits
    26 |       case (state)
       |       ^~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest

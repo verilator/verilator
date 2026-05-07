@@ -9,31 +9,35 @@
             input logic clk
         );
         
-          typedef enum logic [1:0] {
-            S0 = 2'd0,
-            S1 = 2'd1,
-            S2 = 2'd2
+          typedef enum logic [2:0] {
+            S0 = 3'd0,
+            S1 = 3'd1,
+            S2 = 3'd2
           } state_t;
         
           int cyc;
           logic side;
+          logic [2:0] dyn_case;
           state_t state  /*verilator fsm_reset_arc*/;
         
           initial begin
             cyc = 0;
             side = 1'b0;
+            dyn_case = 3'd7;
           end
         
           always @(posedge clk) begin
             cyc <= cyc + 1;
             if (cyc == 1) side <= 1'b1;
+            dyn_case <= {2'b11, side};
             if (cyc == 5) begin
               $write("*-* All Finished *-*\n");
               $finish;
             end
           end
         
-          // The S0 arm is the supported baseline. The S1 and default arms are
+          // The grouped S0/dyn_case arm keeps the supported S0 baseline while the
+          // non-constant case item is skipped. The S1 and default arms are
           // deliberately unsupported extractor shapes: one has two meaningful
           // statements, the other writes a different lhs first. Coverage should ignore
           // those arcs rather than guessing.
@@ -48,7 +52,7 @@
 %000001        // [fsm_state t.state::S0]
 %000002        // [fsm_state t.state::S1]
 %000002        // [fsm_state t.state::S2]
-                S0: state <= S1;
+                S0, state_t'(dyn_case): state <= S1;
                 S1: begin
                   side <= ~side;
                   state <= S2;

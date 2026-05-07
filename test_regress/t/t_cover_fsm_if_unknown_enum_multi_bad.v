@@ -132,10 +132,37 @@ module unknown_reset (
   end
 endmodule
 
+module unknown_source (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      /* verilator lint_off ENUMVALUE */
+      2'd3: state_d = S0;
+      /* verilator lint_on ENUMVALUE */
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
 module t;
   logic clk;
   unknown_then unknown_then_u (.clk(clk));
   unknown_else unknown_else_u (.clk(clk));
   unknown_direct unknown_direct_u (.clk(clk));
   unknown_reset unknown_reset_u (.clk(clk));
+  unknown_source unknown_source_u (.clk(clk));
 endmodule
