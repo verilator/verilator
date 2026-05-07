@@ -268,7 +268,6 @@ class LinkIncVisitor final : public VNVisitor {
     void prepost_stmt_sel_visit(AstAssignCompound* const nodep) {
         // Special case array[something] += expr, see comments at file top
         // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
-        iterateChildren(nodep);
         AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
 
         prepost_stmt_sel_visit(nodep, nodep->lhsp(), exprp);
@@ -323,7 +322,6 @@ class LinkIncVisitor final : public VNVisitor {
         prepost_stmt_visit(nodep, exprp, storeTop, valuep);
     }
     void prepost_stmt_visit(AstAssignCompound* const nodep) {
-        iterateChildren(nodep);
         AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* const storeTop = nodep->lhsp()->cloneTreePure(true);
         AstNodeExpr* const valuep = nodep->lhsp()->unlinkFrBack();
@@ -394,6 +392,7 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstPreDec* nodep) override { prepost_visit(nodep); }
     void visit(AstPostDec* nodep) override { prepost_visit(nodep); }
     void visit(AstAssignCompound* nodep) override {
+        visit(static_cast<AstNodeStmt*>(nodep));
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
         if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
