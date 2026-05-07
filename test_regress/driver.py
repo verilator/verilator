@@ -1606,6 +1606,7 @@ class VlTest:
             pli_opt = ""
             if param['use_libvpi']:
                 pli_opt = "-loadvpi " + self.obj_dir + "/libvpi.so:vpi_compat_bootstrap"
+            done = "XRUN_DONE"
             cmd = [
                 run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
                 ' '.join(param['xrun_run_flags']),
@@ -1615,6 +1616,8 @@ class VlTest:
                 pli_opt,
                 '-input',
                 '@run',
+                '-input',
+                f'"@puts {done}"',
                 '-input',
                 '@exit',
                 param['top_filename'],
@@ -1626,6 +1629,7 @@ class VlTest:
                      fails=param['fails'],
                      logfile=param.get('logfile', self.obj_dir + "/xrun_sim.log"),
                      stop_re=r'Simulation stopped via',
+                     done_re=done,
                      tee=param['tee'])
         elif param['xsim']:
             cmd = [
@@ -1838,6 +1842,7 @@ class VlTest:
             fails=False,  # True: normal 1 exit code, 'any': any exit code
             logfile=None,  # Filename to write putput to
             stop_re=None,  # Regex for $stop
+            done_re=None,  # Regex for sim completion
             tee=True,
             verilator_run=False) -> bool:  # Move gcov data to parallel area
 
@@ -1956,14 +1961,17 @@ class VlTest:
             return False
 
         # Read the log file a couple of times to allow for NFS delays
-        if check_finished or stop_re:
+        if stop_re and not done_re:
+            self.errof("Must provide done_re when using stop_re")
+
+        if check_finished or stop_re or done_re:
             delay = 0.25
             for tryn in range(Args.log_retries - 1, -1, -1):
                 if tryn != Args.log_retries - 1:
                     time.sleep(delay)
                     delay = min(1, delay * 2)
                 moretry = tryn != 0
-                if not self._run_log_try(logfile, check_finished, moretry, stop_re):
+                if not self._run_log_try(logfile, check_finished, moretry, stop_re, done_re):
                     break
         if expect_filename:
             self.files_identical(logfile, expect_filename, is_logfile=True)
@@ -1983,7 +1991,7 @@ class VlTest:
             logfh.write(data)
 
     def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool,
-                     stop_re: str) -> bool:
+                     stop_re: Optional[str], done_re: Optional[str]) -> bool:
         # If moretry, then return true to try again
         with open(logfile, 'r', encoding='latin-1', newline='\n') as fh:
             if not fh and moretry:
@@ -1995,6 +2003,11 @@ class VlTest:
             if moretry:
                 return True
             self.error("Missing '*-* All Finished *-*'")
+
+        if done_re and not re.search(done_re, wholefile):
+            if moretry:
+                return True
+            self.error(f"Missing '{done_re}'")
 
         if stop_re and re.search(stop_re, wholefile):
             self.error("Found $stop")
