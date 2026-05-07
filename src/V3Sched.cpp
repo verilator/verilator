@@ -1019,7 +1019,6 @@ void schedule(AstNetlist* netlistp) {
     // Step 8: Create the triggers
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
     netlistp->dpiExportTriggerp(nullptr);  // Finished with this here
-    netlistp->dpiImportTriggerp(nullptr);  // Finished with this here
 
     // We may have an extra trigger for variable updated in DPI exports
     TriggerKit::ExtraTriggers extraTriggers;
