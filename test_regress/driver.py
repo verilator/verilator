@@ -1613,7 +1613,10 @@ class VlTest:
                 ' '.join(param['v_flags']),
                 ' '.join(param['all_run_flags']),
                 pli_opt,
-                '-input', '@run', '-input', '@exit',
+                '-input',
+                '@run',
+                '-input',
+                '@exit',
                 param['top_filename'],
             ]
             self.run(cmd=cmd,
@@ -1979,7 +1982,8 @@ class VlTest:
         if logfh:
             logfh.write(data)
 
-    def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool, stop_re: str) -> bool:
+    def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool,
+                     stop_re: str) -> bool:
         # If moretry, then return true to try again
         with open(logfile, 'r', encoding='latin-1', newline='\n') as fh:
             if not fh and moretry:
