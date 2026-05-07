@@ -18,7 +18,7 @@ module t;
 
   initial begin
     $monitor("%d d=%b,e=%b", $stime, d, e);
-    assign d = a & b & c;
+    d = a & b & c;
     a = 1;
     b = 0;
     c = 1;
