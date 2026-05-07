@@ -1962,7 +1962,7 @@ class VlTest:
 
         # Read the log file a couple of times to allow for NFS delays
         if stop_re and not done_re:
-            self.errof("Must provide done_re when using stop_re")
+            self.error("Must provide done_re when using stop_re")
 
         if check_finished or stop_re or done_re:
             delay = 0.25
