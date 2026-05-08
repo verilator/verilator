@@ -14,13 +14,12 @@
 extern "C" {
 #endif
 
-extern void pong(int n, int* o);
+extern void pong(int n);
 
-int ping(int n, int* o) {
+int ping(int n) {
     printf("Called ping(%d)\n", n);
     if (n == 0) return 0;
-    if (o) *o = *o + n;
-    pong(n, o);
+    pong(n);
     return 0;
 }
 

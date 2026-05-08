@@ -13,22 +13,18 @@ module t;
   end
 
   export "DPI-C" pong = task pong;
-  task pong(input int n, output int o);
+  task pong(input int n);
     $display("%t: Called pong(%d)", $time, n);
     @(posedge rtl_clk);
-    ping(n - 1, o);
+    ping(n - 1);
   endtask
 
   import "DPI-C" context task ping(
     input  int n,
-    output int res
   );
 
-  int res;
   initial begin
-    res = 0;
-    ping(10, res);
-    $display("res = %d", res);
+    ping(10);
     $finish;
   end
 endmodule

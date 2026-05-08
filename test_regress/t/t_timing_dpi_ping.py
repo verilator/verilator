@@ -10,14 +10,13 @@
 import vltest_bootstrap
 
 test.scenarios("simulator")
-test.top_filename = "t/t_timing_dpi_circular.v"
+test.top_filename = "t/t_timing_dpi_ping.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_circular.cpp"],
+    v_flags2=["t/t_timing_dpi_ping.cpp"],
     verilator_flags2=["--binary", "--trace-fst"],
 )
 
-# test.execute(expect_filename=test.golden_filename)
-test.execute()
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()
