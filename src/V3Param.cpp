@@ -1702,7 +1702,9 @@ class ParamProcessor final {
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* pinp = pinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             const AstVar* const modvarp = pinp->modVarp();
-            if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
+            if (modvarp && VN_IS(arraySubDTypeDeepp(modvarp->subDTypep()), IfaceGenericDType)) {
+                continue;
+            }
             if (modvarp->isIfaceRef()) {
                 // arraySubDTypeDeepp returns input unchanged if not an array.
                 AstIfaceRefDType* const portIrefp
@@ -1790,10 +1792,12 @@ class ParamProcessor final {
         for (const AstNode* nodep = pinsp; nodep; nodep = nodep->nextp()) {
             if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
                 if (AstVar* const varp = pinp->modVarp()) {
+                    AstNodeDType* dtypep = varp->childDTypep()->elemDTypep();
                     if (AstIfaceGenericDType* const ifaceGDTypep
-                        = VN_CAST(varp->childDTypep(), IfaceGenericDType)) {
+                        = VN_CAST(dtypep, IfaceGenericDType)) {
                         const auto iter = paramspMap.find(varp->name());
                         if (iter == paramspMap.end()) continue;
+                        AstNode* const backp = ifaceGDTypep->backp();
                         ifaceGDTypep->unlinkFrBack();
                         const AstPin* const paramp = iter->second;
                         paramspMap.erase(iter);
@@ -1804,7 +1808,13 @@ class ParamProcessor final {
                             ifaceGDTypep->name(), ifacerefp->ifaceName(),
                             ifaceGDTypep->modportName()};
                         newIfacerefp->ifacep(ifacerefp->ifacep());
-                        varp->childDTypep(newIfacerefp);
+                        if (auto* const arrDtp = VN_CAST(backp, NodeArrayDType)) {
+                            arrDtp->childDTypep(newIfacerefp);
+                        } else if (auto* const arrDtp = VN_CAST(backp, BracketArrayDType)) {
+                            arrDtp->childDTypep(newIfacerefp);
+                        } else {
+                            varp->childDTypep(newIfacerefp);
+                        }
                         VL_DO_DANGLING(m_deleter.pushDeletep(ifaceGDTypep), ifaceGDTypep);
                         if (paramspMap.empty()) return;
                     }

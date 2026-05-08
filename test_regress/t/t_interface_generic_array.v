@@ -12,6 +12,8 @@ module GenericModule (interface a);
   initial begin
     #1;
     if (a.v != 7) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule
 
@@ -20,7 +22,5 @@ module t;
   GenericModule genericModule (inf_inst[2]);
   initial begin
     inf_inst[2].v = 7;
-    $write("*-* All Finished *-*\n");
-    $finish;
   end
 endmodule

@@ -1041,6 +1041,25 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     return nullptr;
 }
 
+const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
+    const AstNodeDType* dtypep = this;
+    while (true) {
+        if (skipRef) dtypep = dtypep->skipRefp();
+        if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else {
+            break;
+        }
+    }
+    return dtypep;
+}
+
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
     nodep = nodep->skipRefToNonRefp();
