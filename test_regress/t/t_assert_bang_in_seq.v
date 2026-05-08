@@ -4,64 +4,76 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
-  bit clk = 0;
-  always #1 clk = ~clk;
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
-  bit c_true = 1'b1;
-  bit c_false = 1'b0;
-  bit b = 1'b0;
-  bit c = 1'b0;
-  bit [3:0] vec = 4'b1110;
+module t (
+    input clk
+);
 
-  initial begin
-    #20 $write("*-* All Finished *-*\n");
-    $finish;
+  int cyc;
+  reg [63:0] crc;
+
+  // Non-adjacent CRC bits avoid LFSR shift correlation.
+  wire a = crc[0];
+  wire b = crc[4];
+  wire c = crc[8];
+  wire d = crc[12];
+
+  int count_fail1 = 0;
+  int count_fail2 = 0;
+  int count_fail3 = 0;
+  int count_fail4 = 0;
+  int count_fail5 = 0;
+  int count_fail6 = 0;
+
+  // Test 1: a ##1 !b -- boolean ! as consequent of cycle delay.
+  assert property (@(posedge clk) a ##1 !b)
+  else count_fail1 <= count_fail1 + 1;
+
+  // Test 2: a ##1 (!b && !c) -- conjunction of two bangs in seq.
+  assert property (@(posedge clk) a ##1 (!b && !c))
+  else count_fail2 <= count_fail2 + 1;
+
+  // Test 3: a |-> ##1 !b -- bang on consequent of overlapping implication
+  // (mirrors core-v-verif `|-> ##1 !irq_enabled`).
+  assert property (@(posedge clk) a |-> ##1 !b)
+  else count_fail3 <= count_fail3 + 1;
+
+  // Test 4: a ##1 !$past(b) -- bang applied to sampled value function.
+  assert property (@(posedge clk) a ##1 !$past(b))
+  else count_fail4 <= count_fail4 + 1;
+
+  // Test 5: a ##0 !b ##1 c -- bang interleaved between cycle delays.
+  assert property (@(posedge clk) a ##0 !b ##1 c)
+  else count_fail5 <= count_fail5 + 1;
+
+  // Test 6: a |=> !d -- bang on consequent of non-overlapping implication.
+  assert property (@(posedge clk) a |=> !d)
+  else count_fail6 <= count_fail6 + 1;
+
+  always @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
+`endif
+    cyc <= cyc + 1;
+    crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+    if (cyc == 0) begin
+      crc <= 64'h5aef0c8d_d70a4497;
+    end
+    else if (cyc == 99) begin
+      `checkh(crc, 64'hc77bb9b3784ea091);
+      `checkd(count_fail1, 66);  // Questa: 66
+      `checkd(count_fail2, 69);  // Questa: 69
+      `checkd(count_fail3, 26);  // Questa: 26
+      `checkd(count_fail4, 66);  // Questa: 66
+      `checkd(count_fail5, 80);  // Questa: 80
+      `checkd(count_fail6, 27);  // Questa: 27
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
-
-  // Simple boolean `!` as the rhs of ##1.
-  property p_bang_simple;
-    @(posedge clk) c_true ##1 !c_false;
-  endproperty
-  ap_bang_simple :
-  assert property (p_bang_simple);
-
-  // Conjunction of two bangs inside the sequence.
-  property p_bang_and;
-    @(posedge clk) c_true ##1 (!b && !c);
-  endproperty
-  ap_bang_and :
-  assert property (p_bang_and);
-
-  // Bit-select negation.
-  property p_bang_bit;
-    @(posedge clk) c_true ##1 !vec[0];
-  endproperty
-  ap_bang_bit :
-  assert property (p_bang_bit);
-
-  // Sampled value function inside a negation.
-  property p_bang_past;
-    @(posedge clk) c_true ##1 !$past(
-        c_false
-    );
-  endproperty
-  ap_bang_past :
-  assert property (p_bang_past);
-
-  // Bang interleaved with multiple cycle delays.
-  property p_bang_interleaved;
-    @(posedge clk) c_true ##0 !c_false ##1 c_true;
-  endproperty
-  ap_bang_interleaved :
-  assert property (p_bang_interleaved);
-
-  // CVV-style: bang on the consequent of an implication, mirroring
-  // core-v-verif's `|-> ##1 !irq_enabled` pattern that motivated this fix.
-  property p_bang_cvv_style;
-    @(posedge clk) c_true |-> ##1 !c_false;
-  endproperty
-  ap_bang_cvv_style :
-  assert property (p_bang_cvv_style);
-
 endmodule
