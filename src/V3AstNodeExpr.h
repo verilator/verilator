@@ -5562,6 +5562,8 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool fromProperty() const { return m_fromProperty; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstNToI final : public AstNodeUniop {
     // String to any-size integral

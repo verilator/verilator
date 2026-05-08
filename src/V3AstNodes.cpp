@@ -1841,6 +1841,14 @@ void AstCCast::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, size);
     dumpJsonGen(str);
 }
+void AstLogNot::dump(std::ostream& str) const {
+    this->AstNodeUniop::dump(str);
+    if (fromProperty()) str << " [fromProperty]";
+}
+void AstLogNot::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, fromProperty);
+    dumpJsonGen(str);
+}
 void AstCvtArrayToArray::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " reverse=" << reverse();
