@@ -214,8 +214,10 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
         }
         // Call will return on first delay/event encountered
         VlCoroutine local{call(std::forward<Args>(args)...)};
-        local.setFiberContinuation(fiberp);
-        while (!local.await_ready()) { VlFiber::yield(); }
+        if (!local.await_ready()) {
+            local.setFiberContinuation(fiberp);
+            while (!local.await_ready()) { VlFiber::yield(); }
+        }
     } else if (std::is_same<decltype(call(std::forward<Args>(args)...)), void>::value) {
         return call(std::forward<Args>(args)...);
     } else {

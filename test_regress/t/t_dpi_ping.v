@@ -15,7 +15,6 @@ module t;
   export "DPI-C" pong = task pong;
   task pong(input int n);
     $display("%t: Called pong(%d)", $time, n);
-    @(posedge rtl_clk);
     ping(n - 1);
   endtask
 
