@@ -7658,7 +7658,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    void visit_log_not(AstNode* nodep) {
+    void visit_log_not(AstLogNot* nodep) {
         // CALLER: LogNot
         // Width-check: lhs 1 bit
         // Real: Allowed; implicitly compares with zero
@@ -7674,7 +7674,10 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetBit();
-            if (m_underSExpr) {
+            // IEEE 1800-2023 16.12.3: property 'not' is not a sequence operator.
+            // Boolean '!' is allowed in sequences (16.7 expression_or_dist).
+            // The parser distinguishes the two via AstLogNot::fromProperty().
+            if (m_underSExpr && nodep->fromProperty()) {
                 nodep->v3error("Unexpected 'not' in sequence expression context");
                 AstConst* const newp = new AstConst{nodep->fileline(), 0};
                 newp->dtypeFrom(nodep);
