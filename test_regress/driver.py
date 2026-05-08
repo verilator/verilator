@@ -1621,6 +1621,7 @@ class VlTest:
                 '-input',
                 '@exit',
                 param['top_filename'],
+                param['top_shell_filename'],
             ]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
