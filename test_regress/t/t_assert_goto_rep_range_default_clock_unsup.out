@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_assert_goto_rep_range_default_clock_unsup.v:19:12: Unsupported: [->M:N] goto range repetition when clock is resolved outside V3AssertNfa (IEEE 1800-2023 16.9.2)
-                                                                         : ... note: In instance 't'
-   19 |     a |-> b[->1:2];
-      |            ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

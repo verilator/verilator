@@ -78,31 +78,6 @@ module t (
     a ## [+] b;
   endsequence
 
-  sequence s_booleanabbrev_brastar_int;
-    a [* 1 ];
-  endsequence
-  sequence s_booleanabbrev_brastar;
-    a [*];
-  endsequence
-  sequence s_booleanabbrev_plus;
-    a [+];
-  endsequence
-  sequence s_booleanabbrev_eq;
-    a [= 1];  // Now supported (AstSNonConsRep)
-  endsequence
-  sequence s_booleanabbrev_eq_range;
-    a [= 1:2];
-  endsequence
-  sequence s_booleanabbrev_eq_unbounded;
-    a [= 1:$];
-  endsequence
-  sequence s_booleanabbrev_minusgt;
-    a [-> 1];
-  endsequence
-  sequence s_booleanabbrev_minusgt_range;
-    a [-> 1:2];
-  endsequence
-
   sequence p_arg_seqence(sequence inseq);
     inseq;
   endsequence

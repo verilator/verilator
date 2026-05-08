@@ -1,10 +1,10 @@
-%Error-UNSUPPORTED: t/t_assert_rep_range_zero_min_unsup.v:16:27: Unsupported: zero min count in Goto repetition range (IEEE 1800-2023 16.9.2)
+%Error-UNSUPPORTED: t/t_assert_rep_range_zero_min_unsup.v:18:28: Unsupported: zero min count in Goto repetition range (IEEE 1800-2023 16.9.2)
                                                                : ... note: In instance 't'
-   16 |     @(posedge clk) a |-> b[->0:2];
-      |                           ^~~
+   18 |     @(posedge clk) a |-> b [-> 0: 2];
+      |                            ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_rep_range_zero_min_unsup.v:19:27: Unsupported: zero min count in Nonconsecutive repetition range (IEEE 1800-2023 16.9.2)
+%Error-UNSUPPORTED: t/t_assert_rep_range_zero_min_unsup.v:21:28: Unsupported: zero min count in Nonconsecutive repetition range (IEEE 1800-2023 16.9.2)
                                                                : ... note: In instance 't'
-   19 |     @(posedge clk) a |-> b[=0:2];
-      |                           ^~
+   21 |     @(posedge clk) a |-> b [= 0: 2];
+      |                            ^~
 %Error: Exiting due to
