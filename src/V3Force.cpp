@@ -637,12 +637,6 @@ public:
         }
         return baseExprp;
     }
-
-    static AstNodeExpr* cloneLValue(AstNodeExpr* lhsp) {
-        AstNodeExpr* const clonep = lhsp->cloneTreePure(false);
-        clonep->foreach([](AstNodeVarRef* const refp) { refp->access(VAccess::WRITE); });
-        return clonep;
-    }
 };
 
 // Split deassign concat LHS before converting to release internals.
@@ -1025,8 +1019,7 @@ class ForceConvertVisitor final : public VNVisitor {
                                  lhsp, m_state.createForceReadExpression(*varInfo, lhsVarRefp))
                            : m_state.createForceReadExpression(*varInfo, lhsVarRefp);
             }
-            AstAssign* const assignp
-                = new AstAssign{flp, ForceState::cloneLValue(lhsp), forceReadp};
+            AstAssign* const assignp = new AstAssign{flp, lhsp->cloneTreePure(false), forceReadp};
             assignp->addNextHere(stmtListp);
             stmtListp = assignp;
         }
@@ -1232,20 +1225,27 @@ void V3Force::forceAll(AstNetlist* nodep) {
 void V3Force::assignAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasAssignDeassign()) return;
+
+    std::vector<AstDeassign*> deassignps;
+    nodep->foreach([&](AstDeassign* deassignp) { deassignps.push_back(deassignp); });
+    for (AstDeassign* const deassignp : deassignps) splitDeassign(deassignp);
+
     std::vector<AstAssignCont*> assignContps;
-    nodep->foreach([&](AstAssignCont* assignp) { assignContps.push_back(assignp); });
+    deassignps.clear();
+    nodep->foreach([&](AstNodeStmt* nodep) {
+        if (AstAssignCont* const assignContp = VN_CAST(nodep, AssignCont)) {
+            assignContps.push_back(assignContp);
+        } else if (AstDeassign* const deassignp = VN_CAST(nodep, Deassign)) {
+            deassignps.push_back(deassignp);
+        }
+    });
+
     for (AstAssignCont* const assignp : assignContps) {
         assignp->replaceWith(new AstAssignForce{assignp->fileline(),
                                                 assignp->lhsp()->unlinkFrBack(),
                                                 assignp->rhsp()->unlinkFrBack()});
         assignp->deleteTree();
     }
-
-    std::vector<AstDeassign*> deassignps;
-    nodep->foreach([&](AstDeassign* deassignp) { deassignps.push_back(deassignp); });
-    for (AstDeassign* const deassignp : deassignps) splitDeassign(deassignp);
-    deassignps.clear();
-    nodep->foreach([&](AstDeassign* deassignp) { deassignps.push_back(deassignp); });
     for (AstDeassign* const deassignp : deassignps) {
         deassignp->replaceWith(
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});

@@ -4,14 +4,14 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-/* verilator lint_off ALWCOMBORDER */
-/* verilator lint_off LATCH */
-/* verilator lint_off MULTIDRIVEN */
-/* verilator lint_off UNDRIVEN */
-/* verilator lint_off UNUSEDSIGNAL */
-/* verilator lint_off COMBDLY */
-/* verilator lint_off WIDTHEXPAND */
-/* verilator lint_off WIDTHTRUNC */
+// verilator lint_off ALWCOMBORDER
+// verilator lint_off LATCH
+// verilator lint_off MULTIDRIVEN
+// verilator lint_off UNDRIVEN
+// verilator lint_off UNUSEDSIGNAL
+// verilator lint_off COMBDLY
+// verilator lint_off WIDTHEXPAND
+// verilator lint_off WIDTHTRUNC
 
 module t (
     input  logic src,
