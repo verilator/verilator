@@ -1876,12 +1876,14 @@ class ParamProcessor final {
 
         // Count existing pins and capture them by index for easy lookup
         std::vector<AstPin*> pinsByIndex;
+        pinsByIndex.resize(m_classParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            pinsByIndex.push_back(pinp);
+            pinsByIndex[m_paramIndex[pinp->modPTypep()]] = pinp;
         }
 
         // For each missing parameter, get its pin from dependency or direct default
-        for (size_t paramIdx = pinsByIndex.size(); paramIdx < m_classParams.size(); paramIdx++) {
+        for (size_t paramIdx = 0; paramIdx < m_classParams.size(); paramIdx++) {
+            if (pinsByIndex[paramIdx]) continue;
             const int sourceParamIdx = m_classParams[paramIdx].second;
 
             AstPin* newPinp = nullptr;
