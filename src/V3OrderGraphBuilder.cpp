@@ -105,6 +105,7 @@ class OrderGraphBuilder final : public VNVisitor {
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
+    V3Sched::util::VarScopeSet m_forceReadEdgeIgnores;
 
     // METHODS
 
@@ -112,12 +113,16 @@ class OrderGraphBuilder final : public VNVisitor {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage
         AstNode::user2ClearTree();
+        m_forceReadEdgeIgnores.clear();
+        if (!m_inClocked)
+            V3Sched::util::collectForceReadEdgeIgnores(nodep, m_forceReadEdgeIgnores);
         // Create LogicVertex for this logic node
         m_logicVxp = new OrderLogicVertex{m_graphp, m_scopep, m_domainp, m_hybridp, nodep};
         // Gather variable dependencies based on usage
         iterateChildren(nodep);
         // Finished with this logic
         m_logicVxp = nullptr;
+        m_forceReadEdgeIgnores.clear();
     }
 
     OrderVarVertex* getVarVertex(AstVarScope* varscp, VarVertexType type) {
@@ -207,6 +212,7 @@ class OrderGraphBuilder final : public VNVisitor {
                 //       latch?).
                 con = false;
             }
+            if (!m_inClocked && m_forceReadEdgeIgnores.count(varscp)) con = false;
         }
 
         // Note: See V3OrderGraph.h about the roles of the various vertex types

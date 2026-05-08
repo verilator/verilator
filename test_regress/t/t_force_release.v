@@ -18,7 +18,7 @@ module t;
 
   initial begin
     $monitor("%d d=%b,e=%b", $stime, d, e);
-    assign d = a & b & c;
+    d = a & b & c;
     a = 1;
     b = 0;
     c = 1;
@@ -30,11 +30,6 @@ module t;
     #10;
     release d;
     release e;
-    // TODO support procedural continuous assignments.
-    //
-    // As per IEEE 1800-2023 10.6.2, value of `d` should be updated
-    // after release. However, Verilator treats `assign` inside an initial block
-    // as procedural assign thus value update is not properly restored.
     #10;
     `checkh(d, 0);
     `checkh(e, 0);

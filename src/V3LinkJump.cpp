@@ -241,6 +241,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 new AstClassRefDType{fl, v3Global.rootp()->stdPackageClassp(), nullptr}, nullptr}};
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
         processQueuep->processQueue(true);
+        processQueuep->setIgnoreSchedWrite();
         topPkgp->addStmtsp(processQueuep);
         return processQueuep;
     }
