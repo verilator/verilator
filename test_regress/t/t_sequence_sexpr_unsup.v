@@ -78,6 +78,13 @@ module t (
     a ## [+] b;
   endsequence
 
+  sequence s_booleanabbrev_eq_range;
+    a [= 1:2];
+  endsequence
+  sequence s_booleanabbrev_minusgt_range;
+    a [-> 1:2];
+  endsequence
+
   sequence p_arg_seqence(sequence inseq);
     inseq;
   endsequence
