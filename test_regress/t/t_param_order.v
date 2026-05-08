@@ -35,7 +35,7 @@ module t;
     `checkd(b.t1, o);
     `checkd(b.t2, 32);
     `checkd(b.t3, 1);
-    
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
