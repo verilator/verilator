@@ -723,6 +723,9 @@ public:
         iterateConst(nodep->fromp());
         putns(nodep, nodep->usePtr() ? "->" : ".");
         putns(nodep, nodep->name());
+        if (nodep->method() == VCMethod::FORCE_READ_SEL_W) {
+            putns(nodep, "<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        }
         puts("(");
         bool comma = false;
         int argNum = 0;

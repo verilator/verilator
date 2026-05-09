@@ -815,6 +815,9 @@ public:
         FORCE_ADD,
         FORCE_READ,
         FORCE_READ_INDEX,
+        FORCE_READ_SEL_I,
+        FORCE_READ_SEL_Q,
+        FORCE_READ_SEL_W,
         FORCE_RELEASE,
         FORCE_TOUCH,
         FORK_DONE,
@@ -968,6 +971,9 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORCE_ADD, "addForce", false}, \
            {FORCE_READ, "read", true}, \
            {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_READ_SEL_I, "readSelI", true}, \
+           {FORCE_READ_SEL_Q, "readSelQ", true}, \
+           {FORCE_READ_SEL_W, "readSelW", true}, \
            {FORCE_RELEASE, "release", false}, \
            {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \
