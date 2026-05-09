@@ -3726,6 +3726,16 @@ class WidthVisitor final : public VNVisitor {
                         return;
                     }
                 }
+                if (AstNodeFTask* const ftaskp = VN_CAST(foundp, NodeFTask)) {
+                    AstMethodCall* const newp = new AstMethodCall{
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
+                    newp->taskp(ftaskp);
+                    newp->dtypep(ftaskp->dtypep());
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    userIterate(newp, m_vup);
+                    return;
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
