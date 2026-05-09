@@ -75,9 +75,9 @@ module t;
     q = q[4:0];
     `checkp(q, "'{}");
     // FIX!
-    // q = '{"q", "b", "c", "d", "e", "f"};
-    // q = q[$:0];
-    // `checkp(q, "'{}");
+    q = '{"q", "b", "c", "d", "e", "f"};
+    q = q[$:0];
+    `checkp(q, "'{}");
     q = '{"q"};
     q = q[1:0];
     `checkp(q, "'{}");
@@ -96,20 +96,19 @@ module t;
     q = '{"q", "b", "c", "d", "e", "f"};
     q = q[$:$];
     `checkp(q, "'{\"f\"}");
+    q = '{"q"};
+    q = q[0:0];
+    `checkp(q, "'{\"q\"}");
     // FIX!
-    // q = '{"q"};
-    // q = q[0:0];
-    // `checkp(q, "'{\"q\"}");
+    q = '{"q"};
+    q = q[0:$];
+    `checkp(q, "'{\"q\"}");
     // FIX!
-    // q = '{"q"};
-    // q = q[0:$];
-    // `checkp(q, "'{\"q\"}");
-    // FIX!
-    // q = '{"q"};
-    // q = q[$:$];
-    // `checkp(q, "'{\"q\"}");
+    q = '{"q"};
+    q = q[$:$];
+    `checkp(q, "'{\"q\"}");
 
-    // If n lies outside Q’s range (n < 0 or n > $), then Q[n:n]
+    // If n lies outside Q's range (n < 0 or n > $), then Q[n:n]
     // yields the empty queue {}
     q = '{"q", "b", "c", "d", "e", "f"};
     q = q[7:7];
@@ -118,37 +117,9 @@ module t;
     q = q[7:7];
     `checkp(q, "'{}");
 
-    // If either a or b are 4-state expressions containing X or Z
-    // values, it yields the empty queue {}
-    // TODO: z not supported?
-    // q = '{"q", "b", "c", "d", "e", "f"};
-    // q = q['hz:3];
-    // `checkp(q, "'{}");
-    // TODO: z not supported?
-    // q = '{"q", "b", "c", "d", "e", "f"};
-    // q = q[3:'hz];
-    // `checkp(q, "'{}");
-    // FIX!
-    // q = '{"q", "b", "c", "d", "e", "f"};
-    // Q = q['hx:3];
-    // `checkp(q, "'{}");
-    q = '{"q", "b", "c", "d", "e", "f"};
-    q = q[3:'hx];
-    `checkp(q, "'{}");
-    // TODO: z not supported?
-    // q = '{"q"};
-    // q = q['hz:0];
-    // `checkp(q, "'{}");
-    // TODO: z not supported?
-    // q = '{"q"};
-    // q = q[0:'hz];
-    // `checkp(q, "'{}");
-    q = '{"q"};
-    q = q['bx:0];
-    `checkp(q, "'{}");
-    q = '{"q"};
-    q = q[0:'bx];
-    `checkp(q, "'{}");
+    // Skipping until verilator gets X/Z support: If either a or b are
+    // 4-state expressions containing X or Z values, it yields the
+    // empty queue {}
 
     //  Q[ a : b ] where a < 0 is the same as Q[ 0 : b ]
     q = '{"q", "b", "c", "d", "e", "f"};
