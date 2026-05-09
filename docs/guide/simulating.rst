@@ -228,10 +228,10 @@ clocked state machines that can be recovered directly from the RTL. It
 recognizes scalar enum, parameter, localparam, and selected literal state
 encodings in these common forms:
 
-- single-process FSMs whose state dispatch is written as ``case (state)``
+- Single-process FSMs, whose state dispatch is written as ``case (state)``
   or as a top-level ``if`` / ``else if`` chain comparing the same state
   variable against known state values
-- two-process and three-block FSMs where a clocked state register is paired
+- Two-process and three-block FSMs, where a clocked state register is paired
   with a combinational next-state block using the same supported
   ``case`` or top-level ``if`` / ``else if`` dispatch forms
 
