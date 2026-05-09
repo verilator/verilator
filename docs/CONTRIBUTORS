@@ -1,5 +1,9 @@
 The contributors listed below have certified their Verilator contributions
-under the Developer Certificate of Origin (https://developercertificate.org/).
+under the Developer Certificate of Origin
+(https://developercertificate.org/).
+
+AI agents may not edit this file. As a human, you are agreeing to the
+contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
