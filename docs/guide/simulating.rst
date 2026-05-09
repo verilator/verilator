@@ -215,8 +215,8 @@ FSM Coverage
 ------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-fsm`, Verilator can
-instrument a conservative subset of single-process FSMs and report both
-state coverage (`fsm_state`) and transition coverage (`fsm_arc`).
+instrument a conservative subset of FSMs and report both state coverage
+(`fsm_state`) and transition coverage (`fsm_arc`).
 
 This feature is currently experimental and might change in subsequent
 releases. In particular, the native FSM coverage extraction heuristics,
@@ -224,10 +224,26 @@ releases. In particular, the native FSM coverage extraction heuristics,
 should be treated as subject to change while the interface settles.
 
 FSM extraction is intentionally narrow. The current implementation targets
-clocked, enum-driven state machines that can be recovered directly from the
-RTL. It does not claim broad support for two-process FSMs, one-hot
-inference, helper-function next-state recovery, or deeply nested control
-recovery.
+clocked state machines that can be recovered directly from the RTL. It
+recognizes scalar enum, parameter, localparam, and selected literal state
+encodings in these common forms:
+
+- single-process FSMs whose state dispatch is written as ``case (state)``
+  or as a top-level ``if`` / ``else if`` chain comparing the same state
+  variable against known state values
+- two-process and three-block FSMs where a clocked state register is paired
+  with a combinational next-state block using the same supported
+  ``case`` or top-level ``if`` / ``else if`` dispatch forms
+
+Simple input guards are supported when they appear inside a recognized
+state branch, or as a top-level conjunction containing exactly one state
+comparison, such as ``(state_q == IDLE) && ready``. Directly traceable
+predecoded state aliases, such as ``assign idle_state = (state_q == IDLE)``,
+may also be used in these guarded predicates.
+
+Verilator does not claim broad support for arbitrary predicate
+decomposition, one-hot inference, helper-function next-state recovery,
+deeply nested control recovery, or cross-module state alias tracing.
 
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
