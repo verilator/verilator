@@ -652,7 +652,7 @@ public:
         VlQueue out;
         if (VL_UNLIKELY(lsb > msb)) return out;
         if (VL_UNLIKELY(lsb == msb)) {
-            if (lsb > 0 && lsb < m_deque.size()) {
+            if (lsb >= 0 && lsb < m_deque.size()) {
                 out.push_back(m_deque[lsb]);
             }
             return out;
