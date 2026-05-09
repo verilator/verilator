@@ -14,7 +14,7 @@
 // verilator lint_off WIDTHTRUNC
 
 module t (
-    input  logic src,
+    input logic src,
     output logic assign_out,
     output logic comb_out,
     output logic latch_out
@@ -27,7 +27,7 @@ module t (
   reg q, d;
   event foo;
   real rl;
-  int ar [];
+  int ar[];
   int start = 0;
   int stop = 1;
   int step = 1;
@@ -59,14 +59,14 @@ module t (
     deassign assign_sig;
   end
 
-  always_comb begin: blk_name
+  always_comb begin : blk_name
     event int1, int2;
     real intrl;
     q <= d;
-    -> foo;
+    ->foo;
     rl = 0.0;
     rl <= 1.0;
-    ar = new [2];
+    ar = new[2];
     for (int idx = start; idx < stop; idx += step) $display("For: %0d", idx);
     for (int idx = 0; done; idx = done + 1) $stop;
     for (int idx = 0; idx; done = done + 1) $stop;
@@ -79,23 +79,22 @@ module t (
     a_task;
     assign a = 1'b0;
     deassign a;
-    do $display("do/while");
-    while (a);
+    do $display("do/while"); while (a);
     force a = 1'b1;
     release a;
-    while(a) begin
+    while (a) begin
       $display("while");
       a = 1'b0;
     end
-    repeat(2) $display("repeat");
+    repeat (2) $display("repeat");
     disable out_name;
     forever begin
       $display("forever");
-      disable blk_name; // This one should not generate a warning
+      disable blk_name;  // This one should not generate a warning
     end
   end
 
-  initial begin: out_name
+  initial begin : out_name
     #2 $stop;
   end
 

@@ -22,7 +22,7 @@ module t;
   logic clk = 0;
   int cyc = 0;
 
-  SimpleIf intf();
+  SimpleIf intf ();
 
   // Two different virtual interface handles to the same interface
   virtual SimpleIf vi1 = intf;

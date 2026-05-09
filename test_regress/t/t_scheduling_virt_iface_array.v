@@ -30,8 +30,8 @@ module t;
   logic clk = 0;
   int cyc = 0;
 
-  SimpleIf intf0();
-  SimpleIf intf1();
+  SimpleIf intf0 ();
+  SimpleIf intf1 ();
 
   virtual SimpleIf vi0 = intf0;
   virtual SimpleIf vi1 = intf1;

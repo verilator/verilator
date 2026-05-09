@@ -22,7 +22,7 @@ module t;
   logic clk = 0;
   int cyc = 0;
 
-  SimpleIf intf();
+  SimpleIf intf ();
   virtual SimpleIf vi = intf;
 
   // Write through virtual interface

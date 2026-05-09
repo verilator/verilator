@@ -20,10 +20,12 @@ module t;
   always @(posedge clock) {a, b, c, d} = 4'h3;
 
   always @(control)
-    if (control)
+    if (control) begin
       assign {a, b, c, d} = 4'h2;
-    else
+    end
+    else begin
       deassign {a, b, c, d};
+    end
 
   always begin
     #2;

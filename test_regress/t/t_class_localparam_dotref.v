@@ -4,17 +4,29 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 // Tests reference into a parameterized class via :: in a parameter expression.
 
-virtual class C #(parameter int a = 0);
+virtual class C #(
+    parameter int a = 0
+);
   localparam int b = a;
   static function int get_a();
     return a;
   endfunction
-  typedef enum {E0 = 100, E1 = 101} e_t;
+  typedef enum {
+    E0 = 100,
+    E1 = 101
+  } e_t;
 endclass
 
-class D #(parameter int v = C#(7)::b);
+class D #(
+    parameter int v = C#(7)::b
+);
   static function int get_v();
     return v;
   endfunction
@@ -25,7 +37,7 @@ typedef C#(1) inst1;
 typedef C#(4) chain_a;
 typedef chain_a chain_b;
 
-module t (/*AUTOARG*/);
+module t (  /*AUTOARG*/);
 
   // Wilson's exact case: typedef-aliased paramed class lparam.
   localparam int LP_TYPEDEF_LPARAM = inst0::b;
@@ -74,21 +86,21 @@ module t (/*AUTOARG*/);
   localparam int LP_CHAINED_TYPEDEF_INNER = D#(c13_alias::b)::get_v();
 
   initial begin
-    if (LP_TYPEDEF_LPARAM !== 0) begin $write("%%Error: TYPEDEF_LPARAM=%0d\n", LP_TYPEDEF_LPARAM); $stop; end
-    if (LP_DIRECT_LPARAM !== 2) begin $write("%%Error: DIRECT_LPARAM=%0d\n", LP_DIRECT_LPARAM); $stop; end
-    if (LP_STATIC_FUNC !== 1) begin $write("%%Error: STATIC_FUNC=%0d\n", LP_STATIC_FUNC); $stop; end
-    if (LP_ENUM_DIRECT !== 100) begin $write("%%Error: ENUM_DIRECT=%0d\n", LP_ENUM_DIRECT); $stop; end
-    if (LP_ENUM_TYPEDEF !== 101) begin $write("%%Error: ENUM_TYPEDEF=%0d\n", LP_ENUM_TYPEDEF); $stop; end
-    if (LP_OVERRIDE !== 7) begin $write("%%Error: OVERRIDE=%0d\n", LP_OVERRIDE); $stop; end
-    if (LP_MATH !== 5) begin $write("%%Error: MATH=%0d\n", LP_MATH); $stop; end
-    if (LP_PARAM_DRIVES_PARAM !== 5) begin $write("%%Error: PARAM_DRIVES_PARAM=%0d\n", LP_PARAM_DRIVES_PARAM); $stop; end
-    if (LP_CHAIN_TYPEDEF !== 4) begin $write("%%Error: CHAIN_TYPEDEF=%0d\n", LP_CHAIN_TYPEDEF); $stop; end
-    if (LP_MULTI !== 3) begin $write("%%Error: MULTI=%0d\n", LP_MULTI); $stop; end
-    if (LP_CLASS_DEFAULT !== 7) begin $write("%%Error: CLASS_DEFAULT=%0d\n", LP_CLASS_DEFAULT); $stop; end
-    if (LP_NESTED_ARG !== 9) begin $write("%%Error: NESTED_ARG=%0d\n", LP_NESTED_ARG); $stop; end
-    if (LP_NESTED_TYPEDEF_INNER !== 13) begin $write("%%Error: NESTED_TYPEDEF_INNER=%0d\n", LP_NESTED_TYPEDEF_INNER); $stop; end
-    if (LP_THREE_LEVEL !== 15) begin $write("%%Error: THREE_LEVEL=%0d\n", LP_THREE_LEVEL); $stop; end
-    if (LP_CHAINED_TYPEDEF_INNER !== 13) begin $write("%%Error: CHAINED_TYPEDEF_INNER=%0d\n", LP_CHAINED_TYPEDEF_INNER); $stop; end
+    `checkd(LP_TYPEDEF_LPARAM, 0);
+    `checkd(LP_DIRECT_LPARAM, 2);
+    `checkd(LP_STATIC_FUNC, 1);
+    `checkd(LP_ENUM_DIRECT, 100);
+    `checkd(LP_ENUM_TYPEDEF, 101);
+    `checkd(LP_OVERRIDE, 7);
+    `checkd(LP_MATH, 5);
+    `checkd(LP_PARAM_DRIVES_PARAM, 5);
+    `checkd(LP_CHAIN_TYPEDEF, 4);
+    `checkd(LP_MULTI, 3);
+    `checkd(LP_CLASS_DEFAULT, 7);
+    `checkd(LP_NESTED_ARG, 9);
+    `checkd(LP_NESTED_TYPEDEF_INNER, 13);
+    `checkd(LP_THREE_LEVEL, 15);
+    `checkd(LP_CHAINED_TYPEDEF_INNER, 13);
     $write("*-* All Finished *-*\n");
     $finish;
   end

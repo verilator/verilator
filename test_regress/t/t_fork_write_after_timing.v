@@ -75,7 +75,7 @@ module t;
     `checkd(x, -1)
   endtask
 
- task t3(output int x);
+  task t3(output int x);
     if ($time < 10) begin
       `checkd(x, 0)
     end

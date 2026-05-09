@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module top(
-  input wire [31:0] a
+module top (
+    input wire [31:0] a
 );
 
   wire [31:0] w00, w01, w02, w03, w04, w05, w06, w07, w08, w09;

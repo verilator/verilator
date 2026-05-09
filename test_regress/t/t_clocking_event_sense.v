@@ -16,7 +16,7 @@ module t;
   initial begin
     #1;
     data = 1;
-    -> e;
+    ->e;
     #1;
     if (cb.data !== 1'b1) $stop;
     $write("*-* All Finished *-*\n");

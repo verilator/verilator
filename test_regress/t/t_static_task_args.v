@@ -21,20 +21,17 @@ module t;
     #5 `checkd(x, expected);
   endtask
 
-  task factorial1 (input [31:0] x, output [31:0] out);
+  task factorial1(input [31:0] x, output [31:0] out);
     if (x >= 2) begin
-      factorial1 (x - 1, out);
+      factorial1(x - 1, out);
       out = out * x;
     end
-    else
-      out = 1;
+    else out = 1;
   endtask
 
-  function int factorial2 (input int x);
-    if (x >= 2)
-      factorial2 = factorial2(x - 1) * x;
-    else
-      factorial2 = 1;
+  function int factorial2(input int x);
+    if (x >= 2) factorial2 = factorial2(x - 1) * x;
+    else factorial2 = 1;
   endfunction
 
   int result;
@@ -79,8 +76,7 @@ module t;
       end
     join_none
 
-    #10
-    expected = 10;
+    #10 expected = 10;
     fork
       begin
         static int x3 = 99;
@@ -105,8 +101,7 @@ module t;
       end
     join_none
 
-
-    #10
+    #10;
     $write("*-* All Finished *-*\n");
     $finish;
   end

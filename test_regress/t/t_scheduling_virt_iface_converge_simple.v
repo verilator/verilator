@@ -22,20 +22,20 @@
 
 // Simple bus interface with request and response signals
 interface BusIf ();
-  logic       req_valid;
-  logic       req_ready;
+  logic req_valid;
+  logic req_ready;
 endinterface
 
 module t;
 
   logic clk = 0;
-  int   cyc = 0;
+  int cyc = 0;
 
   // Driver interface -- used via virtual interface in class
-  BusIf drv_if();
+  BusIf drv_if ();
 
   // DUT interface -- plain interface
-  BusIf dut_if();
+  BusIf dut_if ();
 
   // Instantiate virtual interface handle
   virtual BusIf vif = drv_if;
@@ -44,10 +44,10 @@ module t;
   // Request direction: drv_if -> dut_if
   assign dut_if.req_valid = drv_if.req_valid;
   // Response direction: dut_if -> drv_if (WRITES TO VIF!)
-  assign drv_if.req_ready = 1'b1; // dut_if.req_ready;
+  assign drv_if.req_ready = 1'b1;  // dut_if.req_ready;
 
   // --- Extract signals from dut_if ---
-  logic       ext_valid;
+  logic ext_valid;
   assign ext_valid = dut_if.req_valid;
 
   // --- Write response back to dut_if (like AXI_ASSIGN_FROM_RESP) ---

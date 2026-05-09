@@ -73,7 +73,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
-        ALWNEVER,       // always will never execute
+        ALWNEVER,       // Always will never execute
         ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNEQEXPR,   // Assignment equal (=) in expression

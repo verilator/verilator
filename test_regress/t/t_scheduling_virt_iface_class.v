@@ -23,19 +23,19 @@
 
 // Simple bus interface with request and response signals
 interface BusIf #(
-  parameter int DW = 8
+    parameter int DW = 8
 ) (
-  input logic clk
+    input logic clk
 );
-  logic       req_valid;
-  logic       req_ready;
+  logic req_valid;
+  logic req_ready;
   logic [DW-1:0] req_data;
 endinterface
 
 // Driver class that holds a virtual interface reference.
 // This is what makes drv_if a "virtual interface" in Verilator's eyes.
 class Driver #(
-  parameter int DW = 8
+    parameter int DW = 8
 );
   virtual BusIf #(.DW(DW)) vif;
 
@@ -45,12 +45,12 @@ class Driver #(
 
   task reset();
     vif.req_valid <= 1'b0;
-    vif.req_data  <= '0;
+    vif.req_data <= '0;
   endtask
 
   task send(input logic [DW-1:0] data);
     vif.req_valid <= 1'b1;
-    vif.req_data  <= data;
+    vif.req_data <= data;
     @(posedge vif.clk);
     while (!vif.req_ready) @(posedge vif.clk);
     vif.req_valid <= 1'b0;
@@ -60,7 +60,7 @@ endclass
 module t;
 
   logic clk = 0;
-  int   cyc = 0;
+  int cyc = 0;
 
   // Driver interface (like AXI_BUS_DV) -- used via virtual interface in class
   BusIf #(.DW(8)) drv_if (.clk(clk));
@@ -74,15 +74,15 @@ module t;
   // --- Bidirectional continuous assigns (like `AXI_ASSIGN(dut_if, drv_if)) ---
   // Request direction: drv_if -> dut_if
   assign dut_if.req_valid = drv_if.req_valid;
-  assign dut_if.req_data  = drv_if.req_data;
+  assign dut_if.req_data = drv_if.req_data;
   // Response direction: dut_if -> drv_if (WRITES TO VIF!)
   assign drv_if.req_ready = dut_if.req_ready;
 
   // --- Extract signals from dut_if (like AXI_ASSIGN_TO_REQ) ---
-  logic       ext_valid;
+  logic ext_valid;
   logic [7:0] ext_data;
   assign ext_valid = dut_if.req_valid;
-  assign ext_data  = dut_if.req_data;
+  assign ext_data = dut_if.req_data;
 
   // --- Combinational response logic (like always_comb in tb_axi_bus_compare) ---
   logic rsp_ready;
