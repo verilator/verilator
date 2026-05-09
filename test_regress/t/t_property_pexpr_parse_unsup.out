@@ -1,0 +1,68 @@
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:26:13: Unsupported: strong (in property expression)
+   26 |       strong(a);
+      |             ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:30:11: Unsupported: weak (in property expression)
+   30 |       weak(a);
+      |           ^
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:58:7: Unsupported: nexttime (in property expression)
+   58 |       nexttime a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:62:7: Unsupported: nexttime[] (in property expression)
+   62 |       nexttime [2] a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:66:7: Unsupported: s_nexttime (in property expression)
+   66 |       s_nexttime a;
+      |       ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:70:7: Unsupported: s_nexttime[] (in property expression)
+   70 |       s_nexttime [2] a;
+      |       ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:74:7: Unsupported: nexttime (in property expression)
+   74 |       nexttime always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:78:7: Unsupported: nexttime[] (in property expression)
+   78 |       nexttime [2] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:82:7: Unsupported: nexttime[] (in property expression)
+   82 |       nexttime [2] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:86:7: Unsupported: nexttime (in property expression)
+   86 |       nexttime s_eventually a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:90:16: Unsupported: s_eventually[] (in property expression)
+   90 |       nexttime s_eventually [2:$] always a;
+      |                ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:90:7: Unsupported: nexttime (in property expression)
+   90 |       nexttime s_eventually [2:$] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:94:17: Unsupported: accept_on (in property expression)
+   94 |       accept_on (a) b;
+      |                 ^
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:98:22: Unsupported: sync_accept_on (in property expression)
+   98 |       sync_accept_on (a) b;
+      |                      ^
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:102:17: Unsupported: reject_on (in property expression)
+  102 |       reject_on (a) b;
+      |                 ^
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:106:22: Unsupported: sync_reject_on (in property expression)
+  106 |       sync_reject_on (a) b;
+      |                      ^
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:109:27: Unsupported: property argument data type
+  109 |    property p_arg_propery(property inprop);
+      |                           ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:112:27: Unsupported: sequence argument data type
+  112 |    property p_arg_seqence(sequence inseq);
+      |                           ^~~~~~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:117:7: Unsupported: property case expression
+  117 |       case (a) endcase
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:120:7: Unsupported: property case expression
+  120 |       case (a) default: b; endcase
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:123:7: Unsupported: property case expression
+  123 |       if (a) b
+      |       ^~
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:126:7: Unsupported: property case expression
+  126 |       if (a) b else c
+      |       ^~
+%Error: Exiting due to

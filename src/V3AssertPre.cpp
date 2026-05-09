@@ -67,9 +67,11 @@ private:
     V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
+    V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
@@ -240,6 +242,15 @@ private:
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
         UINFO(8, "   CLOCKING" << nodep);
+        if (nodep->isDefault()) {
+            if (m_defaultClockingp) {
+                nodep->v3error("Only one default clocking block allowed per module"
+                               " (IEEE 1800-2023 14.12)");
+            } else {
+                m_defaultClockingp = nodep;
+                m_defaultClkEvtVarp = nodep->ensureEventp();
+            }
+        }
         iterateChildren(nodep);
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -402,6 +413,7 @@ private:
         }
     }
     void visit(AstDelay* nodep) override {
+        m_hasCycleDelay = true;
         // Only cycle delays are relevant in this stage; also only process once
         if (!nodep->isCycleDelay()) {
             if (m_inSynchDrive) {
@@ -783,6 +795,121 @@ private:
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    static AstAssocArrayDType* getProcessAssocArrayType(FileLine* const flp) {
+        // Type of __VassertsActive___x[std::process]
+        AstNodeDType* valp
+            = v3Global.rootp()->typeTablep()->findBasicDType(flp, VBasicDTypeKwd::BIT);
+        AstClassRefDType* keyp
+            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageClassp(), nullptr};
+        keyp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        v3Global.rootp()->typeTablep()->addTypesp(keyp);
+        AstAssocArrayDType* const typep = new AstAssocArrayDType{flp, valp, keyp};
+        typep->dtypep(typep);
+        v3Global.rootp()->typeTablep()->addTypesp(typep);
+        return typep;
+    }
+    static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
+        // Constructs refp.delete(std::process::self()) statement
+        FileLine* const flp = refp->fileline();
+        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        AstCMethodHard* const deletep = new AstCMethodHard{
+            flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
+        deletep->dtypep(refp->findVoidDType());
+        return new AstStmtExpr{flp, deletep};
+    }
+    static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
+        // Constructs refp.size() statement
+        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        AstCMethodHard* const sizep
+            = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
+        sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
+        return sizep;
+    }
+    void visit(AstSEventually* nodep) override {
+        UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+
+        AstSenTree* const sentreep = newSenTree(nodep);
+        if (!sentreep->sensesp()) {
+            VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
+        FileLine* const flp = nodep->fileline();
+
+        // Track active assertions
+        AstVar* const activep = new AstVar{flp, VVarType::MODULETEMP, m_activeNames.get(""),
+                                           getProcessAssocArrayType(flp)};
+        activep->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(activep);
+
+        // Assertion condition check
+        AstLoop* const loopp = new AstLoop{flp};
+        AstNodeExpr* const condp = new AstSampled{flp, nodep->exprp()->unlinkFrBack()};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLogNot{flp, condp}});
+        loopp->addStmtsp(new AstEventControl{flp, sentreep, nullptr});
+
+        // Add assertion to the active set
+        AstAssocSel* const selp = new AstAssocSel{flp, new AstVarRef{flp, activep, VAccess::WRITE},
+                                                  v3Global.rootp()->stdPackageProcessSelfp(flp)};
+        AstAssign* const incrementp = new AstAssign{flp, selp, new AstConst{flp, 1}};
+        AstPExprClause* const clausep = new AstPExprClause{flp};
+        AstStmtExpr* const deletep
+            = getProcessAssocArrayDelete(new AstVarRef{flp, activep, VAccess::WRITE});
+
+        // Main assertion block
+        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+        bodyp->addStmtsp(incrementp);
+        bodyp->addStmtsp(loopp);
+        bodyp->addStmtsp(clausep);
+        bodyp->addStmtsp(deletep);
+
+        // Validate assertion condition for each active assert
+        AstVar* const activeCountp = new AstVar{flp, VVarType::BLOCKTEMP, "__VassertCount",
+                                                nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        activeCountp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstAssign* const initActiveCountp
+            = new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                            getProcessAssocArraySize(new AstVarRef{flp, activep, VAccess::READ})};
+        AstLoop* const finalLoopp = new AstLoop{flp};
+        AstIf* const finalBodypCondp
+            = new AstIf{flp, condp->cloneTreePure(false), new AstPExprClause{flp},
+                        new AstPExprClause{flp, false}};
+        finalLoopp->addStmtsp(
+            new AstLoopTest{flp, finalLoopp,
+                            new AstNeq{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                       new AstConst{flp, 0}}});
+        finalLoopp->addStmtsp(finalBodypCondp);
+        finalLoopp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                          new AstSub{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                     new AstConst{flp, 1}}});
+
+        // Final assertion block
+        AstBegin* const finalp = new AstBegin{flp, "", nullptr, true};
+        finalp->addStmtsp(activeCountp);
+        finalp->addStmtsp(initActiveCountp);
+        finalp->addStmtsp(finalLoopp);
+
+        m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
+        VL_RESTORER(m_hasCycleDelay);
+        m_hasCycleDelay = false;
+        iterate(bodyp);
+        iterate(finalp);
+
+        if (m_hasCycleDelay) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
+            return;
+        }
+
+        nodep->replaceWith(m_pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstStable* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
@@ -993,6 +1120,18 @@ private:
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
+        // Top-level followed-by is claimed by V3AssertNfa; anything reaching here
+        // is nested inside iff/implies/or. IEEE 1800-2023 16.12.9 permits the
+        // composition, but silent lowering would drop non-vacuous-fail semantics.
+        if (nodep->isFollowedBy()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: followed-by (#-# / #=#) nested inside property operator"
+                          " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
         // Handle goto repetition as antecedent before iterateChildren,
         // so the standalone AstSGotoRep visitor doesn't process it
         if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
@@ -1182,7 +1321,12 @@ private:
     }
 
     void visit(AstDefaultDisable* nodep) override {
-        // Done with these
+        if (m_defaultDisablep) {
+            nodep->v3error("Only one 'default disable iff' allowed per module"
+                           " (IEEE 1800-2023 16.15)");
+        } else {
+            m_defaultDisablep = nodep;
+        }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstInferredDisable* nodep) override {
@@ -1246,6 +1390,17 @@ private:
         m_pexprp = nodep;
 
         if (m_disablep) {
+            const AstSampled* sampledp = nullptr;
+            if (m_disablep->exists([&sampledp](const AstSampled* const sp) {
+                    sampledp = sp;
+                    return true;
+                })) {
+                sampledp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: $sampled inside disabled condition of a sequence");
+                m_disablep = new AstConst{m_disablep->fileline(), AstConst::BitFalse{}};
+                // always a copy is used, so remove it now
+                pushDeletep(m_disablep);
+            }
             FileLine* const flp = nodep->fileline();
             // Add counter which counts times the condition turned true
             AstVar* const disableCntp
@@ -1293,29 +1448,8 @@ private:
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
         m_defaultClkEvtVarp = nullptr;
-        nodep->foreach([&](AstClocking* const clockingp) {
-            if (clockingp->isDefault()) {
-                if (m_defaultClockingp) {
-                    clockingp->v3error("Only one default clocking block allowed per module"
-                                       " (IEEE 1800-2023 14.12)");
-                }
-                m_defaultClockingp = clockingp;
-            }
-        });
         m_defaultDisablep = nullptr;
-        nodep->foreach([&](AstDefaultDisable* const disablep) {
-            if (m_defaultDisablep) {
-                disablep->v3error("Only one 'default disable iff' allowed per module"
-                                  " (IEEE 1800-2023 16.15)");
-            }
-            m_defaultDisablep = disablep;
-        });
         m_modp = nodep;
-        // Pre-create and cache the clocking event var before iterating children.
-        // visit(AstClocking) will unlink the event from the clocking node and place it
-        // in the module tree, then delete the clocking. After that, ensureEventp() would
-        // create an orphaned var. Caching here avoids this.
-        m_defaultClkEvtVarp = m_defaultClockingp ? m_defaultClockingp->ensureEventp() : nullptr;
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {

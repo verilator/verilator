@@ -185,6 +185,8 @@ struct BuildResult final {
 
 class SvaNfaBuilder final {
     SvaGraph& m_graph;  // NFA graph being built
+    AstNodeModule* const m_modp;  // Module to receive hoisted sampled-prop temps
+    V3UniqueNames& m_propTempNames;  // Module-shared temp-var name source
     std::vector<AstNodeExpr*> m_throughoutStack;  // Active throughout guards (IEEE 16.9.9)
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
 
@@ -282,6 +284,29 @@ class SvaNfaBuilder final {
         AstSampled* const sp = new AstSampled{exprp->fileline(), exprp};
         sp->dtypeFrom(exprp);
         return sp;
+    }
+
+    // Cuts AST size from O(N * sizeof(exprp)) to O(N) + O(sizeof(exprp)) by
+    // sharing a single `VarRef` across N check edges. Hoist also matches the
+    // IEEE 1800-2023 16.9.9 "single preponed-region snapshot" semantic for
+    // any exprp -- even an impure one would now evaluate exactly once per
+    // clock instead of N times. Orphan temps from failed builds are unused
+    // MODULETEMPs and are removed by V3Dead.
+    AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, int cloneCount) {
+        constexpr int kHoistThreshold = 2;
+        if (cloneCount < kHoistThreshold) return nullptr;
+        AstVar* const tempVarp = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp),
+                                            m_modp->findBitDType()};
+        m_modp->addStmtsp(tempVarp);
+        AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
+                                                 sampled(exprp->cloneTreePure(false))};
+        m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp});
+        return tempVarp;
+    }
+
+    static AstNodeExpr* sampledRefOrClone(AstVar* hoistVarp, AstNodeExpr* exprp, FileLine* flp) {
+        if (hoistVarp) return new AstVarRef{flp, hoistVarp, VAccess::READ};
+        return sampled(exprp->cloneTreePure(false));
     }
 
     // Create vertex and inherit throughout guards from current scope (IEEE 16.9.9).
@@ -388,11 +413,12 @@ class SvaNfaBuilder final {
         } else {
             // Pure boolean RHS: register chain. Each mid-position links to
             // match (match-only); last position is the reject source.
+            AstVar* const hoistVarp = tryHoistSampled(rhsExprp, flp, range);
             midSources.push_back(currentp);
             for (int i = 0; i < range; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
                 AstNodeExpr* const notExprp
-                    = new AstNot{flp, sampled(rhsExprp->cloneTreePure(false))};
+                    = new AstNot{flp, sampledRefOrClone(hoistVarp, rhsExprp, flp)};
                 guardedEdge(currentp, nextVtxp, notExprp, flp);
                 if (i < range - 1) midSources.push_back(nextVtxp);
                 currentp = nextVtxp;
@@ -474,6 +500,16 @@ class SvaNfaBuilder final {
         }
         // LCOV_EXCL_STOP
 
+        // Sum sites across prefix + unbounded/range tail so one hoist covers
+        // every check edge of this repetition.
+        int totalSites = minN;
+        if (repp->unbounded()) {
+            totalSites += 1;
+        } else if (repp->maxCountp()) {
+            totalSites += getConstInt(repp->maxCountp()) - minN;
+        }
+        AstVar* const hoistVarp = tryHoistSampled(exprp, flp, totalSites);
+
         SvaStateVertex* currentp = entryVtxp;
         for (int i = 0; i < minN; ++i) {
             if (i > 0) {
@@ -485,7 +521,7 @@ class SvaNfaBuilder final {
             // reject on standalone ConsRep.
             SvaStateVertex* const condVtxp = scopedCreateVertex();
             SvaTransEdge* const linkp
-                = guardedLink(currentp, condVtxp, sampled(exprp->cloneTreePure(false)), flp);
+                = guardedLink(currentp, condVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
             if (isTopLevelStep && (i == 0 || i == minN - 1)) { linkp->m_rejectOnFail = true; }
             currentp = condVtxp;
         }
@@ -495,7 +531,7 @@ class SvaNfaBuilder final {
                 SvaStateVertex* const waitVtxp = scopedCreateVertex();
                 guardedEdge(currentp, waitVtxp, flp);
                 SvaStateVertex* const checkVtxp = scopedCreateVertex();
-                guardedLink(waitVtxp, checkVtxp, sampled(exprp->cloneTreePure(false)), flp);
+                guardedLink(waitVtxp, checkVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
                 guardedEdge(checkVtxp, waitVtxp, flp);
                 guardedLink(currentp, checkVtxp, flp);
                 currentp = checkVtxp;
@@ -503,7 +539,8 @@ class SvaNfaBuilder final {
                 SvaStateVertex* const loopBackVtxp = scopedCreateVertex();
                 guardedEdge(currentp, loopBackVtxp, flp);
                 SvaStateVertex* const reCheckVtxp = scopedCreateVertex();
-                guardedLink(loopBackVtxp, reCheckVtxp, sampled(exprp->cloneTreePure(false)), flp);
+                guardedLink(loopBackVtxp, reCheckVtxp, sampledRefOrClone(hoistVarp, exprp, flp),
+                            flp);
                 guardedEdge(reCheckVtxp, loopBackVtxp, flp);
                 guardedLink(reCheckVtxp, currentp, flp);
             }
@@ -518,7 +555,7 @@ class SvaNfaBuilder final {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
                 guardedEdge(currentp, nextVtxp, flp);
                 SvaStateVertex* const checkVtxp = scopedCreateVertex();
-                guardedLink(nextVtxp, checkVtxp, sampled(exprp->cloneTreePure(false)), flp);
+                guardedLink(nextVtxp, checkVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
                 guardedLink(checkVtxp, mergeVtxp, flp);
                 currentp = checkVtxp;
             }
@@ -528,12 +565,41 @@ class SvaNfaBuilder final {
         return {currentp, nullptr, {}};
     }
 
+    // always[lo:hi] / s_always[lo:hi] (IEEE 1800-2023 16.12.11).
+    BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
+                                bool isTopLevelStep = false) {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const propp = nodep->propp();
+        const int lo = getConstInt(nodep->loBoundp());
+        const int hi = getConstInt(nodep->hiBoundp());
+        UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        AstVar* const hoistVarp = tryHoistSampled(propp, flp, hi - lo + 1);
+        SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
+        for (int k = 0; k <= hi - lo; ++k) {
+            if (k > 0) {
+                SvaStateVertex* const nextp = scopedCreateVertex();
+                guardedEdge(currentp, nextp, flp);
+                currentp = nextp;
+            }
+            SvaStateVertex* const checkp = scopedCreateVertex();
+            SvaTransEdge* const linkp
+                = guardedLink(currentp, checkp, sampledRefOrClone(hoistVarp, propp, flp), flp);
+            if (isTopLevelStep && !m_inUnboundedScope) linkp->m_rejectOnFail = true;
+            currentp = checkp;
+        }
+        return {currentp, nullptr, {}};
+    }
+
     BuildResult buildGotoRep(AstSGotoRep* repp, SvaStateVertex* entryVtxp) {
         FileLine* const flp = repp->fileline();
         AstNodeExpr* const exprp = repp->exprp();
         const int n = getConstInt(repp->countp());
         if (n <= 0) return BuildResult::fail();
 
+        // Wait + match per iter -> 2n sites. NOT($sampled(x)) matches
+        // $sampled(NOT(x)) at the value level (IEEE 1800-2023 16.9.9);
+        // purity is enforced uniformly via cloneTreePure inside sampledRefOrClone.
+        AstVar* const hoistVarp = tryHoistSampled(exprp, flp, 2 * n);
         SvaStateVertex* currentp = entryVtxp;
         for (int i = 0; i < n; ++i) {
             SvaStateVertex* const waitVtxp = scopedCreateVertex();
@@ -541,10 +607,11 @@ class SvaNfaBuilder final {
             // match. A Link at i==0 was wrong -- it allowed same-cycle matching
             // and was discarded by Phase 2 (waitNode has a self-loop Edge).
             guardedEdge(currentp, waitVtxp, flp);
-            AstNodeExpr* const notExprp = new AstNot{flp, exprp->cloneTreePure(false)};
-            guardedEdge(waitVtxp, waitVtxp, sampled(notExprp), flp);
+            AstNodeExpr* const waitCondp
+                = new AstNot{flp, sampledRefOrClone(hoistVarp, exprp, flp)};
+            guardedEdge(waitVtxp, waitVtxp, waitCondp, flp);
             SvaStateVertex* const matchVtxp = scopedCreateVertex();
-            guardedLink(waitVtxp, matchVtxp, sampled(exprp->cloneTreePure(false)), flp);
+            guardedLink(waitVtxp, matchVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
             currentp = matchVtxp;
         }
         currentp->m_isUnbounded = true;  // [->N] waits unboundedly
@@ -717,8 +784,10 @@ class SvaNfaBuilder final {
     }
 
 public:
-    explicit SvaNfaBuilder(SvaGraph& graph)
-        : m_graph{graph} {}
+    SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames)
+        : m_graph{graph}
+        , m_modp{modp}
+        , m_propTempNames{propTempNames} {}
 
     // Reset scope between antecedent and consequent: liveness must not leak.
     void resetScope() {
@@ -733,6 +802,9 @@ public:
         }
         if (AstSConsRep* const repp = VN_CAST(nodep, SConsRep)) {
             return buildConsRep(repp, entryVtxp, isTopLevelStep);
+        }
+        if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
+            return buildPropAlways(alwaysp, entryVtxp, isTopLevelStep);
         }
         if (AstSGotoRep* const repp = VN_CAST(nodep, SGotoRep)) {
             return buildGotoRep(repp, entryVtxp);
@@ -767,8 +839,73 @@ public:
             return buildSWithin(withinp, entryVtxp, isTopLevelStep);
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
+        if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
+            return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
+                                         implp->isOverlapped(), implp->isFollowedBy(),
+                                         implp->lhsp(), implp->fileline());
+        }
         // Boolean leaf (including LogAnd): return as finalCond
         return {entryVtxp, nodep, {}};
+    }
+
+    // Wire an implication / followed-by from `entryVtxp`: builds the antecedent,
+    // emits the match-link (and for followed-by the reject-sink edge), inserts a
+    // delay vertex for non-overlapped forms, and builds the body. Used both for
+    // nested AstImplication in pexpr position and for the top-level assertion
+    // antecedent -- `errorNodep` anchors the "unsupported sequence antecedent"
+    // error, which differs between the two call sites.
+    BuildResult buildImplicationEdges(AstNodeExpr* antExprp, AstNodeExpr* bodyExprp,
+                                      SvaStateVertex* entryVtxp, bool isOverlapped,
+                                      bool isFollowedBy, AstNode* errorNodep, FileLine* flp) {
+        const BuildResult antResult = buildExpr(antExprp, entryVtxp);
+        if (!antResult.valid()) return antResult;
+
+        // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
+        // the attempt-start cycle. IEEE 1800-2023 16.12.9 permits a multi-cycle
+        // sequence LHS, so this is an implementation gap rather than illegal SV.
+        if (isFollowedBy && antResult.termVertexp != entryVtxp) {
+            errorNodep->v3warn(E_UNSUPPORTED,
+                               "Unsupported: sequence expression as antecedent of followed-by"
+                               " (#-# / #=#) (IEEE 1800-2023 16.12.9)");
+            return BuildResult::failWithError();
+        }
+        UASSERT_OBJ(!isFollowedBy || antResult.finalCondp, errorNodep,
+                    "followed-by antecedent terminal at entry must carry finalCondp");
+
+        // Use raw createStateVertex() so trigVtxp starts without liveness --
+        // reaching the antecedent terminal is a definitive event.
+        SvaStateVertex* const trigVtxp = m_graph.createStateVertex();
+        if (antResult.finalCondp) {
+            m_graph.addLink(antResult.termVertexp, trigVtxp,
+                            sampled(antResult.finalCondp->cloneTreePure(false)));
+            // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
+            // is live (termVtx reachable) and sampled(antecedent) is false.
+            if (isFollowedBy) {
+                SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+                sinkVtxp->m_isRejectSink = true;
+                SvaTransEdge* const ep
+                    = m_graph.addLink(antResult.termVertexp, sinkVtxp,
+                                      sampled(antResult.finalCondp->cloneTreePure(false)));
+                ep->m_rejectOnFail = true;
+            }
+            // finalCondp is cloned into the Sampled nodes; if the original is
+            // not parented anywhere in the AST anymore it must be freed here
+            // or ASan flags it as a leak (e.g. t_sequence_bool_ops).
+            if (!antResult.finalCondp->backp()) {
+                VL_DO_DANGLING(antResult.finalCondp->deleteTree(), antResult.finalCondp);
+            }
+        } else {
+            m_graph.addLink(antResult.termVertexp, trigVtxp);
+        }
+        resetScope();
+
+        SvaStateVertex* bodyEntryp = trigVtxp;
+        if (!isOverlapped) {
+            SvaStateVertex* const delayVtxp = m_graph.createStateVertex();
+            m_graph.addClockedEdge(trigVtxp, delayVtxp);
+            bodyEntryp = delayVtxp;
+        }
+        return buildExpr(bodyExprp, bodyEntryp, /*isTopLevelStep=*/true);
     }
 
     BuildResult build(AstNodeExpr* exprp) {
@@ -1440,9 +1577,12 @@ public:
 class AssertNfaVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module being processed
+    AstClocking* m_defaultClockingp = nullptr;  // Default clocking
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
+    V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     // Wire match vertex and mid-window sources for a successful NFA build.
@@ -1613,6 +1753,7 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr* seqExprp = nullptr;
         bool isOverlapped = true;
         bool hasImplication = false;
+        bool isFollowedBy = false;  // True for #-# / #=# (non-vacuous-fail on antecedent miss)
     };
 
     static PropertyParts decomposeProperty(AstNode* propp) {
@@ -1621,6 +1762,7 @@ class AssertNfaVisitor final : public VNVisitor {
         if (AstImplication* const implp = VN_CAST(propp, Implication)) {
             parts.hasImplication = true;
             parts.isOverlapped = implp->isOverlapped();
+            parts.isFollowedBy = implp->isFollowedBy();
             parts.triggerExprp = implp->lhsp();
             parts.seqExprp = implp->rhsp();
         } else if (AstNodeExpr* const exprp = VN_CAST(propp, NodeExpr)) {
@@ -1684,29 +1826,9 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!parts.hasImplication) return builder.build(seqBodyp);
 
         graph.m_startVertexp = graph.createStateVertex();
-        const BuildResult antResult = builder.buildExpr(parts.triggerExprp, graph.m_startVertexp);
-        if (!antResult.valid()) return antResult;
-
-        // Use raw createStateVertex() (not scopedCreateVertex) so trigVtxp starts
-        // without liveness. Reaching the antecedent terminal is a definitive event.
-        SvaStateVertex* const trigVtxp = graph.createStateVertex();
-        if (antResult.finalCondp) {
-            AstSampled* const sampp
-                = new AstSampled{flp, antResult.finalCondp->cloneTreePure(false)};
-            sampp->dtypeFrom(antResult.finalCondp);
-            graph.addLink(antResult.termVertexp, trigVtxp, sampp);
-            if (!antResult.finalCondp->backp()) pushDeletep(antResult.finalCondp);
-        } else {
-            graph.addLink(antResult.termVertexp, trigVtxp);
-        }
-        builder.resetScope();
-
-        if (parts.isOverlapped) {
-            return builder.buildExpr(seqBodyp, trigVtxp, /*isTopLevelStep=*/true);
-        }
-        SvaStateVertex* const delayVtxp = graph.createStateVertex();
-        graph.addClockedEdge(trigVtxp, delayVtxp);
-        return builder.buildExpr(seqBodyp, delayVtxp, /*isTopLevelStep=*/true);
+        return builder.buildImplicationEdges(parts.triggerExprp, seqBodyp, graph.m_startVertexp,
+                                             parts.isOverlapped, parts.isFollowedBy,
+                                             parts.triggerExprp, flp);
     }
 
     // Install the pass-action handler and per-thread fail-handlers generated by
@@ -1788,6 +1910,13 @@ class AssertNfaVisitor final : public VNVisitor {
         bool senTreeOwned = false;  // True if we created senTreep locally
         AstPropSpec* const propSpecp = VN_CAST(assertp->propp(), PropSpec);
         UASSERT_OBJ(propSpecp, assertp, "Concurrent assertion must have PropSpec");
+        // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
+        if (!propSpecp->sensesp() && m_defaultClockingp) {
+            propSpecp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
+        }
+        if (!propSpecp->disablep() && m_defaultDisablep) {
+            propSpecp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
+        }
         if (!senTreep && propSpecp->sensesp()) {
             senTreep
                 = new AstSenTree{propSpecp->fileline(), propSpecp->sensesp()->cloneTree(true)};
@@ -1800,13 +1929,15 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool isCover = VN_IS(assertp, Cover);
 
         SvaGraph graph;
-        SvaNfaBuilder builder{graph};
+        SvaNfaBuilder builder{graph, m_modp, m_propTempNames};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);
         if (!result.valid()) {
             // Fall through to V3AssertPre for unsupported constructs; only
-            // replace the body on real semantic errors.
+            // replace the body on real semantic errors. Any hoisted temps
+            // from this attempt become orphan MODULETEMPs; V3Dead removes
+            // them along with the dead always_comb driver.
             replaceBodyOnBuildError(flp, propSpecp, result.errorEmitted);
             if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
             return;
@@ -1859,10 +1990,21 @@ class AssertNfaVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_loweringp);
+        VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_defaultDisablep);
         m_modp = nodep;
+        m_defaultClockingp = nullptr;
+        m_defaultDisablep = nullptr;
         SvaNfaLowering lowering{nodep};
         m_loweringp = &lowering;
         iterateChildren(nodep);
+    }
+    void visit(AstClocking* nodep) override {
+        if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        if (!m_defaultDisablep) m_defaultDisablep = nodep;
     }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }

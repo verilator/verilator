@@ -137,6 +137,7 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, uint32_t elemen
         = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
     const bool newEntry = m_local2fstdtype[initUserp()].emplace(dtypenum, enumNum).second;
     assert(newEntry);
+    (void)newEntry;  // Prevent unused variable warning when asserts are disabled
 }
 
 void VerilatedFst::pushPrefix(const char* namep, VerilatedTracePrefixType type, int left,

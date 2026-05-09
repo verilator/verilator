@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:20: Unsupported: Unclocked assertion
+                                                           : ... note: In instance 't'
+   14 |   assert property (s_eventually ##1 1);
+      |                    ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:3: Unsupported: Unclocked assertion
+                                                          : ... note: In instance 't'
+   14 |   assert property (s_eventually ##1 1);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: cycle delay in s_eventually
+                                                           : ... note: In instance 't'
+   15 |   assert property (@(negedge clk) s_eventually ##1 1);
+      |                                   ^~~~~~~~~~~~
+%Error: Exiting due to

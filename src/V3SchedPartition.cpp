@@ -197,9 +197,12 @@ class SchedGraphBuilder final : public VNVisitor {
         }
 
         // Add edges based on references
-        nodep->foreach([this, logicVtxp](const AstVarRef* vrefp) {
+        V3Sched::util::VarScopeSet forceReadEdgeIgnores;
+        V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
+        nodep->foreach([this, logicVtxp, &forceReadEdgeIgnores](const AstVarRef* vrefp) {
             AstVarScope* const vscp = vrefp->varScopep();
-            if (vrefp->access().isReadOrRW() && m_readTriggersThisLogic(vscp)) {
+            if (vrefp->access().isReadOrRW() && m_readTriggersThisLogic(vscp)
+                && !forceReadEdgeIgnores.count(vscp)) {
                 new V3GraphEdge{m_graphp, getVarVertex(vscp), logicVtxp, 10};
             }
             if (vrefp->access().isWriteOrRW() && !vrefp->varp()->ignoreSchedWrite()) {

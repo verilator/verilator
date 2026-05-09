@@ -86,10 +86,6 @@ module sva_implies2 (
     b
 );
 
-  p0 :
-  assert property ((always a) implies (always a));
-  p1 :
-  assert property ((a or(always b)) implies (a or(always b)));
   p2 :
   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
   p3 :
@@ -112,8 +108,6 @@ module sva_iff2 (
     b
 );
 
-  p0 :
-  assert property ((always a) iff (always a));
   p1 :
   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
   p2 :

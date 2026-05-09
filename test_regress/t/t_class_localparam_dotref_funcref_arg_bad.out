@@ -1,0 +1,12 @@
+%Error-UNSUPPORTED: t/t_class_localparam_dotref_funcref_arg_bad.v:23:32: dotted expressions in parameters
+                                                                       : ... note: In instance 't'
+                                                                       : ... Suggest use a typedef
+   23 |   localparam int y = D#(C#(7)::get_a())::x;
+      |                                ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_class_localparam_dotref_funcref_arg_bad.v:23:32: Can't convert defparam value to constant: Param '__paramNumber1' of 'D'
+                                                           : ... note: In instance 't'
+   23 |   localparam int y = D#(C#(7)::get_a())::x;
+      |                                ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

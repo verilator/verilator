@@ -183,6 +183,7 @@ static void process() {
         V3Param::param(v3Global.rootp());
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+        V3Param::finalizeDeferredParams(v3Global.rootp());
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         // Link cleanup of 'with' as final link phase before V3Width
@@ -423,6 +424,10 @@ static void process() {
             // After V3TraceDecl so we don't trace additional signals inserted to implement
             // forcing.
             V3Force::forceAll(v3Global.rootp());
+
+            // Convert assign/deassign statements to forces on generated variables, so they can be
+            // handled by the same logic as regular force/release statements.
+            V3Force::assignAll(v3Global.rootp());
 
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());

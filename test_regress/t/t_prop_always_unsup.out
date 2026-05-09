@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:12:35: Unsupported: unbounded always range (always [m:$])
+                                                 : ... note: In instance 't'
+   12 |   assert property (@(posedge clk) always [2:$] a);
+      |                                   ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:15:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   15 |   assert property (@(posedge clk) always [0:3] (a |-> b));
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:16:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) always [0:3] (a |=> b));
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:17:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) always [0:3] (a ##1 b));
+      |                                   ^~~~~~
+%Error: Exiting due to

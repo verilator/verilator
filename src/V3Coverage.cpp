@@ -300,7 +300,9 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstLoop* nodep) override {
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         VL_RESTORER(m_state);
+        VL_RESTORER(m_exprStmtsp);
         VL_RESTORER(m_inToggleOff);
+        m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateAndNextNull(nodep->stmtsp());

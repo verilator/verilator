@@ -152,6 +152,9 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
+            V3Sched::util::VarScopeSet forceReadEdgeIgnores;
+            V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
+
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedAcyclicVarVertex* const vvtxp = getVarVertex(vscp);
@@ -164,7 +167,8 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
                 // If read, add var -> logic edge
                 // Note: Use same heuristic as ordering does to ignore written variables
                 // TODO: Use live variable analysis.
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2())
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp))
                     addEdge(vvtxp, lvtxp, weight, true);
             });
         }
