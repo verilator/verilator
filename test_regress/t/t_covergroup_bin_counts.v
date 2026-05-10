@@ -7,10 +7,12 @@
 // SPDX-FileCopyrightText: 2026 Matthew Ballance
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
-  `define stop $stop
-  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
+module t;
   logic [3:0] data;
   logic [7:0] opcode;
 
