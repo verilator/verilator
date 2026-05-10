@@ -23,6 +23,7 @@ module t (
   logic [1:0] underscore_state;
   logic [1:0] xz_reset_probe_state;
   logic [1:0] xz_rhs_probe_state;
+  logic [32:0] wide_if_state  /*verilator fsm_state*/;
 
   always_ff @(posedge clk) begin
     if (rst) begin
@@ -133,6 +134,18 @@ module t (
         2'h1: xz_rhs_probe_state <= 2'h0;
         default: xz_rhs_probe_state <= 2'h0;
       endcase
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      wide_if_state <= 33'h0;
+    end
+    else if (wide_if_state == 33'h0) begin
+      wide_if_state <= 33'h1;
+    end
+    else if (wide_if_state == 33'h1) begin
+      wide_if_state <= 33'h0;
     end
   end
 

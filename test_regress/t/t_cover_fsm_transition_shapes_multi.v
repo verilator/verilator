@@ -731,6 +731,20 @@ module fsm_forced_wide_bad (
 
 endmodule
 
+module fsm_forced_if_wide_bad (
+    input logic clk
+);
+
+  // Forced non-enum FSMs enumerate every possible state; 31 bits is too many.
+  logic [30:0] state  /*verilator fsm_state*/;
+
+  always_ff @(posedge clk) begin
+    if (state == 31'd0) state <= 31'd1;
+    else if (state == 31'd1) state <= 31'd0;
+  end
+
+endmodule
+
 module fsm_reset_commit_mismatch_bad (
     input logic clk
 );
@@ -852,6 +866,7 @@ module t (
   fsm_normalized_if_follow_wronglhs_bad normalized_if_follow_wronglhs_bad_u (.clk(clk));
   fsm_case_next_wrongrhs_bad case_next_wrongrhs_bad_u (.clk(clk));
   fsm_forced_wide_bad forced_wide_bad_u (.clk(clk));
+  fsm_forced_if_wide_bad forced_if_wide_bad_u (.clk(clk));
   fsm_reset_commit_mismatch_bad reset_commit_mismatch_bad_u (.clk(clk));
   fsm_reset_then_bad reset_then_bad_u (.clk(clk));
 

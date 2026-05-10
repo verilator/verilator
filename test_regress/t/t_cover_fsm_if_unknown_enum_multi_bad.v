@@ -158,6 +158,104 @@ module unknown_source (
   end
 endmodule
 
+module unknown_if_source (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    /* verilator lint_off ENUMVALUE */
+    if (state_q == 2'd3) state_d = S0;
+    /* verilator lint_on ENUMVALUE */
+    else if (state_q == S1) state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
+module unknown_if_direct_target (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    /* verilator lint_off ENUMVALUE */
+    if (state_q == S0) state_d = 2'd3;
+    /* verilator lint_on ENUMVALUE */
+    else if (state_q == S1) state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
+module unknown_if_then_target (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  logic sel;
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    /* verilator lint_off ENUMVALUE */
+    if (state_q == S0) state_d = sel ? 2'd3 : S1;
+    /* verilator lint_on ENUMVALUE */
+    else if (state_q == S1) state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
+module unknown_if_else_target (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  logic sel;
+  state_t state_q /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    /* verilator lint_off ENUMVALUE */
+    if (state_q == S0) state_d = sel ? S1 : 2'd3;
+    /* verilator lint_on ENUMVALUE */
+    else if (state_q == S1) state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
 module t;
   logic clk;
   unknown_then unknown_then_u (.clk(clk));
@@ -165,4 +263,8 @@ module t;
   unknown_direct unknown_direct_u (.clk(clk));
   unknown_reset unknown_reset_u (.clk(clk));
   unknown_source unknown_source_u (.clk(clk));
+  unknown_if_source unknown_if_source_u (.clk(clk));
+  unknown_if_direct_target unknown_if_direct_target_u (.clk(clk));
+  unknown_if_then_target unknown_if_then_target_u (.clk(clk));
+  unknown_if_else_target unknown_if_else_target_u (.clk(clk));
 endmodule
