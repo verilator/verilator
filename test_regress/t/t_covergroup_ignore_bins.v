@@ -6,10 +6,12 @@
 
 // Test ignore_bins - excluded from coverage
 
-module t (/*AUTOARG*/);
-  `define stop $stop
-  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
+module t;
   logic [3:0] data;
   logic [1:0] data2;  // 2-bit signal for range-boundary tests
 

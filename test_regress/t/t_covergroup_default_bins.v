@@ -6,6 +6,11 @@
 
 // Test default bins - catch-all for values not in other bins
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Non-covergroup class in the same module - must not interfere with covergroup processing
 class DataHelper;
   bit [7:0] val;
@@ -13,9 +18,6 @@ class DataHelper;
 endclass
 
 module t;
-  `define stop $stop
-  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-
   bit [7:0] data;
   logic [1:0] idx;
   logic [63:0] data64;

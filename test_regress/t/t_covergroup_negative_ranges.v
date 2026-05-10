@@ -6,14 +6,14 @@
 // Test: Bins with negative value ranges
 // Expected: Should handle negative numbers correctly
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  `define stop $stop
-  `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
-  input clk;
+module t (
+    input clk
+);
 
   int signed value;
 
