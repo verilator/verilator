@@ -21,6 +21,7 @@ Verilator 5.049 devel
 * Support procedural continuous assign/deassign (#7493). [Artur Bieniek, Antmicro Ltd.]
 * Support randsequence production function ports (#7522). [Yilou Wang]
 * Support followed-by operators `#-#` and `#=#` in properties (#7523). [Yilou Wang]
+* Support TERMUX (#7559). [Laurent CHARRIER]
 * Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
 * Improve `--coverage-fsm` (#7490) (#7529). [Yogish Sekhar]
 * Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
