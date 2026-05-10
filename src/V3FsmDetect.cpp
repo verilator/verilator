@@ -1034,8 +1034,8 @@ class FsmDetectVisitor final : public VNVisitor {
             if (chain.compareVscp && chain.compareVscp != cmp.stateVscp) return false;
             if (!seenValues.insert(cmp.value).second) return false;
             chain.compareVscp = cmp.stateVscp;
-            chain.branches.push_back(FsmIfBranch{curp, curp->thensp(), cmp.valuep, cmp.value,
-                                                 hasGuard});
+            chain.branches.push_back(
+                FsmIfBranch{curp, curp->thensp(), cmp.valuep, cmp.value, hasGuard});
 
             AstNode* const elseNodep
                 = singleMeaningfulBranch(skipLeadingIgnorableStmt(curp->elsesp()));
@@ -1061,8 +1061,7 @@ class FsmDetectVisitor final : public VNVisitor {
             const string enumRole = role == "source" ? "case item value" : "assigned value";
             nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on enum state variable "
                                         + stateSpace.stateVarp->prettyNameQ() + ": " + enumRole
-                                        + " "
-                                        + cvtToStr(value)
+                                        + " " + cvtToStr(value)
                                         + " is not present in the declared enum");
             return false;
         }
@@ -1195,10 +1194,10 @@ class FsmDetectVisitor final : public VNVisitor {
         if (enump) {
             if (stateVscp->width() > 32) {
                 warnNodep->v3warn(COVERIGN,
-                                   "Ignoring unsupported: FSM coverage on enum-typed state "
-                                   "variable "
-                                       + stateSpace.stateVarp->prettyNameQ() + " with width "
-                                       + cvtToStr(stateVscp->width()) + " wider than 32 bits");
+                                  "Ignoring unsupported: FSM coverage on enum-typed state "
+                                  "variable "
+                                      + stateSpace.stateVarp->prettyNameQ() + " with width "
+                                      + cvtToStr(stateVscp->width()) + " wider than 32 bits");
                 return false;
             }
             stateSpace.enumBacked = true;
@@ -1252,9 +1251,8 @@ class FsmDetectVisitor final : public VNVisitor {
             return false;
         }
         if (!needsSourceValues) return true;
-        if (!visitValueps([&](AstNodeExpr* valuep) {
-                return addCondToStateSpace(valuep, stateSpace);
-            })) {
+        if (!visitValueps(
+                [&](AstNodeExpr* valuep) { return addCondToStateSpace(valuep, stateSpace); })) {
             return false;
         }
         return stateSpace.states.size() >= 2;
@@ -1287,8 +1285,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                 "FSM if-chain source values should be prevalidated");
                 }
                 return true;
-            }
-        );
+            });
     }
 
     // Extract supported case-item transitions in one place so the conservative
@@ -1362,8 +1359,10 @@ class FsmDetectVisitor final : public VNVisitor {
 
         FsmStateValue thenValue = 0;
         FsmStateValue elseValue = 0;
-        const bool condAssign = directStateCondConstAssign(stmtsp, stateVscp, thenValue, elseValue);
-        UASSERT_OBJ(condAssign, stmtsp, "FSM if-chain branch should be a direct constant transition");
+        const bool condAssign
+            = directStateCondConstAssign(stmtsp, stateVscp, thenValue, elseValue);
+        UASSERT_OBJ(condAssign, stmtsp,
+                    "FSM if-chain branch should be a direct constant transition");
         if (!validateKnownStateValue(stmtsp, stateSpace, thenValue, "target")) return;
         if (!validateKnownStateValue(stmtsp, stateSpace, elseValue, "target")) return;
         for (const FsmStateValue branchValue : {thenValue, elseValue}) {
@@ -1599,8 +1598,8 @@ class FsmDetectVisitor final : public VNVisitor {
             AstNode* const matchedWarnNodep = match.warnNodep;
             if (!matchedp) continue;
             if (!firstCand.stateVscp) {
-                const std::pair<
-                    std::unordered_map<const AstVarScope*, FsmCaseCandidate>::iterator, bool>
+                const std::pair<std::unordered_map<const AstVarScope*, FsmCaseCandidate>::iterator,
+                                bool>
                     insertPair = m_comboPaired.emplace(
                         matchedp->stateVscp(),
                         FsmCaseCandidate{matchedWarnNodep,
