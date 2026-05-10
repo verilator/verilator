@@ -223,7 +223,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (m_covergroupp->cgAutoBinMax() >= 0) {
                 autoBinMaxOut = m_covergroupp->cgAutoBinMax();
             } else {
-                autoBinMaxOut = 64;  // Default per IEEE 1800-2017
+                autoBinMaxOut = 64;  // Default per IEEE 1800-2023 Table 19-1
             }
         }
     }
