@@ -684,7 +684,7 @@ class SvaNfaBuilder final {
                              AbortKind kind, FileLine* flp) {
         // Snapshot vertex set before body build so we can identify which
         // vertices belong to the body's sub-NFA (abort-reachable sources).
-        // Two O(V) scans (snapshot + diff) — acceptable because V3Graph has
+        // Two O(V) scans (snapshot + diff) -- acceptable because V3Graph has
         // no "subgraph rooted at entry" traversal, abort nesting is shallow,
         // and this only runs once per abort operator.
         std::unordered_set<const V3GraphVertex*> preExisting;
