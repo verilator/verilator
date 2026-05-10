@@ -221,33 +221,6 @@ translate covergroup coverage points the user has inserted manually in
 SystemVerilog code into the Verilated model. Verilator supports
 coverpoints with value and transition bins, and cross points.
 
-.. code-block:: sv
-
-   module top;
-      logic [7:0] addr;
-      logic       cmd;
-
-      // Define a covergroup
-      covergroup cg;
-         cp_addr: coverpoint addr {
-            bins low  = {[0:127]};
-            bins high = {[128:255]};
-         }
-         cp_cmd: coverpoint cmd {
-            bins read  = {0};
-            bins write = {1};
-         }
-      endgroup
-
-      // Instantiate the covergroup
-      cg cg_inst = new;
-
-      always @(posedge clk) begin
-         // Sample coverage explicitly
-         cg_inst.sample();
-      end
-   endmodule
-
 
 .. _fsm coverage:
 
