@@ -568,8 +568,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         UINFO(4, "      Adding bin match if statement to sample function");
         addCoverpointBinHitIf(coverpointp, binp, hitVarp, fullCondp,
-                              "Illegal bin '" + binp->name() + "' hit in coverpoint '"
-                                  + coverpointp->name() + "'",
+                              "Illegal bin " + binp->prettyNameQ() + " hit in coverpoint "
+                                  + coverpointp->prettyNameQ(),
                               "sample() CFunc not set when generating bin match code");
         UINFO(4, "      Successfully added if statement for bin: " << binp->name());
     }
@@ -921,8 +921,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstNodeExpr* condp = new AstEq{binp->fileline(), exprp->cloneTree(false), valuep};
 
         addCoverpointBinHitIf(coverpointp, binp, hitVarp, condp,
-                              "Illegal bin '" + binp->name() + "' hit in coverpoint '"
-                                  + coverpointp->name() + "'",
+                              "Illegal bin " + binp->prettyNameQ() + " hit in coverpoint "
+                                  + coverpointp->prettyNameQ(),
                               "sample() CFunc not set when generating array bin code");
     }
 
