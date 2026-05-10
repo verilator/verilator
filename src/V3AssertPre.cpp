@@ -967,8 +967,9 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: [=M:N] nonconsecutive range repetition"
                                          " (IEEE 1800-2023 16.9.2)");
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: [->M:N] goto range repetition when clock is"
-                                         " resolved outside V3AssertNfa (IEEE 1800-2023 16.9.2)");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: [->M:N] goto range repetition with implicit clocking"
+                          " (IEEE 1800-2023 16.9.2)");
         }
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
