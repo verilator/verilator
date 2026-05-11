@@ -206,14 +206,14 @@ public:
         }
         const AstNode* const initp = nodep->hasUserInit() ? initStaticp() : initialp();
         if (initp && contAssignp() && !nodep->isClassMember() && !nodep->isFuncLocal()) {
-            initp->v3warn(
-                E_CONTASSINIT,
-                "Continuous assignment to variable with initial value: " << nodep->prettyNameQ()
-                    << '\n'
-                    << initp->warnMore() << "... Location of variable initialization\n"
-                    << initp->warnContextPrimary() << '\n'
-                    << contAssignp()->warnOther() << "... Location of continuous assignment\n"
-                    << contAssignp()->warnContextSecondary());
+            initp->v3warn(E_CONTASSINIT, "Continuous assignment to variable with initial value: "
+                                             << nodep->prettyNameQ() << '\n'
+                                             << initp->warnMore()
+                                             << "... Location of variable initialization\n"
+                                             << initp->warnContextPrimary() << '\n'
+                                             << contAssignp()->warnOther()
+                                             << "... Location of continuous assignment\n"
+                                             << contAssignp()->warnContextSecondary());
         }
         if (nodep->isGenVar()) {  // Genvar
             if (!nodep->isIfaceRef() && !nodep->isUsedParam() && !unusedMatch(nodep)) {
