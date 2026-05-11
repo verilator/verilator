@@ -887,7 +887,8 @@ class SvaNfaBuilder final {
         rejectSinkp->m_isRejectSink = true;
         for (SvaStateVertex* const srcp : abortSources)
             m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()})
-                ->m_rejectOnFail = true;
+                ->m_rejectOnFail
+                = true;
         return bodyResult;
     }
 
