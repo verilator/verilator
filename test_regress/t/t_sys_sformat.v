@@ -72,6 +72,9 @@ module t (
     $swrite(str2, "mod=%m");
     `checks(str2, "mod=top.t");
 
+    $swrite(str2, "n=%0d mod=%m n=%0d mod_again=%m", 1, 2);
+    `checks(str2, "n=1 mod=top.t n=2 mod_again=top.t");
+
     $swrite(str2, "lib=%l");
     `checks(str2, "lib=work.t");
 

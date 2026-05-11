@@ -230,6 +230,10 @@ multiline", $time);
     s = $sformatf("[%0t] %s", $time, " fmt-string-not-%s");
     $display("s=%s", s);
 
+    // Issue #7574
+    $display("a", "%m");
+    $display(nine, "%m", "%M");
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

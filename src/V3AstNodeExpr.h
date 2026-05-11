@@ -2362,8 +2362,18 @@ public:
         return nullptr;
     }
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
-        return exprFormat() || name().find("%m") != string::npos
-               || name().find("%M") != string::npos;
+        if (exprFormat() || name().find("%m") != string::npos || name().find("%M") != string::npos)
+            return true;
+        for (const AstNode* exprp = this->exprsp(); exprp; exprp = exprp->nextp()) {
+            if (const AstConst* const fmtp = VN_CAST(exprp, Const)) {
+                if (fmtp->num().isFromString()) {
+                    const string str = fmtp->num().toString();
+                    if (str.find("%m") != string::npos || str.find("%M") != string::npos)
+                        return true;
+                }
+            }
+        }
+        return false;
     }
     bool hidden() const { return m_hidden; }
     bool exprFormat() const { return m_exprFormat; }
