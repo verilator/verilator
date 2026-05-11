@@ -1082,22 +1082,14 @@ private:
         return new AstPExpr{flp, beginp, exprp->findBitDType()};
     }
 
-    // Reject range-form repetition that reached V3AssertPre.
-    // V3AssertNfa handles [->M:N] natively when a clock is resolvable at NFA
-    // time, but NFA bails early when `propSpecp->sensesp()` is null (e.g.
-    // properties that inherit a `default clocking` event resolved only here).
-    // [=M:N] always lands here since NFA does not handle AstSNonConsRep yet.
+    // Reject [=M:N] nonconsecutive range that reached V3AssertPre.
+    // [->M:N] is fully handled upstream (NFA path); only [=M:N] still lands
+    // here because AstSNonConsRep lowering is not yet implemented there.
     // Replaces the node with BitFalse so lowering continues after the warning.
-    bool rejectRangeRep(AstNode* nodep, AstNodeExpr* maxCountp, bool isNonConsec) {
+    bool rejectNonconsecRange(AstNode* nodep, AstNodeExpr* maxCountp) {
         if (!maxCountp) return false;
-        if (isNonConsec) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: [=M:N] nonconsecutive range repetition"
-                                         " (IEEE 1800-2023 16.9.2)");
-        } else {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: [->M:N] goto range repetition with implicit clocking"
-                          " (IEEE 1800-2023 16.9.2)");
-        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: [=M:N] nonconsecutive range repetition"
+                                     " (IEEE 1800-2023 16.9.2)");
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
@@ -1106,7 +1098,6 @@ private:
     void visit(AstSGotoRep* nodep) override {
         // Standalone goto rep (not inside implication antecedent)
         iterateChildren(nodep);
-        if (rejectRangeRep(nodep, nodep->maxCountp(), /*isNonConsec=*/false)) return;
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
         if (!validateRepCount(nodep, countp)) return;
@@ -1119,7 +1110,7 @@ private:
     void visit(AstSNonConsRep* nodep) override {
         // Standalone nonconsecutive rep (not inside implication antecedent)
         iterateChildren(nodep);
-        if (rejectRangeRep(nodep, nodep->maxCountp(), /*isNonConsec=*/true)) return;
+        if (rejectNonconsecRange(nodep, nodep->maxCountp())) return;
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
         if (!validateRepCount(nodep, countp)) return;
@@ -1160,7 +1151,6 @@ private:
         if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
             iterateChildren(gotop);
             iterateAndNextNull(nodep->rhsp());
-            if (rejectRangeRep(nodep, gotop->maxCountp(), /*isNonConsec=*/false)) return;
             FileLine* const flp = nodep->fileline();
             AstNodeExpr* countp = gotop->countp()->unlinkFrBack();
             if (!validateRepCount(nodep, countp)) return;
@@ -1178,7 +1168,7 @@ private:
         if (AstSNonConsRep* const ncrp = VN_CAST(nodep->lhsp(), SNonConsRep)) {
             iterateChildren(ncrp);
             iterateAndNextNull(nodep->rhsp());
-            if (rejectRangeRep(nodep, ncrp->maxCountp(), /*isNonConsec=*/true)) return;
+            if (rejectNonconsecRange(nodep, ncrp->maxCountp())) return;
             FileLine* const flp = nodep->fileline();
             AstNodeExpr* countp = ncrp->countp()->unlinkFrBack();
             if (!validateRepCount(nodep, countp)) return;
