@@ -17,7 +17,6 @@ module t (
   logic [7:0][3:0] arr;
 
   logic [31:0] arr2_c;
-  initial arr2_c = 0;
   logic [7:0][3:0] arr2;
   assign arr2_c = arr2;
 

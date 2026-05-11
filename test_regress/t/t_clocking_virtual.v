@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface Iface;
-  logic clk = 1'b0, inp = 1'b0, io = 1'b0, out = 1'b0, out2 = 1'b0;
+  logic clk = 1'b0, inp = 1'b0, io = 1'b0, out = 1'b0, out2;
   clocking cb @(posedge clk);
     input #7 inp;
     output out;

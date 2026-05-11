@@ -25,11 +25,11 @@ module t (/*AUTOARG*/
   wire fake_D;
 
   logic[3:0] sh1 = 1;
-  logic[3:0] sh2 = 2;
+  logic[3:0] sh2;
   logic[3:0] sh3 = 3;
-  logic[3:0] sh4 = 4;
+  logic[3:0] sh4;
   logic[3:0] sh5 = 5;
-  logic[3:0] sh6 = 6;
+  logic[3:0] sh6;
 
   int cyc = 0;
 

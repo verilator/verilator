@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  bit clk1 = 0;
+  bit clk1;
 
   assign #3 clk1 = ~clk1;
 
-  bit clk2 = 0;
+  bit clk2;
   assign #11 clk2 = ~clk2;
 
   bit flag = 0;

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  logic clk1 = 0, clk2 = 0, clk3 = 0, clk4 = 0;
+  logic clk1 = 0, clk2, clk3, clk4;
   always #2 clk1 = ~clk1;
   assign #1 clk2 = clk1;
   assign #1 clk3 = clk2;

@@ -23,7 +23,7 @@ module top(
   reg clk_half = 0;
 
   reg [31:0] cyc = 0;
-  reg [31:0] a = 1, b = 2, c = 2;
+  reg [31:0] a = 1, b = 2, c;
 
   always @(posedge clk) begin
     $display("tick %d: a: %d, b: %d, c: %d", cyc, a, b, c);

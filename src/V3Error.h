@@ -61,6 +61,7 @@ public:
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         // Error codes:
+        E_CONTASSINIT,  // Error: Continuous assignment versus initialization
         E_CONSTWRITTEN, // Error: Const variable being written.
         E_LIFETIME,     // Error: Reference to a variable might outlive the variable.
         E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
@@ -217,8 +218,8 @@ public:
             " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_STYLE",
             " I_TIMING", " I_TRACING",
             // Errors
-            "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR",
-            "UNSUPPORTED",
+            "CONTASSINIT", "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT",
+            "TASKNSVAR", "UNSUPPORTED",
             // Warnings
             " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNEQEXPR",
             "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
