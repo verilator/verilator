@@ -22,6 +22,8 @@ module t (
   logic rst;
   logic start;
   integer cyc;
+  logic [39:0] forced_state  /*verilator fsm_state*/;
+  logic [39:0] forced_case_if_state  /*verilator fsm_state*/;
   logic [47:0] param_state_q;
   logic [47:0] param_state_d;
 
@@ -55,6 +57,38 @@ module t (
     end
   end
 
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      forced_state <= 40'h0000_0000_01;
+    end
+    else begin
+      case (forced_state)
+        40'h0000_0000_01: forced_state <= start ? 40'h8000_0000_02 : 40'h0000_0000_01;
+        40'h8000_0000_02: forced_state <= 40'hffff_0000_03;
+        default: forced_state <= 40'h0000_0000_01;
+      endcase
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      forced_case_if_state <= 40'h0000_0000_01;
+    end
+    else begin
+      case (forced_case_if_state)
+        40'h0000_0000_01: begin
+          if (start) begin
+            forced_case_if_state <= 40'h8000_0000_02;
+          end
+          else begin
+            forced_case_if_state <= 40'h0000_0000_01;
+          end
+        end
+        40'h8000_0000_02: forced_case_if_state <= 40'h0000_0000_01;
+        default: forced_case_if_state <= 40'h0000_0000_01;
+      endcase
+    end
+  end
   always_comb begin
     param_state_d = param_state_q;
     if (param_state_q == L_S0_IDLE) begin

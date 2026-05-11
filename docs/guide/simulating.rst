@@ -239,9 +239,7 @@ Scalar state encodings may be wider than 32 bits. This allows sparse
 state encodings, such as high-Hamming-distance enum or localparam values,
 to be preserved in the detected FSM model. Verilator uses the declared
 enum item name, parameter name, or localparam name as the reported state
-label where possible. When Verilator reports an ignored transition to a
-known-bad wide enum value, the warning includes the full Verilog literal
-value, for example ``40'hffffffffff``.
+label where possible.
 
 Simple input guards are supported when they appear inside a recognized
 state branch, or as a top-level conjunction containing exactly one state

@@ -71,12 +71,6 @@ public:
         : m_key{makeKey(num)}
         , m_num{num} {}
 
-    // Preserve the legacy small-integer construction path used when inferring
-    // compact literal state spaces from vector widths.
-    static FsmStateValue fromUInt(FileLine* flp, int width, uint32_t value) {
-        return FsmStateValue{V3Number{flp, width, value}};
-    }
-
     const string& key() const { return m_key; }
     const V3Number& num() const { return m_num; }
     string ascii() const { return m_num.ascii(true, true); }
@@ -117,16 +111,16 @@ struct FsmResetCondDesc final {
 
 class FsmResetArcDesc final {
     FsmStateValue m_toValue;  // Encoded reset target state.
-    AstNode* m_nodep = nullptr;  // Source node for warnings and emitted metadata.
+    AstNodeAssign* m_nodep = nullptr;  // Source assignment for warnings and emitted metadata
 
 public:
     FsmResetArcDesc() = default;
-    FsmResetArcDesc(FsmStateValue toValue, AstNode* nodep)
+    FsmResetArcDesc(FsmStateValue toValue, AstNodeAssign* nodep)
         : m_toValue{toValue}
         , m_nodep{nodep} {}
 
     FsmStateValue toValue() const { return m_toValue; }
-    AstNode* nodep() const { return m_nodep; }
+    AstNodeAssign* nodep() const { return m_nodep; }
 };
 
 class FsmRegisterCandidate final {
@@ -532,10 +526,10 @@ class FsmDetectVisitor final : public VNVisitor {
                         = FsmDetectVisitor::singleMeaningfulBranch(firstIfp->thensp());
                     UASSERT_OBJ(thenNodep, firstIfp,
                                 "one-block reset fallback requires a non-empty reset branch");
-                    if (FsmDetectVisitor::directConstStateAssignNode(thenNodep, resetStateVscp,
-                                                                     resetValue)
-                        && resetStateVscp == vscp) {
-                        reg.resetArcs().emplace_back(resetValue, firstIfp->thensp());
+                    AstNodeAssign* const resetAssp = FsmDetectVisitor::directConstStateAssignNode(
+                        thenNodep, resetStateVscp, resetValue);
+                    if (resetAssp && resetStateVscp == vscp) {
+                        reg.resetArcs().emplace_back(resetValue, resetAssp);
                     }
                 } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                     reg.resetArcs().clear();
@@ -1159,9 +1153,10 @@ class FsmDetectVisitor final : public VNVisitor {
                 FsmStateValue resetValue;
                 AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
                 UASSERT_OBJ(thenNodep, ifp, "reset fallback requires a non-empty reset branch");
-                if (!directConstStateAssignNode(thenNodep, resetStateVscp, resetValue))
-                    return false;
-                cand.resetArcs().emplace_back(resetValue, ifp->thensp());
+                AstNodeAssign* const resetAssp
+                    = directConstStateAssignNode(thenNodep, resetStateVscp, resetValue);
+                if (!resetAssp) return false;
+                cand.resetArcs().emplace_back(resetValue, resetAssp);
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
@@ -1193,27 +1188,13 @@ class FsmDetectVisitor final : public VNVisitor {
         return true;
     }
 
-    // Helper: process a single condition expression and add it to the state space.
-    // Returns true on success, false if the state space is invalid.
-    static bool addCondToStateSpace(AstNodeExpr* condp, FsmStateSpace& stateSpace) {
-        FsmStateValue value;
-        const ConstValueStatus status = constValueStatus(condp, value);
-        if (status != ConstValueStatus::OK) {
-            if (status == ConstValueStatus::XZ) {
-                condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
-                                        "state variable "
-                                            + stateSpace.stateVarp->prettyNameQ()
-                                            + " with X/Z state encoding values");
-            }
-            return false;
-        }
-        AstConst* const constp = VN_AS(condp, Const);
-        const StateConstLabel label = stateLabelForConst(constp);
+    static bool addValueToStateSpace(AstNode* nodep, FsmStateSpace& stateSpace,
+                                     const FsmStateValue& value, StateConstLabel label) {
         const auto labelIt = stateSpace.labels.find(value);
         if (labelIt != stateSpace.labels.end()) {
             StateConstLabel& existingLabel = labelIt->second;
             if (existingLabel.text != label.text && existingLabel.fromParam && label.fromParam) {
-                condp->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
+                nodep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
                                         "state variable "
                                             + stateSpace.stateVarp->prettyNameQ()
                                             + " with multiple labels for the same value "
@@ -1233,6 +1214,51 @@ class FsmDetectVisitor final : public VNVisitor {
             stateSpace.labels.emplace(value, storedLabel);
         }
         return true;
+    }
+
+    // Helper: process a single observed state expression and add it to the state space
+    // Returns true on success, false if the state space is invalid
+    static bool addExprToStateSpace(AstNodeExpr* valuep, FsmStateSpace& stateSpace) {
+        FsmStateValue value;
+        const ConstValueStatus status = constValueStatus(valuep, value);
+        if (status != ConstValueStatus::OK) {
+            if (status == ConstValueStatus::XZ) {
+                valuep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
+                                         "state variable "
+                                             + stateSpace.stateVarp->prettyNameQ()
+                                             + " with X/Z state encoding values");
+            }
+            return false;
+        }
+        AstConst* const constp = VN_AS(valuep, Const);
+        return addValueToStateSpace(valuep, stateSpace, value, stateLabelForConst(constp));
+    }
+
+    static bool addOptionalTargetExprToStateSpace(AstNodeExpr* valuep, FsmStateSpace& stateSpace) {
+        FsmStateValue value;
+        const ConstValueStatus status = constValueStatus(valuep, value);
+        if (status != ConstValueStatus::OK) {
+            valuep->v3warn(COVERIGN, "Ignoring unsupported: FSM coverage on non-enum "
+                                     "state variable "
+                                         + stateSpace.stateVarp->prettyNameQ()
+                                         + " with non-constant target state values");
+            return false;
+        }
+        AstConst* const constp = VN_AS(valuep, Const);
+        return addValueToStateSpace(valuep, stateSpace, value, stateLabelForConst(constp));
+    }
+
+    static void addResetTargetsToStateSpace(const std::vector<FsmResetArcDesc>& resetArcs,
+                                            FsmStateSpace& stateSpace) {
+        for (const FsmResetArcDesc& resetArc : resetArcs) {
+            StateConstLabel label{resetArc.toValue().ascii(), false, 0};
+            if (AstConst* const constp = VN_CAST(resetArc.nodep()->rhsp(), Const)) {
+                label = stateLabelForConst(constp);
+            }
+            UASSERT_OBJ(
+                addValueToStateSpace(resetArc.nodep(), stateSpace, resetArc.toValue(), label),
+                resetArc.nodep(), "reset target labels should be unambiguous");
+        }
     }
 
     // Build the Phase 1 state space from the tracked registered state
@@ -1260,19 +1286,7 @@ class FsmDetectVisitor final : public VNVisitor {
         }
 
         if (forced) {
-            const int width = stateVarp->width();
-            // Forced non-enum FSMs have no declared state list, so enumeration
-            // must stay small enough for this scalar graph representation.
-            if (width >= 31) return false;
-            const unsigned stateCount = 1U << width;
-            for (uint32_t rawValue = 0; rawValue < stateCount; ++rawValue) {
-                const FsmStateValue value
-                    = FsmStateValue::fromUInt(warnNodep->fileline(), width, rawValue);
-                const string label = "S" + cvtToStr(rawValue);
-                const size_t stateIndex = stateSpace.states.size();
-                stateSpace.states.emplace_back(label, value);
-                stateSpace.labels.emplace(value, StateConstLabel{label, false, stateIndex});
-            }
+            needsSourceValues = true;
             return true;
         }
 
@@ -1282,6 +1296,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     template <typename T_ValuepVisitor>
     static bool collectStateSpaceFromValues(AstNode* warnNodep, AstVarScope* stateVscp,
+                                            const std::vector<FsmResetArcDesc>& resetArcs,
                                             FsmStateSpace& stateSpace,
                                             const T_ValuepVisitor& visitValueps) {
         bool needsSourceValues = false;
@@ -1291,23 +1306,41 @@ class FsmDetectVisitor final : public VNVisitor {
             return false;
         }
         if (!needsSourceValues) return true;
+        addResetTargetsToStateSpace(resetArcs, stateSpace);
         if (!visitValueps(
-                [&](AstNodeExpr* valuep) { return addCondToStateSpace(valuep, stateSpace); })) {
+                [&](AstNodeExpr* valuep) { return addExprToStateSpace(valuep, stateSpace); })) {
             return false;
         }
         return stateSpace.states.size() >= 2;
     }
 
-    static bool collectStateSpace(AstCase* casep, AstVarScope* stateVscp,
+    static bool collectStateSpace(AstCase* casep, AstVarScope* stateVscp, AstVarScope* assignVscp,
+                                  const std::vector<FsmResetArcDesc>& resetArcs,
                                   FsmStateSpace& stateSpace) {
         return collectStateSpaceFromValues(
-            casep, stateVscp, stateSpace, [casep](const auto& visitValuep) {
+            casep, stateVscp, resetArcs, stateSpace,
+            [casep, assignVscp, &stateSpace](const auto& visitValuep) {
                 for (AstCaseItem* itemp = casep->itemsp(); itemp;
                      itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                    if (itemp->isDefault()) continue;
-                    for (AstNodeExpr* condp = itemp->condsp(); condp;
-                         condp = VN_AS(condp->nextp(), NodeExpr)) {
-                        if (!visitValuep(condp)) return false;
+                    if (!itemp->isDefault()) {
+                        for (AstNodeExpr* condp = itemp->condsp(); condp;
+                             condp = VN_AS(condp->nextp(), NodeExpr)) {
+                            if (!visitValuep(condp)) return false;
+                        }
+                    }
+                    if (AstNodeAssign* const assp
+                        = directStateAssign(itemp->stmtsp(), assignVscp)) {
+                        FsmStateValue thenValue;
+                        FsmStateValue elseValue;
+                        AstCond* const condp = VN_CAST(assp->rhsp(), Cond);
+                        if (condp
+                            && directStateCondConstAssign(itemp->stmtsp(), assignVscp, thenValue,
+                                                          elseValue)) {
+                            if (!visitValuep(condp->thenp())) return false;
+                            if (!visitValuep(condp->elsep())) return false;
+                        } else if (!addOptionalTargetExprToStateSpace(assp->rhsp(), stateSpace)) {
+                            return false;
+                        }
                     }
                 }
                 return true;
@@ -1315,14 +1348,32 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     static bool collectStateSpace(const FsmIfChainCandidate& chain, AstVarScope* stateVscp,
+                                  AstVarScope* assignVscp,
+                                  const std::vector<FsmResetArcDesc>& resetArcs,
                                   FsmStateSpace& stateSpace) {
         return collectStateSpaceFromValues(
-            chain.ifp, stateVscp, stateSpace, [&chain](const auto& visitValuep) {
+            chain.ifp, stateVscp, resetArcs, stateSpace,
+            [&chain, assignVscp, &stateSpace](const auto& visitValuep) {
                 for (const FsmIfBranch& branch : chain.branches) {
                     // Reaching this point with an unresolvable source value
                     // would mean the if-chain classifier and emitter disagree.
                     UASSERT_OBJ(visitValuep(branch.valuep), branch.valuep,
                                 "FSM if-chain source values should be prevalidated");
+                    AstNodeAssign* const assp = directStateAssign(branch.stmtsp, assignVscp);
+                    UASSERT_OBJ(assp, branch.stmtsp,
+                                "FSM if-chain target values should be prevalidated");
+                    FsmStateValue thenValue;
+                    FsmStateValue elseValue;
+                    AstCond* const condp = VN_CAST(assp->rhsp(), Cond);
+                    if (condp) {
+                        UASSERT_OBJ(directStateCondConstAssign(branch.stmtsp, assignVscp,
+                                                               thenValue, elseValue),
+                                    condp, "FSM if-chain ternary targets should be prevalidated");
+                        if (!visitValuep(condp->thenp())) return false;
+                        if (!visitValuep(condp->elsep())) return false;
+                    } else if (!addOptionalTargetExprToStateSpace(assp->rhsp(), stateSpace)) {
+                        return false;
+                    }
                 }
                 return true;
             });
@@ -1443,7 +1494,7 @@ class FsmDetectVisitor final : public VNVisitor {
         UASSERT_OBJ(assignVscp, casep, "FSM case processing requires a non-null assignment var");
         AstVarScope* const stateVscp = reg.stateVscp();
         FsmStateSpace stateSpace;
-        if (!collectStateSpace(casep, stateVscp, stateSpace)) return;
+        if (!collectStateSpace(casep, stateVscp, assignVscp, reg.resetArcs(), stateSpace)) return;
         DetectedFsm& entry = m_state.fsms()[stateVscp];
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
@@ -1476,7 +1527,7 @@ class FsmDetectVisitor final : public VNVisitor {
                     "FSM if-chain processing requires a non-null assignment var");
         AstVarScope* const stateVscp = reg.stateVscp();
         FsmStateSpace stateSpace;
-        if (!collectStateSpace(chain, stateVscp, stateSpace)) return;
+        if (!collectStateSpace(chain, stateVscp, assignVscp, reg.resetArcs(), stateSpace)) return;
         DetectedFsm& entry = m_state.fsms()[stateVscp];
         // Case candidates keep ownership of existing graphs; reaching this path
         // means the if-chain is the only supported dispatch for this FSM.
