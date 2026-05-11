@@ -816,10 +816,8 @@ class SvaNfaBuilder final {
     // is not a hot path.
     AstNodeExpr* abortFireExpr(AstNodeExpr* condp, FileLine* flp) {
         AstNodeExpr* resultp = condp->cloneTreePure(false);
-        for (AstNodeExpr* const op : m_outerAbortStack) {
-            AstNodeExpr* const notOuterp = new AstLogNot{flp, op->cloneTreePure(false)};
-            resultp = new AstAnd{flp, resultp, notOuterp};
-        }
+        for (AstNodeExpr* const op : m_outerAbortStack)
+            resultp = new AstAnd{flp, resultp, new AstLogNot{flp, op->cloneTreePure(false)}};
         return resultp;
     }
 
@@ -873,9 +871,8 @@ class SvaNfaBuilder final {
             // is covered because termVertexp is in abortSources -- no need
             // to also fold abort-fire into bodyResult.finalCondp.
             SvaStateVertex* const acceptSinkp = scopedCreateVertex();
-            for (SvaStateVertex* const srcp : abortSources) {
+            for (SvaStateVertex* const srcp : abortSources)
                 guardedLink(srcp, acceptSinkp, sampledAbortFire(), flp);
-            }
             std::vector<SvaStateVertex*> midSources = bodyResult.midSources;
             midSources.push_back(acceptSinkp);
             return {bodyResult.termVertexp, bodyResult.finalCondp, std::move(midSources)};
@@ -888,11 +885,9 @@ class SvaNfaBuilder final {
         // is silenced when the abort is not firing OR any outer abort fires.
         SvaStateVertex* const rejectSinkp = m_graph.createStateVertex();
         rejectSinkp->m_isRejectSink = true;
-        for (SvaStateVertex* const srcp : abortSources) {
-            AstNodeExpr* const notFirep = new AstLogNot{flp, sampledAbortFire()};
-            SvaTransEdge* const ep = m_graph.addLink(srcp, rejectSinkp, notFirep);
-            ep->m_rejectOnFail = true;
-        }
+        for (SvaStateVertex* const srcp : abortSources)
+            m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()})
+                ->m_rejectOnFail = true;
         return bodyResult;
     }
 

@@ -589,8 +589,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isMultiCycleSva() const override { return true; }
 };
 class AstAddrOfCFunc final : public AstNodeExpr {
@@ -2188,8 +2186,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isMultiCycleSva() const override { return true; }
 };
 class AstRising final : public AstNodeExpr {
@@ -2685,8 +2681,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isMultiCycleSva() const override { return true; }
 };
 class AstSyncRejectOn final : public AstNodeExpr {
@@ -2704,8 +2698,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isMultiCycleSva() const override { return true; }
 };
 class AstSysIgnore final : public AstNodeExpr {
