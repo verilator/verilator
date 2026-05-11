@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sequence_within_range_unsup.v:15:21: Unsupported: within with ranged cycle-delay operand
+                                                           : ... note: In instance 't'
+   15 |       (a ##[1:3] b) within (c ##5 d));
+      |                     ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

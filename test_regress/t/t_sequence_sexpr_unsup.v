@@ -30,10 +30,6 @@ module t (
     a;
   endsequence
 
-  sequence s_within;
-    a within(b);
-  endsequence
-
   sequence s_and;
     a and b;
   endsequence

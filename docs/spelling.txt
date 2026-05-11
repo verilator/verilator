@@ -590,6 +590,7 @@ al
 ala
 alejandro
 algrobman
+allocator
 andit
 ar
 architected
@@ -811,6 +812,7 @@ fs
 fscanf
 fseek
 fsiegle
+fsm
 fst
 fstrict
 ftell
@@ -985,6 +987,7 @@ onehot
 ooo
 oprofile
 ortegon
+output
 oversized
 oversubscription
 parallelized
@@ -1073,12 +1076,14 @@ recrem
 recurse
 recurses
 redeclaring
+reentrant
 regs
 reloop
 replaceShiftOp
 reproducibility
 resetall
 respecified
+reusability
 rodata
 rolloverSize
 rr
@@ -1260,6 +1265,7 @@ vpm
 vpp
 warmup
 wavealloca
+wavediff
 waveforms
 whitespace
 widthed

@@ -1,0 +1,109 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM reporting coverage test
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t (
+%000007     input clk
+        );
+        
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2,
+            S3 = 2'd3
+          } state_t;
+        
+          integer cyc;
+%000001   logic rst;
+%000001   logic start;
+%000003   state_t state_default  /*verilator fsm_arc_include_cond*/;
+%000001   state_t state_reset_incl  /*verilator fsm_reset_arc*/;
+%000001   state_t state_reset_excl;
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     start = 1'b0;
+%000001     cyc = 0;
+          end
+        
+%000007   always @(posedge clk) begin
+%000007     cyc <= cyc + 1;
+%000006     if (cyc == 1) rst <= 1'b0;
+%000006     if (cyc == 2) start <= 1'b1;
+%000006     if (cyc == 3) start <= 1'b0;
+%000006     if (cyc == 6) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+          // This FSM gives the reporting path both ordinary arcs and a synthetic
+          // default arc so annotate/write-info exercise FSM-arc filtering.
+%000007   always_ff @(posedge clk) begin
+%000005     if (rst) begin
+%000002       state_default <= S0;
+            end
+%000005     else begin
+%000005       case (state_default)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_default::ANY->S0[reset]] [reset arc, excluded from %]
+%000000        // [fsm_arc t.state_default::S0->S1]
+%000003        // [fsm_arc t.state_default::S0->S2]
+%000000        // [SYNTHETIC DEFAULT ARC: t.state_default::default->S0]
+%000002        // [fsm_state t.state_default::S0]
+%000000        // [fsm_state t.state_default::S1] *** UNCOVERED ***
+%000003        // [fsm_state t.state_default::S2]
+%000000        // [fsm_state t.state_default::S3] *** UNCOVERED ***
+%000003         S0:
+%000003         if (start) state_default <= S1;
+%000003         else state_default <= S2;
+%000002         default: state_default <= S0;
+              endcase
+            end
+          end
+        
+          // These two FSMs give reporting both reset-include and reset-exclude arcs so
+          // annotate can exercise the reset-arc filtering wording in both modes.
+%000007   always_ff @(posedge clk) begin
+%000005     if (rst) begin
+%000002       state_reset_incl <= S0;
+            end
+%000005     else begin
+%000005       case (state_reset_incl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_reset_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_reset_incl::S0->S1]
+%000000        // [fsm_state t.state_reset_incl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_reset_incl::S1]
+%000000        // [fsm_state t.state_reset_incl::S2] *** UNCOVERED ***
+%000000        // [fsm_state t.state_reset_incl::S3] *** UNCOVERED ***
+%000001         S0: state_reset_incl <= S1;
+%000004         default: state_reset_incl <= S1;
+              endcase
+            end
+          end
+        
+%000007   always_ff @(posedge clk) begin
+%000005     if (rst) begin
+%000002       state_reset_excl <= S0;
+            end
+%000005     else begin
+%000005       case (state_reset_excl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state_reset_excl::ANY->S0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_arc t.state_reset_excl::S0->S1]
+%000000        // [fsm_state t.state_reset_excl::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.state_reset_excl::S1]
+%000000        // [fsm_state t.state_reset_excl::S2] *** UNCOVERED ***
+%000000        // [fsm_state t.state_reset_excl::S3] *** UNCOVERED ***
+%000001         S0: state_reset_excl <= S1;
+%000004         default: state_reset_excl <= S1;
+              endcase
+            end
+          end
+        
+        endmodule
+        

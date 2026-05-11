@@ -40,12 +40,32 @@ if [ "$CI_OS_NAME" = "linux" ]; then
   echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 fi
 
-install-vcddiff() {
-  TMP_DIR="$(mktemp -d)"
-  git clone https://github.com/veripool/vcddiff "$TMP_DIR"
-  git -C "${TMP_DIR}" checkout 4db0d84a27e8f148b127e916fc71d650837955c5
-  "$MAKE" -C "${TMP_DIR}"
-  sudo cp "${TMP_DIR}/vcddiff" /usr/local/bin
+install-wavediff() {
+  source ci/docker/buildenv/wavetools.conf
+  local _base_url="https://github.com/hudson-trading/wavetools/releases/download/${WAVETOOLS_VERSION}"
+  local _platform
+  if [ "$CI_OS_NAME" = "linux" ]; then
+    _platform="linux-x86_64"
+  elif [ "$CI_OS_NAME" = "osx" ]; then
+    _platform="macos-arm64"
+  elif [ "$CI_OS_NAME" = "windows" ]; then
+    _platform="windows-x86_64"
+  else
+    echo "WARNING: No wavetools binary available for CI_OS_NAME=$CI_OS_NAME, skipping"
+    return 0
+  fi
+  local _tmpdir
+  _tmpdir=$(mktemp -d)
+  local _archive="wavetools-${WAVETOOLS_VERSION}-${_platform}"
+  if [ "$CI_OS_NAME" = "windows" ]; then
+    wget -q -O "${_tmpdir}/${_archive}.zip" "${_base_url}/${_archive}.zip"
+    unzip -o "${_tmpdir}/${_archive}.zip" -d "${_tmpdir}"
+  else
+    wget -q -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
+    tar -xzf "${_tmpdir}/${_archive}.tar.gz" -C "${_tmpdir}"
+  fi
+  sudo cp "${_tmpdir}/${_archive}/wavediff" /usr/local/bin/wavediff
+  rm -rf "${_tmpdir}"
 }
 
 if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
@@ -120,7 +140,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     fatal "Unknown CI_OS_NAME: '$CI_OS_NAME'"
   fi
   # Common installs
-  install-vcddiff
+  install-wavediff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
 else

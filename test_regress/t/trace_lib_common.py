@@ -107,8 +107,7 @@ def run(test, *, verilator_flags2=()):
                 if "enddefinitions" in la:
                     break
 
-    # The two models must match ignoring enum attributes which can differ
-    test.trace_identical(trace_libs, trace_nonl, ignore_attr=True)
+    test.trace_identical(trace_libs, trace_nonl)
     # The --lib-create must match the reference
     test.trace_identical(trace_libs, test.golden_filename)
 

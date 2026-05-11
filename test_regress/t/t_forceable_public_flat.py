@@ -14,7 +14,6 @@ test.scenarios('vlt')
 test.compile()
 
 files = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.h")
-test.file_grep_any(files, r' u_sub__DOT__a__VforceRd')
 test.file_grep_any(files, r' u_sub__DOT__a__VforceEn')
 test.file_grep_any(files, r' u_sub__DOT__a__VforceVal')
 

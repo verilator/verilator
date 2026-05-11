@@ -265,6 +265,17 @@ public:
     std::string srcName(size_t) const override final { return ""; }
 };
 
+class DfgRep final : public DfgVertexUnary {
+    // AstReplicate is binary, but 'countp' is always constant. Represented in
+    // Dfg as a unary vertex, with the count determined by the data type,
+    // similar to Extend/ExtendS.
+public:
+    DfgRep(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgRep;
+    uint32_t count() const { return width() / srcp()->width(); }
+};
+
 class DfgSel final : public DfgVertexUnary {
     // AstSel is binary, but 'lsbp' is very often constant. As AstSel is fairly
     // common, we special case as a DfgSel for the constant 'lsbp', and as

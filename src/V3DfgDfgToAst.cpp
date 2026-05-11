@@ -228,6 +228,12 @@ class DfgToAstVisitor final : DfgVisitor {
         m_resultp = new AstConst{vtxp->fileline(), vtxp->num()};
     }
 
+    void visit(DfgRep* vtxp) override {
+        FileLine* const flp = vtxp->fileline();
+        AstNodeExpr* const srcp = convertDfgVertexToAstNodeExpr(vtxp->srcp());
+        m_resultp = new AstReplicate{flp, srcp, vtxp->count()};
+    }
+
     void visit(DfgSel* vtxp) override {
         FileLine* const flp = vtxp->fileline();
         AstNodeExpr* const fromp = convertDfgVertexToAstNodeExpr(vtxp->fromp());

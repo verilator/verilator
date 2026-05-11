@@ -776,12 +776,19 @@ class LinkCellsVisitor final : public VNVisitor {
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
-                    // For arrayed interfaces, we replace cellp when de-arraying in V3Inst
-                    AstNodeArrayDType* const arrp
-                        = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, idtypep,
-                                                  nodep->rangep()->cloneTree(true)};
+                    // For arrayed interfaces, we replace cellp when de-arraying in V3Inst.
+                    // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
+                    std::vector<AstRange*> rangesp;
+                    for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
+                        rangesp.push_back(rp);
+                    }
+                    AstNodeDType* dtp = idtypep;
+                    for (auto it = rangesp.rbegin(); it != rangesp.rend(); ++it) {
+                        dtp = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, dtp,
+                                                      (*it)->cloneTree(false)};
+                    }
                     varp = new AstVar{nodep->fileline(), VVarType::IFACEREF, varName,
-                                      VFlagChildDType{}, arrp};
+                                      VFlagChildDType{}, dtp};
                 } else {
                     varp = new AstVar{nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType{}, idtypep};

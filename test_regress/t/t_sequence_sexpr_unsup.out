@@ -1,34 +1,31 @@
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:34:7: Unsupported: within (in sequence expression)
-   34 |     a within(b);
-      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:94:7: Unsupported: [= range nonconsecutive repetition
+   94 |     a [= 1:2];
+      |       ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:98:7: Unsupported: [= range nonconsecutive repetition
-   98 |     a [= 1:2];
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:97:7: Unsupported: [= range nonconsecutive repetition
+   97 |     a [= 1:$];
       |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:101:7: Unsupported: [= range nonconsecutive repetition
-  101 |     a [= 1:$];
-      |       ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:107:7: Unsupported: [-> range goto repetition
-  107 |     a [-> 1:2];
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:103:7: Unsupported: [-> range goto repetition
+  103 |     a [-> 1:2];
       |       ^~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:110:26: Unsupported: sequence argument data type
-  110 |   sequence p_arg_seqence(sequence inseq);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:106:26: Unsupported: sequence argument data type
+  106 |   sequence p_arg_seqence(sequence inseq);
       |                          ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:118:5: Unsupported: first_match with sequence_match_items
-  118 |     first_match (a, res0 = 1);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:114:5: Unsupported: first_match with sequence_match_items
+  114 |     first_match (a, res0 = 1);
       |     ^~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:121:5: Unsupported: first_match with sequence_match_items
-  121 |     first_match (a, res0 = 1, res1 = 2);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:117:5: Unsupported: first_match with sequence_match_items
+  117 |     first_match (a, res0 = 1, res1 = 2);
       |     ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:124:9: Ignoring unsupported: cover sequence
-  124 |   cover sequence (s_a) $display("");
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:120:9: Ignoring unsupported: cover sequence
+  120 |   cover sequence (s_a) $display("");
       |         ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:125:9: Ignoring unsupported: cover sequence
-  125 |   cover sequence (@(posedge a) disable iff (b) s_a) $display("");
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:121:9: Ignoring unsupported: cover sequence
+  121 |   cover sequence (@(posedge a) disable iff (b) s_a) $display("");
       |         ^~~~~~~~
-%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:126:9: Ignoring unsupported: cover sequence
-  126 |   cover sequence (disable iff (b) s_a) $display("");
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:122:9: Ignoring unsupported: cover sequence
+  122 |   cover sequence (disable iff (b) s_a) $display("");
       |         ^~~~~~~~
 %Error: Exiting due to

@@ -134,7 +134,6 @@ for s in [
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
         'Unsupported: Stream operation on a variable of a type',
-        'Unsupported: Unclocked assertion',
         'Unsupported: Using --protect-ids with public function',
         'Unsupported: Verilog 1995 gate primitive:',
         'Unsupported: [] dimensions',
@@ -153,7 +152,6 @@ for s in [
         'Unsupported: super',
         'Unsupported: with[] stream expression',
         'expected non-complex non-double',
-        'is not an unpacked array, but is in an unpacked array context',
         'loading other than unpacked-array variable',
         'loading other than unpacked/associative-array variable',
 ]:

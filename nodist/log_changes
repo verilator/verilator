@@ -13,14 +13,20 @@ import re
 
 def message_section(msg: str) -> int:
     """Return sorting-section number for given commit message"""
-    if re.match(r'^Support', msg, flags=re.IGNORECASE):
-        return 10
     if re.match(r'^Add', msg, flags=re.IGNORECASE):
+        return 10
+    if re.match(r'^Deprecate', msg, flags=re.IGNORECASE):
         return 20
-    if re.match(r'^Improve', msg, flags=re.IGNORECASE):
+    if re.match(r'^Remove', msg, flags=re.IGNORECASE):
         return 30
-    if re.match(r'^Fix', msg, flags=re.IGNORECASE):
+    if re.match(r'^Improve', msg, flags=re.IGNORECASE):
         return 40
+    if re.match(r'^Change', msg, flags=re.IGNORECASE):
+        return 50
+    if re.match(r'^Support', msg, flags=re.IGNORECASE):
+        return 60
+    if re.match(r'^Fix', msg, flags=re.IGNORECASE):
+        return 70
     if re.match(r'^(Internals|CI|Tests)', msg, flags=re.IGNORECASE):
         return -1
     if re.match(r'^Bump.* from .* to .*', msg, flags=re.IGNORECASE):  # dependabot

@@ -163,6 +163,8 @@ jobs:
               grep -E "(lines|branches)\.*:" ${{ github.workspace }}/make-coverage-report.log | sed "s/\.*:/:/" >> notification/body.txt || true
               echo "</pre>" >> notification/body.txt
               echo "Report: [${{ github.run_id }}](https://${{ github.repository_owner }}.github.io/verilator/coverage-reports/${{ github.run_id }}/index.html)" >> notification/body.txt
+              echo "" >> notification/body.txt
+              echo "Please get to 100% line coverage, and understand all branches; see https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results" >> notification/body.txt
             else
               echo "Patch contains no code changes" >> notification/body.txt
             fi

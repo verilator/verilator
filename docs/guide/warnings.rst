@@ -306,7 +306,7 @@ List Of Warnings
         else
           array[address] <= data;
 
-   While this is supported in typical synthesizeable code (including the
+   While this is supported in typical synthesizable code (including the
    example above), some complicated cases are not supported. Namely:
 
    1. If the above loop is inside a suspendable process or fork statement.
@@ -837,6 +837,18 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FSMMULTI
+
+   Warns that the same always block contains multiple enum-typed case
+   statements that look like FSM candidates for native FSM coverage when
+   :vlopt:`--coverage-fsm` or :vlopt:`--coverage` is enabled.
+
+   Verilator's FSM coverage instruments only the first such candidate in
+   source order. Split the FSMs into separate always blocks, or explicitly
+   annotate the intended state variables and restructure the RTL for full
+   coverage of such multiple state machines.
+
+
 .. option:: FUNCTIMECTL
 
    Error that a function contains a time-controlling statement or call of a
@@ -943,6 +955,13 @@ List Of Warnings
    An exception is made for IEEE 1800-2023 25.10 for interfaces/modports which appear in a module's
    port list, since these are references to interfaces/modports declared at a higher level and are
    already specialized. These types of accesses do not require waiving HIERPARAM.
+
+.. option:: IEEEMAYDEPRECATE
+
+   This feature is not yet deprecated, but may be in a future version of the IEEE standard.
+   This warning is to alert users that they may want to avoid using this feature, as it
+   may be removed in a future version of the IEEE standard, and thus may not be supported
+   in future versions of Verilator.
 
 .. option:: IFDEPTH
 

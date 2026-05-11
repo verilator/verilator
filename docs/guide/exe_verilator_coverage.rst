@@ -129,12 +129,19 @@ verilator_coverage Arguments
 .. option:: --filter-type <regex>
 
    Skips records of coverage types that matches with <regex>
-   Possible values are `toggle`, `line`, `branch`, `expr`, `user` and
-   a wildcard with `\*` or `?`. The default value is `\*`.
+   Possible values are `toggle`, `line`, `branch`, `expr`, `user`,
+   `fsm_state`, `fsm_arc` and a wildcard with `\*` or `?`. The default
+   value is `\*`.
 
 .. option:: --help
 
    Displays a help summary, the program version, and exits.
+
+.. option:: --include-reset-arcs
+
+   Includes FSM reset arcs in the printed summaries and annotated output.
+   By default, reset arcs are tracked but summarized separately from the
+   non-reset FSM arcs.
 
 .. option:: --rank
 

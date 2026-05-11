@@ -281,7 +281,8 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm`
+   :vlopt:`--coverage-user`.
 
 .. option:: --coverage-expr
 
@@ -292,6 +293,10 @@ Summary:
    Rarely needed. Specifies the maximum number of permutations able to be
    covered for a given expression. Defaults to 32. Increasing may slow
    coverage simulations and make analyzing the results unwieldy.
+
+.. option:: --coverage-fsm
+
+   Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
 .. option:: --coverage-line
 
@@ -752,6 +757,14 @@ Summary:
    Rarely needed. Do not attempt to split variables
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
+
+.. option:: --fourstate
+
+   Enables four-state logic support. Experimental, for developer use only.
+
+.. option:: --no-fourstate
+
+   Disables four-state logic support which is the default. Exists for forward compatibility.
 
 .. option:: --fslice-element-limit
 

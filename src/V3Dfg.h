@@ -815,9 +815,11 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
 bool DfgVertex::isCheaperThanLoad() const {
     // Constants
     if (is<DfgConst>()) return true;
+    // Variables
+    if (is<DfgVertexVar>()) return true;
     // Array sels are just address computation
     if (is<DfgArraySel>()) return true;
-    // Small constant select from variable
+    // Small select from variable
     if (const DfgSel* const selp = cast<DfgSel>()) {
         if (!selp->fromp()->is<DfgVarPacked>()) return false;
         if (selp->fromp()->width() <= VL_QUADSIZE) return true;
@@ -828,20 +830,32 @@ bool DfgVertex::isCheaperThanLoad() const {
     // Zero extend of a cheap vertex - Extend(_) was converted to Concat(0, _)
     if (const DfgConcat* const catp = cast<DfgConcat>()) {
         if (catp->width() > VL_QUADSIZE) return false;
-        const DfgConst* const lCatp = catp->lhsp()->cast<DfgConst>();
-        if (!lCatp) return false;
-        if (!lCatp->isZero()) return false;
+        const DfgConst* const lConstp = catp->lhsp()->cast<DfgConst>();
+        if (!lConstp || !lConstp->isZero()) return false;
         return catp->rhsp()->isCheaperThanLoad();
     }
-    // Reduction of a cheap vertex
-    if (const DfgRedOr* const redOrp = cast<DfgRedOr>()) {
-        return redOrp->srcp()->isCheaperThanLoad();
+    // Reduction of a narrow cheap vertex
+    if (is<DfgRedOr>()  //
+        || is<DfgRedAnd>()  //
+        || is<DfgRedXor>()) {
+        const DfgVertex* const srcp = as<DfgVertexUnary>()->srcp();
+        return srcp->width() <= VL_QUADSIZE && srcp->isCheaperThanLoad();
     }
-    if (const DfgRedAnd* const redAndp = cast<DfgRedAnd>()) {
-        return redAndp->srcp()->isCheaperThanLoad();
-    }
-    if (const DfgRedXor* const redXorp = cast<DfgRedXor>()) {
-        return redXorp->srcp()->isCheaperThanLoad();
+    // Comparisons of a narrow cheap vertex with constant
+    if (is<DfgEq>()  //
+        || is<DfgNeq>()  //
+        || is<DfgLt>()  //
+        || is<DfgLte>()  //
+        || is<DfgGt>()  //
+        || is<DfgGte>()  //
+        || is<DfgLtS>()  //
+        || is<DfgLteS>()  //
+        || is<DfgGtS>()  //
+        || is<DfgGteS>()) {
+        const DfgVertexBinary* const binp = as<DfgVertexBinary>();
+        const DfgVertex* const lhsp = binp->inputp(0);
+        const DfgVertex* const rhsp = binp->inputp(1);
+        return lhsp->width() <= VL_QUADSIZE && lhsp->is<DfgConst>() && rhsp->isCheaperThanLoad();
     }
     // Otherwise probably not
     return false;

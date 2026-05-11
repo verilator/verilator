@@ -16,13 +16,14 @@ module t;
 
   int seq;
   int counts[8];
+  int sum, hits;
 
   task prep();
     for (int i = 0; i < COUNT; ++i) counts[i] = 0;
   endtask
 
   initial begin
-    // functions
+    // Single-port and no-port productions
     prep();
     for (int i = 0; i < COUNT; ++i) begin
       randsequence(main)
@@ -36,6 +37,42 @@ module t;
     end
     `checkd(counts[1], COUNT * (10 + 20));
     `checkd(counts[2], COUNT * 1 / 1);  // return
+
+    // Multi-port, repeat-with-arg, if-prod-with-arg, nested-prod-with-arg
+    sum  = 0;
+    hits = 0;
+    for (int i = 0; i < COUNT; ++i) begin
+      // verilog_format: off
+      randsequence(main)
+        main : multi nested ifcall reps;
+        multi : add2(3, 4);
+        nested : leaf(7);
+        ifcall : if (1) add2(1, 2) else add2(0, 0);
+        reps : repeat (3) add2(2, 0);
+        void add2(int a, int b) : { sum = sum + a + b; hits = hits + 1; };
+        void leaf(int v) : { sum = sum + v; hits = hits + 1; };
+      endsequence
+      // verilog_format: on
+    end
+    `checkd(sum, COUNT * (7 + 7 + 3 + 3 * 2));
+    `checkd(hits, COUNT * (1 + 1 + 1 + 3));
+
+    // Default port values (IEEE 1800-2023 18.17.7)
+    sum  = 0;
+    hits = 0;
+    for (int i = 0; i < COUNT; ++i) begin
+      // verilog_format: off
+      randsequence(main)
+        main : useDefault override1 override2;
+        useDefault : add_def;
+        override1 : add_def(50);
+        override2 : add_def(100);
+        void add_def(int n = 7) : { sum = sum + n; hits = hits + 1; };
+      endsequence
+      // verilog_format: on
+    end
+    `checkd(sum, COUNT * (7 + 50 + 100));
+    `checkd(hits, COUNT * 3);
 
     $write("*-* All Finished *-*\n");
     $finish;

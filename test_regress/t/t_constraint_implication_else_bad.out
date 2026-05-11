@@ -1,0 +1,5 @@
+%Error: t/t_constraint_implication_else_bad.v:15:32: syntax error, unexpected else
+   15 |     (a == 0) -> { b == 4'h1; } else { b == 4'h2; }
+      |                                ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

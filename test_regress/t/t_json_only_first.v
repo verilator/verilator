@@ -16,6 +16,17 @@ module t (  /*AUTOARG*/
   output wire [3:0] q;
 
   logic [3:0] between;
+  logic direct_named;
+  logic computed_named;
+  logic anonymous_expr;
+
+  localparam logic [1:0] S_IDLE = 2'b00;
+  localparam logic [1:0] S_FETCH = 2'b01;
+  localparam logic [1:0] S_EXEC = S_FETCH + 1;
+
+  assign direct_named = d[1:0] == S_IDLE;
+  assign computed_named = d[1:0] == S_EXEC;
+  assign anonymous_expr = d[1:0] == (S_FETCH + 1);
 
   mod1 #(
       .WIDTH(4)

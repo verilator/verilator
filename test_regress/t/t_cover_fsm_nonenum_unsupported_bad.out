@@ -1,0 +1,15 @@
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:33:7: Ignoring unsupported: FSM coverage on non-enum state variable 't.wide_state' with width 33 wider than 32 bits
+   33 |       case (wide_state)
+      |       ^~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:48:28: Ignoring unsupported: FSM coverage on non-enum state variable 't.target_state': target value 2 is not present in the inferred state space
+   48 |         2'h1: target_state <= 2'h2;
+      |                            ^~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:62:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_state' with multiple labels for the same value 0: IDLE and RESET
+   62 |         RESET: duplicate_state <= IDLE;
+      |         ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:78:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.xz_case_state' with X/Z state encoding values
+   78 |         2'b1x: xz_case_state <= 2'h0;
+      |         ^~~~~
+%Error: Exiting due to

@@ -25,6 +25,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -122,12 +124,18 @@ void VlcTop::writeInfo(const string& filename) {
         int branchesHit = 0;
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
-            os << "DA:" << sc.lineno() << "," << sc.maxCount() << "\n";
-            const int num_branches = sc.points().size();
-            if (num_branches == 1) continue;
-            branchesFound += num_branches;
-            int point_num = 0;
+            uint64_t daCount = 0;
+            std::vector<const VlcPoint*> infoPoints;
             for (const auto& point : sc.points()) {
+                if (point->isFsmArc()) continue;
+                daCount = std::max(daCount, point->count());
+                if (!point->isFsmState()) infoPoints.push_back(point);
+            }
+            os << "DA:" << sc.lineno() << "," << daCount << "\n";
+            if (infoPoints.size() <= 1) continue;
+            branchesFound += static_cast<int>(infoPoints.size());
+            int point_num = 0;
+            for (const VlcPoint* point : infoPoints) {
                 os << "BRDA:" << sc.lineno() << ",";
                 os << "0,";
                 os << point_num << ",";
@@ -269,8 +277,10 @@ void VlcTop::annotateCalcNeeded() {
         }
     }
     const float pct = totCases ? (100 * totOk / totCases) : 0;
-    std::cout << "Total coverage (" << totOk << "/" << totCases << ") ";
-    std::cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
+    std::cout << "Annotation Summary:\n";
+    std::cout << "  lines with all attached points covered : ";
+    std::cout << std::fixed << std::setw(5) << std::setprecision(2) << pct << "%  (" << totOk
+              << "/" << totCases << ")\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 
@@ -326,6 +336,29 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 if (opt.annotatePoints()) {
                     for (const auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
                 }
+                bool printedFsmHeader = false;
+                for (const auto& pit : sc.points()) {
+                    if (!pit->isFsmState() && !pit->isFsmArc()) continue;
+                    if (!printedFsmHeader) {
+                        os << "        // [FSM coverage]\n";
+                        printedFsmHeader = true;
+                    }
+                    os << (opt.countOk(pit->count()) ? " " : "%");
+                    os << std::setfill('0') << std::setw(6) << pit->count() << "        ";
+                    if (pit->isFsmState()) {
+                        os << "// [fsm_state " << pit->comment() << "]";
+                        if (pit->count() == 0) os << " *** UNCOVERED ***";
+                        os << "\n";
+                    } else if (pit->isFsmDefaultArc()) {
+                        os << "// [SYNTHETIC DEFAULT ARC: " << pit->comment() << "]\n";
+                    } else {
+                        os << "// [fsm_arc " << pit->comment() << "]";
+                        if (pit->fsmIsReset() && !opt.includeResetArcs()) {
+                            os << " [reset arc, excluded from %]";
+                        }
+                        os << "\n";
+                    }
+                }
             }
         }
     }
@@ -336,4 +369,50 @@ void VlcTop::annotate(const string& dirname) {
     annotateCalc();
     annotateCalcNeeded();
     annotateOutputFiles(dirname);
+}
+
+void VlcTop::printTypeSummary() {
+    static const std::vector<std::string> orderedTypes
+        = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
+    std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
+    for (const auto& i : m_points) {
+        const VlcPoint& pt = m_points.pointNumber(i.second);
+        const string type = pt.type().empty() ? "point" : pt.type();
+        auto& entry = tally[type];
+        if (pt.count() > 0) ++entry.first;
+        ++entry.second;
+    }
+    if (tally.empty()) return;
+    std::set<std::string> printed;
+    size_t typeWidth = 0;
+    size_t countWidth = 0;
+    for (const string& type : orderedTypes) typeWidth = std::max(typeWidth, type.size());
+    countWidth = std::max(countWidth, cvtToStr(0).size());
+    for (const auto& it : tally) {
+        typeWidth = std::max(typeWidth, it.first.size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.second).size());
+    }
+    std::cout << "Coverage Summary:\n";
+    for (const string& type : orderedTypes) {
+        const auto it = tally.find(type);
+        printed.insert(type);
+        const uint64_t hit = (it == tally.end()) ? 0 : it->second.first;
+        const uint64_t total = (it == tally.end()) ? 0 : it->second.second;
+        const double pct
+            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
+    for (const auto& it : tally) {
+        if (printed.count(it.first)) continue;
+        const uint64_t hit = it.second.first;
+        const uint64_t total = it.second.second;
+        const double pct
+            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        std::cout << "  " << std::left << std::setw(typeWidth) << it.first << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
 }

@@ -15,6 +15,7 @@ path = [
     ".style.yapf",
     "CITATION.cff",
     "CPPLINT.cfg",
+    "ci/docker/buildenv/wavetools.conf",
     "docs/CONTRIBUTORS",
     "docs/spelling.txt",
     "docs/verilated.dox",

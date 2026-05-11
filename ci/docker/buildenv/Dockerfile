@@ -53,10 +53,14 @@ RUN apt-get update \
 
 WORKDIR /tmp
 
-RUN git clone https://github.com/veripool/vcddiff.git && \
-    make -C vcddiff && \
-    cp -p vcddiff/vcddiff /usr/local/bin/vcddiff && \
-    rm -rf vcddiff
+COPY wavetools.conf /tmp/wavetools.conf
+ARG WGET_EXTRA_ARGS=
+RUN . /tmp/wavetools.conf && \
+    wget -q ${WGET_EXTRA_ARGS} -O /tmp/wavetools.tar.gz \
+    "https://github.com/hudson-trading/wavetools/releases/download/${WAVETOOLS_VERSION}/wavetools-${WAVETOOLS_VERSION}-linux-x86_64.tar.gz" && \
+    tar -xzf /tmp/wavetools.tar.gz -C /tmp && \
+    cp -p /tmp/wavetools-${WAVETOOLS_VERSION}-linux-x86_64/wavediff /usr/local/bin/wavediff && \
+    rm -rf /tmp/wavetools.tar.gz /tmp/wavetools-* /tmp/wavetools.conf
 
 COPY build.sh /tmp/build.sh
 

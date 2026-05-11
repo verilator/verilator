@@ -1,0 +1,5 @@
+%Error: t/t_randomize_with_idlist_method_bad.v:13:21: 'with (...) { ... }' constraint block is only valid for randomize() (IEEE 1800-2023 18.7)
+   13 |     total = q.sum() with (item) { item > 0; };
+      |                     ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

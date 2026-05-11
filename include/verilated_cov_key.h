@@ -40,6 +40,10 @@ VLCOVGEN_ITEM("'name':'thresh',      'short':'s',  'group':1, 'default':None, 'd
 VLCOVGEN_ITEM("'name':'type',        'short':'t',  'group':1, 'default':'',   'descr':'Type of coverage (block, line, fsm, etc)'")
 // Bin attributes
 VLCOVGEN_ITEM("'name':'comment',     'short':'o',  'group':0, 'default':'',   'descr':'Textual description for the item'")
+VLCOVGEN_ITEM("'name':'fsm_from',    'short':'Ff', 'group':0, 'default':'',   'descr':'FSM source state name for structured FSM coverage points'")
+VLCOVGEN_ITEM("'name':'fsm_tag',     'short':'Fg', 'group':0, 'default':'',   'descr':'FSM point tag such as reset, reset_include, or default'")
+VLCOVGEN_ITEM("'name':'fsm_to',      'short':'Ft', 'group':0, 'default':'',   'descr':'FSM destination state name for structured FSM coverage points'")
+VLCOVGEN_ITEM("'name':'fsm_var',     'short':'Fv', 'group':0, 'default':'',   'descr':'FSM state variable name for structured FSM coverage points'")
 VLCOVGEN_ITEM("'name':'hier',        'short':'h',  'group':0, 'default':'',   'descr':'Hierarchy path name for the item'")
 VLCOVGEN_ITEM("'name':'lineno',      'short':'l',  'group':0, 'default':0,    'descr':'Line number for the item'")
 VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'descr':'For totaling items, weight of this item'")
@@ -49,6 +53,10 @@ VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'd
 #define VL_CIK_COLUMN "n"
 #define VL_CIK_COMMENT "o"
 #define VL_CIK_FILENAME "f"
+#define VL_CIK_FSM_FROM "Ff"
+#define VL_CIK_FSM_TAG "Fg"
+#define VL_CIK_FSM_TO "Ft"
+#define VL_CIK_FSM_VAR "Fv"
 #define VL_CIK_HIER "h"
 #define VL_CIK_LINENO "l"
 #define VL_CIK_LINESCOV "S"
@@ -70,6 +78,10 @@ public:
         if (key == "column") return VL_CIK_COLUMN;
         if (key == "comment") return VL_CIK_COMMENT;
         if (key == "filename") return VL_CIK_FILENAME;
+        if (key == "fsm_from") return VL_CIK_FSM_FROM;
+        if (key == "fsm_tag") return VL_CIK_FSM_TAG;
+        if (key == "fsm_to") return VL_CIK_FSM_TO;
+        if (key == "fsm_var") return VL_CIK_FSM_VAR;
         if (key == "hier") return VL_CIK_HIER;
         if (key == "lineno") return VL_CIK_LINENO;
         if (key == "linescov") return VL_CIK_LINESCOV;

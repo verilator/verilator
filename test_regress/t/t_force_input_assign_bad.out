@@ -1,3 +1,8 @@
+%Warning-IEEEMAYDEPRECATE: t/t_force_input_assign_bad.v:27:5: Feature may be deprecated in future IEEE standard
+   27 |     assign s3.i = 2;
+      |     ^~~~~~
+                           ... For warning description see https://verilator.org/warn/IEEEMAYDEPRECATE?v=latest
+                           ... Use "/* verilator lint_off IEEEMAYDEPRECATE */" and lint_on around source to disable this message.
 %Error-ASSIGNIN: t/t_force_input_assign_bad.v:20:8: Assigning to input/const variable: 'i'
                                                   : ... note: In instance 't'
    20 |     s1.i = 2;

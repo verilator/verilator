@@ -26,6 +26,7 @@ EXEMPT_FILES_LIST = """
     REUSE.toml
     ci/ci-win-compile.ps1
     ci/ci-win-test.ps1
+    ci/docker/buildenv/wavetools.conf
     ci/codecov
     docs/CONTRIBUTORS
     docs/_static

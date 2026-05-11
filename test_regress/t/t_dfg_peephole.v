@@ -68,6 +68,8 @@ module t (
   `signal(FOLD_BINARY_Concat,    {const_a, const_b});
   `signal(FOLD_BINARY_Div,       const_a / 64'd3);
   `signal(FOLD_BINARY_DivS,      sconst_a / 64'sd3);
+  `signal(REMOVE_DIV_ONE,        rand_a / 64'd1);
+  `signal(REMOVE_DIVS_ONE,       srand_a / 64'sd1);
   `signal(FOLD_BINARY_Eq,        const_a == const_b);
   `signal(FOLD_BINARY_Gt,        const_a > const_b);
   `signal(FOLD_BINARY_GtS,       sconst_a > sconst_b);
@@ -89,6 +91,10 @@ module t (
   `signal(FOLD_BINARY_ModDivS,   sconst_a % 64'sd3);
   `signal(FOLD_BINARY_Mul,       const_a * 64'd3);
   `signal(FOLD_BINARY_MulS,      sconst_a * 64'sd3);
+  `signal(REMOVE_MUL_ZERO,       rand_a * 64'd0);
+  `signal(REMOVE_MUL_ONE,        rand_a * 64'd1);
+  `signal(REMOVE_MULS_ZERO,      srand_a * 64'sd0);
+  `signal(REMOVE_MULS_ONE,       srand_a * 64'sd1);
   `signal(FOLD_BINARY_Neq,       const_a != const_b);
   `signal(FOLD_BINARY_Or,        const_a | const_b);
   `signal(FOLD_BINARY_Pow,       const_a ** 64'd2);
@@ -134,8 +140,21 @@ module t (
   `signal(REPLACE_EXTEND, 4'(rand_a[0]));
   `signal(PUSH_NOT_THROUGH_COND, ~(rand_a[0] ? rand_a[4:0] : 5'hb));
   `signal(REMOVE_NOT_NOT, ~~rand_a);
-  `signal(REPLACE_NOT_NEQ, ~(rand_a != rand_b));
-  `signal(REPLACE_NOT_EQ, ~(srand_a == srand_b));
+  `signal(REPLACE_NOT_NEQ,  ~(rand_a != rand_b));
+  `signal(REPLACE_NOT_EQ,   ~(srand_a == srand_b));
+  // GT/GTE variants use shifted operands to avoid CSE interference.  The peephole's
+  // REPLACE_NOT_LT fires first and emits a new DfgGte(rand_a, rand_b); the intra-pass
+  // CSE then merges it with the existing DfgGte(rand_a, rand_b) that is the source of
+  // REPLACE_NOT_GTE, giving that vertex two sinks and causing its !hasMultipleSinks()
+  // guard to fail.  Unique shift amounts break the CSE match, so all eight patterns fire.
+  `signal(REPLACE_NOT_GT,   ~((rand_a  >> 18) >  (rand_b  >> 18)));
+  `signal(REPLACE_NOT_GTE,  ~((rand_a  >> 19) >= (rand_b  >> 19)));
+  `signal(REPLACE_NOT_GTES, ~((srand_a >>> 20) >= (srand_b >>> 20)));
+  `signal(REPLACE_NOT_GTS,  ~((srand_a >>> 21) >  (srand_b >>> 21)));
+  `signal(REPLACE_NOT_LT,   ~(rand_a  <  rand_b));
+  `signal(REPLACE_NOT_LTE,  ~(rand_a  <= rand_b));
+  `signal(REPLACE_NOT_LTES, ~(srand_a <= srand_b));
+  `signal(REPLACE_NOT_LTS,  ~(srand_a <  srand_b));
   `signal(REPLACE_NOT_OF_CONST, ~4'd0);
   `signal(REPLACE_DISTRIBUTIVE_AND_OR_ABAC, ((rand_a >> 10) | (rand_b >> 10)) & ((rand_a  >> 10) | (srand_b >> 10)));
   `signal(REPLACE_DISTRIBUTIVE_AND_OR_ABCA, ((rand_a >> 11) | (rand_b >> 11)) & ((srand_b >> 11) | (rand_a  >> 11)));
@@ -164,6 +183,7 @@ module t (
   `signal(REMOVE_OR_WITH_ZERO, 64'd0 | rand_a);
   `signal(REPLACE_TAUTOLOGICAL_OR, rand_a | ~rand_a);
   `signal(REPLACE_TAUTOLOGICAL_OR_3, ~(rand_a + 1) | ((rand_a + 1) | rand_b));
+  `signal(FOLD_SELF_SUB, rand_a - rand_a);
   `signal(REMOVE_SUB_ZERO, rand_a - 64'd0);
   `signal(REPLACE_SUB_WITH_NOT, rand_a[0] - 1'b1);
   `signal(REMOVE_REDUNDANT_ZEXT_ON_RHS_OF_SHIFT, rand_a << {2'b0, rand_a[2:0]});
@@ -326,6 +346,7 @@ module t (
   `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
   `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
   `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
+  `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths
   `signal(MISMATCHED_ShiftL,const_a << 4'd2);

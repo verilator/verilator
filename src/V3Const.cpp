@@ -1731,12 +1731,13 @@ class ConstVisitor final : public VNVisitor {
     // Constant Replacement functions.
     // These all take a node, delete its tree, and replaces it with a constant
 
-    void replaceNum(AstNode* oldp, const V3Number& num) {
+    void replaceNum(AstNode* oldp, const V3Number& num, const string& origParamName = "") {
         // Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
         UASSERT_OBJ(!(VN_IS(oldp, Const) && !VN_AS(oldp, Const)->num().isFourState()), oldp,
                     "Already constant??");
-        AstNode* const newp = new AstConst{oldp->fileline(), num};
+        AstConst* const newp = new AstConst{oldp->fileline(), num};
+        if (!origParamName.empty()) newp->origParamName(origParamName);
         oldp->replaceWithKeepDType(newp);
         UINFOTREE(6, oldp, "", "const_old");
         UINFOTREE(6, newp, "", "_new");
@@ -2229,7 +2230,9 @@ class ConstVisitor final : public VNVisitor {
             && !VN_IS(nodep, AssignDly)) {
             // X = X.  Quite pointless, though X <= X may override another earlier assignment
             if (VN_IS(nodep, AssignW)) {
-                nodep->v3error("Wire inputs its own output, creating circular logic (wire x=x)");
+                if (!v3Global.opt.pedantic())
+                    nodep->v3error(
+                        "Wire inputs its own output, creating circular logic (wire x=x)");
                 return false;  // Don't delete the assign, or V3Gate will freak out
             } else {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -3111,7 +3114,9 @@ class ConstVisitor final : public VNVisitor {
                 if (operandConst(valuep)) {
                     const V3Number& num = VN_AS(valuep, Const)->num();
                     // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
-                    VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+                    const string origParamName
+                        = nodep->varp()->isParam() ? nodep->varp()->name() : "";
+                    VL_DO_DANGLING(replaceNum(nodep, num, origParamName), nodep);
                     did = true;
                 } else if (m_selp && VN_IS(valuep, InitArray)) {
                     const AstInitArray* const initarp = VN_AS(valuep, InitArray);

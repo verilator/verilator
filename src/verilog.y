@@ -804,6 +804,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
+%token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
+%token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
 %token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
@@ -3123,6 +3126,9 @@ sigAttr<nodep>:
         |       yVL_SC_BV                               { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BV}; }
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
         |       yVL_SPLIT_VAR                           { $$ = new AstAttrOf{$1, VAttrType::VAR_SPLIT_VAR}; }
+        |       yVL_FSM_ARC_INCL_COND                   { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND}; }
+        |       yVL_FSM_RESET_ARC                       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_RESET_ARC}; }
+        |       yVL_FSM_STATE                           { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE}; }
         ;
 
 rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
@@ -3589,10 +3595,12 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       fexprLvalue yP_LTE cycle_delay expr ';'
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
         //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
-        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
-                        { $$ = new AstAssignCont{$1, $2, $5, $4}; }
+        |       yASSIGN variable_lvalue '=' delay_or_event_controlE expr ';'
+                        { $$ = new AstAssignCont{$1, $2, $5, $4};
+                          $1->v3warn(IEEEMAYDEPRECATE, "Feature may be deprecated in future IEEE standard"); v3Global.setHasAssignDeassign(); }
         |       yDEASSIGN variable_lvalue ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); DEL($2); }
+                        { $$ = new AstDeassign{$1, $2};
+                          $1->v3warn(IEEEMAYDEPRECATE, "Feature may be deprecated in future IEEE standard"); v3Global.setHasAssignDeassign(); }
         |       yFORCE variable_lvalue '=' expr ';'
                         { $$ = new AstAssignForce{$1, $2, $4}; v3Global.setHasForceableSignals(); }
         |       yRELEASE variable_lvalue ';'
@@ -3784,48 +3792,40 @@ foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
-                        { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Add, $2, $1, $3}; }
         |       fexprLvalue yP_MINUSEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Sub, $2, $1, $3}; }
         |       fexprLvalue yP_TIMESEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Mul, $2, $1, $3}; }
         |       fexprLvalue yP_DIVEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Div, $2, $1, $3}; }
         |       fexprLvalue yP_MODEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ModDiv, $2, $1, $3}; }
         |       fexprLvalue yP_ANDEQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::And, $2, $1, $3}; }
         |       fexprLvalue yP_OREQ      expr
-                        { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Or, $2, $1, $3}; }
         |       fexprLvalue yP_XOREQ     expr
-                        { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::Xor, $2, $1, $3}; }
         |       fexprLvalue yP_SLEFTEQ   expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftL, $2, $1, $3}; }
         |       fexprLvalue yP_SRIGHTEQ  expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftR, $2, $1, $3}; }
         |       fexprLvalue yP_SSRIGHTEQ expr
-                        { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTreePure(true), $3}}; }
+                        { $$ = new AstAssignCompound{AstAssignCompound::operation::ShiftRS, $2, $1, $3}; }
         ;
 
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
         //                      // Need fexprScope instead of variable_lvalue to prevent conflict
                 ~l~exprScope yP_PLUSPLUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostInc{$2, $1}; }
         |       ~l~exprScope yP_MINUSMINUS
-                        { $<fl>$ = $<fl>1; $$ = new AstPostSub{$2, new AstConst{$2, AstConst::StringToParse{}, "'b1"},
-                                                               // Purity checked in V3LinkInc
-                                                               $1, $1->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPostDec{$2, $1}; }
         //                      // Need expr instead of variable_lvalue to prevent conflict
         |       yP_PLUSPLUS     expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreAdd{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreInc{$1, $2}; }
         |       yP_MINUSMINUS   expr
-                        { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, new AstConst{$1, AstConst::StringToParse{}, "'b1"},
-                                                              // Purity checked in V3LinkInc
-                                                              $2, $2->cloneTree(true)}; }
+                        { $<fl>$ = $<fl>1; $$ = new AstPreDec{$1, $2}; }
         ;
 
 finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
@@ -4188,7 +4188,11 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4205,7 +4209,11 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' expr ')' constraint_block   { $$ = new AstWithParse{$2, $1, $4, $6}; }
+        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                                                        { AstWithParse* const withParsep
+                                                              = new AstWithParse{$2, $1, $4, $6};
+                                                          withParsep->restricted(true);
+                                                          $$ = withParsep; }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -5079,11 +5087,11 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       type_referenceEq yP_EQUAL type_referenceBoth         { $$ = new AstEqT{$2, $1, $3}; }
         |       type_referenceEq yP_NOTEQUAL type_referenceBoth      { $$ = new AstNeqT{$2, $1, $3}; }
         //                      // IEEE: expr yP_MINUSGT expr  (1800-2009)
-        //                      // Conflicts with constraint_expression:"expr yP_MINUSGT constraint_set"
-        //                      // To duplicating expr for constraints, just allow the more general form
-        //                      // Later Ast processing must ignore constraint terms where inappropriate
-        //UNSUP ~l~expr yP_MINUSGT constraint_set               { $<fl>$ = $<fl>1; $$ = $1 + $2 + $3; }
-        //UNSUP remove line below
+        //                      // Full IEEE 1800-2023 18.7.2 "expr ->
+        //                      // constraint_set" is split: this rule handles
+        //                      // the bare-expression RHS as a boolean
+        //                      // (AstLogIf), constraint_expression has one
+        //                      // production per non-expression RHS shape.
         |       ~l~expr yP_MINUSGT ~r~expr              { $$ = new AstLogIf{$2, $1, $3}; }
         //
         //                      // <= is special, as we need to disambiguate it with <= assignment
@@ -5399,6 +5407,21 @@ exprListE<nodeExprp>:
 exprList<nodeExprp>:
                 expr                                    { $$ = $1; }
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
+        ;
+
+// identifier_list for 'with' in inline randomize constraints (IEEE 1800-2023 18.7).
+// Only simple identifiers; non-identifier expressions are parse errors.
+inlineConstraintIdList<nodeExprp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
+        |       inlineConstraintIdList ',' id           { $$ = $1->addNext(
+                                                             new AstParseRef{$<fl>3, *$3, nullptr, nullptr}); }
+        ;
+
+// Optional identifier_list. Empty 'with () {...}' differs from bare 'with {...}'
+// via AstWithParse::restricted().
+inlineConstraintIdListE<nodeExprp>:
+                /* empty */                             { $$ = nullptr; }
+        |       inlineConstraintIdList                  { $$ = $1; }
         ;
 
 exprEListE<nodep>:  // expression list with empty commas allowed
@@ -6716,7 +6739,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // Expanded below
         //
                 yNOT pexpr
-                        { $$ = new AstLogNot{$1, $2}; }
+                        { $$ = new AstLogNot{$1, $2, /*fromProperty=*/true}; }
         |       ySTRONG '(' sexpr ')'
                         { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
         |       yWEAK '(' sexpr ')'
@@ -6734,10 +6757,12 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE-2012: yIF and yCASE
         |       property_exprCaseIf                     { $$ = $1; }
         //
+        //                      // IEEE: "sequence_expr yP_POUNDMINUSPD pexpr" (followed-by #-#/#=#)
+        //                      // Reuses AstImplication with m_isFollowedBy to carry non-vacuous-fail polarity
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, true, true}; }
         |       ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #=# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, false, true}; }
         |       yNEXTTIME pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: nexttime (in property expression)"); }
         |       yS_NEXTTIME pexpr
@@ -6747,13 +6772,18 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_NEXTTIME '[' constExpr ']' pexpr %prec yS_NEXTTIME
                         { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); DEL($3); }
         |       yALWAYS pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: always (in property expression)"); }
-        |       yALWAYS anyrange pexpr  %prec yALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); DEL($2); }
-        |       yS_ALWAYS anyrange pexpr  %prec yS_ALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); DEL($2); }
+                        { $$ = $2; }
+        |       yALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yALWAYS
+                        { $$ = new AstPropAlways{$1, $7, $3, $5, false}; }
+        |       yS_ALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yS_ALWAYS
+                        { $$ = new AstPropAlways{$1, $7, $3, $5, true}; }
+        |       yS_ALWAYS pexpr
+                        { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
         |       yS_EVENTUALLY pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
+                        {
+                            $$ = new AstSEventually{$1, $2};
+                            PARSEP->importIfInStd($1, "process", true);
+                        }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
         |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
@@ -6879,7 +6909,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
         //                      // IEEE: sexpr yWITHIN sexpr
         |       ~p~sexpr yWITHIN sexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: within (in sequence expression)"); DEL($3); }
+                        { $$ = new AstSWithin{$2, $1, $3}; }
         //                      // Note concurrent_assertion had duplicate rule for below
         //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
         //
@@ -7904,8 +7934,37 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yUNIQUE '{' range_list '}' ';'
                         { $$ = new AstConstraintUnique{$1, $3}; }
         //                      // IEEE: expr yP_MINUSGT constraint_set
-        //                      // Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
-        //
+        //                      // The bare-expression case "expr -> expr ;"
+        //                      // arrives via the general expr rule above
+        //                      // (AstLogIf) and matches "expr ';'".  Each
+        //                      // production below covers one constraint_set
+        //                      // shape that is not a plain expression and
+        //                      // builds an outer AstConstraintIf wrapping the
+        //                      // statement V3Randomize already knows how to
+        //                      // lower (with disable-soft hoisted by the
+        //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT '{' constraint_expressionList '}'
+                        { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, nullptr}, nullptr}; }
+        |       expr yP_MINUSGT yIF '(' expr ')' constraint_set yELSE constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintIf{$3, $5, $7, $9}, nullptr}; }
+        |       expr yP_MINUSGT yFOREACH '(' idClassSelForeach ')' constraint_set
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintForeach{$3, $5, $7}, nullptr}; }
+        |       expr yP_MINUSGT yUNIQUE '{' range_list '}' ';'
+                        { $$ = new AstConstraintIf{$2, $1,
+                                   new AstConstraintUnique{$3, $5}, nullptr}; }
+        |       expr yP_MINUSGT ySOFT expr ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $4};
+                          innerp->isSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
+        |       expr yP_MINUSGT yDISABLE ySOFT constraint_primary ';'
+                        { AstConstraintExpr* const innerp = new AstConstraintExpr{$3, $5};
+                          innerp->isDisableSoft(true);
+                          $$ = new AstConstraintIf{$2, $1, innerp, nullptr}; }
         |       yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
                         { $$ = new AstConstraintIf{$1, $3, $5, nullptr}; }
         |       yIF '(' expr ')' constraint_set yELSE constraint_set
@@ -7914,7 +7973,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         |       yFOREACH '(' idClassSelForeach ')' constraint_set
                         { $$ = new AstConstraintForeach{$1, $3, $5}; }
         //                      // soft is 1800-2012
-        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'
+        |       yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }

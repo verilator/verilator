@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_force_forceable_readwrite_unsup.v:15:14: Unsupported: Signals used via read-write reference cannot be forced
+   15 |     take_ref(value);
+      |              ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

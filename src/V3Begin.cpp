@@ -298,12 +298,39 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVar* nodep) override {
+        if (nodep->user1SetOnce()) { return; }
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
+            if (nodep->isIO()) {
+                if (nodep->direction().isRef()) {
+                    nodep->v3error(
+                        "It is illegal to use argument passing by reference for subroutines with "
+                        "a lifetime of static (IEEE 1800-2023 13.5.2)");
+                }
+                // Create a port that is used for passing value between argument and static
+                // variable
+                AstVar* const portp = nodep->cloneTreePure(false);
+                nodep->replaceWith(portp);
+
+                if (nodep->isInput() || nodep->isInout()) {
+                    AstAssign* const initAssignp = new AstAssign{
+                        nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                        new AstVarRef{portp->fileline(), portp, VAccess::READ}};
+                    portp->addNextHere(initAssignp);
+                }
+
+                if (nodep->isWritable()) {
+                    AstAssign* const endAssignp = new AstAssign{
+                        nodep->fileline(), new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
+                        new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
+                    m_ftaskp->addStmtsp(endAssignp);
+                }
+            } else {
+                nodep->unlinkFrBack();
+            }
             nodep->name(newName);
-            nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
         } else if (m_unnamedScope != "") {
@@ -584,11 +611,11 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    firstp->dtypeSetSigned32();
+    firstp->dtypeSetInteger();
     AstNodeExpr* const nextp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    nextp->dtypeSetSigned32();
+    nextp->dtypeSetInteger();
 
     // _Vmore = array.first(__Vnext)
     loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
@@ -693,7 +720,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                         : subfromp->cloneTreePure(false),
                     VCMethod::DYN_SIZE};
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                rightp->dtypeSetSigned32();
+                rightp->dtypeSetInt();
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp, leftp,
                                           rightp, VNType::Lt);

@@ -1050,6 +1050,10 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (fourstate()) {
         cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
+        if (hierarchical()) {
+            cmdfl->v3warn(E_UNSUPPORTED,
+                          "--fourstate is not supported with hierarchical Verilation");
+        }
     }
 
     if (coverage() && savable()) {
@@ -1352,6 +1356,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
+    DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
