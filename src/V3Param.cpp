@@ -2356,17 +2356,42 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
         if (m_origNameToClone.empty()) return;
         const std::string origName
             = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
-        if (m_ambiguous.count(origName)) return;
+        if (m_ambiguous.count(origName)) {
+            // The owner has two locally-resolved typedefs pointing at
+            // different specializations of the same template, e.g.:
+            //   typedef driver #(.IW(5)) drv5_t;
+            //   typedef driver #(.IW(6)) drv6_t;
+            // A stripped REFDTYPE only carries the origName, so we cannot
+            // tell which sibling it meant; leave it alone.
+            UINFO(9, "post-param REFDTYPE retarget skipped (ambiguous owner '" << origName
+                                                                               << "'): " << refp);
+            return;
+        }
         const auto it = m_origNameToClone.find(origName);
         if (it == m_origNameToClone.end()) return;
         AstClass* const correctClassp = it->second;
         if (correctClassp == oldOwnerp) return;
         AstTypedef* const newTdp
             = V3LinkDotIfaceCapture::findTypedefInModule(correctClassp, refp->name());
-        if (!newTdp) return;
+        if (!newTdp) {
+            // The owner map says correctClassp is the right specialization,
+            // but it does not declare a typedef named refp->name(). Caveats
+            // of findTypedefInModule (e.g. typedef declared in a base class,
+            // not the specialization we resolved to) can land us here.
+            UINFO(9, "post-param REFDTYPE retarget skipped (no typedef '"
+                         << refp->name() << "' in " << correctClassp->name() << "): " << refp);
+            return;
+        }
+        // typedefp / classOrPackagep / refDTypep must agree. If newTdp lacks
+        // a subDTypep we cannot keep all three in sync, so skip the entire
+        // retarget rather than leaving the REFDTYPE half-updated.
+        if (!newTdp->subDTypep()) {
+            UINFO(9, "post-param REFDTYPE retarget skipped (newTdp has null subDTypep): " << refp);
+            return;
+        }
         refp->typedefp(newTdp);
         refp->classOrPackagep(correctClassp);
-        if (newTdp->subDTypep()) refp->refDTypep(newTdp->subDTypep());
+        refp->refDTypep(newTdp->subDTypep());
         UINFO(9, "post-param REFDTYPE re-resolve: " << refp << " from " << oldOwnerp->name()
                                                     << " to " << correctClassp->name());
     }
