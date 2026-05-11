@@ -35,18 +35,6 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:90:7: Unsupported: nexttime (in property expression)
    90 |       nexttime s_eventually [2:$] always a;
       |       ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:94:17: Unsupported: accept_on (in property expression)
-   94 |       accept_on (a) b;
-      |                 ^
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:98:22: Unsupported: sync_accept_on (in property expression)
-   98 |       sync_accept_on (a) b;
-      |                      ^
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:102:17: Unsupported: reject_on (in property expression)
-  102 |       reject_on (a) b;
-      |                 ^
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:106:22: Unsupported: sync_reject_on (in property expression)
-  106 |       sync_reject_on (a) b;
-      |                      ^
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:109:27: Unsupported: property argument data type
   109 |    property p_arg_propery(property inprop);
       |                           ^~~~~~~~
