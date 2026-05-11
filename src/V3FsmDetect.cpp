@@ -40,11 +40,17 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-// Width-preserving FSM state identity. The string is only a canonical lookup
-// key for maps/sets; the V3Number remains the actual Verilog value used when
-// rebuilding emitted constants.
+// Width-preserving FSM state identity. FSM detection needs a stable key for
+// graph vertices and lookup tables, but lowering still needs the original
+// folded Verilog value so emitted comparisons keep the correct width and bits.
 class FsmStateValue final {
+    // Hash/equality key only. It deliberately ignores signedness because
+    // signed and unsigned constants with the same width and bits denote the
+    // same encoded FSM state.
     string m_key;  // Canonical "width:value" identity, independent of signedness
+
+    // Semantic value. This is what diagnostics and lowering use when printing
+    // values or rebuilding AstConst nodes for instrumentation.
     V3Number m_num;  // Original folded value, preserving width for lowered comparisons
 
     static string makeKey(const V3Number& num) {
@@ -56,6 +62,8 @@ class FsmStateValue final {
     }
 
 public:
+    // Default value is used only for synthetic pseudo-states such as ANY and
+    // default, which never use m_num as a real Verilog state encoding.
     FsmStateValue()
         : m_key{"1:1'h0"}
         , m_num{static_cast<AstNode*>(nullptr), 1, 0} {}
@@ -63,6 +71,8 @@ public:
         : m_key{makeKey(num)}
         , m_num{num} {}
 
+    // Preserve the legacy small-integer construction path used when inferring
+    // compact literal state spaces from vector widths.
     static FsmStateValue fromUInt(FileLine* flp, int width, uint32_t value) {
         return FsmStateValue{V3Number{flp, width, value}};
     }
@@ -80,6 +90,8 @@ public:
     bool operator==(const FsmStateValue& rhs) const { return m_key == rhs.m_key; }
 };
 
+// unordered_map needs an explicit hash for this custom key type. Keep the
+// hash definition paired with operator== by hashing the same canonical key.
 struct FsmStateValueHash final {
     size_t operator()(const FsmStateValue& value) const {
         return std::hash<string>{}(value.key());
