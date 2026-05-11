@@ -1,0 +1,10 @@
+%Error-CONTASSINIT: t/t_var_mixed_initialization_bad.v:11:13: Continuous assignment to variable with initial value: 'a'
+                                                            : ... note: In instance 't'
+                                                            : ... Location of variable initialization
+   11 |   logic a = 1'b0;   
+      |             ^~~~
+                    t/t_var_mixed_initialization_bad.v:12:10: ... Location of continuous assignment
+   12 |   assign a = 1'b1;   
+      |          ^
+                    ... For error description see https://verilator.org/warn/CONTASSINIT?v=latest
+%Error: Exiting due to

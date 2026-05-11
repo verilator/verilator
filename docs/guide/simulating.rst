@@ -238,8 +238,8 @@ encodings in these common forms:
 Simple input guards are supported when they appear inside a recognized
 state branch, or as a top-level conjunction containing exactly one state
 comparison, such as ``(state_q == IDLE) && ready``. Directly traceable
-predecoded state aliases, such as ``assign idle_state = (state_q == IDLE)``,
-may also be used in these guarded predicates.
+pre-decoded state aliases, such as ``assign idle_state = (state_q ==
+IDLE)``, may also be used in these guarded predicates.
 
 Verilator does not claim broad support for arbitrary predicate
 decomposition, one-hot inference, helper-function next-state recovery,

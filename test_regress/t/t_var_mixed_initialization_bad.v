@@ -8,9 +8,9 @@ module t (
     output wire out
 );
 
-    logic a = 1'b0;   // declaration initialization
-    assign a = 1'b1;  // continuous assignment
+  logic a = 1'b0;  // declaration initialization
+  assign a = 1'b1;  // continuous assignment
 
-    assign out = a;
+  assign out = a;
 
 endmodule
