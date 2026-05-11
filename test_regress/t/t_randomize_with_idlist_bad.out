@@ -1,0 +1,10 @@
+%Error: t/t_randomize_with_idlist_bad.v:14:26: Identifier 'm_z' in 'with (...)' identifier list is not a member of the randomize() target class (IEEE 1800-2023 18.7)
+   14 |   return obj.randomize() with (m_x, m_z) { m_x > 0; };
+      |                          ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Warning-UNUSED: t/t_randomize_with_idlist_bad.v:19:26: Identifier 'm_y' in 'with (...)' identifier list is not referenced in the constraint block
+   19 |   return obj.randomize() with (m_x, m_y) { m_x > 0; };
+      |                          ^~~~
+                 ... For warning description see https://verilator.org/warn/UNUSED?v=latest
+                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Error: Exiting due to

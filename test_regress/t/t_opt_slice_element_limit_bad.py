@@ -16,6 +16,6 @@ test.golden_filename = "t/t_opt_slice_element_limit_bad.out"
 
 test.lint(fails=True,
           verilator_flags2=['--stats', '--fslice-element-limit', '-100'],
-          except_filename=test.golden_filename)
+          expect_filename=test.golden_filename)
 
 test.passes()

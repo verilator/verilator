@@ -86,12 +86,44 @@ Do you have questions on Verilator?
   <https://verilator.org/forum>`__.
 
 
+AI Policy
+---------
+
+Verilator follows the Linux Foundation recommendations regarding the usage
+of Generative Large Language Model Artificial Intelligence (LLM-AI) tools
+and agents for all contributions to the project, including source code,
+test benches, and documentation.
+
+AI assistants and automated agents are not permitted to sign off on
+contributions. A human submitter is strictly responsible for reviewing,
+verifying, and testing all AI-generated content. By submitting, the
+contributor certifies that the generated content is effectively their work
+product and adheres to project standards. This accountability is affirmed
+when the human contributor signs the Developer Certificate of Origin (DCO)
+as outlined in ``docs/CONTRIBUTORS``.
+
+Contributors are encouraged to disclose the significant use of generative
+AI tools in their commit messages or Pull Request descriptions to maintain
+transparency.
+
+Contributors must ensure that the terms and conditions of the generative AI
+tool do not place any contractual restrictions on the tool's output that
+are inconsistent with Verilator's open-source licenses, the project's
+intellectual property policies, or the Open Source Definition.
+
+If any pre-existing copyrighted materials (including third-party
+open-source code or documentation) are included in the AI tool's output,
+the contributor must confirm prior to submission that they have explicit
+permission from the third-party owners to use, modify, and distribute those
+materials under terms compliant with Verilator's licensing policies.
+
+
 Code of Conduct
 ---------------
 
-- Our contributors and participants pledge to make participation in our
-  project and our community a positive experience for everyone. We follow
-  the `Contributor Covenant version 1.4
-  <https://www.contributor-covenant.org/version/1/4/code-of-conduct/>`__.
+Our contributors and participants pledge to make participation in our
+project and our community a positive experience for everyone. We follow the
+`Contributor Covenant version 1.4
+<https://www.contributor-covenant.org/version/1/4/code-of-conduct/>`__.
 
 Thanks!

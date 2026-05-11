@@ -956,6 +956,13 @@ List Of Warnings
    port list, since these are references to interfaces/modports declared at a higher level and are
    already specialized. These types of accesses do not require waiving HIERPARAM.
 
+.. option:: IEEEMAYDEPRECATE
+
+   This feature is not yet deprecated, but may be in a future version of the IEEE standard.
+   This warning is to alert users that they may want to avoid using this feature, as it
+   may be removed in a future version of the IEEE standard, and thus may not be supported
+   in future versions of Verilator.
+
 .. option:: IFDEPTH
 
    Warns that if/if else statements have exceeded the depth specified with

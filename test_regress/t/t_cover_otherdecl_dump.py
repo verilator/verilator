@@ -12,7 +12,7 @@ from pathlib import Path
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_cover_fsm_styles.v"
+test.top_filename = "t/t_cover_fsm_policy_accept_multi.v"
 
 # Dump generic COVEROTHERDECL nodes so AstCoverOtherDecl::dump() also sees
 # coverage declarations with no FSM metadata, exercising the empty-field side

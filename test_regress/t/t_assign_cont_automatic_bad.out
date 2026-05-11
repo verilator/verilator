@@ -1,3 +1,8 @@
+%Warning-IEEEMAYDEPRECATE: t/t_assign_cont_automatic_bad.v:14:7: Feature may be deprecated in future IEEE standard
+   14 |       assign g = signed'(l);   
+      |       ^~~~~~
+                           ... For warning description see https://verilator.org/warn/IEEEMAYDEPRECATE?v=latest
+                           ... Use "/* verilator lint_off IEEEMAYDEPRECATE */" and lint_on around source to disable this message.
 %Error: t/t_assign_cont_automatic_bad.v:14:26: Automatic lifetime variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'l'
                                              : ... note: In instance 't'
    14 |       assign g = signed'(l);   

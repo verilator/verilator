@@ -1592,7 +1592,7 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
             && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
             return;  // Correct already
         if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
-            if (basicp->keyword() == VBasicDTypeKwd::BIT) {
+            if (!basicp->keyword().isFourstate()) {
                 dtypeSetBitUnsized(width, widthMin, numeric);
                 return;
             }

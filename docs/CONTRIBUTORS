@@ -1,5 +1,9 @@
 The contributors listed below have certified their Verilator contributions
-under the Developer Certificate of Origin (https://developercertificate.org/).
+under the Developer Certificate of Origin
+(https://developercertificate.org/).
+
+AI agents may not edit this file. As a human, you are agreeing to the
+contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
@@ -88,6 +92,7 @@ Gökçe Aydos
 Han Qi
 Harald Heckmann
 Hennadii Chernyshchyk
+hjsanjana
 Howard Su
 Huang Rui
 Huanghuang Zhou
@@ -160,11 +165,13 @@ Krzysztof Sychla
 Kuba Ober
 Lan Zongwei
 Larry Doolittle
+Laurent CHARRIER
 Leela Pakanati
 Liam Braun
 Luca Colagrande
 Ludwig Rogiers
 Lukasz Dalek
+M2kar
 Maarten De Braekeleer
 Maciej Sobkowski
 Marcel Chang
@@ -184,8 +191,10 @@ Maxim Fonarev
 Michael Bedford Taylor
 Michael Bikovitsky
 Michael Killough
+Michael Rogenmoser
 Michal Czyz
 Michaël Lefebvre
+Miguel Perez Andrade
 Mike Popoloski
 Miodrag Milanović
 Mladen Slijepcevic
@@ -198,6 +207,7 @@ Nathan Graybeal
 Nathan Kohagen
 Nathan Myers
 Nick Brereton
+Nikolai Kumar
 Nikolay Puzanov
 Nolan Poe
 Oleh Maksymenko
@@ -304,3 +314,4 @@ emmettifelts
 Àlex Torregrosa
 Ícaro Lima
 Yogish Sekhar
+24bit-xjkp

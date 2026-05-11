@@ -28,6 +28,8 @@
 #define VL_NOT_FINAL  // This #define fixes broken code folding in the CLion IDE
 #endif
 
+#include <unordered_map>
+
 // === Abstract base node types (AstNode*) =====================================
 
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
@@ -432,6 +434,7 @@ public:
     // METHODS
     inline bool hasClocked() const;
     inline bool hasCombo() const;
+    inline bool hasStatic() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
@@ -1262,6 +1265,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_constPoolp : AstConstPool  // Reference to constant pool, for faster lookup
     // @astgen ptr := m_dollarUnitPkgp : Optional[AstPackage]  // $unit
     // @astgen ptr := m_stdPackagep : Optional[AstPackage]  // SystemVerilog std package
+    // @astgen ptr := m_stdPackageClassp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_evalp : Optional[AstCFunc]  // The '_eval' function
     // @astgen ptr := m_evalNbap : Optional[AstCFunc]  // The '_eval__nba' function
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
@@ -1274,9 +1278,20 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
+    // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
+    std::vector<AstVar*> m_deferredParamVarps;
+    // Sparse metadata for constants produced from named parameters/localparams. Keep this off
+    // AstConst itself, as AstConst is a very common node and only a small fraction carry this
+    // name.
+    std::unordered_map<const AstConst*, string> m_constOrigParamNames;
+
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
+    const char* broken() const override;
+    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.push_back(varp); }
+    const std::vector<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
+    void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     string name() const override VL_MT_STABLE { return "$root"; }
@@ -1287,6 +1302,9 @@ public:
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     AstConstPool* constPoolp() { return m_constPoolp; }
+    string astConstOrigParamName(const AstConst* nodep) const;
+    void astConstOrigParamName(const AstConst* nodep, const string& name);
+    void astConstOrigParamNameErase(const AstConst* nodep);
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp();
     AstCFunc* evalp() const { return m_evalp; }
@@ -1303,6 +1321,9 @@ public:
     void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
+    void stdPackageClassp(AstClass* const classp) { m_stdPackageClassp = classp; }
+    AstClass* stdPackageClassp() const { return m_stdPackageClassp; }
+    AstFuncRef* stdPackageProcessSelfp(FileLine*) const;
     AstTopScope* topScopep() const { return m_topScopep; }
     void createTopScope(AstScope* scopep);
     VTimescale timeunit() const { return m_timeunit; }

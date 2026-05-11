@@ -58,7 +58,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <limits>
 #include <list>
@@ -80,6 +82,7 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/time.h>
 # include <sys/resource.h>
+# include <unistd.h>
 # define _VL_HAVE_GETRLIMIT
 #endif
 
@@ -3223,6 +3226,27 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
     return std::make_pair(s_argc, s_argvp);
 }
 
+// Derive a non-deterministic non-zero positive seed value from the system
+// clocks. Used to implement +verilator+seed+0, which means "pick a random
+// seed". Returning the actual picked value lets $get_initial_random_seed()
+// expose it so the user can reproduce the run later by passing
+// +verilator+seed+<that_value>.
+static uint64_t pickRandomSeed() VL_MT_SAFE {
+    using namespace std::chrono;
+    // Combine steady_clock and system_clock to get entropy even when one has
+    // low resolution (e.g. high_resolution_clock aliases system_clock on MSVC).
+    const uint64_t t1 = static_cast<uint64_t>(
+        duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count());
+    const uint64_t t2 = static_cast<uint64_t>(
+        duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
+    // vl_splitmix64 avalanches bits so closely-spaced timestamps look unrelated.
+    uint64_t seed = vl_splitmix64(t1 ^ t2).second;
+    // Keep within [1, INT_MAX] so it round-trips through the int seed field.
+    seed &= 0x7fffffffULL;
+    if (seed == 0) seed = 1;
+    return seed;
+}
+
 void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
         std::string str;
@@ -3260,8 +3284,14 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             solverLogFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {
             warnUnsatConstr(u64 == 0);  // wno means disable, so invert
-        } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
+        } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 0,
                                       std::numeric_limits<int>::max())) {
+            // +verilator+seed+0 means "pick a random seed". Replace the
+            // user-supplied 0 with a non-deterministic non-zero value derived
+            // from the high-resolution clock and store that as the actual
+            // seed, so $get_initial_random_seed() returns the picked value
+            // and the run can be reproduced by passing +verilator+seed+<that_value>.
+            if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too

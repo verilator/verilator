@@ -16,14 +16,6 @@ module t (
     val = ~val;
   end
 
-  property p_alw;
-    always [2:5] a;
-  endproperty
-
-  property p_s_alw;
-    s_always [2:5] a;
-  endproperty
-
   property p_ev;
     eventually [2:5] a;
   endproperty

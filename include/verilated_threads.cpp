@@ -268,8 +268,13 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
         }
         status += ";";
 
+#ifdef __TERMUX__
+        const int rc = sched_setaffinity(m_workers[thread]->m_cthread.native_handle(),
+                                         sizeof(cpu_set_t), &cpuset);
+#else
         const int rc = pthread_setaffinity_np(m_workers[thread]->m_cthread.native_handle(),
                                               sizeof(cpu_set_t), &cpuset);
+#endif
         if (rc != 0) return "%Warning: pthread_setaffinity_np failed";
     }
     // std::cout << "Status: " << status << std::endl;

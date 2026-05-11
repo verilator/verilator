@@ -13,6 +13,4 @@ test.scenarios('linter')
 
 test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
 
-#test.execute()
-
 test.passes()

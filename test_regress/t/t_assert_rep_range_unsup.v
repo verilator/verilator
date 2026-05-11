@@ -21,29 +21,3 @@ module t;
   a_nc_lhs_range :
   assert property (p_nc_lhs_range);
 endmodule
-
-module t_dc;
-  bit clk;
-  bit a;
-  bit b;
-
-  default clocking cb @(posedge clk);
-  endclocking
-
-  property p_goto_default_clock;
-    a |-> b [-> 1: 2];
-  endproperty
-  property p_goto_standalone_range;
-    b [-> 1: 2];
-  endproperty
-  property p_goto_lhs_range;
-    a [-> 1: 2] |-> b;
-  endproperty
-
-  a_goto_default_clock :
-  assert property (p_goto_default_clock);
-  a_goto_standalone_range :
-  assert property (p_goto_standalone_range);
-  a_goto_lhs_range :
-  assert property (p_goto_lhs_range);
-endmodule

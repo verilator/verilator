@@ -118,7 +118,11 @@ unsigned getProcessAvailableParallelism() VL_MT_SAFE {
 #if defined(__linux) || defined(CPU_ZERO)  // Linux-like; assume we have pthreads etc
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
+#ifdef __TERMUX__
+    const int rc = sched_getaffinity(pthread_self(), sizeof(cpuset), &cpuset);
+#else
     const int rc = pthread_getaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+#endif
     if (rc == 0) {
         unsigned nCpus = 0;
         for (int i = 0; i < CPU_SETSIZE; ++i) {

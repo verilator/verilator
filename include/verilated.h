@@ -391,7 +391,7 @@ protected:
         int m_errorCount = 0;  // Number of errors
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
-        int m_randSeed = 0;  // Random seed: 0=random
+        int m_randSeed = 1;  // Random seed (default 1; +verilator+seed+0 picks at parse time)
         static constexpr int UNITS_NONE = 99;  // Default based on precision
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places

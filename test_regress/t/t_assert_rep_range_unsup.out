@@ -1,13 +1,3 @@
-%Warning-MULTITOP: t/t_assert_rep_range_unsup.v:25:8: Multiple top level modules
-                                                    : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
-                   ... For warning description see https://verilator.org/warn/MULTITOP?v=latest
-                   ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
-                                                    : ... Top module 't'
-    7 | module t;
-      |        ^
-                                                    : ... Top module 't_dc'
-   25 | module t_dc;
-      |        ^~~~
 %Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:13:28: Unsupported: [=M:N] nonconsecutive range repetition (IEEE 1800-2023 16.9.2)
                                                       : ... note: In instance 't'
    13 |     @(posedge clk) a |-> b [= 1: 2];
@@ -17,16 +7,4 @@
                                                       : ... note: In instance 't'
    16 |     @(posedge clk) a [= 1: 2] |-> b;
       |                               ^~~
-%Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:34:13: Unsupported: [->M:N] goto range repetition with implicit clocking (IEEE 1800-2023 16.9.2)
-                                                      : ... note: In instance 't_dc'
-   34 |     a |-> b [-> 1: 2];
-      |             ^~~
-%Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:37:7: Unsupported: [->M:N] goto range repetition with implicit clocking (IEEE 1800-2023 16.9.2)
-                                                     : ... note: In instance 't_dc'
-   37 |     b [-> 1: 2];
-      |       ^~~
-%Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:40:17: Unsupported: [->M:N] goto range repetition with implicit clocking (IEEE 1800-2023 16.9.2)
-                                                      : ... note: In instance 't_dc'
-   40 |     a [-> 1: 2] |-> b;
-      |                 ^~~
 %Error: Exiting due to

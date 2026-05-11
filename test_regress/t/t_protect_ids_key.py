@@ -16,6 +16,7 @@ test.compile(verilator_flags2=["--protect-ids --protect-key SECRET_KEY", "t/t_pr
 
 test.execute()
 
-# Since using a named key, we can check for always identical maptest.files_identical(test.obj_dir + "/"+test.vm_prefix+"__idmap.xml", test.golden_filename)
+# Since using a named key, we can check for always identical map
+test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", test.golden_filename)
 
 test.passes()

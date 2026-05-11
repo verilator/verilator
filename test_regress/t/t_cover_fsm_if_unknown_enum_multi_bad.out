@@ -1,0 +1,30 @@
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:26:19: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_then_u.state_q': assigned value 3 is not present in the declared enum
+   26 |       S0: state_d = sel ? 2'd3 : S1;
+      |                   ^
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:53:19: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_else_u.state_q': assigned value 3 is not present in the declared enum
+   53 |       S0: state_d = sel ? S1 : 2'd3;
+      |                   ^
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:79:19: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_direct_u.state_q': assigned value 3 is not present in the declared enum
+   79 |       S0: state_d = 2'd3;
+      |                   ^
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:126:15: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_reset_u.state_q': assigned value 3 is not present in the declared enum
+  126 |       state_q <= 2'd3;
+      |               ^~
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:150:7: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_source_u.state_q': case item value 3 is not present in the declared enum
+  150 |       2'd3: state_d = S0;
+      |       ^~~~
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:175:5: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_if_source_u.state_q': case item value 3 is not present in the declared enum
+  175 |     if (state_q == 2'd3) state_d = S0;
+      |     ^~
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:199:32: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_if_direct_target_u.state_q': assigned value 3 is not present in the declared enum
+  199 |     if (state_q == S0) state_d = 2'd3;
+      |                                ^
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:224:32: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_if_then_target_u.state_q': assigned value 3 is not present in the declared enum
+  224 |     if (state_q == S0) state_d = sel ? 2'd3 : S1;
+      |                                ^
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:249:32: Ignoring unsupported: FSM coverage on enum state variable 't.unknown_if_else_target_u.state_q': assigned value 3 is not present in the declared enum
+  249 |     if (state_q == S0) state_d = sel ? S1 : 2'd3;
+      |                                ^
+%Error: Exiting due to

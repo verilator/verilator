@@ -72,6 +72,13 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+// Walk a class-typed node through typedef/RefDType chains to its ClassRefDType, or null.
+static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
+    while (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) nodep = tdp->subDTypep();
+    AstNodeDType* const dtp = VN_CAST(nodep, NodeDType);
+    return dtp ? VN_CAST(dtp->skipRefOrNullp(), ClassRefDType) : nullptr;
+}
+
 //######################################################################
 // Hierarchical block and parameter db (modules without parameters are also handled)
 
@@ -875,6 +882,18 @@ class ParamProcessor final {
                 }
                 return true;
             }
+        } else if (!entry.cloneCellPath.empty()) {
+            // Clone entry has no paramTypep stored; look up the type by name.
+            if (AstParamTypeDType* const ptp
+                = V3LinkDotIfaceCapture::findParamTypeInModule(targetModp, entry.refp->name())) {
+                entry.refp->refDTypep(ptp);
+                entry.refp->dtypep(ptp);
+                for (AstRefDType* const xrefp : entry.extraRefps) {
+                    xrefp->refDTypep(ptp);
+                    xrefp->dtypep(ptp);
+                }
+                return true;
+            }
         }
         return false;
     }
@@ -1248,15 +1267,33 @@ class ParamProcessor final {
                 }
             }
         }
+        // Typedef-aliased paramed class (e.g., typedef C#(7) my_c; my_c::b).
+        if (AstClassRefDType* const crp = classRefDTypeOfNode(classRefp->classOrPackageNodep())) {
+            if (AstClass* const srcClassp = crp->classp()) {
+                if (srcClassp->hasGParam() && crp->paramsp()) {
+                    classRefDeparam(crp, srcClassp);
+                    if (AstClass* const newClassp = crp->classp()) lhsClassp = newClassp;
+                }
+            }
+        }
         if (!lhsClassp) return;
 
-        AstTypedef* const tdefp
-            = VN_CAST(m_memberMap.findMember(lhsClassp, parseRefp->name()), Typedef);
-        if (tdefp) {
+        AstNode* const memberp = m_memberMap.findMember(lhsClassp, parseRefp->name());
+        if (AstTypedef* const tdefp = VN_CAST(memberp, Typedef)) {
             AstRefDType* const refp = new AstRefDType{dotp->fileline(), tdefp->name()};
             refp->typedefp(tdefp);
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
+        } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
+            // Param/lparam member: substitute its constant value so the caller's constify can
+            // succeed.
+            if (varp->isParam() && varp->valuep()) {
+                if (!VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
+                if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
+                    dotp->replaceWith(constp->cloneTree(false));
+                    VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                }
+            }
         }
     }
 
@@ -1360,6 +1397,40 @@ class ParamProcessor final {
         return isEq.isNeqZero();
     }
 
+    // Rewrite placeholder __VGIfaceParam pins emitted by
+    // LinkDotResolveVisitor::addImplicitParametersOfGenericIface for a nested
+    // generic-interface forwarding chain (#7454). Must run here (not in
+    // V3LinkDot's Param/Resolve visitor at LDS_PARAMED) because:
+    //   * linkDotParamed runs AFTER V3Param, at which point cellDeparam has
+    //     already consumed the pin via moduleFindOrClone (variant naming off
+    //     pinp->exprp()'s IfaceRefDType) and genericInterfaceVarSetup (hard
+    //     VN_AS cast to IfaceRefDType); and
+    //   * the enclosing module's port only becomes a concrete IfaceRefDType
+    //     after its own nodeDeparam has specialized it. That specialization
+    //     happens in V3Param's top-down walk, so the window between "outer
+    //     port resolved" and "inner cellDeparam starts" exists only here.
+    void resolveGenericIfaceForwardingPins(AstPin* paramsp) {
+        for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (!pinp->exprp()) continue;
+            if (!VString::startsWith(pinp->name(), "__VGIfaceParam")) continue;
+            const AstNodeVarRef* const fwdRefp = VN_CAST(pinp->exprp(), NodeVarRef);
+            if (!fwdRefp) continue;
+            const AstIfaceRefDType* const resolvedp
+                = VN_CAST(fwdRefp->varp()->childDTypep()->skipRefp(), IfaceRefDType);
+            UASSERT_OBJ(resolvedp, pinp,
+                        "Generic interface forwarding pin not specialized before use");
+            AstIfaceRefDType* const newIrefp = new AstIfaceRefDType{
+                resolvedp->fileline(), resolvedp->modportFileline(), resolvedp->cellName(),
+                resolvedp->ifaceName(), resolvedp->modportName()};
+            newIrefp->ifacep(resolvedp->ifacep());
+            if (resolvedp->paramsp()) {
+                newIrefp->addParamsp(resolvedp->paramsp()->cloneTree(true));
+            }
+            pinp->exprp()->unlinkFrBack()->deleteTree();
+            pinp->exprp(newIrefp);
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -1406,6 +1477,7 @@ class ParamProcessor final {
                 AstConst* normedNamep = nullptr;
                 if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
                     AstVar* cloneVarp = modvarp->cloneTree(false);
+                    bool cloneVarpUnresolved = false;
                     if (AstNode* const oldValuep = cloneVarp->valuep()) {
                         oldValuep->unlinkFrBack();
                         VL_DO_DANGLING(oldValuep->deleteTree(), oldValuep);
@@ -1441,24 +1513,26 @@ class ParamProcessor final {
                                     any = true;
                                 }
                             });
-                            // Substitute RefDType to an overridden paramtype.  RefDType is
-                            // not a foreach leaf, so collect matches and replace after the
-                            // walk.  Reverse order so descendants are replaced before
-                            // ancestors -- replacing an ancestor would free its descendants.
+                            // Replace RefDType to a ParamTypeDType with pin override
+                            // or the paramtype's default so constify below does not
+                            // reach into the template.  Collect then replace in
+                            // reverse so descendants aren't freed early.
                             std::vector<std::pair<AstRefDType*, AstNodeDType*>> toReplace;
                             cloneVarp->foreach([&](AstRefDType* refp) {
                                 AstParamTypeDType* const ptdp
                                     = VN_CAST(refp->refDTypep(), ParamTypeDType);
                                 if (!ptdp) return;
+                                AstPin* overridePinp = nullptr;
                                 for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
                                     if (pp->modPTypep() == ptdp) {
-                                        if (AstNodeDType* const overDtp
-                                            = VN_CAST(pp->exprp(), NodeDType)) {
-                                            toReplace.emplace_back(refp, overDtp);
-                                        }
+                                        overridePinp = pp;
                                         break;
                                     }
                                 }
+                                AstNodeDType* const substp
+                                    = overridePinp ? VN_CAST(overridePinp->exprp(), NodeDType)
+                                                   : ptdp->subDTypep();
+                                if (substp) toReplace.emplace_back(refp, substp);
                             });
                             for (auto it = toReplace.rbegin(); it != toReplace.rend(); ++it) {
                                 AstRefDType* const refp = it->first;
@@ -1475,13 +1549,24 @@ class ParamProcessor final {
                                 << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
                                 << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                         });
+                        // Skip the widthing constify if any RefDType is unresolved.
+                        cloneVarp->foreach([&](AstRefDType* refp) {
+                            if (VN_IS(refp->refDTypep(), ParamTypeDType)) {
+                                UINFO(5, "  cellPinCleanup: skip normedNamep "
+                                         "(unresolved RefDType->ParamTypeDType) pin="
+                                             << pinp->prettyNameQ());
+                                cloneVarpUnresolved = true;
+                            }
+                        });
                     }
-                    V3Const::constifyParamsEdit(cloneVarp);
-                    if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
-                        // Stamp the port's type on the const so equal values hash the same.
-                        if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
-                        widthedp->unlinkFrBack();
-                        normedNamep = widthedp;
+                    if (!cloneVarpUnresolved) {
+                        V3Const::constifyParamsEdit(cloneVarp);
+                        if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
+                            // Stamp the port's type so equal values hash the same.
+                            if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
+                            widthedp->unlinkFrBack();
+                            normedNamep = widthedp;
+                        }
                     }
                     VL_DO_DANGLING(cloneVarp->deleteTree(), cloneVarp);
                 }
@@ -2100,9 +2185,21 @@ public:
                 }
                 pinp = nextp;
             }
+            // Nested generic-iface forwarding (#7454): rewrite VarRef placeholders
+            // left by V3LinkDot to concrete IfaceRefDTypes now that the enclosing
+            // module has been specialized.
+            resolveGenericIfaceForwardingPins(cellp->paramsp());
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
+        // Resolve `class::member` Dots in pin values so constify sees Consts.
+        // Single-pass: filter-collect class-scoped Dots, then reverse-iterate so inner
+        // Dots resolve before outer (vector stays empty for cells with no class Dots).
+        std::vector<AstDot*> dotps;
+        nodep->foreach([&](AstDot* dotp) {
+            if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
+        });
+        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
@@ -2692,6 +2789,13 @@ class ParamVisitor final : public VNVisitor {
                     }
                 });
                 if (hasUnresolvedLparamXRef) return;
+                // Defer if value contains a class::member Dot. By V3Param time the only
+                // surviving such Dots are paramed-class refs awaiting linkDotParamed.
+                if (nodep->valuep()->exists(
+                        [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
+                    v3Global.rootp()->pushDeferredParamVarp(nodep);
+                    return;
+                }
                 V3Const::constifyParamsEdit(nodep);
             }
         }
@@ -3190,6 +3294,7 @@ public:
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
+    rootp->clearDeferredParamVarps();  // Defensive: drop any stragglers from a prior invocation
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
@@ -3197,4 +3302,12 @@ void V3Param::param(AstNetlist* rootp) {
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("after V3Param");
 
     V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Param::finalizeDeferredParams(AstNetlist* rootp) {
+    // Constify params whose Dot RHS was resolved by V3LinkDot::linkDotParamed.
+    for (AstVar* const varp : rootp->deferredParamVarps()) {
+        if (varp->valuep() && !VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
+    }
+    rootp->clearDeferredParamVarps();
 }

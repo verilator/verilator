@@ -73,7 +73,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
-        ALWNEVER,       // always will never execute
+        ALWNEVER,       // Always will never execute
         ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNEQEXPR,   // Assignment equal (=) in expression
@@ -113,6 +113,7 @@ public:
         GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
         HIERPARAM,      // Parameter using hierarchical value
+        IEEEMAYDEPRECATE, // Feature may be deprecated in future IEEE standard
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
@@ -225,20 +226,21 @@ public:
             "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
             "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FSMMULTI",
-            "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH",
-            "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
-            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH",
-            "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN",
-            "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NULLPORT",
-            "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
-            "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
-            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
-            "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN",
-            "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED",
-            "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL",
-            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
-            "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM",
+            "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
+            "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
+            "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
+            "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD",
+            "NORETURN", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING",
+            "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
+            "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
+            "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
+            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP",
+            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
+            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
