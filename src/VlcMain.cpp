@@ -174,8 +174,6 @@ int main(int argc, char** argv) {
     V3Error::abortIfWarnings();
     if (!top.opt.annotateOut().empty()) top.annotate(top.opt.annotateOut());
 
-    top.covergroup();
-
     if (top.opt.rank()) {
         top.rank();
         top.tests().dump(false);

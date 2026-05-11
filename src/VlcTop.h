@@ -20,7 +20,6 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "VlcCovergroup.h"
 #include "VlcOptions.h"
 #include "VlcPoint.h"
 #include "VlcSource.h"
@@ -38,13 +37,11 @@ private:
     VlcTests m_tests;  //< List of all tests (all coverage files)
     VlcPoints m_points;  //< List of all points
     VlcSources m_sources;  //< List of all source files to annotate
-    VlcCovergroups m_covergroups;  //< Covergroup analysis data
 
     // METHODS
     void annotateCalc();
     void annotateCalcNeeded();
     void annotateOutputFiles(const string& dirname);
-    void covergroupCalc();
 
 public:
     // CONSTRUCTORS
@@ -60,7 +57,6 @@ public:
     void annotate(const string& dirname);
     void printHierarchyReport();
     void printTypeSummary();
-    void covergroup();
     void readCoverage(const string& filename, bool nonfatal = false);
     void writeCoverage(const string& filename);
     void writeInfo(const string& filename);
