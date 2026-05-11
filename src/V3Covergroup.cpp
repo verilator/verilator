@@ -55,13 +55,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         int atLeast;  // Minimum hits required for coverage (from option.at_least)
         AstCoverpoint* coverpointp;  // Associated coverpoint (or nullptr for cross bins)
         AstCoverCross* crossp;  // Associated cross (or nullptr for coverpoint bins)
+        string crossBins;  // For cross bins: comma-separated individual bin names, in order
         BinInfo(AstCoverBin* b, AstVar* v, int al = 1, AstCoverpoint* cp = nullptr,
-                AstCoverCross* cr = nullptr)
+                AstCoverCross* cr = nullptr, const string& cb = "")
             : binp{b}
             , varp{v}
             , atLeast{al}
             , coverpointp{cp}
-            , crossp{cr} {}
+            , crossp{cr}
+            , crossBins{cb} {}
     };
     std::vector<BinInfo> m_binInfos;  // All bins in current covergroup
 
@@ -1031,6 +1033,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Build sanitized name from all bins
         string binName;
         string varName = "__Vcov_" + crossp->name();
+        string crossBins;  // Comma-separated individual bin names (one per coverpoint dimension)
 
         for (size_t i = 0; i < bins.size(); ++i) {
             const string sanitized = sanitizeGeneratedName(bins[i]->name());
@@ -1038,9 +1041,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (i > 0) {
                 binName += "_x_";
                 varName += "_x_";
+                crossBins += ",";
             }
             binName += sanitized;
             varName += "_" + sanitized;
+            crossBins += sanitized;
         }
 
         // Create member variable for this cross bin
@@ -1052,7 +1057,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Track this for coverage computation
         AstCoverBin* const pseudoBinp = new AstCoverBin{
             crossp->fileline(), binName, static_cast<AstNode*>(nullptr), false, false};
-        m_binInfos.push_back(BinInfo(pseudoBinp, varp, 1, nullptr, crossp));
+        m_binInfos.push_back(BinInfo(pseudoBinp, varp, 1, nullptr, crossp, crossBins));
 
         // Generate matching code: if (bin1 && bin2 && ... && binN) varName++;
         generateNWayCrossBinMatchCode(crossp, coverpointRefs, bins, varp);
@@ -1410,7 +1415,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         + "\", "
                           "\"column\", \""
                         + std::to_string(fl->firstColumn()) + "\", ");
-            const std::string crossSuffix = crossp ? ", \"cross\", \"1\"" : "";
+            const std::string crossSuffix
+                = crossp ? (", \"cross\", \"1\", \"cross_bins\", \"" + binInfo.crossBins + "\"")
+                         : "";
             if (binp->binsType() == VCoverBinsType::BINS_IGNORE) {
                 cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\"" + crossSuffix
                             + ");");
