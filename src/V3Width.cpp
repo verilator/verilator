@@ -1745,6 +1745,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Goto");
             nodep->dtypeSetBit();
         }
     }
@@ -1753,7 +1754,42 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
+            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Nonconsecutive");
             nodep->dtypeSetBit();
+        }
+    }
+    // IEEE 1800-2023 16.9.2 range-form bound validation for goto/nonconsec.
+    // Parent accessors are re-fetched after constifyParamsEdit because that
+    // call can replace the node in-tree (Lesson: AstSConsRep visitor pattern).
+    // Templated to cover AstSGotoRep and AstSNonConsRep uniformly.
+    template <typename T_Rep>
+    void widthCheckGotoRepRange(T_Rep* nodep, const char* kind) {
+        userIterateAndNext(nodep->maxCountp(), WidthVP{SELF, BOTH}.p());
+        V3Const::constifyParamsEdit(nodep->countp());
+        V3Const::constifyParamsEdit(nodep->maxCountp());
+        const AstConst* const minConstp = VN_CAST(nodep->countp(), Const);
+        const AstConst* const maxConstp = VN_CAST(nodep->maxCountp(), Const);
+        if (!minConstp || !maxConstp) {
+            nodep->v3error(std::string{kind}
+                           + " repetition range bounds must be constant expressions"
+                             " (IEEE 1800-2023 16.9.2)");
+            return;
+        }
+        if (minConstp->toSInt() < 0) {
+            nodep->v3error(std::string{kind}
+                           + " repetition range min count must be non-negative"
+                             " (IEEE 1800-2023 16.9.2)");
+            return;
+        }
+        if (maxConstp->toSInt() < minConstp->toSInt()) {
+            nodep->v3error(std::string{kind}
+                           + " repetition range max count must be >= min count"
+                             " (IEEE 1800-2023 16.9.2)");
+            return;
+        }
+        if (minConstp->isZero()) {
+            nodep->v3warn(E_UNSUPPORTED, std::string{"Unsupported: zero min count in "} + kind
+                                             + " repetition range (IEEE 1800-2023 16.9.2)");
         }
     }
     void visit(AstSThroughout* nodep) override {

@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:13:28: Unsupported: [=M:N] nonconsecutive range repetition (IEEE 1800-2023 16.9.2)
+                                                      : ... note: In instance 't'
+   13 |     @(posedge clk) a |-> b [= 1: 2];
+      |                            ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_rep_range_unsup.v:16:31: Unsupported: [=M:N] nonconsecutive range repetition (IEEE 1800-2023 16.9.2)
+                                                      : ... note: In instance 't'
+   16 |     @(posedge clk) a [= 1: 2] |-> b;
+      |                               ^~~
+%Error: Exiting due to

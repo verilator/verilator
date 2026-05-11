@@ -1082,6 +1082,19 @@ private:
         return new AstPExpr{flp, beginp, exprp->findBitDType()};
     }
 
+    // Reject [=M:N] nonconsecutive range that reached V3AssertPre.
+    // [->M:N] is fully handled upstream (NFA path); only [=M:N] still lands
+    // here because AstSNonConsRep lowering is not yet implemented there.
+    // Replaces the node with BitFalse so lowering continues after the warning.
+    bool rejectNonconsecRange(AstNode* nodep, AstNodeExpr* maxCountp) {
+        if (!maxCountp) return false;
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: [=M:N] nonconsecutive range repetition"
+                                     " (IEEE 1800-2023 16.9.2)");
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
     void visit(AstSGotoRep* nodep) override {
         // Standalone goto rep (not inside implication antecedent)
         iterateChildren(nodep);
@@ -1097,6 +1110,7 @@ private:
     void visit(AstSNonConsRep* nodep) override {
         // Standalone nonconsecutive rep (not inside implication antecedent)
         iterateChildren(nodep);
+        if (rejectNonconsecRange(nodep, nodep->maxCountp())) return;
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
         if (!validateRepCount(nodep, countp)) return;
@@ -1154,6 +1168,7 @@ private:
         if (AstSNonConsRep* const ncrp = VN_CAST(nodep->lhsp(), SNonConsRep)) {
             iterateChildren(ncrp);
             iterateAndNextNull(nodep->rhsp());
+            if (rejectNonconsecRange(nodep, ncrp->maxCountp())) return;
             FileLine* const flp = nodep->fileline();
             AstNodeExpr* countp = ncrp->countp()->unlinkFrBack();
             if (!validateRepCount(nodep, countp)) return;

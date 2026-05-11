@@ -1,0 +1,50 @@
+%Error: t/t_assert_rep_range_bad.v:15:35: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   15 |     @(posedge clk) a |-> b [-> 1: n];
+      |                                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_rep_range_bad.v:15:28: Goto repetition range bounds must be constant expressions (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   15 |     @(posedge clk) a |-> b [-> 1: n];
+      |                            ^~~
+%Error: t/t_assert_rep_range_bad.v:19:34: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   19 |     @(posedge clk) a |-> b [= 1: n];
+      |                                  ^
+%Error: t/t_assert_rep_range_bad.v:19:28: Nonconsecutive repetition range bounds must be constant expressions (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   19 |     @(posedge clk) a |-> b [= 1: n];
+      |                            ^~
+%Error: t/t_assert_rep_range_bad.v:23:32: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   23 |     @(posedge clk) a |-> b [-> n: 2];
+      |                                ^
+%Error: t/t_assert_rep_range_bad.v:23:28: Goto repetition range bounds must be constant expressions (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   23 |     @(posedge clk) a |-> b [-> n: 2];
+      |                            ^~~
+%Error: t/t_assert_rep_range_bad.v:27:31: Expecting expression to be constant, but variable isn't const: 'n'
+                                        : ... note: In instance 't'
+   27 |     @(posedge clk) a |-> b [= n: 2];
+      |                               ^
+%Error: t/t_assert_rep_range_bad.v:27:28: Nonconsecutive repetition range bounds must be constant expressions (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   27 |     @(posedge clk) a |-> b [= n: 2];
+      |                            ^~
+%Error: t/t_assert_rep_range_bad.v:31:28: Goto repetition range max count must be >= min count (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   31 |     @(posedge clk) a |-> b [-> 3: 1];
+      |                            ^~~
+%Error: t/t_assert_rep_range_bad.v:35:28: Nonconsecutive repetition range max count must be >= min count (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   35 |     @(posedge clk) a |-> b [= 3: 1];
+      |                            ^~
+%Error: t/t_assert_rep_range_bad.v:39:28: Goto repetition range min count must be non-negative (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   39 |     @(posedge clk) a |-> b [-> -1: 2];
+      |                            ^~~
+%Error: t/t_assert_rep_range_bad.v:43:28: Nonconsecutive repetition range min count must be non-negative (IEEE 1800-2023 16.9.2)
+                                        : ... note: In instance 't'
+   43 |     @(posedge clk) a |-> b [= -1: 2];
+      |                            ^~
+%Error: Exiting due to
