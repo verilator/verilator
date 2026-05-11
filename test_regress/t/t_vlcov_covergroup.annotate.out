@@ -44,9 +44,13 @@
             }
 %000001     addr_cmd: cross cp_addr, cp_cmd;
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr0_x_read
+        //  cross: [addr0, read]
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr0_x_write
+        //  cross: [addr0, write]
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr1_x_read
+        //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr1_x_write
+        //  cross: [addr1, write]
           endgroup
         
           // 3-way cross
@@ -73,17 +77,29 @@
             }
 %000001     addr_cmd_mode: cross cp_addr, cp_cmd, cp_mode;
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_read_x_debug
+        //  cross: [addr0, read, debug]
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_read_x_normal
+        //  cross: [addr0, read, normal]
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_write_x_debug
+        //  cross: [addr0, write, debug]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_write_x_normal
+        //  cross: [addr0, write, normal]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr1_x_read_x_debug
+        //  cross: [addr1, read, debug]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr1_x_read_x_normal
+        //  cross: [addr1, read, normal]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr1_x_write_x_debug
+        //  cross: [addr1, write, debug]
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr1_x_write_x_normal
+        //  cross: [addr1, write, normal]
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr2_x_read_x_debug
+        //  cross: [addr2, read, debug]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr2_x_read_x_normal
+        //  cross: [addr2, read, normal]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr2_x_write_x_debug
+        //  cross: [addr2, write, debug]
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr2_x_write_x_normal
+        //  cross: [addr2, write, normal]
           endgroup
         
           // 4-way cross
@@ -114,21 +130,37 @@
             }
 %000001     addr_cmd_mode_parity: cross cp_addr, cp_cmd, cp_mode, cp_parity;
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_even
+        //  cross: [addr0, read, debug, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_odd
+        //  cross: [addr0, read, debug, odd]
 -000001  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_normal_x_even
+        //  cross: [addr0, read, normal, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_normal_x_odd
+        //  cross: [addr0, read, normal, odd]
 -000001  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_write_x_debug_x_even
+        //  cross: [addr0, write, debug, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_write_x_debug_x_odd
+        //  cross: [addr0, write, debug, odd]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_write_x_normal_x_even
+        //  cross: [addr0, write, normal, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_write_x_normal_x_odd
+        //  cross: [addr0, write, normal, odd]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_read_x_debug_x_even
+        //  cross: [addr1, read, debug, even]
 -000001  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_read_x_debug_x_odd
+        //  cross: [addr1, read, debug, odd]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_read_x_normal_x_even
+        //  cross: [addr1, read, normal, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_read_x_normal_x_odd
+        //  cross: [addr1, read, normal, odd]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_write_x_debug_x_even
+        //  cross: [addr1, write, debug, even]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_write_x_debug_x_odd
+        //  cross: [addr1, write, debug, odd]
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_write_x_normal_x_even
+        //  cross: [addr1, write, normal, even]
 -000001  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr1_x_write_x_normal_x_odd
+        //  cross: [addr1, write, normal, odd]
           endgroup
         
           // Cross with option set inside the cross body
@@ -147,9 +179,13 @@
             }
 %000001     addr_cmd_opt: cross cp_addr, cp_cmd {
 -000001  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr0_x_read
+        //  cross: [addr0, read]
 -000000  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr0_x_write
+        //  cross: [addr0, write]
 -000000  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr1_x_read
+        //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr1_x_write
+        //  cross: [addr1, write]
               option.weight = 2;
             }
           endgroup
@@ -170,9 +206,13 @@
             }
 %000001     addr_cmd_range: cross cp_addr, cp_cmd;
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.hi_range_x_read
+        //  cross: [hi_range, read]
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.hi_range_x_write
+        //  cross: [hi_range, write]
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.lo_range_x_read
+        //  cross: [lo_range, read]
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.lo_range_x_write
+        //  cross: [lo_range, write]
           endgroup
         
           // Cross where one coverpoint has ignore_bins - ignored values must not appear in cross bins
@@ -193,9 +233,13 @@
             }
 %000001     cross_ab: cross cp_addr, cp_cmd;
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a0_x_read
+        //  cross: [a0, read]
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a0_x_write
+        //  cross: [a0, write]
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a1_x_read
+        //  cross: [a1, read]
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a1_x_write
+        //  cross: [a1, write]
           endgroup
         
           // Cross with option.at_least set in the cross body
@@ -214,9 +258,13 @@
             }
 %000001     addr_cmd_al: cross cp_addr, cp_cmd {
 -000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_read
+        //  cross: [addr0, read]
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_write
+        //  cross: [addr0, write]
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_read
+        //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_write
+        //  cross: [addr1, write]
               option.at_least = 3;
             }
           endgroup
@@ -237,9 +285,13 @@
             }
 %000001     addr_cmd_goal: cross cp_addr, cp_cmd {
 -000001  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr0_x_read
+        //  cross: [addr0, read]
 -000000  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr0_x_write
+        //  cross: [addr0, write]
 -000000  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr1_x_read
+        //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr1_x_write
+        //  cross: [addr1, write]
               option.goal = 90;
             }
           endgroup
@@ -260,9 +312,13 @@
             }
 %000001     addr_cmd_unsup: cross cp_addr, cp_cmd {
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_read
+        //  cross: [addr0, read]
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_write
+        //  cross: [addr0, write]
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_read
+        //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_write
+        //  cross: [addr1, write]
               option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
             }
           endgroup
@@ -277,9 +333,13 @@
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.write
 %000001     cross cp_a, cp_c;  // no label: reported under the default cross name
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_read
+        //  cross: [a0, read]
 -000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_write
+        //  cross: [a0, write]
 -000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a1_x_read
+        //  cross: [a1, read]
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a1_x_write
+        //  cross: [a1, write]
           endgroup
         
 %000001   cg2 cg2_inst = new;
