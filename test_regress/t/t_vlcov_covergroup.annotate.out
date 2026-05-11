@@ -29,29 +29,20 @@
 -000000  point: type=toggle comment=parity:1->0 hier=top.t
         
           // 2-way cross
-~000012   covergroup cg2;
-+000012  point: type=line comment=block hier=top.t::cg2__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
+          covergroup cg2;
+            cp_addr: coverpoint addr {
 %000002       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
 -000002  point: type=covergroup comment= hier=cg2.cp_addr.addr0
 %000002       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
 -000002  point: type=covergroup comment= hier=cg2.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000002       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
 -000002  point: type=covergroup comment= hier=cg2.cp_cmd.read
 %000002       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
 -000002  point: type=covergroup comment= hier=cg2.cp_cmd.write
             }
 %000001     addr_cmd: cross cp_addr, cp_cmd;
--000001  point: type=line comment=block hier=top.t::cg2__Vclpkg
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr0_x_read
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr0_x_write
 -000001  point: type=covergroup comment= hier=cg2.addr_cmd.addr1_x_read
@@ -59,41 +50,28 @@
           endgroup
         
           // 3-way cross
-%000004   covergroup cg3;
--000004  point: type=line comment=block hier=top.t::cg3__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
+          covergroup cg3;
+            cp_addr: coverpoint addr {
 %000002       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000002  point: type=covergroup comment= hier=cg3.cp_addr.addr0
 %000001       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000001  point: type=covergroup comment= hier=cg3.cp_addr.addr1
 %000001       bins addr2 = {2};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000001  point: type=covergroup comment= hier=cg3.cp_addr.addr2
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000002       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000002  point: type=covergroup comment= hier=cg3.cp_cmd.read
 %000002       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000002  point: type=covergroup comment= hier=cg3.cp_cmd.write
             }
-%000001     cp_mode: coverpoint mode {
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
+            cp_mode: coverpoint mode {
 %000002       bins normal = {0};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000002  point: type=covergroup comment= hier=cg3.cp_mode.normal
 %000002       bins debug  = {1};
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000002  point: type=covergroup comment= hier=cg3.cp_mode.debug
             }
 %000001     addr_cmd_mode: cross cp_addr, cp_cmd, cp_mode;
--000001  point: type=line comment=block hier=top.t::cg3__Vclpkg
 -000000  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_read_x_debug
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_read_x_normal
 -000001  point: type=covergroup comment= hier=cg3.addr_cmd_mode.addr0_x_write_x_debug
@@ -109,47 +87,32 @@
           endgroup
         
           // 4-way cross
-%000008   covergroup cg4;
--000008  point: type=line comment=block hier=top.t::cg4__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
+          covergroup cg4;
+            cp_addr: coverpoint addr {
 %000002       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_addr.addr0
 %000002       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000002       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_cmd.read
 %000002       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_cmd.write
             }
-%000001     cp_mode: coverpoint mode {
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
+            cp_mode: coverpoint mode {
 %000002       bins normal = {0};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_mode.normal
 %000002       bins debug  = {1};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_mode.debug
             }
-%000001     cp_parity: coverpoint parity {
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
+            cp_parity: coverpoint parity {
 %000002       bins even = {0};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_parity.even
 %000002       bins odd  = {1};
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000002  point: type=covergroup comment= hier=cg4.cp_parity.odd
             }
 %000001     addr_cmd_mode_parity: cross cp_addr, cp_cmd, cp_mode, cp_parity;
--000001  point: type=line comment=block hier=top.t::cg4__Vclpkg
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_even
 -000000  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_odd
 -000001  point: type=covergroup comment= hier=cg4.addr_cmd_mode_parity.addr0_x_read_x_normal_x_even
@@ -169,62 +132,43 @@
           endgroup
         
           // Cross with option set inside the cross body
-%000006   covergroup cg5;
--000006  point: type=line comment=block hier=top.t::cg5__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
+          covergroup cg5;
+            cp_addr: coverpoint addr {
 %000001       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
 -000001  point: type=covergroup comment= hier=cg5.cp_addr.addr0
 %000001       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
 -000001  point: type=covergroup comment= hier=cg5.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000001       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
 -000001  point: type=covergroup comment= hier=cg5.cp_cmd.read
 %000001       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
 -000001  point: type=covergroup comment= hier=cg5.cp_cmd.write
             }
 %000001     addr_cmd_opt: cross cp_addr, cp_cmd {
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
 -000001  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr0_x_read
 -000000  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr0_x_write
 -000000  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr1_x_read
 -000001  point: type=covergroup comment= hier=cg5.addr_cmd_opt.addr1_x_write
-%000001       option.weight = 2;
--000001  point: type=line comment=block hier=top.t::cg5__Vclpkg
+              option.weight = 2;
             }
           endgroup
         
           // 2-way cross where one coverpoint uses a range bin
-~000012   covergroup cg_range;
-+000012  point: type=line comment=block hier=top.t::cg_range__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
+          covergroup cg_range;
+            cp_addr: coverpoint addr {
 %000002       bins lo_range = {[0:1]};  // range bin
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_range.cp_addr.lo_range
 %000002       bins hi_range = {[2:3]};
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_range.cp_addr.hi_range
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000002       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_range.cp_cmd.read
 %000002       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_range.cp_cmd.write
             }
 %000001     addr_cmd_range: cross cp_addr, cp_cmd;
--000001  point: type=line comment=block hier=top.t::cg_range__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.hi_range_x_read
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.hi_range_x_write
 -000001  point: type=covergroup comment= hier=cg_range.addr_cmd_range.lo_range_x_read
@@ -232,32 +176,22 @@
           endgroup
         
           // Cross where one coverpoint has ignore_bins - ignored values must not appear in cross bins
-~000015   covergroup cg_ignore;
-+000015  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
+          covergroup cg_ignore;
+            cp_addr: coverpoint addr {
 %000001       ignore_bins ign = {3};  // addr=3 excluded from cross
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_ignore.cp_addr.ign
 %000002       bins a0 = {0};
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_ignore.cp_addr.a0
 %000002       bins a1 = {1};
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_ignore.cp_addr.a1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000003       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000003  point: type=covergroup comment= hier=cg_ignore.cp_cmd.read
 %000002       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000002  point: type=covergroup comment= hier=cg_ignore.cp_cmd.write
             }
 %000001     cross_ab: cross cp_addr, cp_cmd;
--000001  point: type=line comment=block hier=top.t::cg_ignore__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a0_x_read
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a0_x_write
 -000001  point: type=covergroup comment= hier=cg_ignore.cross_ab.a1_x_read
@@ -265,118 +199,83 @@
           endgroup
         
           // Cross with option.at_least set in the cross body
-%000004   covergroup cg_at_least;
--000004  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
+          covergroup cg_at_least;
+            cp_addr: coverpoint addr {
 %000001       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_addr.addr0
 %000001       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000001       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_cmd.read
 %000001       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_cmd.write
             }
 %000001     addr_cmd_al: cross cp_addr, cp_cmd {
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_read
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_write
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_read
 -000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_write
-%000001       option.at_least = 3;
--000001  point: type=line comment=block hier=top.t::cg_at_least__Vclpkg
+              option.at_least = 3;
             }
           endgroup
         
           // Cross with option.goal set in the cross body
-%000004   covergroup cg_goal;
--000004  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
+          covergroup cg_goal;
+            cp_addr: coverpoint addr {
 %000001       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_goal.cp_addr.addr0
 %000001       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_goal.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000001       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_goal.cp_cmd.read
 %000001       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_goal.cp_cmd.write
             }
 %000001     addr_cmd_goal: cross cp_addr, cp_cmd {
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr0_x_read
 -000000  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr0_x_write
 -000000  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr1_x_read
 -000001  point: type=covergroup comment= hier=cg_goal.addr_cmd_goal.addr1_x_write
-%000001       option.goal = 90;
--000001  point: type=line comment=block hier=top.t::cg_goal__Vclpkg
+              option.goal = 90;
             }
           endgroup
         
           // Cross with an unsupported option (option.per_instance) - Verilator warns and ignores it
-%000004   covergroup cg_unsup_cross_opt;
--000004  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
-%000001     cp_addr: coverpoint addr {
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
+          covergroup cg_unsup_cross_opt;
+            cp_addr: coverpoint addr {
 %000001       bins addr0 = {0};
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.cp_addr.addr0
 %000001       bins addr1 = {1};
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.cp_addr.addr1
             }
-%000001     cp_cmd: coverpoint cmd {
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
+            cp_cmd: coverpoint cmd {
 %000001       bins read  = {0};
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.cp_cmd.read
 %000001       bins write = {1};
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.cp_cmd.write
             }
 %000001     addr_cmd_unsup: cross cp_addr, cp_cmd {
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_read
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_write
 -000000  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_read
 -000001  point: type=covergroup comment= hier=cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_write
-%000001       option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
--000001  point: type=line comment=block hier=top.t::cg_unsup_cross_opt__Vclpkg
+              option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
             }
           endgroup
         
           // Covergroup with an unnamed cross - the cross is reported under the default name "cross"
-%000004   covergroup cg_unnamed_cross;
--000004  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
--000001  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
+          covergroup cg_unnamed_cross;
 %000001     cp_a: coverpoint addr { bins a0 = {0}; bins a1 = {1}; }
--000001  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_a.a0
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_a.a1
 %000001     cp_c: coverpoint cmd  { bins read = {0}; bins write = {1}; }
--000001  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.read
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.write
 %000001     cross cp_a, cp_c;  // no label: reported under the default cross name
--000001  point: type=line comment=block hier=top.t::cg_unnamed_cross__Vclpkg
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_read
 -000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_write
 -000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a1_x_read
