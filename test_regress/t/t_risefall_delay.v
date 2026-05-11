@@ -13,7 +13,7 @@ module t;
   logic [3:0] in_vec = 4'h0;
   wire out_assign;
   wire out_buf;
-  wire #(5,3) out_net;
+  wire #(5,3.3) out_net;
   wire [3:0] out_vec_assign;
 
   assign #(5,3) out_assign = in;

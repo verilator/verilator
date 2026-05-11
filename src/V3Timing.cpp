@@ -849,6 +849,30 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
 
+    AstNodeExpr* delayToIntegral(AstDelay* nodep, AstNodeExpr* valuep) {
+        FileLine* const flp = nodep->fileline();
+        AstConst* const constp = VN_CAST(valuep, Const);
+        const bool isForkSentinel
+            = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
+        if (!isForkSentinel && (!constp || !constp->isZero())) {
+            // Scale the delay
+            const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
+            if (valuep->dtypep()->skipRefp()->isDouble()) {
+                AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
+                valuep = new AstMulD{flp, valuep, tsfp};
+                valuep = new AstRToIRoundS{flp, valuep};
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+            } else {
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+                const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
+                AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
+                valuep = new AstMul{flp, valuep, tsfp};
+            }
+            valuep = V3Const::constifyEdit(valuep);  // Simplify
+        }
+        return valuep;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_classp, nodep, "Module or class under class");
@@ -982,28 +1006,7 @@ class TimingControlVisitor final : public VNVisitor {
             valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
             valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
         } else {
-            AstConst* const constp = VN_CAST(valuep, Const);
-            const bool isForkSentinel
-                = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
-            if (!isForkSentinel && (!constp || !constp->isZero())) {
-                // Scale the delay
-                const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
-                if (valuep->dtypep()->skipRefp()->isDouble()) {
-                    AstConst* const tsfp
-                        = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
-                    valuep = new AstMulD{flp, valuep, tsfp};
-                    valuep = new AstRToIRoundS{flp, valuep};
-                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                } else {
-                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                    const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
-                    AstConst* const tsfp
-                        = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
-                    valuep = new AstMul{flp, valuep, tsfp};
-                }
-                // Simplify
-                valuep = V3Const::constifyEdit(valuep);
-            }
+            valuep = delayToIntegral(nodep, valuep);
         }
 
         // Statistics
@@ -1270,10 +1273,13 @@ class TimingControlVisitor final : public VNVisitor {
         if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
             if (AstNodeExpr* fallDelayp = delayp->fallDelay()) {
                 fallDelayp = fallDelayp->unlinkFrBack();
+                AstNodeExpr* lhsp = delayp->lhsp()->unlinkFrBack();
                 // Use fall only for an all-zero value, rise otherwise.
+                lhsp = delayToIntegral(delayp, lhsp);
+                fallDelayp = delayToIntegral(delayp, fallDelayp);
                 delayp->lhsp(
                     new AstCond{flp, new AstEq{flp, rhs1p->cloneTree(false), new AstConst{flp, 0}},
-                                fallDelayp, delayp->lhsp()->unlinkFrBack()});
+                                fallDelayp, lhsp});
             }
         }
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};

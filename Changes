@@ -46,6 +46,7 @@ Verilator 5.049 devel
 * Fix regression rejecting boolean `!x` inside sequence expressions (#7549) (#7551). [Yilou Wang]
 * Fix exponential expansion in V3Gate (#7550). [Geza Lore, Testorrent USA, Inc.]
 * Fix display of %m in non-first argument (#7574).
+* Fix floating point compile warning on min/max delays.
 
 
 Verilator 5.048 2026-04-26
