@@ -1875,6 +1875,9 @@ class ParamProcessor final {
         }
 
         // Count existing pins and capture them by index for easy lookup
+        // Type parameters when named can be given in any order, but later we depend
+        // on the order when handling defaults. So here we reorder them
+        // for proper handling. The remaining ones are just pushed back
         std::vector<AstPin*> pinsByIndex;
         pinsByIndex.resize(m_classParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
