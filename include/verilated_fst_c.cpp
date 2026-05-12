@@ -66,14 +66,14 @@ static_assert(std::is_same<vlFstEnumHandle, fst::EnumHandle>::value, "vlFstHandl
 VerilatedFst::VerilatedFst(void* /*fst*/) {}
 
 VerilatedFst::~VerilatedFst() {
-    if (m_fst) VL_DO_CLEAR(delete m_fst, m_fst = nullptr); // LCOV_EXCL_BR_LINE
-    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr); // LCOV_EXCL_BR_LINE
-    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr); // LCOV_EXCL_BR_LINE
+    if (m_fst) VL_DO_CLEAR(delete m_fst, m_fst = nullptr);  // LCOV_EXCL_BR_LINE
+    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);  // LCOV_EXCL_BR_LINE
+    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr);  // LCOV_EXCL_BR_LINE
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    m_fst = new fst::Writer{filename}; // LCOV_EXCL_BR_LINE
+    m_fst = new fst::Writer{filename};  // LCOV_EXCL_BR_LINE
     m_fst->setWriterPackType(fst::WriterPackType::LZ4);
     m_fst->setTimecale(int8_t(round(log10(timeRes()))));
     // if (m_useFstWriterThread) fstWriterSetParallelMode(m_fst, 1);
@@ -85,7 +85,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
-        m_symbolp = new fst::Handle[nextCode()]{0}; // LCOV_EXCL_BR_LINE
+        m_symbolp = new fst::Handle[nextCode()]{0};  // LCOV_EXCL_BR_LINE
         for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
@@ -98,7 +98,7 @@ void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::closeBase();
     emitTimeChangeMaybe();
-    if (m_fst) m_fst->close(); // LCOV_EXCL_BR_LINE
+    if (m_fst) m_fst->close();  // LCOV_EXCL_BR_LINE
     m_fst = nullptr;
 }
 
@@ -106,7 +106,7 @@ void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::flushBase();
     emitTimeChangeMaybe();
-    if (m_fst) m_fst->flushValueChangeData(); // LCOV_EXCL_BR_LINE
+    if (m_fst) m_fst->flushValueChangeData();  // LCOV_EXCL_BR_LINE
 }
 
 void VerilatedFst::emitTimeChange(uint64_t timeui) {
@@ -371,49 +371,49 @@ void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) { delete bufp; 
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitEvent(uint32_t code) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], 1);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], uint64_t(newval));
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     // call emitValueChange(handle, uint32_t*)
     m_fst->emitValueChange(m_symbolp[code], newvalp);
@@ -421,7 +421,7 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int) {
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
-    VL_DEBUG_IFDEF(assert(m_symbolp[code]);); // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
     uint64_t newval_u64;
     std::memcpy(&newval_u64, &newval, sizeof(newval_u64));
