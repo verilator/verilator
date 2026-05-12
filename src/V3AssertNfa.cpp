@@ -189,7 +189,7 @@ class SvaNfaBuilder final {
     AstNodeModule* const m_modp;  // Module to receive hoisted sampled-prop temps
     V3UniqueNames& m_propTempNames;  // Module-shared temp-var name source
     std::vector<AstNodeExpr*> m_throughoutStack;  // Active throughout guards (IEEE 16.9.9)
-    // Active outer abort conditions (IEEE 1800-2023 16.16 outer-wraps-inner).
+    // Active outer abort conditions (IEEE 1800-2023 16.12.14 outer-wraps-inner).
     // When inner abort fires while any outer abort fires, outer wins, so every
     // inner abort edge is AND-ed with !outerCond for each outer on the stack.
     std::vector<AstNodeExpr*> m_outerAbortStack;
@@ -788,7 +788,7 @@ class SvaNfaBuilder final {
         return result;
     }
 
-    // IEEE 1800-2023 16.16: property abort operators
+    // IEEE 1800-2023 16.12.14: property abort operators
     //   accept_on(c) P       -- async abort, P succeeds when c fires at any live step
     //   reject_on(c) P       -- async abort, P fails when c fires at any live step
     //   sync_accept_on(c) P  -- same effect, c sampled at matured clocking event
@@ -808,7 +808,7 @@ class SvaNfaBuilder final {
     }
 
     // Positive abort-fire condition (not yet sampled):
-    //   condp && !outer_1 && !outer_2 ...   (outer-wraps-inner, IEEE 16.16)
+    //   condp && !outer_1 && !outer_2 ...   (outer-wraps-inner, IEEE 16.12.14)
     // Each call clones `condp` and each outer once; cost is O(depth) per
     // invocation and the builder generates O(V) invocations per abort, so
     // total expression growth is O(V * depth). Abort nesting depth is
@@ -833,7 +833,7 @@ class SvaNfaBuilder final {
 
         // Recurse into body with this abort's condition on the outer stack, so
         // inner aborts built during the recursion AND !condp into their fire
-        // conditions (IEEE 16.16 outer-wraps-inner).
+        // conditions (IEEE 16.12.14 outer-wraps-inner).
         m_outerAbortStack.push_back(condp);
         const BuildResult bodyResult = buildExpr(bodyp, entryVtxp, /*isTopLevelStep=*/false);
         m_outerAbortStack.pop_back();
@@ -861,7 +861,7 @@ class SvaNfaBuilder final {
 
         if (isAcceptKind(kind)) {
             // accept_on(c): property matches whenever c fires at a live step,
-            // or the body matches normally (IEEE 1800-2023 16.16).
+            // or the body matches normally (IEEE 1800-2023 16.12.14).
             //
             // Encoding: add a dedicated accept-sink vertex with a link from
             // every live body vertex (including the body terminal), gated on

@@ -575,7 +575,7 @@ public:
 
 // === AstNodeExpr ===
 class AstAcceptOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.16: accept_on (cond) prop  (async abort, property succeeds)
+    // IEEE 1800-2023 16.12.14: accept_on (cond) prop  (async abort, property succeeds)
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
 public:
@@ -2172,7 +2172,7 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstRejectOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.16: reject_on (cond) prop  (async abort, property fails)
+    // IEEE 1800-2023 16.12.14: reject_on (cond) prop  (async abort, property fails)
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
 public:
@@ -2667,7 +2667,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
 };
 class AstSyncAcceptOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.16: sync_accept_on (cond) prop  (sync abort, property succeeds)
+    // IEEE 1800-2023 16.12.14: sync_accept_on (cond) prop  (sync abort, property succeeds)
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
 public:
@@ -2684,7 +2684,7 @@ public:
     bool isMultiCycleSva() const override { return true; }
 };
 class AstSyncRejectOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.16: sync_reject_on (cond) prop  (sync abort, property fails)
+    // IEEE 1800-2023 16.12.14: sync_reject_on (cond) prop  (sync abort, property fails)
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
 public:

@@ -7712,7 +7712,7 @@ class WidthVisitor final : public VNVisitor {
     template <typename T_Node>
     void visitAbortProp(T_Node* nodep) {
         // CALLER: AcceptOn, RejectOn, SyncAcceptOn, SyncRejectOn
-        // IEEE 1800-2023 16.16: abort condition is a 1-bit self-determined
+        // IEEE 1800-2023 16.12.14: abort condition is a 1-bit self-determined
         // Boolean; property subexpression carries its own type checking.
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
