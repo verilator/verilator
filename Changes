@@ -11,6 +11,13 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.049 devel
 ==========================
 
+**Important:**
+
+* Support new FST writer API (#6871) (#6992). [Yu-Sheng Lin]
+  Use of FST may requiring installing liblz4 and/or liblz4-dev packages, see docs/install.rst.
+
+**Other:**
+
 * Support `s_eventually` (#7291) (#7508). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support writing to inout in fork after timing (#7345). [Kamil Danecki, Antmicro Ltd.]
 * Support `always` / `always[m:n]` / `s_always[m:n]` property operators (#7482). [Yilou Wang]
