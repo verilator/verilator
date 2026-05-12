@@ -1096,17 +1096,13 @@ class ForceReplaceVisitor final : public VNVisitor {
                 const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
                 if (varInfo && !varInfo->m_forceRdVscp && !varInfo->m_forces.empty()
                     && ForceState::isBitwiseDType(varp) && varp->dtypep()->isWide()) {
-                    const VCMethod method = (nodep->width() <= VL_EDATASIZE) ? VCMethod::FORCE_READ_SEL_I
-                                            : (nodep->width() <= VL_QUADSIZE)
-                                                ? VCMethod::FORCE_READ_SEL_Q
-                                                : VCMethod::FORCE_READ_SEL_W;
                     FileLine* const flp = nodep->fileline();
                     ForceState::markNonReplaceable(refp);
                     AstVarRef* const refClonep = refp->cloneTreePure(false);
                     ForceState::markNonReplaceable(refClonep);
                     AstCMethodHard* const callp = new AstCMethodHard{
-                        flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::READ}, method,
-                        ForceState::makeConst32(flp, varp->width())};
+                        flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::READ},
+                        VCMethod::FORCE_READ_SEL, ForceState::makeConst32(flp, varp->width())};
                     callp->addPinsp(refClonep);
                     callp->addPinsp(nodep->lsbp()->cloneTreePure(false));
                     callp->addPinsp(ForceState::makeConst32(flp, nodep->width()));
