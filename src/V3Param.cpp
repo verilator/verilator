@@ -1878,10 +1878,11 @@ class ParamProcessor final {
         std::vector<AstPin*> pinsByIndex;
         pinsByIndex.resize(m_classParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (AstParamTypeDType* typep = pinp->modPTypep())
+            if (AstParamTypeDType* typep = pinp->modPTypep()) {
                 pinsByIndex[m_paramIndex[typep]] = pinp;
-            else
+            } else {
                 pinsByIndex.push_back(pinp);
+            }
         }
 
         // For each missing parameter, get its pin from dependency or direct default
