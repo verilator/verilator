@@ -195,6 +195,18 @@ private:
         return *static_cast<const VlForceBaseType<T>*>(entry.m_rhsDatap);
     }
 
+    template <typename T>
+    typename std::enable_if<VlIsVlWide<T>::value>::type applyEntries(T& val) const {
+        for (const auto& entry : m_entries) {
+            applyEntry(val.data(), entry, entry.m_lsb, entry.m_msb, 0);
+        }
+    }
+
+    template <typename T>
+    typename std::enable_if<!VlIsVlWide<T>::value>::type applyEntries(T& val) const {
+        for (const auto& entry : m_entries) val = applyEntry(val, entry);
+    }
+
     void readSel(int lbits, WDataInP valp, WDataOutP reswp, int lsb, int width) const {
         VL_SEL_WWII(width, lbits, reswp, valp, lsb, width);
         const int msb = lsb + width - 1;
@@ -229,14 +241,7 @@ public:
             }
             return val;
         }
-
-        if VL_CONSTEXPR_CXX17 (VlIsVlWide<T>::value) {
-            for (const auto& entry : m_entries) {
-                applyEntry(val.data(), entry, entry.m_lsb, entry.m_msb, 0);
-            }
-        } else {
-            for (const auto& entry : m_entries) val = applyEntry(val, entry);
-        }
+        applyEntries(val);
         return val;
     }
 
