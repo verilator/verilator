@@ -2663,6 +2663,7 @@ class AstClass final : public AstNodeModule {
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
+    bool m_printedFrom = false;  // This class is printed from i.e. is used as format arg.
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -2690,6 +2691,8 @@ public:
     void needRNG(bool flag) { m_needRNG = flag; }
     bool useVirtualPublic() const { return m_useVirtualPublic; }
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
+    void markPrintedFrom() { m_printedFrom = true; }
+    bool isPrintedFrom() const { return m_printedFrom; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
