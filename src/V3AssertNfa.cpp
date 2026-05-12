@@ -189,9 +189,8 @@ class SvaNfaBuilder final {
     AstNodeModule* const m_modp;  // Module to receive hoisted sampled-prop temps
     V3UniqueNames& m_propTempNames;  // Module-shared temp-var name source
     std::vector<AstNodeExpr*> m_throughoutStack;  // Active throughout guards (IEEE 16.9.9)
-    // Active outer abort conditions (IEEE 1800-2023 16.12.14 outer-wraps-inner).
-    // When inner abort fires while any outer abort fires, outer wins, so every
-    // inner abort edge is AND-ed with !outerCond for each outer on the stack.
+    // Outer abort conditions, AND-ed as !cond into inner abort edges
+    // (IEEE 1800-2023 16.12.14 outer-wraps-inner).
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
 
@@ -788,32 +787,16 @@ class SvaNfaBuilder final {
         return result;
     }
 
-    // IEEE 1800-2023 16.12.14: property abort operators
-    //   accept_on(c) P       -- async abort, P succeeds when c fires at any live step
-    //   reject_on(c) P       -- async abort, P fails when c fires at any live step
-    //   sync_accept_on(c) P  -- same effect, c sampled at matured clocking event
-    //   sync_reject_on(c) P  -- same effect, c sampled at matured clocking event
-    //
-    // Sync vs async encoding: identical in Verilator. Rationale: the NFA
-    // advances only at maturing clocking events in the Observed region, and
-    // AstSampled already gives the matured value of c there. Async firing
-    // "between clocks" cannot be observed in a cycle-based model, so async
-    // collapses to the same per-cycle check as sync. The AbortKind enum is
-    // preserved at the API boundary so a future sync-only refinement (e.g.
-    // different sampling layer for async) can diverge without reshaping
-    // callers.
+    // IEEE 1800-2023 16.12.14 property abort operators. Sync and async share
+    // the same encoding: AstSampled already gives matured values at every
+    // maturing clocking event, and async firing "between clocks" is not
+    // observable in a cycle-based model.
     enum class AbortKind : uint8_t { AcceptAsync, AcceptSync, RejectAsync, RejectSync };
     static bool isAcceptKind(AbortKind k) {
         return k == AbortKind::AcceptAsync || k == AbortKind::AcceptSync;
     }
 
-    // Positive abort-fire condition (not yet sampled):
-    //   condp && !outer_1 && !outer_2 ...   (outer-wraps-inner, IEEE 16.12.14)
-    // Each call clones `condp` and each outer once; cost is O(depth) per
-    // invocation and the builder generates O(V) invocations per abort, so
-    // total expression growth is O(V * depth). Abort nesting depth is
-    // bounded in practice by source complexity (typically <= 2-3), so this
-    // is not a hot path.
+    // Build `condp && !outer_1 && !outer_2 ...` (unsampled).
     AstNodeExpr* abortFireExpr(AstNodeExpr* condp, FileLine* flp) {
         AstNodeExpr* resultp = condp->cloneTreePure(false);
         for (AstNodeExpr* const op : m_outerAbortStack)
@@ -823,25 +806,17 @@ class SvaNfaBuilder final {
 
     BuildResult buildAbortOn(AstNodeExpr* condp, AstNodeExpr* bodyp, SvaStateVertex* entryVtxp,
                              AbortKind kind, FileLine* flp) {
-        // Snapshot vertex set before body build so we can identify which
-        // vertices belong to the body's sub-NFA (abort-reachable sources).
-        // Two O(V) scans (snapshot + diff) -- acceptable because V3Graph has
-        // no "subgraph rooted at entry" traversal, abort nesting is shallow,
-        // and this only runs once per abort operator.
+        // Snapshot pre-body vertices so post-build diff yields the body's sub-NFA.
         std::unordered_set<const V3GraphVertex*> preExisting;
         for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
 
-        // Recurse into body with this abort's condition on the outer stack, so
-        // inner aborts built during the recursion AND !condp into their fire
-        // conditions (IEEE 16.12.14 outer-wraps-inner).
         m_outerAbortStack.push_back(condp);
         const BuildResult bodyResult = buildExpr(bodyp, entryVtxp, /*isTopLevelStep=*/false);
         m_outerAbortStack.pop_back();
         if (!bodyResult.valid()) return bodyResult;
 
-        // Collect the body's new vertices that can host a live state and are
-        // valid abort-fire sources. Skip dedicated reject sinks (they carry
-        // reject fuel, not live-thread fuel; see lesson 44).
+        // Live-thread sources for the abort edge: entry + new body vertices,
+        // minus reject sinks (they carry reject fuel, not live-thread fuel).
         std::vector<SvaStateVertex*> abortSources;
         abortSources.push_back(entryVtxp);
         for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
@@ -851,7 +826,6 @@ class SvaNfaBuilder final {
             abortSources.push_back(sp);
         }
 
-        // Helper: build a fresh `$sampled(condp && !outer_1 && !outer_2 ...)`.
         auto sampledAbortFire = [&]() -> AstSampled* {
             AstNodeExpr* const expr = abortFireExpr(condp, flp);
             AstSampled* const sampp = new AstSampled{flp, expr};
@@ -860,16 +834,10 @@ class SvaNfaBuilder final {
         };
 
         if (isAcceptKind(kind)) {
-            // accept_on(c): property matches whenever c fires at a live step,
-            // or the body matches normally (IEEE 1800-2023 16.12.14).
-            //
-            // Encoding: add a dedicated accept-sink vertex with a link from
-            // every live body vertex (including the body terminal), gated on
-            // $sampled(abort-fire). The sink is registered as a midSource,
-            // making it match-only (unbounded, no reject contribution) via
-            // wireMatchAndMidSources. Concurrent accept at the body terminal
-            // is covered because termVertexp is in abortSources -- no need
-            // to also fold abort-fire into bodyResult.finalCondp.
+            // Match-only sink fed by $sampled(abort-fire) from every live source;
+            // registered as midSource so it never contributes a reject. The body
+            // terminal is already in abortSources, so we don't fold abort-fire
+            // into bodyResult.finalCondp.
             SvaStateVertex* const acceptSinkp = scopedCreateVertex();
             for (SvaStateVertex* const srcp : abortSources)
                 guardedLink(srcp, acceptSinkp, sampledAbortFire(), flp);
@@ -878,11 +846,8 @@ class SvaNfaBuilder final {
             return {bodyResult.termVertexp, bodyResult.finalCondp, std::move(midSources)};
         }
 
-        // reject_on(c): property fails whenever c fires at a live step.
-        // rejectOnFail interprets the edge's m_condp as the *success* condition
-        // and fires a required-step reject on !condp. So the edge condition is
-        // the complement of abort-fire: `!c || outer_fires`. That way the reject
-        // is silenced when the abort is not firing OR any outer abort fires.
+        // rejectOnFail treats m_condp as the success condition and fires on
+        // !condp, so the edge carries !sampledAbortFire().
         SvaStateVertex* const rejectSinkp = m_graph.createStateVertex();
         rejectSinkp->m_isRejectSink = true;
         for (SvaStateVertex* const srcp : abortSources)

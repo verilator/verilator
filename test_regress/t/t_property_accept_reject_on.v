@@ -6,162 +6,106 @@
 
 // verilog_format: off
 `define stop $stop
-`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 module t (
     input clk
 );
-  integer cyc = 0;
-  reg [63:0] crc = 64'h5aef0c8d_d70a4497;
 
-  // CRC-derived signals. Abort conditions sample a single far-offset bit
-  // so the fire rate is ~50% and both pass (accept/reject fires) and fail
-  // (body determines outcome) paths are exercised.
+  int cyc;
+  reg [63:0] crc;
+
+  // Non-adjacent CRC bits to avoid LFSR shift correlation
   wire a = crc[0];
-  wire b = crc[1];
-  wire cnd = crc[2];
-  wire d = crc[3];
-  wire e = crc[4];
+  wire b = crc[4];
+  wire cnd_a = crc[8];
+  wire cnd_r = crc[12];
+  wire cnd = crc[16];
+  wire body = a | b;
 
-  wire abort_accept = crc[12];
-  wire abort_reject = crc[24];
+  int count_fail1 = 0;
+  int count_fail2 = 0;
+  int count_fail3 = 0;
+  int count_fail4 = 0;
+  int count_fail5 = 0;
+  int count_fail6 = 0;
+  int count_fail7 = 0;
+  int count_fail8 = 0;
+  int count_fail9 = 0;
+  int count_fail10 = 0;
 
-  int accept_pass = 0;
-  int accept_fail = 0;
-  int reject_pass = 0;
-  int reject_fail = 0;
-  int sync_accept_pass = 0;
-  int sync_accept_fail = 0;
-  int sync_reject_pass = 0;
-  int sync_reject_fail = 0;
-  int outer_accept_pass = 0;
-  int outer_accept_fail = 0;
-  int outer_reject_pass = 0;
-  int outer_reject_fail = 0;
-  int named_accept_pass = 0;
-  int named_accept_fail = 0;
-  int disable_accept_pass = 0;
-  int disable_accept_fail = 0;
-  // Hook for future async vs sync divergence (IEEE 1800-2023 16.16):
-  // same body, same abort signal, but one uses sync and one async.
-  // Both forms currently collapse to the same per-cycle NFA check; these
-  // counters will diverge if the encoding is ever refined, letting this
-  // test catch such a regression.
-  int async_divergence_pass = 0;
-  int async_divergence_fail = 0;
-  int sync_divergence_pass = 0;
-  int sync_divergence_fail = 0;
+  // Test 1: accept_on (async) -- property succeeds when cnd_a fires
+  assert property (@(posedge clk) disable iff (cyc < 2) accept_on (cnd_a) body)
+    else count_fail1 <= count_fail1 + 1;
 
-  always_ff @(posedge clk) begin
+  // Test 2: reject_on (async) -- property fails when cnd_r fires
+  assert property (@(posedge clk) disable iff (cyc < 2) reject_on (cnd_r) body)
+    else count_fail2 <= count_fail2 + 1;
+
+  // Test 3: sync_accept_on -- sampled at matured clocking event
+  assert property (@(posedge clk) disable iff (cyc < 2) sync_accept_on (cnd_a) body)
+    else count_fail3 <= count_fail3 + 1;
+
+  // Test 4: sync_reject_on
+  assert property (@(posedge clk) disable iff (cyc < 2) sync_reject_on (cnd_r) body)
+    else count_fail4 <= count_fail4 + 1;
+
+  // Test 5: outer accept_on wraps inner reject_on -- outer wins per 16.12.14
+  assert property (@(posedge clk) disable iff (cyc < 2)
+                   accept_on (cnd_a) reject_on (cnd_r) body)
+    else count_fail5 <= count_fail5 + 1;
+
+  // Test 6: outer reject_on wraps inner accept_on
+  assert property (@(posedge clk) disable iff (cyc < 2)
+                   reject_on (cnd_r) accept_on (cnd_a) body)
+    else count_fail6 <= count_fail6 + 1;
+
+  // Test 7: named property form with accept_on inside
+  property p_named;
+    accept_on (cnd_a) body;
+  endproperty
+  assert property (@(posedge clk) disable iff (cyc < 2) p_named)
+    else count_fail7 <= count_fail7 + 1;
+
+  // Test 8: disable iff over a sync_accept_on with a second disabled window
+  assert property (@(posedge clk) disable iff (cyc < 2 || (cyc >= 50 && cyc < 60))
+                   sync_accept_on (cnd) body)
+    else count_fail8 <= count_fail8 + 1;
+
+  // Test 9 / 10: async vs sync divergence hook -- identical encoding must
+  // produce identical fail counts under current implementation
+  assert property (@(posedge clk) disable iff (cyc < 2) accept_on (cnd_a) body)
+    else count_fail9 <= count_fail9 + 1;
+
+  assert property (@(posedge clk) disable iff (cyc < 2) sync_accept_on (cnd_a) body)
+    else count_fail10 <= count_fail10 + 1;
+
+  always @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("[%0t] cyc==%0d crc=%x body=%b cnd_a=%b cnd_r=%b cnd=%b\n",
+           $time, cyc, crc, body, cnd_a, cnd_r, cnd);
+`endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
-    if (cyc == 99) begin
-      $write("accept=%0d/%0d reject=%0d/%0d sync_accept=%0d/%0d sync_reject=%0d/%0d\n",
-             accept_pass, accept_fail, reject_pass, reject_fail,
-             sync_accept_pass, sync_accept_fail, sync_reject_pass, sync_reject_fail);
-      $write("outer_accept=%0d/%0d outer_reject=%0d/%0d named=%0d/%0d disable=%0d/%0d\n",
-             outer_accept_pass, outer_accept_fail, outer_reject_pass, outer_reject_fail,
-             named_accept_pass, named_accept_fail, disable_accept_pass, disable_accept_fail);
-      $write("async_div=%0d/%0d sync_div=%0d/%0d\n",
-             async_divergence_pass, async_divergence_fail,
-             sync_divergence_pass, sync_divergence_fail);
-      // Sanity: every CRC-driven counter exercises both pass and fail paths
-      // (non-vacuous match required per pattern 23, 24; lesson 17, 33).
-      if (!(accept_pass > 0 && accept_fail > 0))
-        `stop;
-      if (!(reject_pass > 0 && reject_fail > 0))
-        `stop;
-      if (!(sync_accept_pass > 0 && sync_accept_fail > 0))
-        `stop;
-      if (!(sync_reject_pass > 0 && sync_reject_fail > 0))
-        `stop;
-      if (!(outer_accept_pass > 0 && outer_accept_fail > 0))
-        `stop;
-      if (!(outer_reject_pass > 0 && outer_reject_fail > 0))
-        `stop;
-      if (!(named_accept_pass > 0 && named_accept_fail > 0))
-        `stop;
-      if (!(disable_accept_pass > 0 && disable_accept_fail > 0))
-        `stop;
-      if (!(async_divergence_pass > 0 && async_divergence_fail > 0))
-        `stop;
-      if (!(sync_divergence_pass > 0 && sync_divergence_fail > 0))
-        `stop;
-      // Under the current encoding async and sync must match exactly.
-      `checkd(async_divergence_pass, sync_divergence_pass)
-      `checkd(async_divergence_fail, sync_divergence_fail)
+    if (cyc == 0) begin
+      crc <= 64'h5aef0c8d_d70a4497;
+    end
+    else if (cyc == 99) begin
+      `checkh(crc, 64'hc77bb9b3784ea091);
+      `checkd(count_fail1, 29);   // Questa: 14
+      `checkd(count_fail2, 65);   // Questa: 64
+      `checkd(count_fail3, 29);   // Questa: 14
+      `checkd(count_fail4, 65);   // Questa: 64
+      `checkd(count_fail5, 46);   // Questa: 31
+      `checkd(count_fail6, 65);   // Questa: 59
+      `checkd(count_fail7, 29);   // Questa: 14
+      `checkd(count_fail8, 14);   // Questa: 10
+      `checkd(count_fail9, 29);   // Questa: 14
+      `checkd(count_fail10, 29);  // Questa: 14
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
-
-  // Body expression that actually has fails mixed with passes under CRC.
-  wire body = a | b;
-
-  // IEEE 1800-2023 16.16 async accept_on: if accept fires at any live step,
-  // the property matches regardless of body outcome.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    accept_on (abort_accept) body)
-    accept_pass++;
-  else accept_fail++;
-
-  // IEEE 1800-2023 16.16 async reject_on: if reject fires, property fails.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    reject_on (abort_reject) body)
-    reject_pass++;
-  else reject_fail++;
-
-  // IEEE 1800-2023 16.16 sync_accept_on: sampled at matured clocking event.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    sync_accept_on (abort_accept) body)
-    sync_accept_pass++;
-  else sync_accept_fail++;
-
-  // IEEE 1800-2023 16.16 sync_reject_on.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    sync_reject_on (abort_reject) body)
-    sync_reject_pass++;
-  else sync_reject_fail++;
-
-  // Outer-wraps-inner precedence (IEEE 1800-2023 example 16-23):
-  // when both abort conditions fire simultaneously, the outer operator wins.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    accept_on (abort_accept) reject_on (abort_reject) body)
-    outer_accept_pass++;
-  else outer_accept_fail++;
-
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    reject_on (abort_reject) accept_on (abort_accept) body)
-    outer_reject_pass++;
-  else outer_reject_fail++;
-
-  // Named property form: accept_on inside a `property ... endproperty` block.
-  property p_named;
-    accept_on (abort_accept) body;
-  endproperty
-  assert property (@(posedge clk) disable iff (cyc < 2) p_named)
-    named_accept_pass++;
-  else named_accept_fail++;
-
-  // disable iff + sync_accept_on: disable iff kills the assertion entirely
-  // before abort fires, matching IEEE priority. Use a simpler disable gate
-  // (cyc-based reset window) so both pass and fail paths are exercised.
-  assert property (@(posedge clk) disable iff (cyc < 2 || (cyc >= 50 && cyc < 60))
-    sync_accept_on (cnd) body)
-    disable_accept_pass++;
-  else disable_accept_fail++;
-
-  // Async vs sync divergence hook: identical bodies and abort signals under
-  // both forms. Currently identical encoding -> counters must match.
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    accept_on (abort_accept) body)
-    async_divergence_pass++;
-  else async_divergence_fail++;
-
-  assert property (@(posedge clk) disable iff (cyc < 2)
-    sync_accept_on (abort_accept) body)
-    sync_divergence_pass++;
-  else sync_divergence_fail++;
-
 endmodule
