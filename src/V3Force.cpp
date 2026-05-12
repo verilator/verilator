@@ -611,6 +611,13 @@ public:
         return it2->second;
     }
 
+    static bool selOverlapsAnyForce(const VarForceInfo& varInfo, int selLsb, int selMsb) {
+        for (const auto& pair : varInfo.m_forces) {
+            if (pair.second.m_rangeLsb <= selMsb && pair.second.m_rangeMsb >= selLsb) return true;
+        }
+        return false;
+    }
+
     AstNodeExpr* createForceReadExpression(const VarForceInfo& varInfo,
                                            AstVarRef* originalRefp) const {
         FileLine* const flp = originalRefp->fileline();
@@ -1096,6 +1103,15 @@ class ForceReplaceVisitor final : public VNVisitor {
                 const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
                 if (varInfo && !varInfo->m_forceRdVscp && !varInfo->m_forces.empty()
                     && ForceState::isBitwiseDType(varp) && varp->dtypep()->isWide()) {
+                    if (const AstConst* const lsbConstp = VN_CAST(nodep->lsbp(), Const)) {
+                        const int selLsb = lsbConstp->toSInt();
+                        const int selMsb = selLsb + nodep->width() - 1;
+                        if (!ForceState::selOverlapsAnyForce(*varInfo, selLsb, selMsb)) {
+                            ForceState::markNonReplaceable(refp);
+                            visit(static_cast<AstNode*>(nodep));
+                            return;
+                        }
+                    }
                     FileLine* const flp = nodep->fileline();
                     ForceState::markNonReplaceable(refp);
                     AstVarRef* const refClonep = refp->cloneTreePure(false);
