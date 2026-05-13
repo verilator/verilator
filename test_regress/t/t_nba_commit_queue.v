@@ -297,4 +297,32 @@ module t(clk);
     for (int i = 0 ; i < 10; ++i) `checks(array9[i], "cuttlefish");
   end
 
+  // Case 10: Packed narrow, but whole array also target of NBA directly
+  typedef logic [31:0] elem10_t;
+  typedef elem10_t array10_t[128];
+  array10_t array10;
+  array10_t array10_init = '{default: 10};
+  `at_posedge_clk_on_cycle(0) begin
+    for (int i = 0 ; i < 128; ++i) array10[i] = 0;
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], 0);
+  end
+  `at_posedge_clk_on_cycle(1) begin
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], 0);
+    array10 <= array10_init;
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], 0);
+  end
+  `at_posedge_clk_on_cycle(2) begin
+    for (int i =  0 ; i < 128; ++i) `checkh(array10[i], 10);
+    for (int i = 64 ; i < 128; ++i) array10[i][4] <= 1'b1;
+    for (int i =  0 ; i < 128; ++i) `checkh(array10[i], 10);
+  end
+  `at_posedge_clk_on_cycle(3) begin
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], i < 64 ? 10 : 26);
+    for (int i = 0 ; i < 128; ++i) array10[i] <= ~i;
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], i < 64 ? 10 : 26);
+  end
+  `at_posedge_clk_on_cycle(4) begin
+    for (int i = 0 ; i < 128; ++i) `checkh(array10[i], ~i);
+  end
+
 endmodule
