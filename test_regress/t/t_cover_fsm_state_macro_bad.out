@@ -1,0 +1,43 @@
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:71:5: Ignoring unsupported: fsm_state_macro d and q connections must be simple variables
+                                                       : ... note: In instance 't'
+   71 |   ) u_bad_simple (
+      |     ^~~~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:91:5: Ignoring unsupported: malformed fsm_state_macro option '!bad'
+                                                       : ... note: In instance 't'
+   91 |   ) u_malformed (
+      |     ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:91:5: Ignoring unsupported: malformed fsm_state_macro option 'stray'
+                                                       : ... note: In instance 't'
+   91 |   ) u_malformed (
+      |     ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:91:5: Ignoring unsupported: malformed fsm_state_macro option 'd='
+                                                       : ... note: In instance 't'
+   91 |   ) u_malformed (
+      |     ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:101:5: Ignoring unsupported: unknown fsm_state_macro option 'dee'
+                                                        : ... note: In instance 't'
+  101 |   ) u_unknown (
+      |     ^~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:81:5: Ignoring unsupported: fsm_state_macro instance requires discoverable d and q ports
+                                                       : ... note: In instance 't'
+   81 |   ) u_missing_roles (
+      |     ^~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:91:5: Ignoring unsupported: fsm_state_macro instance requires discoverable d and q ports
+                                                       : ... note: In instance 't'
+   91 |   ) u_malformed (
+      |     ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:111:5: Ignoring unsupported: fsm_state_macro instance requires a simple clock connection
+                                                        : ... note: In instance 't'
+  111 |   ) u_no_clock (
+      |     ^~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:121:5: Ignoring unsupported: fsm_state_macro d and q connections must be simple variables
+                                                        : ... note: In instance 't'
+  121 |   ) u_missing_port (
+      |     ^~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_cover_fsm_state_macro_bad.v:131:5: Ignoring unsupported: fsm_state_macro d and q connections must be simple variables
+                                                        : ... note: In instance 't'
+  131 |   ) u_missing_q_port (
+      |     ^~~~~~~~~~~~~~~~
+%Error: Exiting due to

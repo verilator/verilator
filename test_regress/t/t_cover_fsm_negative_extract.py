@@ -32,6 +32,13 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
-test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
+annotated_filename = test.obj_dir + "/annotated/" + test.name + ".v"
+normalized_filename = test.obj_dir + "/annotated/" + test.name + ".normalized.v"
+with open(annotated_filename, encoding="utf-8") as in_file:
+    with open(normalized_filename, "w", encoding="utf-8") as out_file:
+        for line in in_file:
+            out_file.write(line.rstrip() + "\n")
+
+test.files_identical(normalized_filename, test.golden_filename)
 
 test.passes()

@@ -30,9 +30,11 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 
+#include <algorithm>
 #include <cctype>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -107,21 +109,203 @@ struct FsmSenDesc final {
 struct FsmResetCondDesc final {
     // Reset signal used by the FSM in the saved scoped AST.
     AstVarScope* varScopep = nullptr;
+    bool activeLow = false;
 };
 
 class FsmResetArcDesc final {
     FsmStateValue m_toValue;  // Encoded reset target state.
-    AstNodeAssign* m_nodep = nullptr;  // Source assignment for warnings and emitted metadata
+    AstNode* m_nodep = nullptr;  // Source node for warnings and emitted metadata.
+    AstNodeExpr* m_valuep = nullptr;  // Expression that provided the reset value.
 
 public:
     FsmResetArcDesc() = default;
     FsmResetArcDesc(FsmStateValue toValue, AstNodeAssign* nodep)
         : m_toValue{toValue}
-        , m_nodep{nodep} {}
+        , m_nodep{nodep}
+        , m_valuep{nodep->rhsp()} {}
+    FsmResetArcDesc(FsmStateValue toValue, AstNode* nodep, AstNodeExpr* valuep)
+        : m_toValue{toValue}
+        , m_nodep{nodep}
+        , m_valuep{valuep} {}
 
     FsmStateValue toValue() const { return m_toValue; }
-    AstNodeAssign* nodep() const { return m_nodep; }
+    AstNode* nodep() const { return m_nodep; }
+    AstNodeExpr* valuep() const { return m_valuep; }
 };
+
+struct FsmMacroArg final {
+    string key;
+    string value;
+
+    FsmMacroArg(const string& keyr, const string& valuer)
+        : key{keyr}
+        , value{valuer} {}
+};
+
+static void warnMalformedFsmMacroGap(AstCell* cellp, const string& gap) {
+    std::istringstream stream{gap};
+    string token;
+    while (stream >> token) {
+        cellp->v3warn(COVERIGN,
+                      "Ignoring unsupported: malformed fsm_state_macro option '" + token + "'");
+    }
+}
+
+// fsm_state_macro options name wrapper ports or parameters, not arbitrary
+// expressions. Treat whitespace around '=' as presentation-only while keeping
+// the grammar intentionally small: a stream of identifier key/value pairs.
+static std::vector<FsmMacroArg> parseFsmMacroArgList(AstCell* cellp, bool warnMalformed) {
+    std::vector<FsmMacroArg> args;
+    std::istringstream stream{cellp->attrFsmStateMacroArgs()};
+    std::vector<string> tokens;
+
+    string token;
+    while (stream >> token) tokens.push_back(token);
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        token = tokens[i];
+        string key;
+        string value;
+        string::size_type eq = token.find('=');
+        if (eq == string::npos) {
+            if (i + 1 >= tokens.size() || tokens[i + 1].front() != '=') {
+                if (warnMalformed) warnMalformedFsmMacroGap(cellp, token);
+                continue;
+            }
+            key = token;
+            value = tokens[++i].substr(1);
+        } else {
+            key = token.substr(0, eq);
+            value = token.substr(eq + 1);
+        }
+        if (key.empty() || value.empty()) {
+            if (i + 1 >= tokens.size()) {
+                if (warnMalformed) warnMalformedFsmMacroGap(cellp, token);
+                continue;
+            }
+            value = tokens[++i];
+        }
+        args.emplace_back(key, value);
+    }
+    return args;
+}
+
+struct FsmMacroRoles final {
+    string dPort;
+    string qPort;
+    string clkPort;
+    string rstPort;
+    string rstValParam;
+    bool hasRstActiveLow = false;
+    bool rstActiveLow = false;
+    bool annotated = false;
+};
+
+static void fsmMacroAssignIfMatches(string& role, const string& candidate, const string& portName) {
+    if (portName != candidate) return;
+    // Multiple conventional names for the same role make the wrapper ambiguous.
+    // Clear the role so the candidate is rejected instead of guessing between,
+    // for example, state_i and d_i.
+    if (!role.empty()) {
+        role.clear();
+        return;
+    }
+    role = portName;
+}
+
+static bool fsmMacroResetPolarityFromName(const string& name, bool& activeLow) {
+    if (name == "rst_ni" || name == "rst_n") {
+        activeLow = true;
+        return true;
+    }
+    if (name == "rst_i" || name == "rst") {
+        activeLow = false;
+        return true;
+    }
+    return false;
+}
+
+static bool fsmMacroResetPolarityFromWrapperAst(AstCell* cellp, const string& portName,
+                                                bool& activeLow) {
+    bool matched = false;
+    cellp->modp()->foreach([&](AstSenItem* itemp) {
+        AstNodeVarRef* const vrefp = itemp->varrefp();
+        if (!vrefp) return;
+        if (vrefp->varp()->name() != portName) return;
+        activeLow = itemp->edgeType() == VEdgeType::ET_NEGEDGE;
+        matched = true;
+    });
+    return matched;
+}
+
+static string fsmMacroCellModuleOrigName(AstCell* cellp) {
+    // Built-in descriptors describe user-visible modules, not Verilator's
+    // parameter-specialized clone names. Match against the original module
+    // identity so primitive recognition is stable across elaboration.
+    return cellp->modp()->origName();
+}
+
+static void inferKnownFsmMacroRoles(AstCell* cellp, FsmMacroRoles& roles) {
+    const string modName = fsmMacroCellModuleOrigName(cellp);
+    if (modName == "prim_sparse_fsm_flop") {
+        if (roles.dPort.empty()) roles.dPort = "state_i";
+        if (roles.qPort.empty()) roles.qPort = "state_o";
+        if (roles.clkPort.empty()) roles.clkPort = "clk_i";
+        if (roles.rstPort.empty()) roles.rstPort = "rst_ni";
+        if (roles.rstValParam.empty()) roles.rstValParam = "ResetValue";
+        roles.hasRstActiveLow = true;
+        roles.rstActiveLow = true;
+    } else if (modName == "prim_flop") {
+        if (roles.dPort.empty()) roles.dPort = "d_i";
+        if (roles.qPort.empty()) roles.qPort = "q_o";
+        if (roles.clkPort.empty()) roles.clkPort = "clk_i";
+        if (roles.rstPort.empty()) roles.rstPort = "rst_ni";
+        if (roles.rstValParam.empty()) roles.rstValParam = "ResetValue";
+        roles.hasRstActiveLow = true;
+        roles.rstActiveLow = true;
+    }
+}
+
+static void inferConventionalFsmMacroPorts(const std::vector<string>& portNames,
+                                           FsmMacroRoles& roles) {
+    string dFound = roles.dPort;
+    string qFound = roles.qPort;
+    string clkFound = roles.clkPort;
+    string rstFound = roles.rstPort;
+    bool rstActiveLow = roles.rstActiveLow;
+    bool hasRstActiveLow = roles.hasRstActiveLow;
+
+    for (const string& name : portNames) {
+        if (roles.dPort.empty()) {
+            fsmMacroAssignIfMatches(dFound, "state_i", name);
+            fsmMacroAssignIfMatches(dFound, "d_i", name);
+            fsmMacroAssignIfMatches(dFound, "d", name);
+        }
+        if (roles.qPort.empty()) {
+            fsmMacroAssignIfMatches(qFound, "state_o", name);
+            fsmMacroAssignIfMatches(qFound, "q_o", name);
+            fsmMacroAssignIfMatches(qFound, "q", name);
+        }
+        if (roles.clkPort.empty()) {
+            fsmMacroAssignIfMatches(clkFound, "clk_i", name);
+            fsmMacroAssignIfMatches(clkFound, "clk", name);
+        }
+        if (roles.rstPort.empty()) {
+            bool inferredActiveLow = false;
+            if (fsmMacroResetPolarityFromName(name, inferredActiveLow)) {
+                fsmMacroAssignIfMatches(rstFound, name, name);
+                rstActiveLow = inferredActiveLow;
+                hasRstActiveLow = true;
+            }
+        }
+    }
+
+    roles.dPort = dFound;
+    roles.qPort = qFound;
+    roles.clkPort = clkFound;
+    roles.rstPort = rstFound;
+    roles.rstActiveLow = rstActiveLow;
+    roles.hasRstActiveLow = hasRstActiveLow;
+}
 
 class FsmRegisterCandidate final {
     AstScope* m_scopep = nullptr;  // Owning scope for the paired FSM.
@@ -134,6 +318,7 @@ class FsmRegisterCandidate final {
     bool m_hasResetCond = false;  // Whether the FSM had a modeled reset predicate.
     bool m_resetInclude = false;  // Whether reset arcs count toward summary totals.
     bool m_inclCond = false;  // Whether conditional/default arcs are kept explicitly.
+    FileLine* m_flp = nullptr;  // Representative source location.
 
 public:
     AstScope* scopep() const { return m_scopep; }
@@ -156,6 +341,8 @@ public:
     void resetInclude(bool flag) { m_resetInclude = flag; }
     bool inclCond() const { return m_inclCond; }
     void inclCond(bool flag) { m_inclCond = flag; }
+    FileLine* fileline() const { return m_flp; }
+    void fileline(FileLine* flp) { m_flp = flp; }
 };
 
 class FsmComboAlways final {
@@ -386,6 +573,8 @@ struct FsmIfChainCandidate final {
 // Aliases are accepted only when they are equivalent to spelling the state
 // comparison inline; this avoids inferring FSM semantics from arbitrary logic.
 using FsmAliasMap = std::unordered_map<const AstVarScope*, FsmStateComparison>;
+using FsmCellPortMap = std::unordered_map<string, AstVarScope*>;
+using FsmCellPortAliasMap = std::unordered_map<const AstCell*, FsmCellPortMap>;
 
 struct StateConstLabel final {
     string text;
@@ -431,11 +620,21 @@ class FsmDetectVisitor final : public VNVisitor {
     std::vector<FsmComboAlways> m_oneBlockAlwayss;
     std::vector<FsmComboAlways> m_comboAlwayss;
     std::vector<FsmComboAlways> m_nonComboAlwayss;
+    // Wrapper FSM detection has a second path for designs compiled without
+    // inlining. In that shape the state register stays behind an AstCell, so we
+    // remember candidate cells and resolve them only after the surrounding
+    // transition logic and post-link port wiring have both been seen.
+    std::vector<std::pair<AstScope*, AstCell*>> m_macroCells;
     std::unordered_map<const AstVarScope*, FsmCaseCandidate> m_comboPaired;
     // Continuous aliases are order-independent, while procedural aliases must
     // remain source-order scoped to avoid using assignments not yet executed.
     FsmAliasMap m_stateAliases;
     std::unordered_set<const AstVarScope*> m_ambiguousStateAliases;
+    // A surviving wrapper's semantic d/q relationship is split across the
+    // parent scope and the child module scope. This table is the narrow bridge
+    // between those scopes: only transparent port aliases are recorded, so the
+    // detector does not become a general cross-module dataflow engine.
+    FsmCellPortAliasMap m_cellPortAliases;
 
     // METHODS
     // Enum-backed FSMs may be wrapped in refs/typedefs; normalize to the
@@ -450,6 +649,145 @@ class FsmDetectVisitor final : public VNVisitor {
                + "... Location of first supported candidate for "
                + firstCand.stateVscp->prettyNameQ() + '\n'
                + firstCand.warnNodep->warnContextSecondary();
+    }
+
+    static void parseFsmMacroArgs(AstCell* cellp, FsmMacroRoles& roles) {
+        roles.annotated = cellp->attrFsmStateMacro();
+        for (const FsmMacroArg& arg : parseFsmMacroArgList(cellp, false)) {
+            if (arg.key == "d") {
+                roles.dPort = arg.value;
+            } else if (arg.key == "q") {
+                roles.qPort = arg.value;
+            } else if (arg.key == "clk") {
+                roles.clkPort = arg.value;
+            } else if (arg.key == "rst") {
+                roles.rstPort = arg.value;
+            } else if (arg.key == "rstval") {
+                roles.rstValParam = arg.value;
+            } else {
+                // The pre-inline marker pass reports unknown options so the
+                // warning is emitted exactly once even when cells survive.
+            }
+        }
+    }
+
+    static bool rejectFsmMacroCell(AstCell* cellp, const FsmMacroRoles& roles, const string& reason) {
+        if (roles.annotated) cellp->v3warn(COVERIGN, "Ignoring unsupported: " + reason);
+        return false;
+    }
+
+    static std::vector<string> cellPortNames(AstCell* cellp) {
+        std::vector<string> names;
+        // This detector runs after V3Inst has lowered instance pins into
+        // continuous assignments and deleted the AstPin nodes. The wrapper's
+        // child-module IO variables are therefore the stable representation of
+        // its public contract at FSM-detect time.
+        for (AstNode* stmtp = cellp->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (varp && varp->isIO()) names.push_back(varp->name());
+        }
+        return names;
+    }
+
+    static string inferResetValueParam(AstCell* cellp, const string& requested) {
+        if (!requested.empty()) return requested;
+        // Reset arcs are useful metadata, but they are not required to prove the
+        // FSM relationship. Probe common parameter spellings for generic
+        // wrappers; if none resolve statically, transition/state coverage still
+        // proceeds and reset arcs are simply omitted.
+        static const char* const names[] = {"ResetValue", "RstVal", "RESET_VALUE"};
+        for (const char* const name : names) {
+            for (AstNode* stmtp = cellp->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                const AstVar* const varp = VN_CAST(stmtp, Var);
+                if (varp && varp->isParam() && varp->name() == name) return name;
+            }
+        }
+        return "";
+    }
+
+    static void inferConventionalMacroRoles(AstCell* cellp, FsmMacroRoles& roles) {
+        inferKnownFsmMacroRoles(cellp, roles);
+        inferConventionalFsmMacroPorts(cellPortNames(cellp), roles);
+        roles.rstValParam = inferResetValueParam(cellp, roles.rstValParam);
+    }
+
+    static bool simpleParamStateValue(AstCell* cellp, const string& name, FsmStateValue& value,
+                                      AstNodeExpr*& valuepr) {
+        // Cell-path reset recovery must behave like the inlined path when the
+        // instance relies on a parameter default. Looking into the linked module
+        // default preserves that equivalence while keeping the cell detector's
+        // contract narrow: only static, known reset encodings become reset arcs.
+        valuepr = nullptr;
+        for (AstNode* stmtp = cellp->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !varp->isParam() || varp->name() != name) continue;
+            valuepr = VN_AS(varp->valuep(), NodeExpr);
+            return constValueStatus(valuepr, value) == ConstValueStatus::OK;
+        }
+        return false;
+    }
+
+    static bool childPortInScope(AstVarScope* vscp, AstScope* parentScopep, AstCell*& cellpr) {
+        if (!vscp->varp()->isIO()) return false;
+        AstScope* const scopep = vscp->scopep();
+        UASSERT_OBJ(scopep, vscp, "VarScope without scope");
+        if (scopep->aboveScopep() != parentScopep) return false;
+        UASSERT_OBJ(scopep->aboveCellp(), vscp,
+                    "Child port scope should retain the instance that created it");
+        cellpr = scopep->aboveCellp();
+        return true;
+    }
+
+    static AstVarScope* simpleAssignVarScope(AstNodeExpr* exprp) {
+        AstVarRef* const vrefp = VN_CAST(exprp, VarRef);
+        return vrefp ? vrefp->varScopep() : nullptr;
+    }
+
+    void addMacroCell(AstScope* scopep, AstCell* cellp) {
+        m_cellPortAliases.emplace(cellp, FsmCellPortMap{});
+        const std::pair<AstScope*, AstCell*> item{scopep, cellp};
+        if (std::find(m_macroCells.cbegin(), m_macroCells.cend(), item) != m_macroCells.cend()) {
+            return;
+        }
+        m_macroCells.emplace_back(item);
+    }
+
+    void collectCellPortAlias(AstAssignW* nodep) {
+        UASSERT_OBJ(m_scopep, nodep, "Cell port alias collection requires a scoped assignment");
+        AstVarScope* const lhsVscp = simpleAssignVarScope(nodep->lhsp());
+        AstVarScope* const rhsVscp = simpleAssignVarScope(nodep->rhsp());
+        if (!lhsVscp || !rhsVscp) return;
+        AstCell* cellp = nullptr;
+        // The cell path is intentionally a transparent-wrapper recognizer. A
+        // direct parent<->child variable assignment preserves the register's
+        // identity across the hierarchy boundary; any expression, slice, or
+        // transform is outside this phase's contract and therefore not recorded.
+        if (childPortInScope(lhsVscp, m_scopep, cellp)) {
+            UASSERT_OBJ(lhsVscp->varp()->isInput(), nodep,
+                        "Child-side port alias lhs should be an input");
+            UASSERT_OBJ(rhsVscp->scopep() == m_scopep, nodep,
+                        "Child input port alias should connect from the parent scope");
+            m_cellPortAliases[cellp][lhsVscp->varp()->name()] = rhsVscp;
+            addMacroCell(m_scopep, cellp);
+        } else if (childPortInScope(rhsVscp, m_scopep, cellp)) {
+            UASSERT_OBJ(rhsVscp->varp()->isWritable(), nodep,
+                        "Child-side port alias rhs should be writable");
+            UASSERT_OBJ(lhsVscp->scopep() == m_scopep, nodep,
+                        "Child output port alias should connect into the parent scope");
+            m_cellPortAliases[cellp][rhsVscp->varp()->name()] = lhsVscp;
+            addMacroCell(m_scopep, cellp);
+        }
+    }
+
+    AstVarScope* roleVarScope(AstCell* cellp, const string& portName) const {
+        // At this point explicit AstPin expressions have been lowered away, so
+        // role resolution crosses the wrapper boundary only through the
+        // transparent alias table above. This keeps macro support aligned with
+        // direct-register detection instead of growing into interprocedural FSM
+        // inference.
+        const FsmCellPortMap& ports = m_cellPortAliases.at(cellp);
+        const FsmCellPortMap::const_iterator portIt = ports.find(portName);
+        return portIt == ports.end() ? nullptr : portIt->second;
     }
 
     class RegisterAlwaysAnalyzer final {
@@ -537,6 +875,79 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
     };
+
+    bool matchFsmMacroCell(AstScope* scopep, AstCell* cellp, FsmRegisterCandidate& cand) const {
+        FsmMacroRoles roles;
+        parseFsmMacroArgs(cellp, roles);
+        inferConventionalMacroRoles(cellp, roles);
+        if (roles.dPort.empty() || roles.qPort.empty()) {
+            return rejectFsmMacroCell(
+                cellp, roles, "fsm_state_macro instance requires discoverable d and q ports");
+        }
+
+        AstVarScope* const nextVscp = roleVarScope(cellp, roles.dPort);
+        AstVarScope* const stateVscp = roleVarScope(cellp, roles.qPort);
+        if (!nextVscp || !stateVscp) {
+            return rejectFsmMacroCell(
+                cellp, roles,
+                "fsm_state_macro d and q connections must be simple variables");
+        }
+        AstVarScope* const clkVscp
+            = roles.clkPort.empty() ? nullptr : roleVarScope(cellp, roles.clkPort);
+        if (!clkVscp) {
+            return rejectFsmMacroCell(
+                cellp, roles, "fsm_state_macro instance requires a simple clock connection");
+        }
+
+        FsmSenDesc clkSense;
+        clkSense.edgeType = VEdgeType::ET_POSEDGE;
+        clkSense.varScopep = clkVscp;
+        cand.senses().push_back(clkSense);
+
+        AstVarScope* resetVscp = nullptr;
+        if (!roles.rstPort.empty()) resetVscp = roleVarScope(cellp, roles.rstPort);
+        if (resetVscp && !roles.hasRstActiveLow) {
+            // A custom wrapper reset port name does not encode polarity. Once
+            // annotation identifies the port, use the wrapper's own event
+            // control AST as the contract for sampling the connected parent
+            // signal.
+            bool inferredActiveLow = false;
+            if (fsmMacroResetPolarityFromWrapperAst(cellp, roles.rstPort, inferredActiveLow)) {
+                roles.hasRstActiveLow = true;
+                roles.rstActiveLow = inferredActiveLow;
+            }
+        }
+        if (resetVscp && roles.hasRstActiveLow) {
+            FsmSenDesc rstSense;
+            rstSense.edgeType = roles.rstActiveLow ? VEdgeType::ET_NEGEDGE : VEdgeType::ET_POSEDGE;
+            rstSense.varScopep = resetVscp;
+            cand.senses().push_back(rstSense);
+            cand.resetCond().varScopep = resetVscp;
+            cand.resetCond().activeLow = roles.rstActiveLow;
+            cand.hasResetCond(true);
+        }
+
+        if (cand.hasResetCond() && !roles.rstValParam.empty()) {
+            AstNodeExpr* valuep = nullptr;
+            FsmStateValue value;
+            if (simpleParamStateValue(cellp, roles.rstValParam, value, valuep)) {
+                cand.resetArcs().emplace_back(value, cellp, valuep);
+            }
+        }
+
+        // This candidate represents a register proven through an instance
+        // boundary, so there is no parent always_ff body to annotate. Lowering
+        // treats null alwaysp as the explicit cell-path contract and builds its
+        // sampling block from the recovered clock/reset interface instead.
+        cand.scopep(scopep);
+        cand.alwaysp(nullptr);
+        cand.stateVscp(stateVscp);
+        cand.nextVscp(nextVscp);
+        cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
+        cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
+        cand.fileline(cellp->fileline());
+        return true;
+    }
 
     class ComboAlwaysAnalyzer final {
     public:
@@ -747,6 +1158,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     static AstNodeAssign* directCondStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
                                                    AstVarScope*& fromVscp, AstNodeExpr*& condp,
+                                                   bool& resetActiveLow,
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
@@ -755,12 +1167,18 @@ class FsmDetectVisitor final : public VNVisitor {
                     "conditional register commit lhs should be normalized to a VarRef");
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp) return nullptr;
-        AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
-        if (!elsep || constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) {
+        if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
+            if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) return nullptr;
+            fromVscp = elsep->varScopep();
+            resetActiveLow = false;
+        } else if (AstVarRef* const thenp = VN_CAST(rhsp->thenp(), VarRef)) {
+            if (constValueStatus(rhsp->elsep(), resetValue) != ConstValueStatus::OK) return nullptr;
+            fromVscp = thenp->varScopep();
+            resetActiveLow = true;
+        } else {
             return nullptr;
         }
         stateVscp = lhsp->varScopep();
-        fromVscp = elsep->varScopep();
         condp = rhsp->condp();
         return assp;
     }
@@ -1168,11 +1586,20 @@ class FsmDetectVisitor final : public VNVisitor {
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             AstNodeExpr* resetCondp = nullptr;
+            bool resetActiveLow = false;
             FsmStateValue resetValue;
             if (AstNodeAssign* const assp
-                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetValue)) {
+                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetActiveLow,
+                                           resetValue)) {
+                // Inlined wrappers can normalize into a compact active-low
+                // assignment form that earlier direct-register FSM support did
+                // not accept. The pre-inline marker is the architectural fence:
+                // it lets wrapper-derived registers use that shape without
+                // changing the meaning of unrelated legacy RTL.
+                if (resetActiveLow && !stateVscp->varp()->attrFsmStateMacro()) return false;
                 cand.resetArcs().emplace_back(resetValue, assp);
                 cand.resetCond() = describeResetCond(resetCondp);
+                cand.resetCond().activeLow = resetActiveLow;
                 cand.hasResetCond(cand.resetCond().varScopep != nullptr);
             } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
                 return false;
@@ -1185,6 +1612,7 @@ class FsmDetectVisitor final : public VNVisitor {
         cand.senses() = describeSenTree(alwaysp->sentreep());
         cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
         cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
+        cand.fileline(alwaysp->fileline());
         return true;
     }
 
@@ -1252,7 +1680,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                             FsmStateSpace& stateSpace) {
         for (const FsmResetArcDesc& resetArc : resetArcs) {
             StateConstLabel label{resetArc.toValue().ascii(), false, 0};
-            if (AstConst* const constp = VN_CAST(resetArc.nodep()->rhsp(), Const)) {
+            if (AstConst* const constp = VN_CAST(resetArc.valuep(), Const)) {
                 label = stateLabelForConst(constp);
             }
             UASSERT_OBJ(
@@ -1761,6 +2189,14 @@ class FsmDetectVisitor final : public VNVisitor {
         // Continuous aliases are unordered hardware connections, so source
         // order should not affect whether an if-chain FSM is recognized.
         collectAliasFromAssign(nodep, m_stateAliases, m_ambiguousStateAliases);
+        collectCellPortAlias(nodep);
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCell* nodep) override {
+        // Cells are matched after the full traversal because linkdot lowers
+        // uninlined port connections into sibling continuous assignments.
+        if (m_scopep) addMacroCell(m_scopep, nodep);
         iterateChildren(nodep);
     }
 
@@ -1774,6 +2210,12 @@ public:
     FsmDetectVisitor(FsmState& state, AstNetlist* rootp)
         : m_state{state} {
         iterate(rootp);
+        for (const std::pair<AstScope*, AstCell*>& macroCell : m_macroCells) {
+            FsmRegisterCandidate reg;
+            if (matchFsmMacroCell(macroCell.first, macroCell.second, reg)) {
+                m_registerCandidates.emplace(reg.stateVscp(), reg);
+            }
+        }
         for (const FsmComboAlways& oneBlock : m_oneBlockAlwayss) processOneBlockAlways(oneBlock);
         for (const FsmComboAlways& combo : m_comboAlwayss) processComboAlways(combo);
         for (const FsmComboAlways& combo : m_nonComboAlwayss) warnUnsupportedComboAlways(combo);
@@ -1805,8 +2247,9 @@ class FsmLowerVisitor final {
     }
 
     static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
-                                       const FsmResetCondDesc&) {
-        return new AstVarRef{flp, resetVscp, VAccess::READ};
+                                       const FsmResetCondDesc& desc) {
+        AstNodeExpr* const refp = new AstVarRef{flp, resetVscp, VAccess::READ};
+        return desc.activeLow ? static_cast<AstNodeExpr*>(new AstLogNot{flp, refp}) : refp;
     }
 
     // Rebuild the original event control from the saved sense description so
@@ -1855,14 +2298,25 @@ class FsmLowerVisitor final {
         scopep->addBlocksp(initActivep);
 
         AstAlwaysPost* const covPostp = new AstAlwaysPost{flp};
-        // Save the previous state as plain sequential logic at the front of
-        // the original always_ff body, then evaluate coverage in post logic
-        // after the delayed state update commits. This avoids a scheduler race
-        // between a separate AstAlwaysPre task and the real state commit.
-        AstNode* const bodysp = alwaysp->stmtsp()->unlinkFrBackWithNext();
-        alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                                         new AstVarRef{flp, stateVscp, VAccess::READ}});
-        alwaysp->addStmtsp(bodysp);
+        bool updatePrevAfterPost = false;
+        if (alwaysp) {
+            // Save the previous state as plain sequential logic at the front of
+            // the original always_ff body, then evaluate coverage in post logic
+            // after the delayed state update commits. This avoids a scheduler
+            // race between a separate AstAlwaysPre task and the real state
+            // commit for direct parent-level registers.
+            AstNode* const bodysp = alwaysp->stmtsp()->unlinkFrBackWithNext();
+            alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
+                                             new AstVarRef{flp, stateVscp, VAccess::READ}});
+            alwaysp->addStmtsp(bodysp);
+        } else {
+            // Primitive/macro-derived register candidates do not have a parent
+            // always_ff body to splice into. Sample coverage first, then save
+            // the current state for the next clock tick; this survives cell
+            // boundary scheduling where the real flop update lives elsewhere.
+            updatePrevAfterPost = true;
+            prevVscp->varp()->setIgnorePostRead();
+        }
 
         for (const V3GraphVertex& vtx : graph.vertices()) {
             const FsmVertex* const vertexp = vtx.as<FsmVertex>();
@@ -1953,6 +2407,10 @@ class FsmLowerVisitor final {
                 covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
             }
         }
+        if (updatePrevAfterPost) {
+            covPostp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
+                                              new AstVarRef{flp, stateVscp, VAccess::READ}});
+        }
 
         AstSenTree* const sentreep = buildSenTree(flp, graph.senses());
         AstActive* const activep = new AstActive{flp, "fsm-coverage", sentreep};
@@ -1972,7 +2430,81 @@ public:
     }
 };
 
+// Wrapper FSM support has two architectural paths. If V3Inline removes the
+// wrapper, the main detector will later see an ordinary parent-scope always_ff;
+// this pre-inline visitor leaves just enough provenance on the q-side state
+// variable for that direct path to accept wrapper-specific normalized shapes.
+// If the wrapper survives, this marker is harmless and the cell-path detector
+// builds a register candidate from the instance itself.
+class FsmMacroMarkerVisitor final : public VNVisitor {
+    static AstPin* findPin(AstCell* cellp, const string& name) {
+        for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (pinp->name() == name) return pinp;
+        }
+        return nullptr;
+    }
+
+    static std::vector<string> cellPinNames(AstCell* cellp) {
+        std::vector<string> names;
+        for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            names.push_back(pinp->name());
+        }
+        return names;
+    }
+
+    static FsmMacroRoles rolesFor(AstCell* cellp) {
+        FsmMacroRoles roles;
+        for (const FsmMacroArg& arg : parseFsmMacroArgList(cellp, true)) {
+            if (arg.key == "d") {
+                roles.dPort = arg.value;
+            } else if (arg.key == "q") {
+                roles.qPort = arg.value;
+            } else if (arg.key == "clk" || arg.key == "rst" || arg.key == "rstval") {
+                // These options are consumed by the non-inlined cell detector.
+                // The pre-inline marker only needs d/q to tag the q-side var.
+            } else {
+                cellp->v3warn(COVERIGN, "Ignoring unsupported: unknown fsm_state_macro option '"
+                                            + arg.key + "'");
+            }
+        }
+        inferKnownFsmMacroRoles(cellp, roles);
+        inferConventionalFsmMacroPorts(cellPinNames(cellp), roles);
+        return roles;
+    }
+
+    void visit(AstCell* cellp) override {
+        const FsmMacroRoles roles = rolesFor(cellp);
+        if (!roles.dPort.empty() && !roles.qPort.empty()) {
+            AstPin* const dp = findPin(cellp, roles.dPort);
+            AstPin* const qp = findPin(cellp, roles.qPort);
+            if (dp && qp && dp->exprp() && qp->exprp() && VN_IS(dp->exprp(), VarRef)
+                && VN_IS(qp->exprp(), VarRef)) {
+                AstVarRef* const qrefp = VN_AS(qp->exprp(), VarRef);
+                // The q-side parent variable is the point where the wrapper
+                // abstraction collapses into direct RTL after inlining.
+                // Marking only that variable keeps the provenance narrow:
+                // transition detection still has to prove the d/q FSM pair.
+                qrefp->varp()->attrFsmStateMacro(true);
+            } else if (cellp->attrFsmStateMacro() && dp && qp && dp->exprp() && qp->exprp()) {
+                cellp->v3warn(COVERIGN, "Ignoring unsupported: fsm_state_macro d and q "
+                                          "connections must be simple variables");
+            }
+        }
+        iterateChildren(cellp);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit FsmMacroMarkerVisitor(AstNetlist* rootp) { iterate(rootp); }
+};
+
 }  // namespace
+
+void V3FsmDetect::markMacroStateVars(AstNetlist* rootp) {
+    UINFO(2, __FUNCTION__ << ":");
+    FsmMacroMarkerVisitor marker{rootp};
+}
 
 void V3FsmDetect::detect(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");

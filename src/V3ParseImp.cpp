@@ -39,6 +39,7 @@
 #include "V3PreShell.h"
 #include "V3Stats.h"
 
+#include <cctype>
 #include <sstream>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -218,6 +219,21 @@ string V3ParseImp::lexParseTag(const char* textp) {
     string tmp = textp + std::strlen("/*verilator tag ");
     string::size_type pos = tmp.rfind("*/");
     if (pos != string::npos) tmp.erase(pos);
+    return tmp;
+}
+
+string V3ParseImp::lexParseFsmStateMacro(const char* textp) {
+    // The annotation is a coverage hint whose valid keys belong to FSM
+    // detection, not to the language lexer. Preserve the raw option text here
+    // so the detecting pass can issue diagnostics in the same context where it
+    // decides whether a wrapper is usable.
+    string tmp = textp + std::strlen("/*verilator fsm_state_macro");
+    // The lexer rule that calls this helper includes the closing marker, so the
+    // parser-side contract is to strip that fixed suffix and leave option
+    // validation to FSM detection.
+    tmp.erase(tmp.length() - std::strlen("*/"));
+    while (!tmp.empty() && std::isspace(static_cast<unsigned char>(tmp.front()))) tmp.erase(0, 1);
+    while (!tmp.empty() && std::isspace(static_cast<unsigned char>(tmp.back()))) tmp.pop_back();
     return tmp;
 }
 

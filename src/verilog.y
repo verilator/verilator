@@ -806,6 +806,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
 %token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
+%token<strp>            yVL_FSM_STATE_MACRO       "/*verilator fsm_state_macro*/"
 %token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
@@ -3302,8 +3303,19 @@ instnameList<nodep>:
         ;
 
 instnameParen<nodep>:
-                id instRangeListE '(' instPinListE ')'
-                        { $$ = GRAMMARP->createCell($<fl>1, *$1, $4, $2); }
+                id instRangeListE '(' instPinListE ')' instFsmStateMacroE
+                        // fsm_state_macro describes the transparent register
+                        // relationship of this instance. Store it on AstCell so
+                        // both the pre-inline provenance marker and the
+                        // surviving-cell detector consume the same annotation.
+                        { AstCell* const cellp = VN_AS(GRAMMARP->createCell($<fl>1, *$1, $4, $2), Cell);
+                          if ($6) cellp->attrFsmStateMacro(*$6);
+                          $$ = cellp; }
+        ;
+
+instFsmStateMacroE<strp>:
+                /* empty */                             { $$ = nullptr; }
+        |       yVL_FSM_STATE_MACRO                     { $$ = $1; }
         ;
 
 instnameParenUdpn<nodep>:  // IEEE: part of udp_instance when no name_of_instance

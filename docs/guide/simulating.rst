@@ -262,6 +262,36 @@ the extracted coverage model:
 - ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
   arcs that would otherwise be skipped by the conservative extractor.
 
+State registers may also be wrapped by a transparent instance, for
+example a project flop wrapper or primitive. Verilator can
+infer these wrappers automatically when the instance has exactly one
+unambiguous conventional next-state input and state output, and the
+connected variables also pair with supported transition logic in the
+parent scope. The conventional port names are:
+
+- ``state_i``, ``d_i``, or ``d`` for the next-state input
+- ``state_o``, ``q_o``, or ``q`` for the registered state output
+- ``clk_i`` or ``clk`` for the clock
+- ``rst_ni`` or ``rst_n`` for an active-low reset, and ``rst_i`` or
+  ``rst`` for an active-high reset
+
+The ``prim_flop`` and ``prim_sparse_fsm_flop`` wrappers are recognized
+with their conventional ``ResetValue`` parameter. Other conventional
+wrappers may also recover reset targets from simple
+``ResetValue``, ``RstVal``, or ``RESET_VALUE`` parameter connections. If
+reset metadata is missing or cannot be resolved to a static state value,
+Verilator may still emit FSM state and transition coverage, but reset arcs
+are omitted.
+
+For non-standard wrappers, attach ``/*verilator fsm_state_macro*/`` to the
+instance. Optional key/value overrides may name the wrapper ports:
+``d=<port>``, ``q=<port>``, ``clk=<port>``, ``rst=<port>``, and
+``rstval=<parameter>``. The ``d`` and ``q`` roles must be recoverable from
+either the overrides or conventional inference. Reset polarity is inferred
+from conventional reset port names, or from the wrapper's reset event/control
+AST when an annotation names a non-standard reset port. Custom reset polarity
+overrides are not currently supported.
+
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather
 than printing them alongside non-reset arcs. Use

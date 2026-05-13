@@ -197,6 +197,7 @@ public:
     FileLine* lexFileline() const { return m_lexFileline; }
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp) VL_MT_DISABLED;
     static string lexParseTag(const char* textp) VL_MT_DISABLED;
+    static string lexParseFsmStateMacro(const char* textp) VL_MT_DISABLED;
     static double lexParseTimenum(const char* text) VL_MT_DISABLED;
     void lexPpline(const char* textp) VL_MT_DISABLED;
     void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnOff) VL_MT_DISABLED;
