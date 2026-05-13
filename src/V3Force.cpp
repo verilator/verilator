@@ -1096,7 +1096,12 @@ class ForceReplaceVisitor final : public VNVisitor {
             return;
         }
 
-        AstVarRef* const baseRefp = m_state.getOneVarRef(nodep);
+        AstNode* const basep = AstArraySel::baseFromp(nodep, true);
+        AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
+        if (!baseRefp) {
+            iterateChildren(nodep);
+            return;
+        }
         AstVar* const varp = baseRefp->varp();
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
         // Skip non-forceable reads, reads we intentionally protected earlier, and intermediate
