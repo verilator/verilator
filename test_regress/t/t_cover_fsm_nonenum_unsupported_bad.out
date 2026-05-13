@@ -1,15 +1,30 @@
-%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:33:7: Ignoring unsupported: FSM coverage on non-enum state variable 't.wide_state' with width 33 wider than 32 bits
-   33 |       case (wide_state)
-      |       ^~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:68:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_state' with multiple labels for the same value 0: IDLE and RESET
+   68 |         RESET: duplicate_state <= IDLE;
+      |         ^~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:48:28: Ignoring unsupported: FSM coverage on non-enum state variable 't.target_state': target value 2 is not present in the inferred state space
-   48 |         2'h1: target_state <= 2'h2;
-      |                            ^~
-%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:62:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_state' with multiple labels for the same value 0: IDLE and RESET
-   62 |         RESET: duplicate_state <= IDLE;
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:84:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.xz_case_state' with X/Z state encoding values
+   84 |         2'b1x: xz_case_state <= 2'h0;
       |         ^~~~~
-%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:78:9: Ignoring unsupported: FSM coverage on non-enum state variable 't.xz_case_state' with X/Z state encoding values
-   78 |         2'b1x: xz_case_state <= 2'h0;
-      |         ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:97:64: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_ternary_target_state' with multiple labels for the same value 0: IDLE and RESET
+   97 |         IDLE: duplicate_ternary_target_state <= start ? BUSY : RESET;
+      |                                                                ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:110:62: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_ternary_then_target_state' with multiple labels for the same value 0: IDLE and RESET
+  110 |         IDLE: duplicate_ternary_then_target_state <= start ? RESET : BUSY;
+      |                                                              ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:125:36: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_if_target_state' with multiple labels for the same value 0: IDLE and RESET
+  125 |       duplicate_if_target_state <= RESET;
+      |                                    ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:134:57: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_if_ternary_then_target_state' with multiple labels for the same value 0: IDLE and RESET
+  134 |       duplicate_if_ternary_then_target_state <= start ? RESET : BUSY;
+      |                                                         ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:146:64: Ignoring unsupported: FSM coverage on non-enum state variable 't.duplicate_if_ternary_else_target_state' with multiple labels for the same value 0: IDLE and RESET
+  146 |       duplicate_if_ternary_else_target_state <= start ? BUSY : RESET;
+      |                                                                ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:201:37: Ignoring unsupported: FSM coverage on non-enum state variable 't.xz_rhs_probe_state' with non-constant target state values
+  201 |         2'h0: xz_rhs_probe_state <= 2'b0x;
+      |                                     ^~~~~
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:214:54: Ignoring unsupported: FSM coverage on non-enum state variable 't.nonconst_ternary_target_state' with non-constant target state values
+  214 |         2'h0: nonconst_ternary_target_state <= start ? 2'h1 : {1'b0, start};
+      |                                                      ^
 %Error: Exiting due to

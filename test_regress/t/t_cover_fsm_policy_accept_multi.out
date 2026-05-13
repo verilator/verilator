@@ -97,13 +97,12 @@
             else begin
 %000002       case (state)
         // [FSM coverage]
-%000001        // [fsm_arc t.forced_u.state::ANY->S0[reset]] [reset arc, excluded from %]
-%000002        // [fsm_arc t.forced_u.state::S0->S1]
-%000002        // [fsm_arc t.forced_u.state::S1->S2]
-%000001        // [fsm_state t.forced_u.state::S0]
-%000002        // [fsm_state t.forced_u.state::S1]
-%000002        // [fsm_state t.forced_u.state::S2]
-%000000        // [fsm_state t.forced_u.state::S3] *** UNCOVERED ***
+%000002        // [fsm_arc t.forced_u.state::2'h0->2'h1]
+%000002        // [fsm_arc t.forced_u.state::2'h1->2'h2]
+%000001        // [fsm_arc t.forced_u.state::ANY->2'h0[reset]] [reset arc, excluded from %]
+%000001        // [fsm_state t.forced_u.state::2'h0]
+%000002        // [fsm_state t.forced_u.state::2'h1]
+%000002        // [fsm_state t.forced_u.state::2'h2]
                 2'd0: state <= 2'd1;
                 2'd1: state <= 2'd2;
                 default: state <= 2'd0;
