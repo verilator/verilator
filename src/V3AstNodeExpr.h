@@ -582,6 +582,7 @@ class AstAbortOn final : public AstNodeExpr {
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
     VAbortKind m_kind;
+
 public:
     AstAbortOn(FileLine* fl, VAbortKind kind, AstNodeExpr* condp, AstNodeExpr* propp)
         : ASTGEN_SUPER_AbortOn(fl)
