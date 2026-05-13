@@ -6564,9 +6564,11 @@ property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item
                 id variable_dimensionListE
-                        { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
+                        { VARDECL(VAR);
+                          $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
-                        { $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                        { VARDECL(VAR);
+                          $$ = VARDONEA($<fl>1, *$1, $2, $4);
                           BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
