@@ -574,17 +574,25 @@ public:
 };
 
 // === AstNodeExpr ===
-class AstAcceptOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.12.14: accept_on (cond) prop  (async abort, property succeeds)
+class AstAbortOn final : public AstNodeExpr {
+    // IEEE 1800-2023 16.12.14: accept_on/reject_on/sync_accept_on/sync_reject_on
+    // (cond) prop. The four operators share an identical AST shape and lowering
+    // scaffolding -- VAbortKind selects between Accept/Reject verdict and
+    // Async/Sync sampling.
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
+    VAbortKind m_kind;
 public:
-    AstAcceptOn(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* propp)
-        : ASTGEN_SUPER_AcceptOn(fl) {
+    AstAbortOn(FileLine* fl, VAbortKind kind, AstNodeExpr* condp, AstNodeExpr* propp)
+        : ASTGEN_SUPER_AbortOn(fl)
+        , m_kind{kind} {
         this->condp(condp);
         this->propp(propp);
     }
-    ASTGEN_MEMBERS_AstAcceptOn;
+    ASTGEN_MEMBERS_AstAbortOn;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VAbortKind kind() const { return m_kind; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -2171,23 +2179,6 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
-class AstRejectOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.12.14: reject_on (cond) prop  (async abort, property fails)
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := propp : AstNodeExpr
-public:
-    AstRejectOn(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* propp)
-        : ASTGEN_SUPER_RejectOn(fl) {
-        this->condp(condp);
-        this->propp(propp);
-    }
-    ASTGEN_MEMBERS_AstRejectOn;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    bool isMultiCycleSva() const override { return true; }
-};
 class AstRising final : public AstNodeExpr {
     // Verilog $rising_gclk
     // @astgen op1 := exprp : AstNodeExpr
@@ -2665,40 +2656,6 @@ public:
         return m_name == sp->m_name;
     }
     int instrCount() const override { return widthInstrs(); }
-};
-class AstSyncAcceptOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.12.14: sync_accept_on (cond) prop  (sync abort, property succeeds)
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := propp : AstNodeExpr
-public:
-    AstSyncAcceptOn(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* propp)
-        : ASTGEN_SUPER_SyncAcceptOn(fl) {
-        this->condp(condp);
-        this->propp(propp);
-    }
-    ASTGEN_MEMBERS_AstSyncAcceptOn;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    bool isMultiCycleSva() const override { return true; }
-};
-class AstSyncRejectOn final : public AstNodeExpr {
-    // IEEE 1800-2023 16.12.14: sync_reject_on (cond) prop  (sync abort, property fails)
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := propp : AstNodeExpr
-public:
-    AstSyncRejectOn(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* propp)
-        : ASTGEN_SUPER_SyncRejectOn(fl) {
-        this->condp(condp);
-        this->propp(propp);
-    }
-    ASTGEN_MEMBERS_AstSyncRejectOn;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    bool isMultiCycleSva() const override { return true; }
 };
 class AstSysIgnore final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNodeExpr] // Expressions to output (???)

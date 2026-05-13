@@ -788,13 +788,10 @@ class SvaNfaBuilder final {
     }
 
     // IEEE 1800-2023 16.12.14 property abort operators. Sync and async share
-    // the same encoding: AstSampled already gives matured values at every
+    // the same NFA encoding: AstSampled already gives matured values at every
     // maturing clocking event, and async firing "between clocks" is not
-    // observable in a cycle-based model.
-    enum class AbortKind : uint8_t { AcceptAsync, AcceptSync, RejectAsync, RejectSync };
-    static bool isAcceptKind(AbortKind k) {
-        return k == AbortKind::AcceptAsync || k == AbortKind::AcceptSync;
-    }
+    // observable in a cycle-based model. VAbortKind selects accept vs reject
+    // verdict (sync vs async only changes the user-visible spelling).
 
     // Build `condp && !outer_1 && !outer_2 ...` (unsampled).
     AstNodeExpr* abortFireExpr(AstNodeExpr* condp, FileLine* flp) {
@@ -805,7 +802,7 @@ class SvaNfaBuilder final {
     }
 
     BuildResult buildAbortOn(AstNodeExpr* condp, AstNodeExpr* bodyp, SvaStateVertex* entryVtxp,
-                             AbortKind kind, FileLine* flp) {
+                             VAbortKind kind, FileLine* flp) {
         // Snapshot pre-body vertices so post-build diff yields the body's sub-NFA.
         std::unordered_set<const V3GraphVertex*> preExisting;
         for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
@@ -833,7 +830,7 @@ class SvaNfaBuilder final {
             return sampp;
         };
 
-        if (isAcceptKind(kind)) {
+        if (kind.isAccept()) {
             // Match-only sink fed by $sampled(abort-fire) from every live source;
             // registered as midSource so it never contributes a reject. The body
             // terminal is already in abortSources, so we don't fold abort-fire
@@ -913,21 +910,8 @@ public:
         if (AstSWithin* const withinp = VN_CAST(nodep, SWithin)) {
             return buildSWithin(withinp, entryVtxp, isTopLevelStep);
         }
-        if (AstAcceptOn* const ap = VN_CAST(nodep, AcceptOn)) {
-            return buildAbortOn(ap->condp(), ap->propp(), entryVtxp, AbortKind::AcceptAsync,
-                                ap->fileline());
-        }
-        if (AstRejectOn* const rp = VN_CAST(nodep, RejectOn)) {
-            return buildAbortOn(rp->condp(), rp->propp(), entryVtxp, AbortKind::RejectAsync,
-                                rp->fileline());
-        }
-        if (AstSyncAcceptOn* const ap = VN_CAST(nodep, SyncAcceptOn)) {
-            return buildAbortOn(ap->condp(), ap->propp(), entryVtxp, AbortKind::AcceptSync,
-                                ap->fileline());
-        }
-        if (AstSyncRejectOn* const rp = VN_CAST(nodep, SyncRejectOn)) {
-            return buildAbortOn(rp->condp(), rp->propp(), entryVtxp, AbortKind::RejectSync,
-                                rp->fileline());
+        if (AstAbortOn* const ap = VN_CAST(nodep, AbortOn)) {
+            return buildAbortOn(ap->condp(), ap->propp(), entryVtxp, ap->kind(), ap->fileline());
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
