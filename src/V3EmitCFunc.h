@@ -1627,8 +1627,7 @@ public:
             emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
                        nodep->rhsp(), nullptr);
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
-            if (parent->dtypep() && parent->dtypep()->skipRefp()->charIQWN() != "N"
-                && !((parent->op1p() && parent->op1p()->isWide())
+            if (parent->dtypep() && !((parent->op1p() && parent->op1p()->isWide())
                      || (parent->op2p() && parent->op2p()->isWide()))) {
                 //if our lhsp is a queue make sure we streamR and return the correct type.
                 //if either side is wide or the previous node is string type dont use this case
