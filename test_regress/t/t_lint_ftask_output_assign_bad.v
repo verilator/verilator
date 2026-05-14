@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    input  logic in,
-    output wire  wire_out,
+    input logic in,
+    output wire wire_out,
     output logic reg_out
 );
   function void set_f(output set_out, input set_in);

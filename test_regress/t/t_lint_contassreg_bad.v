@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 
-module t(r);
+module t (
+    r
+);
 
   output r;
 

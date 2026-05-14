@@ -22,5 +22,5 @@ module t;
     // verilog_format: on
     $write("*-* All Finished *-*\n");
     $finish;
-   end
+  end
 endmodule

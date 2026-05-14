@@ -7,6 +7,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 // Note: no hier_block pragma here to validate partial hier_block design
-module subB (output bit [31:0] out);
+module subB (
+    output bit [31:0] out
+);
   assign out = `VALUE_B;
 endmodule

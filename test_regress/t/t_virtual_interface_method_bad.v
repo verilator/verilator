@@ -9,27 +9,27 @@ class ExampleClass;
 
   task run();
     v_if.x();
-  endtask: run
+  endtask : run
 
   function void bind_if(virtual example_if v_if);
     this.v_if = v_if;
-  endfunction: bind_if
-endclass:  ExampleClass
+  endfunction : bind_if
+endclass : ExampleClass
 
-interface example_if();
-  logic      clk;
-  logic      rstn;
-  logic[7:0] x;
-endinterface: example_if
+interface example_if ();
+  logic clk;
+  logic rstn;
+  logic [7:0] x;
+endinterface : example_if
 
 module t;
 
-  example_if example_if_inst();
+  example_if example_if_inst ();
 
-  initial begin: main
+  initial begin : main
     automatic ExampleClass exampleClass = new();
 
     exampleClass.bind_if(example_if_inst);
     exampleClass.run();
-  end: main
-endmodule: t
+  end : main
+endmodule : t

@@ -10,14 +10,15 @@
 // verilog_format: on
 
 module t;
-  reg [1:0] a=0, b=1;
+  reg [1:0] a = 0, b = 1;
   reg [1:0] r;
   initial begin
     r = 2'b00;
     assign r = 2'b01;
     `checkb(r, 2'b01)
-    r = 2'b00; // ignored
-    #1; `checkb(r, 2'b01)
+    r = 2'b00;  // ignored
+    #1;
+    `checkb(r, 2'b01)
     deassign r;
     `checkb(r, 2'b01)
     r = 2'b00;
@@ -29,12 +30,16 @@ module t;
     a = 2'b00;
     `checkb(r, 2'b00)
     force r = a + b;
-    a = 2'b00; b = 2'b00;
-    #1; `checkb(r, 2'b00)
-    a = 2'b01; b = 2'b01;
-    #1; `checkb(r, 2'b10)
-    assign r = b; // covered
-    r = 2'b11; // ignored
+    a = 2'b00;
+    b = 2'b00;
+    #1;
+    `checkb(r, 2'b00)
+    a = 2'b01;
+    b = 2'b01;
+    #1;
+    `checkb(r, 2'b10)
+    assign r = b;  // covered
+    r = 2'b11;  // ignored
     `checkb(r, 2'b10)
     release r;
     `checkb(r, 2'b01)

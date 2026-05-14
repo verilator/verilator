@@ -4,12 +4,9 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  i
-  );
-
-  input [1:0] i;
+module t (
+    input [1:0] i
+);
 
   always_comb begin
     case (i)

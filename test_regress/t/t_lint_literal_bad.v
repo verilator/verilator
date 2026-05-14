@@ -4,8 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
-module t (
-);
+module t;
 
   localparam the_localparam = 8'd256;
 

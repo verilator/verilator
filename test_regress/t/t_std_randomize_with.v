@@ -10,8 +10,8 @@ class external_cl;
   logic [7:0] dyn[][];
 
   function new();
-    x   = 0;
-    y   = 0;
+    x = 0;
+    y = 0;
     dyn = new[4];
     foreach (dyn[i]) dyn[i] = new[1];
   endfunction
@@ -21,7 +21,7 @@ module t;
   initial begin
     int a, b;
     automatic int limit = 10;
-    external_cl   obj;
+    external_cl obj;
 
     // Test 1: Basic std::randomize with 'with' clause
     if (std::randomize(

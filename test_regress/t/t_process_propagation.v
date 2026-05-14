@@ -56,10 +56,8 @@ module t;
     ->evt1;
 
     @evt2 begin
-      if (!foo.event_received)
-        $stop;
-      if (bar.event_received)
-        $stop;
+      if (!foo.event_received) $stop;
+      if (bar.event_received) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -7,40 +7,40 @@
                                        : ... note: In instance 't'
    14 |         o1 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:22:7: Writing to an output automatic variable of a task after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:23:9: Writing to an output automatic variable of a task after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   22 |       o1 = 0;
-      |       ^~
-%Error: t/t_timing_func_fork_bad.v:29:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
-                                       : ... note: In instance 't'
-   29 |         f2 = #5 0;
+   23 |         o1 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:31:9: Writing to an inout automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:31:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   31 |         io2 = 0;
+   31 |         f2 = #5 0;
+      |         ^~
+%Error: t/t_timing_func_fork_bad.v:33:9: Writing to an inout automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+                                       : ... note: In instance 't'
+   33 |         io2 = 0;
       |         ^~~
-%Error: t/t_timing_func_fork_bad.v:41:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:43:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   41 |         f3 = 0;
+   43 |         f3 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:42:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:44:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   42 |         o3 = 0;
+   44 |         o3 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:50:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:52:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   50 |         f4 = @e 0;
+   52 |         f4 = @e 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:52:9: Writing to an inout automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:54:9: Writing to an inout automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   52 |         io4 = 0;
+   54 |         io4 = 0;
       |         ^~~
-%Error: t/t_timing_func_fork_bad.v:63:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:65:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   63 |         f5 = 0;
+   65 |         f5 = 0;
       |         ^~
-%Error: t/t_timing_func_fork_bad.v:64:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+%Error: t/t_timing_func_fork_bad.v:66:9: Writing to an output automatic variable of a function after a timing control is not allowed (IEEE 1800-2023 13.2.2)
                                        : ... note: In instance 't'
-   64 |         o5 = 0;
+   66 |         o5 = 0;
       |         ^~
 %Error: Exiting due to

@@ -66,12 +66,12 @@ module t;
 `endif
 
   initial begin
-  $display("'%p'", printed_obj);
+    $display("'%p'", printed_obj);
 `ifdef OBJ_TYPE2
-  $display("'%p'", printed_obj2);
+    $display("'%p'", printed_obj2);
 `endif
 
-  $write("*-* All Finished *-*\n");
-  $finish;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule

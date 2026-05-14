@@ -6,21 +6,18 @@
 // SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+module t (
+    input clk
+);
 
   integer counter = 0;
-  import "DPI-C" context function int  dpii_increment(inout int counter);
+  import "DPI-C" context function int dpii_increment(inout int counter);
 
   function void func();
   endfunction : func
 
   always @(posedge clk) begin
-    if(dpii_increment(counter) == 1) begin
+    if (dpii_increment(counter) == 1) begin
       // unreachable
       func();
 

@@ -19,7 +19,7 @@ class cls;
 endclass
 
 module t;
-  intf intf();
+  intf intf ();
   cls c;
   initial begin
     intf.status = 'hdeadbeef;

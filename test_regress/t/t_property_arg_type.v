@@ -7,17 +7,17 @@
 // Test to assert that property argument type is not retained from
 // the previous variable and is not causing errors
 
-module t(input clk);
+module t (
+    input clk
+);
   genvar i;
   property prop(prop_arg);
-    @(posedge clk)
-    (prop_arg |-> prop_arg);
+    @(posedge clk) (prop_arg |-> prop_arg);
   endproperty
 
   wire w;
   property prop2(prop_arg);
-    @(posedge clk)
-    (prop_arg |-> prop_arg);
+    @(posedge clk) (prop_arg |-> prop_arg);
   endproperty
 
   initial begin

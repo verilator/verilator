@@ -7,17 +7,17 @@ module t;
 
   function void do_stuff();
     static int some_int;
-    begin: block0
+    begin : block0
       static int some_int;
     end
-    begin: block1
+    begin : block1
       static int some_int;
     end
     begin
       static int some_int;
     end
-    begin: block2
-      begin: block3
+    begin : block2
+      begin : block3
         static int some_int;
       end
       begin
