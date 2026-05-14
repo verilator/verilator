@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_iface_name_collision.sv"
 
 test.lint(verilator_flags2=["--lint-only -Werror-MULTIDRIVEN -Werror-UNOPTFLAT"])
 
