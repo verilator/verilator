@@ -10,9 +10,7 @@
 
 module t;
   logic forced_sig;
-  typedef struct {
-    logic [1:0] d[0:1];
-  } payload_t;
+  typedef struct {logic [1:0] d[0:1];} payload_t;
   payload_t s;
   initial begin
     force forced_sig = 1'b1;

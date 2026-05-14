@@ -28,15 +28,22 @@ Verilator 5.049 devel
 * Support procedural continuous assign/deassign (#7493). [Artur Bieniek, Antmicro Ltd.]
 * Support randsequence production function ports (#7522). [Yilou Wang]
 * Support followed-by operators `#-#` and `#=#` in properties (#7523). [Yilou Wang]
+* Support expression coverage on assign statements (#7542) (#7543). [Thomas Brown]
 * Support TERMUX (#7559). [Laurent CHARRIER]
 * Support SVA goto repetition with range `[->M:N]` (#7569). [Yilou Wang]
+* Support procedural concurrent assertions with inferred clock (#7581). [Yilou Wang]
+* Support calling interface functions without parens (#7584). [Krzysztof Bieganski, Antmicro Ltd.]
 * Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
 * Add error on mixed-initialization (#7352) (#7357).
-* Improve `--coverage-fsm` (#7490) (#7529) (#7561). [Yogish Sekhar]
+* Improve `--coverage-fsm` (#7490) (#7529) (#7561) (#7573). [Yogish Sekhar]
 * Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
 * Change JSON to include parameter constant mnemonics for FSM Coverage (#7531). [Yogish Sekhar]
+* Optimize emitting to_string() for compiler speedup (#7468). [Jakub Michalski, Antmicro Ltd.]
 * Optimize additional DFG peephole cases (#7553). [Varun Koyyalagunta, Testorrent USA, Inc.]
+* Optimize forced signal handling (#7554 partial) (#7572) (#7504_. [Krzysztof Bieganski, Artur Bieniek, Antmicro Ltd.]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
+* Fix segmentation fault when using --trace with --lib-create (#7299) (#7518). [anonkey]
+* Fix destructive event state before dynamic waits (#7340). [Nick Brereton]
 * Fix generic interface port forwarded to a nested instance (#7454) (#7457). [Yilou Wang]
 * Fix internal error on multi-cycle SVA under default clocking (#7472) (#7506). [Yilou Wang]
 * Fix internal error instead of missing prototype error (#7485). [Alex Solomatnikov]
@@ -54,6 +61,9 @@ Verilator 5.049 devel
 * Fix exponential expansion in V3Gate (#7550). [Geza Lore, Testorrent USA, Inc.]
 * Fix display of %m in non-first argument (#7574).
 * Fix floating point compile warning on min/max delays.
+* Fix force of unpacked arrays (#7579) (#7580). [Zubin Jain]
+* Fix property argument retaining type of the previous variable (#7582). [Jakub Michalski]
+* Fix NBA to whole arrays (#7583) (#7575). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.048 2026-04-26
