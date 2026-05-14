@@ -1106,7 +1106,8 @@ class ForceReplaceVisitor final : public VNVisitor {
                     if (const AstConst* const lsbConstp = VN_CAST(nodep->lsbp(), Const)) {
                         const int selLsb = lsbConstp->toSInt();
                         const int selMsb = selLsb + nodep->width() - 1;
-                        if (!ForceState::selOverlapsAnyForce(*varInfo, selLsb, selMsb)) {
+                        if (!varp->isSigPublic()
+                            && !ForceState::selOverlapsAnyForce(*varInfo, selLsb, selMsb)) {
                             ForceState::markNonReplaceable(refp);
                             visit(static_cast<AstNode*>(nodep));
                             return;
