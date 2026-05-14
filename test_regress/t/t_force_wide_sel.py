@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(verilator_flags2=["--stats"])
+
+test.file_grep(test.stats, r'Non-overlapping force sels\s+(\d+)', 2)
 
 test.execute()
 
