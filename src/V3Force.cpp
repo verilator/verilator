@@ -1088,6 +1088,33 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
+    void visit(AstSel* nodep) override {
+        // Replace Sel on a wide with readSelI/Q/W to avoid materializing the full value
+        if (AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef)) {
+            if (!ForceState::isNotReplaceable(refp) && refp->access().isReadOnly()) {
+                AstVar* const varp = refp->varp();
+                const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+                if (varInfo && !varInfo->m_forceRdVscp && !varInfo->m_forces.empty()
+                    && ForceState::isBitwiseDType(varp) && varp->dtypep()->isWide()) {
+                    FileLine* const flp = nodep->fileline();
+                    ForceState::markNonReplaceable(refp);
+                    AstVarRef* const refClonep = refp->cloneTreePure(false);
+                    ForceState::markNonReplaceable(refClonep);
+                    AstCMethodHard* const callp = new AstCMethodHard{
+                        flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::READ},
+                        VCMethod::FORCE_READ_SEL, ForceState::makeConst32(flp, varp->width())};
+                    callp->addPinsp(refClonep);
+                    callp->addPinsp(nodep->lsbp()->cloneTreePure(false));
+                    callp->addPinsp(ForceState::makeConst32(flp, nodep->width()));
+                    callp->dtypeFrom(nodep);
+                    nodep->replaceWith(callp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+        }
+        visit(static_cast<AstNode*>(nodep));
+    }
     void visit(AstArraySel* nodep) override {
         if (nodep->backp() && VN_IS(nodep->backp(), ArraySel)) {
             // Only the outermost unpacked array selection should become a force-aware read;
