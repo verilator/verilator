@@ -31,7 +31,6 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <concepts>
 #include <deque>
 #include <map>
 #include <memory>
@@ -616,7 +615,6 @@ public:
         }
         return m_deque[index];
     }
-
     // Setting. Verilog: assoc[index] = v (should only be used by queues)
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
@@ -2012,7 +2010,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull) {};
+    VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
