@@ -111,7 +111,8 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             case 'P':
                 if (nodep->isWide()) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
-                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                                "Wide op " << nodep->prettyTypeName()
+                                           << " w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
                     putOut();
                     if (!m_wideTempRefp->selfPointer().isEmpty()) {
