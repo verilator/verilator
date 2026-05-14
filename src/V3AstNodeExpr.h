@@ -581,7 +581,7 @@ class AstAbortOn final : public AstNodeExpr {
     // Async/Sync sampling.
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := propp : AstNodeExpr
-    VAbortKind m_kind;
+    VAbortKind m_kind{VAbortKind::ACCEPT_ON};
 
 public:
     AstAbortOn(FileLine* fl, VAbortKind kind, AstNodeExpr* condp, AstNodeExpr* propp)

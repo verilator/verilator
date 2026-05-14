@@ -810,7 +810,7 @@ class SvaNfaBuilder final {
         m_outerAbortStack.push_back(condp);
         const BuildResult bodyResult = buildExpr(bodyp, entryVtxp, /*isTopLevelStep=*/false);
         m_outerAbortStack.pop_back();
-        if (!bodyResult.valid()) return bodyResult;
+        UASSERT_OBJ(bodyResult.valid(), bodyp, "abort body must be a valid SVA expression");
 
         // Live-thread sources for the abort edge: entry + new body vertices,
         // minus reject sinks (they carry reject fuel, not live-thread fuel).

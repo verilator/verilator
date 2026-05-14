@@ -49,27 +49,16 @@ public:
         SYNC_REJECT_ON  // sync_reject_on(cond) prop: sampled at matured clock, fails
     };
     enum en m_e;
-    VAbortKind()
-        : m_e{ACCEPT_ON} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VAbortKind(en _e)
         : m_e{_e} {}
-    explicit VAbortKind(int _e)
-        : m_e(static_cast<en>(_e)) {}
-    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
             = {"accept_on", "reject_on", "sync_accept_on", "sync_reject_on"};
         return names[m_e];
     }
     bool isAccept() const { return m_e == ACCEPT_ON || m_e == SYNC_ACCEPT_ON; }
-    bool isSync() const { return m_e == SYNC_ACCEPT_ON || m_e == SYNC_REJECT_ON; }
 };
-constexpr bool operator==(const VAbortKind& lhs, const VAbortKind& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VAbortKind& lhs, VAbortKind::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VAbortKind::en lhs, const VAbortKind& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
