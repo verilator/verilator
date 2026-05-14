@@ -490,15 +490,6 @@ class SvaNfaBuilder final {
         }
         const int minN = getConstInt(repp->countp());
         UASSERT_OBJ(minN >= 0, repp, "ConsRep count must be non-negative (V3Width invariant)");
-        // Exact-repetition ConsRep is currently unrolled into minN vertices, so
-        // we cap minN to keep compile size bounded. An unbounded or ranged rep
-        // has already been rewritten to a counter-FSM path elsewhere.
-        constexpr int kConsRepLimit = 256;
-        // LCOV_EXCL_START -- compile-size guard; exercised only with >256-rep inputs
-        if (minN > kConsRepLimit && !repp->unbounded() && !repp->maxCountp()) {
-            return BuildResult::fail();
-        }
-        // LCOV_EXCL_STOP
 
         // Sum sites across prefix + unbounded/range tail so one hoist covers
         // every check edge of this repetition.
