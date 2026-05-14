@@ -8,12 +8,6 @@
 // SPDX-FileCopyrightText: 2026 Zubin Jain
 // SPDX-License-Identifier: CC0-1.0
 
-// verilog_format: off
-`define stop $stop
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-// verilog_format: on
-
 module t;
   logic forced_sig;
   typedef struct {
