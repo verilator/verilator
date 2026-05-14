@@ -383,10 +383,24 @@ class InlineRelinkVisitor final : public VNVisitor {
     }
     void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
-        nodep->inlinedDots(VString::dot(m_cellp->name(), ".", nodep->inlinedDots()));
+        // Save original inlinedDots to determine if this VarXRef is from the current
+        // module being inlined (empty) or from a previously inlined module (non-empty)
+        const string origInlinedDots = nodep->inlinedDots();
+        nodep->inlinedDots(VString::dot(m_cellp->name(), ".", origInlinedDots));
         for (string tryname = nodep->dotted(); true;) {
             if (m_renamedInterfaces.count(tryname)) {
-                nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
+                // Only update dotted() if either:
+                // 1. This VarXRef is from the current module (origInlinedDots empty), OR
+                // 2. The matching name has already been renamed (contains __DOT__)
+                // This prevents collision (#5120) where a parent's original port name
+                // matches a VarXRef from a previously inlined child module that has
+                // a local interface with the same name (whose dotted was not updated
+                // because local interface var names don't match dotted paths).
+                const bool fromCurrentModule = origInlinedDots.empty();
+                const bool matchIsRenamed = tryname.find("__DOT__") != string::npos;
+                if (fromCurrentModule || matchIsRenamed) {
+                    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
+                }
                 break;
             }
             // If foo.bar, and foo is an interface, then need to search again for foo
