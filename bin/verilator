@@ -200,9 +200,9 @@ sub verilator_bin {
 
 sub gdb_works {
     $! = undef;  # Cleanup -x
-    system("gdb /bin/echo"
+    system("gdb /bin/sh"
            . " --batch-silent --quiet --return-child-result"
-           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'run -c exit'"  # `/bin/sh -c exit
            . " -ex 'set width 0'"
            . " -ex 'bt'"
            . " -ex 'quit'");
