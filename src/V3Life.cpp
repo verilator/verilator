@@ -283,7 +283,7 @@ class LifeVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstCvtArrayToPacked* nodep){
+    void visit(AstCvtArrayToPacked* nodep) override {
         //remove AstCvtArrayToPacked when we replaced its op1 with a const
         if(VN_IS(nodep->op1p(), Const)){
             nodep->replaceWith(nodep->op1p()->unlinkFrBack());
