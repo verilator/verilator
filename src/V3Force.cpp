@@ -37,6 +37,7 @@
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Stats.h"
 #include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1051,6 +1052,7 @@ public:
 
 class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
+    VDouble0 m_nonOverlappingForceSels;  // Statistic tracking
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
 
@@ -1116,6 +1118,7 @@ class ForceReplaceVisitor final : public VNVisitor {
             const int selMsb = selLsb + nodep->width() - 1;
             if (!varp->isSigPublic()
                 && !ForceState::selOverlapsAnyForce(*varInfo, selLsb, selMsb)) {
+                m_nonOverlappingForceSels++;
                 ForceState::markNonReplaceable(refp);
                 visit(static_cast<AstNode*>(nodep));
                 return;
@@ -1251,6 +1254,9 @@ public:
     explicit ForceReplaceVisitor(AstNetlist* nodep, const ForceState& state)
         : m_state{state} {
         iterateAndNextNull(nodep->modulesp());
+    }
+    ~ForceReplaceVisitor() override {
+        V3Stats::addStat("Non-overlapping force sels", m_nonOverlappingForceSels);
     }
 };
 //######################################################################
