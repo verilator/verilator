@@ -2982,6 +2982,15 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->delayp(), WidthVP{nodep->dtypep(), PRELIM}.p());
         UINFO(4, "varWidthed " << nodep);
         // UINFOTREE(1, nodep, "", "InitOut");
+        // Check for unsupported unpacked array on interface ports only
+        // (synthesis tools pack these, causing GLS mismatches)
+        if (nodep->isIO() && !nodep->isIfaceRef()) {
+            if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+                nodep->v3warn(UNPACKED, "Unsupported: Unpacked array on port "
+                                            << nodep->prettyNameQ()
+                                            << "; synthesis may pack this");
+            }
+        }
         nodep->didWidth(true);
         nodep->doingWidth(false);
     }
