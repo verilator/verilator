@@ -193,6 +193,7 @@ package std;
     // Two process references are equal if the different classes' containing
     // m_process are equal. Can't yet use <=> as the base class template
     // comparisons doesn't define <=> as they don't yet require --timing and C++20.
+    // V3Name may remove the __PVT__ from this text.
     // verilog_format: off
 `ifdef VERILATOR_TIMING
 `systemc_header_post

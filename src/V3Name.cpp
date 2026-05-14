@@ -24,6 +24,7 @@
 #include "V3Name.h"
 
 #include "V3LanguageWords.h"
+#include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
 #include <vector>
@@ -80,10 +81,8 @@ class NameVisitor final : public VNVisitorConst {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
     }
     // Add __PVT__ to names of local signals
     void visit(AstVar* nodep) override {
@@ -153,6 +152,17 @@ class NameVisitor final : public VNVisitorConst {
             nodep->editCountInc();
             iterateChildrenConst(nodep);
         }
+    }
+    void visit(AstSystemCSection* nodep) override {
+        // include/verilated_std.sv assumes that V3Name does renaming of std::process;
+        // if V3Name does not, remove the __PVT__.
+        if (m_modp && m_modp->name() == "std__03a__03aprocess") {
+            VMemberMap memberMap;
+            if (memberMap.findMember(m_modp, "m_process")) {
+                nodep->text(VString::replaceSubstr(nodep->text(), "__PVT__", ""));
+            }
+        }
+        iterateChildrenConst(nodep);
     }
 
     //--------------------

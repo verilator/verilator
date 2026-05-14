@@ -64,6 +64,7 @@ Verilator 5.049 devel
 * Fix force of unpacked arrays (#7579) (#7580). [Zubin Jain]
 * Fix property argument retaining type of the previous variable (#7582). [Jakub Michalski]
 * Fix NBA to whole arrays (#7583) (#7575). [Geza Lore, Testorrent USA, Inc.]
+* Fix process comparison compile error with `--public-flat-rw` (#7592).
 
 
 Verilator 5.048 2026-04-26
