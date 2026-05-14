@@ -1671,7 +1671,6 @@ public:
                 bool usesQueue = false;
                 AstQueueDType* qtypep = nodep->backp()->op2p() ? VN_CAST(nodep->backp()->op2p()->dtypep()->skipRefp(), QueueDType) : nullptr;
                 if (VN_IS(nodep->backp(), Assign) && qtypep) { // if we are assigning to a queue then emit the correct symbol for it
-                    AstNodeDType* child_type = qtypep->subDTypep();
                     puts("R");  // R for queue
                     usesQueue = true;
                 } else {
