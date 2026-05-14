@@ -2388,6 +2388,25 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: UNSYNTHESIZABLE
+
+   Warns when the design uses an arithmetic operator that is commonly
+   rejected or treated specially by hardware synthesis tools: division
+   (``/``), modulo (``%``), and exponentiation (``**``), including their
+   signed variants.
+
+   Behavior across synthesis tools varies. Some tools accept these
+   operators when at least one operand is a constant (e.g., dividing by a
+   power of two reduces to a shift). Other tools reject them outright.
+   Detecting these operators in Verilator helps catch potential
+   simulation/synthesis mismatches early in flows that target less
+   permissive synthesizers.
+
+   Disabled by default. Enable with ``-Wwarn-UNSYNTHESIZABLE`` to surface
+   it. Ignoring this warning does not affect Verilator simulation; it
+   only flags a potential synthesis-flow incompatibility.
+
+
 .. option:: UNSUPPORTED
 
    An error that a construct might be legal according to IEEE but is not
