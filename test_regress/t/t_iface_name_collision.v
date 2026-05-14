@@ -1,3 +1,15 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// The code describes a very simple hierarchy of modules.
+// The lowest level instantiates avst_interface with name my_avst_if.
+// The highest level also instantiates the same interface type
+// with the exact same name. The file should lint with no errors
+// or warnings other than those disabled by lint_off.
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
 /* verilator lint_off DECLFILENAME */
 /* verilator lint_off UNUSEDSIGNAL */
 interface avst_interface;
