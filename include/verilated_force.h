@@ -222,11 +222,12 @@ public:
     VlForceVec() = default;
 
     template <typename T>
-    T read(T val) const {
+    T read(const T& val) const {
+        T result = val;
         if VL_CONSTEXPR_CXX17 (VlForceTypeInfo<T>::unpackedArray) {
             // Handling the case of a nested flattened array using recursion
             using ElemRef
-                = decltype(VlForceArrayIndexer<T>::elem(val, static_cast<std::size_t>(0)));
+                = decltype(VlForceArrayIndexer<T>::elem(result, static_cast<std::size_t>(0)));
             using Elem = VlForceBaseType<ElemRef>;
             const int total = static_cast<int>(VlForceArrayIndexer<T>::size);
             for (const auto& entry : m_entries) {
@@ -236,13 +237,13 @@ public:
                 for (int idx = startIdx; idx <= endIdx; idx++) {
                     const int rhsIndex = idx - entry.m_rhsLsb;
                     const std::size_t uidx = static_cast<std::size_t>(idx);
-                    VlForceArrayIndexer<T>::elem(val, uidx) = rhsBasep[rhsIndex];
+                    VlForceArrayIndexer<T>::elem(result, uidx) = rhsBasep[rhsIndex];
                 }
             }
-            return val;
+            return result;
         }
-        applyEntries(val);
-        return val;
+        applyEntries(result);
+        return result;
     }
 
     template <typename T>
