@@ -123,14 +123,14 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     out += m_wideTempRefp->varp()->nameProtect();
                     m_wideTempRefp = nullptr;
                     needComma = true;
-                } else if (usesQueue){
+                } else if (usesQueue) {
                     commaOut();
                     putOut();
                     iterateAndNextConstNull(nodep->backp()->op2p());
                     needComma = true;
                 }
 
-                    break;
+                break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
             if (detail) {
@@ -139,9 +139,11 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 switch (pos[0]) {
                 case 'q':
                     putOut();
-                    //if we are assigning this to a queue we need to get the return type
-                    if (VN_IS(detailp->backp(), Assign) && VN_IS(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
-                        AstQueueDType* qtypep = VN_CAST(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType);
+                    // If we are assigning this to a queue we need to get the return type
+                    if (VN_IS(detailp->backp(), Assign)
+                        && VN_IS(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
+                        AstQueueDType* qtypep
+                            = VN_CAST(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType);
                         AstNodeDType* child_type = qtypep->subDTypep();
                         int width = child_type->width();
                         puts("R");  // R for queue
@@ -163,7 +165,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                         commaOut();
                         out += cvtToStr(lhsp->widthWords());
                         needComma = true;
-                    }else if(VN_IS(lhsp, StreamR)){
+                    } else if (VN_IS(lhsp, StreamR)) {
                         commaOut();
                         out += cvtToStr(rhsp->widthWords());
                         needComma = true;
@@ -348,7 +350,9 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         puts(",");
         if (addrof) puts("&(");
         if (VN_IS(subargp, StreamR))
-            emitStreamR(VN_CAST(subargp,StreamR),nodep); //this has to be done here because streamR doesn't know what it returns
+            emitStreamR(
+                VN_CAST(subargp, StreamR),
+                nodep);  //this has to be done here because streamR doesn't know what it returns
         else
             iterateConst(subargp);
         if (addrof) puts(")");

@@ -962,7 +962,7 @@ static inline IData VL_EQ_R(int words, const VlQueue<VlWide<N_Words>>& q,
     EData nequal = 0;
     int elementsInQ = (q.size() * 4) / N_Words - 1;
     IData temp = 0;
-    if ((q.size() * 4) != words) { return false; }
+    if ((q.size() * N_Words) != words) { return false; }
     for (int i = 0; i < elementsInQ + 1; ++i) {
         int qIndex = (elementsInQ - i) / N_Words;
         int wordInWide = (elementsInQ - i) % N_Words;
@@ -1985,9 +1985,11 @@ static inline VlQueue<VlWide<N_Words>> VL_STREAML_RRI(int lbits, const VlQueue<V
 }
 
 template <typename T>
-static inline void VL_STREAML_RII(int lbits, VlQueue<T>& q, IData ld, IData rd) VL_MT_SAFE {
+static inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<T>& q, IData ld,
+                                  IData rd) VL_MT_SAFE {
 
     IData ret = 0;
+    if (lbits < queueBits) { lbits = queueBits; }
     // Slice size should never exceed the lhs width
     const IData mask = VL_MASK_I(rd);
     for (int istart = 0; istart < lbits; istart += rd) {
@@ -2011,9 +2013,9 @@ static inline void VL_STREAML_RII(int lbits, VlQueue<T>& q, IData ld, IData rd) 
 }
 
 template <std::size_t N_Words>
-static inline void VL_STREAML_RII(int lbits, VlQueue<VlWide<N_Words>>& q, IData ld,
+static inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q, IData ld,
                                   IData rd) VL_MT_SAFE {
-
+    if (lbits < queueBits) { lbits = queueBits; }
     IData ret = 0;
     // Slice size should never exceed the lhs width
     const IData mask = VL_MASK_I(rd);
@@ -2060,7 +2062,7 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 }
 
 template <typename T>
-static inline void VL_STREAML_RWI(int lbits, VlQueue<T>& q, WDataInP const lwp,
+static inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP const lwp,
                                   IData rd) VL_MT_SAFE {
     constexpr bool needsMask = sizeof(T) < 4;
     constexpr int numBitsInT = 8 * sizeof(T);
@@ -2091,11 +2093,14 @@ static inline void VL_STREAML_RWI(int lbits, VlQueue<T>& q, WDataInP const lwp,
 }
 
 template <std::size_t N_Words>
-static inline void VL_STREAML_RWI(int lbits, VlQueue<VlWide<N_Words>>& q, WDataInP const lwp,
-                                  IData rd) VL_MT_SAFE {
+static inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q,
+                                  WDataInP const lwp, IData rd) VL_MT_SAFE {
     constexpr int numBitsInT = 4 * N_Words * 8;
+    if (lbits < queueBits) {  // this handles the case where the queue is larger than the rhs
+        lbits = queueBits;
+    }
     int leftOver = (lbits % numBitsInT) > 0;
-    q.renew((lbits / numBitsInT) + leftOver);
+    q.renew(lbits / numBitsInT + leftOver);
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;

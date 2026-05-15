@@ -1388,7 +1388,8 @@ class ConstVisitor final : public VNVisitor {
                 && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
                     || (VN_AS(nodep->rhsp(), Const)->toUInt()
                         >= static_cast<uint32_t>(nodep->lhsp()->width())))
-                && nodep->lhsp()->isPure() && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)));
+                && nodep->lhsp()->isPure()
+                && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)));
     }
     bool operandIsTwo(const AstNode* nodep) {
         const AstConst* const constp = VN_CAST(nodep, Const);
@@ -1829,6 +1830,11 @@ class ConstVisitor final : public VNVisitor {
         // If replacing a SEL for example, the data type comes from the parent (is less wide).
         // This may adversely affect the operation of the node being replaced.
         nodep->replaceWithKeepDType(childp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void replaceWOp1(AstNode* nodep) {
+        // NODE(..., OP1(...)) -> OP1(...)
+        nodep->replaceWithKeepDType(nodep->op1p()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceWChildBool(AstNode* nodep, AstNodeExpr* childp) {
@@ -2354,7 +2360,8 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(conp), conp);
             // Further reduce, either node may have more reductions.
             return true;
-        } else if (m_doV && VN_IS(nodep->rhsp(), StreamR) && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+        } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)
+                   && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
             // The right-streaming operator on rhs of assignment does not
             // change the order of bits. Eliminate stream but keep its lhsp.
             // Add a cast if needed.
@@ -2449,7 +2456,7 @@ class ConstVisitor final : public VNVisitor {
             nodep->rhsp(streamp);
             nodep->dtypep(dstDTypep);
             return true;
-        } else if (m_doV && VN_IS(nodep->lhsp(), StreamR) ) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
@@ -2517,15 +2524,14 @@ class ConstVisitor final : public VNVisitor {
                     // Source narrower than destination: left-justify by shifting left.
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.2).
-                    if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)){
-                            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
+                    if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)) {
+                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
                         extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
                         srcp = new AstShiftL{
                             srcp->fileline(), extendp,
                             new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
                             dWidth};
-                    }
-                    else{ // if it is a queue we dont need do do a shiftL
+                    } else {  // if it is a queue we dont need do do a shiftL
                         srcp = new AstExtend{srcp->fileline(), srcp};
                     }
                 }
@@ -4308,6 +4314,8 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
     TREEOP ("AstToStringN{DISABLE_BASE}", "DONE");  // Avoid uniop(const); use matchToStringNConst
     TREEOP ("AstToStringN{matchToStringNConst(nodep)}", "DONE");
+    //AstCvtArrayTOPacked
+    TREEOPA("AstCvtArrayToPacked{$op1p.castConst}", "replaceWOp1(nodep)");
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");

@@ -6229,6 +6229,11 @@ class WidthVisitor final : public VNVisitor {
                                            << lwidth << " bits) is narrower than the stream ("
                                            << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
                 }
+                if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
+                    && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                    const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
+                    UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
+                }
                 if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)) {
                     streamp->unlinkFrBack();
                     nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp,
