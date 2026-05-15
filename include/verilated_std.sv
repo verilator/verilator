@@ -140,6 +140,7 @@ package std;
     } state;
 
     // Width visitor changes it to VlProcessRef
+    // V3Name is hardcoded not to rename this variable
     protected chandle m_process;
 
     static function process self();
@@ -193,7 +194,6 @@ package std;
     // Two process references are equal if the different classes' containing
     // m_process are equal. Can't yet use <=> as the base class template
     // comparisons doesn't define <=> as they don't yet require --timing and C++20.
-    // V3Name may remove the __PVT__ from this text.
     // verilog_format: off
 `ifdef VERILATOR_TIMING
 `systemc_header_post
@@ -201,19 +201,19 @@ template<> template<>
 inline bool VlClassRef<`systemc_class_name>::operator==(const VlClassRef<`systemc_class_name>& rhs) const {
     if (!m_objp && !rhs.m_objp) return true;
     if (!m_objp || !rhs.m_objp) return false;
-    return m_objp->__PVT__m_process == rhs.m_objp->__PVT__m_process;
+    return m_objp->m_process == rhs.m_objp->m_process;
 };
 template<> template<>
 inline bool VlClassRef<`systemc_class_name>::operator!=(const VlClassRef<`systemc_class_name>& rhs) const {
     if (!m_objp && !rhs.m_objp) return false;
     if (!m_objp || !rhs.m_objp) return true;
-    return m_objp->__PVT__m_process != rhs.m_objp->__PVT__m_process;
+    return m_objp->m_process != rhs.m_objp->m_process;
 };
 template<> template<>
 inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc_class_name>& rhs) const {
     if (!m_objp && !rhs.m_objp) return false;
     if (!m_objp || !rhs.m_objp) return false;
-    return m_objp->__PVT__m_process < rhs.m_objp->__PVT__m_process;
+    return m_objp->m_process < rhs.m_objp->m_process;
 };
 `verilog
 `endif

@@ -90,7 +90,11 @@ class NameVisitor final : public VNVisitorConst {
         rename(nodep,
                ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
-                && !nodep->isTemp()));  // Don't bother to rename internal signals
+                && !nodep->isTemp()  // Don't bother to rename internal signals
+                // Special case, hardcoded m_process references in verilated_std.h and elsewhere
+                && !(m_modp && m_modp->name() == "std__03a__03aprocess"
+                     && nodep->name() == "m_process")));
+        iterateChildrenConst(nodep);
     }
     void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
@@ -152,17 +156,6 @@ class NameVisitor final : public VNVisitorConst {
             nodep->editCountInc();
             iterateChildrenConst(nodep);
         }
-    }
-    void visit(AstSystemCSection* nodep) override {
-        // include/verilated_std.sv assumes that V3Name does renaming of std::process;
-        // if V3Name does not, remove the __PVT__.
-        if (m_modp && m_modp->name() == "std__03a__03aprocess") {
-            VMemberMap memberMap;
-            if (memberMap.findMember(m_modp, "m_process")) {
-                nodep->text(VString::replaceSubstr(nodep->text(), "__PVT__", ""));
-            }
-        }
-        iterateChildrenConst(nodep);
     }
 
     //--------------------
