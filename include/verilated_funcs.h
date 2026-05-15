@@ -1626,7 +1626,7 @@ template <typename T>
 static inline void VL_STREAML_FAST_RQI(int lbits, VlQueue<T>& q, QData ld, IData rd_log2) VL_PURE {
     QData ret = VL_STREAML_FAST_QQI(lbits, ld, rd_log2);
     q.clear();
-    int numQData = 8 / sizeof(T);
+    const int numQData = 8 / sizeof(T);
     VL_CONSTEXPR_CXX17 bool needsMask = sizeof(T) < 8;
     VL_CONSTEXPR_CXX17 uint64_t mask = (0x1UL << sizeof(T) * 8 * needsMask) - 1;
     for (int ii = numQData - 1; ii >= 0; ii--) {
@@ -1692,7 +1692,7 @@ static inline void VL_STREAMR_RQI(int lbits, VlQueue<T>& q, QData ld, IData rd_l
         q.push_back(static_cast<T>((ld >> 8) & 0xFF));
         q.push_back(static_cast<T>(ld & 0xFF));
     } else {
-        int numQData = 8 / sizeof(T);
+        const int numQData = 8 / sizeof(T);
         for (int ii = numQData - 1; ii >= 0; ii--) {
             q.push_back(static_cast<T>(ld >> (ii * sizeof(T) * 8)));
         }
@@ -1703,7 +1703,7 @@ template <typename T>
 static inline IData VL_STREAMR_IRI(int lbits, VlQueue<T> &q, IData rd_log2) VL_PURE
 {
     IData value = 0;  // Starts at 0. Out-of-range bits will remain 0.
-    size_t len = q.size();
+    const size_t len = q.size();
 
     if VL_CONSTEXPR_CXX17 (sizeof(T) == 1) {  // If it is a queue of bytes
         if (len > 0) value |= static_cast<IData>(q.at(0)) << 24;
@@ -1729,7 +1729,7 @@ template <typename T>
 static inline IData VL_STREAMR_QRI(int lbits, VlQueue<T> &q, IData rd_log2) VL_PURE
 {
     QData value = 0;
-    size_t len = q.size();
+    const size_t len = q.size();
 
     if VL_CONSTEXPR_CXX17 (sizeof(T) == 1) {
         // Must cast to QData BEFORE shifting to prevent 32-bit overflow!
@@ -1800,7 +1800,6 @@ static inline void VL_STREAMR_RWI(int lbits, VlQueue<VlWide<N_Words>>& q, WDataI
     for(int ii = 0; ii < N_Words; ii++){
         value.at(ii) = 0;
     }
-    int wordInQueue = 0;
     for (int word = numWords - 1; word >= 0; word--) {
         value.at(word) = lwp[word];
         if((word % N_Words) == 0){
@@ -2163,7 +2162,7 @@ static inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Wor
     if(lbits < queueBits){ // this handles the case where the queue is larger than the rhs
         lbits = queueBits;
     }
-    int leftOver = (lbits % numBitsInT) > 0;
+    const int leftOver = (lbits % numBitsInT) > 0;
     q.renew(lbits / numBitsInT + leftOver);
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
@@ -2424,33 +2423,6 @@ static inline WDataOutP VL_CONCAT_WWI(int obits, int lbits, int rbits, WDataOutP
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     _vl_insert_WW(owp, lwp, rbits + lbits - 1, rbits);
     return owp;
-}
-
-static inline VlQueue<CData> VL_CONCAT_RWI(int obits, int lbits, int rbits, WDataInP const lwp,
-                                           IData rd) VL_MT_SAFE {
-    // TODO make sure this works with any queue size
-    std::vector<uint32_t> my_buffer(VL_BITWORD_E(lbits), 0);
-    WDataOutP owp = my_buffer.data();
-    owp[0] = rd;
-    VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
-    _vl_insert_WW(owp, lwp, rbits + lbits - 1, rbits);
-
-    VlQueue<CData> out_queue;
-
-    // Figure out how many bytes we actually processed
-    int total_bytes = (lbits + 7) / 8;
-
-    // Read the owp buffer backwards to preserve Big-Endian byte order
-    for (int i = total_bytes - 1; i >= 0; --i) {
-        int word_idx = i / 4;  // Which 32-bit chunk is this byte in?
-        int byte_in_word = i % 4;  // Which of the 4 bytes is it?
-
-        // Extract the byte and push it
-        unsigned char byte_val = (owp[word_idx] >> (byte_in_word * 8)) & 0xFF;
-        out_queue.push_back(byte_val);
-    }
-
-    return out_queue;
 }
 
 static inline WDataOutP VL_CONCAT_WIW(int obits, int lbits, int rbits, WDataOutP owp, IData ld,
@@ -2803,10 +2775,10 @@ static inline IData VL_SEL_IRII(int lbits, const VlQueue<T>& lhs, IData lsb,
                                 IData width) VL_MT_SAFE {
     IData val = 0;
     if(sizeof(T) == 8){
-        int offset = lhs.size() * sizeof(T) / 4 - VL_BITWORD_E(lsb) - 1;
-        int wordIndex = VL_BITWORD_E(VL_BITBIT_Q(lsb));
-        int shiftAmt = wordIndex << 5;
-        int index = offset / 2;
+        const int offset = lhs.size() * sizeof(T) / 4 - VL_BITWORD_E(lsb) - 1;
+        const int wordIndex = VL_BITWORD_E(VL_BITBIT_Q(lsb));
+        const int shiftAmt = wordIndex << 5;
+        const int index = offset / 2;
         val |= static_cast<IData>(lhs.at(index) >> shiftAmt);
         return val;
     }
@@ -2826,10 +2798,10 @@ static inline IData VL_SEL_IRII(int lbits, const VlQueue<VlWide<N_Words>> &lhs, 
 {
     IData val = 0;
 
-    int offset = lhs.size() * N_Words - VL_BITWORD_E(lsb) - 1;
-    int wordIndex = VL_BITWORD_E(lsb % (N_Words * 32));
-    int shiftAmt = VL_BITBIT_I(lsb);
-    int index = offset / N_Words;
+    const int offset = lhs.size() * N_Words - VL_BITWORD_E(lsb) - 1;
+    const int wordIndex = VL_BITWORD_E(lsb % (N_Words * 32));
+    const int shiftAmt = VL_BITBIT_I(lsb);
+    const int index = offset / N_Words;
     val = lhs.at(index).at(wordIndex) >> shiftAmt;
 
     return val;
@@ -3010,67 +2982,6 @@ static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*
             VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
                              VL_GET_QUEUE_BIT(srcCopy, srcElementBits, bitIndex));
         }
-    }
-}
-
-template <typename TargetType>
-void VL_COPY_Q(VlQueue<TargetType>& dst_q, const VlQueue<CData>& src_q, int /*lbits*/,
-               int srcElementBits, int dstElementBits) {
-    // TODO use scrElementBits and dstElementBits
-    VL_CONSTEXPR_CXX17 size_t byteNeeded = sizeof(TargetType);
-    TargetType temp = 0;
-    size_t byteCount = byteNeeded - 1;
-
-    for (CData byte_val : src_q) {
-        // Shift the byte into the correct position and merge
-        temp |= (static_cast<TargetType>(byte_val) << (byteCount * 8));
-        byteCount--;
-
-        // If we've collected enough bytes for the target type, push and reset
-        if (byteCount == -1) {
-            dst_q.push_back(temp);
-            temp = 0;
-            byteCount = byteNeeded - 1;
-        }
-    }
-
-    // Push any remaining leftover bytes (upper bits will remain zero-padded)
-    if (byteCount > 0) { dst_q.push_back(temp); }
-}
-
-template <std::size_t N_Words>
-void VL_COPY_Q(VlQueue<VlWide<N_Words>>& dst_q, const VlQueue<CData>& src_q, int /*lbits*/,
-               int srcElementBits, int dstElementBits) {
-    // TODO use scrElementBits and dstElementBits
-    VL_CONSTEXPR_CXX17 size_t byteNeeded = sizeof(EData);
-    VlWide<N_Words> queElem;
-    EData temp = 0;
-    size_t byteCount = byteNeeded - 1;
-    size_t VlWideCount = N_Words - 1;
-    bool tempHasData = false;
-    for (CData byte_val : src_q) {
-        // Shift the byte into the correct position and merge
-        temp |= (static_cast<EData>(byte_val) << (byteCount * 8));
-        byteCount--;
-        tempHasData = true;
-        // If we've collected enough bytes for the target type, push and reset
-        if (byteCount == -1) {
-            queElem.m_storage[VlWideCount] = temp;
-            temp = 0;
-            VlWideCount--;
-            byteCount = byteNeeded - 1;
-        }
-        if (VlWideCount == -1) {
-            dst_q.push_back(queElem);
-            VlWideCount = N_Words - 1;
-            tempHasData = false;
-        }
-    }
-
-    // Push any remaining leftover bytes (upper bits will remain zero-padded)
-    if (tempHasData) {
-        queElem.m_storage[VlWideCount] = temp;
-        dst_q.push_back(queElem);
     }
 }
 
