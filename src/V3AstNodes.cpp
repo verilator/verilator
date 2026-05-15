@@ -182,6 +182,15 @@ AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeEx
     }
 }
 
+void AstAbortOn::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " [" << kind().ascii() << "]";
+}
+void AstAbortOn::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kind", kind().ascii());
+    dumpJsonGen(str);
+}
+
 void AstAddrOfCFunc::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";

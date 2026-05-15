@@ -1058,6 +1058,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("\n");
     }
     void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }
+    void visit(AstAbortOn* nodep) override {
+        puts(nodep->kind().ascii());
+        puts(" (");
+        iterateConst(nodep->condp());
+        puts(") ");
+        iterateConst(nodep->propp());
+    }
     void visit(AstPropAlways* nodep) override {
         puts(nodep->isStrong() ? "s_always" : "always");
         if (!VN_IS(nodep->loBoundp(), Unbounded) || !VN_IS(nodep->hiBoundp(), Unbounded)) {

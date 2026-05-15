@@ -342,6 +342,10 @@ module t (/*AUTOARG*/
   assert_prop_nonoverlap_impl: assert property (@(posedge clk) in |=> in);
   assert_prop_overlap_fb: assert property (@(posedge clk) in #-# in);
   assert_prop_nonoverlap_fb: assert property (@(posedge clk) in #=# in);
+  assert_prop_accept_on: assert property (@(posedge clk) accept_on (in) in);
+  assert_prop_reject_on: assert property (@(posedge clk) reject_on (in) in);
+  assert_prop_sync_accept_on: assert property (@(posedge clk) sync_accept_on (in) in);
+  assert_prop_sync_reject_on: assert property (@(posedge clk) sync_reject_on (in) in);
 
 
   int a;
