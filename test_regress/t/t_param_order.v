@@ -71,8 +71,7 @@ module t;
     t.t1 = o;
     t.t2 = 32;
     t.t3 = 1;
-    if (t.t1 != o)
-      $stop;
+    if (t.t1 != o) $stop;
     `checkd(t.t2, 32);
     `checkd(t.t3, 1);
 
@@ -92,8 +91,7 @@ module t;
     m.x2 = 250;
     m.x3 = 15;
     `checkd(m.t1, 1);
-    if (m.t2 != o)
-      $stop;
+    if (m.t2 != o) $stop;
     `checkd(m.t3, 12345);
     `checkd(m.x1, 0);
     `checkd(m.x2, 250);
