@@ -296,8 +296,8 @@ class ParamProcessor final {
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
     VNDeleter m_deleter;  // Used to delay deletion of nodes
-    // Class default paramater dependencies
-    std::vector<std::pair<AstParamTypeDType*, int>> m_classParams;
+    // Class default type paramater dependencies
+    std::vector<std::pair<AstParamTypeDType*, int>> m_classTypeParams;
     std::unordered_map<AstParamTypeDType*, int> m_paramIndex;
 
     // Guard against infinite recursion in classTypeMatchesDefaultClone slow path
@@ -1835,24 +1835,24 @@ class ParamProcessor final {
         UASSERT_OBJ(classp, nodep, "Class or interface ref has no classp/ifacep");
 
         // Get the parameter list for this class
-        m_classParams.clear();
+        m_classTypeParams.clear();
         m_paramIndex.clear();
         for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* paramTypep = VN_CAST(stmtp, ParamTypeDType)) {
                 // Only consider formal class type parameters (generic parameters),
                 // not localparam type declarations inside the class body.
                 if (!paramTypep->isGParam()) continue;
-                m_paramIndex.emplace(paramTypep, static_cast<int>(m_classParams.size()));
-                m_classParams.emplace_back(paramTypep, -1);
+                m_paramIndex.emplace(paramTypep, static_cast<int>(m_classTypeParams.size()));
+                m_classTypeParams.emplace_back(paramTypep, -1);
             }
         }
 
         // For each parameter, detect either a dependent default (copy from previous param)
         // or a direct type default (for ex. int). Store dependency index in
         // m_classParams[i].second, default type in defaultTypeNodes[i].
-        std::vector<AstNodeDType*> defaultTypeNodes(m_classParams.size(), nullptr);
-        for (size_t i = 0; i < m_classParams.size(); ++i) {
-            AstParamTypeDType* const paramTypep = m_classParams[i].first;
+        std::vector<AstNodeDType*> defaultTypeNodes(m_classTypeParams.size(), nullptr);
+        for (size_t i = 0; i < m_classTypeParams.size(); ++i) {
+            AstParamTypeDType* const paramTypep = m_classTypeParams[i].first;
             // Parser places defaults/constraints under childDTypep as AstRequireDType
             AstRequireDType* const reqDtp = VN_CAST(paramTypep->getChildDTypep(), RequireDType);
             if (!reqDtp) continue;
@@ -1862,7 +1862,7 @@ class ParamProcessor final {
                 if (AstParamTypeDType* const sourceParamp
                     = VN_CAST(refDtp->refDTypep(), ParamTypeDType)) {
                     auto it = m_paramIndex.find(sourceParamp);
-                    if (it != m_paramIndex.end()) { m_classParams[i].second = it->second; }
+                    if (it != m_paramIndex.end()) { m_classTypeParams[i].second = it->second; }
                     continue;  // dependency handled
                 }
             }
@@ -1879,7 +1879,7 @@ class ParamProcessor final {
         // on the order when handling defaults. So here we reorder them
         // for proper handling. The remaining ones are just pushed back
         std::vector<AstPin*> pinsByIndex;
-        pinsByIndex.resize(m_classParams.size(), nullptr);
+        pinsByIndex.resize(m_classTypeParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (AstParamTypeDType* typep = pinp->modPTypep()) {
                 pinsByIndex[m_paramIndex[typep]] = pinp;
@@ -1889,9 +1889,9 @@ class ParamProcessor final {
         }
 
         // For each missing parameter, get its pin from dependency or direct default
-        for (size_t paramIdx = 0; paramIdx < m_classParams.size(); paramIdx++) {
+        for (size_t paramIdx = 0; paramIdx < m_classTypeParams.size(); paramIdx++) {
             if (pinsByIndex[paramIdx]) continue;
-            const int sourceParamIdx = m_classParams[paramIdx].second;
+            const int sourceParamIdx = m_classTypeParams[paramIdx].second;
 
             AstPin* newPinp = nullptr;
 
@@ -1909,7 +1909,7 @@ class ParamProcessor final {
             if (newPinp) {
                 newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
                 newPinp->param(true);
-                newPinp->modPTypep(m_classParams[paramIdx].first);
+                newPinp->modPTypep(m_classTypeParams[paramIdx].first);
                 if (classOrPackageRef) {
                     classOrPackageRef->addParamsp(newPinp);
                 } else if (classRefDType) {
