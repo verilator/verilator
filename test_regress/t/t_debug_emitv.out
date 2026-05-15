@@ -703,36 +703,36 @@ module Vt_debug_emitv_t;
         end
     end
     begin : assert_prop_accept_on
-        assert property (@(posedge clk) 
-            ???? // ABORTON
-            inin
+        assert property (@(posedge clk) accept_on (
+                                                   in) 
+                         in
         ) begin
         end
         else begin
         end
     end
     begin : assert_prop_reject_on
-        assert property (@(posedge clk) 
-            ???? // ABORTON
-            inin
+        assert property (@(posedge clk) reject_on (
+                                                   in) 
+                         in
         ) begin
         end
         else begin
         end
     end
     begin : assert_prop_sync_accept_on
-        assert property (@(posedge clk) 
-            ???? // ABORTON
-            inin
+        assert property (@(posedge clk) sync_accept_on (
+                                                        in) 
+                         in
         ) begin
         end
         else begin
         end
     end
     begin : assert_prop_sync_reject_on
-        assert property (@(posedge clk) 
-            ???? // ABORTON
-            inin
+        assert property (@(posedge clk) sync_reject_on (
+                                                        in) 
+                         in
         ) begin
         end
         else begin
