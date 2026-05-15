@@ -256,6 +256,14 @@ class InlineRelinkVisitor final : public VNVisitor {
 
     // STATE
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
+    std::unordered_set<std::string>
+        m_priorInlinedCells;  // Cells previously inlined into the module being inlined here.
+                              // Used to recognize VarXRefs whose inlinedDots was stamped by a
+                              // prior V3Inline pass (vs. by V3Begin generate-block unrolling).
+    std::unordered_set<const AstVarXRef*>
+        m_pinSubstitutedXRefs;  // VarXRefs created by pin substitution in this relink pass.
+                                // Their dotted/inlinedDots already represent the parent's scope
+                                // and must not be rewritten on the immediate visit.
     AstNodeModule* const m_modp;  // The module we are inlining into
     const AstCell* const m_cellp;  // The cell being inlined
     size_t m_nPlaceholders = 0;  // Unique identifier sequence number for placeholder variables
@@ -373,32 +381,45 @@ class InlineRelinkVisitor final : public VNVisitor {
         AstVarXRef* const newp
             = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(), nodep->access()};
         newp->varp(xrefp->varp());
-        // Copy inlinedDots from pin expression - the normal visitor iteration will
-        // prepend the cell name when this VarXRef is visited later
+        // The pin expression came from m_modp (the parent we are inlining into), so its
+        // dotted/inlinedDots already describe a path in m_modp's scope. Record this xref
+        // so visit(AstVarXRef) leaves it alone on the immediate visit; later inline
+        // passes will prepend their cell names normally.
         newp->inlinedDots(xrefp->inlinedDots());
+        m_pinSubstitutedXRefs.insert(newp);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        // Note: Don't call iterate(newp) here - the node will be visited during
-        // normal tree iteration which will apply the inlining transformations
     }
     void visit(AstVarXRef* nodep) override {
+        // VarXRefs just created by pin substitution in this pass already describe a path
+        // in m_modp's scope (the parent we are inlining into). Leave them untouched on
+        // this immediate visit; subsequent inline passes will prepend their cell names.
+        if (m_pinSubstitutedXRefs.erase(nodep)) {
+            iterateChildren(nodep);
+            return;
+        }
         // Track what scope it was originally under so V3LinkDot can resolve it
-        // Save original inlinedDots to determine if this VarXRef is from the current
-        // module being inlined (empty) or from a previously inlined module (non-empty)
         const string origInlinedDots = nodep->inlinedDots();
         nodep->inlinedDots(VString::dot(m_cellp->name(), ".", origInlinedDots));
+        // If origInlinedDots starts with the name of a previously-inlined cell, this
+        // VarXRef came from that cell's body and its dotted refers to that child's
+        // local scope; renaming it against m_renamedInterfaces would wrongly alias it
+        // to a coincidentally-named var in the current module (#5120). VarXRefs whose
+        // inlinedDots was stamped by V3Begin generate-block unrolling are unaffected,
+        // since V3Begin's CellInlines have origModName "__BEGIN__" and don't appear in
+        // m_priorInlinedCells.
+        const string::size_type firstDot = origInlinedDots.find('.');
+        const string firstSeg
+            = firstDot == string::npos ? origInlinedDots : origInlinedDots.substr(0, firstDot);
+        const bool fromPriorInline = m_priorInlinedCells.count(firstSeg);
         for (string tryname = nodep->dotted(); true;) {
             if (m_renamedInterfaces.count(tryname)) {
-                // Only update dotted() if either:
-                // 1. This VarXRef is from the current module (origInlinedDots empty), OR
-                // 2. The matching name has already been renamed (contains __DOT__)
-                // This prevents collision (#5120) where a parent's original port name
-                // matches a VarXRef from a previously inlined child module that has
-                // a local interface with the same name (whose dotted was not updated
-                // because local interface var names don't match dotted paths).
-                const bool fromCurrentModule = origInlinedDots.empty();
+                // matchIsRenamed: the matched name itself was created by a prior V3Inline
+                // rename (contains "__DOT__"). When true, we are following the chain of
+                // renames for the same var across nested inlines, so apply the rename
+                // even if the VarXRef came from a prior-inlined child.
                 const bool matchIsRenamed = tryname.find("__DOT__") != string::npos;
-                if (fromCurrentModule || matchIsRenamed) {
+                if (!fromPriorInline || matchIsRenamed) {
                     nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
                 }
                 break;
@@ -446,6 +467,16 @@ public:
     InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp)
         : m_modp{oldModp}
         , m_cellp{cellp} {
+        // CellInlines added by V3Begin for generate/named blocks have origModName
+        // "__BEGIN__"; only those added by prior V3Inline passes carry a real module
+        // name. Track the latter so visit(AstVarXRef) can distinguish VarXRefs
+        // originating from previously-inlined children.
+        for (AstNode* nodep = cloneModp->inlinesp(); nodep; nodep = nodep->nextp()) {
+            const AstCellInline* const cip = VN_CAST(nodep, CellInline);
+            if (cip && cip->origModName() != "__BEGIN__") {
+                m_priorInlinedCells.insert(cip->name());
+            }
+        }
         iterate(cloneModp);
     }
     ~InlineRelinkVisitor() override = default;
