@@ -158,22 +158,21 @@ private:
         return static_cast<T>((cur & ~mask) | (rhsBits & mask));
     }
 
-    template <typename T>
-    static typename std::enable_if<VlIsVlWide<T>::value, T>::type applyEntry(T result,
-                                                                             const Entry& entry) {
-        EData* const reswp = result.data();
-        const int lword = VL_BITWORD_E(entry.m_lsb);
-        const int hword = VL_BITWORD_E(entry.m_msb);
+    static void applyEntry(WDataOutP reswp, const Entry& entry, int entryLsb, int entryMsb,
+                           int lsbOffset) {
+        const int resLsb = entryLsb - lsbOffset;
+        const int resMsb = entryMsb - lsbOffset;
+        const int lword = VL_BITWORD_E(resLsb);
+        const int hword = VL_BITWORD_E(resMsb);
         for (int word = lword; word <= hword; ++word) {
             const int wordLsb = word * VL_EDATASIZE;
-            const int segLsb = std::max(entry.m_lsb, wordLsb);
-            const int segMsb = std::min(entry.m_msb, wordLsb + VL_EDATASIZE - 1);
+            const int segLsb = std::max(resLsb, wordLsb);
+            const int segMsb = std::min(resMsb, wordLsb + VL_EDATASIZE - 1);
             const int segWidth = segMsb - segLsb + 1;
             const int bitOffset = segLsb - wordLsb;
-            const int rhsLsb = segLsb - entry.m_rhsLsb;
+            const int rhsLsb = lsbOffset + segLsb - entry.m_rhsLsb;
             reswp[word] = applyBits(reswp[word], entry, bitOffset, segWidth, rhsLsb);
         }
-        return result;
     }
 
     template <typename T>
@@ -196,15 +195,39 @@ private:
         return *static_cast<const VlForceBaseType<T>*>(entry.m_rhsDatap);
     }
 
+    template <typename T>
+    typename std::enable_if<VlIsVlWide<T>::value>::type applyEntries(T& val) const {
+        for (const auto& entry : m_entries) {
+            applyEntry(val.data(), entry, entry.m_lsb, entry.m_msb, 0);
+        }
+    }
+
+    template <typename T>
+    typename std::enable_if<!VlIsVlWide<T>::value>::type applyEntries(T& val) const {
+        for (const auto& entry : m_entries) val = applyEntry(val, entry);
+    }
+
+    void readSel(int lbits, WDataInP valp, WDataOutP reswp, int lsb, int width) const {
+        VL_SEL_WWII(width, lbits, reswp, valp, lsb, width);
+        const int msb = lsb + width - 1;
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), lsb,
+                                   [](const Entry& e, int bit) { return e.m_msb < bit; });
+        while (it != m_entries.end() && it->m_lsb <= msb) {
+            applyEntry(reswp, *it, std::max(it->m_lsb, lsb), std::min(it->m_msb, msb), lsb);
+            ++it;
+        }
+    }
+
 public:
     VlForceVec() = default;
 
     template <typename T>
-    T read(T val) const {
+    T read(const T& val) const {
+        T result = val;
         if VL_CONSTEXPR_CXX17 (VlForceTypeInfo<T>::unpackedArray) {
             // Handling the case of a nested flattened array using recursion
             using ElemRef
-                = decltype(VlForceArrayIndexer<T>::elem(val, static_cast<std::size_t>(0)));
+                = decltype(VlForceArrayIndexer<T>::elem(result, static_cast<std::size_t>(0)));
             using Elem = VlForceBaseType<ElemRef>;
             const int total = static_cast<int>(VlForceArrayIndexer<T>::size);
             for (const auto& entry : m_entries) {
@@ -214,14 +237,13 @@ public:
                 for (int idx = startIdx; idx <= endIdx; idx++) {
                     const int rhsIndex = idx - entry.m_rhsLsb;
                     const std::size_t uidx = static_cast<std::size_t>(idx);
-                    VlForceArrayIndexer<T>::elem(val, uidx) = rhsBasep[rhsIndex];
+                    VlForceArrayIndexer<T>::elem(result, uidx) = rhsBasep[rhsIndex];
                 }
             }
-            return val;
+            return result;
         }
-
-        for (const auto& entry : m_entries) { val = applyEntry(val, entry); }
-        return val;
+        applyEntries(result);
+        return result;
     }
 
     template <typename T>
@@ -236,6 +258,29 @@ public:
             return rhsBasep[rhsIndex];
         }
         return origVal;
+    }
+
+    IData readSelI(int lbits, WDataInP valp, int lsb, int width) const {
+        IData result;
+        readSel(lbits, valp, &result, lsb, width);
+        result &= VL_MASK_I(width);
+        return result;
+    }
+
+    QData readSelQ(int lbits, WDataInP valp, int lsb, int width) const {
+        QData result;
+        readSel(lbits, valp, reinterpret_cast<WDataOutP>(&result), lsb, width);
+        result &= VL_MASK_Q(width);
+        return result;
+    }
+
+    template <std::size_t N_Words>
+    VlWide<N_Words> readSelW(int lbits, WDataInP valp, int lsb, int width) const {
+        VlWide<N_Words> result;
+        WDataOutP const reswp = result.data();
+        readSel(lbits, valp, reswp, lsb, width);
+        reswp[N_Words - 1] &= VL_MASK_E(width);
+        return result;
     }
 
     void addForce(int lsb, int msb, const void* rhsDatap, int rhsLsb) {

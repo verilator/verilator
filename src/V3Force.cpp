@@ -37,6 +37,7 @@
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Stats.h"
 #include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -611,6 +612,13 @@ public:
         return it2->second;
     }
 
+    static bool selOverlapsAnyForce(const VarForceInfo& varInfo, int selLsb, int selMsb) {
+        for (const auto& pair : varInfo.m_forces) {
+            if (pair.second.m_rangeLsb <= selMsb && pair.second.m_rangeMsb >= selLsb) return true;
+        }
+        return false;
+    }
+
     AstNodeExpr* createForceReadExpression(const VarForceInfo& varInfo,
                                            AstVarRef* originalRefp) const {
         FileLine* const flp = originalRefp->fileline();
@@ -1044,6 +1052,7 @@ public:
 
 class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
+    VDouble0 m_nonOverlappingForceSels;  // Statistic tracking
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
 
@@ -1088,6 +1097,48 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
+    void visit(AstSel* nodep) override {
+        // Replace Sel on a wide with readSelI/Q/W to avoid materializing the full value
+        AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef);
+        if (!refp || ForceState::isNotReplaceable(refp) || !refp->access().isReadOnly()) {
+            visit(static_cast<AstNode*>(nodep));
+            return;
+        }
+
+        AstVar* const varp = refp->varp();
+        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+        if (!varInfo || varInfo->m_forceRdVscp || varInfo->m_forces.empty()
+            || !ForceState::isBitwiseDType(varp) || !varp->dtypep()->isWide()) {
+            visit(static_cast<AstNode*>(nodep));
+            return;
+        }
+
+        if (const AstConst* const lsbConstp = VN_CAST(nodep->lsbp(), Const)) {
+            const int selLsb = lsbConstp->toSInt();
+            const int selMsb = selLsb + nodep->width() - 1;
+            if (!varp->isSigPublic()
+                && !ForceState::selOverlapsAnyForce(*varInfo, selLsb, selMsb)) {
+                m_nonOverlappingForceSels++;
+                ForceState::markNonReplaceable(refp);
+                visit(static_cast<AstNode*>(nodep));
+                return;
+            }
+        }
+
+        FileLine* const flp = nodep->fileline();
+        ForceState::markNonReplaceable(refp);
+        AstVarRef* const refClonep = refp->cloneTreePure(false);
+        ForceState::markNonReplaceable(refClonep);
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::READ},
+            VCMethod::FORCE_READ_SEL, ForceState::makeConst32(flp, varp->width())};
+        callp->addPinsp(refClonep);
+        callp->addPinsp(nodep->lsbp()->cloneTreePure(false));
+        callp->addPinsp(ForceState::makeConst32(flp, nodep->width()));
+        callp->dtypeFrom(nodep);
+        nodep->replaceWith(callp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstArraySel* nodep) override {
         if (nodep->backp() && VN_IS(nodep->backp(), ArraySel)) {
             // Only the outermost unpacked array selection should become a force-aware read;
@@ -1096,7 +1147,12 @@ class ForceReplaceVisitor final : public VNVisitor {
             return;
         }
 
-        AstVarRef* const baseRefp = m_state.getOneVarRef(nodep);
+        AstNode* const basep = AstArraySel::baseFromp(nodep, true);
+        AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
+        if (!baseRefp) {
+            iterateChildren(nodep);
+            return;
+        }
         AstVar* const varp = baseRefp->varp();
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
         // Skip non-forceable reads, reads we intentionally protected earlier, and intermediate
@@ -1203,6 +1259,9 @@ public:
     explicit ForceReplaceVisitor(AstNetlist* nodep, const ForceState& state)
         : m_state{state} {
         iterateAndNextNull(nodep->modulesp());
+    }
+    ~ForceReplaceVisitor() override {
+        V3Stats::addStat("Non-overlapping force sels", m_nonOverlappingForceSels);
     }
 };
 //######################################################################

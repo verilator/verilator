@@ -1677,7 +1677,7 @@ class AstSystemCSection final : public AstNode {
     // containing arbitrary text that is emitted to the C++ output in various
     // locations depending on the sectionType.
     const VSystemCSectionType m_sectionType;  // The section type
-    const std::string m_text;  // The text content
+    std::string m_text;  // The text content
 
 public:
     AstSystemCSection(FileLine* fl, VSystemCSectionType sectionType, const std::string& text)
@@ -1689,6 +1689,7 @@ public:
     ASTGEN_MEMBERS_AstSystemCSection;
     VSystemCSectionType sectionType() const { return m_sectionType; }
     const std::string& text() const { return m_text; }
+    void text(const std::string& value) { m_text = value; }
     void dump(std::ostream&) const override;
     void dumpJson(std::ostream&) const override;
     bool sameNode(const AstNode*) const override { return false; }
