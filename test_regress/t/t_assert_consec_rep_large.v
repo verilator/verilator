@@ -19,33 +19,28 @@ module t (
 
   wire a = crc[0];
   wire b = crc[4];
+  wire c = crc[8];
 
   int count_fail_257 = 0;
+  int count_fail_513 = 0;
 
-  // All forms exceed the prior kConsRepLimit=256 in V3AssertNfa
-  // buildConsRep; pre-fix they crashed at codegen
-  // (V3AstNodeExpr.h Unexpected Call).
-
-  // Antecedent: 257 consecutive 1's in a CRC bit are effectively impossible,
-  // so the antecedent never holds and count_fail stays at 0.
+  // All N > prior kConsRepLimit=256 (pre-fix: V3AssertNfa crash at codegen).
   assert property (@(posedge clk) a [* 257] |-> b)
   else count_fail_257 <= count_fail_257 + 1;
 
-  // Consequent SExpr forms (issue #7552 reporter shape). Cover (not assert)
-  // sidesteps the NFA pending-rejects over-count that already affects
-  // assert ##1 a[*N] when the consequent cannot complete before sim ends.
-  cover property (@(posedge clk) b ##1 a [* 257]);
-  cover property (@(posedge clk) b ##1 a [* 512]);
+  assert property (@(posedge clk) c |-> ##1 a [* 513])
+  else count_fail_513 <= count_fail_513 + 1;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
-    end
-    else if (cyc == 99) begin
+    end else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkd(count_fail_257, 0);
+      // Questa: 31 -- pre-existing ~26.5% NFA reject gap on |-> ##1 [*N]
+      `checkd(count_fail_513, 23);
       $write("*-* All Finished *-*\n");
       $finish;
     end
