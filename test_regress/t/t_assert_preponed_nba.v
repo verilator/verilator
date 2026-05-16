@@ -16,6 +16,7 @@ module t;
   end
 
   assert property (@(posedge clk) fire |-> (cnt == 0))
+    $write("Assertion fired and passed: cnt=%0d\n", cnt);
   else begin
     $write("%%Error: sampled fire=1 cnt=%0d, expected preponed cnt 0\n", cnt);
     $stop;
@@ -23,11 +24,9 @@ module t;
 
   initial begin
     @(posedge clk);
-    // verilator lint_off INITIALDLY
     fire <= 1;
     @(posedge clk);
     fire <= 0;
-    // verilator lint_on INITIALDLY
     repeat (2) @(posedge clk);
     $write("*-* All Finished *-*\n");
     $finish;

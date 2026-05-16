@@ -1180,8 +1180,9 @@ List Of Warnings
    Warns that the code has a delayed assignment inside of an ``initial`` or
    ``final`` block. If this message is suppressed, Verilator will convert
    this to a non-delayed assignment. With :vlopt:`--timing`, delayed
-   assignments in timed ``initial`` blocks are scheduled as non-blocking
-   assignments. See also :option:`COMBDLY`.
+   assignments in ``initial`` blocks that also contain a `#` delay
+   control, or `@` even control statement are scheduled as
+   non-blocking assignments. See also :option:`COMBDLY`.
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
