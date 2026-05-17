@@ -309,6 +309,17 @@ class SvaNfaBuilder final {
         return sampled(exprp->cloneTreePure(false));
     }
 
+    // Reject concurrent assertions whose unrolled vertex count would exceed
+    // --assert-unroll-limit, so a pathological count cannot blow up compile time.
+    static bool exceedsAssertUnrollLimit(AstNode* nodep, int requested) {
+        const int limit = v3Global.opt.assertUnrollLimit();
+        if (requested <= limit) return false;
+        nodep->v3error("Concurrent assertion repetition count "
+                       << requested << " exceeds --assert-unroll-limit (" << limit
+                       << "); raise '--assert-unroll-limit' to compile");
+        return true;
+    }
+
     // Create vertex and inherit throughout guards from current scope (IEEE 16.9.9).
     SvaStateVertex* scopedCreateVertex() {
         SvaStateVertex* const vtxp = m_graph.createStateVertex();
@@ -499,6 +510,7 @@ class SvaNfaBuilder final {
         } else if (repp->maxCountp()) {
             totalSites += getConstInt(repp->maxCountp()) - minN;
         }
+        if (exceedsAssertUnrollLimit(repp, totalSites)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, totalSites);
 
         SvaStateVertex* currentp = entryVtxp;
@@ -564,6 +576,7 @@ class SvaNfaBuilder final {
         const int lo = getConstInt(nodep->loBoundp());
         const int hi = getConstInt(nodep->hiBoundp());
         UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        if (exceedsAssertUnrollLimit(nodep, hi - lo + 1)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(propp, flp, hi - lo + 1);
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
         for (int k = 0; k <= hi - lo; ++k) {
@@ -589,6 +602,7 @@ class SvaNfaBuilder final {
         const bool hasMax = repp->maxCountp() != nullptr;
         const int maxN = hasMax ? getConstInt(repp->maxCountp()) : minN;
         UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
+        if (exceedsAssertUnrollLimit(repp, maxN)) return BuildResult::failWithError();
 
         // Wait + match per iter -> 2 sites per iteration; range form needs
         // sites for every iteration in [0..maxN). NOT($sampled(x)) matches
