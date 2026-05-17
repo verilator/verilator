@@ -510,10 +510,9 @@ class ActiveVisitor final : public VNVisitor {
     void visit(AstInitialStatic* nodep) override { moveUnderSpecial<AstSenItem::Static>(nodep); }
     void visit(AstInitial* nodep) override {
         const bool timedInitial
-            = v3Global.opt.timing().isSetTrue()
-              && nodep->exists([](const AstNode* const subp) {
-                     return VN_IS(subp, Delay) || VN_IS(subp, EventControl);
-                 });
+            = v3Global.opt.timing().isSetTrue() && nodep->exists([](const AstNode* const subp) {
+                  return VN_IS(subp, Delay) || VN_IS(subp, EventControl);
+              });
         const ActiveDlyVisitor dlyvisitor{nodep, timedInitial ? ActiveDlyVisitor::CT_SUSPENDABLE
                                                               : ActiveDlyVisitor::CT_INITIAL};
         visitSenItems(nodep);
