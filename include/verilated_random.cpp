@@ -30,8 +30,18 @@
 #include <sstream>
 #include <streambuf>
 
+// Number of diversity rounds. Each round appends one XOR-parity assert and
+// re-runs (check-sat) -- Z3 returns a fresh model that satisfies all prior
+// asserts plus the new one. Round count, not parity-hash width, is the
+// relevant knob: Z3 deterministically returns the boundary representative
+// (`K-1` for `bvult var K`) within each equivalence class, so widening
+// HASH_LEN only shrinks the classes without moving Z3 off the boundary;
+// each extra check-sat is what lets Z3 walk away from it. Empirically 4
+// rounds gave 70-90% per-bit bias on `value < (1<<N)` constraints (issue
+// #7563); 16 rounds restores 45-55%. HASH_LEN>=4 instead made the bvxor
+// trees large enough that bit-blasting timed out the solver entirely.
 #define _VL_SOLVER_HASH_LEN 1
-#define _VL_SOLVER_HASH_LEN_TOTAL 4
+#define _VL_SOLVER_HASH_LEN_TOTAL 16
 
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
