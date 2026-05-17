@@ -184,7 +184,8 @@ Verilator supports adding code to the Verilated model to support
 SystemVerilog code coverage. With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
-- :ref:`User Coverage`
+- :ref:`Property Coverage`
+- :ref:`Covergroup Coverage`
 - :ref:`FSM Coverage`
 - :ref:`Line Coverage`
 - :ref:`Toggle Coverage`
@@ -193,21 +194,33 @@ When a model with coverage is executed, it will create a coverage file for
 collection and later analysis, see :ref:`Coverage Collection`.
 
 
-.. _user coverage:
+.. _property coverage:
 
-Functional Coverage
--------------------
+Property Coverage
+-----------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
-translate functional coverage points the user has inserted manually in
-SystemVerilog code through into the Verilated model.
+translate property coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model.
 
-For example, the following SystemVerilog statement will add a coverage
-point under the coverage name "DefaultClock":
+For simple coverage points, use the ``cover property`` construct:
 
 .. code-block:: sv
 
    DefaultClock: cover property (@(posedge clk) cyc==3);
+
+This adds a coverage point that tracks whether the condition has been observed.
+
+.. _covergroup coverage:
+
+Covergroup Coverage
+-------------------
+
+With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
+translate covergroup coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model. Verilator supports
+coverpoints with value and transition bins, and cross points.
+
 
 .. _fsm coverage:
 
@@ -271,7 +284,6 @@ the printed summary and annotated output.
 Annotated output produced by :command:`verilator_coverage --annotate` will
 label FSM points with `fsm_state` and `fsm_arc`, and synthetic fallback
 transitions with `SYNTHETIC DEFAULT ARC`.
-
 
 .. _line coverage:
 

@@ -288,6 +288,23 @@ class CoverageVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstClass* nodep) override {
+        const AstNodeModule* const origModp = m_modp;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_exprTempNames);
+        VL_RESTORER(m_funcTemps);
+        createHandle(nodep);
+        m_modp = nodep;
+        // Covergroup declarations are not executable statements; suppress line/expr/toggle
+        // coverage so declarative elements (covergroup, coverpoint, cross) are not annotated
+        m_state.m_inModOff = nodep->isCovergroup();
+        if (!origModp) {
+            m_varnames.clear();
+            m_handleLines.clear();
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             // Handle continuous assigns for expression coverage (but not line coverage)
@@ -806,7 +823,6 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                             m_ftaskp->stmtsp()->addHereThisAsNext(varp);
                         } else {
                             m_modp->stmtsp()->addHereThisAsNext(varp);

@@ -1,0 +1,9 @@
+cg_array_iff.cp.arr: 1
+cg_default_iff.cp.def: 1
+cg_default_iff.cp.known: 1
+cg_iff.cp_value.disabled_hi: 0
+cg_iff.cp_value.disabled_lo: 0
+cg_iff.cp_value.enabled_hi: 1
+cg_iff.cp_value.enabled_lo: 1
+cg_trans2_iff.cp.t2: 1
+cg_trans3_iff.cp.t3: 1

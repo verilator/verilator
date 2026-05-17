@@ -132,6 +132,7 @@ class V3Global final {
     bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandSequence = false;  // Has `randsequence`
+    bool m_useCovergroup = false;  // Has covergroup declarations
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
@@ -220,6 +221,8 @@ public:
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandSequence() const { return m_useRandSequence; }
     void useRandSequence(bool flag) { m_useRandSequence = flag; }
+    bool useCovergroup() const { return m_useCovergroup; }
+    void useCovergroup(bool flag) { m_useCovergroup = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     bool hasPrintedObjects() const { return m_hasPrintedObjects; }

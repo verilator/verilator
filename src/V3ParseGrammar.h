@@ -15,11 +15,13 @@
 //*************************************************************************
 
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Control.h"
 #include "V3Global.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
 
 #include <stack>
+#include <vector>
 
 class V3ParseGrammar final {
 public:
@@ -94,97 +96,6 @@ public:
             singletonp()->scrubRangeMulti(rangelistp)};
         nodep->trace(singletonp()->allTracingOn(fileline));
         return nodep;
-    }
-    void createCoverGroupMethods(AstClass* nodep, AstNode* sampleArgs) {
-        // Hidden static to take unspecified reference argument results
-        AstVar* const defaultVarp
-            = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
-        defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        nodep->addStmtsp(defaultVarp);
-
-        // IEEE: option
-        {
-            v3Global.setUsesStdPackage();
-            AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::MEMBER, "option", VFlagChildDType{},
-                             new AstRefDType{nodep->fileline(), "vl_covergroup_options_t",
-                                             new AstClassOrPackageRef{nodep->fileline(), "std",
-                                                                      nullptr, nullptr},
-                                             nullptr}};
-            nodep->addMembersp(varp);
-        }
-
-        // IEEE: type_option
-        {
-            v3Global.setUsesStdPackage();
-            AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
-                             new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
-                                             new AstClassOrPackageRef{nodep->fileline(), "std",
-                                                                      nullptr, nullptr},
-                                             nullptr}};
-            nodep->addMembersp(varp);
-        }
-
-        // IEEE: function void sample()
-        {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            funcp->addStmtsp(sampleArgs);
-            funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
-            nodep->addMembersp(funcp);
-        }
-
-        // IEEE: function void start(), void stop()
-        for (const string& name : {"start"s, "stop"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
-            funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
-            nodep->addMembersp(funcp);
-        }
-
-        // IEEE: static function real get_coverage(optional ref int, optional ref int)
-        // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
-        for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
-            funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-            funcp->isStatic(name == "get_coverage");
-            funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
-            nodep->addMembersp(funcp);
-            {
-                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
-                                                nodep->findDoubleDType()};
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                varp->funcLocal(true);
-                varp->direction(VDirection::OUTPUT);
-                varp->funcReturn(true);
-                funcp->fvarp(varp);
-            }
-            for (const string& varname : {"covered_bins"s, "total_bins"s}) {
-                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
-                                                nodep->findStringDType()};
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                varp->funcLocal(true);
-                varp->direction(VDirection::INPUT);
-                varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
-                funcp->addStmtsp(varp);
-            }
-        }
-        // IEEE: function void set_inst_name(string)
-        {
-            AstFunc* const funcp
-                = new AstFunc{nodep->fileline(), "set_inst_name", nullptr, nullptr};
-            funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
-            nodep->addMembersp(funcp);
-            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
-                                            nodep->findStringDType()};
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            varp->funcLocal(true);
-            varp->direction(VDirection::INPUT);
-            funcp->addStmtsp(varp);
-        }
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};

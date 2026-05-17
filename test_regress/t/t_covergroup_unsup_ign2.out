@@ -1,0 +1,252 @@
+%Warning-COVERIGN: t/t_covergroup_unsup.v:64:24: Unsupported: '@@' coverage event
+   64 |   covergroup cg_atat() @@ (begin funca or end funcb);
+      |                        ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_unsup.v:98:21: Unsupported: 'iff' in coverage cross
+   98 |     cross a, b iff (!rst);
+      |                     ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:101:21: Unsupported: 'iff' in coverage cross
+  101 |     cross a, b iff (!rst) {}
+      |                     ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:108:21: Unsupported: 'function' in coverage cross body
+  108 |       function void crossfunc; endfunction
+      |                     ^~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:109:18: Unsupported: function call in coverage select expression
+  109 |       bins one = crossfunc();
+      |                  ^~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:109:7: Unsupported: explicit coverage cross bins
+  109 |       bins one = crossfunc();
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:113:31: Unsupported: 'iff' in coverage cross
+  113 |     my_cg_id: cross a, b iff (!rst);
+      |                               ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:123:14: Unsupported: 'bins' explicit array size (treated as '[]')
+  123 |     { bins ba[2] = {a}; }
+      |              ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:127:21: Unsupported: 'with' in cover bin (bin created without filter)
+  127 |     { bins ba = {a} with ( b ); }
+      |                     ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:130:32: Unsupported: 'with' in wildcard cover bin
+  130 |     { wildcard bins bwaw = {a} with ( b ); }
+      |                                ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:133:27: Unsupported: 'sequence' in default cover bin
+  133 |     { bins defs = default sequence; }
+      |                           ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:136:7: Unsupported: 'wildcard' transition list in cover bin
+  136 |     { wildcard bins wbts = ( 1, 2 ); }
+      |       ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:137:31: Unsupported: covergroup value range '[...]'
+  137 |     { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
+      |                               ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:137:42: Unsupported: covergroup value range '[...]'
+  137 |     { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
+      |                                          ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:137:57: Unsupported: covergroup value range '[...]'
+  137 |     { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
+      |                                                         ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:140:23: Unsupported: '[*]' in cover transition
+  140 |     { bins bts2 = ( 3 [*5] ) ; }
+      |                       ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:141:23: Unsupported: '[*]' in cover transition
+  141 |     { bins bts2 = ( 3 [*5:6] ) ; }
+      |                       ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:142:23: Unsupported: '[->' in cover transition
+  142 |     { bins bts2 = ( 3 [->5] ) ; }
+      |                       ^~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:143:23: Unsupported: '[->' in cover transition
+  143 |     { bins bts2 = ( 3 [->5:6] ) ; }
+      |                       ^~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:144:23: Unsupported: '[=]' in cover transition
+  144 |     { bins bts2 = ( 3 [=5] ) ; }
+      |                       ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:145:23: Unsupported: '[=]' in cover transition
+  145 |     { bins bts2 = ( 3 [=5:6] ) ; }
+      |                       ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:151:12: Unsupported: 'bins' array (non-auto)
+  151 |     { bins nonAuto[4]; }
+      |            ^~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:153:35: Unsupported: 'with' in cover bin (bin created without filter)
+  153 |     { ignore_bins ib_with = {1,2} with ( b ); }
+      |                                   ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:154:37: Unsupported: 'with' in cover bin (bin created without filter)
+  154 |     { illegal_bins lib_with = {1,2} with ( b ); }
+      |                                     ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:156:29: Unsupported: 'with' in cover bin
+  156 |     { ignore_bins ib_cp = a with ( b ); }
+      |                             ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:157:31: Unsupported: 'with' in cover bin
+  157 |     { illegal_bins lib_cp = a with ( b ); }
+      |                               ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:159:45: Unsupported: 'with' in wildcard cover bin
+  159 |     { wildcard ignore_bins wib_with = {1,2} with ( b ); }
+      |                                             ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:160:47: Unsupported: 'with' in wildcard cover bin
+  160 |     { wildcard illegal_bins wlib_with = {1,2} with ( b ); }
+      |                                               ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:162:7: Unsupported: 'wildcard' transition list in cover bin
+  162 |     { wildcard ignore_bins wib_trans = ( 1 => 2 ); }
+      |       ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:163:7: Unsupported: 'wildcard' transition list in cover bin
+  163 |     { wildcard illegal_bins wlib_trans = ( 1 => 2 ); }
+      |       ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:165:40: Unsupported: 'sequence' in default cover bin
+  165 |     { ignore_bins ib_def_seq = default sequence; }
+      |                                        ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:166:42: Unsupported: 'sequence' in default cover bin
+  166 |     { illegal_bins lib_def_seq = default sequence; }
+      |                                          ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:171:24: Unsupported: 'with' in cover bin
+  171 |      bins div_by_2 = a with (item % 2 == 0);
+      |                        ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:172:32: Unsupported: 'with' in cover bin
+  172 |      bins div_by_2_paren[] = a with (item % 2 == 0);
+      |                                ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:178:20: Unsupported: 'binsof' in coverage select expression
+  178 |       bins bin_a = binsof(a);
+      |                    ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:178:7: Unsupported: explicit coverage cross bins
+  178 |       bins bin_a = binsof(a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:179:21: Unsupported: 'binsof' in coverage select expression
+  179 |       bins bin_ai = binsof(a) iff (!rst);
+      |                     ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:179:7: Unsupported: explicit coverage cross bins
+  179 |       bins bin_ai = binsof(a) iff (!rst);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:180:20: Unsupported: 'binsof' in coverage select expression
+  180 |       bins bin_c = binsof(cp.x);
+      |                    ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:180:7: Unsupported: explicit coverage cross bins
+  180 |       bins bin_c = binsof(cp.x);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:181:21: Unsupported: 'binsof' in coverage select expression
+  181 |       bins bin_na = ! binsof(a);
+      |                     ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:181:7: Unsupported: explicit coverage cross bins
+  181 |       bins bin_na = ! binsof(a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:183:30: Unsupported: 'intersect' in coverage select expression
+  183 |       bins bin_d = binsof(a) intersect { b };
+      |                              ^~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:183:7: Unsupported: explicit coverage cross bins
+  183 |       bins bin_d = binsof(a) intersect { b };
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:184:31: Unsupported: 'intersect' in coverage select expression
+  184 |       bins bin_nd = ! binsof(a) intersect { b };
+      |                               ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:184:7: Unsupported: explicit coverage cross bins
+  184 |       bins bin_nd = ! binsof(a) intersect { b };
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:186:20: Unsupported: 'with' in coverage select expression
+  186 |       bins bin_e = with (a);
+      |                    ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:186:7: Unsupported: explicit coverage cross bins
+  186 |       bins bin_e = with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:187:24: Unsupported: 'with' in coverage select expression
+  187 |       bins bin_not_e = ! with (a);
+      |                        ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:187:7: Unsupported: explicit coverage cross bins
+  187 |       bins bin_not_e = ! with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:189:23: Unsupported: 'binsof' in coverage select expression
+  189 |       bins bin_par = (binsof(a));
+      |                       ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:189:7: Unsupported: explicit coverage cross bins
+  189 |       bins bin_par = (binsof(a));
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:190:22: Unsupported: 'binsof' in coverage select expression
+  190 |       bins bin_and = binsof(a) && binsof(b);
+      |                      ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:190:35: Unsupported: 'binsof' in coverage select expression
+  190 |       bins bin_and = binsof(a) && binsof(b);
+      |                                   ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:190:32: Unsupported: '&&' in coverage select expression
+  190 |       bins bin_and = binsof(a) && binsof(b);
+      |                                ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:190:7: Unsupported: explicit coverage cross bins
+  190 |       bins bin_and = binsof(a) && binsof(b);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:191:21: Unsupported: 'binsof' in coverage select expression
+  191 |       bins bin_or = binsof(a) || binsof(b);
+      |                     ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:191:34: Unsupported: 'binsof' in coverage select expression
+  191 |       bins bin_or = binsof(a) || binsof(b);
+      |                                  ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:191:31: Unsupported: '||' in coverage select expression
+  191 |       bins bin_or = binsof(a) || binsof(b);
+      |                               ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:191:7: Unsupported: explicit coverage cross bins
+  191 |       bins bin_or = binsof(a) || binsof(b);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:192:23: Unsupported: 'binsof' in coverage select expression
+  192 |       bins bin_with = binsof(a) with (a);
+      |                       ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:192:33: Unsupported: 'with' in coverage select expression
+  192 |       bins bin_with = binsof(a) with (a);
+      |                                 ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:192:7: Unsupported: explicit coverage cross bins
+  192 |       bins bin_with = binsof(a) with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:193:26: Unsupported: 'binsof' in coverage select expression
+  193 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+      |                          ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:193:39: Unsupported: 'binsof' in coverage select expression
+  193 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+      |                                       ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:193:49: Unsupported: 'with' in coverage select expression
+  193 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+      |                                                 ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:193:36: Unsupported: '||' in coverage select expression
+  193 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+      |                                    ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:193:7: Unsupported: explicit coverage cross bins
+  193 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:194:27: Unsupported: 'binsof' in coverage select expression
+  194 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+      |                           ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:194:40: Unsupported: 'binsof' in coverage select expression
+  194 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+      |                                        ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:194:50: Unsupported: 'with' in coverage select expression
+  194 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+      |                                                  ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:194:37: Unsupported: '&&' in coverage select expression
+  194 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+      |                                     ^~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:194:7: Unsupported: explicit coverage cross bins
+  194 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:195:34: Unsupported: 'binsof' in coverage select expression
+  195 |       bins bin_multiple_fields = binsof(p.inner_packet.field);
+      |                                  ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:195:7: Unsupported: explicit coverage cross bins
+  195 |       bins bin_multiple_fields = binsof(p.inner_packet.field);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:197:30: Unsupported: 'binsof' in coverage select expression
+  197 |       ignore_bins ib_cross = binsof(a);
+      |                              ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:197:7: Unsupported: explicit coverage cross bins
+  197 |       ignore_bins ib_cross = binsof(a);
+      |       ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:198:32: Unsupported: 'binsof' in coverage select expression
+  198 |       illegal_bins lib_cross = binsof(a);
+      |                                ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:198:7: Unsupported: explicit coverage cross bins
+  198 |       illegal_bins lib_cross = binsof(a);
+      |       ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:104:18: Ignoring unsupported coverage cross option: 'comment'
+  104 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
+      |                  ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:104:44: Ignoring unsupported coverage cross option: 'weight'
+  104 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
+      |                                            ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:104:64: Ignoring unsupported coverage cross option: 'per_instance'
+  104 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
+      |                                                                ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:209:5: Unsupported: 'covergroup' clocking event on member variable
+                                               : ... note: In instance 't'
+  209 |     covergroup cov1 @m_z;
+      |     ^~~~~~~~~~

@@ -25,8 +25,10 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -212,8 +214,6 @@ void VlcTop::rank() {
         }
     }
 }
-
-//######################################################################
 
 void VlcTop::annotateCalc() {
     // Calculate per-line information into filedata structure

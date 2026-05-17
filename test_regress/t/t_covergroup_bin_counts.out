@@ -1,0 +1,9 @@
+cg.data.low: 3
+cg.data.zero: 1
+cg_db.cp.high: 1
+cg_db.cp.low: 1
+cg_mixed.opcode.arith: 1
+cg_mixed.opcode.load: 1
+cg_mixed.opcode.nop: 1
+cg_mixed.opcode.other: 1
+cg_mixed.opcode.store: 1
