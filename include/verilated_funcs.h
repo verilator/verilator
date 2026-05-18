@@ -1849,7 +1849,7 @@ static inline void VL_STREAMR_RRI(int lbits, VlQueue<VlWide<N_Words>>& to_q,
     VlWide<N_Words> temp;
     for (int ii = 0; ii < N_Words; ii++) { temp.at(ii) = 0; }
     size_t elementCount = sizeOfThis - 1;
-    for (auto val : from_q) {
+    for (T_Other val : from_q) {
         if VL_CONSTEXPR_CXX17 (numOtherInWord > 0) {
             temp.at((elementCount / numOtherInWord) % N_Words)
                 |= (static_cast<EData>(val) << (elementCount * 8 * otherSize));
@@ -1860,7 +1860,7 @@ static inline void VL_STREAMR_RRI(int lbits, VlQueue<VlWide<N_Words>>& to_q,
                 for (int ii = 0; ii < N_Words; ii++) { temp.at(ii) = 0; }
                 elementCount = sizeOfThis - 1;
             }
-        } else {  //QData
+        } else if VL_CONSTEXPR_CXX17 (otherSize == 8) {  //QData
             temp.at(elementCount % N_Words) |= (static_cast<EData>(val >> 32));
             elementCount--;
             if (elementCount == -1) {
