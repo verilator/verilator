@@ -8,25 +8,42 @@ interface inf;
   int v;
 endinterface
 
-module GenericModule (interface a[4]);
+module GenericModule1D (interface a[4]);
   initial begin
     #1;
     if (a[0].v != 'hdead) $stop;
     if (a[1].v != 'hbeef) $stop;
     if (a[2].v != 'hface) $stop;
     if (a[3].v != 'hcafe) $stop;
-    $write("*-* All Finished *-*\n");
-    $finish;
+  end
+endmodule
+
+module GenericModule2D (interface a[2][2]);
+  initial begin
+    #2;
+    if (a[0][0].v != 'hdead) $stop;
+    if (a[0][1].v != 'hbeef) $stop;
+    if (a[1][0].v != 'hface) $stop;
+    if (a[1][1].v != 'hcafe) $stop;
   end
 endmodule
 
 module t;
-  inf inf_inst[4]();
-  GenericModule genericModule (inf_inst);
+  inf inf1d[4]();
+  inf inf2d[2][2]();
+  GenericModule1D mod1d(inf1d);
+  GenericModule2D mod2d(inf2d);
   initial begin
-    inf_inst[0].v ='hdead;
-    inf_inst[1].v ='hbeef;
-    inf_inst[2].v ='hface;
-    inf_inst[3].v ='hcafe;
+    inf1d[0].v ='hdead;
+    inf1d[1].v ='hbeef;
+    inf1d[2].v ='hface;
+    inf1d[3].v ='hcafe;
+    inf2d[0][0].v ='hdead;
+    inf2d[0][1].v ='hbeef;
+    inf2d[1][0].v ='hface;
+    inf2d[1][1].v ='hcafe;
+    #3;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule
