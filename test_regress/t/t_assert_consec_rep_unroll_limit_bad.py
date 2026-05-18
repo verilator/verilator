@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True,
+          verilator_flags2=['--assert-unroll-limit 1024'],
+          expect_filename=test.golden_filename)
 
 test.passes()
