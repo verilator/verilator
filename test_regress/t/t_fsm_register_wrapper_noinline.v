@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage for non-inlined macro state register wrappers
+// DESCRIPTION: Verilator: FSM coverage for non-inlined fsm_register_wrapper state register wrappers
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -281,7 +281,7 @@ module fsm_prim_override (
     .rst_ni(rst_n),
     .d_i(state_d),
     .q_o(state_q)
-  ) /*verilator fsm_state_macro d=d_i q=q_o clk=clk_i rst=rst_ni rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_sparse_prim (
@@ -351,7 +351,7 @@ module fsm_sparse_prim_override (
     .rst_ni(rst_n),
     .state_i(state_d),
     .state_o(state_q)
-  ) /*verilator fsm_state_macro d=state_i q=state_o clk=clk_i rst=rst_ni rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_active_high (
@@ -517,7 +517,7 @@ module fsm_sync_reset_unknown_polarity (
     .my_reset(parent_reset),
     .d(state_d),
     .q(state_q)
-  ) /*verilator fsm_state_macro d=d q=q clk=clk rst=my_reset rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_custom_reset_parent_polarity (
@@ -551,7 +551,7 @@ module fsm_custom_reset_parent_polarity (
     .my_reset(parent_reset),
     .d(state_d),
     .q(state_q)
-  ) /*verilator fsm_state_macro d=d q=q clk=clk rst=my_reset rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_custom_reset_active_high (
@@ -585,7 +585,7 @@ module fsm_custom_reset_active_high (
     .my_reset(parent_reset),
     .d(state_d),
     .q(state_q)
-  ) /*verilator fsm_state_macro d=d q=q clk=clk rst=my_reset rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_ambiguous_ignored (
@@ -651,7 +651,7 @@ module fsm_missing_reset_param (
     .rst_ni(rst_n),
     .state_i(state_d),
     .state_o(state_q)
-  ) /*verilator fsm_state_macro rstval=MissingParam*/;
+  );
 endmodule
 
 module fsm_competing_direct (

@@ -668,9 +668,7 @@ class AstCell final : public AstNode {
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
-    string m_attrFsmStateMacro;  // fsm_state_macro metacomment role overrides
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
-    bool m_hasAttrFsmStateMacro : 1;  // Has fsm_state_macro metacomment
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
 public:
@@ -681,9 +679,7 @@ public:
         , m_name{instName}
         , m_origName{instName}
         , m_modName{modName}
-        , m_attrFsmStateMacro{}
         , m_hasIfaceVar{false}
-        , m_hasAttrFsmStateMacro{false}
         , m_recursive{false}
         , m_trace{true} {
         addPinsp(pinsp);
@@ -703,12 +699,6 @@ public:
     void origName(const string& name) { m_origName = name; }
     string modName() const { return m_modName; }  // * = Instance name
     void modName(const string& name) { m_modName = name; }
-    bool attrFsmStateMacro() const { return m_hasAttrFsmStateMacro; }
-    const string& attrFsmStateMacroArgs() const { return m_attrFsmStateMacro; }
-    void attrFsmStateMacro(const string& args) {
-        m_hasAttrFsmStateMacro = true;
-        m_attrFsmStateMacro = args;
-    }
     FileLine* modNameFileline() const { return m_modNameFileline; }
     AstNodeModule* modp() const { return m_modp; }  // [AfterLink] = Pointer to module instantiated
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
@@ -1974,7 +1964,7 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_attrFsmState : 1;  // declared with fsm_state metacomment
-    bool m_attrFsmStateMacro : 1;  // connected to an fsm_state_macro instance
+    bool m_attrFsmRegisterWrapper : 1;  // connected to an fsm_register_wrapper instance
     bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_fileDescr : 1;  // File descriptor
@@ -2036,7 +2026,7 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_attrFsmState = false;
-        m_attrFsmStateMacro = false;
+        m_attrFsmRegisterWrapper = false;
         m_attrFsmResetArc = false;
         m_attrFsmArcInclCond = false;
         m_fileDescr = false;
@@ -2184,7 +2174,7 @@ public:
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void attrFsmState(bool flag) { m_attrFsmState = flag; }
-    void attrFsmStateMacro(bool flag) { m_attrFsmStateMacro = flag; }
+    void attrFsmRegisterWrapper(bool flag) { m_attrFsmRegisterWrapper = flag; }
     void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
@@ -2351,7 +2341,7 @@ public:
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrFsmState() const { return m_attrFsmState; }
-    bool attrFsmStateMacro() const { return m_attrFsmStateMacro; }
+    bool attrFsmRegisterWrapper() const { return m_attrFsmRegisterWrapper; }
     bool attrFsmResetArc() const { return m_attrFsmResetArc; }
     bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }

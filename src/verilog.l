@@ -136,6 +136,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
   "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
   "forceable"           { FL; return yVLT_FORCEABLE; }
+  "fsm_register_wrapper" { FL; return yVLT_FSM_REGISTER_WRAPPER; }
   "full_case"           { FL; return yVLT_FULL_CASE; }
   "hier_block"          { FL; return yVLT_HIER_BLOCK; }
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
@@ -166,6 +167,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-block"            { FL; return yVLT_D_BLOCK; }
   -?"-contents"         { FL; return yVLT_D_CONTENTS; }
   -?"-cost"             { FL; return yVLT_D_COST; }
+  -?"-clock"            { FL; return yVLT_D_CLOCK; }
+  -?"-d"                { FL; return yVLT_D_D; }
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-hier-dpi"         { FL; return yVLT_D_HIER_DPI; }
@@ -178,6 +181,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-param"            { FL; return yVLT_D_PARAM; }
   -?"-port"             { FL; return yVLT_D_PORT; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
+  -?"-q"                { FL; return yVLT_D_Q; }
+  -?"-reset"            { FL; return yVLT_D_RESET; }
+  -?"-reset_value"      { FL; return yVLT_D_RESET_VALUE; }
   -?"-scope"            { FL; return yVLT_D_SCOPE; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }
@@ -855,8 +861,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    */
   "/*verilator fsm_arc_include_cond*/"  { FL; return yVL_FSM_ARC_INCL_COND; }
   "/*verilator fsm_reset_arc*/"         { FL; return yVL_FSM_RESET_ARC; }
-  "/*verilator fsm_state_macro"[^*]*"*/" { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseFsmStateMacro(yytext));
-                                          return yVL_FSM_STATE_MACRO; }
   "/*verilator fsm_state*/"             { FL; return yVL_FSM_STATE; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }

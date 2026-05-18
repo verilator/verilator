@@ -1,0 +1,14 @@
+// DESCRIPTION: Verilator: FSM register wrapper VLT bad descriptor coverage
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+fsm_register_wrapper -module "" -d "din" -q "dout" -clock "clk"
+fsm_register_wrapper -module "missing_d_fsm_flop" -d "" -q "dout" -clock "clk"
+fsm_register_wrapper -module "missing_q_fsm_flop" -d "din" -q "" -clock "clk"
+fsm_register_wrapper -module "missing_clock_fsm_flop" -d "din" -q "dout" -clock ""
+fsm_register_wrapper -module "duplicate_fsm_flop" -d "din" -q "dout" -clock "clk"
+fsm_register_wrapper -module "duplicate_fsm_flop" -d "din" -q "dout" -clock "clk"

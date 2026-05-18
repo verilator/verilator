@@ -100,6 +100,27 @@ The grammar of control commands is as follows:
 
    Same as :option:`/*verilator&32;forceable*/` metacomment.
 
+.. option:: fsm_register_wrapper -module "<modulename>" -d "<port>" -q "<port>" -clock "<port>" [-reset "<port>"] [-reset_value "<param>"]
+
+   Declares that the specified module is a transparent FSM state-register
+   wrapper for FSM coverage extraction. One declaration applies to all
+   instances of that module.
+
+   The ``-d`` option names the wrapper input port carrying next-state data.
+   The ``-q`` option names the wrapper output port carrying registered state.
+   The ``-clock`` option names the wrapper clock port.
+
+   Verilator does not infer wrapper semantics from module or port naming
+   conventions. A wrapper module must be declared with this option before
+   Verilator will use instances of it to extract FSM state and transition
+   coverage.
+
+   The ``-reset`` and ``-reset_value`` options are optional. Reset arcs are
+   emitted only when both the reset polarity can be inferred from the
+   wrapper's event control and ``-reset_value`` names a static parameter value.
+   If reset metadata is incomplete, Verilator may still emit FSM state and
+   transition coverage without reset arcs.
+
 .. option:: full_case -file "<filename>" -lines <lineno>
 
    Same as ``//synthesis full_case``. When these synthesis directives

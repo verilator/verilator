@@ -1,5 +1,5 @@
 //      // verilator_coverage annotation
-        // DESCRIPTION: Verilator: FSM coverage for macro/primitive state register wrappers
+        // DESCRIPTION: Verilator: FSM coverage for fsm_register_wrapper state register wrappers
         //
         // This file ONLY is placed under the Creative Commons Public Domain.
         // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -159,7 +159,7 @@
             .rst_ni(rst_n),
             .state_i(state_d),
             .state_o(state_q)
-          ) /*verilator fsm_state_macro*/;
+          );
         endmodule
 
         module fsm_prim (
@@ -365,7 +365,7 @@
             .rst_n(rst_n),
             .din(state_d),
             .dout(state_q)
-          ) /*verilator fsm_state_macro d=din q=dout clk=clk rst=rst_n rstval=ResetValue*/;
+          );
         endmodule
 
         module fsm_non_simple (
@@ -458,7 +458,15 @@
 
           always_comb begin
             state_d = state_q;
-            unique case (state_q)
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.ignored_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.ignored_u.state_q::S0->S0]
+%000001        // [fsm_arc t.ignored_u.state_q::S0->S1]
+%000001        // [fsm_arc t.ignored_u.state_q::S1->S2]
+%000001        // [fsm_state t.ignored_u.state_q::S0]
+%000001        // [fsm_state t.ignored_u.state_q::S1]
+%000001        // [fsm_state t.ignored_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
               S1: state_d = S2;
               default: state_d = S0;

@@ -222,21 +222,6 @@ string V3ParseImp::lexParseTag(const char* textp) {
     return tmp;
 }
 
-string V3ParseImp::lexParseFsmStateMacro(const char* textp) {
-    // The annotation is a coverage hint whose valid keys belong to FSM
-    // detection, not to the language lexer. Preserve the raw option text here
-    // so the detecting pass can issue diagnostics in the same context where it
-    // decides whether a wrapper is usable.
-    string tmp = textp + std::strlen("/*verilator fsm_state_macro");
-    // The lexer rule that calls this helper includes the closing marker, so the
-    // parser-side contract is to strip that fixed suffix and leave option
-    // validation to FSM detection.
-    tmp.erase(tmp.length() - std::strlen("*/"));
-    while (!tmp.empty() && std::isspace(static_cast<unsigned char>(tmp.front()))) tmp.erase(0, 1);
-    while (!tmp.empty() && std::isspace(static_cast<unsigned char>(tmp.back()))) tmp.pop_back();
-    return tmp;
-}
-
 double V3ParseImp::lexParseTimenum(const char* textp) {
     const size_t length = std::strlen(textp);
     char* const strgp = new char[length + 1];

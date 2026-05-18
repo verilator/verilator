@@ -227,8 +227,10 @@ class V3ControlModule final {
     V3ControlVarResolver m_params;  // Parameters in module
     V3ControlVarResolver m_ports;  // Ports in module
     V3ControlVarResolver m_vars;  // Variables in module
+    V3Control::FsmRegisterWrapper m_fsmRegisterWrapper;  // FSM wrapper descriptor
     std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
     std::set<VPragmaType> m_modPragmas;  // List of Pragmas for modules
+    bool m_hasFsmRegisterWrapper = false;  // Whether descriptor has been set
     bool m_inline = false;  // Whether to force the inline
     bool m_inlineValue = false;  // The inline value (on/off)
 
@@ -240,6 +242,10 @@ public:
         m_params.update(m.m_params);
         m_ports.update(m.m_ports);
         m_vars.update(m.m_vars);
+        if (m.m_hasFsmRegisterWrapper) {
+            m_fsmRegisterWrapper = m.m_fsmRegisterWrapper;
+            m_hasFsmRegisterWrapper = true;
+        }
         for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
         if (!m_inline) {
             m_inline = m.m_inline;
@@ -260,6 +266,17 @@ public:
     void setInline(bool set) {
         m_inline = true;
         m_inlineValue = set;
+    }
+    void setFsmRegisterWrapper(FileLine* fl, const V3Control::FsmRegisterWrapper& desc) {
+        if (m_hasFsmRegisterWrapper) {
+            fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module '"
+                                        << desc.module << "'; replacing previous descriptor");
+        }
+        m_fsmRegisterWrapper = desc;
+        m_hasFsmRegisterWrapper = true;
+    }
+    const V3Control::FsmRegisterWrapper* fsmRegisterWrapperp() const {
+        return m_hasFsmRegisterWrapper ? &m_fsmRegisterWrapper : nullptr;
     }
     void addModulePragma(VPragmaType pragma) { m_modPragmas.insert(pragma); }
 
@@ -877,6 +894,30 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
     V3ControlResolver::s().addHierWorkers(fl, model, workers);
 }
 
+void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
+                                      const string& q, const string& clock,
+                                      const string& reset, const string& resetValue) {
+    if (module.empty()) {
+        fl->v3error("fsm_register_wrapper missing -module");
+        return;
+    }
+    if (d.empty()) {
+        fl->v3error("fsm_register_wrapper missing -d");
+        return;
+    }
+    if (q.empty()) {
+        fl->v3error("fsm_register_wrapper missing -q");
+        return;
+    }
+    if (clock.empty()) {
+        fl->v3error("fsm_register_wrapper missing -clock");
+        return;
+    }
+
+    const FsmRegisterWrapper desc{module, d, q, clock, reset, resetValue};
+    V3ControlResolver::s().modules().at(module).setFsmRegisterWrapper(fl, desc);
+}
+
 void V3Control::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
     UINFO(9, "addIgnore " << code << " " << min << "-" << max << " fn=" << filename);
     if (filename == "*") {  // For "lint_off/lint_on [--rule x]"
@@ -1065,6 +1106,10 @@ int V3Control::getHierWorkers(const string& model) {
 }
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
+}
+const V3Control::FsmRegisterWrapper* V3Control::getFsmRegisterWrapper(const string& module) {
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(module);
+    return modp ? modp->fsmRegisterWrapperp() : nullptr;
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
     return V3ControlResolver::s().getProfileData(hierDpi);

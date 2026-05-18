@@ -24,9 +24,9 @@ class AstNetlist;
 
 class V3FsmDetect final {
 public:
-    // Mark parent-scope state variables connected through recognized or
-    // annotated wrapper instances before inlining lowers those instances away.
-    static void markMacroStateVars(AstNetlist* rootp) VL_MT_DISABLED;
+    // Mark parent-scope state variables connected through configured wrapper
+    // instances before inlining lowers those instances away.
+    static void markWrapperStateVars(AstNetlist* rootp) VL_MT_DISABLED;
 
     // Detect FSMs while the original clocked/case structure is still visible,
     // then immediately lower the recovered graphs into concrete coverage

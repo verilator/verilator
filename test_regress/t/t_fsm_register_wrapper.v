@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage for macro/primitive state register wrappers
+// DESCRIPTION: Verilator: FSM coverage for fsm_register_wrapper state register wrappers
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -142,7 +142,7 @@ module fsm_noargs_hint (
     .rst_ni(rst_n),
     .state_i(state_d),
     .state_o(state_q)
-  ) /*verilator fsm_state_macro*/;
+  );
 endmodule
 
 module fsm_prim (
@@ -316,7 +316,7 @@ module fsm_annotated (
     .rst_n(rst_n),
     .din(state_d),
     .dout(state_q)
-  ) /*verilator fsm_state_macro d=din q=dout clk=clk rst=rst_n rstval=ResetValue*/;
+  );
 endmodule
 
 module fsm_non_simple (

@@ -322,7 +322,7 @@ static void process() {
             // wrapper-derived registers. If inlining is disabled, V3FsmDetect
             // also has a cell-based path that builds the register candidate
             // directly from the surviving instance.
-            if (v3Global.opt.coverageFsm()) V3FsmDetect::markMacroStateVars(v3Global.rootp());
+            if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
             if (v3Global.opt.fInline()) {
                 V3Inline::inlineAll(v3Global.rootp());
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules

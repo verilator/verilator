@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage for macro/primitive state register wrappers
+# DESCRIPTION: Verilator: FSM coverage for non-inlined fsm_register_wrapper state register wrappers
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -13,7 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage-fsm'])
+test.compile(verilator_flags2=['--cc --coverage-fsm -fno-inline t/t_fsm_register_wrapper_noinline.vlt'])
 
 test.execute()
 
