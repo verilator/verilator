@@ -177,6 +177,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
     const bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
+    if (nodep->mtaskCacheLineAlign() && !asRef) putns(nodep, "alignas(VL_CACHE_LINE_BYTES) ");
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types

@@ -2002,6 +2002,7 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
+    bool m_mtaskCacheLineAlign : 1;  // Start MTask affinity group on a cache line
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2063,6 +2064,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_processQueue = false;
+        m_mtaskCacheLineAlign = false;
     }
 
 public:
@@ -2310,6 +2312,8 @@ public:
     }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
+    bool mtaskCacheLineAlign() const { return m_mtaskCacheLineAlign; }
+    void mtaskCacheLineAlign(bool flag) { m_mtaskCacheLineAlign = flag; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const VL_MT_STABLE;
