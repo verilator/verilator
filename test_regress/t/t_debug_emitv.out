@@ -77,6 +77,7 @@ module Vt_debug_emitv_t;
             end
             #1;
             $write("After #1 delay");
+            wait((clk == 'sh1)) $write("After wait(clk == 1)");
         end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
@@ -789,15 +790,10 @@ package Vt_debug_emitv_std;
                 __Vincrement1 = m_nextTicket;
                 m_nextTicket = (m_nextTicket + 64'h1);
                 ticket = __Vincrement1;
-
-                ???? // WAIT
-                (m_ticket == ticket)m_nextKeyCount = keyCount;
-
-                ???? // WAIT
-                (m_keyCount >= keyCount)m_keyCount = (
-                                                      m_keyCount 
-                                                      - 
-                                                      keyCount);
+                wait((m_ticket == ticket));
+                m_nextKeyCount = keyCount;
+                wait((m_keyCount >= keyCount));
+                m_keyCount = (m_keyCount - keyCount);
                 m_ticket = (m_ticket + 64'h1);
             end
         endtask
@@ -860,12 +856,9 @@ package Vt_debug_emitv_std;
             set_status(process::RUNNING);
         endtask
         task await;
-
-            ???? // WAIT
-            ((status() == process::FINISHED) || (status() 
-                                                 == 
-                                                 process::
-                                                 KILLED))endtask
+            wait(((status() == process::FINISHED) || 
+                  (status() == process::KILLED)));
+        endtask
         task killQueue;
             ref 
             ???? // CLASSREFDTYPE 'process'
