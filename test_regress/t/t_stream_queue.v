@@ -46,7 +46,7 @@ module t;
     i_crc = 42;
     i_char = 15;
     i_short = 16'hFF;
-    #5; // this forces no-life
+    #0; // this forces no-life
     //TODO make this work with V3Life
     //-------------------- STREAML ------------------------------------
     //----------- CData QUEUE --------
@@ -333,7 +333,8 @@ module t;
     qdata_pkt = {>>{vlwide_pkt_128}};
     `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
     `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
-
+    $write("*-* All Finished *-*\n");
+    $finish;
 
   end
 

@@ -142,10 +142,6 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     // If we are assigning this to a queue we need to get the return type
                     if (VN_IS(detailp->backp(), Assign)
                         && VN_IS(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
-                        AstQueueDType* qtypep
-                            = VN_CAST(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType);
-                        AstNodeDType* child_type = qtypep->subDTypep();
-                        int width = child_type->width();
                         puts("R");  // R for queue
                         usesQueue = true;
                     } else if (VN_IS(detailp->dtypep()->skipRefp(), QueueDType)

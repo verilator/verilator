@@ -25,12 +25,13 @@ module t;
 
     //---------------------- STREAM WITH INTERFACE -------------------
     //using this forces verilator to a AstSel Node into a Stream Node
-    #5 //make sure we dont optimize it all away in v3life
+    #0 //make sure we dont optimize it all away in v3life
     pkt_if_init.s.extra = 8'hd;
     byte_pkt = {>>{pkt_if_init.s.extra}};
-    // `checks(8'hd,byte_pkt);
-    foreach(byte_pkt[i])
-      $display("%h",byte_pkt[i]);
+    if(8'hd == {>>{byte_pkt}}) begin
+        $write("*-* All Finished *-*\n");
+        $finish();
+    end
 
   end
 

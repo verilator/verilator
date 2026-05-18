@@ -1620,7 +1620,7 @@ public:
         }
     }
     void emitStreamR(AstStreamR* nodep, AstNode* parent) {
-        if ((VN_IS(parent->dtypep()->skipRefp(), QueueDType))) {
+        if ((VN_IS(parent->dtypep(), QueueDType))) {
             emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
                        nodep->rhsp(), nullptr);
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
