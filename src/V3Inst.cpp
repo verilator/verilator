@@ -628,6 +628,19 @@ private:
         for (size_t i = 0; i < indices.size(); ++i) {
             indexStr += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
         }
+        AstMemberSel* const parentSelp = VN_CAST(nodep->backp(), MemberSel);
+        if (parentSelp && parentSelp->fromp() == nodep && parentSelp->varp()) {
+            AstVar* const memberVarp = parentSelp->varp();
+            AstVarXRef* const newp
+                = new AstVarXRef{parentSelp->fileline(), memberVarp->name(),
+                                 varrefp->name() + indexStr, parentSelp->access()};
+            newp->varp(memberVarp);
+            newp->dtypep(parentSelp->dtypep());
+            newp->classOrPackagep(varrefp->classOrPackagep());
+            parentSelp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(parentSelp), parentSelp);
+            return;
+        }
         AstVarXRef* const newp
             = new AstVarXRef{nodep->fileline(), varrefp->name() + indexStr, "", VAccess::READ};
         newp->dtypep(irp);
