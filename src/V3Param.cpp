@@ -3255,21 +3255,27 @@ public:
         // own typedefs have been correctly bound (via classRefDeparam) to the
         // appropriate sibling, so we use those local typedefs as ground truth
         // to disambiguate which sibling each REFDTYPE should point at.
-        netlistp->foreach([&](AstClass* ownerClassp) {
+        netlistp->foreach([&](AstNodeModule* ownerModp) {
+            // Build map: origName-of-target-class -> unique resolved sibling
+            // clone in this module/class. If two locally-resolved typedefs
+            // point at different specializations of the same template, mark
+            // it ambiguous and skip retargeting for that origName: we can't
+            // safely guess which one a stripped REFDTYPE meant.
             std::unordered_map<std::string, AstClass*> origNameToClone;
-            for (AstNode* sp = ownerClassp->stmtsp(); sp; sp = sp->nextp()) {
+            std::unordered_set<std::string> ambiguous;
+            for (AstNode* sp = ownerModp->stmtsp(); sp; sp = sp->nextp()) {
                 AstTypedef* const tdp = VN_CAST(sp, Typedef);
                 if (!tdp) continue;
                 AstClassRefDType* const crdtp = VN_CAST(tdp->subDTypep(), ClassRefDType);
                 if (!crdtp || !crdtp->classp()) continue;
                 AstClass* const targetp = crdtp->classp();
-                if (targetp->hasGParam()) continue;
                 const std::string origName
                     = targetp->origName().empty() ? targetp->name() : targetp->origName();
-                origNameToClone[origName] = targetp;
+                const auto pair = origNameToClone.emplace(origName, targetp);
+                if (!pair.second && pair.first->second != targetp) ambiguous.insert(origName);
             }
             if (origNameToClone.empty()) return;
-            ownerClassp->foreach([&](AstRefDType* refp) {
+            ownerModp->foreach([&](AstRefDType* refp) {
                 AstTypedef* const oldTdp = refp->typedefp();
                 if (!oldTdp) return;
                 AstClass* const oldOwnerp
@@ -3277,6 +3283,7 @@ public:
                 if (!oldOwnerp) return;
                 const std::string origName
                     = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
+                if (ambiguous.count(origName)) return;
                 const auto it = origNameToClone.find(origName);
                 if (it == origNameToClone.end()) return;
                 AstClass* const correctClassp = it->second;
