@@ -757,12 +757,12 @@ endmodule
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_semaphore;
         int signed m_keyCount;
-        int signed m_ticket;
-        m_ticket = 'sh0;
-        int signed m_nextTicket;
-        m_nextTicket = 'sh0;
         int signed m_nextKeyCount;
         m_nextKeyCount = 32'hffffffff;
+        longint m_ticket;
+        m_ticket = 64'h0;
+        longint m_nextTicket;
+        m_nextTicket = 64'h0;
         function new;
             input int signed keyCount;
             m_keyCount = keyCount;
@@ -772,9 +772,9 @@ package Vt_debug_emitv_std;
             m_keyCount = (m_keyCount + keyCount);
         endtask
         task get;
-            int signed __Vincrement1;
+            longint __Vincrement1;
             input int signed keyCount;
-            int signed ticket;
+            longint ticket;
             begin : label3
                 ticket = /*CRESET*/;
                 if (((m_keyCount >= keyCount) && (m_nextKeyCount 
@@ -787,7 +787,7 @@ package Vt_debug_emitv_std;
                     end
                 end
                 __Vincrement1 = m_nextTicket;
-                m_nextTicket = (m_nextTicket + 'h1);
+                m_nextTicket = (m_nextTicket + 64'h1);
                 ticket = __Vincrement1;
 
                 ???? // WAIT
@@ -798,7 +798,7 @@ package Vt_debug_emitv_std;
                                                       m_keyCount 
                                                       - 
                                                       keyCount);
-                m_ticket = (m_ticket + 'h1);
+                m_ticket = (m_ticket + 64'h1);
             end
         endtask
         function try_get;
