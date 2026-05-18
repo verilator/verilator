@@ -1861,7 +1861,7 @@ static inline void VL_STREAMR_RRI(int lbits, VlQueue<VlWide<N_Words>>& to_q,
                 elementCount = sizeOfThis - 1;
             }
         } else if VL_CONSTEXPR_CXX17 (otherSize == 8) {  //QData
-            temp.at(elementCount % N_Words) |= (static_cast<EData>(val >> 32));
+            temp.at(elementCount % N_Words) |= (static_cast<EData>(static_cast<QData>(val) >> 32));
             elementCount--;
             if (elementCount == -1) {
                 to_q.push_back(temp);
