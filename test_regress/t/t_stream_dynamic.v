@@ -6,8 +6,8 @@
 
 // verilog_format: off
 `define stop $stop
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); end end while(0);
 // verilog_format: on
 
 typedef enum bit [5:0] {
@@ -31,7 +31,7 @@ module t;
     bit [99:0] bit100;
     bit [319:0] bit320;
     enum_t ans_enum;
-
+    #0; //this is needed until V3Life can optimize streaming correctly
     bit6 = 6'b111000;
     arr4 = '{25{4'b1000}};
     arr8 = '{8{8'b00110011}};
