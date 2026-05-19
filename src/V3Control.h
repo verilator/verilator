@@ -30,7 +30,7 @@
 class V3Control final {
 public:
     struct FsmRegisterWrapper final {
-        string module;
+        string moduleName;
         string d;
         string q;
         string clock;

@@ -270,7 +270,7 @@ public:
     void setFsmRegisterWrapper(FileLine* fl, const V3Control::FsmRegisterWrapper& desc) {
         if (m_hasFsmRegisterWrapper) {
             fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module '"
-                                        << desc.module << "'; replacing previous descriptor");
+                                        << desc.moduleName << "'; replacing previous descriptor");
         }
         m_fsmRegisterWrapper = desc;
         m_hasFsmRegisterWrapper = true;
@@ -897,20 +897,13 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
 void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
                                       const string& q, const string& clock,
                                       const string& reset, const string& resetValue) {
-    if (module.empty()) {
-        fl->v3error("fsm_register_wrapper missing -module");
-        return;
-    }
-    if (d.empty()) {
-        fl->v3error("fsm_register_wrapper missing -d");
-        return;
-    }
-    if (q.empty()) {
-        fl->v3error("fsm_register_wrapper missing -q");
-        return;
-    }
-    if (clock.empty()) {
-        fl->v3error("fsm_register_wrapper missing -clock");
+    string missing;
+    if (module.empty()) missing += "-module";
+    if (d.empty()) missing += (missing.empty() ? "" : ", ") + string{"-d"};
+    if (q.empty()) missing += (missing.empty() ? "" : ", ") + string{"-q"};
+    if (clock.empty()) missing += (missing.empty() ? "" : ", ") + string{"-clock"};
+    if (!missing.empty()) {
+        fl->v3error("fsm_register_wrapper missing " << missing);
         return;
     }
 

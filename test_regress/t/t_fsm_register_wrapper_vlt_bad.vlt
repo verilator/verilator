@@ -7,6 +7,7 @@
 `verilator_config
 
 fsm_register_wrapper -module "" -d "din" -q "dout" -clock "clk"
+fsm_register_wrapper -module "" -d "" -q "" -clock ""
 fsm_register_wrapper -module "missing_d_fsm_flop" -d "" -q "dout" -clock "clk"
 fsm_register_wrapper -module "missing_q_fsm_flop" -d "din" -q "" -clock "clk"
 fsm_register_wrapper -module "missing_clock_fsm_flop" -d "din" -q "dout" -clock ""

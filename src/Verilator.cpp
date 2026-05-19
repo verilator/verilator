@@ -316,12 +316,6 @@ static void process() {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
             // V3Scope's V3LinkDot is in the AstVar.
-            // FSM wrapper instances need a pre-inline marker: after inlining,
-            // the wrapper always_ff looks like ordinary parent RTL, but the
-            // active-low condensed reset form must stay limited to those
-            // wrapper-derived registers. If inlining is disabled, V3FsmDetect
-            // also has a cell-based path that builds the register candidate
-            // directly from the surviving instance.
             if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
             if (v3Global.opt.fInline()) {
                 V3Inline::inlineAll(v3Global.rootp());

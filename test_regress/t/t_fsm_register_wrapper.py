@@ -27,16 +27,6 @@ test.run(
     verilator_run=True,
 )
 
-annotated_filename = test.obj_dir + "/annotated/" + test.name + ".v"
-normalized_filename = test.obj_dir + "/annotated/" + test.name + ".normalized.v"
-with open(annotated_filename, encoding="utf-8") as in_file:
-    lines = [line.rstrip() for line in in_file]
-while lines and not lines[-1]:
-    lines.pop()
-with open(normalized_filename, "w", encoding="utf-8") as out_file:
-    for line in lines:
-        out_file.write(line + "\n")
-
-test.files_identical(normalized_filename, test.golden_filename)
+test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
 
 test.passes()
