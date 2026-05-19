@@ -376,6 +376,7 @@ detailed descriptions of these arguments.
     --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
+    --assert-unroll-limit <iter> Max SVA assertion repetition before erroring
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features

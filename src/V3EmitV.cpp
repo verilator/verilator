@@ -1162,6 +1162,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateAndNextConstNull(nodep->stmtsp());
     }
+    void visit(AstWait* nodep) override {
+        puts("wait(");
+        iterateConst(nodep->condp());
+        puts(")");
+        if (nodep->stmtsp()) {
+            puts(" ");
+            iterateAndNextConstNull(nodep->stmtsp());
+        } else {
+            puts(";\n");
+        }
+    }
     void visit(AstCAwait* nodep) override {
         AstCMethodHard* methodp = VN_CAST(nodep->exprp(), CMethodHard);
         UASSERT_OBJ(methodp, nodep, "AstCAwait expression must be an AstCMethodHard");

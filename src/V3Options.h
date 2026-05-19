@@ -311,6 +311,7 @@ private:
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 
+    int         m_assertUnrollLimit = 1024;  // main switch: --assert-unroll-limit
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 10000;  // main switch: --converge-limit
@@ -606,6 +607,7 @@ public:
     bool serializeOnly() const { return m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
+    int assertUnrollLimit() const { return m_assertUnrollLimit; }
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }
