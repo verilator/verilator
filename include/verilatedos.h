@@ -37,6 +37,7 @@
 //=========================================================================
 // Compiler pragma abstraction
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #ifdef __clang__
 # define VL_CLANG_ATTR(attr) __attribute__(( attr ))
 #else
@@ -241,6 +242,7 @@
 // This is not necessarily the same as "#UL", depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-do-while)
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
@@ -282,6 +284,7 @@
         } while (false); \
     } while (false)
 
+// NOLINTEND(cppcoreguidelines-avoid-do-while)
 #ifdef _MSC_VER
 # if _MSC_VER < 1929
 #  error "Verilator requires at least Visual Studio 2019 version 16.11.2"
@@ -645,6 +648,7 @@ static inline double VL_ROUND(double n) {
 // Address zero can cause compiler problems
 #define VL_OFFSETOF(type, field) \
     (reinterpret_cast<size_t>(&(reinterpret_cast<type*>(0x10000000)->field)) - 0x10000000)
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 //=========================================================================
 // Time and performance
