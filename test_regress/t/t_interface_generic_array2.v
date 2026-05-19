@@ -28,11 +28,22 @@ module GenericModule2D (interface a[2][2]);
   end
 endmodule
 
+module GenericModuleRng (interface a[5:3]);
+  initial begin
+    #5;
+    if (a[3].v != 'hdead) $stop;
+    if (a[4].v != 'hbeef) $stop;
+    a[5].v = 'hface;
+  end
+endmodule
+
 module t;
   inf inf1d[4]();
   inf inf2d[2][2]();
+  inf infrng[5:3]();
   GenericModule1D mod1d(inf1d);
   GenericModule2D mod2d(inf2d);
+  GenericModuleRng modrng(infrng);
   initial begin
     inf1d[0].v = 'hdead;
     inf1d[1].v = 'hbeef;
@@ -44,6 +55,10 @@ module t;
     #2;
     if (inf2d[0][1].v != 'hbeef) $stop;
     if (inf2d[1][1].v != 'hcafe) $stop;
+    infrng[3].v = 'hdead;
+    infrng[4].v = 'hbeef;
+    #2;
+    if (infrng[5].v != 'hface) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
