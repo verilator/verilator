@@ -21,8 +21,7 @@ module t;
   pkt_if pkt_if_init (clk);
   //this will not compile without -fno-life
   initial begin
-    byte byte_pkt[$];
-
+  byte byte_pkt[$];
     //---------------------- STREAM WITH INTERFACE -------------------
     //using this forces verilator to a AstSel Node into a Stream Node
     #0 //make sure we dont optimize it all away in v3life
@@ -32,47 +31,46 @@ module t;
         $write("*-* All Finished *-*\n");
         $finish();
     end
-
   end
 
 endmodule
 
 interface pkt_if (
-    input wire clk
+  input wire clk
 );
 
-    typedef struct packed {
-        logic [31:0] extra;
-        logic [31:0] empty;
-        logic [31:0] data;
-        logic valid;
-        logic sop;
-        logic eop;
-    } avst_s;
+  typedef struct packed {
+    logic [31:0] extra;
+    logic [31:0] empty;
+    logic [31:0] data;
+    logic valid;
+    logic sop;
+    logic eop;
+  } avst_s;
 
-    avst_s s;
-    logic ready;
+  avst_s s;
+  logic ready;
 
-    // Read-Only Helper Signals
-    logic sop_pulse;
-    logic eop_pulse;
+  // Read-Only Helper Signals
+  logic sop_pulse;
+  logic eop_pulse;
 
-    modport src (
-        output s,
-        input ready,
-        input sop_pulse, eop_pulse
-    );
+  modport src (
+    output s,
+    input ready,
+    input sop_pulse, eop_pulse
+  );
 
-    modport snoop (
-        input s,
-        input ready,
-        input sop_pulse, eop_pulse
-    );
+  modport snoop (
+    input s,
+    input ready,
+    input sop_pulse, eop_pulse
+  );
 
-    modport sink (
-        input s,
-        output ready,
-        input sop_pulse, eop_pulse
-    );
+  modport sink (
+    input s,
+    output ready,
+    input sop_pulse, eop_pulse
+  );
 
 endinterface
