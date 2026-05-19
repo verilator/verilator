@@ -110,9 +110,8 @@ if ($opt_gdbbt && !gdb_works()) {
 
 my $DUP_STDOUT;
 if (defined $logfile) {
-    print("Opening logfile: $logfile\n");
     open($DUP_STDOUT, '>&', STDOUT) or die "Can't save default output handle: $!";
-    open STDOUT, '>', $logfile or die $!;
+    open(STDOUT, '>', $logfile) or die $!;
     
     my ($index) = grep { $Opt_Verilator_Sw[$_] eq "--logfile" } 0 .. $#Opt_Verilator_Sw;
     if (defined $index) {
@@ -185,7 +184,6 @@ if ($opt_gdb) {
 END {
     if (defined $logfile) {
         open(STDOUT, '>&', $DUP_STDOUT) or die "Can't restore default file handle: $!";
-        print("Closing log file: $logfile\n");
     }
 }
 
