@@ -1101,6 +1101,10 @@ Summary:
    Rarely needed. Set the maximum variable size in bytes for it to be
    subject to localizing-to-stack optimization. Defaults to 1024.
 
+.. option:: --logfile <filename>
+
+   Send verilator STDOUT to filename.
+
 .. option:: --main
 
    Generates a top-level C++ main() file that supports parsing arguments,
