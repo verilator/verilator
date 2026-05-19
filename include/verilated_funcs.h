@@ -966,7 +966,7 @@ static inline IData VL_EQ_R(int words, const VlQueue<VlWide<N_Words>>& q,
     IData temp2 = 0;
     if ((q.size() * N_Words) != words) { return false; }
     int count = 0;
-    for (int qIndex = 0; qIndex < q.size(); ++qIndex) {
+    for (int qIndex = q.size() - 1; qIndex >= 0; qIndex--) {
         for (int wordInElement = 0; wordInElement < N_Words; wordInElement++) {
             nequal |= (q.at(qIndex).at(wordInElement) ^ rwp[count]);
             temp1 = q.at(qIndex).at(wordInElement);

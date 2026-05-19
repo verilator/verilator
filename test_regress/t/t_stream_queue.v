@@ -334,6 +334,11 @@ module t;
     `checks({i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
     `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}});
 
+    qdata_pkt = {>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc}};
+    vlwide_pkt_128 = {>>{qdata_pkt}};
+    `checks({32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc},{>>{vlwide_pkt_128}});
+    `checks({>>{vlwide_pkt_128}},{>>{32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc}});
+
     vlwide_pkt_128 = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{vlwide_pkt_128}};
     `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
