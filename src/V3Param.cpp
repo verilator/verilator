@@ -2303,11 +2303,120 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     AstClass* m_classp = nullptr;
     std::unordered_map<const AstParamTypeDType*, AstClass*> m_paramTypeClassMap;
 
+    // Owner-tracking state for the post-clone REFDTYPE typedef retargeting
+    // (see retargetRefDType()). m_ownerModp is the most recently entered
+    // AstNodeModule (or AstClass). m_origNameToClone / m_ambiguous are
+    // rebuilt lazily on the first AstRefDType visit per owner; the
+    // m_ownerMapForp cache key avoids rebuilding when the owner is unchanged
+    // (e.g. across siblings under the same parent).
+    AstNodeModule* m_ownerModp = nullptr;
+    AstNodeModule* m_ownerMapForp = nullptr;
+    std::unordered_map<std::string, AstClass*> m_origNameToClone;
+    std::unordered_set<std::string> m_ambiguous;
+
+    void ensureOwnerMap() {
+        if (m_ownerMapForp == m_ownerModp) return;
+        m_ownerMapForp = m_ownerModp;
+        m_origNameToClone.clear();
+        m_ambiguous.clear();
+        if (!m_ownerModp) return;
+        // Skip bare/generic class templates: their bodies are not
+        // authoritative for any specialization, and their self-typedefs
+        // (e.g. `typedef cls#(P,Q) this_type;` inside a parameterized class)
+        // would otherwise be treated as ground truth and cause REFDTYPEs in
+        // the body to be retargeted at the bare template.
+        if (AstClass* const ownerClassp = VN_CAST(m_ownerModp, Class)) {
+            if (ownerClassp->hasGParam()) return;
+        }
+        for (AstNode* sp = m_ownerModp->stmtsp(); sp; sp = sp->nextp()) {
+            AstTypedef* const tdp = VN_CAST(sp, Typedef);
+            if (!tdp) continue;
+            AstClassRefDType* const crdtp = VN_CAST(tdp->subDTypep(), ClassRefDType);
+            if (!crdtp || !crdtp->classp()) continue;
+            AstClass* const targetp = crdtp->classp();
+            // A typedef pointing at a still-generic template is a forward
+            // declaration / unresolved reference, not ground truth.
+            if (targetp->hasGParam()) continue;
+            const std::string origName
+                = targetp->origName().empty() ? targetp->name() : targetp->origName();
+            const auto pair = m_origNameToClone.emplace(origName, targetp);
+            // Two locally-resolved typedefs pointing at different
+            // specializations of the same template -> ambiguous; we cannot
+            // safely guess which one a stripped REFDTYPE meant.
+            if (!pair.second && pair.first->second != targetp) m_ambiguous.insert(origName);
+        }
+    }
+
+    // Re-resolve REFDTYPE.typedefp/refDTypep using the containing module's
+    // own resolved typedef chain. The eager retargeting in deepCloneModule
+    // blindly retargets every captured entry to whichever sibling clone is
+    // being created, so when a referenced parameterized class is cloned more
+    // than once (e.g. driver -> driver__I5 + driver__I6), the second sibling
+    // stomps the bindings made by the first. By this point each owner's
+    // typedefs have been correctly bound (via classRefDeparam), so we use
+    // those local typedefs as ground truth.
+    void retargetRefDType(AstRefDType* refp) {
+        if (!m_ownerModp) return;
+        AstTypedef* const oldTdp = refp->typedefp();
+        if (!oldTdp) return;
+        AstClass* const oldOwnerp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
+        if (!oldOwnerp) return;
+        ensureOwnerMap();
+        if (m_origNameToClone.empty()) return;
+        const std::string origName
+            = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
+        if (m_ambiguous.count(origName)) {
+            // The owner has two locally-resolved typedefs pointing at
+            // different specializations of the same template, e.g.:
+            //   typedef driver #(.IW(5)) drv5_t;
+            //   typedef driver #(.IW(6)) drv6_t;
+            // A stripped REFDTYPE only carries the origName, so we cannot
+            // tell which sibling it meant; leave it alone.
+            UINFO(9, "post-param REFDTYPE retarget skipped (ambiguous owner '" << origName
+                                                                               << "'): " << refp);
+            return;
+        }
+        const auto it = m_origNameToClone.find(origName);
+        if (it == m_origNameToClone.end()) return;
+        AstClass* const correctClassp = it->second;
+        if (correctClassp == oldOwnerp) return;
+        AstTypedef* const newTdp
+            = V3LinkDotIfaceCapture::findTypedefInModule(correctClassp, refp->name());
+        if (!newTdp) {
+            // The owner map says correctClassp is the right specialization,
+            // but it does not declare a typedef named refp->name(). Caveats
+            // of findTypedefInModule (e.g. typedef declared in a base class,
+            // not the specialization we resolved to) can land us here.
+            UINFO(9, "post-param REFDTYPE retarget skipped (no typedef '"
+                         << refp->name() << "' in " << correctClassp->name() << "): " << refp);
+            return;
+        }
+        // typedefp / classOrPackagep / refDTypep must agree. If newTdp lacks
+        // a subDTypep we cannot keep all three in sync, so skip the entire
+        // retarget rather than leaving the REFDTYPE half-updated.
+        if (!newTdp->subDTypep()) {
+            UINFO(9, "post-param REFDTYPE retarget skipped (newTdp has null subDTypep): " << refp);
+            return;
+        }
+        refp->typedefp(newTdp);
+        refp->classOrPackagep(correctClassp);
+        refp->refDTypep(newTdp->subDTypep());
+        UINFO(9, "post-param REFDTYPE re-resolve: " << refp << " from " << oldOwnerp->name()
+                                                    << " to " << correctClassp->name());
+    }
+
 public:
     explicit ParamClassRefDTypeRelinkVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_ownerModp);
+        m_ownerModp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
+        VL_RESTORER(m_ownerModp);
         m_classp = nodep;
+        m_ownerModp = nodep;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                 m_paramTypeClassMap[ptp] = nodep;
@@ -2317,29 +2426,38 @@ public:
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
-        AstParamTypeDType* const paramtypep = VN_CAST(nodep->refDTypep(), ParamTypeDType);
-        if (!paramtypep) return;
-        const auto it = m_paramTypeClassMap.find(paramtypep);
-        if (it == m_paramTypeClassMap.end()) return;
-        AstClass* const origClassp = it->second;
-        if (!origClassp->hasGParam()) return;  // only relink refs to original param classes
-        if (origClassp->user3p()) return;  // will not get removed, no need to relink
-        AstClass* const parametrizedClassp = VN_CAST(origClassp->user4p(), Class);
-        if (!parametrizedClassp) return;
-        const string paramName = paramtypep->name();
-        AstParamTypeDType* newParamTypep = nullptr;
-        for (AstNode* stmtp = parametrizedClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
-                if (ptp->name() == paramName) {
-                    newParamTypep = ptp;
-                    break;
+        // Redirect refs whose refDTypep points at a stale ParamTypeDType in
+        // a generic class template that has been replaced by a parametrized
+        // clone.
+        if (AstParamTypeDType* const paramtypep = VN_CAST(nodep->refDTypep(), ParamTypeDType)) {
+            const auto it = m_paramTypeClassMap.find(paramtypep);
+            if (it != m_paramTypeClassMap.end()) {
+                AstClass* const origClassp = it->second;
+                if (origClassp->hasGParam() && !origClassp->user3p()) {
+                    if (AstClass* const parametrizedClassp
+                        = VN_CAST(origClassp->user4p(), Class)) {
+                        const string paramName = paramtypep->name();
+                        AstParamTypeDType* newParamTypep = nullptr;
+                        for (AstNode* stmtp = parametrizedClassp->stmtsp(); stmtp;
+                             stmtp = stmtp->nextp()) {
+                            if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                                if (ptp->name() == paramName) {
+                                    newParamTypep = ptp;
+                                    break;
+                                }
+                            }
+                        }
+                        if (newParamTypep) {
+                            nodep->refDTypep(newParamTypep);
+                            nodep->classOrPackagep(parametrizedClassp);
+                        }
+                    }
                 }
             }
         }
-        if (newParamTypep) {
-            nodep->refDTypep(newParamTypep);
-            nodep->classOrPackagep(parametrizedClassp);
-        }
+        // Retarget REFDTYPE.typedefp using the current owner's own
+        // resolved typedefs as ground truth (handles sibling-clone stomping).
+        retargetRefDType(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 };
