@@ -45,16 +45,34 @@ private:
     std::map<std::pair<const AstIface*, const std::string>, std::vector<AstVarScope*>>
         m_candidateVscps;
     VirtIfaceTriggers m_triggers;
+    AstIface* m_ifacep = nullptr;  // Current interface
 
     // METHODS
+    void addCandidateVscp(const AstIface* const ifacep, AstVarScope* const vscp) {
+        std::vector<AstVarScope*>& vscps = m_candidateVscps[{ifacep, vscp->varp()->name()}];
+        if (std::find(vscps.begin(), vscps.end(), vscp) == vscps.end()) vscps.push_back(vscp);
+    }
+
     // Returns true if statement writes across a virtual interface boundary
-    static bool writesToVirtIface(const AstNode* const nodep) {
-        return nodep->exists([](const AstMemberSel* const memberSelp) {
-            if (!memberSelp->access().isWriteOrRW()) return false;
-            AstIfaceRefDType* const dtypep
-                = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
-            return dtypep && dtypep->isVirtual();
+    bool writesToVirtIface(const AstNode* const nodep) {
+        return nodep->exists([this](const AstNode* const childp) {
+            if (const AstMemberSel* const memberSelp = VN_CAST(childp, MemberSel)) {
+                if (!memberSelp->access().isWriteOrRW()) return false;
+                AstIfaceRefDType* const dtypep
+                    = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                return dtypep && dtypep->isVirtual();
+            }
+            if (const AstVarRef* const refp = VN_CAST(childp, VarRef)) {
+                return m_ifacep && isConcreteIfaceMemberRef(refp);
+            }
+            return false;
         });
+    }
+
+    static bool isConcreteIfaceMemberRef(const AstVarRef* const refp) {
+        return refp->access().isWriteOrRW() && !refp->varp()->isFuncLocal()
+               && !refp->varp()->isTemp() && !refp->varp()->isEvent() && refp->varScopep()
+               && VN_IS(refp->varScopep()->scopep()->modp(), Iface);
     }
 
     // VISITORS
@@ -70,11 +88,20 @@ private:
         }
         iterateChildren(nodep);
     }
+    void visit(AstVarRef* nodep) override {
+        if (m_ifacep && isConcreteIfaceMemberRef(nodep)) {
+            nodep->varp()->sensIfacep(m_ifacep);
+            m_vifWrittenMembers.emplace(m_ifacep, nodep->varp()->name());
+            addCandidateVscp(m_ifacep, nodep->varScopep());
+        }
+    }
     void visit(AstVarScope* nodep) override {
         // Collect candidate VarScopes. sensIfacep() is set on interface members
         // accessed via any MemberSel (virtual or non-virtual).
         if (const AstIface* const ifacep = nodep->varp()->sensIfacep()) {
-            m_candidateVscps[{ifacep, nodep->varp()->name()}].push_back(nodep);
+            if (!nodep->varp()->isFuncLocal() && !nodep->varp()->isTemp()) {
+                addCandidateVscp(ifacep, nodep);
+            }
         }
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -83,6 +110,11 @@ private:
         if (VN_IS(nodep, AlwaysPost) && writesToVirtIface(nodep)) {
             nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
         }
+        iterateChildren(nodep);
+    }
+    void visit(AstIface* nodep) override {
+        VL_RESTORER(m_ifacep);
+        m_ifacep = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
