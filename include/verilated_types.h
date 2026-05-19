@@ -425,12 +425,13 @@ struct VlWide final {
     // Default copy assignment operators are used.
     operator WDataOutP() VL_PURE { return &m_storage[0]; }  // This also allows []
     operator WDataInP() const VL_PURE { return &m_storage[0]; }  // This also allows []
-    bool operator!=(const VlWide<N_Words>& that) const VL_PURE {
+    bool operator==(const VlWide<N_Words>& that) const VL_PURE {
         for (size_t i = 0; i < N_Words; ++i) {
-            if (m_storage[i] != that.m_storage[i]) return true;
+            if (m_storage[i] != that.m_storage[i]) return false;
         }
-        return false;
+        return true;
     }
+    bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
