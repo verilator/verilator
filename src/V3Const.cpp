@@ -1832,11 +1832,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->replaceWithKeepDType(childp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void replaceWOp1(AstNode* nodep) {
-        // NODE(..., OP1(...)) -> OP1(...)
-        nodep->replaceWithKeepDType(nodep->op1p()->unlinkFrBack());
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+
     void replaceWChildBool(AstNode* nodep, AstNodeExpr* childp) {
         // NODE(..., CHILD(...)) -> REDOR(CHILD(...))
         childp->unlinkFrBack();
@@ -4314,8 +4310,6 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
     TREEOP ("AstToStringN{DISABLE_BASE}", "DONE");  // Avoid uniop(const); use matchToStringNConst
     TREEOP ("AstToStringN{matchToStringNConst(nodep)}", "DONE");
-    //AstCvtArrayTOPacked
-    TREEOPA("AstCvtArrayToPacked{$op1p.castConst}", "replaceWOp1(nodep)");
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");

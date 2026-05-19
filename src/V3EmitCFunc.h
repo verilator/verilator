@@ -634,17 +634,6 @@ public:
             //if either side is streamL or streamR don't emit lhsp everything will be passed by
             //reference
 
-            //TODO this might not be needed
-            if (VN_IS(nodep->rhsp(), ShiftR)) {
-                rhs = false;
-                iterateAndNextConstNull(nodep->rhsp()->op2p());
-            }
-            //if the other side is a const or AND operator stream in. we cant just assign.
-            if (VN_IS(nodep->rhsp(), Const) || VN_IS(nodep->rhsp(), And)) {
-                emitOpName(nodep->lhsp(), "VL_STREAMR_RII(%lw, %li, %ri, 0)", nodep->lhsp(),
-                           nodep->rhsp(), nullptr);
-                rhs = false;
-            }
             paren = false;
 
         } else {
@@ -1620,26 +1609,11 @@ public:
         }
     }
     void emitStreamR(AstStreamR* nodep, AstNode* parent) {
-        if ((VN_IS(parent->dtypep(), QueueDType))) {
-            emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
-                       nodep->rhsp(), nullptr);
-        } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
-            if (parent->dtypep()
-                && !((parent->op1p() && parent->op1p()->isWide())
-                     || (parent->op2p() && parent->op2p()->isWide()))) {
-                //if our lhsp is a queue make sure we streamR and return the correct type.
-                //if either side is wide or the previous node is string type dont use this case
-                emitOpName(parent, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
-                           nodep->rhsp(), nullptr);
-            } else {
-                emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
-            }
-        } else {
-            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
-        }
+        //TODO: This might need to handle more cases like the visit(AstStreamR) function
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
     }
-    void visit(AstStreamR* nodep) override {  //this is only meant for queues
-        //the parrent node of our AstStreamR will give just enough info for what streamR should
+    void visit(AstStreamR* nodep) override {
+        //The parrent node of our AstStreamR will give just enough info for what streamR should
         //output if nodep->backp() is not the parent then emitStreamR should have been used. throw
         //an error
         bool backpIsParent = (nodep->backp()->op1p() == nodep || nodep->backp()->op2p() == nodep);
@@ -1650,8 +1624,8 @@ public:
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
             if (!((nodep->backp()->op1p() && nodep->backp()->op1p()->isWide())
                   || (nodep->backp()->op2p() && nodep->backp()->op2p()->isWide()))) {
-                //if our lhsp is a queue make sure we streamR and return the correct type.
-                //if either side is wide or the previous node is string type dont use this case
+                //If our lhsp is a queue make sure we streamR and return the correct type.
+                //If either side is wide or the previous node is string type dont use this case
                 emitOpName(nodep->backp(), "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)",
                            nodep->lhsp(), nodep->rhsp(), nullptr);
             } else {

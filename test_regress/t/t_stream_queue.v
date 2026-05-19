@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
-`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%h' exp='%h'\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%h' exp='%h'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 module t;
 
   logic [7:0] i_char;
@@ -328,6 +328,11 @@ module t;
     vlwide_pkt_128 = {>>{qdata_pkt}};
     `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
     `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
+
+    qdata_pkt = {>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}};
+    vlwide_pkt_128 = {>>{qdata_pkt}};
+    `checks({i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
+    `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}});
 
     vlwide_pkt_128 = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{vlwide_pkt_128}};
