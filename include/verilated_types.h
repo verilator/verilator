@@ -1090,7 +1090,7 @@ public:
     }
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
-        std::set<T_Key> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_map) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
