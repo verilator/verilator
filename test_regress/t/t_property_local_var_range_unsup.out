@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_property_local_var_range_unsup.v:21:11: Unsupported: property local variable used across non-constant cycle delay in consequent (IEEE 1800-2023 16.10)
+                                                              : ... note: In instance 't'
+   21 |     ) |-> ##[1:3] (cyc > prev);
+      |           ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_local_var_range_unsup.v:31:25: Unsupported: property local variable used across composite sequence operator in consequent (IEEE 1800-2023 16.10)
+                                                              : ... note: In instance 't'
+   31 |     ) |-> (cyc == snap) and ##1 (cyc == snap + 1);
+      |                         ^~~
+%Error-UNSUPPORTED: t/t_property_local_var_range_unsup.v:42:17: Unsupported: property local variable used across non-constant cycle delay in consequent (IEEE 1800-2023 16.10)
+                                                              : ... note: In instance 't'
+   42 |     ) |-> (1'b1 ##[1:3] (cyc > snap)) ##2 (cyc > snap);
+      |                 ^~
+%Error-UNSUPPORTED: t/t_property_local_var_range_unsup.v:53:21: Unsupported: property local variable used across non-constant cycle delay in consequent (IEEE 1800-2023 16.10)
+                                                              : ... note: In instance 't'
+   53 |     ) |-> ##2 (1'b1 ##[1:3] (cyc > snap));
+      |                     ^~
+%Error: Exiting due to
