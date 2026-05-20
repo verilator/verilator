@@ -66,7 +66,7 @@ public:
     static VlFiber* current() noexcept { return s_currentFiberp; }
 
     // Register a coroutine to be resumed once the fiber completes
-    void addWaiter(std::coroutine_handle<> waiter);
+    void setWaiter(std::coroutine_handle<> waiter);
 
     // Destructor releases mapped memory and resumes waiters if necessary
     ~VlFiber();
@@ -84,7 +84,7 @@ private:
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
     bool m_done = false;  // Set once m_fn returns
-    std::vector<std::coroutine_handle<>> m_waiters;  // Coroutines resumed on completion
+    std::coroutine_handle<void> m_waiter;  // Coroutine resumed on completion
 
     static thread_local VlFiber* s_currentFiberp;  // Fiber currently executing on the thread
 
@@ -96,8 +96,8 @@ private:
     // Actual function executing the user callable and performing cleanup
     static void entryPoint(VlFiber* fiberp) VL_ATTR_NORETURN;
 
-    // Resume all stored waiters when the fiber completes
-    void resumeWaiters();
+    // Resume waiter when the fiber completes
+    void resumeWaiter();
 };
 
 #endif  // Guard

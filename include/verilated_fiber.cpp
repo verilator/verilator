@@ -87,7 +87,7 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
 }
 
 VlFiber::~VlFiber() {
-    resumeWaiters();
+    resumeWaiter();
     if (m_mappingp) { ::munmap(m_mappingp, m_mappingSize); }
 }
 
@@ -97,7 +97,7 @@ VlFiber::~VlFiber() {
 void VlFiber::resume() {
     if (m_done) {
         // Quick exit if fiber already finished
-        resumeWaiters();
+        resumeWaiter();
         return;
     }
 
@@ -119,7 +119,7 @@ void VlFiber::resume() {
 
     // Restore previous context
     s_currentFiberp = previousFiberp;
-    if (m_done) resumeWaiters();
+    if (m_done) resumeWaiter();
 }
 
 void VlFiber::yield() {
@@ -136,18 +136,16 @@ void VlFiber::yield() {
     s_currentFiberp = currentFiberp;  // Restore current fiber
 }
 
-void VlFiber::resumeWaiters() {
-    if (m_waiters.empty()) return;
-    auto waiters = std::move(m_waiters);
-    m_waiters.clear();
-    for (auto handle : waiters) {
-        if (handle) handle.resume();
-    }
+void VlFiber::resumeWaiter() {
+    if (!m_waiter) return;
+    auto waiter = std::move(m_waiter);
+    m_waiter = {};
+    if (waiter) waiter.resume();
 }
 
-void VlFiber::addWaiter(std::coroutine_handle<> waiter) {
+void VlFiber::setWaiter(std::coroutine_handle<> waiter) {
     if (!waiter) return;
-    m_waiters.push_back(waiter);
+    m_waiter = waiter;
 }
 
 //======================================================================

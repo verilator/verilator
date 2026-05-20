@@ -176,7 +176,7 @@ public:
         : m_fiber{fiber} {}
 
     bool await_ready() const noexcept { return m_fiber.isDone(); }
-    void await_suspend(std::coroutine_handle<> waiter) const { m_fiber.addWaiter(waiter); }
+    void await_suspend(std::coroutine_handle<> waiter) const { m_fiber.setWaiter(waiter); }
     void await_resume() const noexcept {}
 };
 };  //namespace
