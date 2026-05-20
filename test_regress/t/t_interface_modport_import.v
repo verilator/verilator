@@ -23,6 +23,21 @@ interface test_if;
 endinterface  // test_if
 
 
+interface dead_caller_if;
+  task automatic imported_task;
+  endtask
+  modport mp(import imported_task);
+endinterface
+
+module dead_caller_test;
+  dead_caller_if di ();
+
+  task automatic uncalled_caller;
+    di.imported_task;
+  endtask
+endmodule
+
+
 module t (  /*AUTOARG*/
     // Inputs
     clk
@@ -35,6 +50,8 @@ module t (  /*AUTOARG*/
       .clk(clk),
       .i(i.mp)
   );
+
+  dead_caller_test dead_caller_test_i ();
 
 endmodule
 
