@@ -141,8 +141,10 @@ module t;
 
     vlwide_pkt_129 = {<<8{i_header,i_len,i_crc,i_data}};
 
+    /* verilator lint_off WIDTHEXPAND */
     wide129 = {<<8{i_header,i_len,i_crc,i_data}};
     `checks({>>{vlwide_pkt_129}},wide129);
+    /* verilator lint_on WIDTHEXPAND */
 
     //------------------------------- REVERSE ENDIAN ------------------------------
     //----------- CData QUEUE --------
@@ -222,8 +224,9 @@ module t;
     // ----------- VLWide QUEUE --------
 
     vlwide_pkt_129_rev = {<<8{i_header,i_len,i_crc,i_data}};
-
+    /* verilator lint_off WIDTHEXPAND */
     wide129 = {<<8{i_header,i_len,i_crc,i_data}};
+    /* verilator lint_on WIDTHEXPAND */
     `checks({>>{vlwide_pkt_129_rev}},wide129);
 
     // // -------------------- STREAMR ------------------------------------
@@ -298,12 +301,32 @@ module t;
     `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
+    int_pkt = {>>{byte_pkt}};
+    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+
+    sdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
+    byte_pkt = {>>{sdata_pkt}};
+    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+
+    byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
+    sdata_pkt = {>>{byte_pkt}};
+    `checks({>>{sdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+
+    byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{byte_pkt}};
     `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     byte_pkt = {>>{qdata_pkt}};
     `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+
+    qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
+    int_pkt = {>>{qdata_pkt}};
+    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+
+    int_pkt = {>>{i_header,i_len,i_crc,i_data}};
+    qdata_pkt = {>>{int_pkt}};
+    `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     vlwide_pkt_128 = {>>{byte_pkt}};

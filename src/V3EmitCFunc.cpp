@@ -348,9 +348,8 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         if (VN_IS(subargp, StreamR))
             emitStreamR(
                 VN_CAST(subargp, StreamR),
-                nodep);  //this has to be done here because streamR doesn't know what it returns
-        else
-            iterateConst(subargp);
+                nodep);  // This has to be done here because streamR doesn't know what it returns
+        else { iterateConst(subargp); }
         if (addrof) puts(")");
         if (!addrof) emitDatap(argp);
         ofp()->indentDec();

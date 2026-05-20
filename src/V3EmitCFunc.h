@@ -630,7 +630,7 @@ public:
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)
                    && (VN_IS(nodep->rhsp(), StreamL) || VN_IS(nodep->lhsp(), StreamL)
                        || VN_IS(nodep->rhsp(), StreamR) || VN_IS(nodep->lhsp(), StreamR)
-                       || VN_IS(nodep->rhsp(), StreamR) || VN_IS(nodep->rhsp(), And))) {
+                       || VN_IS(nodep->rhsp(), StreamR))) {
             //if either side is streamL or streamR don't emit lhsp everything will be passed by
             //reference
 

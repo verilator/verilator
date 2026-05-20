@@ -282,7 +282,6 @@ class LifeVisitor final : public VNVisitor {
             VL_DO_DANGLING(m_lifep->varUsageReplace(vscp, nodep), nodep);
         }
     }
-
     void visit(AstNodeAssign* nodep) override {
         if (nodep->isTimingControl() || VN_IS(nodep, AssignForce)) {
             // V3Life doesn't understand time sense nor force assigns - don't optimize
