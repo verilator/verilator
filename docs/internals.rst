@@ -2202,6 +2202,41 @@ When the bisection ends, the first value that makes the discriminator
 command fail is printed, which identifies the exact offending application
 of the transform.
 
+Debugging Non-Deterministic Results
+-----------------------------------
+
+The Verilator binary should be deterministic, producing the same Verilated
+C++ and stdout when run multiple times with the same inputs. A common
+source of non-determinism is (mis-)use of pointers in container
+comparisons, causing arbitrary changes im memory layout to make container
+comparisons differ, and in turn creating differences in Ast layout, and
+ultimately different C++ code.
+
+To debug this, compile Verilator with the `VL_ALLOC_RANDOM_CHECKS` define,
+then Verilator may be run with a seed e.g. `-debug-alloc-random 22` and
+`-debug-alloc-random 33` which will randomly change the memory allocation
+order. If multiple seeds are run, `verilator_difftree` may then be used to
+see where netlists start to differ. Once the Ast difference is determined,
+the debugging tips above can then further isolate the C++ code causing a
+specific node to be created or changed.
+
+The typical fix is to add a comparison operator to the problematic
+container, e.g. compare using `AstNodeComparator` or by `name()`.
+
+The following script is an example of this debugging:
+
+.. code-block:: bash
+
+   # Before this: ./configure CXX="g++ -DVL_ALLOC_RANDOM_CHECKS" && make -j
+   # Example script for finding nondeterminism
+   cd $VERILATOR_ROOT
+   set -e
+   t=t_split_var_0  # Test name
+   test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
+   test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
+   bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@
+
+
 Adding a New Feature
 ====================
 
