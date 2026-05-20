@@ -2141,6 +2141,34 @@ List Of Warnings
    correctly.
 
 
+.. option:: SYNTHUNPACKED
+
+   Warns that a module IO port uses an unpacked array. Synthesis tools
+   (e.g., Yosys, Cadence Genus, Synopsys Design Compiler) accept the
+   construct but typically flatten the unpacked dimensions to packed bits
+   in the netlist. The resulting post-synthesis port signature no longer
+   matches the pre-synthesis source, so a testbench that drove the RTL
+   through these ports cannot connect to the netlist without modification,
+   making gate-level simulation (GLS) harder.
+
+   For example:
+
+   .. code-block:: sv
+
+      module dut(input wire [7:0] data [0:3]);  // Will get SYNTHUNPACKED
+        ...
+      endmodule
+
+   To keep the pre- and post-synthesis port signatures aligned, flatten
+   the port to a packed vector at the module boundary, or wrap the array
+   in a packed struct.
+
+   Disabled by default since not all flows go through synthesis. Enable
+   with ``-Wwarn-SYNTHUNPACKED`` to surface it. Ignoring this warning does
+   not affect Verilator simulation; it only flags a downstream GLS
+   compatibility hazard.
+
+
 .. option:: TASKNSVAR
 
    Error when a call to a task or function has an inout from that task tied

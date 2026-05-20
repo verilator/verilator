@@ -167,6 +167,7 @@ public:
         SUPERNFIRST,    // Super.new must be first statement
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
+        SYNTHUNPACKED,  // Unpacked array on IO port (synth packs these, breaking GLS)
         TICKCOUNT,      // Too large tick count
         TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
@@ -237,16 +238,17 @@ public:
             "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
             "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
             "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP",
-            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "SYNTHUNPACKED", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT",
+            "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR",
+            "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO",
+            "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND",
+            "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == SYNTHUNPACKED
+                || styleError());
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
