@@ -16,6 +16,6 @@ if not test.have_solver:
 
 test.compile()
 
-test.execute()
+test.execute(all_run_flags=["+verilator+seed+1"])
 
 test.passes()

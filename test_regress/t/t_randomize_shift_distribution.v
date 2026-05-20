@@ -47,8 +47,8 @@ endclass
 module t;
   regA r;
   int unsigned i;
-  // 200 trials; binomial 3-sigma window for p=0.5 is +- 3*sqrt(200*0.25) ~= 21.2, so
-  // any free bit must land in [200/2 - 30, 200/2 + 30] = [70, 130].
+  // 200 trials; seed is pinned in the driver so values are deterministic.
+  // Pre-fix bias was 70-90% ones (140-180 per bit), well outside [70, 130].
   localparam int unsigned TRIALS = 200;
   localparam int unsigned LO = 70;
   localparam int unsigned HI = 130;
@@ -64,9 +64,7 @@ module t;
       r.fa32.tally;
     end
     // For value < (1<<N), bits 0..N-1 must each be set ~50% of the time.
-    // High bits (>=N) must be set 0 times. Pre-fix on master, low bits land
-    // at 70-90% (issue #7563); 3-sigma window of [70..130] is generous
-    // enough to ride CI seed variance.
+    // High bits (>=N) must be set 0 times.
     for (int b = 0; b < 1; b++) `check_range(r.fa1.m_ones[b], LO, HI);
     for (int b = 0; b < 15; b++) `check_range(r.fa15.m_ones[b], LO, HI);
     for (int b = 0; b < 31; b++) `check_range(r.fa31.m_ones[b], LO, HI);
