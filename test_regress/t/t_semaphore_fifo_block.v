@@ -11,24 +11,28 @@ module t;
   initial begin
     fork
       begin
-        #1 sem.get(4);
+        #1;
+        sem.get(4);
         $write("[%0t] A got 4\n", $time);
-        #1
+        #1;
         sem.put(3);
         $write("[%0t] A put 3\n", $time);
       end
       begin
-        #2 sem.get(3);
+        #2;
+        sem.get(3);
         $write("[%0t] B got 3\n", $time);
       end
       begin
-        #3 sem.get(1);
+        #3;
+        sem.get(1);
         $write("[%0t] C got 1\n", $time);
         sem.put(1);
         $write("[%0t] C put 1\n", $time);
       end
       begin
-        #4 sem.put(2);
+        #4;
+        sem.put(2);
         $write("[%0t] D put 2\n", $time);
       end
     join

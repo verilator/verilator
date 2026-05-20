@@ -22,7 +22,7 @@ module t;
     data[1] = 2'd2;
     @(posedge clk);
     @(posedge clk);
-    if (snap[0] !== 2'd1 || snap[1] !==2'd2) $stop;
+    if (snap[0] !== 2'd1 || snap[1] !== 2'd2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

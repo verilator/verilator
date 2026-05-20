@@ -12,9 +12,9 @@
 class obj;
 endclass
 class TypeParams #(
-  type T1 = obj,
-  type T2 = obj,
-  type T3 = obj
+    type T1 = obj,
+    type T2 = obj,
+    type T3 = obj
 );
   T1 t1;
   T2 t2;
@@ -22,48 +22,48 @@ class TypeParams #(
 endclass
 
 class ValueParams #(
-  int P1 = 1,
-  int P2 = 1,
-  int P3 = 1
+    int P1 = 1,
+    int P2 = 1,
+    int P3 = 1
 );
-  logic[P1:0] x1;
-  logic[P2:0] x2;
-  logic[P3:0] x3;
+  logic [P1:0] x1;
+  logic [P2:0] x2;
+  logic [P3:0] x3;
 endclass
 
 class Mixed #(
-  type T1 = obj,
-  int P1 = 1,
-  type T2 = obj,
-  int P2 = 1,
-  type T3 = obj,
-  int P3 = 1
+    type T1 = obj,
+    int P1 = 1,
+    type T2 = obj,
+    int P2 = 1,
+    type T3 = obj,
+    int P3 = 1
 );
   T1 t1;
   T2 t2;
   T3 t3;
-  logic[P1:0] x1;
-  logic[P2:0] x2;
-  logic[P3:0] x3;
+  logic [P1:0] x1;
+  logic [P2:0] x2;
+  logic [P3:0] x3;
 endclass
 
 module t;
   TypeParams #(
-    .T2 (int),
-    .T3 (logic)
+      .T2(int),
+      .T3(logic)
   ) t;
   obj o;
 
   ValueParams #(
-    .P3 (5),
-    .P2 (2)
+      .P3(5),
+      .P2(2)
   ) v;
 
   Mixed #(
-    .P3 (3),
-    .T1 (logic),
-    .T3 (int),
-    .P2 (7)
+      .P3(3),
+      .T1(logic),
+      .T3(int),
+      .P2(7)
   ) m;
   initial begin
     o = new;

@@ -18,16 +18,24 @@
 // verilog_format: on
 
 package pkg;
-  class rand_master #(parameter int AW = 32, parameter int DW = 32);
+  class rand_master #(
+      parameter int AW = 32,
+      parameter int DW = 32
+  );
     typedef logic [AW-1:0] addr_t;
   endclass
 endpackage
 
-module t #(parameter int unused = 1);
+module t #(
+    parameter int unused = 1
+);
   // AW and DW are both overridden to non-default values so that a regression
   // in parameter propagation through the typedef chain shows up as a width
   // mismatch instead of silently succeeding.
-  typedef pkg::rand_master #(.AW(17), .DW(64)) rand_master_t;
+  typedef pkg::rand_master#(
+      .AW(17),
+      .DW(64)
+  ) rand_master_t;
   typedef rand_master_t::addr_t addr_t;
   initial begin
     static addr_t a = '0;
