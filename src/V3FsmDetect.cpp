@@ -608,20 +608,21 @@ class FsmDetectVisitor final : public VNVisitor {
             const AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
             if (!selp) return false;
 
-            return std::any_of(m_registerCandidates.cbegin(), m_registerCandidates.cend(),
-                               [&](const FsmRegisterCandidate& reg) -> bool {
-                const bool matchesNext = selp->varScopep() == reg.nextVscp();
-                const bool matchesState = selp->varScopep() == reg.stateVscp();
+            return std::any_of(
+                m_registerCandidates.cbegin(), m_registerCandidates.cend(),
+                [&](const FsmRegisterCandidate& reg) -> bool {
+                    const bool matchesNext = selp->varScopep() == reg.nextVscp();
+                    const bool matchesState = selp->varScopep() == reg.stateVscp();
 
-                if (!matchesNext && !matchesState) return false;
-                if (matchesNext
-                    && !FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
-                        stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
-                    return false;
-                }
-                return FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
-                                                                     reg.inclCond());
-            });
+                    if (!matchesNext && !matchesState) return false;
+                    if (matchesNext
+                        && !FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
+                            stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
+                        return false;
+                    }
+                    return FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
+                                                                         reg.inclCond());
+                });
         }
     };
 
@@ -1745,14 +1746,12 @@ class FsmDetectVisitor final : public VNVisitor {
         FsmRegisterCandidate reg;
         if (analyzer.matchRegisterCandidate(nodep, reg)) {
             AstVarScope* const stateVscp = reg.stateVscp();
-            const bool found = std::any_of(
-                m_registerCandidates.cbegin(), m_registerCandidates.cend(),
-                [stateVscp](const FsmRegisterCandidate& existing) {
-                    return existing.stateVscp() == stateVscp;
-                });
-            if (!found) {
-                m_registerCandidates.emplace_back(reg);
-            }
+            const bool found
+                = std::any_of(m_registerCandidates.cbegin(), m_registerCandidates.cend(),
+                              [stateVscp](const FsmRegisterCandidate& existing) {
+                                  return existing.stateVscp() == stateVscp;
+                              });
+            if (!found) { m_registerCandidates.emplace_back(reg); }
         }
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
