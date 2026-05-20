@@ -369,10 +369,22 @@ class WidthVisitor final : public VNVisitor {
     // Signed: If both sides real
     void visit(AstAdd* nodep) override { visit_add_sub_replace(nodep, true); }
     void visit(AstSub* nodep) override { visit_add_sub_replace(nodep, true); }
-    void visit(AstDiv* nodep) override { visit_add_sub_replace(nodep, true); }
+    void visit(AstDiv* nodep) override {
+        if (!m_paramsOnly) {
+            nodep->v3warn(UNSYNTHESIZABLE,
+                          "Operator '/' is not always synthesizable; behavior varies by tool");
+        }
+        visit_add_sub_replace(nodep, true);
+    }
     void visit(AstMul* nodep) override { visit_add_sub_replace(nodep, true); }
     // These can't promote to real
-    void visit(AstModDiv* nodep) override { visit_add_sub_replace(nodep, false); }
+    void visit(AstModDiv* nodep) override {
+        if (!m_paramsOnly) {
+            nodep->v3warn(UNSYNTHESIZABLE,
+                          "Operator '%' is not always synthesizable; behavior varies by tool");
+        }
+        visit_add_sub_replace(nodep, false);
+    }
     void visit(AstModDivS* nodep) override { visit_add_sub_replace(nodep, false); }
     void visit(AstMulS* nodep) override { visit_add_sub_replace(nodep, false); }
     void visit(AstDivS* nodep) override { visit_add_sub_replace(nodep, false); }
@@ -1896,6 +1908,10 @@ class WidthVisitor final : public VNVisitor {
         // RHS is self-determined (IEEE)
         // Real if either side is real (as with AstAdd)
         assertAtExpr(nodep);
+        if (!m_paramsOnly) {
+            nodep->v3warn(UNSYNTHESIZABLE, "Operator '**' (power) is not always synthesizable;"
+                                           " behavior varies by tool");
+        }
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());

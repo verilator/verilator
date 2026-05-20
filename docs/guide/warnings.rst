@@ -2410,6 +2410,24 @@ List Of Warnings
    Disabling this error also disables :option:`COVERIGN` and
    :option:`SPECIFYIGN`.
 
+
+.. option:: UNSYNTHESIZABLE
+
+   Warns when the design uses an arithmetic operator that is commonly
+   rejected or treated specially by hardware synthesis tools: division
+   (``/``), modulo (``%``), and exponentiation (``**``), including their
+   signed variants.
+
+   Behavior across synthesis tools varies. Verilator simulates these
+   operators correctly, but synthesis tools may quietly reinterpret them,
+   producing a netlist that diverges from the simulation. Detecting these
+   operators in Verilator helps catch potential simulation/synthesis
+   mismatches early in flows that target less permissive synthesizers.
+
+   Disabled by default. Enable with ``-Wwarn-UNSYNTHESIZABLE`` to surface
+   it. Ignoring this warning does not affect Verilator simulation; it
+   only flags a potential synthesis-flow incompatibility.
+
 .. option:: UNUSED
 
    Disabling/enabling UNUSED is equivalent to disabling/enabling the

@@ -1,0 +1,29 @@
+%Warning-UNSYNTHESIZABLE: t/t_lint_unsynthesizable_bad.v:15:21: Operator '/' is not always synthesizable; behavior varies by tool
+                                                              : ... note: In instance 't'
+   15 |   assign q_div  = a / b;
+      |                     ^
+                          ... For warning description see https://verilator.org/warn/UNSYNTHESIZABLE?v=latest
+                          ... Use "/* verilator lint_off UNSYNTHESIZABLE */" and lint_on around source to disable this message.
+%Warning-UNSYNTHESIZABLE: t/t_lint_unsynthesizable_bad.v:16:21: Operator '%' is not always synthesizable; behavior varies by tool
+                                                              : ... note: In instance 't'
+   16 |   assign q_mod  = a % b;
+      |                     ^
+%Warning-UNSYNTHESIZABLE: t/t_lint_unsynthesizable_bad.v:17:22: Operator '/' is not always synthesizable; behavior varies by tool
+                                                              : ... note: In instance 't'
+   17 |   assign q_divs = sa / sb;
+      |                      ^
+%Warning-UNSYNTHESIZABLE: t/t_lint_unsynthesizable_bad.v:18:22: Operator '%' is not always synthesizable; behavior varies by tool
+                                                              : ... note: In instance 't'
+   18 |   assign q_mods = sa % sb;
+      |                      ^
+%Warning-UNSYNTHESIZABLE: t/t_lint_unsynthesizable_bad.v:19:21: Operator '**' (power) is not always synthesizable; behavior varies by tool
+                                                              : ... note: In instance 't'
+   19 |   assign q_pow  = a ** b;
+      |                     ^~
+%Warning-WIDTHEXPAND: t/t_lint_unsynthesizable_bad.v:19:21: Operator POW expects 16 bits on the LHS, but LHS's VARREF 'a' generates 8 bits.
+                                                          : ... note: In instance 't'
+   19 |   assign q_pow  = a ** b;
+      |                     ^~
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: Exiting due to
