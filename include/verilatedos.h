@@ -515,9 +515,6 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 /// Return mask for EData with 1's where relevant bits are (0=all bits)
 /// Arguments must not have side effects
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
-// Return a mask for any size
-#define VL_MASK(nbits) ((0x1UL << nbits) - 1)
-
 
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 

@@ -1631,7 +1631,7 @@ static inline void VL_STREAML_FAST_RQI(int lbits, VlQueue<T>& q, QData ld, IData
     const QData ret = VL_STREAML_FAST_QQI(lbits, ld, rd_log2);
     q.clear();
     const int numQData = 8 / sizeof(T);
-    VL_CONSTEXPR_CXX17 bool needsMask = sizeof(T) < 8;
+    const bool needsMask = sizeof(T) < 8;
     for (int ii = numQData - 1; ii >= 0; ii--) {
         if VL_CONSTEXPR_CXX17 (needsMask) {
             VL_CONSTEXPR_CXX17 uint64_t mask = VL_MASK_Q(sizeof(T) * 8);
@@ -2008,7 +2008,7 @@ static inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<T>& q, IData
     }
     q.clear();
     VL_CONSTEXPR_CXX17 int numBitsPerQElem = sizeof(T) * 8;
-    VL_CONSTEXPR_CXX17 bool needsMask = sizeof(T) < 4;
+    const bool needsMask = sizeof(T) < 4;
     VL_CONSTEXPR_CXX17 int elementMask = VL_MASK_I(numBitsPerQElem * needsMask);
     VL_CONSTEXPR_CXX17 int qElementPerWord = numBitsPerQElem < 32 ? 32 / numBitsPerQElem : 1;
     for (int i = 0; i < qElementPerWord; i++) {
@@ -2073,7 +2073,7 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 template <typename T>
 static inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP const lwp,
                                   IData rd) VL_MT_SAFE {
-    VL_CONSTEXPR_CXX17 bool needsMask = sizeof(T) < 4;
+    const bool needsMask = sizeof(T) < 4;
     VL_CONSTEXPR_CXX17 int numBitsInT = 8 * sizeof(T);
     VL_CONSTEXPR_CXX17 int mask = VL_MASK_I(numBitsInT * needsMask);
     q.renew(lbits / numBitsInT);
