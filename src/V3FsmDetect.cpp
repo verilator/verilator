@@ -30,6 +30,7 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 
+#include <algorithm>
 #include <cctype>
 #include <map>
 #include <memory>
@@ -349,7 +350,6 @@ public:
 struct DetectedFsm final {
     std::unique_ptr<FsmGraph> graphp;  // Extracted graph for one detected FSM candidate.
 };
-using DetectedFsmMap = std::map<const AstVarScope*, DetectedFsm>;
 
 struct FsmCaseCandidate final {
     AstNode* warnNodep = nullptr;  // Transition node that made the candidate supported.
@@ -405,14 +405,22 @@ struct FsmStateSpace final {
 // fills this with recovered FSM graphs; lowering consumes the completed graphs
 // immediately afterward without needing any AST serialization bridge.
 class FsmState final {
-    // All detected FSMs keyed by state varscope identity. This is the only bridge
-    // between the adjacent detect and lower phases, so the second phase never
-    // needs to rediscover or serialize the extracted machine.
-    DetectedFsmMap m_fsms;
+    // All detected FSMs in discovery order. This is the only bridge between
+    // the adjacent detect and lower phases, so the second phase never needs to
+    // rediscover or serialize the extracted machine.
+    std::vector<DetectedFsm> m_fsms;
+    std::map<const AstVarScope*, size_t> m_fsmIndex;
 
 public:
-    DetectedFsmMap& fsms() { return m_fsms; }
-    const DetectedFsmMap& fsms() const { return m_fsms; }
+    DetectedFsm& fsmFor(AstVarScope* stateVscp) {
+        const std::map<const AstVarScope*, size_t>::const_iterator it = m_fsmIndex.find(stateVscp);
+        if (it != m_fsmIndex.end()) return m_fsms.at(it->second);
+        const size_t index = m_fsms.size();
+        m_fsmIndex.emplace(stateVscp, index);
+        m_fsms.emplace_back();
+        return m_fsms.back();
+    }
+    const std::vector<DetectedFsm>& fsms() const { return m_fsms; }
 };
 
 // Detection runs while the original clocked/case structure is still intact and
@@ -425,7 +433,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
     AstScope* m_scopep = nullptr;
-    std::unordered_map<const AstVarScope*, FsmRegisterCandidate> m_registerCandidates;
+    std::vector<FsmRegisterCandidate> m_registerCandidates;
     // Deferring one-block detection avoids making continuous alias support
     // depend on whether the assign appears before or after the always block.
     std::vector<FsmComboAlways> m_oneBlockAlwayss;
@@ -546,19 +554,17 @@ class FsmDetectVisitor final : public VNVisitor {
         };
 
     private:
-        const std::unordered_map<const AstVarScope*, FsmRegisterCandidate>& m_registerCandidates;
+        const std::vector<FsmRegisterCandidate>& m_registerCandidates;
 
     public:
-        explicit ComboAlwaysAnalyzer(
-            const std::unordered_map<const AstVarScope*, FsmRegisterCandidate>& registerCandidates)
+        explicit ComboAlwaysAnalyzer(const std::vector<FsmRegisterCandidate>& registerCandidates)
             : m_registerCandidates{registerCandidates} {}
 
         ComboMatch matchCase(AstNode* stmtsp, AstCase* casep) const {
             ComboMatch match;
             AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
             if (!selp) return match;
-            for (const auto& it : m_registerCandidates) {
-                const FsmRegisterCandidate& reg = it.second;
+            for (const FsmRegisterCandidate& reg : m_registerCandidates) {
                 if (selp->varScopep() == reg.nextVscp()) {
                     if (!FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
                             stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
@@ -578,10 +584,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
         ComboMatch matchIfChain(AstNode* stmtsp, const FsmIfChainCandidate& chain) const {
             ComboMatch match;
-            for (std::unordered_map<const AstVarScope*, FsmRegisterCandidate>::const_iterator it
-                 = m_registerCandidates.begin();
-                 it != m_registerCandidates.end(); ++it) {
-                const FsmRegisterCandidate& reg = it->second;
+            for (const FsmRegisterCandidate& reg : m_registerCandidates) {
                 // Comparing state_d is safe only with the canonical default;
                 // otherwise the chain may be dispatching on already-mutated data.
                 if (chain.compareVscp == reg.nextVscp()) {
@@ -605,8 +608,8 @@ class FsmDetectVisitor final : public VNVisitor {
             const AstVarRef* const selp = VN_CAST(casep->exprp(), VarRef);
             if (!selp) return false;
 
-            const auto isRecognizedFsm = [&](const auto& entry) -> bool {
-                const FsmRegisterCandidate& reg = entry.second;
+            return std::any_of(m_registerCandidates.cbegin(), m_registerCandidates.cend(),
+                               [&](const FsmRegisterCandidate& reg) -> bool {
                 const bool matchesNext = selp->varScopep() == reg.nextVscp();
                 const bool matchesState = selp->varScopep() == reg.stateVscp();
 
@@ -618,10 +621,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 }
                 return FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
                                                                      reg.inclCond());
-            };
-
-            return std::any_of(m_registerCandidates.begin(), m_registerCandidates.end(),
-                               isRecognizedFsm);
+            });
         }
     };
 
@@ -1495,7 +1495,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* const stateVscp = reg.stateVscp();
         FsmStateSpace stateSpace;
         if (!collectStateSpace(casep, stateVscp, assignVscp, reg.resetArcs(), stateSpace)) return;
-        DetectedFsm& entry = m_state.fsms()[stateVscp];
+        DetectedFsm& entry = m_state.fsmFor(stateVscp);
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
             entry.graphp->scopep(reg.scopep());
@@ -1528,7 +1528,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* const stateVscp = reg.stateVscp();
         FsmStateSpace stateSpace;
         if (!collectStateSpace(chain, stateVscp, assignVscp, reg.resetArcs(), stateSpace)) return;
-        DetectedFsm& entry = m_state.fsms()[stateVscp];
+        DetectedFsm& entry = m_state.fsmFor(stateVscp);
         // Case candidates keep ownership of existing graphs; reaching this path
         // means the if-chain is the only supported dispatch for this FSM.
         UASSERT_OBJ(!entry.graphp, chain.ifp, "FSM if-chain graph should not already exist");
@@ -1744,7 +1744,15 @@ class FsmDetectVisitor final : public VNVisitor {
         const RegisterAlwaysAnalyzer analyzer{m_scopep};
         FsmRegisterCandidate reg;
         if (analyzer.matchRegisterCandidate(nodep, reg)) {
-            m_registerCandidates.emplace(reg.stateVscp(), reg);
+            AstVarScope* const stateVscp = reg.stateVscp();
+            const bool found = std::any_of(
+                m_registerCandidates.cbegin(), m_registerCandidates.cend(),
+                [stateVscp](const FsmRegisterCandidate& existing) {
+                    return existing.stateVscp() == stateVscp;
+                });
+            if (!found) {
+                m_registerCandidates.emplace_back(reg);
+            }
         }
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             m_comboAlwayss.emplace_back(m_scopep, nodep);
@@ -1968,7 +1976,7 @@ public:
     // still valid in the same pass.
     explicit FsmLowerVisitor(const FsmState& state)
         : m_state{state} {
-        for (const auto& it : m_state.fsms()) { buildOne(*it.second.graphp); }
+        for (const DetectedFsm& fsm : m_state.fsms()) { buildOne(*fsm.graphp); }
     }
 };
 
@@ -1982,8 +1990,8 @@ void V3FsmDetect::detect(AstNetlist* rootp) {
     FsmDetectVisitor detect{state, rootp};
     if (dumpGraphLevel() >= 6) {
         size_t index = 0;
-        for (const auto& it : state.fsms()) {
-            it.second.graphp->dumpDotFilePrefixed(it.second.graphp->dumpTag(index++));
+        for (const DetectedFsm& fsm : state.fsms()) {
+            fsm.graphp->dumpDotFilePrefixed(fsm.graphp->dumpTag(index++));
         }
     }
     // Phase 2: lower the completed in-memory graph state immediately, without
