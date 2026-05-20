@@ -187,7 +187,7 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->ftaskp()) nodep->ftaskp()->user1(1);
+        if (nodep->ftaskp()) nodep->ftaskp()->user1Inc();
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
