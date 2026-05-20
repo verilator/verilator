@@ -668,17 +668,17 @@ void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
+void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
-    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
+    cvtEDataToStr(wp, newval[--words] << (VL_EDATASIZE - bitsInMSW));
     wp += bitsInMSW;
     // Handle the remaining words
     while (words > 0) {
-        cvtEDataToStr(wp, newvalp[--words]);
+        cvtEDataToStr(wp, newval[--words]);
         wp += VL_EDATASIZE;
     }
     finishLine(code, wp);

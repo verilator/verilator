@@ -455,31 +455,29 @@ class EmitCHeader final : public EmitCConstInit {
             puts("}\n");
         } else if (VN_IS(dtypep, NodeUOrStructDType)) {
             const std::string tmp = m_names.get("__Vtmp");
-            const std::string suffixName = dtypep->isWide() ? tmp + ".data()" : tmp;
             if (getfunc) {  // Emit `get` func;
                 // auto __tmp = field.get();
                 puts("auto " + tmp + " = " + fieldname + ".get();\n");
                 // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
-                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, tmp, getfunc);
             } else {  // Emit `set` func
                 const std::string tmptype = AstCDType::typeToHold(dtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
                 // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
-                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+                emitVlAssign(dtypep, parentDtypep, offset, tmp, retOrArg, getfunc);
                 // field.set(__tmp);
                 puts(fieldname + ".set(" + tmp + ");\n");
             }
         } else {
             UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), dtypep,
                         "Unsupported type in packed struct or union");
-            const std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : fieldname;
             if (getfunc) {  // Emit `get` func;
                 // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
-                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, fieldname, getfunc);
             } else {  // Emit `set` func
                 // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
-                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+                emitVlAssign(dtypep, parentDtypep, offset, fieldname, retOrArg, getfunc);
             }
         }
     }
@@ -501,7 +499,6 @@ class EmitCHeader final : public EmitCConstInit {
         }
 
         const std::string retArgName = m_names.get("__v");
-        const std::string suffixName = sdtypep->isWide() ? retArgName + ".data()" : retArgName;
         const std::string retArgType = AstCDType::typeToHold(sdtypep->width());
 
         // Emit `get` member function
@@ -510,12 +507,12 @@ class EmitCHeader final : public EmitCConstInit {
         if (VN_IS(sdtypep, StructDType)) {
             for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
-                                 std::to_string(itemp->lsb()), /*getfunc=*/true, suffixName);
+                                 std::to_string(itemp->lsb()), /*getfunc=*/true, retArgName);
             }
         } else {
             // We only need to fill the widest field of union
             emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
-                             std::to_string(witemp->lsb()), /*getfunc=*/true, suffixName);
+                             std::to_string(witemp->lsb()), /*getfunc=*/true, retArgName);
         }
         puts("return " + retArgName + ";\n");
         puts("}\n");
@@ -525,12 +522,12 @@ class EmitCHeader final : public EmitCConstInit {
         if (VN_IS(sdtypep, StructDType)) {
             for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
-                                 std::to_string(itemp->lsb()), /*getfunc=*/false, suffixName);
+                                 std::to_string(itemp->lsb()), /*getfunc=*/false, retArgName);
             }
         } else {
             // We only need to fill the widest field of union
             emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
-                             std::to_string(witemp->lsb()), /*getfunc=*/false, suffixName);
+                             std::to_string(witemp->lsb()), /*getfunc=*/false, retArgName);
         }
 
         puts("}\n");

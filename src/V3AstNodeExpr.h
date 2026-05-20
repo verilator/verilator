@@ -4873,7 +4873,7 @@ class AstWordSel final : public AstNodeSel {
 public:
     AstWordSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_WordSel(fl, fromp, bitp) {
-        dtypeSetUInt32();  // Always used on WData arrays so returns edata size
+        dtypeSetUInt32();  // Always used on VlWide arrays so returns EData size
     }
     ASTGEN_MEMBERS_AstWordSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }

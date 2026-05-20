@@ -145,7 +145,7 @@ private:
             return (rhsVal >> rhsLsb) & mask;
         }
 
-        const EData* const rhswp = static_cast<const EData*>(entry.m_rhsDatap);
+        WDataInP rhswp = WDataInP::external(static_cast<const EData*>(entry.m_rhsDatap));
         return VL_SEL_QWII(rhsWidth, rhswp, rhsLsb, width) & mask;
     }
 
@@ -198,7 +198,7 @@ private:
     template <typename T>
     typename std::enable_if<VlIsVlWide<T>::value>::type applyEntries(T& val) const {
         for (const auto& entry : m_entries) {
-            applyEntry(val.data(), entry, entry.m_lsb, entry.m_msb, 0);
+            applyEntry(val, entry, entry.m_lsb, entry.m_msb, 0);
         }
     }
 
@@ -262,14 +262,14 @@ public:
 
     IData readSelI(int lbits, WDataInP valp, int lsb, int width) const {
         IData result;
-        readSel(lbits, valp, &result, lsb, width);
+        readSel(lbits, valp, WDataOutP::external(reinterpret_cast<EData*>(&result)), lsb, width);
         result &= VL_MASK_I(width);
         return result;
     }
 
     QData readSelQ(int lbits, WDataInP valp, int lsb, int width) const {
         QData result;
-        readSel(lbits, valp, reinterpret_cast<WDataOutP>(&result), lsb, width);
+        readSel(lbits, valp, WDataOutP::external(reinterpret_cast<EData*>(&result)), lsb, width);
         result &= VL_MASK_Q(width);
         return result;
     }
@@ -277,9 +277,8 @@ public:
     template <std::size_t N_Words>
     VlWide<N_Words> readSelW(int lbits, WDataInP valp, int lsb, int width) const {
         VlWide<N_Words> result;
-        WDataOutP const reswp = result.data();
-        readSel(lbits, valp, reswp, lsb, width);
-        reswp[N_Words - 1] &= VL_MASK_E(width);
+        readSel(lbits, valp, result, lsb, width);
+        result[N_Words - 1] &= VL_MASK_E(width);
         return result;
     }
 

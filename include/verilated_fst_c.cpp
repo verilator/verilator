@@ -412,11 +412,10 @@ void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int) {
+void VerilatedFstBuffer::emitWData(uint32_t code, WDataInP newval, int) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
     m_owner.emitTimeChangeMaybe();
-    // call emitValueChange(handle, uint32_t*)
-    m_fst->emitValueChange(m_symbolp[code], newvalp);
+    m_fst->emitValueChange(m_symbolp[code], newval.datap());
 }
 
 VL_ATTR_ALWINLINE

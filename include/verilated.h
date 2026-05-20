@@ -120,17 +120,13 @@ using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
 using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
 using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
-using EData = uint32_t;   ///< Data representing one element of WData array
-using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
+using EData = uint32_t;   ///< Data representing one element of VlWide
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
 //    N     = std::string;  // No typedef needed; Verilator uses string
 //    U     = VlUnpacked;
 //    R     = VlQueue;
 // clang-format on
-
-using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
-using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
 enum VerilatedVarType : uint8_t {
     VLVT_UNKNOWN = 0,
@@ -139,7 +135,7 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT16,  // AKA SData
     VLVT_UINT32,  // AKA IData
     VLVT_UINT64,  // AKA QData
-    VLVT_WDATA,  // AKA WData
+    VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
     VLVT_REAL  // AKA double
 };
