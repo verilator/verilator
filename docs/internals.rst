@@ -795,6 +795,37 @@ In forked processes, references to local variables are only allowed in
 ``fork..join``, as this is the only case that ensures the lifetime of these
 locals are at least as long as the execution of the forked processes.
 
+Fibers
+~~~~~~
+
+Verilator uses [fibers](https://en.wikipedia.org/wiki/Fiber_(computer_science)) as
+a way to capture the call stack of a function call. It allows to switch contexts on
+demand between the simulation context and fiber context. It is especially useful when
+implementing support for DPI exported tasks that use delays or wait for some event.
+
+Implementation of ``VlFiber`` class is present in ``verilated_fiber.cpp`` and ``verilated_fiber.h``.
+
+The ``VlFiber::create()`` function creates a fiber and allocates the stack.
+On first call to ``VlFiber::resume()``, the specified lambda function will be called
+on a new stack. While inside the fiber context, you can call ``VlFiber::yield()`` to
+restore the main stack and jump to the place where ``VlFiber::resume()`` was called.
+Subsequent resumptions of the same fiber will restore the context and jump to the callsite
+of the last ``VlFiber::yield()`` call.
+
+DPI with timings
+++++++++++++++++
+
+In order to support DPIs with timing constructs, ``verilated_dpi.h`` provides
+``callImportFiber()`` and ``awaitExportFiber()`` functions which utilze fibers
+to save the call stack of a foreign function call and jump back to the simulation
+event loop when a delay occurs or some event has to happen.
+
+The ``callImportFiber()`` function creates new fiber and calls the DPI imported function,
+forwarding all of the arguments. In the case where the DPI import called an exported task
+with timing constructs, the call will go through ``awaitExportFiber()`` which will call the
+exported task and yield on first delay/event that occurs. The control is passed again
+to the most recent ``callImportFiber()``, which allows the event loop to continue by
+calling ``co_await`` on a ``FiberAwaitable``.
 
 Multithreaded Mode
 ------------------
