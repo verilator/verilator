@@ -762,7 +762,8 @@ class FsmDetectVisitor final : public VNVisitor {
             }
             cellp->v3warn(COVERIGN,
                           "Ignoring unsupported: fsm_register_wrapper reset arcs require both "
-                          "reset polarity and static reset value; " + reason);
+                          "reset polarity and static reset value; "
+                              + reason);
         }
 
         // This candidate represents a register proven through an instance
@@ -991,11 +992,13 @@ class FsmDetectVisitor final : public VNVisitor {
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp) return nullptr;
         if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
-            if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) return nullptr;
+            if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK)
+                return nullptr;
             fromVscp = elsep->varScopep();
             resetActiveLow = false;
         } else if (AstVarRef* const thenp = VN_CAST(rhsp->thenp(), VarRef)) {
-            if (constValueStatus(rhsp->elsep(), resetValue) != ConstValueStatus::OK) return nullptr;
+            if (constValueStatus(rhsp->elsep(), resetValue) != ConstValueStatus::OK)
+                return nullptr;
             fromVscp = thenp->varScopep();
             resetActiveLow = true;
         } else {
@@ -1411,9 +1414,8 @@ class FsmDetectVisitor final : public VNVisitor {
             AstNodeExpr* resetCondp = nullptr;
             bool resetActiveLow = false;
             FsmStateValue resetValue;
-            if (AstNodeAssign* const assp
-                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetActiveLow,
-                                           resetValue)) {
+            if (AstNodeAssign* const assp = directCondStateVarAssign(
+                    nodep, stateVscp, nextVscp, resetCondp, resetActiveLow, resetValue)) {
                 // Inlined wrappers can normalize into a compact active-low
                 // assignment form that earlier direct-register FSM support did
                 // not accept. The pre-inline marker is the architectural fence:

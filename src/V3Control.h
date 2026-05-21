@@ -50,8 +50,8 @@ public:
     static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addHierWorkers(FileLine* fl, const string& model, int workers);
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
-                                      const string& q, const string& clock,
-                                      const string& reset, const string& resetValue);
+                                      const string& q, const string& clock, const string& reset,
+                                      const string& resetValue);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);

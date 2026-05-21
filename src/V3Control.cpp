@@ -270,8 +270,8 @@ public:
     void setFsmRegisterWrapper(FileLine* fl, const V3Control::FsmRegisterWrapper& desc) {
         if (m_hasFsmRegisterWrapper) {
             fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module "
-                                        << AstNode::prettyNameQ(desc.moduleName)
-                                        << "; replacing previous descriptor");
+                                         << AstNode::prettyNameQ(desc.moduleName)
+                                         << "; replacing previous descriptor");
         }
         m_fsmRegisterWrapper = desc;
         m_hasFsmRegisterWrapper = true;
@@ -896,8 +896,8 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
 }
 
 void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
-                                      const string& q, const string& clock,
-                                      const string& reset, const string& resetValue) {
+                                      const string& q, const string& clock, const string& reset,
+                                      const string& resetValue) {
     string missing;
     if (module.empty()) missing += "-module";
     if (d.empty()) missing = VString::dot(missing, ", ", "-d");
