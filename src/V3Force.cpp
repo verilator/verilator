@@ -78,6 +78,7 @@ public:
         AstVarScope* m_forceEnVscp = nullptr;
         AstVarScope* m_forceValVscp = nullptr;
         AstVarScope* m_varVscp = nullptr;
+        AstVar* m_varp = nullptr;
         AstScope* m_scopep = nullptr;
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
         std::unordered_map<string, int> m_forcePathToIndex;
@@ -138,7 +139,8 @@ private:
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
 
-    std::unordered_map<AstVar*, VarForceInfo> m_varInfo;
+    std::vector<VarForceInfo> m_varInfos;  // Indexed by stable variable ID
+    std::unordered_map<AstVar*, int> m_varToId;
     std::unordered_set<AstVar*> m_clockedWrites;
     std::unordered_map<AstVar*, std::vector<ForceInfo*>> m_rhsDepToForces;
     bool m_doingAssign = false;  // If true, we're processing procedural continuous assign
@@ -358,7 +360,16 @@ public:
                              readExprp};
     }
 
-    VarForceInfo& getOrCreateVarInfo(AstVar* varp) { return m_varInfo[varp]; }
+    VarForceInfo& getOrCreateVarInfo(AstVar* varp) {
+        const auto it = m_varToId.find(varp);
+        if (it != m_varToId.end()) return m_varInfos[it->second];
+
+        m_varToId.emplace(varp, m_varInfos.size());
+        m_varInfos.emplace_back();
+        VarForceInfo& info = m_varInfos.back();
+        info.m_varp = varp;
+        return info;
+    }
 
     void markClockedWrite(AstVar* varp) { m_clockedWrites.insert(varp); }
     bool hasClockedWrite(AstVar* varp) const { return m_clockedWrites.count(varp); }
@@ -366,8 +377,8 @@ public:
     bool doingAssign() const { return m_doingAssign; }
 
     const VarForceInfo* getVarInfo(AstVar* varp) const {
-        const auto it = m_varInfo.find(varp);
-        return it != m_varInfo.end() ? &it->second : nullptr;
+        const auto it = m_varToId.find(varp);
+        return it != m_varToId.end() ? &m_varInfos[it->second] : nullptr;
     }
 
     void addForceAssignment(AstVar* varp, AstVarScope* vscp, AstNodeExpr* rhsExprp,
@@ -475,9 +486,8 @@ public:
     }
 
     void finalizeRhsVars() {
-        for (auto& it : m_varInfo) {
-            AstVar* const varp = it.first;
-            VarForceInfo& info = it.second;
+        for (VarForceInfo& info : m_varInfos) {
+            AstVar* const varp = info.m_varp;
             if (info.m_forces.empty()) continue;
 
             AstScope* const scopep = info.m_scopep;
@@ -605,10 +615,10 @@ public:
 
     const ForceInfo& getForceInfo(AstAssignForce* forceStmtp) const {
         AstVar* varp = getOneVarRef(forceStmtp->lhsp())->varp();
-        auto it = m_varInfo.find(varp);
-        UASSERT(it != m_varInfo.end(), "Force info not found for variable");
-        auto it2 = it->second.m_forces.find(forceStmtp);
-        UASSERT(it2 != it->second.m_forces.end(), "Force statement not found");
+        const VarForceInfo* const varInfo = getVarInfo(varp);
+        UASSERT(varInfo, "Force info not found for variable");
+        auto it2 = varInfo->m_forces.find(forceStmtp);
+        UASSERT(it2 != varInfo->m_forces.end(), "Force statement not found");
         return it2->second;
     }
 
