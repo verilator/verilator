@@ -21,6 +21,12 @@
 
 #include "verilated.h"
 
+#if defined(__x86_64__) && defined(__linux__)
+#include "arch/x64/fibers.h"
+#else
+#error "Target platform is not supported"
+#endif
+
 #include <cerrno>
 #include <cstring>
 #include <string>
@@ -30,17 +36,6 @@
 // Statics
 
 thread_local VlFiber* VlFiber::s_currentFiberp = nullptr;
-
-namespace {
-
-// Align pointer down to 16-byte boundary (required by x86_64 ABI)
-// The x86_64 calling convention requires stack pointer to be 16-byte aligned
-std::uint8_t* alignDown16(std::uint8_t* ptr) {
-    return reinterpret_cast<std::uint8_t*>(reinterpret_cast<std::uintptr_t>(ptr)
-                                           & ~std::uintptr_t(0xF));
-}
-
-}  // namespace
 
 //======================================================================
 // Construction helpers
@@ -53,7 +48,8 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
     : m_fn{std::move(fn)} {
     // Get system page size for guard page alignment
     const long page = ::sysconf(_SC_PAGESIZE);
-    if (VL_UNLIKELY(page <= 0)) {
+    VlFiberInternal::Context fibCtx = VlFiberInternal::getcontext();
+    if (VL_UNLIKELY(fibCtx.m_pagesize <= 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
     }
     const std::size_t guardSize = static_cast<std::size_t>(page);
@@ -70,7 +66,7 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
                     (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
     }
 
-    // Initialize memory layout pointers early
+    // Initialize memory layout pointers
     m_mappingp = mappingp;
     m_stackBasep = static_cast<std::uint8_t*>(mappingp) + guardSize;
 

@@ -25,6 +25,8 @@
 
 #include "verilatedos.h"
 
+#include "internal/fibers.h"
+
 #include <coroutine>
 #include <csetjmp>
 #include <cstddef>
@@ -32,14 +34,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-
-#if defined(__x86_64__)
-#include <unistd.h>
-
-#include <sys/mman.h>
-#else
-#error "VlFiber currently supports only x86_64"
-#endif
 
 // Simple userspace fiber used to run DPI code on an alternate stack.
 class VlFiber final {
