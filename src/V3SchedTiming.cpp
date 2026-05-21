@@ -558,7 +558,7 @@ public:
 
 void transformForks(AstNetlist* const netlistp) {
     if (!v3Global.opt.timing().isTrue()) return;
-    TransformForksVisitor{netlistp};
+    { TransformForksVisitor{netlistp}; }
     V3Global::dumpCheckGlobalTree("transform_forks", 0, dumpTreeEitherLevel() >= 3);
 }
 

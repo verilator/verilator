@@ -431,7 +431,6 @@ class TaskVisitor final : public VNVisitor {
     V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
                                         // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstNetlist* const m_netlistp = v3Global.rootp();
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
