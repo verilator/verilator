@@ -316,6 +316,7 @@ static void process() {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
             // V3Scope's V3LinkDot is in the AstVar.
+            if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
             if (v3Global.opt.fInline()) {
                 V3Inline::inlineAll(v3Global.rootp());
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules

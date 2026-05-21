@@ -1,0 +1,850 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage for non-inlined fsm_register_wrapper state register wrappers
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module my_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk_i,
+            input logic rst_ni,
+            input logic [Width-1:0] state_i,
+            output logic [Width-1:0] state_o
+        );
+          always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (!rst_ni) state_o <= ResetValue;
+            else state_o <= state_i;
+          end
+        endmodule
+        
+        module prim_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk_i,
+            input logic rst_ni,
+            input logic [Width-1:0] d_i,
+            output logic [Width-1:0] q_o
+        );
+          always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (!rst_ni) q_o <= ResetValue;
+            else q_o <= d_i;
+          end
+        endmodule
+        
+        module prim_sparse_fsm_flop #(
+            parameter int Width = 1,
+            parameter type StateEnumT = logic [Width-1:0],
+            parameter logic [Width-1:0] ResetValue = '0,
+            parameter bit EnableAlertTriggerSVA = 1
+        ) (
+            input logic clk_i,
+            input logic rst_ni,
+            input StateEnumT state_i,
+            output StateEnumT state_o
+        );
+          logic unused_alert_sva;
+          logic [Width-1:0] state_raw;
+        
+          prim_flop #(
+            .Width(Width),
+            .ResetValue(ResetValue)
+          ) u_state_flop (
+            .clk_i(clk_i),
+            .rst_ni(rst_ni),
+            .d_i(state_i),
+            .q_o(state_raw)
+          );
+        
+          assign state_o = StateEnumT'(state_raw);
+          assign unused_alert_sva = EnableAlertTriggerSVA;
+        endmodule
+        
+        module active_high_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk,
+            input logic rst,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk or posedge rst) begin
+            if (rst) q <= ResetValue;
+            else q <= d;
+          end
+        endmodule
+        
+        module active_high_rst_i_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk,
+            input logic rst_i,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk or posedge rst_i) begin
+            if (rst_i) q <= ResetValue;
+            else q <= d;
+          end
+        endmodule
+        
+        module custom_reset_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk,
+            input logic my_reset,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          logic [Width-1:0] d_shadow;
+        
+          always_comb begin
+            d_shadow = d;
+          end
+        
+          always_ff @(posedge clk or negedge my_reset) begin
+            if (!my_reset) q <= ResetValue;
+            else q <= d_shadow;
+          end
+        endmodule
+        
+        module custom_reset_active_high_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk,
+            input logic my_reset,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk or posedge my_reset) begin
+            if (my_reset) q <= ResetValue;
+            else q <= d;
+          end
+        endmodule
+        
+        module no_reset_fsm_flop #(
+            parameter int Width = 1
+        ) (
+            input logic clk,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk) begin
+            q <= d;
+          end
+        endmodule
+        
+        module reset_no_param_fsm_flop #(
+            parameter int Width = 1
+        ) (
+            input logic clk,
+            input logic rst_n,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk or negedge rst_n) begin
+            if (!rst_n) q <= '0;
+            else q <= d;
+          end
+        endmodule
+        
+        module sync_reset_fsm_flop #(
+            parameter int Width = 1,
+            parameter logic [Width-1:0] ResetValue = '0
+        ) (
+            input logic clk,
+            input logic my_reset,
+            input logic [Width-1:0] d,
+            output logic [Width-1:0] q
+        );
+          always_ff @(posedge clk) begin
+            if (my_reset) q <= ResetValue;
+            else q <= d;
+          end
+        endmodule
+        
+        module ambiguous_fsm_flop (
+            input logic clk_i,
+            input logic rst_ni,
+            input logic [1:0] state_i,
+            input logic [1:0] d_i,
+            output logic [1:0] state_o
+        );
+          always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (!rst_ni) state_o <= 2'd0;
+            else state_o <= state_i ^ d_i;
+          end
+        endmodule
+        
+        module fsm_auto (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.auto_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.auto_u.state_q::S0->S0]
+%000001        // [fsm_arc t.auto_u.state_q::S0->S1]
+%000001        // [fsm_arc t.auto_u.state_q::S1->S2]
+%000001        // [fsm_state t.auto_u.state_q::S0]
+%000001        // [fsm_state t.auto_u.state_q::S1]
+%000001        // [fsm_state t.auto_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          my_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .state_o(state_q)
+          );
+        endmodule
+        
+        module fsm_prim (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.prim_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.prim_u.state_q::S0->S0]
+%000001        // [fsm_arc t.prim_u.state_q::S0->S1]
+%000001        // [fsm_arc t.prim_u.state_q::S1->S2]
+%000001        // [fsm_state t.prim_u.state_q::S0]
+%000001        // [fsm_state t.prim_u.state_q::S1]
+%000001        // [fsm_state t.prim_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          prim_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .d_i(state_d),
+            .q_o(state_q)
+          );
+        endmodule
+        
+        module fsm_prim_override (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.prim_override_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.prim_override_u.state_q::S0->S0]
+%000001        // [fsm_arc t.prim_override_u.state_q::S0->S1]
+%000001        // [fsm_arc t.prim_override_u.state_q::S1->S2]
+%000001        // [fsm_state t.prim_override_u.state_q::S0]
+%000001        // [fsm_state t.prim_override_u.state_q::S1]
+%000001        // [fsm_state t.prim_override_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          prim_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .d_i(state_d),
+            .q_o(state_q)
+          );
+        endmodule
+        
+        module fsm_sparse_prim (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [5:0] {
+            S0 = 6'b00_0001,
+            S1 = 6'b10_0100,
+            S2 = 6'b11_0010
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000005     unique case (state_q)
+        // [FSM coverage]
+%000005        // [fsm_arc t.sparse_prim_u.state_q::S0->S0]
+%000001        // [fsm_arc t.sparse_prim_u.state_q::S0->S1]
+%000001        // [fsm_arc t.sparse_prim_u.state_q::S1->S2]
+%000002        // [fsm_state t.sparse_prim_u.state_q::S0]
+%000001        // [fsm_state t.sparse_prim_u.state_q::S1]
+%000001        // [fsm_state t.sparse_prim_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          prim_sparse_fsm_flop #(
+            .StateEnumT(state_t),
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .state_o(state_q)
+          );
+        endmodule
+        
+        module fsm_sparse_prim_override (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [5:0] {
+            S0 = 6'b00_0001,
+            S1 = 6'b10_0100,
+            S2 = 6'b11_0010
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000005     unique case (state_q)
+        // [FSM coverage]
+%000005        // [fsm_arc t.sparse_prim_override_u.state_q::S0->S0]
+%000001        // [fsm_arc t.sparse_prim_override_u.state_q::S0->S1]
+%000001        // [fsm_arc t.sparse_prim_override_u.state_q::S1->S2]
+%000002        // [fsm_state t.sparse_prim_override_u.state_q::S0]
+%000001        // [fsm_state t.sparse_prim_override_u.state_q::S1]
+%000001        // [fsm_state t.sparse_prim_override_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          prim_sparse_fsm_flop #(
+            .StateEnumT(state_t),
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .state_o(state_q)
+          );
+        endmodule
+        
+        module fsm_active_high (
+            input logic clk,
+            input logic rst,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000007     unique case (state_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.active_high_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000007        // [fsm_arc t.active_high_u.state_q::S0->S0]
+%000001        // [fsm_arc t.active_high_u.state_q::S0->S1]
+%000001        // [fsm_arc t.active_high_u.state_q::S1->S2]
+%000001        // [fsm_state t.active_high_u.state_q::S0]
+%000001        // [fsm_state t.active_high_u.state_q::S1]
+%000001        // [fsm_state t.active_high_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          active_high_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk(clk),
+            .rst(rst),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_active_high_rst_i (
+            input logic clk,
+            input logic rst,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000007     unique case (state_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.active_high_rst_i_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000007        // [fsm_arc t.active_high_rst_i_u.state_q::S0->S0]
+%000001        // [fsm_arc t.active_high_rst_i_u.state_q::S0->S1]
+%000001        // [fsm_arc t.active_high_rst_i_u.state_q::S1->S2]
+%000001        // [fsm_state t.active_high_rst_i_u.state_q::S0]
+%000001        // [fsm_state t.active_high_rst_i_u.state_q::S1]
+%000001        // [fsm_state t.active_high_rst_i_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          active_high_rst_i_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk(clk),
+            .rst_i(rst),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_no_reset (
+            input logic clk,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000006        // [fsm_arc t.no_reset_u.state_q::S0->S0]
+%000001        // [fsm_arc t.no_reset_u.state_q::S0->S1]
+%000001        // [fsm_arc t.no_reset_u.state_q::S1->S2]
+%000001        // [fsm_state t.no_reset_u.state_q::S0]
+%000001        // [fsm_state t.no_reset_u.state_q::S1]
+%000001        // [fsm_state t.no_reset_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          no_reset_fsm_flop #(
+            .Width($bits(state_t))
+          ) u_state_regs (
+            .clk(clk),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_reset_no_param (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000006        // [fsm_arc t.reset_no_param_u.state_q::S0->S0]
+%000001        // [fsm_arc t.reset_no_param_u.state_q::S0->S1]
+%000001        // [fsm_arc t.reset_no_param_u.state_q::S1->S2]
+%000001        // [fsm_state t.reset_no_param_u.state_q::S0]
+%000001        // [fsm_state t.reset_no_param_u.state_q::S1]
+%000001        // [fsm_state t.reset_no_param_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          reset_no_param_fsm_flop #(
+            .Width($bits(state_t))
+          ) u_state_regs (
+            .clk(clk),
+            .rst_n(rst_n),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_sync_reset_unknown_polarity (
+            input logic clk,
+            input logic parent_reset,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000006        // [fsm_arc t.sync_reset_u.state_q::S0->S0]
+%000001        // [fsm_arc t.sync_reset_u.state_q::S0->S1]
+%000001        // [fsm_arc t.sync_reset_u.state_q::S1->S2]
+%000001        // [fsm_state t.sync_reset_u.state_q::S0]
+%000001        // [fsm_state t.sync_reset_u.state_q::S1]
+%000001        // [fsm_state t.sync_reset_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          sync_reset_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk(clk),
+            .my_reset(parent_reset),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_custom_reset_parent_polarity (
+            input logic clk,
+            input logic parent_reset,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.custom_reset_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.custom_reset_u.state_q::S0->S0]
+%000001        // [fsm_arc t.custom_reset_u.state_q::S0->S1]
+%000001        // [fsm_arc t.custom_reset_u.state_q::S1->S2]
+%000001        // [fsm_state t.custom_reset_u.state_q::S0]
+%000001        // [fsm_state t.custom_reset_u.state_q::S1]
+%000001        // [fsm_state t.custom_reset_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          custom_reset_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk(clk),
+            .my_reset(parent_reset),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_custom_reset_active_high (
+            input logic clk,
+            input logic parent_reset,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000007     unique case (state_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.custom_reset_active_high_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000007        // [fsm_arc t.custom_reset_active_high_u.state_q::S0->S0]
+%000001        // [fsm_arc t.custom_reset_active_high_u.state_q::S0->S1]
+%000001        // [fsm_arc t.custom_reset_active_high_u.state_q::S1->S2]
+%000001        // [fsm_state t.custom_reset_active_high_u.state_q::S0]
+%000001        // [fsm_state t.custom_reset_active_high_u.state_q::S1]
+%000001        // [fsm_state t.custom_reset_active_high_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          custom_reset_active_high_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk(clk),
+            .my_reset(parent_reset),
+            .d(state_d),
+            .q(state_q)
+          );
+        endmodule
+        
+        module fsm_ambiguous_ignored (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+            unique case (state_q)
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          ambiguous_fsm_flop u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .d_i(state_d),
+            .state_o(state_q)
+          );
+        endmodule
+        
+        module fsm_missing_reset_param (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.missing_reset_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.missing_reset_u.state_q::S0->S0]
+%000001        // [fsm_arc t.missing_reset_u.state_q::S0->S1]
+%000001        // [fsm_arc t.missing_reset_u.state_q::S1->S2]
+%000001        // [fsm_state t.missing_reset_u.state_q::S0]
+%000001        // [fsm_state t.missing_reset_u.state_q::S1]
+%000001        // [fsm_state t.missing_reset_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          my_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .state_o(state_q)
+          );
+        endmodule
+        
+        module fsm_competing_direct (
+            input logic clk,
+            input logic rst_n,
+            input logic start
+        );
+          /* verilator lint_off BLKANDNBLK */
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+        
+          always_comb begin
+            state_d = state_q;
+%000006     unique case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.competing_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
+%000006        // [fsm_arc t.competing_u.state_q::S0->S0]
+%000001        // [fsm_arc t.competing_u.state_q::S0->S1]
+%000001        // [fsm_arc t.competing_u.state_q::S1->S2]
+%000001        // [fsm_state t.competing_u.state_q::S0]
+%000001        // [fsm_state t.competing_u.state_q::S1]
+%000001        // [fsm_state t.competing_u.state_q::S2]
+              S0: state_d = start ? S1 : S0;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+        
+          always_ff @(posedge clk or negedge rst_n) begin
+            if (!rst_n) state_q <= S0;
+            else state_q <= state_d;
+          end
+        
+          my_fsm_flop #(
+            .Width($bits(state_t)),
+            .ResetValue(S0)
+          ) u_state_regs (
+            .clk_i(clk),
+            .rst_ni(rst_n),
+            .state_i(state_d),
+            .state_o(state_q)
+          );
+          /* verilator lint_on BLKANDNBLK */
+        endmodule
+        
+        module t (
+            input logic clk
+        );
+          logic rst_n;
+          logic rst;
+          logic start;
+          integer cyc;
+        
+          initial begin
+            rst_n = 1'b0;
+            rst = 1'b1;
+            start = 1'b0;
+            cyc = 0;
+          end
+        
+          always @(posedge clk) begin
+            cyc <= cyc + 1;
+            if (cyc == 1) rst_n <= 1'b1;
+            if (cyc == 1) rst <= 1'b0;
+            if (cyc == 2) start <= 1'b1;
+            if (cyc == 3) start <= 1'b0;
+            if (cyc == 8) begin
+              $write("*-* All Finished *-*\n");
+              $finish;
+            end
+          end
+        
+          fsm_auto auto_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_prim prim_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_prim_override prim_override_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_sparse_prim sparse_prim_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_sparse_prim_override sparse_prim_override_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_active_high active_high_u (.clk(clk), .rst(rst), .start(start));
+          fsm_active_high_rst_i active_high_rst_i_u (.clk(clk), .rst(rst), .start(start));
+          fsm_no_reset no_reset_u (.clk(clk), .start(start));
+          fsm_reset_no_param reset_no_param_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_sync_reset_unknown_polarity sync_reset_u (.clk(clk), .parent_reset(rst), .start(start));
+          fsm_custom_reset_parent_polarity custom_reset_u (.clk(clk), .parent_reset(rst_n), .start(start));
+          fsm_custom_reset_active_high custom_reset_active_high_u (
+              .clk(clk), .parent_reset(rst), .start(start));
+          fsm_ambiguous_ignored ambiguous_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_missing_reset_param missing_reset_u (.clk(clk), .rst_n(rst_n), .start(start));
+          fsm_competing_direct competing_u (.clk(clk), .rst_n(rst_n), .start(start));
+        endmodule
+        

@@ -39,6 +39,7 @@
 #include "V3PreShell.h"
 #include "V3Stats.h"
 
+#include <cctype>
 #include <sstream>
 
 VL_DEFINE_DEBUG_FUNCTIONS;

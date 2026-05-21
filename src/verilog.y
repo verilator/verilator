@@ -245,6 +245,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
 %token<fl>              yVLT_COVERAGE_ON            "coverage_on"
 %token<fl>              yVLT_FORCEABLE              "forceable"
+%token<fl>              yVLT_FSM_REGISTER_WRAPPER   "fsm_register_wrapper"
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
@@ -275,6 +276,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_BLOCK    "--block"
 %token<fl>              yVLT_D_CONTENTS "--contents"
 %token<fl>              yVLT_D_COST     "--cost"
+%token<fl>              yVLT_D_CLOCK    "--clock"
+%token<fl>              yVLT_D_D        "--d"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
 %token<fl>              yVLT_D_HIER_DPI "--hier-dpi"
@@ -287,6 +290,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_PARAM    "--param"
 %token<fl>              yVLT_D_PORT     "--port"
 %token<fl>              yVLT_D_RULE     "--rule"
+%token<fl>              yVLT_D_Q        "--q"
+%token<fl>              yVLT_D_RESET    "--reset"
+%token<fl>              yVLT_D_RESET_VALUE "--reset_value"
 %token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
@@ -8291,6 +8297,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
+                        { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule
                         { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
         ;
@@ -8329,6 +8337,28 @@ vltDCost<nump>:  // --cost <arg>
 
 vltDFile<strp>:  // --file <arg>
                 yVLT_D_FILE str                         { $$ = $2; }
+        ;
+
+vltDFsmClock<strp>:  // --clock <arg>
+                yVLT_D_CLOCK str                        { $$ = $2; }
+        ;
+
+vltDFsmD<strp>:  // --d <arg>
+                yVLT_D_D str                            { $$ = $2; }
+        ;
+
+vltDFsmQ<strp>:  // --q <arg>
+                yVLT_D_Q str                            { $$ = $2; }
+        ;
+
+vltDFsmResetE<strp>:  // [--reset <arg>]
+                /* empty */                             { static string empty; $$ = &empty; }
+        |       yVLT_D_RESET str                        { $$ = $2; }
+        ;
+
+vltDFsmResetValueE<strp>:  // [--reset_value <arg>]
+                /* empty */                             { static string empty; $$ = &empty; }
+        |       yVLT_D_RESET_VALUE str                  { $$ = $2; }
         ;
 
 vltDHierDpi<strp>:  // --hier-dpi <arg>
