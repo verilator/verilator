@@ -269,8 +269,9 @@ public:
     }
     void setFsmRegisterWrapper(FileLine* fl, const V3Control::FsmRegisterWrapper& desc) {
         if (m_hasFsmRegisterWrapper) {
-            fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module '"
-                                        << desc.moduleName << "'; replacing previous descriptor");
+            fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module "
+                                        << AstNode::prettyNameQ(desc.moduleName)
+                                        << "; replacing previous descriptor");
         }
         m_fsmRegisterWrapper = desc;
         m_hasFsmRegisterWrapper = true;
@@ -899,9 +900,9 @@ void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const 
                                       const string& reset, const string& resetValue) {
     string missing;
     if (module.empty()) missing += "-module";
-    if (d.empty()) missing += (missing.empty() ? "" : ", ") + string{"-d"};
-    if (q.empty()) missing += (missing.empty() ? "" : ", ") + string{"-q"};
-    if (clock.empty()) missing += (missing.empty() ? "" : ", ") + string{"-clock"};
+    if (d.empty()) missing = VString::dot(missing, ", ", "-d");
+    if (q.empty()) missing = VString::dot(missing, ", ", "-q");
+    if (clock.empty()) missing = VString::dot(missing, ", ", "-clock");
     if (!missing.empty()) {
         fl->v3error("fsm_register_wrapper missing " << missing);
         return;
