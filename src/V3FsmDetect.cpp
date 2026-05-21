@@ -2042,7 +2042,7 @@ public:
         for (const std::pair<AstScope*, AstCell*>& wrapperCell : m_wrapperCells) {
             FsmRegisterCandidate reg;
             if (matchFsmWrapperCell(wrapperCell.first, wrapperCell.second, reg)) {
-                m_registerCandidates.emplace(reg.stateVscp(), reg);
+                m_registerCandidates.emplace_back(reg);
             }
         }
         for (const FsmComboAlways& oneBlock : m_oneBlockAlwayss) processOneBlockAlways(oneBlock);
