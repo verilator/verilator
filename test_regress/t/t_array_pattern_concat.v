@@ -66,7 +66,9 @@ module t (  /*AUTOARG*/);
   // Keyed pattern where values are indexed from another array param
   // the key determines position, not the source array's element count.
   localparam logic [31:0] KEYED_FROM_ARR[3] = '{
-    0: BASE_ADDRS[2], 1: BASE_ADDRS[0], 2: BASE_ADDRS[1]
+      0: BASE_ADDRS[2],
+      1: BASE_ADDRS[0],
+      2: BASE_ADDRS[1]
   };
 
   // Package-scoped array as a positional pattern member

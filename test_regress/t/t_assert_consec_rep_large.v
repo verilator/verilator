@@ -36,7 +36,8 @@ module t (
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkd(count_fail_257, 0);
       // Questa: 31 -- pre-existing ~26.5% NFA reject gap on |-> ##1 [*N]

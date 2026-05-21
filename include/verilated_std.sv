@@ -102,6 +102,9 @@ package std;
   // IEEE 1800-specified standard "semaphore"
   class semaphore;
     protected int m_keyCount;
+    protected int m_nextKeyCount = '1;
+    protected longint unsigned m_ticket = 0;
+    protected longint unsigned m_nextTicket = 0;
 
     function new(int keyCount = 0);
       m_keyCount = keyCount;
@@ -113,19 +116,26 @@ package std;
 
     task get(int keyCount = 1);
 `ifdef VERILATOR_TIMING
-      while (m_keyCount < keyCount) begin
-        wait (m_keyCount >= keyCount);
+      longint unsigned ticket;
+      // Fast path: take if keys fit AND either no one is queued, or
+      // the head still doesn't fit (so we're not stealing its keys).
+      if (m_keyCount >= keyCount && m_nextKeyCount > m_keyCount) begin
+        m_keyCount -= keyCount;
+        return;
       end
+      ticket = m_nextTicket++;
+      wait (m_ticket == ticket);
+      m_nextKeyCount = keyCount;
+      wait (m_keyCount >= keyCount);
       m_keyCount -= keyCount;
+      m_ticket++;
 `endif
     endtask
 
     function int try_get(int keyCount = 1);
-      if (m_keyCount >= keyCount) begin
-        m_keyCount -= keyCount;
-        return 1;
-      end
-      return 0;
+      if (m_keyCount < keyCount) return 0;
+      m_keyCount -= keyCount;
+      return 1;
     endfunction
   endclass
 

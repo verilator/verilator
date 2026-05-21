@@ -23,6 +23,7 @@ module t;
     int qv[$];  // Value returns
     int qi[$];  // Index returns
     point points_q[int];
+    point points_qe[int]; // Empty points
     point points_qv[$];
     int i;
     bit b;
@@ -57,6 +58,12 @@ module t;
     qi = points_q.unique_index (p) with (p.x + p.y);
     qi.sort;
     `checkp(qi, "'{'h0, 'h1, 'h5}");
+
+    qi = points_qe.unique_index();
+    `checkp(qi, "'{}");
+
+    qi = points_q.unique_index();
+    `checkh(qi.size, 3);
 
     qi = points_q.find_first_index with (item.x == 1);
     `checkp(qi, "'{'h0}");
