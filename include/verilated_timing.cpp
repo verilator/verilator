@@ -23,8 +23,6 @@
 
 #include "verilated_timing.h"
 
-#include "verilated_fiber.h"
-
 //======================================================================
 // VlCoroutineHandle:: Methods
 

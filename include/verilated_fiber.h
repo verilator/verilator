@@ -25,15 +25,47 @@
 
 #include "verilatedos.h"
 
-#include "internal/fibers.h"
-
 #include <coroutine>
-#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
+
+#if defined(__x86_64__) && defined(__linux__)
+#define FIBER_LINUX_X64
+#else
+#error "This platform has is not supported"
+#endif
+
+#if defined(FIBER_LINUX_X64)
+#include <csetjmp>
+#include <cstddef>
+
+#include <sys/mman.h>
+#endif
+
+namespace VlFiberInternal {
+
+using FiberFn = std::function<void(void*)>;
+
+#if defined(FIBER_LINUX_X64)
+using Register = std::uintptr_t;
+
+struct Context {
+    std::jmp_buf callerCtx{};  // Register state of caller context
+    std::jmp_buf fiberCtx{};  // Register state of fiber context
+    void* mappingp;  // Base of mmap allocation (includes guards)
+    std::size_t mappingSize;  // Total size of allocation (stackSize + 2*pageSize)
+    Register rsp;
+    Register rdi;
+    Register rip;
+};
+
+// Set maximum stack size to 16MB
+constexpr std::size_t stackSize = 16 * (1 << 20);
+#endif
+};  //namespace VlFiberInternal
 
 // Simple userspace fiber used to run DPI code on an alternate stack.
 class VlFiber final {
@@ -41,11 +73,8 @@ public:
     // Function executed when the fiber starts running
     using Fn = std::function<void()>;
 
-    // Default stack size used when none is provided (in bytes)
-    static constexpr std::size_t defaultStackSize() noexcept { return 512 * 1024; }
-
     // Factory helper returning a unique_ptr so callers cannot forget to destroy
-    static std::unique_ptr<VlFiber> create(Fn fn, std::size_t stackSize = defaultStackSize());
+    static std::unique_ptr<VlFiber> create(Fn fn);
 
     // Resume execution of the fiber
     void resume();
@@ -69,20 +98,15 @@ public:
     VlFiber& operator=(const VlFiber&) = delete;
 
 private:
-    std::jmp_buf m_callerCtx{};  // Register state of caller context
-    std::jmp_buf m_fiberCtx{};  // Register state of fiber context
-    void* m_mappingp = nullptr;  // Base of mmap allocation (includes guards)
-    std::size_t m_mappingSize = 0;  // Total size of allocation (stack + 2*guard)
-    uint8_t* m_stackBasep = nullptr;  // Start of usable stack (after low guard)
-    std::size_t m_stackSize = 0;  // Size of usable stack (excludes guards)
+    VlFiberInternal::Context m_ctx{};  // Platform-dependent internal fiber context
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
     bool m_done = false;  // Set once m_fn returns
-    std::coroutine_handle<void> m_waiter;  // Coroutine resumed on completion
+    std::coroutine_handle<void> m_waiter{};  // Coroutine resumed on completion
 
     static thread_local VlFiber* s_currentFiberp;  // Fiber currently executing on the thread
 
-    VlFiber(Fn fn, std::size_t stackSize);
+    VlFiber(Fn fn);
 
     // Bootstrap entry that jumps to entryPoint on the fiber stack
     static void start(VlFiber* fiberp) VL_ATTR_NORETURN;

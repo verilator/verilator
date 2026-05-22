@@ -21,16 +21,97 @@
 
 #include "verilated.h"
 
-#if defined(__x86_64__) && defined(__linux__)
-#include "arch/x64/fibers.h"
-#else
-#error "Target platform is not supported"
-#endif
-
 #include <cerrno>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <functional>
+#include <memory>
 #include <string>
 #include <utility>
+
+//======================================================================
+// Platform-dependent internal implementation
+
+#if defined(FIBER_LINUX_X64)
+#include <csetjmp>
+
+#include <sys/mman.h>
+#endif
+
+namespace VlFiberInternal {
+
+std::uintptr_t alignDown(std::uintptr_t ptr, std::uintptr_t align) { return ptr & ~(align - 1); }
+
+#if defined(FIBER_LINUX_X64)
+
+template <typename T>
+Context setup(std::function<void(T*)> f, T* arg) {
+    // Get system page size for guard page alignment
+    Context ctx;
+    const long pageSize = ::sysconf(_SC_PAGESIZE);
+    if (VL_UNLIKELY(pageSize <= 0)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
+    }
+
+    // Allocate memory with mmap (anonymous, private mapping)
+    ctx.mappingSize = stackSize + 2 * pageSize;
+    ctx.mappingp = ::mmap(nullptr, ctx.mappingSize, PROT_READ | PROT_WRITE,
+                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (VL_UNLIKELY(ctx.mappingp == MAP_FAILED)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
+    }
+
+    // Initialize memory layout pointers
+    ctx.rsp
+        = alignDown(reinterpret_cast<std::uintptr_t>(ctx.mappingp) + stackSize + pageSize - 1, 16);
+    ctx.rdi = reinterpret_cast<Register>(arg);
+    ctx.rip = reinterpret_cast<Register>(std::addressof(f));
+
+    // Protect guard pages (no read/write access) to catch stack overflow/underflow
+    void* const lowGuard = ctx.mappingp;
+    void* const highGuard = reinterpret_cast<void*>(alignDown(ctx.rsp + pageSize, pageSize));
+
+    if (VL_UNLIKELY(::mprotect(lowGuard, pageSize, PROT_NONE) != 0)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
+    }
+    if (VL_UNLIKELY(::mprotect(highGuard, pageSize, PROT_NONE) != 0)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for high guard page");
+    }
+    return ctx;
+}
+
+void teardown(Context& ctx) { ::munmap(ctx.mappingp, ctx.mappingSize); }
+
+[[noreturn]] void start(Context& ctx) {
+    asm volatile("mov %[stack], %%rsp\n\t"
+                 "xor %%rbp, %%rbp\n\t"
+                 "call *%[entry]\n\t"
+                 :
+                 : [stack] "r"(ctx.rsp), [entry] "r"(ctx.rip), "D"(ctx.rdi)
+                 : "memory");
+    __builtin_unreachable();
+}
+
+void resume(Context& ctx) {
+    // Save caller's state and switch to fiber context
+    if (setjmp(ctx.callerCtx) == 0) {
+        longjmp(ctx.fiberCtx, 1);  // Jump back to last yield()
+    }
+    // Returns here when fiber yields or completes
+}
+void yield(Context& ctx) {
+    // Save fiber's state and return to caller
+    if (setjmp(ctx.fiberCtx) == 0) {
+        longjmp(ctx.callerCtx, 1);  // Jump back to last resume()
+    }
+    // Returns here when fiber is resumed
+}
+
+#endif
+
+};  //namespace VlFiberInternal
 
 //======================================================================
 // Statics
@@ -40,51 +121,19 @@ thread_local VlFiber* VlFiber::s_currentFiberp = nullptr;
 //======================================================================
 // Construction helpers
 
-std::unique_ptr<VlFiber> VlFiber::create(Fn fn, std::size_t stackSize) {
-    return std::unique_ptr<VlFiber>(new VlFiber{std::move(fn), stackSize});
+std::unique_ptr<VlFiber> VlFiber::create(Fn fn) {
+    return std::unique_ptr<VlFiber>(new VlFiber{std::move(fn)});
 }
 
-VlFiber::VlFiber(Fn fn, std::size_t stackSize)
+VlFiber::VlFiber(Fn fn)
     : m_fn{std::move(fn)} {
-    // Get system page size for guard page alignment
-    const long page = ::sysconf(_SC_PAGESIZE);
-    VlFiberInternal::Context fibCtx = VlFiberInternal::getcontext();
-    if (VL_UNLIKELY(fibCtx.m_pagesize <= 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
-    }
-    const std::size_t guardSize = static_cast<std::size_t>(page);
-
-    // Calculate total allocation size: stack + two guard pages
-    m_stackSize = stackSize;
-    m_mappingSize = stackSize + 2 * guardSize;
-
-    // Allocate memory with mmap (anonymous, private mapping)
-    void* const mappingp = ::mmap(nullptr, m_mappingSize, PROT_READ | PROT_WRITE,
-                                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (VL_UNLIKELY(mappingp == MAP_FAILED)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
-    }
-
-    // Initialize memory layout pointers
-    m_mappingp = mappingp;
-    m_stackBasep = static_cast<std::uint8_t*>(mappingp) + guardSize;
-
-    // Protect guard pages (no read/write access) to catch stack overflow/underflow
-    uint8_t* const lowGuard = static_cast<uint8_t*>(mappingp);
-    uint8_t* const highGuard = m_stackBasep + stackSize;
-
-    if (VL_UNLIKELY(::mprotect(lowGuard, guardSize, PROT_NONE) != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
-    }
-    if (VL_UNLIKELY(::mprotect(highGuard, guardSize, PROT_NONE) != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for high guard page");
-    }
+    std::function<void(VlFiber*)> f = VlFiber::entryPoint;
+    m_ctx = VlFiberInternal::setup(f, this);
 }
 
 VlFiber::~VlFiber() {
     resumeWaiter();
-    if (m_mappingp) { ::munmap(m_mappingp, m_mappingSize); }
+    VlFiberInternal::teardown(m_ctx);
 }
 
 //======================================================================
@@ -101,14 +150,11 @@ void VlFiber::resume() {
     VlFiber* const previousFiberp = s_currentFiberp;
     s_currentFiberp = this;  // We are now the current fiber
 
-    // Save caller's state and switch to fiber context
-    if (setjmp(m_callerCtx) == 0) {
-        if (!m_started) {
-            m_started = true;
-            start(this);  // First time through: bootstrap the fiber
-        } else {
-            longjmp(m_fiberCtx, 1);  // Resume: jump to saved fiber state
-        }
+    if (!m_started) {
+        m_started = true;
+        start(this);
+    } else {
+        VlFiberInternal::resume(m_ctx);
     }
 
     // Returns here when fiber yields or completes
@@ -123,10 +169,8 @@ void VlFiber::yield() {
     if (!currentFiberp) return;  // Not in fiber, nothing to yield
 
     // Save fiber's state and return to caller
-    if (setjmp(currentFiberp->m_fiberCtx) == 0) {
-        s_currentFiberp = nullptr;  // No longer in fiber
-        longjmp(currentFiberp->m_callerCtx, 1);  // Jump back to resume()
-    }
+    s_currentFiberp = nullptr;
+    VlFiberInternal::yield(currentFiberp->m_ctx);
 
     // Returns here when fiber is resumed
     s_currentFiberp = currentFiberp;  // Restore current fiber
@@ -147,33 +191,14 @@ void VlFiber::setWaiter(std::coroutine_handle<> waiter) {
 //======================================================================
 // Bootstrap helpers
 
-void VlFiber::start(VlFiber* fiberp) {
-    // Calculate stack top: align down to 16-byte boundary (x86_64 ABI requirement)
-    // Stack grows downward, so we start from the end of usable stack space
-    // Subtract 8 bytes for alignment to be in mapping range
-    std::uint8_t* const stackTop = alignDown16(fiberp->m_stackBasep + fiberp->m_stackSize - 8u);
+[[noreturn]] void VlFiber::start(VlFiber* fiberp) { VlFiberInternal::start(fiberp->m_ctx); }
 
-#if defined(__x86_64__)
-    // Switch to fiber stack and call entry point
-    // - Set %rsp to stack top (new stack pointer)
-    // - Clear %rbp (mark as base of call stack for debuggers)
-    // - Call entryPoint with fiberp in %rdi (first arg in x86_64 calling convention)
-    asm volatile("mov %[stack], %%rsp\n\t"
-                 "xor %%rbp, %%rbp\n\t"
-                 "call *%[entry]\n\t"
-                 :
-                 : [stack] "r"(stackTop), [entry] "r"(&VlFiber::entryPoint), "D"(fiberp)
-                 : "memory");
-#else
-#error "VlFiber currently supports only x86_64"
-#endif
-    __builtin_unreachable();
-}
-
-void VlFiber::entryPoint(VlFiber* fiberp) {
+[[noreturn]] void VlFiber::entryPoint(VlFiber* fiberp) {
     s_currentFiberp = fiberp;
     fiberp->m_fn();
     fiberp->m_done = true;
     s_currentFiberp = nullptr;
-    longjmp(fiberp->m_callerCtx, 1);
+    // Resume one last time to finish fiber execution
+    VlFiberInternal::yield(fiberp->m_ctx);
+    __builtin_unreachable();
 }
