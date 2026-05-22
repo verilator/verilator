@@ -34,7 +34,7 @@ class VSymEnt;
 
 class V3LinkDotIfaceCapture final {
 public:
-    enum class CaptureType { IFACE, CLASS };
+    enum class CaptureType : uint8_t { IFACE, CLASS };
 
     // Path-based map key: no pointers, only stable strings.
     // {ownerModName, refName, cellPath, cloneCellPath} uniquely identifies

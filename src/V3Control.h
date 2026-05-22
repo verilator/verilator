@@ -38,7 +38,7 @@ public:
         string resetValue;
     };
 
-    enum class VarSpecKind {
+    enum class VarSpecKind : uint8_t {
         PARAM,  // Select only matching parameters
         PORT,  // Select only matching ports
         VAR  // Select any matching AstVar (including params and ports)

@@ -5329,7 +5329,7 @@ public:
 class AstAtoN final : public AstNodeUniop {
     // string.atoi(), atobin(), atohex(), atooct(), atoireal()
 public:
-    enum FmtType { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
+    enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
     const FmtType m_fmt;  // Operation type

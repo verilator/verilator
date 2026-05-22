@@ -279,12 +279,12 @@ class EmitCHeader final : public EmitCConstInit {
             emitUnpackedUOrSBody(sdtypep);
         }
     }
-    enum class AttributeType { Width, Dimension };
+    enum class AttributeType : uint8_t { WIDTH, DIMENSION };
     // Get member attribute based on type
     int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
         const bool isArrayType = itemp->dtypep()->isNonPackedArray();
         switch (type) {
-        case AttributeType::Width: {
+        case AttributeType::WIDTH: {
             if (isArrayType) {
                 // For arrays, get innermost element width
                 const AstNodeDType* dtype = itemp->dtypep();
@@ -293,7 +293,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
             return itemp->width();
         }
-        case AttributeType::Dimension: {
+        case AttributeType::DIMENSION: {
             // Return array dimension or 0 for non-arrays
             return isArrayType ? itemp->dtypep()->dimensions(true).second : 0;
         }
@@ -345,10 +345,10 @@ class EmitCHeader final : public EmitCConstInit {
             puts("};\n}\n");
 
             putns(sdtypep, "\nstd::vector<int> memberWidth(void) const {\n");
-            emitMemberVector<AttributeType::Width>(sdtypep);
+            emitMemberVector<AttributeType::WIDTH>(sdtypep);
 
             putns(sdtypep, "\nstd::vector<int> memberDimension(void) const {\n");
-            emitMemberVector<AttributeType::Dimension>(sdtypep);
+            emitMemberVector<AttributeType::DIMENSION>(sdtypep);
 
             needComma = false;
             putns(sdtypep, "\nauto memberIndices(void) const {\n");

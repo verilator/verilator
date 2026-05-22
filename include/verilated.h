@@ -140,7 +140,7 @@ enum VerilatedVarType : uint8_t {
     VLVT_REAL  // AKA double
 };
 
-enum VerilatedVarFlags {
+enum VerilatedVarFlags : uint32_t {
     VLVD_0 = 0,  // None
     VLVD_IN = 1,  // == vpiInput
     VLVD_OUT = 2,  // == vpiOutput
