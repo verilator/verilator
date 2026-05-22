@@ -13,6 +13,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+if test.vltmt:
+    test.skip("Flaky - #7644")
+
 test.compile(
     verilator_flags2=['--cc --coverage-fsm -fno-inline t/t_fsm_register_wrapper_noinline.vlt'])
 
