@@ -132,6 +132,8 @@ public:
     };
 
 private:
+    using ScopeVarCache = std::unordered_map<const AstVar*, AstVarScope*>;
+
     // NODE STATE
     //  AstVarRef::user1      -> Flag indicating not to replace reference
     //  AstAssignForce::user2 -> true if force is synthetic (externally forceable)
@@ -141,6 +143,7 @@ private:
     std::unordered_map<AstVar*, VarForceInfo> m_varInfo;
     std::unordered_set<AstVar*> m_clockedWrites;
     std::unordered_map<AstVar*, std::vector<ForceInfo*>> m_rhsDepToForces;
+    std::unordered_map<AstScope*, ScopeVarCache> m_scopeVarCaches;
     bool m_doingAssign = false;  // If true, we're processing procedural continuous assign
                                  // statements instead of force statements
 
@@ -370,11 +373,15 @@ public:
         return it != m_varInfo.end() ? &it->second : nullptr;
     }
 
-    static AstVarScope* findScopeVar(AstScope* scopep, const string& name) {
-        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
-            if (vscp->varp()->name() == name) return vscp;
+    AstVarScope* findScopeVar(AstScope* scopep, const AstVar* varp) {
+        ScopeVarCache& cache = m_scopeVarCaches[scopep];
+        if (cache.empty()) {
+            for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+                cache.emplace(vscp->varp(), vscp);
+            }
         }
-        return nullptr;
+        const auto it = cache.find(varp);
+        return it != cache.end() ? it->second : nullptr;
     }
 
     void addForceAssignment(AstVar* varp, AstVarScope* vscp, AstNodeExpr* rhsExprp,
@@ -744,13 +751,30 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             if (m_state.doingAssign()) {
                 AstVar* const varp = nodep->varp();
                 AstScope* const scopep = nodep->scopep();
-                AstVarScope* const rdVscp
-                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceRd");
-                AstVarScope* const enVscp
-                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceEn");
-                AstVarScope* const valVscp
-                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceVal");
-                if (rdVscp || enVscp || valVscp) {
+                AstVar* rdVarp = nullptr;
+                AstVar* enVarp = nullptr;
+                AstVar* valVarp = nullptr;
+                const string rdName = varp->name() + "__VforceRd";
+                const string enName = varp->name() + "__VforceEn";
+                const string valName = varp->name() + "__VforceVal";
+                for (AstNode* nextp = varp->nextp(); nextp; nextp = nextp->nextp()) {
+                    AstVar* const helperVarp = VN_CAST(nextp, Var);
+                    if (!helperVarp) break;
+                    const string& helperName = helperVarp->name();
+                    if (helperName == rdName) {
+                        rdVarp = helperVarp;
+                    } else if (helperName == enName) {
+                        enVarp = helperVarp;
+                    } else if (helperName == valName) {
+                        valVarp = helperVarp;
+                    } else if (rdVarp || enVarp || valVarp) {
+                        break;
+                    }
+                }
+                if (rdVarp || enVarp || valVarp) {
+                    AstVarScope* const rdVscp = m_state.findScopeVar(scopep, rdVarp);
+                    AstVarScope* const enVscp = m_state.findScopeVar(scopep, enVarp);
+                    AstVarScope* const valVscp = m_state.findScopeVar(scopep, valVarp);
                     UASSERT_OBJ(rdVscp && enVscp && valVscp, nodep,
                                 "Incomplete pre-existing force helper set");
                     ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
