@@ -642,7 +642,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
     // Connect the pins on the instance
     for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
         if (!pinp->exprp()) continue;
-        UINFO(6, "Conecting port " << pinp->modVarp());
+        UINFO(6, "Connecting port " << pinp->modVarp());
         UINFO(6, "   of instance " << cellp);
 
         // Make sure the conneccted pin expression is always a VarRef or a Const

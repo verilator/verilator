@@ -49,13 +49,13 @@ module prim_sparse_fsm_flop #(
   logic [Width-1:0] state_raw;
 
   prim_flop #(
-    .Width(Width),
-    .ResetValue(ResetValue)
+      .Width(Width),
+      .ResetValue(ResetValue)
   ) u_state_flop (
-    .clk_i(clk_i),
-    .rst_ni(rst_ni),
-    .d_i(state_i),
-    .q_o(state_raw)
+      .clk_i(clk_i),
+      .rst_ni(rst_ni),
+      .d_i(state_i),
+      .q_o(state_raw)
   );
 
   assign state_o = StateEnumT'(state_raw);
@@ -206,13 +206,13 @@ module fsm_auto (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -240,13 +240,13 @@ module fsm_prim (
   end
 
   prim_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .d_i(state_d),
-    .q_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .d_i(state_d),
+      .q_o(state_q)
   );
 endmodule
 
@@ -274,13 +274,13 @@ module fsm_prim_override (
   end
 
   prim_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .d_i(state_d),
-    .q_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .d_i(state_d),
+      .q_o(state_q)
   );
 endmodule
 
@@ -308,14 +308,14 @@ module fsm_sparse_prim (
   end
 
   prim_sparse_fsm_flop #(
-    .StateEnumT(state_t),
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .StateEnumT(state_t),
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -343,14 +343,14 @@ module fsm_sparse_prim_override (
   end
 
   prim_sparse_fsm_flop #(
-    .StateEnumT(state_t),
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .StateEnumT(state_t),
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -378,13 +378,13 @@ module fsm_active_high (
   end
 
   active_high_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .rst(rst),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .rst(rst),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -412,13 +412,13 @@ module fsm_active_high_rst_i (
   end
 
   active_high_rst_i_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .rst_i(rst),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .rst_i(rst),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -445,11 +445,11 @@ module fsm_no_reset (
   end
 
   no_reset_fsm_flop #(
-    .Width($bits(state_t))
+      .Width($bits(state_t))
   ) u_state_regs (
-    .clk(clk),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -477,12 +477,12 @@ module fsm_reset_no_param (
   end
 
   reset_no_param_fsm_flop #(
-    .Width($bits(state_t))
+      .Width($bits(state_t))
   ) u_state_regs (
-    .clk(clk),
-    .rst_n(rst_n),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -510,13 +510,13 @@ module fsm_sync_reset_unknown_polarity (
   end
 
   sync_reset_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .my_reset(parent_reset),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .my_reset(parent_reset),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -544,13 +544,13 @@ module fsm_custom_reset_parent_polarity (
   end
 
   custom_reset_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .my_reset(parent_reset),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .my_reset(parent_reset),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -578,13 +578,13 @@ module fsm_custom_reset_active_high (
   end
 
   custom_reset_active_high_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .my_reset(parent_reset),
-    .d(state_d),
-    .q(state_q)
+      .clk(clk),
+      .my_reset(parent_reset),
+      .d(state_d),
+      .q(state_q)
   );
 endmodule
 
@@ -612,11 +612,11 @@ module fsm_ambiguous_ignored (
   end
 
   ambiguous_fsm_flop u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .d_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .d_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -644,13 +644,13 @@ module fsm_missing_reset_param (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -684,13 +684,13 @@ module fsm_competing_direct (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
   /* verilator lint_on BLKANDNBLK */
 endmodule
@@ -722,20 +722,78 @@ module t (
     end
   end
 
-  fsm_auto auto_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_prim prim_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_prim_override prim_override_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_sparse_prim sparse_prim_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_sparse_prim_override sparse_prim_override_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_active_high active_high_u (.clk(clk), .rst(rst), .start(start));
-  fsm_active_high_rst_i active_high_rst_i_u (.clk(clk), .rst(rst), .start(start));
-  fsm_no_reset no_reset_u (.clk(clk), .start(start));
-  fsm_reset_no_param reset_no_param_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_sync_reset_unknown_polarity sync_reset_u (.clk(clk), .parent_reset(rst), .start(start));
-  fsm_custom_reset_parent_polarity custom_reset_u (.clk(clk), .parent_reset(rst_n), .start(start));
+  fsm_auto auto_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_prim prim_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_prim_override prim_override_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_sparse_prim sparse_prim_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_sparse_prim_override sparse_prim_override_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_active_high active_high_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_active_high_rst_i active_high_rst_i_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_no_reset no_reset_u (
+      .clk(clk),
+      .start(start)
+  );
+  fsm_reset_no_param reset_no_param_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_sync_reset_unknown_polarity sync_reset_u (
+      .clk(clk),
+      .parent_reset(rst),
+      .start(start)
+  );
+  fsm_custom_reset_parent_polarity custom_reset_u (
+      .clk(clk),
+      .parent_reset(rst_n),
+      .start(start)
+  );
   fsm_custom_reset_active_high custom_reset_active_high_u (
-      .clk(clk), .parent_reset(rst), .start(start));
-  fsm_ambiguous_ignored ambiguous_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_missing_reset_param missing_reset_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_competing_direct competing_u (.clk(clk), .rst_n(rst_n), .start(start));
+      .clk(clk),
+      .parent_reset(rst),
+      .start(start)
+  );
+  fsm_ambiguous_ignored ambiguous_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_missing_reset_param missing_reset_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_competing_direct competing_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
 endmodule

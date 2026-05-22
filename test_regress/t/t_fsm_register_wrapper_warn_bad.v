@@ -151,82 +151,82 @@ module t (
   state_t missing_reset_connection_q;
 
   odd_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_bad_simple (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(S0),
-    .dout(state_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(S0),
+      .dout(state_q)
   );
 
   missing_q_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_missing_q_port (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(missing_d),
-    .dout(missing_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(missing_d),
+      .dout(missing_q)
   );
 
   missing_clock_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_missing_clock_port (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(missing_clock_d),
-    .dout(missing_clock_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(missing_clock_d),
+      .dout(missing_clock_q)
   );
 
   partial_reset_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_partial_reset (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(partial_reset_d),
-    .dout(partial_reset_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(partial_reset_d),
+      .dout(partial_reset_q)
   );
 
   missing_reset_value_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_missing_reset_value (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(missing_reset_value_d),
-    .dout(missing_reset_value_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(missing_reset_value_d),
+      .dout(missing_reset_value_q)
   );
 
   value_no_reset_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_value_no_reset (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(value_no_reset_d),
-    .dout(value_no_reset_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(value_no_reset_d),
+      .dout(value_no_reset_q)
   );
 
   sync_reset_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_sync_reset (
-    .clk(clk),
-    .rst(rst),
-    .din(sync_reset_d),
-    .dout(sync_reset_q)
+      .clk(clk),
+      .rst(rst),
+      .din(sync_reset_d),
+      .dout(sync_reset_q)
   );
 
   missing_reset_connection_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_missing_reset_connection (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(missing_reset_connection_d),
-    .dout(missing_reset_connection_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(missing_reset_connection_d),
+      .dout(missing_reset_connection_q)
   );
 endmodule

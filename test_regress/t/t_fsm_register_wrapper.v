@@ -101,13 +101,13 @@ module fsm_auto (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -135,13 +135,13 @@ module fsm_noargs_hint (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -169,13 +169,13 @@ module fsm_prim (
   end
 
   prim_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .d_i(state_d),
-    .q_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .d_i(state_d),
+      .q_o(state_q)
   );
 endmodule
 
@@ -203,13 +203,13 @@ module fsm_sparse_prim (
   end
 
   prim_sparse_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -241,13 +241,13 @@ module fsm_ifchain (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -275,13 +275,13 @@ module fsm_wide_sparse (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -309,13 +309,13 @@ module fsm_annotated (
   end
 
   odd_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(state_d),
-    .dout(state_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(state_d),
+      .dout(state_q)
   );
 endmodule
 
@@ -343,13 +343,13 @@ module fsm_non_simple (
   end
 
   my_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d[1:0]),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d[1:0]),
+      .state_o(state_q)
   );
 endmodule
 
@@ -377,11 +377,11 @@ module fsm_ambiguous (
   end
 
   ambiguous_fsm_flop u_state_regs (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-    .state_i(state_d),
-    .d_i(state_d),
-    .state_o(state_q)
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .state_i(state_d),
+      .d_i(state_d),
+      .state_o(state_q)
   );
 endmodule
 
@@ -409,13 +409,13 @@ module fsm_ignored (
   end
 
   odd_fsm_flop #(
-    .Width($bits(state_t)),
-    .ResetValue(S0)
+      .Width($bits(state_t)),
+      .ResetValue(S0)
   ) u_state_regs (
-    .clk(clk),
-    .rst_n(rst_n),
-    .din(state_d),
-    .dout(state_q)
+      .clk(clk),
+      .rst_n(rst_n),
+      .din(state_d),
+      .dout(state_q)
   );
 endmodule
 
@@ -443,14 +443,54 @@ module t (
     end
   end
 
-  fsm_auto auto_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_noargs_hint noargs_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_prim prim_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_sparse_prim sparse_prim_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_ifchain ifchain_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_wide_sparse wide_sparse_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_annotated annotated_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_non_simple non_simple_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_ambiguous ambiguous_u (.clk(clk), .rst_n(rst_n), .start(start));
-  fsm_ignored ignored_u (.clk(clk), .rst_n(rst_n), .start(start));
+  fsm_auto auto_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_noargs_hint noargs_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_prim prim_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_sparse_prim sparse_prim_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_ifchain ifchain_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_wide_sparse wide_sparse_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_annotated annotated_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_non_simple non_simple_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_ambiguous ambiguous_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_ignored ignored_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
 endmodule
