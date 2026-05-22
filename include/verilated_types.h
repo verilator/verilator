@@ -148,6 +148,7 @@ public:
     // CONSTRUCTORS
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
     /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
     WDataOutP(const WDataOutP& other) VL_PURE = default;
     WDataOutP(WDataOutP&& other) VL_PURE = default;
@@ -177,11 +178,14 @@ public:
     // CONSTRUCTORS
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
     /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
     // Implicit conversion from 'const VlWide'
     template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
     /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
     // Implicit conversion from 'WDataOutP'
+    // cppcheck-suppress noExplicitConstructor
     /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
     // Initialize with 'nullptr'
     explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
