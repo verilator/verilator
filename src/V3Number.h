@@ -46,6 +46,7 @@ public:
         //
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
+        ENUM = VL_VFORMATATTR_ENUM,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
         TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
@@ -62,6 +63,7 @@ public:
     char ascii() const { return m_e; }
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
+    bool isEnum() const { return m_e == ENUM; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
