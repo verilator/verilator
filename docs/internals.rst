@@ -938,9 +938,8 @@ macro-task's dataset fits in one core's local caches.
 To achieve spatial locality, we tag each variable with the set of
 macro-tasks that access it. Let's call this set the "footprint" of that
 variable. The variables in a given module have a set of footprints. We group
-variables with identical non-empty footprints, sort those groups in a stable
-deterministic order, and emit all variables into the struct in footprint-group
-order.
+variables with identical non-empty footprints, emit those groups in deterministic
+footprint-key order, then emit variables with no footprint information last.
 
 The first emitted variable in each footprint group is aligned to a cache-line
 boundary. This avoids false sharing between different macro-task footprints

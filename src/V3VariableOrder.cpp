@@ -133,19 +133,6 @@ class VariableOrder final {
     static bool emptyAffinity(const MTaskIdVec& vec) {
         return std::find(vec.begin(), vec.end(), true) == vec.end();
     }
-    static size_t firstMTaskId(const MTaskIdVec& vec) {
-        const auto it = std::find(vec.begin(), vec.end(), true);
-        UASSERT(it != vec.end(), "No MTask affinity");
-        return static_cast<size_t>(it - vec.begin());
-    }
-    static size_t mTaskPopcount(const MTaskIdVec& vec) {
-        return static_cast<size_t>(std::count(vec.begin(), vec.end(), true));
-    }
-    static bool isEmittedDesignState(const AstVar* varp) {
-        return !varp->isStatic()
-               && (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-                   || varp->isGenVar());
-    }
 
     // Sort by MTask-affinity first, then the same as simpleSortVars
     void mtaskSortVars(std::vector<AstVar*>& varps) {
@@ -161,15 +148,12 @@ class VariableOrder final {
         varps.clear();
 
         // Helper function to sort given vector, then append to 'varps'
-        const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps) {
+        const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps,
+                                                  bool alignFirst) {
             simpleSortVars(subVarps);
-            for (AstVar* const varp : subVarps) varps.push_back(varp);
-        };
-        const auto sortAlignAndAppend = [this, &varps](std::vector<AstVar*>& subVarps) {
-            simpleSortVars(subVarps);
-            bool aligned = false;
+            bool aligned = !alignFirst;
             for (AstVar* const varp : subVarps) {
-                if (!aligned && isEmittedDesignState(varp)) {
+                if (!aligned && !varp->isStatic()) {
                     varp->mtaskCacheLineAlign(true);
                     V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
                     aligned = true;
@@ -178,29 +162,20 @@ class VariableOrder final {
             }
         };
 
-        // Sort non-empty MTask affinity groups deterministically. This keeps memory linear in the
-        // number of affinity groups, unlike the old complete pairwise-distance ordering.
-        std::vector<std::map<MTaskIdVec, std::vector<AstVar*>>::iterator> groups;
-        for (auto it = m2v.begin(); it != m2v.end(); ++it) {
-            if (!emptyAffinity(it->first)) groups.push_back(it);
+        // Sort non-empty MTask affinity groups in the map's deterministic key order. This keeps
+        // memory linear in the number of affinity groups, unlike the old complete pairwise-distance
+        // ordering.
+        size_t affinityGroups = 0;
+        for (auto& pair : m2v) {
+            if (emptyAffinity(pair.first)) continue;
+            sortAndAppend(pair.second, true);
+            ++affinityGroups;
         }
-        std::stable_sort(groups.begin(), groups.end(), [](const auto& ap, const auto& bp) {
-            const MTaskIdVec& avec = ap->first;
-            const MTaskIdVec& bvec = bp->first;
-            const size_t afirst = firstMTaskId(avec);
-            const size_t bfirst = firstMTaskId(bvec);
-            if (afirst != bfirst) return afirst < bfirst;
-            const size_t apop = mTaskPopcount(avec);
-            const size_t bpop = mTaskPopcount(bvec);
-            if (apop != bpop) return apop < bpop;
-            return avec < bvec;
-        });
-        for (const auto& it : groups) sortAlignAndAppend(it->second);
 
         // Finally add the variables with no known MTask affinity
-        sortAndAppend(m2v[emptyVec]);
+        sortAndAppend(m2v[emptyVec], false);
 
-        V3Stats::addStatSum("VariableOrder, MTask affinity groups", groups.size());
+        V3Stats::addStatSum("VariableOrder, MTask affinity groups", affinityGroups);
         V3Stats::addStatSum("VariableOrder, no-affinity variables", m2v[emptyVec].size());
     }
 
