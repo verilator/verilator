@@ -384,6 +384,7 @@ public:
             std::string name;
             std::string hier;
             bool per_instance = false;
+            bool emitted_per_instance = false;
             if (m_forcePerInstance) per_instance = true;
 
             for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
@@ -392,6 +393,7 @@ public:
                         = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
                     const std::string val = m_indexValues[itemp->m_vals[i]];
                     if (key == VL_CIK_PER_INSTANCE) {
+                        emitted_per_instance = true;
                         if (val != "0") per_instance = true;
                     }
                     if (key == VL_CIK_HIER) {
@@ -405,6 +407,9 @@ public:
                         name += keyValueFormatter(key, val);
                     }
                 }
+            }
+            if (m_forcePerInstance && !emitted_per_instance) {
+                name += keyValueFormatter(VL_CIK_PER_INSTANCE, "1");
             }
             if (per_instance) {  // Not collapsing hierarchies
                 name += keyValueFormatter(VL_CIK_HIER, hier);

@@ -377,6 +377,7 @@ detailed descriptions of these arguments.
     --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
+    --coverage-per-instance     Enable per-instance coverage counters
     --coverage-toggle           Enable toggle coverage
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage

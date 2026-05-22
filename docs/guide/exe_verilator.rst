@@ -317,6 +317,20 @@ Summary:
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
 
+.. option:: --coverage-per-instance
+
+   For Verilator-inserted coverage, preserve generated coverage counters and
+   ``.dat`` records per hierarchy instance. This option must be specified when
+   Verilating the model, together with one or more coverage instrumentation
+   options, for example :vlopt:`--coverage`, :vlopt:`--coverage-line`,
+   :vlopt:`--coverage-toggle`, :vlopt:`--coverage-expr`,
+   :vlopt:`--coverage-fsm`, or :vlopt:`--coverage-user`. It may increase
+   generated model size, counter memory, coverage write time, and ``.dat`` file
+   size.
+
+   This does not affect SystemVerilog ``cover``, which uses the IEEE-specified
+   coverage option ``per_instance``.
+
 .. option:: --coverage-toggle
 
    Enables adding signal toggle coverage. See :ref:`Toggle Coverage`.

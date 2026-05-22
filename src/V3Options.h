@@ -228,6 +228,7 @@ private:
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
+    bool m_coveragePerInstance = false;  // main switch: --coverage-per-instance
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
     bool m_coverageUser = false;    // main switch: --coverage-func
@@ -524,6 +525,7 @@ public:
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
     bool coverageLine() const { return m_coverageLine; }
+    bool coveragePerInstance() const { return m_coveragePerInstance; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
