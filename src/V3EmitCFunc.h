@@ -187,7 +187,6 @@ public:
     void emitDereference(AstNode* nodep, const string& pointer);
     std::string dereferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
-    void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
@@ -741,10 +740,7 @@ public:
         int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            // handle wide arguments to the queues
-            if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
-                emitCvtWideArray(subnodep, nodep->fromp());
-            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+            if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
                 // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
                 // apply protect() similar to VL_STOP to handle --protected flag
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {

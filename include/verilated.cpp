@@ -815,7 +815,7 @@ double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     const int words = VL_WORDS_I(lbits);
     VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
-    uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS + 1> pos;
     VL_NEGATE_W(words, pos, lwp);
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
@@ -829,9 +829,12 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
     const int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
     std::vector<EData> bcd(VL_WORDS_I(maxdecwidth));
-    VL_ZERO_W(maxdecwidth, bcd.data());
+    WDataOutP bcdp = WDataOutP::external(bcd.data());
+    VL_ZERO_W(maxdecwidth, bcdp);
     std::vector<EData> tmp(VL_WORDS_I(maxdecwidth));
     std::vector<EData> tmp2(VL_WORDS_I(maxdecwidth));
+    WDataOutP tmpp = WDataOutP::external(tmp.data());
+    WDataOutP tmp2p = WDataOutP::external(tmp2.data());
     int from_bit = width - 1;
     // Skip all leading zeros
     for (; from_bit >= 0 && !(VL_BITRSHIFT_W(lwp, from_bit) & 1); --from_bit) {}
@@ -840,15 +843,15 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
         // Any digits >= 5 need an add 3 (via tmp)
         for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
             if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
-                VL_ZERO_W(maxdecwidth, tmp2.data());
+                VL_ZERO_W(maxdecwidth, tmp2p);
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
-                VL_ASSIGN_W(maxdecwidth, tmp.data(), bcd.data());
-                VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd.data(), tmp.data(), tmp2.data());
+                VL_ASSIGN_W(maxdecwidth, tmpp, bcdp);
+                VL_ADD_W(VL_WORDS_I(maxdecwidth), bcdp, tmpp, tmp2p);
             }
         }
         // Shift; bcd = bcd << 1
-        VL_ASSIGN_W(maxdecwidth, tmp.data(), bcd.data());
-        VL_SHIFTL_WWI(maxdecwidth, maxdecwidth, 32, bcd.data(), tmp.data(), 1);
+        VL_ASSIGN_W(maxdecwidth, tmpp, bcdp);
+        VL_SHIFTL_WWI(maxdecwidth, maxdecwidth, 32, bcdp, tmpp, 1);
         // bcd[0] = lwp[from_bit]
         if (VL_BITISSET_W(lwp, from_bit)) bcd[0] |= 1;
     }
@@ -951,7 +954,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                   va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator.
-    // Arguments are each {"VFormatAttr character, int width, arg-value (or WDataIn* if wide)"}
+    // Arguments are each {"VFormatAttr character, int width, arg-value (or EData* if wide)"}
     //
     // Uses a single buffer internally; presumes only one usage per printf.
     // Also assumes variables < 64 are not wide, this assumption is
@@ -1083,7 +1086,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             void* thingp = nullptr;
             QData ld = 0;
             std::vector<EData> strwide;
-            WDataInP lwp = nullptr;
+            WDataInP lwp{nullptr};
             int lsb = 0;
             double real = 0.0;
             if (formatAttr == VL_VFORMATATTR_COMPLEX) {  // printed as string
@@ -1093,8 +1096,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 real = va_arg(ap, double);
                 ld = VL_RTOIROUND_Q_D(real);
                 strwide.resize(2);
-                VL_SET_WQ(strwide, ld);
-                lwp = strwide.data();
+                WDataOutP strwidep = WDataOutP::external(strwide.data());
+                VL_SET_WQ(strwidep, ld);
+                lwp = strwidep;
                 lbits = 64;
                 // Not changint fmt == 'p' to fmt = 'g', as need fmts correct
             } else if (formatAttr == VL_VFORMATATTR_STRING) {
@@ -1105,10 +1109,11 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 if (lbits <= VL_QUADSIZE) {
                     ld = VL_VA_ARG_Q_(ap, lbits);
                     strwide.resize(2);
-                    VL_SET_WQ(strwide, ld);
-                    lwp = strwide.data();
+                    WDataOutP strwidep = WDataOutP::external(strwide.data());
+                    VL_SET_WQ(strwidep, ld);
+                    lwp = strwidep;
                 } else {
-                    lwp = va_arg(ap, WDataInP);
+                    lwp = WDataInP::external(va_arg(ap, EData*));
                     ld = lwp[0];
                 }
                 if (fmt == 'p') {
@@ -1194,8 +1199,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     } else {
                         if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
                             std::vector<EData> neg(VL_WORDS_I(lbits));
-                            VL_NEGATE_W(VL_WORDS_I(lbits), neg.data(), lwp);
-                            append = "-"s + VL_DECIMAL_NW(lbits, neg.data());
+                            WDataOutP negp = WDataOutP::external(neg.data());
+                            VL_NEGATE_W(VL_WORDS_I(lbits), negp, lwp);
+                            append = "-"s + VL_DECIMAL_NW(lbits, negp);
                         } else {
                             append = VL_DECIMAL_NW(lbits, lwp);
                         }
@@ -1262,9 +1268,10 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     if (truncFront < 0) truncFront = 0;
                     lbits = chars * 8;
                     strwide.resize(VL_WORDS_I(lbits));
-                    lwp = strwide.data();
+                    WDataOutP strwidep = WDataOutP::external(strwide.data());
+                    lwp = strwidep;
                     lsb = lbits - 1;
-                    VL_NTOI_W(lbits, strwide.data(), *strp, truncFront);
+                    VL_NTOI_W(lbits, strwidep, *strp, truncFront);
                 }
 
                 if (widthSet || left) {
@@ -1459,7 +1466,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                   const std::string& format, int argc, va_list ap) VL_MT_SAFE {
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
-    // Arguments are in "width, arg-value (or WDataIn* if wide)" form
+    // Arguments are in "width, arg-value (or EData* if wide)" form
     static thread_local std::string t_tmp;
     int floc = fbits - 1;
     IData got = 0;
@@ -1546,7 +1553,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 
                 VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
-                WDataOutP owp = (obits <= 64) ? qowp : static_cast<WDataOutP>(thingp);
+                WDataOutP owp = WDataOutP::external((obits <= 64) ? qowp.data()
+                                                                  : static_cast<EData*>(thingp));
 
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 t_tmp.clear();
@@ -1649,7 +1657,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 'u': {
                     // Read packed 2-value binary data
                     const int bytes = VL_BYTES_I(obits);
-                    char* const out = reinterpret_cast<char*>(owp);
+                    char* const out = reinterpret_cast<char*>(owp.datap());
                     if (!_vl_vsss_read_bin(fp, floc, fromp, fstr, out, bytes)) goto done;
                     const int last = bytes % 4;
                     if (last != 0
@@ -1659,7 +1667,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 }
                 case 'z': {
                     // Read packed 4-value binary data
-                    char* out = reinterpret_cast<char*>(owp);
+                    char* out = reinterpret_cast<char*>(owp.datap());
                     int bytes = VL_BYTES_I(obits);
                     while (bytes > 0) {
                         const int abytes = std::min(4, bytes);
@@ -1801,7 +1809,7 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
 IData VL_FERROR_IW(IData fpi, int obits, WDataOutP outwp) VL_MT_SAFE {
     std::string output;
     const IData ret = VL_FERROR_IN(fpi, output /*ref*/);
-    _vl_string_to_vint(obits, outwp, output.length(), output.c_str());
+    _vl_string_to_vint(obits, outwp.datap(), output.length(), output.c_str());
     return ret;
 }
 
@@ -1866,7 +1874,7 @@ void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, int argc,
     _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
 }
 
-void VL_SFORMAT_NX(int obits, void* destp, const std::string& format, int argc, ...) VL_MT_SAFE {
+void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
@@ -1928,9 +1936,10 @@ IData VL_FSCANF_INX(IData fpi, const std::string& format, int argc, ...) VL_MT_S
     FILE* const fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return ~0U;  // -1
 
+    WDataInP fromp{nullptr};
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(fp, 0, nullptr, "", format, argc, ap);
+    const IData got = _vl_vsscanf(fp, 0, fromp, "", format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -1965,10 +1974,11 @@ IData VL_SSCANF_IWNX(int lbits, const WDataInP lwp, const std::string& format, i
 }
 IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int argc,
                      ...) VL_MT_SAFE {
+    WDataInP fromp{nullptr};
     va_list ap;
     va_start(ap, argc);
     const IData got
-        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, argc, ap);
+        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), fromp, ld, format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -2052,7 +2062,8 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
             if (shift == start_shift) *datap = 0;
             *datap |= ((static_cast<QData>(c) << static_cast<QData>(shift)) & VL_MASK_Q(width));
         } else {
-            WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[entry * VL_WORDS_I(width)];
+            const WDataOutP datap = WDataOutP::external(
+                &(reinterpret_cast<EData*>(memp))[entry * VL_WORDS_I(width)]);
             if (shift == start_shift) VL_ZERO_W(width, datap);
             datap[VL_BITWORD_E(shift)] |= (static_cast<EData>(c) << VL_BITBIT_E(shift));
         }
@@ -2545,7 +2556,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
             *datap = ((*datap << static_cast<QData>(shift)) + static_cast<QData>(value))
                      & VL_MASK_Q(m_bits);
         } else {
-            WDataOutP datap = reinterpret_cast<WDataOutP>(valuep);
+            const WDataOutP datap = WDataOutP::external(reinterpret_cast<EData*>(valuep));
             if (!innum) VL_ZERO_W(m_bits, datap);
             _vl_shiftl_inplace_w(m_bits, datap, static_cast<IData>(shift));
             datap[0] |= value;
@@ -2617,7 +2628,7 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
             fprintf(m_fp, "%s\n", formatBinary(32, lo));
         }
     } else {
-        const WDataInP datap = reinterpret_cast<WDataInP>(valuep);
+        const WDataInP datap = WDataInP::external(reinterpret_cast<const EData*>(valuep));
         // output as a sequence of VL_EDATASIZE'd words
         // from MSB to LSB. Mask off the MSB word which could
         // contain junk above the top of valid data.
@@ -2685,8 +2696,8 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                     QData* const datap = &(reinterpret_cast<QData*>(memp))[entry];
                     rmem.setData(datap, value);
                 } else {
-                    WDataOutP datap
-                        = &(reinterpret_cast<WDataOutP>(memp))[entry * VL_WORDS_I(bits)];
+                    EData* const datap
+                        = &(reinterpret_cast<EData*>(memp))[entry * VL_WORDS_I(bits)];
                     rmem.setData(datap, value);
                 }
             }
@@ -2728,8 +2739,8 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
             const QData* const datap = &(reinterpret_cast<const QData*>(memp))[row_offset];
             wmem.print(addr, false, datap);
         } else {
-            const WDataInP memDatap = reinterpret_cast<WDataInP>(memp);
-            const WDataInP datap = &memDatap[row_offset * VL_WORDS_I(bits)];
+            const EData* const datap
+                = &(reinterpret_cast<const EData*>(memp))[row_offset * VL_WORDS_I(bits)];
             wmem.print(addr, false, datap);
         }
     }

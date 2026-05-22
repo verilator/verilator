@@ -70,7 +70,9 @@ svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
             | (((sp[VL_BITWORD_I(bit)].bval >> VL_BITBIT_I(bit)) & 1) << 1));
 }
 
-void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) { VL_ASSIGNBIT_WI(bit, dp, s); }
+void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) {
+    VL_ASSIGNBIT_WI(bit, WDataOutP::external(dp), s);
+}
 void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     // Verilator doesn't support X/Z so only aval
     dp[VL_BITWORD_I(bit)].aval = ((dp[VL_BITWORD_I(bit)].aval & ~(VL_UL(1) << VL_BITBIT_I(bit)))
@@ -290,7 +292,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         break;
     }
     case VLVT_WDATA: {
-        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
+        WDataInP wdatap = WDataInP::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) d[i] = wdatap[i];
         return;
     }
@@ -329,7 +331,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         break;
     }
     case VLVT_WDATA: {
-        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
+        WDataInP wdatap = WDataInP::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) {
             d[i].aval = wdatap[i];
             d[i].bval = 0;
@@ -355,7 +357,7 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0]; return;
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1], s[0]); break;
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataOutP wdatap = WDataOutP::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i];
         return;
     }
@@ -377,7 +379,7 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0].aval; return;
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1].aval, s[0].aval); break;
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataOutP wdatap = WDataOutP::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i].aval;
         return;
     }

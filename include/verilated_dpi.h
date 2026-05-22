@@ -63,7 +63,7 @@ static inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, const WDataInP lwp
 }
 static inline void VL_SET_SVBV_I(int, svBitVecVal* owp, const IData ld) VL_MT_SAFE { owp[0] = ld; }
 static inline void VL_SET_SVBV_Q(int, svBitVecVal* owp, const QData ld) VL_MT_SAFE {
-    VL_SET_WQ(owp, ld);
+    VL_SET_WQ(WDataOutP::external(owp), ld);
 }
 
 // Convert svLogicVecVal to Verilator internal data
