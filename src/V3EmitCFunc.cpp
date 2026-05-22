@@ -646,21 +646,21 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else if (v3Global.opt.fourstate() && dtypep->isShuffledFourstate()) {
-                const std::string& reset = slow ? "RESET" : "";
+                const std::string& reset = slow ? "RESET_" : "";
                 if (varp->isTopLevelPort()) {
                     // Instead of using VL_ZERO_RESET_W V and X we just use T and pretend the
                     // signal is twice as wide. this way we resets whole thing and sets to zero at
                     // once. We can do that because of the four-state internal representation
-                    out += "VL_ZERO_" + reset + "_W_T(";
+                    out += "VL_ZERO_" + reset + "W_T(";
                     out += cvtToStr(dtypep->widthMin() * 2);
                     out += ", " + varNameProtected + suffix;
                     out += ");\n";
                 } else if (varp->varType().isNet() || isModulePort(varp)) {
-                    out += "VL_ZERO_" + reset + "_W_V(";
+                    out += "VL_ZERO_" + reset + "W_V(";
                     out += cvtToStr(dtypep->widthMin());
                     out += ", " + varNameProtected + suffix;
                     out += ");\n";
-                    out += "VL_ALLONES_" + reset + "_W_X(";
+                    out += "VL_ALLONES_" + reset + "W_X(";
                     out += cvtToStr(dtypep->widthMin());
                     out += ", " + varNameProtected + suffix;
                     out += ");\n";
@@ -668,7 +668,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     // The same as above we can do a trick and use the internal representation to
                     // set everything up in one go but this time it is important to clear the
                     // result
-                    out += "VL_ALLONES_" + reset + "_W_T(";
+                    out += "VL_ALLONES_" + reset + "W_T(";
                     out += cvtToStr(dtypep->widthWords() * VL_EDATASIZE);
                     out += ", " + varNameProtected + suffix;
                     out += ");\n";
