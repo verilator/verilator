@@ -17,8 +17,8 @@ logfile = test.obj_dir + "/t_logfile.log"
 
 test.execute(all_run_flags=['+verilator+log+file+' + logfile])
 
-test.file_grep(logfile, 'Hello World!')
-test.file_grep(logfile, 'system\(echo In a shell now\)') # Line being run
-test.file_grep(logfile, 'Hello 3rd rock!')
+test.file_grep(logfile, r'Hello World!')
+test.file_grep(logfile, r'system\(echo In a shell now\)') # Line being run
+test.file_grep(logfile, r'Hello 3rd rock!')
 
 test.passes()

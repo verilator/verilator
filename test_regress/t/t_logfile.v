@@ -14,4 +14,3 @@ module top;
     $finish;
   end
 endmodule
-

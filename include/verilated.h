@@ -660,8 +660,8 @@ public:
     // Internal: logfile
     std::string logFilename() const VL_MT_SAFE;
     void logFilename(const std::string& flag) VL_MT_SAFE;
-    void sendStdoutToFile(bool append) VL_MT_SAFE;
     bool sendStdoutToFile() const VL_MT_SAFE;
+    void sendStdoutToFile(bool append) VL_MT_SAFE;
     void restoreStdout() VL_MT_SAFE;
 
     // Internal: $dumpfile

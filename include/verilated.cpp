@@ -74,6 +74,8 @@
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
+#include <io.h>       // open, read, write, close
+#define STDOUT_FILENO 1
 #endif
 #ifdef __GLIBC__
 # include <cxxabi.h>
@@ -2960,6 +2962,10 @@ std::string VerilatedContext::logFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_logFilename;
 }
+bool VerilatedContext::sendStdoutToFile() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_logFD >= 0;
+}
 void VerilatedContext::sendStdoutToFile(bool append) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     int flag = (append) ?  O_APPEND : O_TRUNC;
@@ -2969,10 +2975,6 @@ void VerilatedContext::sendStdoutToFile(bool append) VL_MT_SAFE {
         m_ns.m_stdoutFD = dup(STDOUT_FILENO);   // Save original fd
         dup2(m_ns.m_logFD, STDOUT_FILENO);      // Replace STDOUT_FILENO with m_logFD
     }
-}
-bool VerilatedContext::sendStdoutToFile() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    return m_ns.m_logFD >= 0;
 }
 void VerilatedContext::restoreStdout() VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
