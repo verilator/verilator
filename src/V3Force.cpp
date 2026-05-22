@@ -370,6 +370,13 @@ public:
         return it != m_varInfo.end() ? &it->second : nullptr;
     }
 
+    static AstVarScope* findScopeVar(AstScope* scopep, const string& name) {
+        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            if (vscp->varp()->name() == name) return vscp;
+        }
+        return nullptr;
+    }
+
     void addForceAssignment(AstVar* varp, AstVarScope* vscp, AstNodeExpr* rhsExprp,
                             AstAssignForce* forceStmtp, int rangeLsb, int rangeMsb, int padLsb,
                             int padMsb, bool hasArraySel) {
@@ -731,6 +738,31 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
 
     void visit(AstVarScope* nodep) override {
         if (nodep->varp()->isForceable()) {
+            // assignAll() runs after forceAll() and traverses the same netlist with a fresh
+            // ForceState. Reuse already-created public helper vars instead of regenerating
+            // duplicate __Vforce* members for every forceable signal.
+            if (m_state.doingAssign()) {
+                AstVar* const varp = nodep->varp();
+                AstScope* const scopep = nodep->scopep();
+                AstVarScope* const rdVscp
+                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceRd");
+                AstVarScope* const enVscp
+                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceEn");
+                AstVarScope* const valVscp
+                    = ForceState::findScopeVar(scopep, varp->name() + "__VforceVal");
+                if (rdVscp || enVscp || valVscp) {
+                    UASSERT_OBJ(rdVscp && enVscp && valVscp, nodep,
+                                "Incomplete pre-existing force helper set");
+                    ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
+                    info.m_forceRdVscp = rdVscp;
+                    info.m_forceEnVscp = enVscp;
+                    info.m_forceValVscp = valVscp;
+                    info.m_varVscp = nodep;
+                    iterateChildrenConst(nodep);
+                    return;
+                }
+            }
+
             if (VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 nodep->varp()->v3warn(
                     E_UNSUPPORTED,
