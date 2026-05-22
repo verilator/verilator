@@ -47,8 +47,6 @@
 
 namespace VlFiberInternal {
 
-using FiberFn = std::function<void(void*)>;
-
 #if defined(FIBER_LINUX_X64)
 using Register = std::uintptr_t;
 
