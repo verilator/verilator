@@ -148,6 +148,72 @@ protected:
         return false;
     }
 
+    bool coverageUsesLocalCounter(AstNodeCoverDecl* const declp) const {
+        // Only functions with an object receiver can address the module-local
+        // coverage array. Static/package/class helper functions still use the
+        // symbol-table array, as they may have vlSymsp but no vlSelf/this.
+        // Also require the coverage declaration to belong to the current
+        // module; cloned task bodies can increment declarations owned by a
+        // different module, and those must keep using the global array.
+        return m_cfuncp && !m_cfuncp->isStatic() && !VN_IS(m_modp, Class)
+               && !VN_IS(m_modp, ClassPackage)
+               && EmitCParentModule::get(declp->dataDeclThisp()) == m_modp;
+    }
+    int coverageBinNum(AstNodeCoverDecl* const declp, bool forceGlobal = false) const {
+        return !forceGlobal && coverageUsesLocalCounter(declp)
+                   ? declp->dataDeclThisp()->localBinNum()
+                   : declp->dataDeclThisp()->binNum();
+    }
+    void putCoverageArray(AstNodeCoverDecl* const declp, bool forceGlobal = false) {
+        if (!forceGlobal && coverageUsesLocalCounter(declp)) {
+            // Keep counters on the module object when possible, so every
+            // no-inline instance has storage available if coverage output is
+            // later written with forcePerInstance.
+            puts(m_cfuncp->isLoose() ? "vlSelf->__Vcoverage" : "this->__Vcoverage");
+        } else {
+            // Static/package/class helper functions do not have vlSelf, so
+            // keep using the shared symbol-table coverage array there.
+            puts("vlSymsp->__Vcoverage");
+        }
+    }
+    void emitCoverOtherDeclInsert(AstCoverOtherDecl* nodep, bool forceGlobal = false) {
+        putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
+        putCoverageArray(nodep, forceGlobal);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep, forceGlobal)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(!forceGlobal && coverageUsesLocalCounter(nodep) ? "true" : "false");
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(", ");
+        putsQuoted(nodep->linescov());
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
+        puts(");\n");
+    }
+
 public:
     // METHODS
     bool displayEmitHeader(AstNode* nodep);
@@ -810,40 +876,13 @@ public:
         iterateChildrenConst(nodep);
     }
     void visit(AstCoverOtherDecl* nodep) override {
-        putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
-        puts("&(vlSymsp->__Vcoverage[");
-        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
-        puts("])");
-        // If this isn't the first instantiation of this module under this
-        // design, don't really count the bucket, and rely on verilator_cov to
-        // aggregate counts.  This is because Verilator combines all
-        // hierarchies itself, and if verilator_cov also did it, you'd end up
-        // with (number-of-instant) times too many counts in this bin.
-        puts(", first");  // Enable, passed from __Vconfigure parameter
-        puts(", ");
-        putsQuoted(protect(nodep->fileline()->filename()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", ");
-        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
-        puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
-        puts(", ");
-        putsQuoted(nodep->linescov());
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
-        puts(");\n");
+        emitCoverOtherDeclInsert(nodep);
+        if (coverageUsesLocalCounter(nodep)) {
+            // Some task bodies are cloned into a caller module where the
+            // original instance-local counter is not addressable. Those clones
+            // fall back to the global bin number, so register that slot too.
+            emitCoverOtherDeclInsert(nodep, true);
+        }
     }
     void visit(AstCoverToggleDecl* nodep) override {
         putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
@@ -853,15 +892,16 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->range().ranged()));
         puts(", ");
-        puts("&(vlSymsp->__Vcoverage[");
-        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
-        puts("])");
-        // If this isn't the first instantiation of this module under this
-        // design, don't really count the bucket, and rely on verilator_cov to
-        // aggregate counts.  This is because Verilator combines all
-        // hierarchies itself, and if verilator_cov also did it, you'd end up
-        // with (number-of-instant) times too many counts in this bin.
+        putCoverageArray(nodep);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
         puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
         puts(", ");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -880,12 +920,16 @@ public:
     void visit(AstCoverInc* nodep) override {
         if (VN_IS(nodep->declp(), CoverOtherDecl)) {
             if (v3Global.opt.threads() > 1) {
-                putns(nodep, "vlSymsp->__Vcoverage[");
-                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                putns(nodep, "");
+                putCoverageArray(nodep->declp());
+                puts("[");
+                puts(cvtToStr(coverageBinNum(nodep->declp())));
                 puts("].fetch_add(1, std::memory_order_relaxed);\n");
             } else {
-                putns(nodep, "++(vlSymsp->__Vcoverage[");
-                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                putns(nodep, "++(");
+                putCoverageArray(nodep->declp());
+                puts("[");
+                puts(cvtToStr(coverageBinNum(nodep->declp())));
                 puts("]);\n");
             }
         } else {
@@ -901,8 +945,11 @@ public:
             // coverpoint
             puts(cvtToStr(nodep->declp()->size() / 2));
             puts(", ");
-            puts("vlSymsp->__Vcoverage + ");
-            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+            // Toggle update uses the same object-local counter array that
+            // __vlCoverToggleInsert registered.
+            putCoverageArray(nodep->declp());
+            puts(" + ");
+            puts(cvtToStr(coverageBinNum(nodep->declp())));
             puts(", ");
             iterateConst(nodep->toggleExprp());
             puts(", ");
