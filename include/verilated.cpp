@@ -75,8 +75,8 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 # include <io.h>       // open, read, write, close
-//# define STDOUT_FILENO _fileno(stdout)
-//# define STDERR_FILENO _fileno(stderr)
+# define STDOUT_FILENO _fileno(stdout)
+# define STDERR_FILENO _fileno(stderr)
 #endif
 #ifdef __GLIBC__
 # include <cxxabi.h>

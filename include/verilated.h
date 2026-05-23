@@ -422,9 +422,10 @@ protected:
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
-        int m_stdoutFD;
-        int m_stderrFD;
-        int m_logFD;
+        // +verilator+log+file+ filename
+        int m_stdoutFD; // Duplicated stdout file descriptor
+        int m_stderrFD; // Duplicated stderr file descriptor
+        int m_logFD;    // Log file descriptor
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
