@@ -963,11 +963,6 @@ public:
         iterateAndNextConstNull(nodep->lhsp());
         puts(");\n");
     }
-    void visit(AstDisplay* nodep) override {
-        string text = nodep->fmtp()->text();
-        if (nodep->addNewline()) text += "\n";
-        displayNode(nodep, nodep->fmtp(), text, nodep->fmtp()->exprsp(), false);
-    }
     void visit(AstDumpCtl* nodep) override {
         switch (nodep->ctlType()) {
         case VDumpCtlType::FILE:
@@ -1015,6 +1010,11 @@ public:
             const string scope = nodep->scopeDpiName();
             putnbs(nodep, "(vlSymsp->" + protect("__Vscopep_" + scope) + ")");
         }
+    }
+    void visit(AstDisplay* nodep) override {
+        string text = nodep->fmtp()->text();
+        if (nodep->addNewline()) text += "\n";
+        displayNode(nodep, nodep->fmtp(), text, nodep->fmtp()->exprsp(), false);
     }
     void visit(AstSFormat* nodep) override {
         displayNode(nodep, nodep->fmtp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);

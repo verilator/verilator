@@ -2078,7 +2078,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
@@ -2306,5 +2306,151 @@ VlQueue<T_Value, N_MaxSize>::VlQueue(VlQueue<VlClassRef<T_Subclass>>&& that)
     : m_deque{std::make_move_iterator(that.m_deque.begin()),
               std::make_move_iterator(that.m_deque.end())}
     , m_defaultValue{std::move(that.m_defaultValue)} {}
+
+//======================================================================
+
+// Format string renderer used by generated code
+class VlFormatString final {
+    // List of all valid format specifier characters - must match 'matchFormatChar' below
+    // Using an enum class to get exhaustive switch warnings from the C++ compiler.
+    enum class FormatChar : char {
+        b = 'b',
+        c = 'c',
+        d = 'd',
+        e = 'e',
+        f = 'f',
+        g = 'g',
+        h = 'h',
+        o = 'o',
+        p = 'p',
+        s = 's',
+        t = 't',
+        u = 'u',
+        v = 'v',
+        x = 'x',
+        z = 'z'
+    };
+
+    static thread_local std::string t_tmp;  // Temporary storate - static only for speed
+
+    const std::string& m_format;  // Format string
+    const size_t m_formatLength = m_format.length();  // Length of the format string
+    std::string m_output;  // Rendered output string
+    size_t m_index = 0;  // Current index pointing into the format string, for parsing
+
+    // Parsed format specifier detail - 'm_fmt*'
+    size_t m_fmtBegin = 0;  // Start of current format specifier (inclusive, points to '%')
+    size_t m_fmtEnd = 0;  // End of current format specifier (exclusive)
+    bool m_fmtLeftJustify = false;  // Left justify flag
+    bool m_fmtWidthSet = false;  // Width set flag
+    uint64_t m_fmtWidth = 0;  // Width value
+    FormatChar m_fmtChar = FormatChar::d;  // Format specifier character
+
+    // Special inputs stored for later rendering
+    const char* m_modelNamep = "";  // Name of model for "%m"
+    const char* m_scopeNamep = "";  // Name of scope for "%m"
+    int m_timeunit = 0;  // Timeunit for "%t"
+
+    // Attempt to match the given character at the given index.
+    // Iff successful, advances 'indexr' and returns true.
+    bool matchChar(size_t& indexr, char c);
+    // Attempt to match a decimal integer at the given index.
+    // Iff successful, advances 'indexr' and returns true.
+    bool matchUint(size_t& indexr, uint64_t& valuer);
+    // Attempt to match a format specifier character at the given index.
+    // Iff successful, advances 'indexr' and returns true.
+    bool matchFormatChar(size_t& indexr, FormatChar& fmtCharr);
+
+    // Called by proceed() to parse a single format specifier.
+    // Returns true if a valid format specifier is found.
+    // Updates 'm_fmt*' members even if returns false.
+    bool parseFormatSpecifier();
+
+    // Parse format string until the next format character needing input for substitution is found.
+    // Returns true if an argument is expected, or false if the end of the format string reached.
+    // If returns 'true', then the next input datum should be rendered according to 'm_fmt*'.
+    bool proceed();
+
+    // Actually render a WData and add it to the output string
+    void renderWData(bool isSigned, int bits, int msb, WDataInP value);
+    // Actually render a double and add it to the output string
+    void renderDouble(const std::string& format, double value);
+
+public:
+    // Marker types for overload resolution
+    struct TimeUnit {};
+    struct ScopeName {};
+    struct Double {};
+
+    template <typename... Args>
+    VlFormatString(const std::string& format, Args&&... args)
+        : m_format{format} {
+        m_output.reserve(m_format.length());
+        // Render all arguments
+        apply(std::forward<Args>(args)...);
+        // Emit rest of string - must scan in case there is trailing '%m' or '%%
+        while (proceed()) m_output += m_format.substr(m_fmtBegin, m_fmtEnd - m_fmtBegin);
+    }
+
+    // Return the rendered output string
+    const std::string& result() const { return m_output; }
+
+    // ---
+    // Tempalte based dispatchers so generated code can still do a variadic call
+
+    // Recursion base case
+    void apply() {}
+
+    // Scopename
+    template <typename... Args>
+    void apply(ScopeName, const char* modelNamep, const char* scopeNamep, Args&&... args) {
+        // Just save for later
+        m_scopeNamep = scopeNamep;
+        m_modelNamep = modelNamep;
+        apply(std::forward<Args>(args)...);
+    }
+
+    // Timeunit
+    template <typename... Args>
+    void apply(TimeUnit, int timeunit, Args&&... args) {
+        // Just save for later
+        m_timeunit = timeunit;
+        apply(std::forward<Args>(args)...);
+    }
+
+    // QData - Anything narrower is promoted ingenerated code
+    template <typename... Args>
+    void apply(char fmtArg, int bits, QData value, Args&&... args) {
+        applyQData(fmtArg, bits, value);
+        apply(std::forward<Args>(args)...);
+    }
+    // WData
+    template <typename... Args>
+    void apply(char fmtArg, int bits, WDataInP value, Args&&... args) {
+        applyWData(fmtArg, bits, value);
+        apply(std::forward<Args>(args)...);
+    }
+
+    // Double
+    template <typename... Args>
+    void apply(Double, double value, Args&&... args) {
+        applyDouble(value);
+        apply(std::forward<Args>(args)...);
+    }
+
+    // String
+    template <typename... Args>
+    void apply(char fmtArg, const std::string& value, Args&&... args) {
+        applyString(fmtArg, value);
+        apply(std::forward<Args>(args)...);
+    }
+
+    // ---
+    // Actual apply methods - generated code should eventually call these directly
+    void applyQData(char fmtArg, int bits, QData value);
+    void applyWData(char fmtArg, int bits, WDataInP value);
+    void applyDouble(double value);
+    void applyString(char fmtArg, const std::string& value);
+};
 
 #endif  // Guard

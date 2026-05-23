@@ -53,7 +53,7 @@ test.file_grep(test.obj_dir + "/profcfuncs.log", r'Overall summary by')
 #   Appears that GCC 11.4 has a bug whereby it doesn't trace function calls
 #   within coroutines; CLang seems to work correctly.
 #   test.file_grep(test.obj_dir + "/profcfuncs.log", r'VLib + VL_POWSS_QQQ')
-test.file_grep(test.obj_dir + "/profcfuncs.log", r'VLib + VL_WRITEF')
+test.file_grep(test.obj_dir + "/profcfuncs.log", r'VLib + VL_PRINTF')
 test.file_grep(test.obj_dir + "/profcfuncs.log", r'VBlock + t_prof:')
 
 test.passes()

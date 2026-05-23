@@ -227,7 +227,6 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
         puts(cvtToStr(dispp->lhsp()->widthMin()));
         putbs(",");
         iterateConst(dispp->lhsp());
-        emitDatap(dispp->lhsp());
         putbs(",");
     } else if (VN_IS(nodep, SFormatF)) {
         isStmt = false;
@@ -286,7 +285,6 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (exprFormat) {
         UASSERT_OBJ(exprsp, nodep, "Missing format expression");
         iterateConst(exprsp);
-        emitDatap(exprsp);
         exprsp = exprsp->nextp();
     } else {
         ofp()->putsQuoted(vformat);
@@ -311,8 +309,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         AstScopeName* const scopenamep = fmtp ? fmtp->scopeNamep() : nullptr;
         UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
         const string suffix = scopenamep->scopePrettySymName();
-        ofp()->puts(", '"s + VFormatAttr{VFormatAttr::SCOPE}.ascii() + "'");
-        ofp()->puts(",vlSymsp->name(),");
+        ofp()->puts(", VlFormatString::ScopeName{},vlSymsp->name(),");
         ofp()->putsQuoted(suffix);
     }
 
@@ -330,8 +327,8 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         UASSERT_OBJ(!timeunit.isNone(), nodep,
                     "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF, or "
                     "SScanF, and timeunit set");
-        ofp()->puts(", '"s + VFormatAttr{VFormatAttr::TIMEUNIT}.ascii() + "'");
-        ofp()->puts(","s + cvtToStr((int)timeunit.powerOfTen()));
+        ofp()->puts(", VlFormatString::TimeUnit{},");
+        ofp()->puts(cvtToStr((int)timeunit.powerOfTen()));
     }
 
     // Arguments
@@ -341,19 +338,29 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         AstNode* const subargp = fargp ? fargp->exprp() : argp;
         const VFormatAttr formatAttr = AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep());
-        puts(", '"s + formatAttr.ascii() + '\'');
+        if (formatAttr.isDouble()) {
+            puts(", VlFormatString::Double{}");
+        } else {
+            puts(", '"s + formatAttr.ascii() + '\'');
+        }
         if (formatAttr.isSigned() || formatAttr.isUnsigned())
             puts("," + cvtToStr(subargp->widthMin()));
-        const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
         puts(",");
-        if (addrof) puts("&(");
-        if (VN_IS(subargp, StreamR))
-            emitStreamR(
-                VN_CAST(subargp, StreamR),
-                nodep);  // This has to be done here because streamR doesn't know what it returns
-        else { iterateConst(subargp); }
-        if (addrof) puts(")");
-        if (!addrof) emitDatap(argp);
+        if (isScan) puts("&(");
+        if (VN_IS(subargp, StreamR)) {
+            // This has to be done here because streamR doesn't know what it returns
+            emitStreamR(VN_CAST(subargp, StreamR), nodep);
+        } else {
+            bool isInt = formatAttr.isSigned() || formatAttr.isUnsigned();
+
+            // TODO: some builtin methods return C 'int' (e.g. array.size()).
+            // These won't promote to QData (which is unsigned), so cast here.
+            const char* const castp = isScan || !isInt || subargp->isWide() ? nullptr : "(QData)(";
+            if (castp) puts(castp);
+            iterateConst(subargp);
+            if (castp) puts(")");
+        }
+        if (isScan) puts(")");
         ofp()->indentDec();
     }
 
