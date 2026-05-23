@@ -6,11 +6,20 @@
 
 // See also https://verilator.org/guide/latest/examples.html"
 
+// Found on Stackoverflow
+int stdout_fd = 32'h8000_0001;
+int stderr_fd = 32'h8000_0002;
+
 module top;
   initial begin
+    // display
     $display("Hello World!");
     $system("echo In a shell now");
     $display("Hello 3rd rock!");
+    // fdisplay with stdout and stderr
+    $fdisplay(stdout_fd, "Hello Mars!");
+    $system("echo In another shell now");
+    $fdisplay(stderr_fd, "Hello Pluto!");
     $finish;
   end
 endmodule

@@ -422,8 +422,9 @@ protected:
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
-        int32_t m_stdoutFD;
-        int32_t m_logFD;
+        int m_stdoutFD;
+        int m_stderrFD;
+        int m_logFD;
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -660,9 +661,9 @@ public:
     // Internal: logfile
     std::string logFilename() const VL_MT_SAFE;
     void logFilename(const std::string& flag) VL_MT_SAFE;
-    bool sendStdoutToFile() const VL_MT_SAFE;
-    void sendStdoutToFile(bool append) VL_MT_SAFE;
-    void restoreStdout() VL_MT_SAFE;
+    bool sendOutputToFile() const VL_MT_SAFE;
+    void sendOutputToFile(bool append) VL_MT_SAFE;
+    void restoreOutput() VL_MT_SAFE;
 
     // Internal: $dumpfile
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
