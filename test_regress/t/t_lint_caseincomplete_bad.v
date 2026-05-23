@@ -14,5 +14,10 @@ module t (
       2'b10: ;
       2'b11: ;
     endcase
+
+    unique0 case (i)  // No warning
+      2'b00: ;
+    endcase
   end
+
 endmodule

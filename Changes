@@ -83,6 +83,7 @@ Verilator 5.049 devel
 * Fix force determinism (#7620) (#7637). [Artur Bieniek, Antmicro Ltd.]
 * Fix reference counting for modport task references (#7628). [Nick Brereton]
 * Fix implicit conversions of VlWide (#7642). [Geza Lore, Testorrent USA, Inc.]
+* Fix CASEINCOMPLETE to not warn on `unique0 case` (#7647).
 
 
 Verilator 5.048 2026-04-26

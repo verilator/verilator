@@ -382,6 +382,9 @@ List Of Warnings
    non-enumerated values (IEEE 1800-2023 12.5.3). Verilator checks that
    illegal values are not hit, unless :vlopt:`--no-assert-case` was used.
 
+   Unique0 case statements will never cause this warning. (Although unique0
+   should be avoided in synthesizable code as may result in latch behavior.)
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
