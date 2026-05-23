@@ -180,6 +180,7 @@ class FsmRegisterCandidate final {
     AstScope* m_scopep = nullptr;  // Owning scope for the paired FSM.
     AstAlways* m_alwaysp = nullptr;  // Register process that commits the state.
     AstVarScope* m_stateVscp = nullptr;  // Registered FSM state variable.
+    AstVarScope* m_sampleVscp = nullptr;  // Variable sampled by lowered coverage logic.
     AstVarScope* m_nextVscp = nullptr;  // Next-state variable or same state var for 1-block FSMs.
     std::vector<FsmSenDesc> m_senses;  // Event controls for recreated coverage blocks.
     FsmResetCondDesc m_resetCond;  // Saved reset predicate, if any.
@@ -196,6 +197,8 @@ public:
     void alwaysp(AstAlways* alwaysp) { m_alwaysp = alwaysp; }
     AstVarScope* stateVscp() const { return m_stateVscp; }
     void stateVscp(AstVarScope* vscp) { m_stateVscp = vscp; }
+    AstVarScope* sampleVscp() const { return m_sampleVscp ? m_sampleVscp : m_stateVscp; }
+    void sampleVscp(AstVarScope* vscp) { m_sampleVscp = vscp; }
     AstVarScope* nextVscp() const { return m_nextVscp; }
     void nextVscp(AstVarScope* vscp) { m_nextVscp = vscp; }
     const std::vector<FsmSenDesc>& senses() const { return m_senses; }
@@ -328,6 +331,7 @@ class FsmGraph final : public V3Graph {
     string m_stateVarName;  // Pretty state variable name for user-visible output.
     string m_stateVarInternalName;  // Internal state symbol name for dump tags.
     AstVarScope* m_stateVarScopep = nullptr;  // Scoped state variable being tracked.
+    AstVarScope* m_sampleVarScopep = nullptr;  // Scoped variable sampled by coverage logic.
     std::vector<FsmSenDesc> m_senses;  // Saved event controls for recreated active blocks.
     FsmResetCondDesc m_resetCond;  // Saved reset predicate shape, if one exists.
     bool m_hasResetCond = false;  // Whether the detected FSM had a reset branch.
@@ -354,6 +358,10 @@ public:
     void stateVarInternalName(const string& name) { m_stateVarInternalName = name; }
     AstVarScope* stateVarScopep() const { return m_stateVarScopep; }
     void stateVarScopep(AstVarScope* vscp) { m_stateVarScopep = vscp; }
+    AstVarScope* sampleVarScopep() const {
+        return m_sampleVarScopep ? m_sampleVarScopep : m_stateVarScopep;
+    }
+    void sampleVarScopep(AstVarScope* vscp) { m_sampleVarScopep = vscp; }
     const std::vector<FsmSenDesc>& senses() const { return m_senses; }
     std::vector<FsmSenDesc>& senses() { return m_senses; }
     const FsmResetCondDesc& resetCond() const { return m_resetCond; }
@@ -511,6 +519,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // between those scopes: only transparent port aliases are recorded, so the
     // detector does not become a general cross-module dataflow engine.
     FsmCellPortAliasMap m_cellPortAliases;
+    FsmCellPortAliasMap m_cellPortChildAliases;
 
     // METHODS
     // Enum-backed FSMs may be wrapped in refs/typedefs; normalize to the
@@ -566,6 +575,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     void addWrapperCell(AstScope* scopep, AstCell* cellp) {
         m_cellPortAliases.emplace(cellp, FsmCellPortMap{});
+        m_cellPortChildAliases.emplace(cellp, FsmCellPortMap{});
         const std::pair<AstScope*, AstCell*> item{scopep, cellp};
         if (std::find(m_wrapperCells.cbegin(), m_wrapperCells.cend(), item)
             != m_wrapperCells.cend()) {
@@ -591,6 +601,7 @@ class FsmDetectVisitor final : public VNVisitor {
             UASSERT_OBJ(rhsVscp->scopep() == m_scopep, nodep,
                         "Child input port alias should connect from the parent scope");
             m_cellPortAliases[cellp][lhsVscp->varp()->name()] = rhsVscp;
+            m_cellPortChildAliases[cellp][lhsVscp->varp()->name()] = lhsVscp;
             addWrapperCell(m_scopep, cellp);
         } else if (childPortInScope(rhsVscp, m_scopep, cellp)) {
             if (!fsmRegisterWrapperDesc(cellp)) return;
@@ -599,6 +610,7 @@ class FsmDetectVisitor final : public VNVisitor {
             UASSERT_OBJ(lhsVscp->scopep() == m_scopep, nodep,
                         "Child output port alias should connect into the parent scope");
             m_cellPortAliases[cellp][rhsVscp->varp()->name()] = lhsVscp;
+            m_cellPortChildAliases[cellp][rhsVscp->varp()->name()] = rhsVscp;
             addWrapperCell(m_scopep, cellp);
         }
     }
@@ -610,6 +622,12 @@ class FsmDetectVisitor final : public VNVisitor {
         // direct-register detection instead of growing into interprocedural FSM
         // inference.
         const FsmCellPortMap& ports = m_cellPortAliases.at(cellp);
+        const FsmCellPortMap::const_iterator portIt = ports.find(portName);
+        return portIt == ports.end() ? nullptr : portIt->second;
+    }
+
+    AstVarScope* childRoleVarScope(AstCell* cellp, const string& portName) const {
+        const FsmCellPortMap& ports = m_cellPortChildAliases.at(cellp);
         const FsmCellPortMap::const_iterator portIt = ports.find(portName);
         return portIt == ports.end() ? nullptr : portIt->second;
     }
@@ -670,6 +688,7 @@ class FsmDetectVisitor final : public VNVisitor {
             reg.scopep(m_scopep);
             reg.alwaysp(alwaysp);
             reg.stateVscp(vscp);
+            reg.sampleVscp(vscp);
             reg.nextVscp(vscp);
             reg.senses() = FsmDetectVisitor::describeSenTree(alwaysp->sentreep());
             reg.resetCond() = FsmDetectVisitor::describeResetCond(resetCondp);
@@ -773,6 +792,7 @@ class FsmDetectVisitor final : public VNVisitor {
         cand.scopep(scopep);
         cand.alwaysp(nullptr);
         cand.stateVscp(stateVscp);
+        cand.sampleVscp(childRoleVarScope(cellp, roles.qPort));
         cand.nextVscp(nextVscp);
         cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
         cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
@@ -1433,6 +1453,7 @@ class FsmDetectVisitor final : public VNVisitor {
         cand.scopep(scopep);
         cand.alwaysp(alwaysp);
         cand.stateVscp(stateVscp);
+        cand.sampleVscp(stateVscp);
         cand.nextVscp(nextVscp);
         cand.senses() = describeSenTree(alwaysp->sentreep());
         cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
@@ -1756,6 +1777,7 @@ class FsmDetectVisitor final : public VNVisitor {
             entry.graphp->stateVarName(stateVscp->prettyName());
             entry.graphp->stateVarInternalName(stateVscp->varp()->name());
             entry.graphp->stateVarScopep(stateVscp);
+            entry.graphp->sampleVarScopep(reg.sampleVscp());
             entry.graphp->senses() = reg.senses();
             entry.graphp->resetCond() = reg.resetCond();
             entry.graphp->hasResetCond(reg.hasResetCond());
@@ -1791,6 +1813,7 @@ class FsmDetectVisitor final : public VNVisitor {
         entry.graphp->stateVarName(stateVscp->prettyName());
         entry.graphp->stateVarInternalName(stateVscp->varp()->name());
         entry.graphp->stateVarScopep(stateVscp);
+        entry.graphp->sampleVarScopep(reg.sampleVscp());
         entry.graphp->senses() = reg.senses();
         entry.graphp->resetCond() = reg.resetCond();
         entry.graphp->hasResetCond(reg.hasResetCond());
@@ -2105,16 +2128,18 @@ class FsmLowerVisitor final {
         AstAlways* const alwaysp = graph.stateAlwaysp();
         AstScope* const scopep = graph.scopep();
         AstVarScope* const stateVscp = graph.stateVarScopep();
+        AstVarScope* const sampleVscp = graph.sampleVarScopep();
         FileLine* const flp = graph.fileline();
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep = scopep->findLogicDType(
-            stateVscp->width(), stateVscp->width(), stateVscp->dtypep()->numeric());
+            sampleVscp->width(), sampleVscp->width(), sampleVscp->dtypep()->numeric());
         AstVarScope* const prevVscp
             = scopep->createTemp("__Vfsmcov_prev__" + stateVscp->varp()->shortName(), prevDTypep);
         // The saved previous-state temp crosses the scheduler's pre/post split
         // in the same way as Verilator's built-in NBA shadow variables, so keep
         // both vars marked as post-life participants for stable MT ordering.
         stateVscp->optimizeLifePost(true);
+        sampleVscp->optimizeLifePost(true);
         prevVscp->optimizeLifePost(true);
 
         AstActive* const initActivep
@@ -2125,7 +2150,7 @@ class FsmLowerVisitor final {
         // clock edge compares against a defined state value.
         initActivep->addStmtsp(new AstInitialStatic{
             flp, new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                               new AstVarRef{flp, stateVscp, VAccess::READ}}});
+                               new AstVarRef{flp, sampleVscp, VAccess::READ}}});
         scopep->addBlocksp(initActivep);
 
         AstAlwaysPost* const covPostp = new AstAlwaysPost{flp};
@@ -2138,7 +2163,7 @@ class FsmLowerVisitor final {
             // commit for direct parent-level registers.
             AstNode* const bodysp = alwaysp->stmtsp()->unlinkFrBackWithNext();
             alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                                             new AstVarRef{flp, stateVscp, VAccess::READ}});
+                                             new AstVarRef{flp, sampleVscp, VAccess::READ}});
             alwaysp->addStmtsp(bodysp);
         } else {
             // Wrapper-derived register candidates do not have a parent
@@ -2170,8 +2195,8 @@ class FsmLowerVisitor final {
                 = andExpr(flp,
                           new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
                                      makeStateConst(flp, prevVscp, statep->value())},
-                          new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
-                                    makeStateConst(flp, stateVscp, statep->value())});
+                          new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
+                                    makeStateConst(flp, sampleVscp, statep->value())});
             covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
         }
 
@@ -2209,9 +2234,10 @@ class FsmLowerVisitor final {
                     // graph, then reconstructed here into the original simple
                     // reset predicate combined with the destination state.
                     guardp = buildResetCond(flp, graph.resetCond().varScopep, graph.resetCond());
-                    guardp = andExpr(flp, guardp,
-                                     new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
-                                               makeStateConst(flp, stateVscp, toStatep->value())});
+                    guardp
+                        = andExpr(flp, guardp,
+                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
+                                            makeStateConst(flp, sampleVscp, toStatep->value())});
                 } else if (fromVertexp->isDefaultAny()) {
                     // Synthetic default arcs mean "none of the explicit
                     // source states matched", so rebuild that as a conjunction
@@ -2224,23 +2250,24 @@ class FsmLowerVisitor final {
                             new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
                                        makeStateConst(flp, prevVscp, stateVertexp->value())});
                     }
-                    guardp = andExpr(flp, guardp,
-                                     new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
-                                               makeStateConst(flp, stateVscp, toStatep->value())});
+                    guardp
+                        = andExpr(flp, guardp,
+                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
+                                            makeStateConst(flp, sampleVscp, toStatep->value())});
                 } else {
                     guardp
                         = andExpr(flp,
                                   new AstEq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
                                             makeStateConst(flp, prevVscp, fromVertexp->value())},
-                                  new AstEq{flp, new AstVarRef{flp, stateVscp, VAccess::READ},
-                                            makeStateConst(flp, stateVscp, toStatep->value())});
+                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
+                                            makeStateConst(flp, sampleVscp, toStatep->value())});
                 }
                 covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
             }
         }
         if (updatePrevAfterPost) {
             covPostp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                                              new AstVarRef{flp, stateVscp, VAccess::READ}});
+                                              new AstVarRef{flp, sampleVscp, VAccess::READ}});
         }
 
         AstSenTree* const sentreep = buildSenTree(flp, graph.senses());
