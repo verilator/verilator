@@ -376,17 +376,17 @@ std::string vl_timescaled_double(double value, const char* format = "%0.0f%s") V
 
 VL_ATTR_ALWINLINE
 static WDataOutP VL_MEMSET_ZERO_W(WDataOutP owp, int words) VL_MT_SAFE {
-    for (size_t i = 0; i < words; ++i) owp[i] = 0;
+    std::memset(owp.datap(), 0, words * sizeof(EData));
     return owp;
 }
 VL_ATTR_ALWINLINE
 static WDataOutP VL_MEMSET_ONES_W(WDataOutP owp, int words) VL_MT_SAFE {
-    for (size_t i = 0; i < words; ++i) owp[i] = ~static_cast<EData>(0);
+    std::memset(owp.datap(), 0xff, words * sizeof(EData));
     return owp;
 }
 VL_ATTR_ALWINLINE
 static WDataOutP VL_MEMCPY_W(WDataOutP owp, WDataInP const iwp, int words) VL_MT_SAFE {
-    for (size_t i = 0; i < words; ++i) owp[i] = iwp[i];
+    std::memcpy(owp.datap(), iwp.datap(), words * sizeof(EData));
     return owp;
 }
 
