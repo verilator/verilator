@@ -18,7 +18,7 @@ if test.have_dev_gcov:
 
 test.compile(v_flags2=[
     "--binary",
-    test.build_jobs,
+    test.build_jobs_groups,
     "--CFLAGS -O0",
     "-Wall",
     "+incdir+t/uvm",  #

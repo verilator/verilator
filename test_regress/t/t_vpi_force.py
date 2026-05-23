@@ -11,14 +11,19 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             make_pli=True,
-             verilator_flags2=[
-                 "+define+VERILATOR_COMMENTS --binary --vpi", test.build_jobs, "--CFLAGS -O0",
-                 test.pli_filename
-             ],
-             v_flags2=["+define+USE_VPI_NOT_DPI"])
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    make_pli=True,
+    verilator_flags2=[
+        "+define+VERILATOR_COMMENTS",  #
+        "--binary",
+        "--vpi",
+        test.build_jobs_groups,
+        "--CFLAGS -O0",
+        test.pli_filename
+    ],
+    v_flags2=["+define+USE_VPI_NOT_DPI"])
 
 test.execute(xrun_flags2=["+define+USE_VPI_NOT_DPI"], use_libvpi=True, check_finished=True)
 
