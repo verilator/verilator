@@ -1985,6 +1985,24 @@ class AssertNfaVisitor final : public VNVisitor {
         for (AstNodeExpr* const srcp : requiredStepSrcs) pushDeletep(srcp);
     }
 
+    // Replace one VarRef to a captured local var with $past(rhs, K)
+    // (or rhs inline when K == 0). No-op if refp is not in matchMap.
+    void substituteMatchItemRef(AstVarRef* refp, int K,
+                                const std::unordered_map<const AstVar*, AstNodeExpr*>& matchMap) {
+        const auto it = matchMap.find(refp->varp());
+        if (it == matchMap.end()) return;
+        AstNodeExpr* newp = it->second->cloneTreePure(false);
+        if (K > 0) {
+            AstConst* const ticksp = new AstConst{refp->fileline(), AstConst::WidthedValue{}, 32,
+                                                  static_cast<uint32_t>(K)};
+            AstPast* const pastp = new AstPast{refp->fileline(), newp, ticksp};
+            pastp->dtypeFrom(newp);
+            newp = pastp;
+        }
+        refp->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+    }
+
     // Recursively walk a consequent. Returns cycle length consumed and
     // substitutes each VarRef to a captured local var with $past(rhs, K)
     // (or rhs inline when K == 0). Reports E_UNSUPPORTED on non-constant
@@ -2027,21 +2045,7 @@ class AssertNfaVisitor final : public VNVisitor {
         }
         std::vector<AstVarRef*> refs;
         nodep->foreach([&refs](AstVarRef* p) { refs.push_back(p); });
-        for (auto refIt = refs.begin(); refIt != refs.end(); ++refIt) {
-            AstVarRef* const refp = *refIt;
-            const auto it = matchItems.find(refp->varp());
-            if (it == matchItems.end()) continue;
-            AstNodeExpr* newp = it->second->cloneTreePure(false);
-            if (K > 0) {
-                AstConst* const ticksp = new AstConst{refp->fileline(), AstConst::WidthedValue{},
-                                                      32, static_cast<uint32_t>(K)};
-                AstPast* const pastp = new AstPast{refp->fileline(), newp, ticksp};
-                pastp->dtypeFrom(newp);
-                newp = pastp;
-            }
-            refp->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(refp), refp);
-        }
+        for (AstVarRef* const refp : refs) substituteMatchItemRef(refp, K, matchItems);
         return 0;
     }
 
