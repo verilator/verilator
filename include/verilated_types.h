@@ -95,12 +95,6 @@ struct VlWide final {
         return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(EData)) == 0;
     }
     bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
-    operator bool() const VL_PURE {
-        for (size_t i = 0; i < N_Words; ++i) {
-            if (m_storage[i]) return true;
-        }
-        return false;
-    }
     EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
     const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
 
