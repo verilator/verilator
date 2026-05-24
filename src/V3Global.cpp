@@ -157,7 +157,7 @@ void V3Global::removeStd() {
         UINFO(3, "Removing unused std:: package");
         if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
             v3Global.rootp()->stdPackagep(nullptr);
-            v3Global.rootp()->stdPackageClassp(nullptr);
+            v3Global.rootp()->stdPackageProcessp(nullptr);
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
         }
     }

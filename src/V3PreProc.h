@@ -40,7 +40,7 @@ protected:
 
 public:
     // CONSTANTS
-    enum MiscConsts {
+    enum MiscConsts : int {
         DEFINE_RECURSION_LEVEL_MAX = 1000,  // How many `def substitutions before an error
         INCLUDE_DEPTH_MAX = 500,  // How many `includes deep before an error
         // Streams deep (sometimes `def deep) before an error.

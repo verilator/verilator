@@ -200,9 +200,9 @@ sub verilator_bin {
 
 sub gdb_works {
     $! = undef;  # Cleanup -x
-    system("gdb /bin/echo"
+    system("gdb /bin/sh"
            . " --batch-silent --quiet --return-child-result"
-           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'run -c exit'"  # `/bin/sh -c exit
            . " -ex 'set width 0'"
            . " -ex 'bt'"
            . " -ex 'quit'");
@@ -357,6 +357,7 @@ detailed descriptions of these arguments.
     --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
+    --assert-unroll-limit <iter> Max SVA assertion repetition before erroring
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features

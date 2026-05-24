@@ -332,7 +332,26 @@ module fsm_if_reduction_bad (
 
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
-
+module fsm_direct_active_low_dynamic_reset_bad (
+    input logic clk,
+    input logic rst_n,
+    input logic [1:0] dyn_reset
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+  always_comb begin
+    state_d = state_q;
+    if (state_q == S0) state_d = S1;
+    else state_d = S0;
+  end
+  always_ff @(posedge clk or negedge rst_n) begin
+    state_q <= rst_n ? state_d : state_t'(dyn_reset);
+  end
+endmodule
 module t (
     input logic clk
 );
@@ -364,6 +383,8 @@ module t (
   fsm_if_alias_other_state_bad alias_other_state_u (.clk(clk));
   fsm_if_bit_or_bad bit_or_u (.clk(clk), .start(start));
   fsm_if_reduction_bad reduction_u (.clk(clk));
+  fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
+      .clk(clk), .rst_n(cyc != 0), .dyn_reset(dyn_case[1:0]));
 
   initial begin
     cyc = 0;

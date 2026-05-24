@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_pull_bitsel_conflict_bad.v:22:23: Conflicting pullup/pulldown direction on bit 2 of 'bus'
+                                                        : ... note: In instance 't'
+   22 |     output wire [3:0] bus
+      |                       ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

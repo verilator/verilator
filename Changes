@@ -28,15 +28,29 @@ Verilator 5.049 devel
 * Support procedural continuous assign/deassign (#7493). [Artur Bieniek, Antmicro Ltd.]
 * Support randsequence production function ports (#7522). [Yilou Wang]
 * Support followed-by operators `#-#` and `#=#` in properties (#7523). [Yilou Wang]
+* Support expression coverage on assign statements (#7542) (#7543). [Thomas Brown]
 * Support TERMUX (#7559). [Laurent CHARRIER]
+* Support NBAs in initial blocks with delay/event controls (#7566) (#7600). [Muzaffer Kal]
 * Support SVA goto repetition with range `[->M:N]` (#7569). [Yilou Wang]
+* Support property abort operators (accept_on, reject_on) (#7578). [Yilou Wang]
+* Support procedural concurrent assertions with inferred clock (#7581). [Yilou Wang]
+* Support calling interface functions without parens (#7584). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support streaming on queues (#7597). [Benjamin Collier, Secturion Systems, Inc.]
+* Support FSM detection in primitive wrappers (#7607). [Yogish Sekhar]
+* Support busses with mix of pullup/pulldown (#7632). [Lucas Amaral]
 * Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
 * Add error on mixed-initialization (#7352) (#7357).
-* Improve `--coverage-fsm` (#7490) (#7529) (#7561). [Yogish Sekhar]
+* Improve `--coverage-fsm` (#7490) (#7529) (#7561) (#7573) (#7619). [Yogish Sekhar]
 * Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
 * Change JSON to include parameter constant mnemonics for FSM Coverage (#7531). [Yogish Sekhar]
+* Optimize emitting to_string() for compiler speedup (#7468). [Jakub Michalski, Antmicro Ltd.]
 * Optimize additional DFG peephole cases (#7553). [Varun Koyyalagunta, Testorrent USA, Inc.]
+* Optimize forced signal handling (#7554 partial) (#7572) (#7594) (#7596). [Krzysztof Bieganski, Artur Bieniek, Antmicro Ltd.]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
+* Fix segmentation fault when using --trace with --lib-create (#7299) (#7518). [anonkey]
+* Fix destructive event state before dynamic waits (#7340). [Nick Brereton]
+* Fix array pattern concatenation (#7401) (#7402). [Greg Davill]
+* Fix fairness in `std::semaphore` (#7435) (#7605). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix generic interface port forwarded to a nested instance (#7454) (#7457). [Yilou Wang]
 * Fix internal error on multi-cycle SVA under default clocking (#7472) (#7506). [Yilou Wang]
 * Fix internal error instead of missing prototype error (#7485). [Alex Solomatnikov]
@@ -49,11 +63,27 @@ Verilator 5.049 devel
 * Fix $bits on local struct with chained-interface (#7515) (#7517).
 * Fix array indexing side effects in compound assignments (#7519) (#7540) (#7544). [Kamil Danecki, Antmicro Ltd.]
 * Fix class::localparam during elaboration (#7524) (#7534).
+* Fix nested parameterized class typedef chain (#7538). [Michael Rogenmoser]
 * Fix events in observed region (#7546). [Todd Strader]
 * Fix regression rejecting boolean `!x` inside sequence expressions (#7549) (#7551). [Yilou Wang]
 * Fix exponential expansion in V3Gate (#7550). [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error on consecutive repetition with N > 256 (#7552) (#7603). [Yilou Wang]
 * Fix display of %m in non-first argument (#7574).
 * Fix floating point compile warning on min/max delays.
+* Fix force of unpacked arrays (#7579) (#7580). [Zubin Jain]
+* Fix property argument retaining type of the previous variable (#7582). [Jakub Michalski]
+* Fix NBA to whole arrays (#7583) (#7575). [Geza Lore, Testorrent USA, Inc.]
+* Fix interface instance name collision (#7591) (#7593). [Stuart Morris]
+* Fix process comparison compile error with `--public-flat-rw` (#7592).
+* Fix CPU pinning when no 'core id' present (#7599). [Geza Lore, Testorrent USA, Inc.]
+* Fix clocking-block sample of unpacked array (#7612) (#7613). [Nikolai Kumar]
+* Fix type parameters order (#7615). [Kamil Danecki, Antmicro Ltd.]
+* Fix unique_index method on assoc arrays with values differing from the keys (#7616). [Pawel Klopotek]
+* Fix wide equality comparison in unpacked structs (#7618). [Geza Lore, Testorrent USA, Inc.]
+* Fix force determinism (#7620) (#7637). [Artur Bieniek, Antmicro Ltd.]
+* Fix reference counting for modport task references (#7628). [Nick Brereton]
+* Fix implicit conversions of VlWide (#7642). [Geza Lore, Testorrent USA, Inc.]
+* Fix CASEINCOMPLETE to not warn on `unique0 case` (#7647).
 
 
 Verilator 5.048 2026-04-26

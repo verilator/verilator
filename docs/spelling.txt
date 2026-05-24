@@ -180,8 +180,8 @@ Guo
 Gustafsson
 Güzel
 Hameed
-Hammoud
 Hamming
+Hammoud
 Hao
 Haojin
 Harboe
@@ -430,6 +430,7 @@ Sasselli
 Sauter
 Scharrer
 Schless
+Secturion
 Seitz
 Shahid
 Shahrestani
@@ -866,6 +867,7 @@ impot
 incdir
 includer
 incrementing
+inferable
 inferfaces
 informationals
 inhibitSim

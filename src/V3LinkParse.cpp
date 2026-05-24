@@ -416,7 +416,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Mark parameters declared inside interfaces
-        if (nodep->isParam() && m_inInterface) { nodep->isIfaceParam(true); }
+        if (nodep->isParam() && m_inInterface) nodep->isIfaceParam(true);
         if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNode* dtypep = nodep->valuep();

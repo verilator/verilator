@@ -382,6 +382,9 @@ List Of Warnings
    non-enumerated values (IEEE 1800-2023 12.5.3). Verilator checks that
    illegal values are not hit, unless :vlopt:`--no-assert-case` was used.
 
+   Unique0 case statements will never cause this warning. (Although unique0
+   should be avoided in synthesizable code as may result in latch behavior.)
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -1179,7 +1182,10 @@ List Of Warnings
 
    Warns that the code has a delayed assignment inside of an ``initial`` or
    ``final`` block. If this message is suppressed, Verilator will convert
-   this to a non-delayed assignment. See also :option:`COMBDLY`.
+   this to a non-delayed assignment. With :vlopt:`--timing`, delayed
+   assignments in ``initial`` blocks that also contain a `#` delay
+   control, or `@` even control statement are scheduled as
+   non-blocking assignments. See also :option:`COMBDLY`.
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.

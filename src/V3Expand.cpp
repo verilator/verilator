@@ -508,6 +508,9 @@ class ExpandVisitor final : public VNVisitor {
             // Sel is an LHS assignment select
         } else if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
+        } else if (VN_IS(nodep->fromp()->dtypep(), StreamDType)
+                   || VN_IS(nodep->fromp()->dtypep(), QueueDType)) {
+            //sel stream or queue
         } else if (nodep->fromp()->isWide()) {
             if (isImpure(nodep)) return;
             UINFO(8, "    SEL(wide) " << nodep);
@@ -962,7 +965,9 @@ class ExpandVisitor final : public VNVisitor {
     void visitEqNeq(AstNodeBiop* nodep) {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
-        if (nodep->lhsp()->isWide()) {
+        if (nodep->lhsp()->isWide()
+            && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)
+                 || VN_IS(nodep->rhsp()->dtypep()->skipRefp(), StreamDType))) {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
             if (!doExpandWide(nodep->rhsp())) return;

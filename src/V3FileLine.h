@@ -53,7 +53,7 @@ class FileLineSingleton final {
         VErrorBitSet m_ctrlEn;  // Enabled by control file
 
     public:
-        enum class Subset {
+        enum class Subset : uint8_t {
             CODE = 0,  // Selects m_codeEn, the enable bits used by in-code directives/metacomments
             CTRL = 1,  // Selects m_ctrlEn, the enable bits used by control files
         };

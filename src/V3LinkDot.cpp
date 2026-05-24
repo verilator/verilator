@@ -5454,7 +5454,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
 
-        if (packedArrayDtp) { m_packedArrayDtp = packedArrayDtp; }
+        if (packedArrayDtp) m_packedArrayDtp = packedArrayDtp;
     }
     void visit(AstMemberSel* nodep) override {
         // checkNoDot not appropriate, can be under a dot

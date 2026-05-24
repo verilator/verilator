@@ -185,7 +185,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
         AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
         AstTaskRef* killQueueCall = nullptr;
-        for (AstNode* itemp = v3Global.rootp()->stdPackageClassp()->stmtsp(); itemp;
+        for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
              itemp = itemp->nextp()) {
             if (itemp->name() == "killQueue") {
                 killQueueCall
@@ -194,7 +194,7 @@ class LinkJumpVisitor final : public VNVisitor {
             }
         }
         UASSERT(killQueueCall, "Should be found");
-        killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         return new AstStmtExpr{fl, killQueueCall};
     }
     static void prependStmtsp(AstNodeFTask* const nodep, AstNode* const stmtp) {
@@ -238,7 +238,8 @@ class LinkJumpVisitor final : public VNVisitor {
             fl, VVarType::VAR, m_queueNames.get(nodep->name()), VFlagChildDType{},
             new AstQueueDType{
                 fl, VFlagChildDType{},
-                new AstClassRefDType{fl, v3Global.rootp()->stdPackageClassp(), nullptr}, nullptr}};
+                new AstClassRefDType{fl, v3Global.rootp()->stdPackageProcessp(), nullptr},
+                nullptr}};
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
         processQueuep->processQueue(true);
         processQueuep->setIgnoreSchedWrite();

@@ -800,8 +800,8 @@ private:
         AstNodeDType* valp
             = v3Global.rootp()->typeTablep()->findBasicDType(flp, VBasicDTypeKwd::BIT);
         AstClassRefDType* keyp
-            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageClassp(), nullptr};
-        keyp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageProcessp(), nullptr};
+        keyp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         v3Global.rootp()->typeTablep()->addTypesp(keyp);
         AstAssocArrayDType* const typep = new AstAssocArrayDType{flp, valp, keyp};
         typep->dtypep(typep);
@@ -811,7 +811,7 @@ private:
     static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
         // Constructs refp.delete(std::process::self()) statement
         FileLine* const flp = refp->fileline();
-        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         AstCMethodHard* const deletep = new AstCMethodHard{
             flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
         deletep->dtypep(refp->findVoidDType());
@@ -819,7 +819,7 @@ private:
     }
     static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
         // Constructs refp.size() statement
-        refp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         AstCMethodHard* const sizep
             = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));

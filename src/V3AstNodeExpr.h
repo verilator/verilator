@@ -574,6 +574,32 @@ public:
 };
 
 // === AstNodeExpr ===
+class AstAbortOn final : public AstNodeExpr {
+    // IEEE 1800-2023 16.12.14: accept_on/reject_on/sync_accept_on/sync_reject_on
+    // (cond) prop. The four operators share an identical AST shape and lowering
+    // scaffolding -- VAbortKind selects between Accept/Reject verdict and
+    // Async/Sync sampling.
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := propp : AstNodeExpr
+    VAbortKind m_kind{VAbortKind::ACCEPT_ON};
+
+public:
+    AstAbortOn(FileLine* fl, VAbortKind kind, AstNodeExpr* condp, AstNodeExpr* propp)
+        : ASTGEN_SUPER_AbortOn(fl)
+        , m_kind{kind} {
+        this->condp(condp);
+        this->propp(propp);
+    }
+    ASTGEN_MEMBERS_AstAbortOn;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VAbortKind kind() const { return m_kind; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
+};
 class AstAddrOfCFunc final : public AstNodeExpr {
     // Get address of CFunc
     // @astgen ptr := m_funcp : AstCFunc  // Pointer to function itself
@@ -4847,7 +4873,7 @@ class AstWordSel final : public AstNodeSel {
 public:
     AstWordSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_WordSel(fl, fromp, bitp) {
-        dtypeSetUInt32();  // Always used on WData arrays so returns edata size
+        dtypeSetUInt32();  // Always used on VlWide arrays so returns EData size
     }
     ASTGEN_MEMBERS_AstWordSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -5303,7 +5329,7 @@ public:
 class AstAtoN final : public AstNodeUniop {
     // string.atoi(), atobin(), atohex(), atooct(), atoireal()
 public:
-    enum FmtType { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
+    enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
     const FmtType m_fmt;  // Operation type

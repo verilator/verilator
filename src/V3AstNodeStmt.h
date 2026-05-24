@@ -1455,7 +1455,7 @@ public:
     };
 
 private:
-    enum operation m_operation;
+    operation m_operation;
 
 public:
     AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,

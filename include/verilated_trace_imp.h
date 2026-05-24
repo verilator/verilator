@@ -602,11 +602,11 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newvalp, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, WDataInP newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newval[i];
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    emitWData(code, newvalp, bits);
+    emitWData(code, newval, bits);
 }
 
 template <>

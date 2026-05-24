@@ -113,6 +113,15 @@ Summary:
    In versions before 5.038, these were disabled by default, and `--assert`
    or `--assert-case` was required to enable case assertions.
 
+.. option:: --assert-unroll-limit <iterations>
+
+   Rarely needed. Specifies the maximum repetition or range count Verilator
+   will unroll inside an SVA concurrent assertion (e.g. ``[*N]``, ``[->M:N]``,
+   ``always[lo:hi]``). Beyond this, the assertion is rejected with an error
+   so that pathological counts do not blow up compile time or memory.
+
+   Defaults to 1024. Increase if a design needs larger repetition counts.
+
 .. option:: --autoflush
 
    After every $display or $fdisplay, flush the output stream. This ensures

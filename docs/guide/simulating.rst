@@ -262,6 +262,35 @@ the extracted coverage model:
 - ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
   arcs that would otherwise be skipped by the conservative extractor.
 
+State registers may also be wrapped by a transparent instance, for
+example a project flop wrapper or primitive. Such wrappers must be
+described explicitly with a VLT command file action before Verilator will
+use their data, state, clock, or reset connections for FSM extraction:
+
+.. code-block:: sv
+
+   `verilator_config
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i"
+
+The same command may be placed in a separate ``.vlt`` file:
+
+.. code-block:: sv
+
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i"
+
+Optional reset metadata may also be supplied:
+
+.. code-block:: sv
+
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" \
+      -reset "rst_ni" -reset_value "ResetValue"
+
+Reset arcs are emitted only when the configured reset port has an
+inferable edge in the wrapper and the configured reset value parameter is
+statically resolvable. If reset metadata is incomplete, Verilator warns
+and may still emit FSM state and transition coverage, but reset arcs are
+omitted.
+
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather
 than printing them alongside non-reset arcs. Use

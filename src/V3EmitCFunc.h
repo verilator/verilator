@@ -187,7 +187,6 @@ public:
     void emitDereference(AstNode* nodep, const string& pointer);
     std::string dereferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
-    void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
@@ -627,6 +626,15 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
+        } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)
+                   && (VN_IS(nodep->rhsp(), StreamL) || VN_IS(nodep->lhsp(), StreamL)
+                       || VN_IS(nodep->rhsp(), StreamR) || VN_IS(nodep->lhsp(), StreamR)
+                       || VN_IS(nodep->rhsp(), StreamR))) {
+            //if either side is streamL or streamR don't emit lhsp everything will be passed by
+            //reference
+
+            paren = false;
+
         } else {
             paren = false;
             iterateAndNextConstNull(nodep->lhsp());
@@ -723,15 +731,16 @@ public:
         iterateConst(nodep->fromp());
         putns(nodep, nodep->usePtr() ? "->" : ".");
         putns(nodep, nodep->name());
+        if (nodep->method() == VCMethod::FORCE_READ_SEL) {
+            emitIQW(nodep);
+            if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        }
         puts("(");
         bool comma = false;
         int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            // handle wide arguments to the queues
-            if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
-                emitCvtWideArray(subnodep, nodep->fromp());
-            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+            if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
                 // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
                 // apply protect() similar to VL_STOP to handle --protected flag
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
@@ -1595,6 +1604,33 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->srcp(), nodep->countp(), nullptr);
         }
     }
+    void emitStreamR(AstStreamR* nodep, AstNode* parent) {
+        //TODO: This might need to handle more cases like the visit(AstStreamR) function
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+    }
+    void visit(AstStreamR* nodep) override {
+        //The parrent node of our AstStreamR will give just enough info for what streamR should
+        //output if nodep->backp() is not the parent then emitStreamR should have been used. throw
+        //an error
+        bool backpIsParent = (nodep->backp()->op1p() == nodep || nodep->backp()->op2p() == nodep);
+        UASSERT(backpIsParent, "can not find return type for streamR");
+        if ((VN_IS(nodep->backp()->dtypep()->skipRefp(), QueueDType))) {
+            emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
+                       nodep->rhsp(), nullptr);
+        } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+            if (!((nodep->backp()->op1p() && nodep->backp()->op1p()->isWide())
+                  || (nodep->backp()->op2p() && nodep->backp()->op2p()->isWide()))) {
+                //If our lhsp is a queue make sure we streamR and return the correct type.
+                //If either side is wide or the previous node is string type dont use this case
+                emitOpName(nodep->backp(), "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)",
+                           nodep->lhsp(), nodep->rhsp(), nullptr);
+            } else {
+                emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+            }
+        } else {
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        }
+    }
     void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
@@ -1602,11 +1638,26 @@ public:
             const uint32_t sliceSize = VN_AS(nodep->rhsp(), Const)->toUInt();
             if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
                 putns(nodep, "VL_STREAML_FAST_");
-                emitIQW(nodep);
+                bool usesQueue = false;
+                AstQueueDType* qtypep
+                    = nodep->backp()->op2p()
+                          ? VN_CAST(nodep->backp()->op2p()->dtypep()->skipRefp(), QueueDType)
+                          : nullptr;
+                if (VN_IS(nodep->backp(), Assign)
+                    && qtypep) {  // If we are assigning to a queue then emit the correct symbol
+                    puts("R");  // R for queue
+                    usesQueue = true;
+                } else {
+                    emitIQW(nodep);
+                }
                 emitIQW(nodep->lhsp());
                 puts("I(");
                 puts(cvtToStr(nodep->lhsp()->widthMin()));
                 puts(", ");
+                if (usesQueue) {
+                    iterateAndNextConstNull(nodep->backp()->op2p());
+                    puts(", ");
+                }
                 iterateAndNextConstNull(nodep->lhsp());
                 puts(", ");
                 const uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
@@ -1614,7 +1665,18 @@ public:
                 return;
             }
         }
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        if (VN_IS(nodep->backp(), Assign)
+            && VN_IS(nodep->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
+            int queueWidth
+                = nodep->backp()->op2p()->dtypep()->subDTypep()->width();  //We need to know the
+                                                                           //width of both sides
+            emitOpName(nodep,
+                       "VL_STREAML_%nq%lq%rq(%lw," + std::to_string(queueWidth)
+                           + ", %P, %li, %ri)",
+                       nodep->lhsp(), nodep->rhsp(), nullptr);
+        } else {
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        }
     }
     void visit(AstCastDynamic* nodep) override {
         putnbs(nodep, "VL_CAST_DYNAMIC(");

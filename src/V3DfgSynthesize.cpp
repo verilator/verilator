@@ -1813,7 +1813,7 @@ class AstToDfgSynthesize final {
             if (!resolvedp) continue;
             // Add to map for next loop
             const bool newEntry = resolvedDrivers.emplace(&var, resolvedp).second;
-            UASSERT_OBJ(newEntry, &var, "Dupliacte driver");
+            UASSERT_OBJ(newEntry, &var, "Duplicate driver");
         }
         // Revert and remove drivers of multi-driven variables
         revert(m_ctx.m_synt.revertMultidrive);

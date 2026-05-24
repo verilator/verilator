@@ -32,6 +32,7 @@
 #include "V3UniqueNames.h"
 
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -188,6 +189,9 @@ class SvaNfaBuilder final {
     AstNodeModule* const m_modp;  // Module to receive hoisted sampled-prop temps
     V3UniqueNames& m_propTempNames;  // Module-shared temp-var name source
     std::vector<AstNodeExpr*> m_throughoutStack;  // Active throughout guards (IEEE 16.9.9)
+    // Outer abort conditions, AND-ed as !cond into inner abort edges
+    // (IEEE 1800-2023 16.12.14 outer-wraps-inner).
+    std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
 
     AstNodeExpr* throughoutCond(AstNodeExpr* baseCondp, FileLine* flp) {
@@ -307,6 +311,17 @@ class SvaNfaBuilder final {
     static AstNodeExpr* sampledRefOrClone(AstVar* hoistVarp, AstNodeExpr* exprp, FileLine* flp) {
         if (hoistVarp) return new AstVarRef{flp, hoistVarp, VAccess::READ};
         return sampled(exprp->cloneTreePure(false));
+    }
+
+    // Reject concurrent assertions whose unrolled vertex count would exceed
+    // --assert-unroll-limit, so a pathological count cannot blow up compile time.
+    static bool exceedsAssertUnrollLimit(AstNode* nodep, int requested) {
+        const int limit = v3Global.opt.assertUnrollLimit();
+        if (requested <= limit) return false;
+        nodep->v3error("Concurrent assertion repetition count "
+                       << requested << " exceeds --assert-unroll-limit (" << limit
+                       << "); raise '--assert-unroll-limit' to compile");
+        return true;
     }
 
     // Create vertex and inherit throughout guards from current scope (IEEE 16.9.9).
@@ -490,15 +505,6 @@ class SvaNfaBuilder final {
         }
         const int minN = getConstInt(repp->countp());
         UASSERT_OBJ(minN >= 0, repp, "ConsRep count must be non-negative (V3Width invariant)");
-        // Exact-repetition ConsRep is currently unrolled into minN vertices, so
-        // we cap minN to keep compile size bounded. An unbounded or ranged rep
-        // has already been rewritten to a counter-FSM path elsewhere.
-        constexpr int kConsRepLimit = 256;
-        // LCOV_EXCL_START -- compile-size guard; exercised only with >256-rep inputs
-        if (minN > kConsRepLimit && !repp->unbounded() && !repp->maxCountp()) {
-            return BuildResult::fail();
-        }
-        // LCOV_EXCL_STOP
 
         // Sum sites across prefix + unbounded/range tail so one hoist covers
         // every check edge of this repetition.
@@ -508,6 +514,7 @@ class SvaNfaBuilder final {
         } else if (repp->maxCountp()) {
             totalSites += getConstInt(repp->maxCountp()) - minN;
         }
+        if (exceedsAssertUnrollLimit(repp, totalSites)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, totalSites);
 
         SvaStateVertex* currentp = entryVtxp;
@@ -573,6 +580,7 @@ class SvaNfaBuilder final {
         const int lo = getConstInt(nodep->loBoundp());
         const int hi = getConstInt(nodep->hiBoundp());
         UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        if (exceedsAssertUnrollLimit(nodep, hi - lo + 1)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(propp, flp, hi - lo + 1);
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
         for (int k = 0; k <= hi - lo; ++k) {
@@ -598,6 +606,7 @@ class SvaNfaBuilder final {
         const bool hasMax = repp->maxCountp() != nullptr;
         const int maxN = hasMax ? getConstInt(repp->maxCountp()) : minN;
         UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
+        if (exceedsAssertUnrollLimit(repp, maxN)) return BuildResult::failWithError();
 
         // Wait + match per iter -> 2 sites per iteration; range form needs
         // sites for every iteration in [0..maxN). NOT($sampled(x)) matches
@@ -809,6 +818,73 @@ class SvaNfaBuilder final {
         return result;
     }
 
+    // IEEE 1800-2023 16.12.14 property abort operators. Sync and async share
+    // the same NFA encoding: AstSampled already gives matured values at every
+    // maturing clocking event, and async firing "between clocks" is not
+    // observable in a cycle-based model. VAbortKind selects accept vs reject
+    // verdict (sync vs async only changes the user-visible spelling).
+
+    // Build `condp && !outer_1 && !outer_2 ...` (unsampled).
+    AstNodeExpr* abortFireExpr(AstNodeExpr* condp, FileLine* flp) {
+        AstNodeExpr* resultp = condp->cloneTreePure(false);
+        for (AstNodeExpr* const op : m_outerAbortStack)
+            resultp = new AstAnd{flp, resultp, new AstLogNot{flp, op->cloneTreePure(false)}};
+        return resultp;
+    }
+
+    BuildResult buildAbortOn(AstNodeExpr* condp, AstNodeExpr* bodyp, SvaStateVertex* entryVtxp,
+                             VAbortKind kind, FileLine* flp) {
+        // Snapshot pre-body vertices so post-build diff yields the body's sub-NFA.
+        std::unordered_set<const V3GraphVertex*> preExisting;
+        for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
+
+        m_outerAbortStack.push_back(condp);
+        const BuildResult bodyResult = buildExpr(bodyp, entryVtxp, /*isTopLevelStep=*/false);
+        m_outerAbortStack.pop_back();
+        UASSERT_OBJ(bodyResult.valid(), bodyp, "abort body must be a valid SVA expression");
+
+        // Live-thread sources for the abort edge: entry + new body vertices,
+        // minus reject sinks (they carry reject fuel, not live-thread fuel).
+        std::vector<SvaStateVertex*> abortSources;
+        abortSources.push_back(entryVtxp);
+        for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
+            if (preExisting.count(&vtxr)) continue;
+            auto* const sp = static_cast<SvaStateVertex*>(&vtxr);
+            if (sp->m_isRejectSink) continue;
+            abortSources.push_back(sp);
+        }
+
+        auto sampledAbortFire = [&]() -> AstSampled* {
+            AstNodeExpr* const expr = abortFireExpr(condp, flp);
+            AstSampled* const sampp = new AstSampled{flp, expr};
+            sampp->dtypeFrom(expr);
+            return sampp;
+        };
+
+        if (kind.isAccept()) {
+            // Match-only sink fed by $sampled(abort-fire) from every live source;
+            // registered as midSource so it never contributes a reject. The body
+            // terminal is already in abortSources, so we don't fold abort-fire
+            // into bodyResult.finalCondp.
+            SvaStateVertex* const acceptSinkp = scopedCreateVertex();
+            for (SvaStateVertex* const srcp : abortSources)
+                guardedLink(srcp, acceptSinkp, sampledAbortFire(), flp);
+            std::vector<SvaStateVertex*> midSources = bodyResult.midSources;
+            midSources.push_back(acceptSinkp);
+            return {bodyResult.termVertexp, bodyResult.finalCondp, std::move(midSources)};
+        }
+
+        // rejectOnFail treats m_condp as the success condition and fires on
+        // !condp, so the edge carries !sampledAbortFire().
+        SvaStateVertex* const rejectSinkp = m_graph.createStateVertex();
+        rejectSinkp->m_isRejectSink = true;
+        for (SvaStateVertex* const srcp : abortSources)
+            m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()})
+                ->m_rejectOnFail
+                = true;
+        return bodyResult;
+    }
+
 public:
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames)
         : m_graph{graph}
@@ -819,6 +895,7 @@ public:
     void resetScope() {
         m_inUnboundedScope = false;
         m_throughoutStack.clear();
+        m_outerAbortStack.clear();
     }
 
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
@@ -863,6 +940,9 @@ public:
         }
         if (AstSWithin* const withinp = VN_CAST(nodep, SWithin)) {
             return buildSWithin(withinp, entryVtxp, isTopLevelStep);
+        }
+        if (AstAbortOn* const ap = VN_CAST(nodep, AbortOn)) {
+            return buildAbortOn(ap->condp(), ap->propp(), entryVtxp, ap->kind(), ap->fileline());
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
