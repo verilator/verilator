@@ -31,6 +31,7 @@ public:
     static void width(AstNetlist* nodep) VL_MT_DISABLED;
     static AstNode* widthParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     static AstNode* widthGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
+    static void clearTypeMap();
 
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel
