@@ -11,15 +11,17 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Exercise both user and generated coverage in a duplicated no-inline module;
-# the golden verifies forcePerInstance sees separate hierarchy counts.
-test.compile(v_flags2=["--assert --coverage-line --coverage-user t/t_cover_noinline_hier.cpp"],
+# Keep this paired with t_cover_hier_noinline.py: both tests use the same
+# source and golden so inline and no-inline coverage are checked for parity.
+test.compile(top_filename="t/t_cover_hier.v",
+             v_flags2=["+define+INLINE_CHILD --assert --coverage-line --coverage-user "
+                       "t/t_cover_hier.cpp"],
              verilator_flags2=["--exe --top-module t"],
              make_flags=['CPPFLAGS_ADD=-DTEST_OBJ_DIR="' + test.obj_dir + '"'],
              make_main=False)
 
 test.execute()
 
-test.files_identical_sorted(test.obj_dir + "/coverage.dat", "t/" + test.name + ".out")
+test.files_identical_sorted(test.obj_dir + "/coverage.dat", "t/t_cover_hier.out")
 
 test.passes()

@@ -27,9 +27,9 @@ int main(int argc, char** argv) {
         context.timeInc(1);
     }
 
-    // The regression checks that duplicate no-inline instances kept real
-    // counters, so forcePerInstance can split the same source coverage point
-    // by hierarchy at write time.
+    // The paired inline/no-inline regressions check that duplicate hierarchy
+    // instances keep real counters, so forcePerInstance can split the same
+    // source coverage point by hierarchy at write time.
     context.coveragep()->forcePerInstance(true);
     context.coveragep()->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage.dat");
 

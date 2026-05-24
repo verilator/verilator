@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Hierarchical user coverage in no-inline module instances
+// DESCRIPTION: Verilator: Hierarchical coverage in duplicate module instances
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -8,9 +8,13 @@ module child (
     input clk,
     input en,
     output reg seen
-); /* verilator no_inline_module */
+);
+`ifdef INLINE_CHILD  //verilator inline_module
+`else  //verilator no_inline_module
+`endif
+
   // The user cover and generated line/branch coverage below share one
-  // no-inline module body but must produce independent counters per instance.
+  // module body but must produce independent counters per instance.
   same_stmt:
     cover property (@(posedge clk) en);
 
