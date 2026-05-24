@@ -1,11 +1,11 @@
 # SystemC::Coverage-3
-C 'ft/t_cover_hier.vl19n5tuserpagev_user/childosame_stmtS19P1htop.t.u_a.same_stmt' 4
-C 'ft/t_cover_hier.vl19n5tuserpagev_user/childosame_stmtS19P1htop.t.u_b.same_stmt' 1
-C 'ft/t_cover_hier.vl21n3tlinepagev_line/childoblockS21P1htop.t.u_a' 9
-C 'ft/t_cover_hier.vl21n3tlinepagev_line/childoblockS21P1htop.t.u_b' 9
-C 'ft/t_cover_hier.vl22n5tbranchpagev_branch/childoifS22P1htop.t.u_a' 4
-C 'ft/t_cover_hier.vl22n5tbranchpagev_branch/childoifS22P1htop.t.u_b' 1
-C 'ft/t_cover_hier.vl22n6tbranchpagev_branch/childoelseP1htop.t.u_a' 5
-C 'ft/t_cover_hier.vl22n6tbranchpagev_branch/childoelseP1htop.t.u_b' 8
-C 'ft/t_cover_hier.vl29n19tlinepagev_line/toblockS29P1htop.t' 1
-C 'ft/t_cover_hier.vl50n3tlinepagev_line/toblockS50-51P1htop.t' 9
+C 'ft/t_cover_hier.vl19n5tuserpagev_user/childosame_stmtS19htop.t.u_a.same_stmt' 4
+C 'ft/t_cover_hier.vl19n5tuserpagev_user/childosame_stmtS19htop.t.u_b.same_stmt' 1
+C 'ft/t_cover_hier.vl21n3tlinepagev_line/childoblockS21htop.t.u_a' 9
+C 'ft/t_cover_hier.vl21n3tlinepagev_line/childoblockS21htop.t.u_b' 9
+C 'ft/t_cover_hier.vl22n5tbranchpagev_branch/childoifS22htop.t.u_a' 4
+C 'ft/t_cover_hier.vl22n5tbranchpagev_branch/childoifS22htop.t.u_b' 1
+C 'ft/t_cover_hier.vl22n6tbranchpagev_branch/childoelsehtop.t.u_a' 5
+C 'ft/t_cover_hier.vl22n6tbranchpagev_branch/childoelsehtop.t.u_b' 8
+C 'ft/t_cover_hier.vl29n19tlinepagev_line/toblockS29htop.t' 1
+C 'ft/t_cover_hier.vl50n3tlinepagev_line/toblockS50-51htop.t' 9

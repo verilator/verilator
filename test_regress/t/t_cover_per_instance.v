@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Coverage per-instance hierarchy for inline and no-inline module instances
+// DESCRIPTION: Verilator: Coverage per-instance hierarchy for duplicate module instances
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
@@ -7,22 +7,10 @@
 module child (
     input clk,
     input en
-); /* verilator no_inline_module */
-  reg [3:0] count = 0;
-
-  always @(posedge clk) begin
-    if (en) begin
-      count <= count + 1'b1;
-    end else begin
-      count <= count;
-    end
-  end
-endmodule
-
-module child_inline (
-    input clk,
-    input en
-); /* verilator inline_module */
+);
+`ifdef INLINE_CHILD  //verilator inline_module
+`else  //verilator no_inline_module
+`endif
   reg [3:0] count = 0;
 
   always @(posedge clk) begin
@@ -39,26 +27,16 @@ module t (
 );
   reg [3:0] cyc = 0;
 
-  // No-inline current behavior: counters are folded into u_a.
-  // True per-instance expected: u_a if=4 else=5, u_b if=1 else=8.
+  // Over 9 clock edges, u_a.en is true for cyc 0..3, so u_a should report
+  // if coverage of 4, else coverage of 5, and line coverage of 9.
   child u_a (
       .clk(clk),
       .en(cyc < 4)
   );
 
+  // u_b.en is true only for cyc 0, so u_b should report if coverage of 1,
+  // else coverage of 8, and line coverage of 9.
   child u_b (
-      .clk(clk),
-      .en(cyc == 0)
-  );
-
-  // Inline current behavior: counters are per instance.
-  // Expected: i_a if=4 else=5, i_b if=1 else=8.
-  child_inline i_a (
-      .clk(clk),
-      .en(cyc < 4)
-  );
-
-  child_inline i_b (
       .clk(clk),
       .en(cyc == 0)
   );
