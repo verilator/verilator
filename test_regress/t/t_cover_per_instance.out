@@ -1,0 +1,90 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Coverage per-instance hierarchy for duplicate module instances
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module child (
+            input clk,
+            input en
+        );
+        `ifdef INLINE_CHILD  //verilator inline_module
+        `else  //verilator no_inline_module
+        `endif
+%000001   reg [3:0] count = 0;
+-000001  point: type=line comment=block hier=tb.dut.u_a
+-000001  point: type=line comment=block hier=tb.dut.u_b
+        
+%000009   always @(posedge clk) begin
+-000009  point: type=line comment=block hier=tb.dut.u_a
+-000009  point: type=line comment=block hier=tb.dut.u_b
+%000008     if (en) begin
+-000004  point: type=branch comment=if hier=tb.dut.u_a
+-000001  point: type=branch comment=if hier=tb.dut.u_b
+-000005  point: type=branch comment=else hier=tb.dut.u_a
+-000008  point: type=branch comment=else hier=tb.dut.u_b
+%000004       count <= count + 1'b1;
+-000004  point: type=branch comment=if hier=tb.dut.u_a
+-000001  point: type=branch comment=if hier=tb.dut.u_b
+%000008     end else begin
+-000005  point: type=branch comment=else hier=tb.dut.u_a
+-000008  point: type=branch comment=else hier=tb.dut.u_b
+%000008       count <= count;
+-000005  point: type=branch comment=else hier=tb.dut.u_a
+-000008  point: type=branch comment=else hier=tb.dut.u_b
+            end
+          end
+        endmodule
+        
+        module t (
+            input clk
+        );
+%000001   reg [3:0] cyc = 0;
+-000001  point: type=line comment=block hier=tb.dut
+        
+          // Over 9 clock edges, u_a.en is true for cyc 0..3, so u_a should report
+          // if coverage of 4, else coverage of 5, and line coverage of 9.
+          child u_a (
+              .clk(clk),
+              .en(cyc < 4)
+          );
+        
+          // u_b.en is true only for cyc 0, so u_b should report if coverage of 1,
+          // else coverage of 8, and line coverage of 9.
+          child u_b (
+              .clk(clk),
+              .en(cyc == 0)
+          );
+        
+%000009   always @(posedge clk) begin
+-000009  point: type=line comment=block hier=tb.dut
+%000009     cyc <= cyc + 1'b1;
+-000009  point: type=line comment=block hier=tb.dut
+          end
+        endmodule
+        
+        module tb;
+%000001   reg clk = 0;
+-000001  point: type=line comment=block hier=tb
+        
+          t dut (
+              .clk(clk)
+          );
+        
+ 000017   always #1 clk = !clk;
++000017  point: type=line comment=block hier=tb
+        
+%000009   always @(posedge clk) begin
+-000009  point: type=line comment=block hier=tb
+%000008     if (dut.cyc == 8) begin
+-000001  point: type=branch comment=if hier=tb
+-000008  point: type=branch comment=else hier=tb
+%000001       $write("*-* All Finished *-*\n");
+-000001  point: type=branch comment=if hier=tb
+%000001       $finish;
+-000001  point: type=branch comment=if hier=tb
+            end
+          end
+        endmodule
+        
