@@ -199,9 +199,8 @@ class InstDeOrphanRewriter final : public VNVisitor {
             AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
             const int elems = arrp->elementsConst();
             for (int i = 0; i < elems; ++i) {
-                initp->addIndexValuep(
-                    static_cast<uint64_t>(i),
-                    buildPattern(flp, arrp->subDTypep(), perElem, idx, access));
+                initp->addIndexValuep(static_cast<uint64_t>(i),
+                                      buildPattern(flp, arrp->subDTypep(), perElem, idx, access));
             }
             return initp;
         }
@@ -215,9 +214,8 @@ class InstDeOrphanRewriter final : public VNVisitor {
         if (it == m_dearrayed.end()) return;
         if (isDearrayerHandled(nodep->backp())) return;
         size_t idx = 0;
-        AstNodeExpr* const newp
-            = buildPattern(nodep->fileline(), it->first->dtypep(), it->second, idx,
-                           nodep->access());
+        AstNodeExpr* const newp = buildPattern(nodep->fileline(), it->first->dtypep(), it->second,
+                                               idx, nodep->access());
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -790,9 +788,7 @@ public:
     explicit InstDeVisitor(AstNetlist* nodep) {
         iterate(nodep);
         // Skip when nothing was deleted; designs without iface arrays pay nothing.
-        if (!m_dearrayedIfaceVars.empty()) {
-            InstDeOrphanRewriter{nodep, m_dearrayedIfaceVars};
-        }
+        if (!m_dearrayedIfaceVars.empty()) { InstDeOrphanRewriter{nodep, m_dearrayedIfaceVars}; }
     }
     ~InstDeVisitor() override = default;
 };
