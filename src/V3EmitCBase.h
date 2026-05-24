@@ -27,12 +27,14 @@
 #include <cstdarg>
 
 //######################################################################
-// Set user4p in all CFunc and Var to point to the containing AstNodeModule
+// Set user4p in all CFunc, Var, and coverage declarations to point to the
+// containing AstNodeModule
 
 class EmitCParentModule final {
     // NODE STATE
-    //   AstFunc::user4p()      AstNodeModule* Parent module pointer
-    //   AstVar::user4p()       AstNodeModule* Parent module pointer
+    //   AstCFunc::user4p()          AstNodeModule* Parent module pointer
+    //   AstVar::user4p()            AstNodeModule* Parent module pointer
+    //   AstNodeCoverDecl::user4p()  AstNodeModule* Parent module pointer
     const VNUser4InUse user4InUse;
 
 public:

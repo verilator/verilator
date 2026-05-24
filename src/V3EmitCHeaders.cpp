@@ -36,6 +36,24 @@ class EmitCHeader final : public EmitCConstInit {
     V3UniqueNames m_names;
     // METHODS
 
+    class CoverCountVisitor final : public VNVisitorConst {
+        int m_bins = 0;
+
+        void visit(AstNodeCoverDecl* nodep) override {
+            // Each module class owns the counters for declarations it emits;
+            // duplicate no-inline instances need separate arrays for
+            // forcePerInstance reporting.
+            if (!nodep->dataDeclNullp()) m_bins += nodep->size();
+        }
+        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    public:
+        explicit CoverCountVisitor(const AstNodeModule* modp) {
+            iterateConst(const_cast<AstNodeModule*>(modp));
+        }
+        int bins() const { return m_bins; }
+    };
+
     void decorateFirst(bool& first, const string& str) {
         if (first) {
             putsDecoration(nullptr, str);
@@ -132,6 +150,15 @@ class EmitCHeader final : public EmitCConstInit {
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
             puts(EmitCUtil::symClassName() + "* vlSymsp;\n");
             puts("const char* vlNamep;\n");
+            // Allocate object-local coverage counters only on modules that
+            // contain emitted coverage declarations.
+            const int coverBins = CoverCountVisitor{modp}.bins();
+            if (coverBins) {
+                puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
+                puts(" __Vcoverage[");
+                puts(std::to_string(coverBins));
+                puts("]{};\n");
+            }
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -195,7 +222,8 @@ class EmitCHeader final : public EmitCConstInit {
             decorateFirst(first, section);
             puts("void __vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
                  "linescovp,\n");
             puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
@@ -206,7 +234,8 @@ class EmitCHeader final : public EmitCConstInit {
             decorateFirst(first, section);
             puts("void __vlCoverToggleInsert(int begin, int end, bool ranged, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp);\n");
         }
 

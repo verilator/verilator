@@ -40,7 +40,10 @@ class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     string m_page;  // Coverage point's page tag
     string m_text;  // Coverage point's text
     string m_hier;  // Coverage point's hierarchy
-    int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    int m_binNum = 0;  // Global coverage bin offset in the symbol table coverage array
+    // Coverage counters are emitted in each module object, so duplicate
+    // no-inline instances can keep independent counts for forcePerInstance.
+    int m_localBinNum = 0;  // Per-module coverage bin offset
 public:
     AstNodeCoverDecl(VNType t, FileLine* fl, const string& page, const string& comment)
         : AstNode(t, fl)
@@ -60,6 +63,8 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     int binNum() const { return m_binNum; }
     void binNum(int flag) { m_binNum = flag; }
+    int localBinNum() const { return m_localBinNum; }
+    void localBinNum(int flag) { m_localBinNum = flag; }
     virtual int size() const = 0;
     const string& comment() const { return m_text; }  // text to insert in code
     const string& page() const { return m_page; }
