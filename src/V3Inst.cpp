@@ -179,7 +179,7 @@ public:
 // new() arg, a function call arg, etc) by rebuilding an array literal over
 // the per-element vars. Runs once, only if anything was actually deleted.
 
-class InstDeOrphanRewriter final : public VNVisitor {
+class InstDeOrphanVisitor final : public VNVisitor {
     // STATE
     const std::unordered_map<AstVar*, std::vector<AstVar*>>& m_dearrayed;
 
@@ -192,7 +192,7 @@ class InstDeOrphanRewriter final : public VNVisitor {
     // Build a (possibly nested) InitArray matching dtp's array nesting; leaves
     // are VarRefs to perElem, consumed in flat row-major order.
     static AstNodeExpr* buildPattern(FileLine* flp, AstNodeDType* dtp,
-                                     const std::vector<AstVar*>& perElem, size_t& idx,
+                                     const std::vector<AstVar*>& perElem, size_t& idxr,
                                      const VAccess& access) {
         AstNodeDType* const skipDtp = dtp->skipRefp();
         if (AstUnpackArrayDType* const arrp = VN_CAST(skipDtp, UnpackArrayDType)) {
@@ -200,12 +200,12 @@ class InstDeOrphanRewriter final : public VNVisitor {
             const int elems = arrp->elementsConst();
             for (int i = 0; i < elems; ++i) {
                 initp->addIndexValuep(static_cast<uint64_t>(i),
-                                      buildPattern(flp, arrp->subDTypep(), perElem, idx, access));
+                                      buildPattern(flp, arrp->subDTypep(), perElem, idxr, access));
             }
             return initp;
         }
-        UASSERT(idx < perElem.size(), "buildPattern outran per-element vars");
-        return new AstVarRef{flp, perElem[idx++], access};
+        UASSERT(idxr < perElem.size(), "buildPattern outran per-element vars");
+        return new AstVarRef{flp, perElem[idxr++], access};
     }
 
     // VISITORS
@@ -222,12 +222,12 @@ class InstDeOrphanRewriter final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    InstDeOrphanRewriter(AstNode* rootp,
+    InstDeOrphanVisitor(AstNode* rootp,
                          const std::unordered_map<AstVar*, std::vector<AstVar*>>& dearrayed)
         : m_dearrayed{dearrayed} {
         iterate(rootp);
     }
-    ~InstDeOrphanRewriter() override = default;
+    ~InstDeOrphanVisitor() override = default;
 };
 
 //######################################################################
@@ -241,7 +241,7 @@ private:
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
     // Iface-array vars deleted by visit(AstCell), mapped to their per-element
     // replacements in row-major order. The post-pass uses this to fix up any
-    // leftover VarRefs (see InstDeOrphanRewriter).
+    // leftover VarRefs (see InstDeOrphanVisitor).
     std::unordered_map<AstVar*, std::vector<AstVar*>> m_dearrayedIfaceVars;
 
     // VISITORS
@@ -371,7 +371,7 @@ private:
                     varNewp->origName(varNewp->origName() + suffix);
                     varNewp->dtypep(ifaceRefp);
                     newp->addNextHere(varNewp);
-                    perElemVarps.push_back(varNewp);
+                    perElemVarps.emplace_back(varNewp);
                     if (debug() == 9) {
                         varNewp->dumpTree("-  newintf: ");
                         cout << '\n';
@@ -788,7 +788,7 @@ public:
     explicit InstDeVisitor(AstNetlist* nodep) {
         iterate(nodep);
         // Skip when nothing was deleted; designs without iface arrays pay nothing.
-        if (!m_dearrayedIfaceVars.empty()) { InstDeOrphanRewriter{nodep, m_dearrayedIfaceVars}; }
+        if (!m_dearrayedIfaceVars.empty()) { InstDeOrphanVisitor{nodep, m_dearrayedIfaceVars}; }
     }
     ~InstDeVisitor() override = default;
 };
