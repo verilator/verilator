@@ -2518,5 +2518,6 @@ void V3Fourstate::fourstateAll(AstNetlist* const netlistp) {
 void V3Fourstate::fourstateShuffleAll(AstNetlist* const netlistp) {
     UINFO(2, __FUNCTION__ << ":");
     { FourstateShuffleVisitor{netlistp}; }
+    v3Global.setFourstateShuffled();
     V3Global::dumpCheckGlobalTree("fourstateShuffle", 0, dumpTreeEitherLevel() >= 6);
 }

@@ -2410,6 +2410,16 @@ public:
                && !noCReset() && !(basicp() && basicp()->isEvent());
     }
     static AstVar* scVarRecurse(AstNode* nodep);
+    const char* broken() const override {
+        // TODO:
+        // BROKEN_RTN(v3Global.fourstateHandled() && dtypep()->isFourstate());
+        BROKEN_RTN(
+            v3Global.fourstateShuffled() && dtypep()->isWide()
+            && (isFourstateComplement()
+                || VString::endsWith(name(), "__Vxz")  // TODO: make this not a hard coded value
+                ));
+        return nullptr;
+    }
 };
 class AstVarScope final : public AstNode {
     // A particular scoped usage of a variable
