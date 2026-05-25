@@ -1542,7 +1542,7 @@ class VlTest:
             debugger_exec_cmd_end = ""
             if Args.gdbsim:
                 debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
-                debugger_exec_cmd_start = " -ex 'run "
+                debugger_exec_cmd_start = " -b -o 'run " if "lldb" in debugger else " -ex 'run "
                 debugger_exec_cmd_end = "'"
             cmd = [
                 run_env + debugger + 'vvp', debugger_exec_cmd_start,
@@ -1653,8 +1653,9 @@ class VlTest:
                 debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
             elif Args.rrsim:
                 debugger = "rr record "
+            run_flag = " -b -o " if "lldb" in debugger else " -ex "
             cmd = [
-                (run_env + debugger + param['executable'] + (" -ex 'run " if Args.gdbsim else "")),
+                (run_env + debugger + param['executable'] + (run_flag +"'run " if Args.gdbsim else "")),
                 *param['all_run_flags'],
                 ("'" if Args.gdbsim else ""),
             ]
@@ -2898,8 +2899,8 @@ def run_them() -> None:
 if __name__ == '__main__':
     os.environ['PYTHONUNBUFFERED'] = "1"
 
-    # GDB is broken on macOS
-    if platform.system() == "Darwin":
+    # GDB is broken on macOS but allow setting VERILATOR_GDB
+    if platform.system() == "Darwin" and VtOs.getenv_def('VERILATOR_GDB') is None:
         os.environ['VERILATOR_TEST_NO_GDB'] = "1"
 
     if ('VERILATOR_ROOT' not in os.environ) and os.path.isfile('../bin/verilator'):
