@@ -376,7 +376,8 @@ public:
     AstVarScope* findScopeVar(AstScope* scopep, const AstVar* varp) {
         ScopeVarCache& cache = m_scopeVarCaches[scopep];
         if (cache.empty()) {
-            for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            for (AstVarScope* vscp = scopep->varsp(); vscp;
+                 vscp = VN_AS(vscp->nextp(), VarScope)) {
                 cache.emplace(vscp->varp(), vscp);
             }
         }
