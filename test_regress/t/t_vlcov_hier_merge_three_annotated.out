@@ -1,0 +1,143 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Hierarchical coverage merge with three generated datasets
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module work_unit (
+%000007     input logic clk,
+%000001     input logic rst,
+%000004     input logic sel,
+%000004     input logic [2:0] value
+        );
+%000003   logic [2:0] acc;
+        
+%000007   always_ff @(posedge clk) begin
+%000002     if (rst) begin
+%000002       acc <= 3'b0;
+%000003     end else if (sel) begin
+%000003       acc <= acc + value;
+%000002     end else begin
+%000002       acc <= acc ^ value;
+            end
+          end
+        endmodule
+        
+        module mid_wrapper (
+%000007     input logic clk,
+%000001     input logic rst,
+%000004     input logic sel,
+%000004     input logic [2:0] value
+        );
+          work_unit u_work (
+              .clk(clk),
+              .rst(rst),
+              .sel(sel),
+              .value(value)
+          );
+        endmodule
+        
+        module other_unit (
+%000007     input logic clk,
+%000001     input logic rst,
+%000002     input logic enable,
+%000004     input logic [2:0] value
+        );
+%000002   logic [2:0] acc;
+        
+%000007   always_ff @(posedge clk) begin
+%000002     if (rst) begin
+%000002       acc <= 3'b0;
+%000003     end else if (enable && value[0]) begin
+%000003       acc <= acc + 3'd1;
+%000002     end else begin
+%000002       acc <= acc + 3'd2;
+            end
+          end
+        endmodule
+        
+        module tb_same_a;
+%000007   logic clk = 0;
+%000001   logic rst = 1;
+%000003   logic sel = 0;
+%000004   logic [2:0] value = 3'd1;
+%000001   int cyc = 0;
+        
+~000013   always #1 clk = !clk;
+        
+%000007   always_ff @(posedge clk) begin
+%000007     cyc <= cyc + 1;
+%000007     rst <= (cyc == 0);
+%000007     sel <= cyc[0];
+%000007     value <= value + 3'd1;
+%000006     if (cyc == 6) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+          work_unit u_work (
+              .clk(clk),
+              .rst(rst),
+              .sel(sel),
+              .value(value)
+          );
+        endmodule
+        
+        module tb_same_b;
+%000007   logic clk = 0;
+%000001   logic rst = 1;
+%000004   logic sel = 1;
+%000004   logic [2:0] value = 3'd3;
+%000001   int cyc = 0;
+        
+~000013   always #1 clk = !clk;
+        
+%000007   always_ff @(posedge clk) begin
+%000007     cyc <= cyc + 1;
+%000007     rst <= (cyc == 0);
+%000007     sel <= !sel;
+%000007     value <= value + 3'd2;
+%000006     if (cyc == 6) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+          mid_wrapper u_mid (
+              .clk(clk),
+              .rst(rst),
+              .sel(sel),
+              .value(value)
+          );
+        endmodule
+        
+        module tb_other;
+%000007   logic clk = 0;
+%000001   logic rst = 1;
+%000002   logic enable = 0;
+%000004   logic [2:0] value = 3'd5;
+%000001   int cyc = 0;
+        
+~000013   always #1 clk = !clk;
+        
+%000007   always_ff @(posedge clk) begin
+%000007     cyc <= cyc + 1;
+%000007     rst <= (cyc == 0);
+%000007     enable <= (cyc != 2);
+%000007     value <= value + 3'd1;
+%000006     if (cyc == 6) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+          other_unit u_other (
+              .clk(clk),
+              .rst(rst),
+              .enable(enable),
+              .value(value)
+          );
+        endmodule
+        

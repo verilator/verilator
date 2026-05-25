@@ -1,0 +1,7 @@
+Coverage Summary:
+  line      : 100.0% ( 33/ 33)
+  toggle    : 96.1% ( 98/102)
+  branch    : 100.0% (  6/  6)
+  expr      : 100.0% ( 11/ 11)
+  fsm_state : 0.0% (  0/  0)
+  fsm_arc   : 0.0% (  0/  0)

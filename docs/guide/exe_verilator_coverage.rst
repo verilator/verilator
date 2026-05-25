@@ -38,7 +38,13 @@ verilator_coverage Example Usage
 
    verilator_coverage --annotate obj_dir coverage.dat
 
+   verilator_coverage --report summary coverage.dat
+
+   verilator_coverage --report hier --levels 3 coverage.dat
+
    verilator_coverage --write merged.dat coverage.dat ...
+
+   verilator_coverage --hier-merge --write merged_hier.dat coverage.dat ...
 
    verilator_coverage --write-info merged.info coverage.dat ...
 
@@ -137,11 +143,25 @@ verilator_coverage Arguments
 
    Displays a help summary, the program version, and exits.
 
+.. option:: --hier-merge
+
+   With :option:`--write`, use strict instance-preserving merge semantics.
+   This requires concrete per-instance ``hier`` data, normally from a model
+   built with ``verilator --coverage-per-instance``. If input coverage
+   contains collapsed, wildcard, missing, or empty hierarchy data,
+   :command:`verilator_coverage` will report an error. Remove
+   :option:`--hier-merge` to perform the existing collapsed aggregate merge.
+
 .. option:: --include-reset-arcs
 
    Includes FSM reset arcs in the printed summaries and annotated output.
    By default, reset arcs are tracked but summarized separately from the
    non-reset FSM arcs.
+
+.. option:: --levels <depth>
+
+   With :option:`--report hierarchy`, limits displayed hierarchy depth.
+   Deeper descendants still roll up into the visible parent totals.
 
 .. option:: --rank
 
@@ -154,6 +174,15 @@ verilator_coverage Arguments
    "RankPts" indicates the number of coverage points this test will
    contribute to overall coverage if all tests are run in the order of
    highest to the lowest rank.
+
+.. option:: --report <kind>
+
+   Generates a human-consumable report. Supported report kinds are
+   ``summary``, ``hier``, and ``hierarchy``. ``summary`` is equivalent to the
+   default flat type summary. ``hier`` and ``hierarchy`` build a deterministic
+   hierarchy rollup from ``hier`` fields and warn when input data contains
+   collapsed wildcard hierarchy, as precise per-instance hierarchy reporting
+   requires data generated with ``verilator --coverage-per-instance``.
 
 .. option:: --unlink
 

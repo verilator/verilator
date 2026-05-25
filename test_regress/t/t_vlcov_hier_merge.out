@@ -1,0 +1,21 @@
+$ verilator_coverage --hier-merge t/t_cover_hier.out
+%Error: --hier-merge requires --write
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --hier-merge --write coverage.dat t/t_cover_lib__1.out
+%Error: --hier-merge requires concrete per-instance hierarchy, but input coverage file 't/t_cover_lib__1.out' contains collapsed or missing hier data.
+        To preserve per-instance hierarchy, re-run the simulation from a model
+        built with --coverage-per-instance, then re-run verilator_coverage
+        with --hier-merge.
+        To perform the existing collapsed aggregate merge instead, remove
+        --hier-merge and re-run verilator_coverage.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --hier-merge --write coverage.dat missing.dat
+%Error: --hier-merge requires concrete per-instance hierarchy, but input coverage file 'missing.dat' contains collapsed or missing hier data.
+        To preserve per-instance hierarchy, re-run the simulation from a model
+        built with --coverage-per-instance, then re-run verilator_coverage
+        with --hier-merge.
+        To perform the existing collapsed aggregate merge instead, remove
+        --hier-merge and re-run verilator_coverage.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

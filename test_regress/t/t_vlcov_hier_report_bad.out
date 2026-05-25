@@ -1,0 +1,11 @@
+$ verilator_coverage --report hierarchy t/t_vlcov_merge.out
+%Error: --report hierarchy requires coverage records with hier fields
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --report html t/t_cover_hier.out
+%Error: Invalid --report option: html
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --report hierarchy --levels -1 t/t_cover_hier.out
+%Error: --levels must be non-negative
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

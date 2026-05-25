@@ -25,12 +25,127 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 //######################################################################
+
+namespace {
+
+// File-local helpers for human-readable coverage summaries and the strict
+// hierarchy-preserving merge path.  They operate on VlcEncodedPointName's
+// parsed view of the encoded point name, but leave VlcPoint as the owner of raw
+// coverage counts and canonical .dat storage.
+using TypeTally = std::map<std::string, std::pair<uint64_t, uint64_t>>;
+
+string displayType(const VlcEncodedPointName& pointName) {
+    const string type = pointName.type();
+    return type.empty() ? "point" : type;
+}
+
+string reportHier(const VlcEncodedPointName& pointName) {
+    const string type = pointName.type();
+    if (type == "fsm_state" || type == "fsm_arc") {
+        // FSM records currently carry the instance-qualified variable path in
+        // Fv, while their hier field may name only TOP.  Use Fv to recover the
+        // instance node for hierarchy reports.
+        const string fsmVar = pointName.get(VL_CIK_FSM_VAR);
+        const string::size_type dot = fsmVar.rfind('.');
+        if (dot != string::npos) return fsmVar.substr(0, dot);
+    }
+    return pointName.hier();
+}
+
+std::vector<string> splitHier(const string& hier) {
+    std::vector<string> parts;
+    string part;
+    for (const char c : hier) {
+        if (c == '.') {
+            if (!part.empty()) parts.push_back(part);
+            part.clear();
+        } else {
+            part += c;
+        }
+    }
+    if (!part.empty()) parts.push_back(part);
+    return parts;
+}
+
+void tallyPoint(TypeTally& tally, const string& type, uint64_t count) {
+    std::pair<uint64_t, uint64_t>& entry = tally[type];
+    if (count > 0) ++entry.first;
+    ++entry.second;
+}
+
+void printTypeTally(const TypeTally& tally, const string& indent, bool includeOrderedZeros) {
+    static const char* const orderedTypes[]
+        = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
+    // The default flat summary historically prints the standard coverage types
+    // even when absent.  Per-node hierarchy output suppresses those empty rows.
+    std::set<std::string> printed;
+    size_t typeWidth = 0;
+    size_t countWidth = 0;
+    for (const char* const typep : orderedTypes) {
+        const string type = typep;
+        typeWidth = std::max(typeWidth, type.size());
+    }
+    countWidth = std::max(countWidth, cvtToStr(0).size());
+    for (const TypeTally::value_type& it : tally) {
+        typeWidth = std::max(typeWidth, it.first.size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
+        countWidth = std::max(countWidth, cvtToStr(it.second.second).size());
+    }
+    for (const char* const typep : orderedTypes) {
+        const string type = typep;
+        const TypeTally::const_iterator it = tally.find(type);
+        if (it == tally.end() && !includeOrderedZeros) continue;
+        printed.insert(type);
+        const uint64_t hit = it == tally.end() ? 0 : it->second.first;
+        const uint64_t total = it == tally.end() ? 0 : it->second.second;
+        const double pct
+            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+        std::cout << indent << std::left << std::setw(typeWidth) << type << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
+    for (const TypeTally::value_type& it : tally) {
+        if (printed.count(it.first)) continue;
+        const uint64_t hit = it.second.first;
+        const uint64_t total = it.second.second;
+        const double pct = 100.0 * static_cast<double>(hit) / static_cast<double>(total);
+        std::cout << indent << std::left << std::setw(typeWidth) << it.first << " : " << std::right
+                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
+                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    }
+}
+
+void reportHierarchyWarning(bool hasCollapsedHier) {
+    if (hasCollapsedHier) {
+        std::cerr << "%Warning: --report hierarchy input contains collapsed hierarchy paths.\n"
+                  << "          This report is not precise per-instance coverage.\n"
+                  << "          Re-run the simulation from a model built with "
+                     "--coverage-per-instance\n"
+                  << "          for precise hierarchy reporting.\n";
+    }
+}
+
+void requireConcreteHierForMerge(const string& filename, const VlcEncodedPointName& pointName) {
+    if (pointName.hasConcreteHier()) return;
+    v3fatal("--hier-merge requires concrete per-instance hierarchy, but input coverage file '"
+            << filename << "' contains collapsed or missing hier data.\n"
+            << "\n"
+            << "        To preserve per-instance hierarchy, re-run the simulation from a model\n"
+            << "        built with --coverage-per-instance, then re-run verilator_coverage\n"
+            << "        with --hier-merge.\n"
+            << "\n"
+            << "        To perform the existing collapsed aggregate merge instead, remove\n"
+            << "        --hier-merge and re-run verilator_coverage.");
+}
+
+}  // namespace
 
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2, "readCoverage " << filename);
@@ -58,7 +173,11 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
             const uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9, "   point '" << point << "'" << " " << hits);
 
-            const uint64_t pointnum = points().findAddPoint(point, hits);
+            const VlcEncodedPointName pointName = VlcEncodedPointName::parse(point);
+            if (opt.hierMerge()) requireConcreteHierForMerge(filename, pointName);
+            const string mergePoint = opt.hierMerge() ? pointName.canonicalName() : point;
+
+            const uint64_t pointnum = points().findAddPoint(mergePoint, hits);
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
                 if (hits >= VlcBuckets::sufficient()) {
                     points().pointNumber(pointnum).testsCoveringInc();
@@ -372,47 +491,55 @@ void VlcTop::annotate(const string& dirname) {
 }
 
 void VlcTop::printTypeSummary() {
-    static const std::vector<std::string> orderedTypes
-        = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
-    std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
+    TypeTally tally;
     for (const auto& i : m_points) {
         const VlcPoint& pt = m_points.pointNumber(i.second);
         const string type = pt.type().empty() ? "point" : pt.type();
-        auto& entry = tally[type];
-        if (pt.count() > 0) ++entry.first;
-        ++entry.second;
+        tallyPoint(tally, type, pt.count());
     }
     if (tally.empty()) return;
-    std::set<std::string> printed;
-    size_t typeWidth = 0;
-    size_t countWidth = 0;
-    for (const string& type : orderedTypes) typeWidth = std::max(typeWidth, type.size());
-    countWidth = std::max(countWidth, cvtToStr(0).size());
-    for (const auto& it : tally) {
-        typeWidth = std::max(typeWidth, it.first.size());
-        countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
-        countWidth = std::max(countWidth, cvtToStr(it.second.second).size());
-    }
     std::cout << "Coverage Summary:\n";
-    for (const string& type : orderedTypes) {
-        const auto it = tally.find(type);
-        printed.insert(type);
-        const uint64_t hit = (it == tally.end()) ? 0 : it->second.first;
-        const uint64_t total = (it == tally.end()) ? 0 : it->second.second;
-        const double pct
-            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
-        std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
-                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
-                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    printTypeTally(tally, "  ", true);
+}
+
+void VlcTop::printHierarchyReport() {
+    std::map<string, TypeTally> hierTallies;
+    std::map<string, TypeTally> duTallies;
+    bool hasHier = false;
+    bool hasCollapsedHier = false;
+    for (const VlcPoints::ByName::value_type& i : m_points) {
+        const VlcPoint& pt = m_points.pointNumber(i.second);
+        const VlcEncodedPointName pointName = pt.encodedName();
+        const string type = displayType(pointName);
+        const string hier = reportHier(pointName);
+        if (!pointName.hasHier()) continue;
+        hasHier = true;
+        if (pointName.hasCollapsedHier()) hasCollapsedHier = true;
+        const std::vector<string> parts = splitHier(hier);
+        string path;
+        for (const string& part : parts) {
+            path = path.empty() ? part : path + "." + part;
+            tallyPoint(hierTallies[path], type, pt.count());
+        }
+        const string du = pointName.duName();
+        if (!du.empty()) tallyPoint(duTallies[du], type, pt.count());
     }
-    for (const auto& it : tally) {
-        if (printed.count(it.first)) continue;
-        const uint64_t hit = it.second.first;
-        const uint64_t total = it.second.second;
-        const double pct
-            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
-        std::cout << "  " << std::left << std::setw(typeWidth) << it.first << " : " << std::right
-                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
-                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+
+    if (!hasHier) { v3fatal("--report hierarchy requires coverage records with hier fields"); }
+    reportHierarchyWarning(hasCollapsedHier);
+
+    const int levels = opt.reportLevels();
+    std::cout << "Hierarchy Coverage Summary:\n";
+    for (const std::map<string, TypeTally>::value_type& it : hierTallies) {
+        const std::vector<string> parts = splitHier(it.first);
+        if (levels && static_cast<int>(parts.size()) > levels) continue;
+        std::cout << "  " << it.first << "\n";
+        printTypeTally(it.second, "    ", false);
+    }
+    if (duTallies.empty()) return;
+    std::cout << "Design Unit Coverage Summary:\n";
+    for (const std::map<string, TypeTally>::value_type& it : duTallies) {
+        std::cout << "  " << it.first << "\n";
+        printTypeTally(it.second, "    ", false);
     }
 }

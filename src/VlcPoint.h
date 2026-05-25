@@ -22,6 +22,7 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -31,6 +32,89 @@
 #include "verilated_cov_key.h"
 
 #include "V3Error.h"
+
+//********************************************************************
+// VlcEncodedPointName - Parsed view of an encoded coverage point name
+//
+// Coverage .dat files store each point's identity as one encoded string, and
+// VlcPoint keeps that string as the canonical raw storage for compatibility.
+// This helper is a derived interpretation of that encoded name, used only when
+// callers need field-level semantics such as type/page/hier/FSM metadata.  It
+// also provides deterministic re-encoding for hierarchy-aware merge identity.
+// VlcPoint remains the serialized coverage record authority; this is not a new
+// on-disk record format.
+
+class VlcEncodedPointName final {
+    // MEMBERS
+    std::map<std::string, std::string> m_values;  //< Short key to decoded value
+
+    static string encodeKeyValue(const string& key, const string& value) {
+        return "\001" + key + "\002" + value;
+    }
+
+public:
+    // CONSTRUCTORS
+    VlcEncodedPointName() = default;
+    ~VlcEncodedPointName() = default;
+
+    // METHODS
+    static VlcEncodedPointName parse(const string& name) {
+        VlcEncodedPointName pointName;
+        for (const char* cp = name.c_str(); *cp; ++cp) {
+            if (*cp != '\001') continue;
+            const char* const keyp = cp + 1;
+            const char* sep = keyp;
+            while (*sep && *sep != '\002') ++sep;
+            if (!*sep) break;
+            const char* const valp = sep + 1;
+            const char* ep = valp;
+            while (*ep && *ep != '\001') ++ep;
+            pointName.m_values.emplace(string{keyp, static_cast<size_t>(sep - keyp)},
+                                       string{valp, static_cast<size_t>(ep - valp)});
+            cp = ep - 1;
+        }
+        return pointName;
+    }
+    bool has(const string& shortKey) const { return m_values.find(shortKey) != m_values.end(); }
+    string get(const string& shortKey) const {
+        const std::map<std::string, std::string>::const_iterator it = m_values.find(shortKey);
+        return it == m_values.end() ? "" : it->second;
+    }
+    string type() const { return get(VL_CIK_TYPE); }
+    string hier() const { return get(VL_CIK_HIER); }
+    string page() const { return get("page"); }
+    string duName() const {
+        const string pageName = page();
+        const string::size_type slash = pageName.find('/');
+        return slash == string::npos ? pageName : pageName.substr(slash + 1);
+    }
+    bool hasHier() const { return has(VL_CIK_HIER) && !hier().empty(); }
+    bool hasCollapsedHier() const {
+        const string hierName = hier();
+        return hierName.find('*') != string::npos || hierName.find('?') != string::npos;
+    }
+    bool hasConcreteHier() const { return hasHier() && !hasCollapsedHier(); }
+    string canonicalName() const {
+        string out;
+        static const char* const orderedKeys[] = {
+            VL_CIK_FILENAME, VL_CIK_LINENO,   VL_CIK_COLUMN,       VL_CIK_TYPE,    "page",
+            VL_CIK_COMMENT,  VL_CIK_LINESCOV, VL_CIK_PER_INSTANCE, VL_CIK_THRESH,  VL_CIK_WEIGHT,
+            VL_CIK_FSM_VAR,  VL_CIK_FSM_FROM, VL_CIK_FSM_TO,       VL_CIK_FSM_TAG, VL_CIK_HIER};
+        std::set<string> emitted;
+        for (const char* const shortKeyp : orderedKeys) {
+            const string shortKey = shortKeyp;
+            const std::map<std::string, std::string>::const_iterator it = m_values.find(shortKey);
+            if (it == m_values.end()) continue;
+            out += encodeKeyValue(it->first, it->second);
+            emitted.insert(it->first);
+        }
+        for (const std::map<std::string, std::string>::value_type& it : m_values) {
+            if (emitted.count(it.first)) continue;
+            out += encodeKeyValue(it.first, it.second);
+        }
+        return out;
+    }
+};
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)
@@ -64,7 +148,10 @@ public:
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
+    string page() const { return keyExtract("page", m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
+    string perInstance() const { return keyExtract(VL_CIK_PER_INSTANCE, m_name.c_str()); }
+    string weight() const { return keyExtract(VL_CIK_WEIGHT, m_name.c_str()); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
@@ -91,6 +178,7 @@ public:
         return std::atoi(columnStr.c_str());
     }
     // METHODS
+    VlcEncodedPointName encodedName() const { return VlcEncodedPointName::parse(m_name); }
     static string typeExtract(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
     static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
