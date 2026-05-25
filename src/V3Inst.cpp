@@ -223,7 +223,7 @@ class InstDeOrphanVisitor final : public VNVisitor {
 
 public:
     InstDeOrphanVisitor(AstNode* rootp,
-                         const std::unordered_map<AstVar*, std::vector<AstVar*>>& dearrayed)
+                        const std::unordered_map<AstVar*, std::vector<AstVar*>>& dearrayed)
         : m_dearrayed{dearrayed} {
         iterate(rootp);
     }
