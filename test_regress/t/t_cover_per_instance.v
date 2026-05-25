@@ -4,14 +4,16 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module child (
+module child #(
+    parameter int WIDTH = 1
+) (
     input clk,
     input en
 );
 `ifdef INLINE_CHILD  //verilator inline_module
 `else  //verilator no_inline_module
 `endif
-  reg [3:0] count = 0;
+  reg [WIDTH-1:0] count = '0;
 
   always @(posedge clk) begin
     if (en) begin
@@ -39,6 +41,15 @@ module t (
   child u_b (
       .clk(clk),
       .en(cyc == 0)
+  );
+
+  // Parameterized u_wide should preserve a useful per-instance hierarchy and
+  // parameter-specialized coverage bucket for downstream coverage tools.
+  child #(
+      .WIDTH(3)
+  ) u_wide (
+      .clk(clk),
+      .en(cyc < 2)
   );
 
   always @(posedge clk) begin

@@ -5,34 +5,43 @@
         // SPDX-FileCopyrightText: 2026 Wilson Snyder
         // SPDX-License-Identifier: CC0-1.0
         
-        module child (
+        module child #(
+            parameter int WIDTH = 1
+        ) (
             input clk,
             input en
         );
         `ifdef INLINE_CHILD  //verilator inline_module
         `else  //verilator no_inline_module
         `endif
-%000001   reg [3:0] count = 0;
+%000001   reg [WIDTH-1:0] count = '0;
 -000001  point: type=line comment=block hier=tb.dut.u_a
 -000001  point: type=line comment=block hier=tb.dut.u_b
+-000001  point: type=line comment=block hier=tb.dut.u_wide
         
 %000009   always @(posedge clk) begin
 -000009  point: type=line comment=block hier=tb.dut.u_a
 -000009  point: type=line comment=block hier=tb.dut.u_b
+-000009  point: type=line comment=block hier=tb.dut.u_wide
 %000008     if (en) begin
 -000004  point: type=branch comment=if hier=tb.dut.u_a
 -000001  point: type=branch comment=if hier=tb.dut.u_b
+-000002  point: type=branch comment=if hier=tb.dut.u_wide
 -000005  point: type=branch comment=else hier=tb.dut.u_a
 -000008  point: type=branch comment=else hier=tb.dut.u_b
+-000007  point: type=branch comment=else hier=tb.dut.u_wide
 %000004       count <= count + 1'b1;
 -000004  point: type=branch comment=if hier=tb.dut.u_a
 -000001  point: type=branch comment=if hier=tb.dut.u_b
+-000002  point: type=branch comment=if hier=tb.dut.u_wide
 %000008     end else begin
 -000005  point: type=branch comment=else hier=tb.dut.u_a
 -000008  point: type=branch comment=else hier=tb.dut.u_b
+-000007  point: type=branch comment=else hier=tb.dut.u_wide
 %000008       count <= count;
 -000005  point: type=branch comment=else hier=tb.dut.u_a
 -000008  point: type=branch comment=else hier=tb.dut.u_b
+-000007  point: type=branch comment=else hier=tb.dut.u_wide
             end
           end
         endmodule
@@ -55,6 +64,15 @@
           child u_b (
               .clk(clk),
               .en(cyc == 0)
+          );
+        
+          // Parameterized u_wide should preserve a useful per-instance hierarchy and
+          // parameter-specialized coverage bucket for downstream coverage tools.
+          child #(
+              .WIDTH(3)
+          ) u_wide (
+              .clk(clk),
+              .en(cyc < 2)
           );
         
 %000009   always @(posedge clk) begin
