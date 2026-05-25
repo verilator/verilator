@@ -2001,6 +2001,7 @@ class AssertNfaVisitor final : public VNVisitor {
         }
         refp->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
+        return;
     }
 
     // Recursively walk a consequent. Returns cycle length consumed and
