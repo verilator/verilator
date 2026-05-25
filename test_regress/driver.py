@@ -1655,7 +1655,8 @@ class VlTest:
                 debugger = "rr record "
             run_flag = " -b -o " if "lldb" in debugger else " -ex "
             cmd = [
-                (run_env + debugger + param['executable'] + (run_flag +"'run " if Args.gdbsim else "")),
+                (run_env + debugger + param['executable'] +
+                (run_flag + "'run " if Args.gdbsim else "")),
                 *param['all_run_flags'],
                 ("'" if Args.gdbsim else ""),
             ]
