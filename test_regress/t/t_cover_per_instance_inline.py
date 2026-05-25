@@ -28,6 +28,8 @@ test.execute(all_run_flags=[" +verilator+coverage+file+" + test.obj_dir + "/cove
 
 cov = test.obj_dir + "/coverage.dat"
 
+test.files_identical(cov, "t/t_cover_per_instance.dat.out")
+
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate-points",
