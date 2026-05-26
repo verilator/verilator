@@ -809,6 +809,110 @@ class SvaNfaBuilder final {
         return result;
     }
 
+    // until / until_with (weak forms only) per IEEE 1800-2023 16.12.12.
+    // Topology: combinational wait vertex with self-feeding state register.
+    //   entry  --link[T]--> waitC
+    //   waitR  --link[T]--> waitC                          (back-loop)
+    //   waitC  --edge[##1, sampled(p) && !sampled(q)]--> waitR  (continue)
+    //   waitC  --link[REQUIRE, rejectOnFail]--> sink            (per-cycle fail)
+    //   waitC  --link[T]--> match  (added by wireMatchAndMidSources;
+    //                               accept condition rides via finalCondp)
+    // waitC is m_isUnbounded so the terminal-match link contributes only to
+    // terminalActive, not to rejectBase (which would otherwise spuriously fire
+    // every cycle q is false). Per-cycle reject comes from the explicit
+    // rejectOnFail link to the sink vertex.
+    //
+    // Weak non-overlapping (p until q):
+    //   REQUIRE = sampled(p) || sampled(q)   accept = sampled(q)
+    // Weak overlapping (p until_with q):
+    //   REQUIRE = sampled(p)                 accept = sampled(p) && sampled(q)
+    BuildResult buildUntil(AstUntil* nodep, SvaStateVertex* entryVtxp, bool isTopLevelStep) {
+        FileLine* const flp = nodep->fileline();
+        if (!isTopLevelStep) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            return BuildResult::failWithError();
+        }
+        if (nodep->isStrong()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_until"
+                                             << (nodep->isOverlapping() ? "_with" : "")
+                                             << " (in property expresion)");
+            return BuildResult::failWithError();
+        }
+        AstNodeExpr* const lhsp = nodep->lhsp();
+        AstNodeExpr* const rhsp = nodep->rhsp();
+        const auto hasSeq = [](const AstNodeExpr* ep) {
+            return ep->exists([](const AstNodeExpr* np) { return np->isMultiCycleSva(); });
+        };
+        if (hasSeq(lhsp) || hasSeq(rhsp)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            return BuildResult::failWithError();
+        }
+
+        const bool ov = nodep->isOverlapping();
+        // V3Width's iterateCheckBool leaves unsized constants (e.g. literal `0`
+        // and `1` in `0 until 1`) at their nominal 32-bit dtype. Coerce both
+        // operands to bit via reduction-OR in-place so hoist-temp assignments
+        // and downstream Link conds stay width-clean.
+        if (lhsp->width() != 1) {
+            AstNodeExpr* const wp = lhsp->unlinkFrBack();
+            AstRedOr* const orp = new AstRedOr{wp->fileline(), wp};
+            orp->dtypeSetBit();
+            nodep->lhsp(orp);
+        }
+        if (rhsp->width() != 1) {
+            AstNodeExpr* const wp = rhsp->unlinkFrBack();
+            AstRedOr* const orp = new AstRedOr{wp->fileline(), wp};
+            orp->dtypeSetBit();
+            nodep->rhsp(orp);
+        }
+        AstNodeExpr* const lhsBitp = nodep->lhsp();
+        AstNodeExpr* const rhsBitp = nodep->rhsp();
+        // p hoist count: continue, require (ov: 1 use; nov: 1 use). At least 2 uses.
+        AstVar* const pHoistp = tryHoistSampled(lhsBitp, flp, 2);
+        // q hoist count: continue (1) + require nov (1) = 2; ov: continue only (1).
+        AstVar* const qHoistp = ov ? nullptr : tryHoistSampled(rhsBitp, flp, 2);
+
+        SvaStateVertex* const waitCp = scopedCreateVertex();
+        SvaStateVertex* const waitRp = scopedCreateVertex();
+        waitCp->m_isUnbounded = true;
+
+        // Entry and back-loop Links carry no condition; throughout-folding still applies.
+        guardedLink(entryVtxp, waitCp, flp);
+        guardedLink(waitRp, waitCp, flp);
+
+        // Continue clocked edge: p && !q advances to next-cycle wait.
+        AstNodeExpr* const contCondp
+            = new AstAnd{flp, sampledRefOrClone(pHoistp, lhsBitp, flp),
+                         new AstNot{flp, sampledRefOrClone(qHoistp, rhsBitp, flp)}};
+        contCondp->dtypeSetBit();
+        guardedEdge(waitCp, waitRp, contCondp, flp);
+
+        // Reject sink: fires when require-condition is false.
+        SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+        sinkVtxp->m_isRejectSink = true;
+        AstNodeExpr* requireCondp;
+        if (ov) {
+            requireCondp = sampledRefOrClone(pHoistp, lhsBitp, flp);
+        } else {
+            requireCondp = new AstOr{flp, sampledRefOrClone(pHoistp, lhsBitp, flp),
+                                     sampledRefOrClone(qHoistp, rhsBitp, flp)};
+            requireCondp->dtypeSetBit();
+        }
+        SvaTransEdge* const rejEdgep = m_graph.addLink(waitCp, sinkVtxp, requireCondp);
+        rejEdgep->m_rejectOnFail = true;
+
+        // Accept condition rides via finalCondp; assembleResult $sampled-wraps it.
+        AstNodeExpr* acceptCondp;
+        if (ov) {
+            acceptCondp
+                = new AstAnd{flp, lhsBitp->cloneTreePure(false), rhsBitp->cloneTreePure(false)};
+            acceptCondp->dtypeSetBit();
+        } else {
+            acceptCondp = rhsBitp->cloneTreePure(false);
+        }
+        return {waitCp, acceptCondp, {}};
+    }
+
 public:
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames)
         : m_graph{graph}
@@ -869,6 +973,9 @@ public:
             return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
                                          implp->isOverlapped(), implp->isFollowedBy(),
                                          implp->lhsp(), implp->fileline());
+        }
+        if (AstUntil* const untilp = VN_CAST(nodep, Until)) {
+            return buildUntil(untilp, entryVtxp, isTopLevelStep);
         }
         // Boolean leaf (including LogAnd): return as finalCond
         return {entryVtxp, nodep, {}};
@@ -1774,6 +1881,28 @@ class AssertNfaVisitor final : public VNVisitor {
         });
     }
 
+    // Bare `assert property (p until q)` with boolean operands stays on
+    // V3AssertPre's AstLoop lowering, which preserves per-attempt action-block
+    // firings that this NFA's single-bit aggregated state cannot. NFA still
+    // owns strong forms, sequence operands, and any embedding inside a
+    // multi-cycle context (implication consequent, or/and operands, etc.).
+    static bool isBareTopLevelUntil(AstNode* propp) {
+        AstNode* p = propp;
+        if (AstPropSpec* const specp = VN_CAST(p, PropSpec)) p = specp->propp();
+        while (AstLogNot* const notp = VN_CAST(p, LogNot)) p = notp->lhsp();
+        AstUntil* const untilp = VN_CAST(p, Until);
+        if (!untilp) return false;
+        if (untilp->isStrong()) return false;
+        const auto hasSeq = [](const AstNode* ep) {
+            return ep->exists([](const AstNode* np) {
+                if (const auto* const nep = VN_CAST(np, NodeExpr)) return nep->isMultiCycleSva();
+                return false;
+            });
+        };
+        if (hasSeq(untilp->lhsp()) || hasSeq(untilp->rhsp())) return false;
+        return true;
+    }
+
     struct PropertyParts final {
         AstNodeExpr* triggerExprp = nullptr;
         AstNodeExpr* seqExprp = nullptr;
@@ -1920,6 +2049,7 @@ class AssertNfaVisitor final : public VNVisitor {
 
         AstNode* const propp = assertp->propp();
         if (!hasMultiCycleExpr(propp)) return;
+        if (isBareTopLevelUntil(propp)) return;
 
         const PropertyParts parts = decomposeProperty(propp);
         UASSERT_OBJ(parts.seqExprp, propp, "Property body must be an expression");
