@@ -413,7 +413,7 @@ protected:
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
         std::string m_coverageFilename;  // +coverage+file filename
-        std::string m_logFilename;       // +log+file filename
+        std::string m_logFilename;  // +log+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
@@ -423,9 +423,9 @@ protected:
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
         // +verilator+log+file filename
-        int m_stdoutFD; // Duplicated stdout file descriptor
-        int m_stderrFD; // Duplicated stderr file descriptor
-        int m_logFD;    // Log file descriptor
+        int m_stdoutFD;  // Duplicated stdout file descriptor
+        int m_stderrFD;  // Duplicated stderr file descriptor
+        int m_logFD;  // Log file descriptor
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
