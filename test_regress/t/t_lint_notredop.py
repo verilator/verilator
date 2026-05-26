@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(top_filename="t/t_lint_notredop_bad.v",
-          verilator_flags2=["-Wno-NOTREDOP"])
+test.lint(top_filename="t/t_lint_notredop_bad.v", verilator_flags2=["-Wno-NOTREDOP"])
 
 test.passes()

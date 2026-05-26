@@ -270,8 +270,8 @@ public:
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
                 || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == HIERPARAM
-                || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
-                || m_e == NOTREDOP || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING || m_e == NOTREDOP
+                || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
                 || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS || m_e == SUPERNFIRST
                 || m_e == ZEROREPL);
     }

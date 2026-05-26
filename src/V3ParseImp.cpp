@@ -847,11 +847,10 @@ int V3ParseImp::tokenToBison() {
     if (m_tokenLastBison.token == '!'
         && (yylval.token == '&' || yylval.token == '|' || yylval.token == '^'
             || yylval.token == yP_NAND || yylval.token == yP_NOR || yylval.token == yP_XNOR)) {
-        m_tokenLastBison.fl->v3warn(
-            NOTREDOP,
-            "Logical not directly before reduction operator is illegal\n"
-                << m_tokenLastBison.fl->warnMore()
-                << "... Suggest use parentheses, e.g. '!(|expr)'");
+        m_tokenLastBison.fl->v3warn(NOTREDOP,
+                                    "Logical not directly before reduction operator is illegal\n"
+                                        << m_tokenLastBison.fl->warnMore()
+                                        << "... Suggest use parentheses, e.g. '!(|expr)'");
     }
     m_tokenLastBison = yylval;
 

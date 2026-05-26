@@ -399,16 +399,16 @@ class UndrivenVisitor final : public VNVisitorConst {
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
                 V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
-            nodep->v3warn(
-                ALWCOMBORDER,
-                "always_comb reads " << nodep->prettyNameQ()
-                                      << " before assigning it later in the same block; behavior "
-                                         "may imply latch/state-like behavior and is not purely "
-                                         "combinational"
-                                      << (readp ? "\n" + readp->warnOther()
-                                                     + "... Location of earlier read\n"
-                                                     + readp->warnContextSecondary()
-                                               : ""));
+            nodep->v3warn(ALWCOMBORDER,
+                          "always_comb reads "
+                              << nodep->prettyNameQ()
+                              << " before assigning it later in the same block; behavior "
+                                 "may imply latch/state-like behavior and is not purely "
+                                 "combinational"
+                              << (readp ? "\n" + readp->warnOther()
+                                              + "... Location of earlier read\n"
+                                              + readp->warnContextSecondary()
+                                        : ""));
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
                                             true);  // Complain just once for any usage
         }
