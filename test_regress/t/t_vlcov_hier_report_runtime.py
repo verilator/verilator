@@ -52,12 +52,12 @@ test.run(cmd=[
          tee=False,
          verilator_run=True)
 
-with open(combined_log, "w") as out:
+with open(combined_log, "w", encoding="utf-8") as out:
     out.write("$ verilator_coverage --report summary coverage.dat\n")
-    with open(summary_log) as fh:
+    with open(summary_log, encoding="utf-8") as fh:
         out.write(fh.read())
     out.write("\n$ verilator_coverage --report hierarchy --levels 3 coverage.dat\n")
-    with open(hier_log) as fh:
+    with open(hier_log, encoding="utf-8") as fh:
         out.write(fh.read())
 
 test.files_identical(combined_log, test.golden_filename)

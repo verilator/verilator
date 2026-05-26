@@ -17,7 +17,8 @@ vlcov = os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage"
 log = test.obj_dir + "/vlcov.log"
 tmp_log = test.obj_dir + "/vlcov.tmp"
 
-open(log, "w").close()
+with open(log, "w", encoding="utf-8"):
+    pass
 
 test.run(cmd=[
     vlcov,
@@ -31,7 +32,7 @@ test.run(cmd=[
 test.files_identical_sorted(test.obj_dir + "/coverage.dat", "t/t_cover_hier.out")
 
 extra_cov = test.obj_dir + "/extra_key.dat"
-with open(extra_cov, "w") as fh:
+with open(extra_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     # Verify --hier-merge preserves deterministic identity when a coverage
     # point contains an unknown encoded key. Known keys should be emitted in
@@ -49,7 +50,7 @@ test.run(cmd=[
          verilator_run=True)
 
 extra_expected = test.obj_dir + "/extra_key_expected.dat"
-with open(extra_expected, "w") as fh:
+with open(extra_expected, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     fh.write("C '\001f\002t/edge.v\001l\0021\001t\002line\001page\002v_line/edge"
              "\001h\002top.u\001Z\002extra' 1\n")
@@ -57,7 +58,7 @@ with open(extra_expected, "w") as fh:
 test.files_identical(test.obj_dir + "/extra_key_merged.dat", extra_expected)
 
 missing_cov = test.obj_dir + "/missing.dat"
-with open(missing_cov, "w") as fh:
+with open(missing_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     # --hier-merge must reject missing hierarchy just as strictly as collapsed
     # hierarchy, because there is no instance identity to preserve.
@@ -65,17 +66,17 @@ with open(missing_cov, "w") as fh:
 
 
 def append_bad_log(label, cmd):
-    with open(log, "a") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         if log_fh.tell():
             log_fh.write("\n")
         log_fh.write("$ " + label + "\n")
 
     test.run(cmd=cmd, logfile=tmp_log, fails=True, tee=False, verilator_run=True)
 
-    with open(tmp_log) as in_fh:
+    with open(tmp_log, encoding="utf-8") as in_fh:
         text = in_fh.read()
     text = re.sub(r"verilator_doc[.]html[?]v=[^ ]+", "verilator_doc.html?v=latest", text)
-    with open(log, "a") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         log_fh.write(text)
 
 

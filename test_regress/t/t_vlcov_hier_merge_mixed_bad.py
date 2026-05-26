@@ -90,10 +90,10 @@ test.run(cmd=[
          verilator_run=True)
 
 normalized = test.obj_dir + "/vlcov_normalized.log"
-with open(test.run_log_filename) as in_fh:
+with open(test.run_log_filename, encoding="utf-8") as in_fh:
     text = in_fh.read()
 text = re.sub(r"verilator_doc[.]html[?]v=[^ ]+", "verilator_doc.html?v=latest", text)
-with open(normalized, "w") as out_fh:
+with open(normalized, "w", encoding="utf-8") as out_fh:
     out_fh.write(text)
 
 test.files_identical(normalized, test.golden_filename)

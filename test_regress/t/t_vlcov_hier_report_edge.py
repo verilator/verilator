@@ -13,7 +13,7 @@ test.scenarios('dist')
 
 edge_cov = test.obj_dir + "/edge.dat"
 no_du_cov = test.obj_dir + "/no_du.dat"
-with open(edge_cov, "w") as fh:
+with open(edge_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     # Exercise hierarchy-report edge cases that are awkward to generate from a
     # normal Verilated model but still need stable consumer behavior.  Use
@@ -54,7 +54,7 @@ with open(edge_cov, "w") as fh:
     fh.write("C '\001f\002t/soc.v\001l\00245\001t\002expr\001page\002v_expr/trailing"
              "\001h\002tb.trailing.' 5\n")
 
-with open(no_du_cov, "w") as fh:
+with open(no_du_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     # A separate hierarchy report with only empty-page records exercises the
     # path where no design-unit summary is printed.
@@ -84,12 +84,12 @@ test.run(cmd=[
          verilator_run=True)
 
 combined_log = test.obj_dir + "/vlcov.log"
-with open(combined_log, "w") as out:
+with open(combined_log, "w", encoding="utf-8") as out:
     out.write("$ verilator_coverage --report hierarchy edge.dat\n")
-    with open(test.obj_dir + "/edge.log") as fh:
+    with open(test.obj_dir + "/edge.log", encoding="utf-8") as fh:
         out.write(fh.read())
     out.write("\n$ verilator_coverage --report hierarchy no_du.dat\n")
-    with open(test.obj_dir + "/no_du.log") as fh:
+    with open(test.obj_dir + "/no_du.log", encoding="utf-8") as fh:
         out.write(fh.read())
 
 test.files_identical(combined_log, test.golden_filename)

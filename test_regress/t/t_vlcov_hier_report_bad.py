@@ -17,21 +17,22 @@ vlcov = os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage"
 log = test.obj_dir + "/vlcov.log"
 tmp_log = test.obj_dir + "/vlcov.tmp"
 
-open(log, "w").close()
+with open(log, "w", encoding="utf-8"):
+    pass
 
 
 def run_bad(label, args):
-    with open(log, "a") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         if log_fh.tell():
             log_fh.write("\n")
         log_fh.write("$ " + label + "\n")
 
     test.run(cmd=[vlcov, *args], logfile=tmp_log, fails=True, tee=False, verilator_run=True)
 
-    with open(tmp_log) as in_fh:
+    with open(tmp_log, encoding="utf-8") as in_fh:
         text = in_fh.read()
     text = re.sub(r"verilator_doc[.]html[?]v=[^ ]+", "verilator_doc.html?v=latest", text)
-    with open(log, "a") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         log_fh.write(text)
 
 

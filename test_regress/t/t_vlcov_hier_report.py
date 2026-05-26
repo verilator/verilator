@@ -15,23 +15,24 @@ vlcov = os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage"
 log = test.obj_dir + "/vlcov.log"
 tmp_log = test.obj_dir + "/vlcov.tmp"
 
-open(log, "w").close()
+with open(log, "w", encoding="utf-8"):
+    pass
 
 
 def run_report(label, args):
-    with open(log, "a") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         if log_fh.tell():
             log_fh.write("\n")
         log_fh.write("$ " + label + "\n")
 
     test.run(cmd=[vlcov, *args], logfile=tmp_log, tee=False, verilator_run=True)
 
-    with open(tmp_log) as in_fh, open(log, "a") as log_fh:
+    with open(tmp_log, encoding="utf-8") as in_fh, open(log, "a", encoding="utf-8") as log_fh:
         log_fh.write(in_fh.read())
 
 
 all_types_cov = test.obj_dir + "/all_types.dat"
-with open(all_types_cov, "w") as fh:
+with open(all_types_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
     fh.write("C '\001f\002t/all_types.v\001l\00210\001n\0021\001t\002line"
              "\001page\002v_line/all_types\001o\002block\001S\00210"
