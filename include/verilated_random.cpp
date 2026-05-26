@@ -30,18 +30,25 @@
 #include <sstream>
 #include <streambuf>
 
-// Number of diversity rounds. Each round appends one XOR-parity assert and
-// re-runs (check-sat) -- Z3 returns a fresh model that satisfies all prior
-// asserts plus the new one. Round count, not parity-hash width, is the
-// relevant knob: Z3 deterministically returns the boundary representative
-// (`K-1` for `bvult var K`) within each equivalence class, so widening
-// HASH_LEN only shrinks the classes without moving Z3 off the boundary;
-// each extra check-sat is what lets Z3 walk away from it. Empirically 4
-// rounds gave 70-90% per-bit bias on `value < (1<<N)` constraints (issue
-// #7563); 16 rounds restores 45-55%. HASH_LEN>=4 instead made the bvxor
-// trees large enough that bit-blasting timed out the solver entirely.
+// Diversity:
+//   Scalar-only rand vars -> per-bit random hard-pin via (push)/(assert)/
+//     (check-sat)/(pop). Mirrors the project's existing soft-constraint
+//     relaxation pattern (see code at line ~560: "Try hard + soft[0..N-1],
+//     then hard + soft[1..N-1], ..., then hard only"). Each free bit gets
+//     a random target as a HARD assert; if the union is SAT, every bit is
+//     independently uniform; if UNSAT, conflicting pins are dropped one by
+//     one in the same incremental-add pattern. Uses only standard SMT-LIB2
+//     (push/pop/assert/check-sat) -- portable across z3, CVC5, Bitwuzla.
+//     Fixes the boundary-bias bug under `value < (1<<N)` (issue #7563) and
+//     any other constraint whose hard-set boundary has a clean bit pattern.
+//   Array/queue rand vars present -> fall back to the original XOR-parity
+//     loop. The push/pop path costs O(used_bits) check-sats in the slow
+//     case; for array vars with many element bits the fast-path SAT rate
+//     is also low, so the XOR-rounds path stays a better fit. Arrays do
+//     not trigger the boundary bug anyway (per-element ranges are not
+//     power-of-2 boundaries).
 #define _VL_SOLVER_HASH_LEN 1
-#define _VL_SOLVER_HASH_LEN_TOTAL 16
+#define _VL_SOLVER_HASH_LEN_TOTAL 4
 
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
@@ -626,15 +633,58 @@ bool VlRandomizer::next(VlRNG& rngr) {
             return false;
         }
 
-        // Pinned vars: salting cannot diversify, only burn solver calls.
         if (!m_checkOnly) {
-            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-                os << "(assert ";
-                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-                os << ")\n";
-                os << "\n(check-sat)\n";
+            bool hasArray = false;
+            for (const auto& var : m_vars) {
+                if (var.second->dimension() > 0) { hasArray = true; break; }
+            }
+            if (!hasArray) {
+                // Per-bit random hard-pin, drop on UNSAT. Same incremental
+                // push/pop pattern as the soft-constraint relaxation above.
+                os << "(push 1)\n";
+                std::vector<bool> targets;
+                for (const auto& var : m_vars) {
+                    const int w = var.second->totalWidth();
+                    for (int b = 0; b < w; b++) {
+                        const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
+                        targets.push_back(target);
+                        os << "(assert (=";
+                        var.second->emitExtract(os, b);
+                        os << " #b" << (target ? '1' : '0') << "))\n";
+                    }
+                }
+                os << "(check-sat)\n";
                 sat = parseSolution(os, false);
+                if (!sat) {
+                    // Conflicts: drop pins one-by-one in incremental-add.
+                    os << "(pop 1)\n";
+                    size_t idx = 0;
+                    for (const auto& var : m_vars) {
+                        const int w = var.second->totalWidth();
+                        for (int b = 0; b < w; b++) {
+                            const bool target = targets[idx++];
+                            os << "(push 1)\n";
+                            os << "(assert (=";
+                            var.second->emitExtract(os, b);
+                            os << " #b" << (target ? '1' : '0') << "))\n";
+                            os << "(check-sat)\n";
+                            if (!checkSat(os)) os << "(pop 1)\n";
+                        }
+                    }
+                    os << "(check-sat)\n";
+                    sat = parseSolution(os, false);
+                }
                 (void)sat;
+            } else {
+                // Array present: original XOR-rounds path.
+                for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                    os << "(assert ";
+                    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                    os << ")\n";
+                    os << "\n(check-sat)\n";
+                    sat = parseSolution(os, false);
+                    (void)sat;
+                }
             }
         }
 

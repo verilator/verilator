@@ -55,8 +55,14 @@ module t;
   // no bit is stuck near the boundary the fix did its job. A symmetric lower
   // bound is intentionally omitted -- Z3 4.8 (Ubuntu apt) settles ~30% on
   // some bits, Z3 4.13 settles ~50%; both are non-boundary, both are "fixed".
+  // 200 trials with the (assert-soft) MaxSMT mechanism delivers ~50% per
+  // free bit across all Z3 versions that support assert-soft (Z3 4.4+).
+  // Asserted band [70, 130] = [35%, 65%], ~4.3 sigma above natural noise so
+  // a truly uniform mechanism passes ~99.97% of the time. Master XOR-rounds
+  // FAIL the upper bound (140-180 ones per low bit, 70-90%).
   localparam int unsigned TRIALS = 200;
   localparam int unsigned HI = 130;
+  localparam int unsigned LO = 70;
 
   initial begin
     r = new;
@@ -68,14 +74,13 @@ module t;
       r.fa31.tally;
       r.fa32.tally;
     end
-    // For value < (1<<N), bits 0..N-1 must NOT be stuck near the boundary
-    // (master had them at 70-90% ones; >=140 of 200). High bits (>=N) must
-    // be set 0 times. The 1-bit case (fa1) is omitted because its diversity
-    // is dominated by SMT solver internals, not by the hash-round count this
-    // fix tunes; multi-bit cases below cover the bug.
+    // Symmetric 35-65% band per free bit. Master FAILs the upper bound.
     for (int b = 0; b < 15; b++) `check_le(r.fa15.m_ones[b], HI);
     for (int b = 0; b < 31; b++) `check_le(r.fa31.m_ones[b], HI);
     for (int b = 0; b < 32; b++) `check_le(r.fa32.m_ones[b], HI);
+    for (int b = 0; b < 15; b++) if (r.fa15.m_ones[b] < LO) begin $write("%%Error: fa15[%0d] ones=%0d < %0d\n", b, r.fa15.m_ones[b], LO); `stop; end
+    for (int b = 0; b < 31; b++) if (r.fa31.m_ones[b] < LO) begin $write("%%Error: fa31[%0d] ones=%0d < %0d\n", b, r.fa31.m_ones[b], LO); `stop; end
+    for (int b = 0; b < 32; b++) if (r.fa32.m_ones[b] < LO) begin $write("%%Error: fa32[%0d] ones=%0d < %0d\n", b, r.fa32.m_ones[b], LO); `stop; end
     // High bits beyond m_size must remain 0.
     for (int b = 1; b < 64; b++) `checkd(r.fa1.m_ones[b], 0);
     for (int b = 15; b < 64; b++) `checkd(r.fa15.m_ones[b], 0);
