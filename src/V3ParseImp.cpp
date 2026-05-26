@@ -844,6 +844,15 @@ int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
     tokenPipelineSym();  // sets yylval
     m_bisonLastFileline = yylval.fl;
+    if (m_tokenLastBison.token == '!'
+        && (yylval.token == '&' || yylval.token == '|' || yylval.token == '^'
+            || yylval.token == yP_NAND || yylval.token == yP_NOR || yylval.token == yP_XNOR)) {
+        m_tokenLastBison.fl->v3warn(
+            NOTREDOP,
+            "Logical not directly before reduction operator is illegal\n"
+                << m_tokenLastBison.fl->warnMore()
+                << "... Suggest use parentheses, e.g. '!(|expr)'");
+    }
     m_tokenLastBison = yylval;
 
     if (debug() >= 6 || debugFlex() >= 6

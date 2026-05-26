@@ -1559,6 +1559,25 @@ List Of Warnings
    :vlopt:`--no-timing` option.
 
 
+.. option:: NOTREDOP
+
+   Error that a logical not operator is directly followed by an
+   unparenthesized reduction operator, such as ``!|a``. The IEEE 1800-2023 Annex A
+   grammar requires the operand of ``!`` to be a primary expression, not an
+   unparenthesized reduction expression.
+
+   For example:
+
+   .. include:: ../../docs/gen/ex_NOTREDOP_msg.rst
+
+   Some simulators support this syntax as an extension, but it is recommended to fix
+   these to match IEEE. To do so, add parentheses around the reduction expression,
+   for example use ``!(|a)`` instead of ``!|a``.
+
+   Suppressing this error will suppress the error message check; it will simulate
+   correctly.
+
+
 .. option:: NULLPORT
 
    Warns that a null port was detected in the module definition port
