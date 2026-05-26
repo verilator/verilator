@@ -13,11 +13,10 @@ test.scenarios('vlt')
 
 test.compile()
 
-logfile = test.obj_dir + "/t_logfile_error.log"
+logfile = test.obj_dir + "/logfile.log"
 
 test.execute(all_run_flags=['+verilator+log+file+' + logfile], fails=True)
 
-# $error checks
-test.file_grep(logfile, r'Error: t_logfile_error.v:11: Assertion failed in top.top: This is a generated error!')
+test.files_identical(logfile, test.golden_filename)
 
 test.passes()

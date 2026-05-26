@@ -662,9 +662,9 @@ public:
     // Internal: logfile
     std::string logFilename() const VL_MT_SAFE;
     void logFilename(const std::string& flag) VL_MT_SAFE;
-    bool sendOutputToFile() const VL_MT_SAFE;
-    void sendOutputToFile(bool append) VL_MT_SAFE;
-    void restoreOutput() VL_MT_SAFE;
+    bool logOutputToFile() const VL_MT_SAFE;
+    void logOutputToFile(bool append) VL_MT_SAFE;
+    void logRestoreOutput() VL_MT_SAFE;
 
     // Internal: $dumpfile
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);

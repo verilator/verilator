@@ -4,9 +4,6 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// See also https://verilator.org/guide/latest/examples.html"
-
-// Found on Stackoverflow
 int stdout_fd = 32'h8000_0001;
 int stderr_fd = 32'h8000_0002;
 

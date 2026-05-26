@@ -2152,15 +2152,14 @@ IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
 }
 IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
     VerilatedContext* ctxp = Verilated::threadContextp();
-    auto sending = ctxp->sendOutputToFile();
+    const bool sending = ctxp->logOutputToFile();
     if (sending) {
         // system() command may echo and read so must restore default stdout and stderr
-        std::cout << "system(" << lhs << ")" << std::endl;
-        ctxp->restoreOutput();
+        ctxp->logRestoreOutput();
     }
     const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
     if (sending) {
-        ctxp->sendOutputToFile(true /* append */);
+        ctxp->logOutputToFile(true /* append */);
     }
     return code >> 8;  // Want exit status
 }
@@ -2885,7 +2884,7 @@ VerilatedContext::VerilatedContext()
 VerilatedContext::~VerilatedContext() {
     checkMagic(this);
     m_magic = 0x1;  // Arbitrary but 0x1 is what Verilator src uses for a deleted pointer
-    restoreOutput();
+    logRestoreOutput();
 }
 
 void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
@@ -2964,31 +2963,30 @@ std::string VerilatedContext::logFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_logFilename;
 }
-bool VerilatedContext::sendOutputToFile() const VL_MT_SAFE {
+bool VerilatedContext::logOutputToFile() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_logFD >= 0;
 }
-void VerilatedContext::sendOutputToFile(bool append) VL_MT_SAFE {
+void VerilatedContext::logOutputToFile(bool append) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    int flag = (append) ?  O_APPEND : O_TRUNC;
-    m_ns.m_logFD = open(m_ns.m_logFilename.c_str(), O_WRONLY | O_CREAT | flag, 0666);
+    const mode_t flag = (append) ?  O_APPEND : O_TRUNC;
+    m_ns.m_logFD = ::open(m_ns.m_logFilename.c_str(), O_WRONLY | O_CREAT | flag, 0666);
     if (m_ns.m_logFD >= 0) {
         // See https://man7.org/linux/man-pages/man2/dup.2.html
-        m_ns.m_stdoutFD = dup(STDOUT_FILENO);   // Save original fd
-        dup2(m_ns.m_logFD, STDOUT_FILENO);      // Replace STDOUT_FILENO with m_logFD
-        m_ns.m_stderrFD = dup(STDERR_FILENO);   // Save original fd
-        dup2(m_ns.m_logFD, STDERR_FILENO);      // Replace STDERR_FILENO with m_logFD
-
+        m_ns.m_stdoutFD = ::dup(STDOUT_FILENO);   // Save original fd
+        ::dup2(m_ns.m_logFD, STDOUT_FILENO);      // Replace STDOUT_FILENO with m_logFD
+        m_ns.m_stderrFD = ::dup(STDERR_FILENO);   // Save original fd
+        ::dup2(m_ns.m_logFD, STDERR_FILENO);      // Replace STDERR_FILENO with m_logFD
     }
 }
-void VerilatedContext::restoreOutput() VL_MT_SAFE {
+void VerilatedContext::logRestoreOutput() VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     if (m_ns.m_logFD >= 0) {
         std::fflush(stdout);                    // Flush logfile
         std::fflush(stderr);
-        dup2(m_ns.m_stdoutFD, STDOUT_FILENO);   // Restore STDOUT_FILENO with saved m_stdoutFD
-        dup2(m_ns.m_stderrFD, STDERR_FILENO);   // Restore STDERR_FILENO with saved m_stderrFD
-        close(m_ns.m_logFD);                    // Close logfile
+        ::dup2(m_ns.m_stdoutFD, STDOUT_FILENO);   // Restore STDOUT_FILENO with saved m_stdoutFD
+        ::dup2(m_ns.m_stderrFD, STDERR_FILENO);   // Restore STDERR_FILENO with saved m_stderrFD
+        ::close(m_ns.m_logFD);                    // Close logfile
         m_ns.m_logFD = -1;
         m_ns.m_stdoutFD = -1;
         m_ns.m_stderrFD = -1;
@@ -3312,7 +3310,7 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             coverageFilename(str);
         } else if (commandArgVlString(arg, "+verilator+log+file+", str)) {
             logFilename(str);
-            sendOutputToFile(false /* append */);
+            logOutputToFile(false /* append */);
         } else if (arg == "+verilator+debug") {
             Verilated::debug(4);
         } else if (commandArgVlUint64(arg, "+verilator+debugi+", u64, 0,

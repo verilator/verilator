@@ -20,18 +20,16 @@ if not have_gdb:
 
 test.compile()
 
-logfile = test.obj_dir + "/t_logfile.log"
+logfile = test.obj_dir + "/logfile.log"
 
 test.execute(all_run_flags=['+verilator+log+file+' + logfile])
 
 # $display checks
 test.file_grep(logfile, r'Hello World!')
-test.file_grep(logfile, r'system\(echo In a shell now\)') # Line being run
 test.file_grep(logfile, r'Hello 3rd rock!')
 
 # $fdisplay checks
 test.file_grep(logfile, r'Hello Mars!')
-test.file_grep(logfile, r'system\(echo In another shell now\)') # Line being run
 test.file_grep(logfile, r'Hello Pluto!')
 
 test.passes()
