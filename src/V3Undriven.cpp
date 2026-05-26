@@ -42,6 +42,7 @@ class UndrivenVarEntry final {
     AstVar* const m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
+    const AstNode* m_usedNotDrivenp = nullptr;  // First read before any write
     const AstAlways* m_alwCombp
         = nullptr;  // always_comb of var if driven within always_comb, else nullptr
     const FileLine* m_alwCombFileLinep = nullptr;  // File line of always_comb of var if driven
@@ -82,6 +83,10 @@ private:
     bool drivenFlag(int bit) const {
         return m_wholeFlags[FLAG_DRIVEN] || m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN];
     }
+    int bitCount() const { return m_bitFlags.size() / FLAGS_PER_BIT; }
+    void recordUsedNotDriven(const AstNode* nodep) {
+        if (!m_usedNotDrivenp) m_usedNotDrivenp = nodep;
+    }
     enum BitNamesWhich : uint8_t { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
     string bitNames(BitNamesWhich which) {
         string bits;
@@ -121,6 +126,14 @@ private:
 public:
     void usedWhole(const AstNode* nodep) {
         UINFO(9, "set u[*] " << m_varp->name() << " " << nodep);
+        if (!m_wholeFlags[FLAG_DRIVEN]) {
+            for (int bit = 0; bit < bitCount(); ++bit) {
+                if (!drivenFlag(bit)) {
+                    recordUsedNotDriven(nodep);
+                    break;
+                }
+            }
+        }
         m_wholeFlags[FLAG_USED] = true;
     }
     void drivenWhole(const AstNode* nodep) {
@@ -156,10 +169,13 @@ public:
     const FileLine* getNodeFileLinep() const { return m_nodeFileLinep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
     const FileLine* getAlwCombFileLinep() const { return m_alwCombFileLinep; }
-    void usedBit(int bit, int width) {
+    void usedBit(int bit, int width, const AstNode* nodep) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
-            if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
+            if (bitNumOk(bit + i)) {
+                if (!drivenFlag(bit + i)) recordUsedNotDriven(nodep);
+                m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
+            }
         }
     }
     void drivenBit(int bit, int width) {
@@ -181,6 +197,7 @@ public:
     bool isUsedNotDrivenAny() const {
         return isUsedNotDrivenBit(0, m_bitFlags.size() / FLAGS_PER_BIT);
     }
+    const AstNode* firstUsedNotDrivenp() const { return m_usedNotDrivenp; }
     static bool unusedMatch(AstVar* nodep) {
         const string regexp = v3Global.opt.unusedRegexp();
         if (regexp == "") return false;
@@ -374,7 +391,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         }
     }
 
-    void warnAlwCombOrder(AstNodeVarRef* nodep) {
+    void warnAlwCombOrder(AstNodeVarRef* nodep, const AstNode* readp) {
         AstVar* const varp = nodep->varp();
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
             && !varp->ignoreSchedWrite()
@@ -382,8 +399,16 @@ class UndrivenVisitor final : public VNVisitorConst {
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
                 V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
-            nodep->v3warn(ALWCOMBORDER,
-                          "Always_comb variable driven after use: " << nodep->prettyNameQ());
+            nodep->v3warn(
+                ALWCOMBORDER,
+                "always_comb reads " << nodep->prettyNameQ()
+                                      << " before assigning it later in the same block; behavior "
+                                         "may imply latch/state-like behavior and is not purely "
+                                         "combinational"
+                                      << (readp ? "\n" + readp->warnOther()
+                                                     + "... Location of earlier read\n"
+                                                     + readp->warnContextSecondary()
+                                               : ""));
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
                                             true);  // Complain just once for any usage
         }
@@ -433,12 +458,12 @@ class UndrivenVisitor final : public VNVisitorConst {
                     if (usr == 2 && m_alwaysCombp
                         && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
                         UINFO(9, " Select.  Entryp=" << cvtToHex(entryp));
-                        warnAlwCombOrder(varrefp);
+                        warnAlwCombOrder(varrefp, entryp->firstUsedNotDrivenp());
                     }
                     entryp->drivenBit(lsb, nodep->width());
                 }
                 if (m_inBBox || !varrefp->access().isWriteOrRW())
-                    entryp->usedBit(lsb, nodep->width());
+                    entryp->usedBit(lsb, nodep->width(), varrefp);
             }
         } else {
             // else other varrefs handled as unknown mess in AstVarRef
@@ -487,7 +512,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             if (m_inBBox || nodep->access().isWriteOrRW()) {
                 if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp));
-                    warnAlwCombOrder(nodep);
+                    warnAlwCombOrder(nodep, entryp->firstUsedNotDrivenp());
                 }
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
