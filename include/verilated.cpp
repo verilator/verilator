@@ -2969,8 +2969,8 @@ bool VerilatedContext::logOutputToFile() const VL_MT_SAFE {
 }
 void VerilatedContext::logOutputToFile(bool append) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    const mode_t flag = (append) ?  O_APPEND : O_TRUNC;
-    m_ns.m_logFD = ::open(m_ns.m_logFilename.c_str(), O_WRONLY | O_CREAT | flag, 0666);
+    m_ns.m_logFD = ::open(m_ns.m_logFilename.c_str(),
+                          O_WRONLY | O_CREAT | (append ?  O_APPEND : O_TRUNC), 0666);
     if (m_ns.m_logFD >= 0) {
         // See https://man7.org/linux/man-pages/man2/dup.2.html
         m_ns.m_stdoutFD = ::dup(STDOUT_FILENO);   // Save original fd
