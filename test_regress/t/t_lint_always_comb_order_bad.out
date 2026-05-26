@@ -1,0 +1,17 @@
+%Warning-ALWCOMBORDER: t/t_lint_always_comb_order_bad.v:24:5: always_comb reads 'accum1' before assigning it later in the same block; behavior may imply latch/state-like behavior and is not purely combinational
+                                                            : ... note: In instance 't'
+                       t/t_lint_always_comb_order_bad.v:23:19: ... Location of earlier read
+   23 |     result1 = a + accum1;
+      |                   ^~~~~~
+   24 |     accum1  = b;
+      |     ^~~~~~
+                       ... For warning description see https://verilator.org/warn/ALWCOMBORDER?v=latest
+                       ... Use "/* verilator lint_off ALWCOMBORDER */" and lint_on around source to disable this message.
+%Warning-ALWCOMBORDER: t/t_lint_always_comb_order_bad.v:44:5: always_comb reads 'accum3' before assigning it later in the same block; behavior may imply latch/state-like behavior and is not purely combinational
+                                                            : ... note: In instance 't'
+                       t/t_lint_always_comb_order_bad.v:40:21: ... Location of earlier read
+   40 |       result3 = a + accum3;
+      |                     ^~~~~~
+   44 |     accum3 = b;
+      |     ^~~~~~
+%Error: Exiting due to

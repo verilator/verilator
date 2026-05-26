@@ -96,21 +96,21 @@ List Of Warnings
 
 .. option:: ALWCOMBORDER
 
-   .. TODO better example
-
-   Warns that an ``always_comb`` block has a variable that is set after it
-   is used. This may cause simulation-synthesis mismatches, as not all
-   simulators allow this ordering.
+   Warns that an ``always_comb`` block reads a variable before assigning it
+   later in the same block. Because statements in a procedural block execute
+   in source order, the read observes the variable's previous value for that
+   activation. This can imply latch/state-like behavior and is not purely
+   combinational.
 
    .. code-block:: sv
 
       always_comb begin
-        a = b;
-        b = 1;
+        y = a + tmp;  // Reads the previous value of tmp
+        tmp = b;
       end
 
-   Ignoring this warning will only suppress the lint check; it will
-   simulate correctly.
+   If the new value of ``tmp`` is intended, assign ``tmp`` before reading it.
+   Suppressing this warning may make results vary between simulators.
 
 
 .. option:: ALWNEVER
