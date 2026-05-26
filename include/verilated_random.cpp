@@ -636,7 +636,10 @@ bool VlRandomizer::next(VlRNG& rngr) {
         if (!m_checkOnly) {
             bool hasArray = false;
             for (const auto& var : m_vars) {
-                if (var.second->dimension() > 0) { hasArray = true; break; }
+                if (var.second->dimension() > 0) {
+                    hasArray = true;
+                    break;
+                }
             }
             if (!hasArray) {
                 // Per-bit random hard-pin, drop on UNSAT. Same incremental
