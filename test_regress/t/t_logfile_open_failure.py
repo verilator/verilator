@@ -19,7 +19,7 @@ logfile = test.obj_dir + "/logfile.log"
 capturefile = test.obj_dir + "/capture.log"
 
 # Create the logfile
-with open(logfile, "w") as f:
+with open(logfile, 'w', encoding='utf8') as f:
     f.write("Read-only logfile\n")
 # Change permission to read only so execute() fail when creating the logfile
 os.chmod(logfile, stat.S_IREAD)
