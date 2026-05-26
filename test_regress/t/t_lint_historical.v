@@ -70,6 +70,7 @@ module t;
   // verilator lint_off NOLATCH
   // verilator lint_off NONSTD
   // verilator lint_off NORETURN
+  // verilator lint_off NOTREDOP
   // verilator lint_off NULLPORT
   // verilator lint_off PARAMNODEFAULT
   // verilator lint_off PINCONNECTEMPTY
