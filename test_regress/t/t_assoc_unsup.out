@@ -1,0 +1,78 @@
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:17:15: Unsupported: `with` clause on assoc arrays with wide value types in method 'min'
+                                           : ... note: In instance 't'
+   17 |     qwv = qwe.min(x) with (x + 1);
+      |               ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:18:15: Unsupported: `with` clause on assoc arrays with wide value types in method 'max'
+                                           : ... note: In instance 't'
+   18 |     qwv = qwe.max(x) with (x + 1);
+      |               ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:20:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'sum'
+                                           : ... note: In instance 't'
+   20 |     w = qw.sum with (item + 1);
+      |            ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:21:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'product'
+                                           : ... note: In instance 't'
+   21 |     w = qw.product with (item + 1);
+      |            ^~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:23:13: Unsupported: `with` clause on assoc arrays with wide value types in method 'sum'
+                                           : ... note: In instance 't'
+   23 |     w = qwe.sum with (item + 1);
+      |             ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:24:13: Unsupported: `with` clause on assoc arrays with wide value types in method 'product'
+                                           : ... note: In instance 't'
+   24 |     w = qwe.product with (item + 1);
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:27:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'and'
+                                           : ... note: In instance 't'
+   27 |     w = qw.and with (item + 1);
+      |            ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:28:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'or'
+                                           : ... note: In instance 't'
+   28 |     w = qw.or with (item + 1);
+      |            ^~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:29:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'xor'
+                                           : ... note: In instance 't'
+   29 |     w = qw.xor with (item + 1);
+      |            ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:31:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'and'
+                                           : ... note: In instance 't'
+   31 |     w = qw.and() with (item + 1);
+      |            ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:32:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'or'
+                                           : ... note: In instance 't'
+   32 |     w = qw.or() with (item + 1);
+      |            ^~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:33:12: Unsupported: `with` clause on assoc arrays with wide value types in method 'xor'
+                                           : ... note: In instance 't'
+   33 |     w = qw.xor() with (item + 1);
+      |            ^~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:35:14: Unsupported: `with` clause on assoc arrays with wide value types in method 'find'
+                                           : ... note: In instance 't'
+   35 |     qwv = qw.find with (item == 2);
+      |              ^~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:36:14: Unsupported: `with` clause on assoc arrays with wide value types in method 'find_first'
+                                           : ... note: In instance 't'
+   36 |     qwv = qw.find_first with (item == 2);
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:37:14: Unsupported: `with` clause on assoc arrays with wide value types in method 'find_last'
+                                           : ... note: In instance 't'
+   37 |     qwv = qw.find_last with (item == 2);
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:39:13: Unsupported: `with` clause on assoc arrays with wide value types in method 'find_index'
+                                           : ... note: In instance 't'
+   39 |     qi = qw.find_index with (item == 2);
+      |             ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:40:13: Unsupported: `with` clause on assoc arrays with wide value types in method 'find_first_index'
+                                           : ... note: In instance 't'
+   40 |     qi = qw.find_first_index with (item == 2);
+      |             ^~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:41:13: Unsupported: `with` clause on assoc arrays with wide value types in method 'find_last_index'
+                                           : ... note: In instance 't'
+   41 |     qi = qw.find_last_index with (item == 2);
+      |             ^~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assoc_unsup.v:45:14: Unsupported: `with` clause on assoc arrays with wide value types in method 'map'
+                                           : ... note: In instance 't'
+   45 |     qwv = qw.map(el) with (el / 100);
+      |              ^~~
+%Error: Exiting due to
