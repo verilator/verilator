@@ -561,14 +561,12 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << nodep->warnContextPrimary() << '\n'
                                                        << otherWritep->warnOther()
                                                        << "... Location of always_comb write\n"
-                                                      << otherWritep->warnContextSecondary());
+                                                       << otherWritep->warnContextSecondary());
                     }
-                    if (m_alwaysFFp
-                        && !otherWriteIsStaticInit
+                    if (m_alwaysFFp && !otherWriteIsStaticInit
                         && (!entryp->isDrivenAlwaysFFWhole()
                             || (m_alwaysFFp != entryp->getAlwFFp()
-                                && m_alwaysFFp->fileline()
-                                       != entryp->getAlwFFp()->fileline()))) {
+                                && m_alwaysFFp->fileline() != entryp->getAlwFFp()->fileline()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,
                             "Variable written to in always_ff also written by other process"
@@ -599,8 +597,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     entryp->underGenerate();
                 if (m_alwaysCombp)
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
-                if (m_alwaysFFp)
-                    entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
+                if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
             }
             if (nodep->access().isWriteOrRW()) {
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
