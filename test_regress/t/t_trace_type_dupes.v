@@ -19,9 +19,8 @@ module t (  /*AUTOARG*/
 );
   input clk;
 
-  int cyc;
+  int cyc = 0;
   logic [`NUM_SUBS - 1:0] x;
-  initial cyc = 0;
 
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;

@@ -336,8 +336,6 @@ module fsm_seqmix_off (
   state_t state_q;
   state_t state_d;
 
-  initial side = 1'b0;
-
   always_comb begin
     state_d = state_q;
     case (state_q)
@@ -347,8 +345,10 @@ module fsm_seqmix_off (
   end
 
   always_ff @(posedge clk) begin
-    if (rst) state_q <= S0;
-    else begin
+    if (rst) begin
+      side <= 1'b0;
+      state_q <= S0;
+    end else begin
       side <= ~side;
       state_q <= state_d;
     end
