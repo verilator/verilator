@@ -897,13 +897,13 @@ VL_GEN_HELPER_TWO_ARG(VL_EXTENDS_WW_GEN)
 #define VL_REDAND_W_GEN(lhsSuffix) \
 static inline IData VL_REDAND_W_##lhsSuffix(int lbits, WDataInP lwp) VL_PURE { \
         const int words = VL_WORDS_I(lbits); \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix); \
         EData combine = *lwp; \
         for (int i = 1; i < words - 1; ++i) { \
-            lwp += VL_GET_TYPE_JUMP(lhsSuffix); \
+            lwp = lwp + VL_GET_TYPE_JUMP(lhsSuffix); \
             combine &= *lwp; \
         } \
-        lwp += VL_GET_TYPE_JUMP(lhsSuffix); \
+        lwp = lwp + VL_GET_TYPE_JUMP(lhsSuffix); \
         combine &= ~VL_MASK_E(lbits) | *lwp; \
         /* cppcheck-suppress knownConditionTrueFalse */ \
         return ((~combine) == 0); \
@@ -920,10 +920,10 @@ VL_GEN_HELPER_ONE_ARG(VL_REDAND_W_GEN)
 #define VL_REDOR_W_GEN(lhsSuffix) \
 static inline IData VL_REDOR_W_##lhsSuffix(int words, WDataInP lwp) VL_PURE { \
         EData equal = 0; \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix); \
         for (int i = 0; i < words; ++i) { \
             equal |= *lwp; \
-            lwp += VL_GET_TYPE_JUMP(lhsSuffix); \
+            lwp = lwp + VL_GET_TYPE_JUMP(lhsSuffix); \
         } \
         return (equal != 0); \
     }
@@ -996,10 +996,10 @@ static inline IData VL_REDXOR_64(QData r) VL_PURE {
 // clang-format off
 #define VL_REDXOR_W_GEN(lhsSuffix) \
 static inline IData VL_REDXOR_W_##lhsSuffix(int words, WDataInP lwp) VL_PURE { \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix); \
         EData r = *lwp; \
         for (int i = 1; i < words; ++i) { \
-            lwp += VL_GET_TYPE_JUMP(lhsSuffix); \
+            lwp = lwp + VL_GET_TYPE_JUMP(lhsSuffix); \
             r ^= *lwp; \
         } \
         return VL_REDXOR_32(r); \
@@ -1121,7 +1121,7 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
 // clang-format off
 #define VL_MOSTSETBITP1_W_GEN(suffix) \
 static inline IData VL_MOSTSETBITP1_W_##suffix(int words, WDataInP lwp) VL_PURE { \
-        lwp += VL_GET_TYPE_OFFSET(suffix) + ((words << ((VL_GET_TYPE_JUMP(suffix)) - 1)) - (VL_GET_TYPE_JUMP(suffix))); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(suffix) + ((words << ((VL_GET_TYPE_JUMP(suffix)) - 1)) - (VL_GET_TYPE_JUMP(suffix))); \
         /* MSB set bit plus one; similar to FLS.  0=value is zero */ \
         for (int i = words - 1; i >= 0; --i) { \
             if (VL_UNLIKELY(*lwp)) {  /* Shorter worst case if predict not taken */ \
@@ -1130,7 +1130,7 @@ static inline IData VL_MOSTSETBITP1_W_##suffix(int words, WDataInP lwp) VL_PURE 
                 } \
                 /* Can't get here - one bit must be set */ \
             } \
-            lwp -= (VL_GET_TYPE_JUMP(suffix)); \
+            lwp = lwp - (VL_GET_TYPE_JUMP(suffix)); \
         } \
         return 0; \
     }
@@ -1292,13 +1292,13 @@ VL_GEN_HELPER_TWO_ARG(VL_NOT_GEN)
 // Output clean, <lhs> AND <rhs> MUST BE CLEAN
 #define VL_EQ_W_GEN(lhsSuffix, rhsSuffix) \
 static inline IData VL_EQ_W_##lhsSuffix##rhsSuffix(int words, WDataInP lwp, WDataInP rwp) VL_PURE { \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix); \
-        rwp += VL_GET_TYPE_OFFSET(rhsSuffix); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix); \
+        rwp = rwp + VL_GET_TYPE_OFFSET(rhsSuffix); \
         EData nequal = 0; \
         for (int i = 0; (i < words); ++i) { \
             nequal |= (*lwp ^ *rwp); \
-            lwp += VL_GET_TYPE_JUMP(lhsSuffix); \
-            rwp += VL_GET_TYPE_JUMP(rhsSuffix); \
+            lwp = lwp + VL_GET_TYPE_JUMP(lhsSuffix); \
+            rwp = rwp + VL_GET_TYPE_JUMP(rhsSuffix); \
         } \
         return (nequal == 0); \
     }
@@ -1401,13 +1401,13 @@ VL_GEN_HELPER_ONE_ARG(VL_EQ_R_GEN)
 #define _vl_cmp_w_GEN(lhsSuffix, rhsSuffix) \
 static inline int _vl_cmp_w_##lhsSuffix##rhsSuffix(int words, WDataInP lwp, WDataInP rwp) VL_PURE { \
         int i = words - 1; \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix) + (i * VL_GET_TYPE_JUMP(lhsSuffix)); \
-        rwp += VL_GET_TYPE_OFFSET(rhsSuffix) + (i * VL_GET_TYPE_JUMP(rhsSuffix)); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix) + (i * VL_GET_TYPE_JUMP(lhsSuffix)); \
+        rwp = rwp + VL_GET_TYPE_OFFSET(rhsSuffix) + (i * VL_GET_TYPE_JUMP(rhsSuffix)); \
         for (; i >= 0; --i) { \
             if (*lwp > *rwp) return 1; \
             if (*lwp < *rwp) return -1; \
-            lwp -= VL_GET_TYPE_JUMP(lhsSuffix); \
-            rwp -= VL_GET_TYPE_JUMP(rhsSuffix); \
+            lwp = lwp - VL_GET_TYPE_JUMP(lhsSuffix); \
+            rwp = rwp - VL_GET_TYPE_JUMP(rhsSuffix); \
         } \
         return 0;  /* == */ \
     }
@@ -1539,8 +1539,8 @@ static inline IData VL_LTES_IQQ_TT(int lbits, QData lhs, QData rhs) VL_PURE {
 static inline int _vl_cmps_w_##lhsSuffix##rhsSuffix(int lbits, WDataInP lwp, WDataInP rwp) VL_PURE { \
         const int words = VL_WORDS_I(lbits); \
         int i = words - 1; \
-        lwp += VL_GET_TYPE_OFFSET(lhsSuffix) + (i * VL_GET_TYPE_JUMP(lhsSuffix)); \
-        rwp += VL_GET_TYPE_OFFSET(rhsSuffix) + (i * VL_GET_TYPE_JUMP(rhsSuffix)); \
+        lwp = lwp + VL_GET_TYPE_OFFSET(lhsSuffix) + (i * VL_GET_TYPE_JUMP(lhsSuffix)); \
+        rwp = rwp + VL_GET_TYPE_OFFSET(rhsSuffix) + (i * VL_GET_TYPE_JUMP(rhsSuffix)); \
         /* We need to flip sense if negative comparison */ \
         const EData lsign = VL_SIGN_E_T(lbits, *lwp); \
         const EData rsign = VL_SIGN_E_T(lbits, *rwp); \
@@ -1549,8 +1549,8 @@ static inline int _vl_cmps_w_##lhsSuffix##rhsSuffix(int lbits, WDataInP lwp, WDa
         for (; i >= 0; --i) { \
             if (*lwp > *rwp) return 1; \
             if (*lwp < *rwp) return -1; \
-            lwp -= VL_GET_TYPE_JUMP(lhsSuffix); \
-            rwp -= VL_GET_TYPE_JUMP(rhsSuffix); \
+            lwp = lwp - VL_GET_TYPE_JUMP(lhsSuffix); \
+            rwp = rwp - VL_GET_TYPE_JUMP(rhsSuffix); \
         } \
         return 0;  /* == */ \
     }
@@ -3608,12 +3608,12 @@ VL_GEN_HELPER_TWO_ARG(VL_SHIFTR_WWQ_GEN)
 #define VL_SHIFTR_IIW_GEN(rhsSuffix) \
 static inline IData VL_SHIFTR_IIW_TT##rhsSuffix(int obits, int, int rbits, IData lhs, \
                                                     WDataInP rwp) VL_PURE { \
-        rwp += VL_GET_TYPE_OFFSET(rhsSuffix); \
+        rwp = rwp + VL_GET_TYPE_OFFSET(rhsSuffix); \
         const EData rwp0 = *rwp; \
-        rwp += VL_GET_TYPE_JUMP(rhsSuffix); \
+        rwp = rwp + VL_GET_TYPE_JUMP(rhsSuffix); \
         for (int i = 1; i < VL_WORDS_I(rbits); ++i) { \
             if (VL_UNLIKELY(*rwp)) return 0; /* Huge shift 1>>32 or more */ \
-            rwp += VL_GET_TYPE_JUMP(rhsSuffix); \
+            rwp = rwp + VL_GET_TYPE_JUMP(rhsSuffix); \
         } \
         return VL_SHIFTR_III_TTT(obits, obits, 32, lhs, rwp0); \
     }
@@ -3625,12 +3625,12 @@ VL_GEN_HELPER_ONE_ARG(VL_SHIFTR_IIW_GEN)
 #define VL_SHIFTR_QQW_GEN(rhsSuffix) \
 static inline QData VL_SHIFTR_QQW_TT##rhsSuffix(int obits, int, int rbits, QData lhs, \
                                                     WDataInP rwp) VL_PURE { \
-        rwp += VL_GET_TYPE_OFFSET(rhsSuffix); \
+        rwp = rwp + VL_GET_TYPE_OFFSET(rhsSuffix); \
         const EData rwp0 = *rwp; \
-        rwp += VL_GET_TYPE_JUMP(rhsSuffix); \
+        rwp = rwp + VL_GET_TYPE_JUMP(rhsSuffix); \
         for (int i = 1; i < VL_WORDS_I(rbits); ++i) { \
             if (VL_UNLIKELY(*rwp)) return 0; /* Huge shift 1>>32 or more */ \
-            rwp += VL_GET_TYPE_JUMP(rhsSuffix); \
+            rwp = rwp + VL_GET_TYPE_JUMP(rhsSuffix); \
         } \
         return VL_SHIFTR_QQI_TTT(obits, obits, 32, lhs, rwp0); \
     }

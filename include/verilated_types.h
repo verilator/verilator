@@ -95,15 +95,15 @@ struct VlWide final {
         return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(EData)) == 0;
     }
     bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
-    EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    EData& operator[](size_t index) VL_MT_SAFE VL_PURE { return m_storage[index]; }
+    const EData& operator[](size_t index) const VL_MT_SAFE VL_PURE { return m_storage[index]; }
 
     // METHODS
-    EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    EData& at(size_t index) VL_MT_SAFE VL_PURE { return m_storage[index]; }
+    const EData& at(size_t index) const VL_MT_SAFE VL_PURE { return m_storage[index]; }
     size_t size() const VL_PURE { return N_Words; }
-    EData* data() VL_MT_SAFE { return &m_storage[0]; }
-    const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
+    EData* data() VL_MT_SAFE VL_PURE { return &m_storage[0]; }
+    const EData* data() const VL_MT_SAFE VL_PURE { return &m_storage[0]; }
     inline bool operator<(const VlWide<N_Words>& rhs) const VL_PURE;
 };
 
