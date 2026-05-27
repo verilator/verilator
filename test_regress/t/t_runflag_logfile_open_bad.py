@@ -30,7 +30,6 @@ test.execute(all_run_flags=[log_flags, ">", capturefile, "2>&1"], fails=True)
 # Set read + write so test does not fail next time it is run
 os.chmod(logfile, stat.S_IREAD | stat.S_IWRITE)
 
-test.file_grep(capturefile, r"logfile.log cannot be created")
-test.file_grep_not(capturefile, r"We should not see this message")
+test.files_identical(capturefile, test.golden_filename)
 
 test.passes()

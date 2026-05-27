@@ -2154,10 +2154,10 @@ IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
     VerilatedContext* ctxp = Verilated::threadContextp();
     const bool sending = ctxp->logOutputToFile();
     // system() command may echo and read so restore default stdout and stderr if sending
-    if (sending) { ctxp->logRestoreOutput(); }
+    if (sending) ctxp->logRestoreOutput();
     const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
     // Log to file again if we were sending
-    if (sending) { ctxp->logOutputToFile(true /* append */); }
+    if (sending) ctxp->logOutputToFile(true /* append */);
     return code >> 8;  // Want exit status
 }
 
@@ -3313,9 +3313,6 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
         uint64_t u64;
         if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
             coverageFilename(str);
-        } else if (commandArgVlString(arg, "+verilator+log+file+", str)) {
-            logFilename(str);
-            logOutputToFile(false /* append */);
         } else if (arg == "+verilator+debug") {
             Verilated::debug(4);
         } else if (commandArgVlUint64(arg, "+verilator+debugi+", u64, 0,
@@ -3329,6 +3326,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             VL_PRINTF_MT("For help, please see 'verilator --help'\n");
             VL_FATAL_MT("COMMAND_LINE", 0, "",
                         "Exiting due to command line argument (not an error)");
+        } else if (commandArgVlString(arg, "+verilator+log+file+", str)) {
+            logFilename(str);
+            logOutputToFile(false /* append */);
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
         } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)) {
