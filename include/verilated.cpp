@@ -61,6 +61,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <fcntl.h>
 #include <iostream>
 #include <limits>
 #include <list>
@@ -73,6 +74,9 @@
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
+# include <io.h>       // open, read, write, close
+# define STDOUT_FILENO _fileno(stdout)
+# define STDERR_FILENO _fileno(stderr)
 #endif
 #ifdef __GLIBC__
 # include <cxxabi.h>
@@ -2158,7 +2162,13 @@ IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     return VL_SYSTEM_IN(lhs);
 }
 IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
+    VerilatedContext* ctxp = Verilated::threadContextp();
+    const bool sending = ctxp->logOutputToFile();
+    // system() command may echo and read so restore default stdout and stderr if sending
+    if (sending) ctxp->logRestoreOutput();
     const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
+    // Log to file again if we were sending
+    if (sending) ctxp->logOutputToFile(true /* append */);
     return code >> 8;  // Want exit status
 }
 
@@ -2868,6 +2878,9 @@ VerilatedContext::VerilatedContext()
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
+    m_ns.m_logFD = -1;
+    m_ns.m_stdoutFD = -1;
+    m_ns.m_stderrFD = -1;
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
@@ -2879,6 +2892,7 @@ VerilatedContext::VerilatedContext()
 VerilatedContext::~VerilatedContext() {
     checkMagic(this);
     m_magic = 0x1;  // Arbitrary but 0x1 is what Verilator src uses for a deleted pointer
+    logRestoreOutput();
 }
 
 void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
@@ -2947,6 +2961,52 @@ void VerilatedContext::coverageFilename(const std::string& flag) VL_MT_SAFE {
 std::string VerilatedContext::coverageFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_coverageFilename;
+}
+void VerilatedContext::logFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    assert(m_ns.m_logFD == -1);
+    m_ns.m_logFilename = flag;
+}
+std::string VerilatedContext::logFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_logFilename;
+}
+bool VerilatedContext::logOutputToFile() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_logFD >= 0;
+}
+void VerilatedContext::logOutputToFile(bool append) VL_MT_SAFE {
+    int log_fd = ::open(m_ns.m_logFilename.c_str(),
+                        O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666);
+    std::string error_msg;
+    if (log_fd >= 0) {
+        const VerilatedLockGuard lock{m_mutex};
+        m_ns.m_logFD = log_fd;
+        // See https://man7.org/linux/man-pages/man2/dup.2.html
+        m_ns.m_stdoutFD = ::dup(STDOUT_FILENO);  // Save original fd
+        ::dup2(m_ns.m_logFD, STDOUT_FILENO);  // Replace STDOUT_FILENO with m_logFD
+        m_ns.m_stderrFD = ::dup(STDERR_FILENO);  // Save original fd
+        ::dup2(m_ns.m_logFD, STDERR_FILENO);  // Replace STDERR_FILENO with m_logFD
+    } else {
+        const VerilatedLockGuard lock{m_mutex};
+        m_ns.m_logFD = -1;
+        const std::string op_str = append ? "appended" : "created";
+        error_msg = "Logfile " + m_ns.m_logFilename + " cannot be " + op_str;
+    }
+    if (!error_msg.empty()) { VL_FATAL_MT("", 0, "", error_msg.c_str()); }
+}
+void VerilatedContext::logRestoreOutput() VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    if (m_ns.m_logFD >= 0) {
+        std::fflush(stdout);  // Flush logfile
+        std::fflush(stderr);
+        ::dup2(m_ns.m_stdoutFD, STDOUT_FILENO);  // Restore STDOUT_FILENO with saved m_stdoutFD
+        ::dup2(m_ns.m_stderrFD, STDERR_FILENO);  // Restore STDERR_FILENO with saved m_stderrFD
+        ::close(m_ns.m_logFD);  // Close logfile
+        m_ns.m_logFD = -1;
+        m_ns.m_stdoutFD = -1;
+        m_ns.m_stderrFD = -1;
+    }
 }
 void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock{m_timeDumpMutex};
@@ -3277,6 +3337,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             VL_PRINTF_MT("For help, please see 'verilator --help'\n");
             VL_FATAL_MT("COMMAND_LINE", 0, "",
                         "Exiting due to command line argument (not an error)");
+        } else if (commandArgVlString(arg, "+verilator+log+file+", str)) {
+            logFilename(str);
+            logOutputToFile(false /* append */);
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
         } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)) {

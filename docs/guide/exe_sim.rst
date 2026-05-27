@@ -48,6 +48,11 @@ Options:
 
    Display help and exit.
 
+.. option:: +verilator+log+file+<filename>
+
+    Log all stdout and stderr to the specified output filename. If not specified
+    the normal stdout/stderr streams are used.
+
 .. option:: +verilator+noassert
 
    Disable assert checking per runtime argument. This is the same as

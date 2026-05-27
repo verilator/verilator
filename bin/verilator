@@ -597,6 +597,7 @@ description of these arguments.
      +verilator+debugi+<value>             Enable debugging at a level
      +verilator+error+limit+<value>        Set error limit
      +verilator+help                       Show help
+     +verilator+log+file+<filename>        Log stdout and stderr output to filename
      +verilator+noassert                   Disable assert checking
      +verilator+prof+exec+file+<filename>  Set execution profile filename
      +verilator+prof+exec+start+<value>    Set execution profile starting point

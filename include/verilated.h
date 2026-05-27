@@ -409,6 +409,7 @@ protected:
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
         std::string m_coverageFilename;  // +coverage+file filename
+        std::string m_logFilename;  // +log+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
@@ -417,6 +418,9 @@ protected:
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
+        int m_stdoutFD;  // Duplicated stdout file descriptor
+        int m_stderrFD;  // Duplicated stderr file descriptor
+        int m_logFD;  // Log file descriptor
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -649,6 +653,13 @@ public:
     // Internal: coverage
     std::string coverageFilename() const VL_MT_SAFE;
     void coverageFilename(const std::string& flag) VL_MT_SAFE;
+
+    // Internal: logfile
+    std::string logFilename() const VL_MT_SAFE;
+    void logFilename(const std::string& flag) VL_MT_SAFE;
+    bool logOutputToFile() const VL_MT_SAFE;
+    void logOutputToFile(bool append) VL_MT_SAFE;
+    void logRestoreOutput() VL_MT_SAFE;
 
     // Internal: $dumpfile
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
