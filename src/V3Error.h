@@ -676,7 +676,6 @@ void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_MT
 void v3errorEndFatal(std::ostringstream& sstr)
     VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE VL_ATTR_NORETURN;
 
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #ifdef VL_MT_DISABLED_CODE_UNIT
 #define VL_MT_DISABLED_CODE_UNIT_DEFINED 1
 #else
@@ -712,7 +711,6 @@ void v3errorEndFatal(std::ostringstream& sstr)
 //
 // Requires debug() function to exist in current scope, to hack this in temporarily:
 // auto debug = []() -> bool { return V3Error::debugDefault(); };
-// NOLINTBEGIN(cppcoreguidelines-avoid-do-while)
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
@@ -794,7 +792,6 @@ void v3errorEndFatal(std::ostringstream& sstr)
         v3error("Internal: Unexpected Call"); \
         v3fatalSrc("Unexpected Call"); \
     } while (false)
-// NOLINTEND(cppcoreguidelines-avoid-do-while)
 
 /// Throw fatal and return a value. The return value will never really be
 /// needed, but required to avoid compiler error.
@@ -854,7 +851,6 @@ void v3errorEndFatal(std::ostringstream& sstr)
         return dumpTreeJsonLevel() >= dumpTreeLevel() ? dumpTreeJsonLevel() : dumpTreeLevel(); \
     } \
     static_assert(true, "")
-// NOLINTEND(cppcoreguidelines-macro-usage)
 
 //----------------------------------------------------------------------
 
