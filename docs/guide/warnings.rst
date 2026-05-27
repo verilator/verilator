@@ -1414,9 +1414,11 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   Warns that the specified signal comes from multiple ``always``
-   blocks, each with different clocking. This warning does not look at
-   individual bits (see the example below).
+   Warns that the specified signal has multiple procedural drivers.
+
+   One case is when the signal comes from multiple ``always`` blocks,
+   each with different clocking. This warning does not look at individual
+   bits (see the example below).
 
    This is considered bad style, as the consumer of a given signal may be
    unaware of the inconsistent clocking, causing clock domain crossing
@@ -1430,8 +1432,28 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_msg.rst
 
-   Ignoring this warning will only slow simulations; it will simulate
-   correctly. It may, however, cause longer simulation runtimes due to
+   Another case is when a variable written in an ``always_comb`` or
+   ``always_ff`` block is also written by another process. IEEE 1800
+   requires variables written in these specialized always blocks to be
+   written only by that process.
+
+   Faulty ``always_ff`` example:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVEN_alwaysff_faulty.rst
+
+   To retain an initialization without adding another process, use a
+   declaration initializer (or, for synthesizable code, add a reset term):
+
+   .. code-block:: sv
+
+      logic q = 1'b0;
+
+      always_ff @(posedge clk) begin
+        q <= d;
+      end
+
+   Ignoring this warning may hide clock domain crossing, timing, or
+   portability bugs. It may also cause longer simulation runtimes due to
    reduced optimizations.
 
 
@@ -1798,11 +1820,17 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_PROCASSINIT_fixed.rst
 
-   Alternatively, use an initial block for the initialization:
+   For non-``always_ff`` logic, alternatively use an initial block for
+   the initialization:
 
    .. code-block:: sv
 
       initial flop_out = 1;  // <--- Fixed
+
+   Do not use a separate initial block for a variable assigned by an
+   ``always_ff`` process, as IEEE 1800 requires an ``always_ff`` variable
+   to be written only by that process. Use a declaration initializer, or
+   initialize the variable from reset logic inside the ``always_ff``.
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.

@@ -660,6 +660,7 @@ module fsm_competing_direct (
     input logic start
 );
   /* verilator lint_off BLKANDNBLK */
+  /* verilator lint_off MULTIDRIVEN */
   typedef enum logic [1:0] {
     S0 = 2'd0,
     S1 = 2'd1,
@@ -692,6 +693,7 @@ module fsm_competing_direct (
       .state_i(state_d),
       .state_o(state_q)
   );
+  /* verilator lint_on MULTIDRIVEN */
   /* verilator lint_on BLKANDNBLK */
 endmodule
 

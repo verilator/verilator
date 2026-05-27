@@ -47,6 +47,7 @@ class UndrivenVarEntry final {
         = nullptr;  // always_comb of var if driven within always_comb, else nullptr
     const FileLine* m_alwCombFileLinep = nullptr;  // File line of always_comb of var if driven
                                                    // within always_comb, else nullptr
+    const AstAlways* m_alwFFp = nullptr;  // always_ff of var if driven within always_ff
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
     const AstNode* m_initialp = nullptr;  // varref if driven in an explicit initial block
@@ -58,7 +59,13 @@ class UndrivenVarEntry final {
 
     const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
 
-    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
+    enum : uint8_t {
+        FLAG_USED = 0,  // Signal or bit has been read/observed
+        FLAG_DRIVEN = 1,  // Signal or bit has been written/driven
+        FLAG_DRIVEN_ALWCOMB = 2,  // Whole signal has been driven from always_comb
+        FLAG_DRIVEN_ALWFF = 3,  // Whole signal has been driven from always_ff
+        FLAGS_PER_BIT = 4  // Number of flags stored for each tracked bit
+    };
 
 public:
     // CONSTRUCTORS
@@ -151,6 +158,10 @@ public:
         m_alwCombp = alwCombp;
         m_alwCombFileLinep = fileLinep;
     }
+    void drivenAlwaysFFWhole(const AstAlways* alwFFp, const AstVar* varp) {
+        m_wholeFlags[FLAG_DRIVEN_ALWFF] = true;
+        m_alwFFp = alwFFp;
+    }
 
     const AstNode* initStaticp() const { return m_initStaticp; }
     void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
@@ -164,11 +175,13 @@ public:
     bool isUnderGen() const { return m_underGen; }
     bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
     bool isDrivenAlwaysCombWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWCOMB]; }
+    bool isDrivenAlwaysFFWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWFF]; }
     bool isFtaskDriven() const { return m_ftaskDriven; }
     const AstNodeVarRef* getNodep() const { return m_nodep; }
     const FileLine* getNodeFileLinep() const { return m_nodeFileLinep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
     const FileLine* getAlwCombFileLinep() const { return m_alwCombFileLinep; }
+    const AstAlways* getAlwFFp() const { return m_alwFFp; }
     void usedBit(int bit, int width, const AstNode* nodep) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
@@ -366,6 +379,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
+    const AstAlways* m_alwaysFFp = nullptr;  // Current always if ff, otherwise nullptr
 
     V3UndrivenCapture* const m_capturep = nullptr;  // Capture object.  'nullptr' if disabled.
 
@@ -523,6 +537,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                     const AstNode* const otherWritep
                         = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
                                              : entryp->callNodep();
+                    const bool otherWriteIsStaticInit
+                        = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
@@ -545,6 +561,31 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << nodep->warnContextPrimary() << '\n'
                                                        << otherWritep->warnOther()
                                                        << "... Location of always_comb write\n"
+                                                      << otherWritep->warnContextSecondary());
+                    }
+                    if (m_alwaysFFp
+                        && !otherWriteIsStaticInit
+                        && (!entryp->isDrivenAlwaysFFWhole()
+                            || (m_alwaysFFp != entryp->getAlwFFp()
+                                && m_alwaysFFp->fileline()
+                                       != entryp->getAlwFFp()->fileline()))) {
+                        nodep->v3warn(
+                            MULTIDRIVEN,
+                            "Variable written to in always_ff also written by other process"
+                                << " (IEEE 1800-2023 9.2.2.4): " << nodep->prettyNameQ() << '\n'
+                                << nodep->warnOther() << '\n'
+                                << nodep->warnContextPrimary() << '\n'
+                                << otherWritep->warnOther() << "... Location of other write\n"
+                                << otherWritep->warnContextSecondary());
+                    }
+                    if (!m_alwaysFFp && !m_inInitialStatic && entryp->isDrivenAlwaysFFWhole()) {
+                        nodep->v3warn(MULTIDRIVEN, "Variable also written to in always_ff"
+                                                       << " (IEEE 1800-2023 9.2.2.4): "
+                                                       << nodep->prettyNameQ() << '\n'
+                                                       << nodep->warnOther() << '\n'
+                                                       << nodep->warnContextPrimary() << '\n'
+                                                       << otherWritep->warnOther()
+                                                       << "... Location of always_ff write\n"
                                                        << otherWritep->warnContextSecondary());
                     }
                 }
@@ -558,6 +599,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                     entryp->underGenerate();
                 if (m_alwaysCombp)
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
+                if (m_alwaysFFp)
+                    entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
             }
             if (nodep->access().isWriteOrRW()) {
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
@@ -645,6 +688,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysp);
         VL_RESTORER(m_alwaysCombp);
+        VL_RESTORER(m_alwaysFFp);
         AstNode::user2ClearTree();
         m_alwaysp = nodep;
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
@@ -653,6 +697,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         } else {
             m_alwaysCombp = nullptr;
         }
+        m_alwaysFFp = nodep->keyword() == VAlwaysKwd::ALWAYS_FF ? nodep : nullptr;
         iterateChildrenConst(nodep);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep);
     }
@@ -684,6 +729,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 entryp->drivenViaCall(nodep);
                 if (m_alwaysCombp)
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
+                if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, varp);
             }
         }
     }

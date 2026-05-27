@@ -75,8 +75,7 @@ module t
   // FSM with ++/--
   // A more elaborate case statement, with if-else, for loops, etc
   // to confirm that ++/-- is handled by V3LinkInc.cpp
-  logic [3:0] state_d, state_q;
-  initial state_q = '0;
+  logic [3:0] state_d, state_q = '0;
   logic [3:0] state_counter_d, state_counter_q;
   always_ff @(posedge clk) begin
     state_q         <= state_d;
