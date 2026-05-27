@@ -1300,6 +1300,14 @@ class ParamProcessor final {
     // Resolve an unresolved RefDType whose classOrPackageOp targets a parameterized
     // class or a typedef alias of one. Specializes the class and links the typedef.
     void resolveParamClassRefDType(AstNodeDType* dtypep) {
+        // Recurse into struct/union members for buried RefDTypes
+        if (AstNodeUOrStructDType* const sup = VN_CAST(dtypep, NodeUOrStructDType)) {
+            for (AstMemberDType* memp = sup->membersp(); memp;
+                 memp = VN_AS(memp->nextp(), MemberDType)) {
+                resolveParamClassRefDType(memp->subDTypep());
+            }
+            return;
+        }
         AstRefDType* const refp = dtypep ? VN_CAST(dtypep, RefDType) : nullptr;
         if (!refp) return;
         if (refp->typedefp() || refp->refDTypep()) return;
