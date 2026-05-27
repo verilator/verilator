@@ -50,7 +50,7 @@ def build_and_run(top, prefix, dirname):
 
 # Generate three concrete hierarchy coverage files.  The first two use the
 # same design unit under different hierarchy paths; the third uses a different
-# unit so --hier-merge must preserve both instance and design-unit identity.
+# unit so --per-instance must preserve both instance and design-unit identity.
 same_a_cov = build_and_run("tb_same_a", "Vsame_a", "same_a")
 same_b_cov = build_and_run("tb_same_b", "Vsame_b", "same_b")
 other_cov = build_and_run("tb_other", "Vother", "other")
@@ -58,7 +58,7 @@ other_cov = build_and_run("tb_other", "Vother", "other")
 merged_cov = test.obj_dir + "/coverage.dat"
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--hier-merge",
+    "--per-instance",
     "--write",
     merged_cov,
     same_a_cov,
@@ -82,8 +82,6 @@ test.files_identical(test.obj_dir + "/annotated/t_vlcov_hier_merge_three.v",
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--report",
-    "summary",
     merged_cov,
 ],
          logfile=test.obj_dir + "/summary.log",

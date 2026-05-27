@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Runtime hierarchy report with per-instance all-coverage data
+// DESCRIPTION: Verilator: Runtime hierarchy coverage data for per-instance merge tests
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder

@@ -20,7 +20,7 @@ hier_dir = test.obj_dir + "/hier"
 flat_dir = test.obj_dir + "/flat"
 hier_cov = hier_dir + "/coverage.dat"
 flat_cov = flat_dir + "/coverage.dat"
-source = "t/t_vlcov_hier_report_runtime.v"
+source = "t/t_vlcov_hier_merge_mixed_bad.v"
 
 test.mkdir_ok(hier_dir)
 test.mkdir_ok(flat_dir)
@@ -79,7 +79,7 @@ test.run(cmd=[
     test.obj_dir,
     "&&",
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--hier-merge",
+    "--per-instance",
     "--write",
     "coverage.dat",
     "hier/coverage.dat",

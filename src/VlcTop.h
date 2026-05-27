@@ -55,7 +55,6 @@ public:
 
     // METHODS
     void annotate(const string& dirname);
-    void printHierarchyReport();
     void printTypeSummary();
     void readCoverage(const string& filename, bool nonfatal = false);
     void writeCoverage(const string& filename);

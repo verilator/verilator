@@ -22,7 +22,7 @@ with open(log, "w", encoding="utf-8"):
 
 test.run(cmd=[
     vlcov,
-    "--hier-merge",
+    "--per-instance",
     "--write",
     test.obj_dir + "/coverage.dat",
     "t/t_cover_hier.out",
@@ -34,15 +34,14 @@ test.files_identical_sorted(test.obj_dir + "/coverage.dat", "t/t_cover_hier.out"
 extra_cov = test.obj_dir + "/extra_key.dat"
 with open(extra_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
-    # Verify --hier-merge preserves deterministic identity when a coverage
-    # point contains an unknown encoded key. Known keys should be emitted in
-    # canonical order, and the unknown key should be retained afterward.
+    # Verify --per-instance preserves unknown encoded keys without rewriting
+    # the raw point name.
     fh.write("C '\001Z\002extra\001f\002t/edge.v\001l\0021\001t\002line"
              "\001page\002v_line/edge\001h\002top.u' 1\n")
 
 test.run(cmd=[
     vlcov,
-    "--hier-merge",
+    "--per-instance",
     "--write",
     test.obj_dir + "/extra_key_merged.dat",
     extra_cov,
@@ -52,15 +51,15 @@ test.run(cmd=[
 extra_expected = test.obj_dir + "/extra_key_expected.dat"
 with open(extra_expected, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
-    fh.write("C '\001f\002t/edge.v\001l\0021\001t\002line\001page\002v_line/edge"
-             "\001h\002top.u\001Z\002extra' 1\n")
+    fh.write("C '\001Z\002extra\001f\002t/edge.v\001l\0021\001t\002line"
+             "\001page\002v_line/edge\001h\002top.u' 1\n")
 
 test.files_identical(test.obj_dir + "/extra_key_merged.dat", extra_expected)
 
 missing_cov = test.obj_dir + "/missing.dat"
 with open(missing_cov, "w", encoding="utf-8") as fh:
     fh.write("# SystemC::Coverage-3\n")
-    # --hier-merge must reject missing hierarchy just as strictly as collapsed
+    # --per-instance must reject missing hierarchy just as strictly as collapsed
     # hierarchy, because there is no instance identity to preserve.
     fh.write("C '\001f\002t/missing.v\001l\0021\001t\002line\001page\002v_line/missing' 1\n")
 
@@ -84,13 +83,13 @@ def run_bad(label, args):
     append_bad_log(label, [vlcov, *args])
 
 
-run_bad("verilator_coverage --hier-merge t/t_cover_hier.out",
-        ["--hier-merge", "t/t_cover_hier.out"])
-run_bad("verilator_coverage --hier-merge --write coverage.dat t/t_cover_lib__1.out",
-        ["--hier-merge", "--write", test.obj_dir + "/bad_collapsed.dat", "t/t_cover_lib__1.out"])
-append_bad_log(
-    "verilator_coverage --hier-merge --write coverage.dat missing.dat",
-    ["cd", test.obj_dir, "&&", vlcov, "--hier-merge", "--write", "bad_missing.dat", "missing.dat"])
+run_bad("verilator_coverage --per-instance t/t_cover_hier.out",
+        ["--per-instance", "t/t_cover_hier.out"])
+run_bad("verilator_coverage --per-instance --write coverage.dat t/t_cover_lib__1.out",
+        ["--per-instance", "--write", test.obj_dir + "/bad_collapsed.dat", "t/t_cover_lib__1.out"])
+append_bad_log("verilator_coverage --per-instance --write coverage.dat missing.dat", [
+    "cd", test.obj_dir, "&&", vlcov, "--per-instance", "--write", "bad_missing.dat", "missing.dat"
+])
 
 test.files_identical(log, test.golden_filename)
 

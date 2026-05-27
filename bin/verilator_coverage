@@ -157,13 +157,9 @@ verilator_coverage - Verilator coverage analyzer
 
     verilator_coverage --annotate <obj>
 
-    verilator_coverage --report summary <datafiles>...
-
-    verilator_coverage --report hier <datafiles>...
-
     verilator_coverage  -write merged.dat <datafiles>...
 
-    verilator_coverage  -hier-merge -write merged.dat <datafiles>...
+    verilator_coverage  -per-instance -write merged.dat <datafiles>...
 
     verilator_coverage  -write-info merged.info <datafiles>...
 
@@ -180,12 +176,10 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --annotate-min <count>        Minimum occurrence count for uncovered.
     --annotate-points             Annotates info from each coverage point.
     --filter-type <regex>         Keep only records of given coverage type.
-    --hier-merge                  Preserve concrete per-instance hierarchy with --write.
     --help                        Displays this message and version and exits.
     --include-reset-arcs          Include reset arcs in FSM arc summaries.
-    --levels <depth>              Limit displayed hierarchy report depth.
+    --per-instance                Preserve concrete per-instance hierarchy with --write.
     --rank                        Compute relative importance of tests.
-    --report <kind>               Generate a report: summary, hier, or hierarchy.
     --unlink                      With --write, unlink all inputs
     --version                     Displays program version and exits.
     --write <filename>            Write aggregate coverage results.

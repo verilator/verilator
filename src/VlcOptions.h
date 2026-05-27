@@ -41,10 +41,8 @@ class VlcOptions final {
     bool m_annotatePoints = false;  // main switch: --annotate-points
     bool m_includeResetArcs = false;  // main switch: --include-reset-arcs
     string m_filterType = "*";  // main switch: --filter-type
-    bool m_hierMerge = false;  // main switch: --hier-merge
+    bool m_perInstance = false;  // main switch: --per-instance
     VlStringSet m_readFiles;    // main switch: --read
-    int m_reportLevels = 0;     // main switch: --levels
-    string m_report;            // main switch: --report
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
     string m_writeFile;         // main switch: --write
@@ -72,11 +70,7 @@ public:
     bool countOk(uint64_t count) const { return count >= static_cast<uint64_t>(m_annotateMin); }
     bool annotatePoints() const { return m_annotatePoints; }
     bool includeResetArcs() const { return m_includeResetArcs; }
-    bool hierMerge() const { return m_hierMerge; }
-    int reportLevels() const { return m_reportLevels; }
-    string report() const { return m_report; }
-    bool reportSummary() const { return m_report == "summary"; }
-    bool reportHierarchy() const { return m_report == "hierarchy" || m_report == "hier"; }
+    bool perInstance() const { return m_perInstance; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }

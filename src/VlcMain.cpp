@@ -69,10 +69,8 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
-    DECL_OPTION("-hier-merge", OnOff, &m_hierMerge);
     DECL_OPTION("-include-reset-arcs", OnOff, &m_includeResetArcs);
-    DECL_OPTION("-levels", Set, &m_reportLevels);
-    DECL_OPTION("-report", Set, &m_report);
+    DECL_OPTION("-per-instance", OnOff, &m_perInstance);
     DECL_OPTION("-rank", OnOff, &m_rank);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
@@ -104,12 +102,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             ++i;
         }
     }
-    if (!m_report.empty() && m_report != "summary" && m_report != "hierarchy"
-        && m_report != "hier") {
-        v3fatal("Invalid --report option: " << m_report);
-    }
-    if (m_reportLevels < 0) v3fatal("--levels must be non-negative");
-    if (m_hierMerge && m_writeFile.empty()) v3fatal("--hier-merge requires --write");
+    if (m_perInstance && m_writeFile.empty()) v3fatal("--per-instance requires --write");
 }
 
 void VlcOptions::showVersion(bool verbose) {
@@ -150,12 +143,9 @@ int main(int argc, char** argv) {
         top.points().dump();
     }
 
-    if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()
-        && top.opt.report().empty()) {
+    if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()) {
         top.printTypeSummary();
     }
-    if (top.opt.reportSummary()) top.printTypeSummary();
-    if (top.opt.reportHierarchy()) top.printHierarchyReport();
 
     V3Error::abortIfWarnings();
     if (!top.opt.annotateOut().empty()) top.annotate(top.opt.annotateOut());
