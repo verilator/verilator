@@ -318,7 +318,7 @@ public:
         bool firedAtInitialization = false;
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
-            const auto& pair = createTerm(senItemp);
+            const auto& pair = build(senItemp);
             if (AstNodeExpr* termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
