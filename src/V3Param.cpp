@@ -3061,8 +3061,9 @@ class ParamVisitor final : public VNVisitor {
                 }
             }
             // Fallback: a direct local interface instance ("inst.PARAM"), not reached via a port.
-            if (const auto it = m_ifaceInstCells.find(dotted); it != m_ifaceInstCells.end()) {
-                AstCell* const cellp = it->second;
+            const auto ifaceCellIt = m_ifaceInstCells.find(dotted);
+            if (ifaceCellIt != m_ifaceInstCells.end()) {
+                AstCell* const cellp = ifaceCellIt->second;
                 deparamIfaceCellNow(cellp);
                 ifaceParamReplace(nodep, cellp->modp()->stmtsp());
             }
