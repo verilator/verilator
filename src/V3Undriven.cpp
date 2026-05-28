@@ -45,15 +45,12 @@ class UndrivenVarEntry final {
     const AstNode* m_usedNotDrivenp = nullptr;  // First read before any write
     const AstAlways* m_alwCombp
         = nullptr;  // always_comb of var if driven within always_comb, else nullptr
-    const FileLine* m_alwCombFileLinep = nullptr;  // File line of always_comb of var if driven
-                                                   // within always_comb, else nullptr
     const AstAlways* m_alwFFp = nullptr;  // always_ff of var if driven within always_ff
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
     const AstNode* m_initialp = nullptr;  // varref if driven in an explicit initial block
     const AstNode* m_contAssignp = nullptr;  // varref if in continuous assignment driven
     const AstNode* m_procWritep = nullptr;  // varref if written in process
-    const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
     bool m_ftaskDriven = false;  // Last driven by function or task
 
@@ -147,16 +144,14 @@ public:
         UINFO(9, "set d[*] " << m_varp->name() << " " << nodep);
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
-    void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep, bool ftaskDef) {
+    void drivenWhole(const AstNodeVarRef* nodep, bool ftaskDef) {
         m_ftaskDriven = ftaskDef && !isDrivenWhole();
         drivenWhole(nodep);
         m_nodep = nodep;
-        m_nodeFileLinep = fileLinep;
     }
-    void drivenAlwaysCombWhole(const AstAlways* alwCombp, const FileLine* fileLinep) {
+    void drivenAlwaysCombWhole(const AstAlways* alwCombp) {
         m_wholeFlags[FLAG_DRIVEN_ALWCOMB] = true;
         m_alwCombp = alwCombp;
-        m_alwCombFileLinep = fileLinep;
     }
     void drivenAlwaysFFWhole(const AstAlways* alwFFp, const AstVar* varp) {
         m_wholeFlags[FLAG_DRIVEN_ALWFF] = true;
@@ -178,9 +173,7 @@ public:
     bool isDrivenAlwaysFFWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWFF]; }
     bool isFtaskDriven() const { return m_ftaskDriven; }
     const AstNodeVarRef* getNodep() const { return m_nodep; }
-    const FileLine* getNodeFileLinep() const { return m_nodeFileLinep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
-    const FileLine* getAlwCombFileLinep() const { return m_alwCombFileLinep; }
     const AstAlways* getAlwFFp() const { return m_alwFFp; }
     void usedBit(int bit, int width, const AstNode* nodep) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
@@ -528,22 +521,22 @@ class UndrivenVisitor final : public VNVisitorConst {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp));
                     warnAlwCombOrder(nodep, entryp->firstUsedNotDrivenp());
                 }
+                const AstNodeVarRef* const otherVarRefp = entryp->getNodep();
+                const AstNode* const otherWritep
+                    = otherVarRefp ? static_cast<const AstNode*>(otherVarRefp) : entryp->callNodep();
+                const bool sameFileLine
+                    = otherVarRefp && nodep->fileline() == otherVarRefp->fileline();
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() || entryp->callNodep()) && !entryp->isFtaskDriven()
-                    && !ftaskDef) {
-
-                    const AstNode* const otherWritep
-                        = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
-                                             : entryp->callNodep();
+                    && !sameFileLine && !entryp->isUnderGen() && otherWritep
+                    && !entryp->isFtaskDriven() && !ftaskDef) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
                             || (m_alwaysCombp != entryp->getAlwCombp()
-                                && m_alwaysCombp->fileline() != entryp->getAlwCombFileLinep()))) {
+                                && m_alwaysCombp->fileline() != entryp->getAlwCombp()->fileline()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,
                             "Variable written to in always_comb also written by other process"
@@ -589,14 +582,14 @@ class UndrivenVisitor final : public VNVisitorConst {
                 }
                 if (!m_inInitialSetup || nodep->varp()->hasUserInit()) {
                     // Else don't count default initialization as a driver to a net/variable
-                    entryp->drivenWhole(nodep, nodep->fileline(), ftaskDef);
+                    entryp->drivenWhole(nodep, ftaskDef);
                 }
                 if (m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()
                     && m_alwaysCombp != entryp->getAlwCombp()
-                    && m_alwaysCombp->fileline() == entryp->getAlwCombFileLinep())
+                    && m_alwaysCombp->fileline() == entryp->getAlwCombp()->fileline())
                     entryp->underGenerate();
                 if (m_alwaysCombp)
-                    entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
+                    entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
             }
             if (nodep->access().isWriteOrRW()) {
@@ -725,7 +718,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 UndrivenVarEntry* const entryp = getEntryp(varp, usr);
                 entryp->drivenViaCall(nodep);
                 if (m_alwaysCombp)
-                    entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
+                    entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, varp);
             }
         }
