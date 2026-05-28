@@ -419,7 +419,7 @@ public:
         AstVar* const varp = varInfo.m_varVscp->varp();
         const std::vector<int> dimSizes = unpackedDimSizes(varp->dtypep(), nullptr);
         return foreachUnpackedLeaf(
-            dimSizes, [&, this](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
+            dimSizes, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
                 AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
                 markNonReplaceable(baseRefp);
                 AstNodeExpr* const baseSelp = buildNestedArraySel(flp, baseRefp, idx);
