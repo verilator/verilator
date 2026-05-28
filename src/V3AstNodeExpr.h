@@ -265,7 +265,16 @@ public:
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     bool isPure() override;
-
+    bool sameNode(const AstNode* samep) const override {
+        const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
+        return taskp() == asamep->taskp()  //
+               && classOrPackagep() == asamep->classOrPackagep()  //
+               && name() == asamep->name()  //
+               && dotted() == asamep->dotted()  //
+               && inlinedDots() == asamep->inlinedDots()  //
+               && pli() == asamep->pli()  //
+               && containsGenBlock() == asamep->containsGenBlock();
+    }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
@@ -4999,6 +5008,11 @@ public:
     AstFuncRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
         : ASTGEN_SUPER_FuncRef(fl, name, argsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
+    bool sameNode(const AstNode* samep) const override {
+        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
+        const AstFuncRef* const asamep = VN_DBG_AS(samep, FuncRef);
+        return superReference() == asamep->superReference();
+    }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
 };
@@ -5032,7 +5046,6 @@ public:
     ASTGEN_MEMBERS_AstNew;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool isImplicit() const { return m_isImplicit; }
     void isImplicit(bool flag) { m_isImplicit = flag; }
@@ -5050,6 +5063,11 @@ public:
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;
+    bool sameNode(const AstNode* samep) const override {
+        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
+        const AstTaskRef* const asamep = VN_DBG_AS(samep, TaskRef);
+        return superReference() == asamep->superReference();
+    }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
 };
