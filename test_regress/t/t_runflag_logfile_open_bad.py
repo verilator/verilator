@@ -7,29 +7,18 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import os
-import stat
 import vltest_bootstrap
 
 test.scenarios('vlt')
 
 test.compile()
 
+badfile = "/does-not-exist/badfile.log"
 logfile = test.obj_dir + "/logfile.log"
-capturefile = test.obj_dir + "/capture.log"
 
-# Create the logfile
-with open(logfile, 'w', encoding='utf8') as f:
-    f.write("Read-only logfile\n")
-# Change permission to read only so execute() fail when creating the logfile
-os.chmod(logfile, stat.S_IREAD)
+log_flags = '+verilator+log+file+' + badfile
+test.execute(all_run_flags=[log_flags, ">", logfile, "2>&1"], fails=True)
 
-log_flags = '+verilator+log+file+' + logfile
-test.execute(all_run_flags=[log_flags, ">", capturefile, "2>&1"], fails=True)
-
-# Set read + write so test does not fail next time it is run
-os.chmod(logfile, stat.S_IREAD | stat.S_IWRITE)
-
-test.files_identical(capturefile, test.golden_filename)
+test.files_identical(logfile, test.golden_filename)
 
 test.passes()
