@@ -191,7 +191,7 @@ void VlFiber::setWaiter(std::coroutine_handle<> waiter) {
 //======================================================================
 // Bootstrap
 
-[[noreturn]] void VlFiber::entryPoint(VlFiber* fiberp) {
+void VlFiber::entryPoint(VlFiber* fiberp) {
     s_currentFiberp = fiberp;
     fiberp->m_fn();
     fiberp->m_done = true;
