@@ -132,6 +132,8 @@ public:
     };
 
 private:
+    using ScopeVarCache = std::unordered_map<const AstVar*, AstVarScope*>;
+
     // NODE STATE
     //  AstVarRef::user1      -> Flag indicating not to replace reference
     //  AstAssignForce::user2 -> true if force is synthetic (externally forceable)
@@ -144,6 +146,7 @@ private:
     std::unordered_map<AstVar*, VarForceInfo> m_varInfo;
     std::unordered_set<AstVar*> m_clockedWrites;
     std::unordered_map<AstVar*, std::vector<ForceInfo*>> m_rhsDepToForces;
+    std::unordered_map<AstScope*, ScopeVarCache> m_scopeVarCaches;
     bool m_doingAssign = false;  // If true, we're processing procedural continuous assign
                                  // statements instead of force statements
 
