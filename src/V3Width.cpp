@@ -4712,7 +4712,7 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             userIterate(ftaskp, nullptr);
-            if (ftaskp->isStatic()) {
+            if (ftaskp->isStatic() && !adtypep->isVirtual()) {
                 AstArg* const argsp = nodep->argsp();
                 if (argsp) argsp->unlinkFrBackWithNext();
                 AstNodeFTaskRef* newp = nullptr;
