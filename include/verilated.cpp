@@ -4405,8 +4405,8 @@ void VlFormatString::applyDouble(double value) {
     if (!proceed()) m_fmtChar = FormatChar::f;
 
     switch (m_fmtChar) {
-    case FormatChar::e: // FALLTHRU
-    case FormatChar::f: // FALLTHRU
+    case FormatChar::e:  // FALLTHRU
+    case FormatChar::f:  // FALLTHRU
     case FormatChar::g: {  // Print with given format string
         renderDouble(m_format.substr(m_fmtBegin, m_fmtEnd - m_fmtBegin), value);
         break;
@@ -4417,10 +4417,10 @@ void VlFormatString::applyDouble(double value) {
         break;
     }
 
-    case FormatChar::d: // FALLTHRU
-    case FormatChar::b: // FALLTHRU
-    case FormatChar::o: // FALLTHRU
-    case FormatChar::h: // FALLTHRU
+    case FormatChar::d:  // FALLTHRU
+    case FormatChar::b:  // FALLTHRU
+    case FormatChar::o:  // FALLTHRU
+    case FormatChar::h:  // FALLTHRU
     case FormatChar::x: {  // Round to 64-bit integer and print as int
         VlWide<2> wide;
         VL_SET_WQ(wide, VL_RTOIROUND_Q_D(value));

@@ -218,7 +218,7 @@ inline void VL_SFORMAT_NX(int /*obits*/, std::string& dest, const std::string& f
     dest = formatter.result();
 }
 template <typename... Args>
-inline std::string VL_SFORMATF_N_NX(const std::string& format, int, Args&&...args) VL_MT_SAFE {
+inline std::string VL_SFORMATF_N_NX(const std::string& format, int, Args&&... args) VL_MT_SAFE {
     VlFormatString formatter{format, std::forward<Args>(args)...};
     return formatter.result();
 }
