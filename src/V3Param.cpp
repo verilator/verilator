@@ -1924,7 +1924,6 @@ class ParamProcessor final {
                     classRefDType->addParamsp(newPinp);
                 }
                 // Update local tracking so future dependent defaults can find it
-                pinsByIndex.resize(paramIdx + 1, nullptr);
                 pinsByIndex[paramIdx] = newPinp;
                 if (!paramsp) paramsp = newPinp;
             }
