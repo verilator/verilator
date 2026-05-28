@@ -9,10 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios("simulator")
 
-test.compile(verilator_flags2=["--cc -Wno-fatal -fno-inline --coverage --top-module interrupt --no-skip-identical"],
-          fails=False,
-          expect_filename=test.golden_filename)
+test.compile(
+    verilator_flags2=[
+        "-fno-inline",
+        "--coverage",
+    ],
+    fails=True,
+    expect_filename=test.golden_filename,
+)
 
 test.passes()
