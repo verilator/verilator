@@ -3459,7 +3459,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     const double walltime = statWallTimeSinceStart();
     const double cputime = statCpuTimeSinceStart();
     const std::string simtimePerf
-        = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
+        = vl_timescaled_double((walltime != 0.0) ? (simtimeInUnits / walltime) : 0, "%0.3f %s");
     VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
               simtime.c_str(), walltime, simtimePerf.c_str());
     uint64_t memPeak;
