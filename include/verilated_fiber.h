@@ -35,7 +35,7 @@
 #if defined(__x86_64__) && defined(__linux__)
 #define FIBER_LINUX_X64
 #else
-#error "This platform has is not supported"
+#error "This platform is not supported"
 #endif
 
 #if defined(FIBER_LINUX_X64)
@@ -45,12 +45,15 @@
 #include <sys/mman.h>
 #endif
 
-namespace VlFiberInternal {
+class VlFiber;
 
 #if defined(FIBER_LINUX_X64)
-using Register = std::uintptr_t;
 
-struct Context {
+class VlFiberContext final {
+public:
+    using Register = std::uintptr_t;
+
+private:
     std::jmp_buf callerCtx{};  // Register state of caller context
     std::jmp_buf fiberCtx{};  // Register state of fiber context
     void* mappingp;  // Base of mmap allocation (includes guards)
@@ -58,12 +61,20 @@ struct Context {
     Register rsp;
     Register rdi;
     Register rip;
+
+public:
+    // Set maximum stack size to 16MB
+    static constexpr std::size_t stackSize = 16 * (1 << 20);
+
+    VlFiberContext(void (*f)(VlFiber*), VlFiber* arg);
+    VlFiberContext() {};
+    void teardown();
+    void yield();
+    void resume();
+    void start();
 };
 
-// Set maximum stack size to 16MB
-constexpr std::size_t stackSize = 16 * (1 << 20);
 #endif
-};  //namespace VlFiberInternal
 
 // Simple userspace fiber used to run DPI code on an alternate stack.
 class VlFiber final {
@@ -96,7 +107,7 @@ public:
     VlFiber& operator=(const VlFiber&) = delete;
 
 private:
-    VlFiberInternal::Context m_ctx{};  // Platform-dependent internal fiber context
+    VlFiberContext m_ctx;  // Platform-dependent internal fiber context
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
     bool m_done = false;  // Set once m_fn returns

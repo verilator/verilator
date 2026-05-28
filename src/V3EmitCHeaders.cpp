@@ -605,7 +605,7 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (funcp->dpiImportPrototype())  // Declared in __Dpi.h
-                   continue;
+                    continue;
                 if (funcp->dpiExportDispatcher())  // Declared in __Dpi.h
                     continue;
                 if (funcp->isMethod() != inClassBody)  // Only methods go inside class
@@ -714,8 +714,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
-        if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
-        if (v3Global.dpi() && v3Global.usesTiming()) puts("#include \"verilated_dpi_fiber.h\"\n");
+        if (v3Global.opt.timing().isTrue()) puts("#include \"verilated_timing.h\"\n");
         if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
         if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 
