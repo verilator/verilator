@@ -46,7 +46,7 @@ std::uintptr_t alignDown(std::uintptr_t ptr, std::uintptr_t align) { return ptr 
 #if defined(FIBER_LINUX_X64)
 
 template <typename T>
-Context setup(std::function<void(T*)> f, T* arg) {
+Context setup(void (*f)(T*), T* arg) {
     // Get system page size for guard page alignment
     Context ctx;
     const long pageSize = ::sysconf(_SC_PAGESIZE);
@@ -64,10 +64,9 @@ Context setup(std::function<void(T*)> f, T* arg) {
     }
 
     // Initialize memory layout pointers
-    ctx.rsp
-        = alignDown(reinterpret_cast<std::uintptr_t>(ctx.mappingp) + stackSize + pageSize - 1, 16);
+    ctx.rsp = alignDown(reinterpret_cast<std::uintptr_t>(ctx.mappingp) + ctx.mappingSize - 1, 16);
     ctx.rdi = reinterpret_cast<Register>(arg);
-    ctx.rip = reinterpret_cast<Register>(std::addressof(f));
+    ctx.rip = reinterpret_cast<Register>(f);
 
     // Protect guard pages (no read/write access) to catch stack overflow/underflow
     void* const lowGuard = ctx.mappingp;
@@ -84,14 +83,16 @@ Context setup(std::function<void(T*)> f, T* arg) {
 
 void teardown(Context& ctx) { ::munmap(ctx.mappingp, ctx.mappingSize); }
 
-[[noreturn]] void start(Context& ctx) {
-    asm volatile("mov %[stack], %%rsp\n\t"
-                 "xor %%rbp, %%rbp\n\t"
-                 "call *%[entry]\n\t"
-                 :
-                 : [stack] "r"(ctx.rsp), [entry] "r"(ctx.rip), "D"(ctx.rdi)
-                 : "memory");
-    __builtin_unreachable();
+void start(Context& ctx) {
+    if (setjmp(ctx.callerCtx) == 0) {
+        asm volatile("mov %[stack], %%rsp\n\t"
+                     "xor %%rbp, %%rbp\n\t"
+                     "call *%[entry]\n\t"
+                     :
+                     : [stack] "r"(ctx.rsp), [entry] "r"(ctx.rip), "D"(ctx.rdi)
+                     : "memory");
+    }
+    // Returns here when fiber yields or completes
 }
 
 void resume(Context& ctx) {
@@ -127,8 +128,7 @@ std::unique_ptr<VlFiber> VlFiber::create(Fn fn) {
 
 VlFiber::VlFiber(Fn fn)
     : m_fn{std::move(fn)} {
-    std::function<void(VlFiber*)> f = VlFiber::entryPoint;
-    m_ctx = VlFiberInternal::setup(f, this);
+    m_ctx{VlFiberInternal::setup(&VlFiber::entryPoint, this)};
 }
 
 VlFiber::~VlFiber() {
@@ -152,7 +152,7 @@ void VlFiber::resume() {
 
     if (!m_started) {
         m_started = true;
-        start(this);
+        VlFiberInternal::start(m_ctx);
     } else {
         VlFiberInternal::resume(m_ctx);
     }
@@ -189,9 +189,7 @@ void VlFiber::setWaiter(std::coroutine_handle<> waiter) {
 }
 
 //======================================================================
-// Bootstrap helpers
-
-[[noreturn]] void VlFiber::start(VlFiber* fiberp) { VlFiberInternal::start(fiberp->m_ctx); }
+// Bootstrap
 
 [[noreturn]] void VlFiber::entryPoint(VlFiber* fiberp) {
     s_currentFiberp = fiberp;
