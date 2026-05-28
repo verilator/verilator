@@ -530,7 +530,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
                     && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
-                    && !ftaskDef) {
+                    && !ftaskDef
+                    && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
 

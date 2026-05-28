@@ -16,4 +16,12 @@
                       t/t_lint_always_ff_multidriven_bad.v:20:5: ... Location of always_ff write
    20 |     b <= 1'b1;
       |     ^
+%Warning-MULTIDRIVEN: t/t_lint_always_ff_multidriven_bad.v:34:7: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'q'
+                                                               : ... note: In instance 't'
+                      t/t_lint_always_ff_multidriven_bad.v:34:7: 
+   34 |       q[i][1] <= a;  
+      |       ^
+                      t/t_lint_always_ff_multidriven_bad.v:29:7: ... Location of other write
+   29 |       q[i][0] <= a;  
+      |       ^
 %Error: Exiting due to

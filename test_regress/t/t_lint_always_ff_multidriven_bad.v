@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Zhi QU
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
+module t(input wire clk);
 
   logic a;
 
@@ -21,5 +21,31 @@ module t;
   end
 
   initial b = 1'b0;  // <--- Warning
+
+  reg [1:0][1:0] q;
+
+  always_ff @(posedge clk) begin
+    for (int i = 0 ; i < 2 ; ++i)
+      q[i][0] <= a; // <--- Warning
+  end
+
+  always_ff @(posedge clk) begin
+    for (int i = 0 ; i < 2 ; ++i)
+      q[i][1] <= a; // <--- Warning
+  end
+
+  /* verilator lint_off MULTIDRIVEN */
+  reg [1:0][1:0] q2;
+  /* verilator lint_on MULTIDRIVEN */
+
+  always_ff @(posedge clk) begin
+    for (int i = 0 ; i < 2 ; ++i)
+      q2[i][0] <= a; // <--- NO Warning
+  end
+
+  always_ff @(posedge clk) begin
+    for (int i = 0 ; i < 2 ; ++i)
+      q2[i][1] <= a; // <--- NO Warning
+  end
 
 endmodule
