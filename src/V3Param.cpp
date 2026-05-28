@@ -2924,10 +2924,22 @@ class ParamVisitor final : public VNVisitor {
                     }
                 });
                 if (hasUnresolvedLparamXRef) return;
-                // Defer if value contains a class::member Dot. By V3Param time the only
-                // surviving such Dots are paramed-class refs awaiting linkDotParamed.
-                if (nodep->valuep()->exists(
-                        [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
+                // Defer if value has a class::member Dot, or references a deferred lparam
+                const bool hasDot = nodep->valuep()->exists(
+                    [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); });
+                bool refsDeferred = false;
+                if (!hasDot) {
+                    const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
+                    nodep->valuep()->foreach([&](const AstVarRef* refp) {
+                        if (refsDeferred) return;
+                        AstVar* const refVarp = refp->varp();
+                        if (refVarp && refVarp->varType() == VVarType::LPARAM
+                            && deferredVarps.count(refVarp)) {
+                            refsDeferred = true;
+                        }
+                    });
+                }
+                if (hasDot || refsDeferred) {
                     v3Global.rootp()->pushDeferredParamVarp(nodep);
                     return;
                 }
