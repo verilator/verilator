@@ -1,2 +1,2 @@
-%Error: Logfile obj_vlt/t_runflag_logfile_open_bad/logfile.log cannot be created
+%Error: Logfile /does-not-exist/badfile.log cannot be created
 Aborting...
