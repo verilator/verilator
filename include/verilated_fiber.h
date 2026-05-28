@@ -106,9 +106,6 @@ private:
 
     VlFiber(Fn fn);
 
-    // Bootstrap entry that jumps to entryPoint on the fiber stack
-    static void start(VlFiber* fiberp) VL_ATTR_NORETURN;
-
     // Actual function executing the user callable and performing cleanup
     static void entryPoint(VlFiber* fiberp) VL_ATTR_NORETURN;
 

@@ -64,13 +64,15 @@ Context setup(void (*f)(T*), T* arg) {
     }
 
     // Initialize memory layout pointers
-    ctx.rsp = alignDown(reinterpret_cast<std::uintptr_t>(ctx.mappingp) + ctx.mappingSize - 1, 16);
+    ctx.rsp
+        = alignDown(reinterpret_cast<std::uintptr_t>(ctx.mappingp) + stackSize + pageSize - 1, 16);
     ctx.rdi = reinterpret_cast<Register>(arg);
     ctx.rip = reinterpret_cast<Register>(f);
 
     // Protect guard pages (no read/write access) to catch stack overflow/underflow
     void* const lowGuard = ctx.mappingp;
-    void* const highGuard = reinterpret_cast<void*>(alignDown(ctx.rsp + pageSize, pageSize));
+    void* const highGuard = reinterpret_cast<void*>(alignDown(
+        reinterpret_cast<std::uintptr_t>(ctx.mappingp) + stackSize + pageSize, pageSize));
 
     if (VL_UNLIKELY(::mprotect(lowGuard, pageSize, PROT_NONE) != 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
