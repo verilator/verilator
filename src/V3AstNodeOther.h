@@ -1285,7 +1285,7 @@ class AstNetlist final : public AstNode {
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
-    std::vector<AstVar*> m_deferredParamVarps;
+    std::set<AstVar*> m_deferredParamVarps;
     // Sparse metadata for constants produced from named parameters/localparams. Keep this off
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
@@ -1295,8 +1295,8 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
-    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.push_back(varp); }
-    const std::vector<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
+    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
+    const std::set<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
     void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable

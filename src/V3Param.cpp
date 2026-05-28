@@ -2932,10 +2932,9 @@ class ParamVisitor final : public VNVisitor {
                     const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
                     nodep->valuep()->foreach([&](const AstVarRef* refp) {
                         if (refsDeferred) return;
-                        const AstVar* const refVarp = refp->varp();
+                        AstVar* const refVarp = refp->varp();
                         if (refVarp && refVarp->varType() == VVarType::LPARAM
-                            && std::find(deferredVarps.begin(), deferredVarps.end(), refVarp)
-                                   != deferredVarps.end()) {
+                            && deferredVarps.count(refVarp)) {
                             refsDeferred = true;
                         }
                     });
