@@ -1550,6 +1550,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->propp(), WidthVP{SELF, BOTH}.p());
+            AstNodeExpr* propp = nodep->propp();
             if (!VN_IS(nodep->loBoundp(), Unbounded)) {
                 userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
                 V3Const::constifyParamsEdit(nodep->loBoundp());
@@ -1588,9 +1589,9 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("always range high bound must be >= low bound"
                                " (IEEE 1800-2023 16.12.11)");
             }
-            bool hasPropertyOp = nodep->propp()->isMultiCycleSva();
+            bool hasPropertyOp = propp->isMultiCycleSva();
             if (!hasPropertyOp) {
-                nodep->propp()->foreach([&](const AstNode* np) {
+                propp->foreach([&](const AstNode* np) {
                     if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
                         hasPropertyOp = true;
                     }
@@ -1601,6 +1602,7 @@ class WidthVisitor final : public VNVisitor {
                               "Unsupported: property/sequence operator inside bounded"
                               " always (IEEE 1800-2023 16.12.11)");
             }
+            VL_DO_DANGLING(fixWidthReduce(propp), propp);
             nodep->dtypeSetBit();
         }
     }
@@ -8552,6 +8554,7 @@ class WidthVisitor final : public VNVisitor {
         // Attempt to fix it quietly
         const int expWidth = 1;
         const int expSigned = false;
+        if (nodep->width() == expWidth) return;
         UINFO(4, "  widthReduce_old: " << nodep);
         AstConst* const constp = VN_CAST(nodep, Const);
         if (constp) {
