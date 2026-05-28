@@ -423,11 +423,10 @@ static void process() {
             // Convert forceable signals, process force/release statements.
             // After V3TraceDecl so we don't trace additional signals inserted to implement
             // forcing.
-            V3Force::forceAll(v3Global.rootp());
-
-            // Convert assign/deassign statements to forces on generated variables, so they can be
-            // handled by the same logic as regular force/release statements.
-            V3Force::assignAll(v3Global.rootp());
+            // Convert forceable signals and assign/deassign statements in one combined pass set.
+            // We reserve AST user slots across both sub-passes so helper pointers can be handed
+            // directly from force discovery to assign/deassign lowering without rediscovery.
+            V3Force::forceAndAssignAll(v3Global.rootp());
 
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());

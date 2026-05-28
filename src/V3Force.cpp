@@ -132,18 +132,18 @@ public:
     };
 
 private:
-    using ScopeVarCache = std::unordered_map<const AstVar*, AstVarScope*>;
-
     // NODE STATE
     //  AstVarRef::user1      -> Flag indicating not to replace reference
     //  AstAssignForce::user2 -> true if force is synthetic (externally forceable)
+    //  AstVar::user3p()      -> AstVarScope*: Generated <name>__VforceRd helper
+    //  AstVar::user4p()      -> AstVarScope*: Generated <name>__VforceEn helper
+    //  AstVarScope::user3p() -> AstVarScope*: Generated <name>__VforceVal helper
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
 
     std::unordered_map<AstVar*, VarForceInfo> m_varInfo;
     std::unordered_set<AstVar*> m_clockedWrites;
     std::unordered_map<AstVar*, std::vector<ForceInfo*>> m_rhsDepToForces;
-    std::unordered_map<AstScope*, ScopeVarCache> m_scopeVarCaches;
     bool m_doingAssign = false;  // If true, we're processing procedural continuous assign
                                  // statements instead of force statements
 
@@ -384,7 +384,6 @@ public:
         const auto it = cache.find(varp);
         return it != cache.end() ? it->second : nullptr;
     }
-
     void addForceAssignment(AstVar* varp, AstVarScope* vscp, AstNodeExpr* rhsExprp,
                             AstAssignForce* forceStmtp, int rangeLsb, int rangeMsb, int padLsb,
                             int padMsb, bool hasArraySel) {
@@ -751,31 +750,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             // duplicate __Vforce* members for every forceable signal.
             if (m_state.doingAssign()) {
                 AstVar* const varp = nodep->varp();
-                AstScope* const scopep = nodep->scopep();
-                AstVar* rdVarp = nullptr;
-                AstVar* enVarp = nullptr;
-                AstVar* valVarp = nullptr;
-                const string rdName = varp->name() + "__VforceRd";
-                const string enName = varp->name() + "__VforceEn";
-                const string valName = varp->name() + "__VforceVal";
-                for (AstNode* nextp = varp->nextp(); nextp; nextp = nextp->nextp()) {
-                    AstVar* const helperVarp = VN_CAST(nextp, Var);
-                    if (!helperVarp) break;
-                    const string& helperName = helperVarp->name();
-                    if (helperName == rdName) {
-                        rdVarp = helperVarp;
-                    } else if (helperName == enName) {
-                        enVarp = helperVarp;
-                    } else if (helperName == valName) {
-                        valVarp = helperVarp;
-                    } else if (rdVarp || enVarp || valVarp) {
-                        break;
-                    }
-                }
-                if (rdVarp || enVarp || valVarp) {
-                    AstVarScope* const rdVscp = m_state.findScopeVar(scopep, rdVarp);
-                    AstVarScope* const enVscp = m_state.findScopeVar(scopep, enVarp);
-                    AstVarScope* const valVscp = m_state.findScopeVar(scopep, valVarp);
+                AstVarScope* const rdVscp = VN_CAST(varp->user3p(), VarScope);
+                AstVarScope* const enVscp = VN_CAST(varp->user4p(), VarScope);
+                AstVarScope* const valVscp = VN_CAST(nodep->user3p(), VarScope);
+                if (rdVscp || enVscp || valVscp) {
                     UASSERT_OBJ(rdVscp && enVscp && valVscp, nodep,
                                 "Incomplete pre-existing force helper set");
                     ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
@@ -825,6 +803,9 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             nodep->scopep()->addVarsp(rdVscp);
             nodep->scopep()->addVarsp(enVscp);
             nodep->scopep()->addVarsp(valVscp);
+            varp->user3p(rdVscp);
+            varp->user4p(enVscp);
+            nodep->user3p(valVscp);
 
             // Register force metadata so later transforms can find these helper vars.
             ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
@@ -1327,7 +1308,14 @@ public:
 //######################################################################
 // V3Force - Main entry point
 
-void V3Force::forceAll(AstNetlist* nodep) {
+namespace {
+class ForceUserSlots final {
+    const VNUser3InUse m_user3InUse;
+    const VNUser4InUse m_user4InUse;
+};
+}  // namespace
+
+static void forceAllImpl(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasForceableSignals()) return;
     ForceState state{false};
@@ -1338,7 +1326,7 @@ void V3Force::forceAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }
 
-void V3Force::assignAll(AstNetlist* nodep) {
+static void assignAllImpl(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasAssignDeassign()) return;
 
@@ -1373,4 +1361,10 @@ void V3Force::assignAll(AstNetlist* nodep) {
     { ForceConvertVisitor{nodep, state}; }
     { ForceReplaceVisitor{nodep, state}; }
     V3Global::dumpCheckGlobalTree("assign-deassign", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Force::forceAndAssignAll(AstNetlist* nodep) {
+    ForceUserSlots userSlots;
+    forceAllImpl(nodep);
+    assignAllImpl(nodep);
 }
