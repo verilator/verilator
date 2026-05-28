@@ -1993,6 +1993,18 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+void AstPropSpec::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (propStrength() != VPropStrength::DEFAULT) {
+        str << " [" << VString::upcase(propStrength().ascii()) << "]";
+    }
+}
+void AstPropSpec::dumpJson(std::ostream& str) const {
+    if (propStrength() != VPropStrength::DEFAULT)
+        dumpJsonStr(str, "strength", propStrength().ascii());
+    dumpJsonGen(str);
+}
+
 AstConst::~AstConst() {
     // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
     // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit

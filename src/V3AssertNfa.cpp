@@ -2592,6 +2592,12 @@ class AssertNfaVisitor final : public VNVisitor {
         });
     }
 
+    static VPropStrength effectiveAssertPropStrength(const AstPropSpec* const propSpecp) {
+        if (propSpecp->propStrength() != VPropStrength::DEFAULT) return propSpecp->propStrength();
+        return propSpecp->fileline()->language() <= V3LangCode::L1800_2005 ? VPropStrength::STRONG
+                                                                           : VPropStrength::WEAK;
+    }
+
     // Bare `assert property (p until q)` with boolean operands stays on
     // V3AssertPre's AstLoop lowering, which preserves per-attempt action-block
     // firings that this NFA's single-bit aggregated state cannot. Strong bare
@@ -2933,7 +2939,15 @@ class AssertNfaVisitor final : public VNVisitor {
             if (hoistClockedSeq(specp)) return;
         }
 
-        AstNode* const propp = assertp->propp();
+        AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
+        const bool isCover = VN_IS(assertp, Cover);
+        if (!isCover && effectiveAssertPropStrength(propp) == VPropStrength::STRONG) {
+            propp->v3warn(E_UNSUPPORTED,
+                          "Unsupported: strong property in " + assertp->verilogKwd() + ".");
+            replaceBodyOnBuildError(assertp->fileline(), propp, /*errorEmitted=*/true);
+            return;
+        }
+
         if (!hasMultiCycleExpr(propp)) return;
         if (isBareTopLevelUntil(propp)) return;
 
@@ -2959,27 +2973,23 @@ class AssertNfaVisitor final : public VNVisitor {
 
         AstSenTree* senTreep = assertp->sentreep();
         bool senTreeOwned = false;  // True if we created senTreep locally
-        AstPropSpec* const propSpecp = VN_CAST(assertp->propp(), PropSpec);
-        UASSERT_OBJ(propSpecp, assertp, "Concurrent assertion must have PropSpec");
         AstCover* const coverp = VN_CAST(assertp, Cover);
-        const bool isCover = coverp != nullptr;
         const bool isCoverSeq = coverp && coverp->isCoverSeq();
         // A sequence event control is not an assertion directive; no default
         // disable iff, no assertion control
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
-        if (!propSpecp->sensesp() && m_defaultClockingp) {
-            propSpecp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
+        if (!propp->sensesp() && m_defaultClockingp) {
+            propp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
         }
-        if (!propSpecp->disablep() && m_defaultDisablep && !isSeqEvent) {
-            propSpecp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
+        if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
+            propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
-        if (!senTreep && propSpecp->sensesp()) {
-            senTreep
-                = new AstSenTree{propSpecp->fileline(), propSpecp->sensesp()->cloneTree(true)};
+        if (!senTreep && propp->sensesp()) {
+            senTreep = new AstSenTree{propp->fileline(), propp->sensesp()->cloneTree(true)};
             senTreeOwned = true;
         }
-        AstNodeExpr* disableExprp = propSpecp->disablep();
+        AstNodeExpr* disableExprp = propp->disablep();
         if (!senTreep) return;
 
         // NFA lowering clones repeated operands and may hoist them into an
@@ -2988,7 +2998,7 @@ class AssertNfaVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_sampledValueClockp);
             m_sampledValueClockp = senTreep;
-            iterate(propSpecp->propp());
+            iterate(propp->propp());
         }
 
         FileLine* const flp = assertp->fileline();
@@ -3003,7 +3013,7 @@ class AssertNfaVisitor final : public VNVisitor {
             // replace the body on real semantic errors. Any hoisted temps
             // from this attempt become orphan MODULETEMPs; V3Dead removes
             // them along with the dead always_comb driver.
-            replaceBodyOnBuildError(flp, propSpecp, result.errorEmitted);
+            replaceBodyOnBuildError(flp, propp, result.errorEmitted);
             if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
             return;
         }
@@ -3011,7 +3021,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // Build succeeded. Now create snapshot mechanism for disable iff if needed.
         // Done here (not before build) so failed builds don't pollute the AST.
         const DisableVars disableVars
-            = createDisableCounterMechanism(flp, disableExprp, parts.hasImplication, propSpecp);
+            = createDisableCounterMechanism(flp, disableExprp, parts.hasImplication, propp);
         AstVar* const disableCntVarp = disableVars.cntp;
         AstVar* const snapshotVarp = disableVars.snapp;
         const bool disableExprUnlinked = disableCntVarp && disableExprp;
@@ -3091,7 +3101,7 @@ class AssertNfaVisitor final : public VNVisitor {
             // does not use it.
             VL_DO_DANGLING(outputExprp->deleteTree(), outputExprp);
         } else {
-            AstNode* const innerPropp = propSpecp->propp();
+            AstNode* const innerPropp = propp->propp();
             innerPropp->replaceWith(outputExprp);
             VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
             // If we collected per-mid (N==1) but didn't clone, drop the spare.

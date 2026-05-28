@@ -756,6 +756,18 @@ module Vt_debug_emitv_t;
         else begin
         end
     end
+    begin : assert_prop_weak
+        assert property (@(posedge clk) weak(in)
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : cover_prop_strong
+        cover property (@(posedge clk) strong(in)
+        ) begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin

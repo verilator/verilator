@@ -1687,17 +1687,24 @@ class AstPropSpec final : public AstNode {
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
+    VPropStrength m_propStrength = VPropStrength::DEFAULT;
+
 public:
-    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp)
-        : ASTGEN_SUPER_PropSpec(fl) {
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp,
+                VPropStrength propStrength = VPropStrength::DEFAULT)
+        : ASTGEN_SUPER_PropSpec(fl)
+        , m_propStrength{propStrength} {
         this->sensesp(sensesp);
         this->disablep(disablep);
         this->propp(propp);
     }
     ASTGEN_MEMBERS_AstPropSpec;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE {
         return true;
     }  // Used under Cover, which expects a bool child
+    VPropStrength propStrength() const { return m_propStrength; }
 };
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
