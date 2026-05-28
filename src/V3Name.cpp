@@ -83,6 +83,7 @@ class NameVisitor final : public VNVisitorConst {
         VL_RESTORER(m_modp);
         m_modp = nodep;
         iterateChildrenConst(nodep);
+        rename(nodep, false);
     }
     // Add __PVT__ to names of local signals
     void visit(AstVar* nodep) override {
