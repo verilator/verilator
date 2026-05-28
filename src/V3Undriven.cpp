@@ -522,21 +522,23 @@ class UndrivenVisitor final : public VNVisitorConst {
                     warnAlwCombOrder(nodep, entryp->firstUsedNotDrivenp());
                 }
                 const AstNodeVarRef* const otherVarRefp = entryp->getNodep();
-                const AstNode* const otherWritep
-                    = otherVarRefp ? static_cast<const AstNode*>(otherVarRefp) : entryp->callNodep();
+                const AstNode* const otherWritep = otherVarRefp
+                                                       ? static_cast<const AstNode*>(otherVarRefp)
+                                                       : entryp->callNodep();
                 const bool sameFileLine
                     = otherVarRefp && nodep->fileline() == otherVarRefp->fileline();
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
-                    && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                    && !sameFileLine && !entryp->isUnderGen() && otherWritep
-                    && !entryp->isFtaskDriven() && !ftaskDef) {
+                    && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
+                    && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
+                    && !ftaskDef) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
                             || (m_alwaysCombp != entryp->getAlwCombp()
-                                && m_alwaysCombp->fileline() != entryp->getAlwCombp()->fileline()))) {
+                                && m_alwaysCombp->fileline()
+                                       != entryp->getAlwCombp()->fileline()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,
                             "Variable written to in always_comb also written by other process"
@@ -588,8 +590,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && m_alwaysCombp != entryp->getAlwCombp()
                     && m_alwaysCombp->fileline() == entryp->getAlwCombp()->fileline())
                     entryp->underGenerate();
-                if (m_alwaysCombp)
-                    entryp->drivenAlwaysCombWhole(m_alwaysCombp);
+                if (m_alwaysCombp) entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
             }
             if (nodep->access().isWriteOrRW()) {
@@ -717,8 +718,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* const entryp = getEntryp(varp, usr);
                 entryp->drivenViaCall(nodep);
-                if (m_alwaysCombp)
-                    entryp->drivenAlwaysCombWhole(m_alwaysCombp);
+                if (m_alwaysCombp) entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, varp);
             }
         }
