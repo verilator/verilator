@@ -70,6 +70,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
     DECL_OPTION("-include-reset-arcs", OnOff, &m_includeResetArcs);
+    DECL_OPTION("-per-instance", OnOff, &m_perInstance);
     DECL_OPTION("-rank", OnOff, &m_rank);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
@@ -101,6 +102,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             ++i;
         }
     }
+    if (m_perInstance && m_writeFile.empty()) v3fatal("--per-instance requires --write");
 }
 
 void VlcOptions::showVersion(bool verbose) {

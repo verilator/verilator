@@ -25,12 +25,35 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 //######################################################################
+
+namespace {
+
+bool hasConcreteHier(const string& point) {
+    const string hier = VlcPoint::keyExtract(VL_CIK_HIER, point.c_str());
+    return !hier.empty() && hier.find('*') == string::npos && hier.find('?') == string::npos;
+}
+
+void requireConcreteHierForMerge(const string& filename, const string& point) {
+    if (hasConcreteHier(point)) return;
+    v3fatal("--per-instance requires concrete per-instance hierarchy, but input coverage file '"
+            << filename << "' contains collapsed or missing hier data.\n"
+            << "\n"
+            << "        To preserve per-instance hierarchy, re-run the simulation from a model\n"
+            << "        built with --coverage-per-instance, then re-run verilator_coverage\n"
+            << "        with --per-instance.\n"
+            << "\n"
+            << "        To perform the existing collapsed aggregate merge instead, remove\n"
+            << "        --per-instance and re-run verilator_coverage.");
+}
+
+}  // namespace
 
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2, "readCoverage " << filename);
@@ -57,6 +80,8 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 
             const uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9, "   point '" << point << "'" << " " << hits);
+
+            if (opt.perInstance()) requireConcreteHierForMerge(filename, point);
 
             const uint64_t pointnum = points().findAddPoint(point, hits);
             if (opt.rank()) {  // Only if ranking - uses a lot of memory

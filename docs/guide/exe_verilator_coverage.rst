@@ -40,6 +40,8 @@ verilator_coverage Example Usage
 
    verilator_coverage --write merged.dat coverage.dat ...
 
+   verilator_coverage --per-instance --write merged_hier.dat coverage.dat ...
+
    verilator_coverage --write-info merged.info coverage.dat ...
 
 
@@ -142,6 +144,15 @@ verilator_coverage Arguments
    Includes FSM reset arcs in the printed summaries and annotated output.
    By default, reset arcs are tracked but summarized separately from the
    non-reset FSM arcs.
+
+.. option:: --per-instance
+
+   With :option:`--write`, use strict instance-preserving merge semantics.
+   This requires concrete per-instance ``hier`` data, normally from a model
+   built with ``verilator --coverage-per-instance``. If input coverage
+   contains collapsed, wildcard, missing, or empty hierarchy data,
+   :command:`verilator_coverage` will report an error. Remove
+   :option:`--per-instance` to perform the existing collapsed aggregate merge.
 
 .. option:: --rank
 
