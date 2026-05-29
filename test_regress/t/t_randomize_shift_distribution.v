@@ -47,19 +47,11 @@ endclass
 module t;
   regA r;
   int unsigned i;
-  // 200 trials; seed is pinned in the driver so values are deterministic.
-  // The pre-fix bug consistently pushed each bit toward the boundary K-1
-  // (bvult equivalence-class max), giving 140-180 ones per bit (70-90%).
-  // We assert only the upper bound (<=130, ~4-sigma above fair 50%): post-fix
-  // Z3 versions may settle anywhere in [~30%, ~60%] per bit, but as long as
-  // no bit is stuck near the boundary the fix did its job. A symmetric lower
-  // bound is intentionally omitted -- Z3 4.8 (Ubuntu apt) settles ~30% on
-  // some bits, Z3 4.13 settles ~50%; both are non-boundary, both are "fixed".
-  // 200 trials with the (assert-soft) MaxSMT mechanism delivers ~50% per
-  // free bit across all Z3 versions that support assert-soft (Z3 4.4+).
-  // Asserted band [70, 130] = [35%, 65%], ~4.3 sigma above natural noise so
-  // a truly uniform mechanism passes ~99.97% of the time. Master XOR-rounds
-  // FAIL the upper bound (140-180 ones per low bit, 70-90%).
+  // 200 trials over uvm_reg_field-shaped `value < (1<<m_size)`. Each free bit
+  // should be a fair coin flip; the pre-fix bug pinned them near the boundary
+  // K-1 (140-180 ones, 70-90%). Band [70, 130] = [35%, 65%] is ~4.2 sigma off
+  // the fair-50% mean (Binomial(200, 0.5)), so a uniform mechanism passes
+  // ~99.7% per run while the boundary bias overruns the upper bound.
   localparam int unsigned TRIALS = 200;
   localparam int unsigned HI = 130;
   localparam int unsigned LO = 70;
