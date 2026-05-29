@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_lint_unused_iface.v:10:23: modports are not supported with --fourstate
+                                                 : ... note: In instance 't.sub'
+   10 |   modport slave(input signal);
+      |                       ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_lint_unused_iface.v:12:25: modports are not supported with --fourstate
+                                                 : ... note: In instance 't.sub'
+   12 |   modport master(output signal);
+      |                         ^~~~~~
+%Error: Exiting due to

@@ -4170,7 +4170,7 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     if (time_p->type == vpiSimTime) {
         const QData qtime = VL_TIME_Q();
         VlWide<2> itime;
-        VL_SET_WQ(itime, qtime);
+        VL_SET_WQ_T(itime, qtime);
         time_p->low = itime[0];
         time_p->high = itime[1];
         return;

@@ -95,15 +95,15 @@ struct VlWide final {
         return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(EData)) == 0;
     }
     bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
-    EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    EData& operator[](size_t index) VL_MT_SAFE VL_PURE { return m_storage[index]; }
+    const EData& operator[](size_t index) const VL_MT_SAFE VL_PURE { return m_storage[index]; }
 
     // METHODS
-    EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    EData& at(size_t index) VL_MT_SAFE VL_PURE { return m_storage[index]; }
+    const EData& at(size_t index) const VL_MT_SAFE VL_PURE { return m_storage[index]; }
     size_t size() const VL_PURE { return N_Words; }
-    EData* data() VL_MT_SAFE { return &m_storage[0]; }
-    const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
+    EData* data() VL_MT_SAFE VL_PURE { return &m_storage[0]; }
+    const EData* data() const VL_MT_SAFE VL_PURE { return &m_storage[0]; }
     inline bool operator<(const VlWide<N_Words>& rhs) const VL_PURE;
 };
 
@@ -147,9 +147,28 @@ public:
     // METHODS
     EData* datap() const VL_PURE { return m_datap; }
     operator bool() const VL_PURE { return m_datap; }
+    EData& operator*() const VL_PURE { return *m_datap; }
     EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
     WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
     WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
+    WDataOutP& operator+=(size_t index) {
+        m_datap += index;
+        return *this;
+    }
+    WDataOutP& operator+=(int index) {
+        m_datap += index;
+        return *this;
+    }
+    WDataOutP operator-(size_t index) const VL_PURE { return WDataOutP(m_datap - index); }
+    WDataOutP operator-(int index) const VL_PURE { return WDataOutP(m_datap - index); }
+    WDataOutP& operator-=(size_t index) {
+        m_datap -= index;
+        return *this;
+    }
+    WDataOutP& operator-=(int index) {
+        m_datap -= index;
+        return *this;
+    }
 };
 static_assert(sizeof(WDataOutP) == sizeof(EData*), "WDataOutP should be a single pointer");
 
@@ -186,17 +205,36 @@ public:
     // METHODS
     const EData* datap() const VL_PURE { return m_datap; }
     operator bool() const VL_PURE { return m_datap; }
+    const EData& operator*() const VL_PURE { return *m_datap; }
     const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
     WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
     WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
+    WDataInP& operator+=(size_t index) {
+        m_datap += index;
+        return *this;
+    }
+    WDataInP& operator+=(int index) {
+        m_datap += index;
+        return *this;
+    }
+    WDataInP operator-(size_t index) const VL_PURE { return WDataInP(m_datap - index); }
+    WDataInP operator-(int index) const VL_PURE { return WDataInP(m_datap - index); }
+    WDataInP& operator-=(size_t index) {
+        m_datap -= index;
+        return *this;
+    }
+    WDataInP& operator-=(int index) {
+        m_datap -= index;
+        return *this;
+    }
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+static int _vl_cmp_w_TT(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
-    return _vl_cmp_w(N_Words, *this, rhs) < 0;
+    return _vl_cmp_w_TT(N_Words, *this, rhs) < 0;
 }
 
 //===================================================================

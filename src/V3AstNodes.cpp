@@ -198,11 +198,12 @@ void AstAddrOfCFunc::dump(std::ostream& str) const {
 }
 
 void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
-                         AstRange* rangep) {
+                         AstRange* rangep, bool isShuffledFourstate) {
     // wantwidth=0 means figure it out, but if a widthmin is >=0
     //    we allow width 0 so that {{0{x}},y} works properly
     // wantwidthmin=-1:  default, use wantwidth if it is non-zero
     m.m_keyword = kwd;
+    m.m_isShuffledFourstate = isShuffledFourstate;
     // Implicitness: // "parameter X" is implicit and sized from initial
     // value, "parameter reg x" not
     if (keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT) {
@@ -1168,7 +1169,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
         const string bitvec = (!bdtypep->isOpaque() && !v3Global.opt.protectIds())
-                                  ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/"
+                                  ? "/*" + cvtToStr(dtypep->width() - 1) + ":0"
+                                        + (isShuffledFourstate() ? " 4-state" : "") + "*/"
                                   : "";
         if (bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
             info.m_type = "const char*";
@@ -1196,6 +1198,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlStdRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
+        } else if (dtypep->isWide()) {
+            info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {
@@ -1204,8 +1208,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "IData" + bitvec;
         } else if (dtypep->isQuad()) {
             info.m_type = "QData" + bitvec;
-        } else if (dtypep->isWide()) {
-            info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
         // CData, SData, IData, QData or VlWide are packed type.
         const bool packedType = VString::startsWith(info.m_type, "CData")
@@ -1504,32 +1506,34 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     return m_voidp;
 }
 
-AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
+AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd,
+                                            bool isShuffledFourstate) {
     // Because the detailed map doesn't update m_basicps, check the detailed
     // map for this same node. Also adds this new node to the detailed map
     if (!m_basicps[kwd]) {
-        AstBasicDType basic{fl, kwd};
+        AstBasicDType basic{fl, kwd, VSigning::NOSIGN, isShuffledFourstate};
         m_basicps[kwd] = findCreateSameDType(basic);
     }
     return m_basicps[kwd];
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
-                                               int widthMin, VSigning numeric) {
-    AstBasicDType basic{fl, kwd, numeric, width, widthMin};
+                                               int widthMin, VSigning numeric,
+                                               bool isShuffledFourstate) {
+    AstBasicDType basic{fl, kwd, numeric, width, widthMin, isShuffledFourstate};
     return findCreateSameDType(basic);
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
-                                               VSigning numeric) {
-    AstBasicDType basic{fl, kwd, numeric, range, widthMin};
+                                               VSigning numeric, bool isShuffledFourstate) {
+    AstBasicDType basic{fl, kwd, numeric, range, widthMin, isShuffledFourstate};
     return findCreateSameDType(basic);
 }
 
 AstBasicDType* AstTypeTable::findCreateSameDType(AstBasicDType& node) {
-    const VBasicTypeKey key{node.width(), node.widthMin(), node.numeric(), node.keyword(),
-                            node.nrange()};
+    const VBasicTypeKey key{node.width(),   node.widthMin(), node.numeric(),
+                            node.keyword(), node.nrange(),   node.isShuffledFourstate()};
     AstBasicDType*& entryr = m_detailedMap[key];
     if (!entryr) {
         entryr = node.cloneTree(false);
@@ -1541,8 +1545,8 @@ AstBasicDType* AstTypeTable::findCreateSameDType(AstBasicDType& node) {
 
 // cppcheck-suppress duplInheritedMember
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
-    const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
-                            nodep->nrange()};
+    const VBasicTypeKey key{nodep->width(),   nodep->widthMin(), nodep->numeric(),
+                            nodep->keyword(), nodep->nrange(),   nodep->isShuffledFourstate()};
     auto pair = m_detailedMap.emplace(key, nodep);
     if (pair.second) nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
@@ -1830,6 +1834,7 @@ void AstAttrOf::dumpJson(std::ostream& str) const {
 void AstBasicDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     str << " kwd=" << keyword().ascii();
+    if (isShuffledFourstate()) str << " [SHUFFLED4STATE]";
     if (isRanged() && !rangep()) str << " range=[" << left() << ":" << right() << "]";
 }
 void AstBasicDType::dumpJson(std::ostream& str) const {
@@ -3142,6 +3147,10 @@ void AstVar::dump(std::ostream& str) const {
     } else if (isFuncLocal()) {
         str << " [FUNC]";
     }
+    if (const AstVar* const varp = fourstateComplementp()) {
+        str << " [COMPL=" << nodeAddr(varp) << "]";
+    }
+    if (isFourstateComplement()) str << " [4STATECOMPL]";
     if (hasUserInit()) str << " [UINIT]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";

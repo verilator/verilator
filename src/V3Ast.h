@@ -636,9 +636,9 @@ public:
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
-    int widthWords() const { return VL_WORDS_I(width()); }
-    bool isQuad() const VL_MT_STABLE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
-    bool isWide() const VL_MT_STABLE { return (width() > VL_QUADSIZE); }
+    int widthWords() const;
+    bool isQuad() const VL_MT_STABLE;
+    bool isWide() const VL_MT_STABLE;
     inline bool isCHandle() const VL_MT_STABLE;
     inline bool isDouble() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
@@ -785,18 +785,20 @@ public:
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findStreamDType() const;
     AstNodeDType* findVoidDType() const;
-    AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
-    AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric,
+                               bool isShuffledFourstate = false) const;
+    AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric,
+                                 bool isShuffledFourstate = false) const;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
                            : findBitDType(width, widthMin, numeric);
     }
-    AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
-                                      VSigning numeric) const VL_MT_STABLE;
-    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
-                                    VSigning numeric) const VL_MT_STABLE;
-    AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
+    AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin, VSigning numeric,
+                                      bool isShuffledFourstate = false) const VL_MT_STABLE;
+    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric,
+                                    bool isShuffledFourstate = false) const VL_MT_STABLE;
+    AstNodeDType* findBasicDType(VBasicDTypeKwd kwd, bool isShuffledFourstate = false) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,

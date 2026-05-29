@@ -448,7 +448,9 @@ class EmitCHeader final : public EmitCConstInit {
         puts(getfunc ? "VL_ASSIGNSEL_" : "VL_SELASSIGN_");
         puts(lhstype->charIQWN());
         puts(rhstype->charIQWN());
-        puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
+        UASSERT_OBJ(!v3Global.opt.fourstate(), lhstype,
+                    "Four-state currently do not support structs and unions");
+        puts("_TT(" + std::to_string(lhstype->width()) + ", ");  // LHS width
         if (getfunc) {
             puts(std::to_string(rhstype->width()) + ", ");  // Number of copy bits
             puts(off + ", ");  // LHS offset

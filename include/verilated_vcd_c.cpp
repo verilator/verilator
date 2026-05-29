@@ -636,11 +636,36 @@ void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitLogic(uint32_t code, CData newval, CData newvalXZ) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    if (newval) {
+        *wp++ = newvalXZ ? 'x' : '1';
+    } else {
+        *wp++ = newvalXZ ? 'z' : '0';
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -652,11 +677,37 @@ void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const SData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtIDataToStr(wp, newval << (VL_IDATASIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const IData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -668,7 +719,20 @@ void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
+void VerilatedVcdBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const QData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitWData(uint32_t code, const WDataInP newval, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
@@ -680,6 +744,32 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
     while (words > 0) {
         cvtEDataToStr(wp, newval[--words]);
         wp += VL_EDATASIZE;
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WDataInP newval, int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    const int lastIdx = ((bits - 1) / VL_EDATASIZE) << 1;
+    {
+        const EData value = newval[lastIdx];
+        const EData xz = newval[lastIdx | 1];
+        for (int i = (bits - 1) % VL_EDATASIZE; i >= 0; --i) {
+            const EData mask = 1 << i;
+            *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
+                                : ('0' | (static_cast<char>(value >> i) & 1));
+        }
+    }
+    for (int w = lastIdx - 2; w >= 0; w -= 2) {
+        const EData value = newval[w];
+        const EData xz = newval[w | 1];
+        for (int i = VL_EDATASIZE - 1; i >= 0; --i) {
+            const EData mask = 1 << i;
+            *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
+                                : ('0' | (static_cast<char>(value >> i) & 1));
+        }
     }
     finishLine(code, wp);
 }
