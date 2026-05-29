@@ -493,7 +493,34 @@ class AssertVisitor final : public VNVisitor {
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), disablep}, bodysp};
         }
         if (sentreep) {
-            bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
+            bool useObserved = true;
+            for (const AstSenItem* senip = sentreep->sensesp(); senip;
+                 senip = VN_CAST(senip->nextp(), SenItem)) {
+                if (senip->edgeType() == VEdgeType::ET_EVENT) {
+                    useObserved = false;
+                    break;
+                }
+                if (const AstNodeExpr* const senExprp = senip->sensp()) {
+                    if (const AstBasicDType* const bdtypep
+                        = VN_CAST(senExprp->dtypep()->skipRefp(), BasicDType)) {
+                        if (bdtypep->isEvent()) {
+                            useObserved = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (useObserved && bodysp->exists([](const AstAssignDly*) { return true; })) {
+                useObserved = false;
+            }
+            if (useObserved && bodysp->exists([](const AstFork*) { return true; })) {
+                useObserved = false;
+            }
+            if (useObserved) {
+                bodysp = new AstAlwaysObserved{nodep->fileline(), sentreep, bodysp};
+            } else {
+                bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
+            }
         }
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);

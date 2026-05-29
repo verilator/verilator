@@ -49,6 +49,23 @@ module Test (
   // Pass 1st cycle
   assert property (@(cyc) disable iff (cyc != $sampled(cyc)) cyc == 0);
 
+  // disable happens in Observed, sample is Preopen
+  assert property (@(posedge clk) disable iff (cyc == 4) (cyc != 3));
+
+  // action block happens in Reactive
+  int pass_cyc;
+  assert property (@(posedge clk) 1)
+    pass_cyc = cyc;
+
+  always @(posedge clk) begin
+    if (cyc > 1) begin
+      if (pass_cyc != cyc) begin
+        $display("FAIL: pass_cyc=%0d cyc=%0d", pass_cyc, cyc);
+        $stop;
+      end
+    end
+  end
+
   //
   // Cover properties behave differently
   //
