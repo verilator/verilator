@@ -5,5 +5,5 @@
 // ======================================================================
 
 module t;
-  logic unpacked[1]  /*verilator forceable*/;
+  real unpacked[1]  /*verilator forceable*/;
 endmodule
