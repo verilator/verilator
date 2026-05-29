@@ -121,6 +121,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                                         m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
                     out += m_wideTempRefp->varp()->nameProtect();
+                    out += ".bBits()";
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 } else if (usesQueue) {
@@ -623,6 +624,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                                  : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix;
+                out += ".bBits()";
                 if (!zeroit) {
                     emitVarResetScopeHash();
                     const uint64_t salt = VString::hashMurmur(varp->prettyName());

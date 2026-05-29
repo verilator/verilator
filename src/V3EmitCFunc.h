@@ -121,6 +121,8 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
 
+    bool m_noBits = false;  // Don't emit .bBits() for wide variables
+
 protected:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -1773,6 +1775,7 @@ public:
             emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
         }
         putns(nodep, nodep->varp()->nameProtect());
+        if (nodep->isWide() && !m_noBits) puts(".bBits()");
     }
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
@@ -1796,12 +1799,8 @@ public:
         puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
-    void visit(AstNodeSel* nodep) override {
-        if (!VN_IS(nodep, ArraySel) && !VN_IS(nodep, WordSel)) {
-            visit(static_cast<AstNodeBiop*>(nodep));
-            return;
-        }
-        // ArraySel or WordSel
+    void visit(AstNodeSel* nodep) override { visit(static_cast<AstNodeBiop*>(nodep)); }
+    void visit(AstArraySel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         // Special case constant index for readability
         if (AstConst* const idxp = VN_CAST(nodep->bitp(), Const)) {
@@ -1811,6 +1810,21 @@ public:
         putbs("[");
         iterateAndNextConstNull(nodep->bitp());
         puts("]");
+    }
+    void visit(AstWordSel* nodep) override {
+        VL_RESTORER(m_noBits);
+        m_noBits = true;
+        iterateAndNextConstNull(nodep->fromp());
+        // Special case constant index for readability
+        if (AstConst* const idxp = VN_CAST(nodep->bitp(), Const)) {
+            puts("[" + std::to_string(idxp->toUInt()) + "U]");
+            puts("[1]");  // B bits
+            return;
+        }
+        putbs("[");
+        iterateAndNextConstNull(nodep->bitp());
+        puts("]");
+        puts("[1]");  // B bits
     }
 
     //

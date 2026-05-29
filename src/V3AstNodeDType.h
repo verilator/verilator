@@ -563,7 +563,7 @@ public:
         if (width <= VL_IDATASIZE) return "IData";
         if (width <= VL_QUADSIZE) return "QData";
 
-        return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
+        return "VlWide4AB<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {

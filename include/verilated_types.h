@@ -113,6 +113,23 @@ struct VlIsVlWide : public std::false_type {};
 template <std::size_t N_Words>
 struct VlIsVlWide<VlWide<N_Words>> : public std::true_type {};
 
+// Proxy class to get a WDataInP or WDataOutP from a VlWide4AB for 'A' or 'B' bits.
+// This only exists transiently and is immediately converted to a WDataInP or WDataOutP
+// via an implicit constructor.
+enum class VlWide4ABPart { A_BITS, B_BITS };
+template <VlWide4ABPart Part>
+class VlWide4ABToWData final {
+    template <std::size_t N_Words>
+    friend struct VlWide4AB;
+    friend class WDataOutP;
+    friend class WDataInP;
+
+    EData* const m_datap;
+
+    explicit VlWide4ABToWData(EData* datap) VL_PURE : m_datap{datap} {}
+    explicit VlWide4ABToWData(const EData* datap) VL_PURE : m_datap{const_cast<EData*>(datap)} {}
+};
+
 // Opaque handles to backing store of a VlWide, These are used to pass the
 // backing store to runtime functions without having to template all the
 // runtime functions on the VlWide template patameters. They created via
@@ -125,10 +142,17 @@ struct VlIsVlWide<VlWide<N_Words>> : public std::true_type {};
 
 // Read-Write VlWide handle
 class WDataOutP final {
-    EData* m_datap;  // The backing store - non const as the handle is assignable
+    char* m_datap;  // The backing store - non const as the handle is assignable
+
+    EData* basep() const VL_PURE {
+        return reinterpret_cast<EData*>(reinterpret_cast<uintptr_t>(m_datap) & ~0x1ULL);
+    }
+    size_t scale() const VL_PURE {  //
+        return reinterpret_cast<uintptr_t>(m_datap) & 0x1ULL;
+    }
 
     // Use WDataOutP::external() to create a handle from a raw pointer
-    explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
+    explicit WDataOutP(EData* datap) VL_PURE : m_datap{reinterpret_cast<char*>(datap)} {}
 
 public:
     // FACTORY METHODS
@@ -139,26 +163,44 @@ public:
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
-    WDataOutP(const WDataOutP& other) VL_PURE = default;
-    WDataOutP(WDataOutP&& other) VL_PURE = default;
-    WDataOutP& operator=(const WDataOutP& other) VL_PURE = default;
+    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE
+        : m_datap{reinterpret_cast<char*>(vlWide.data())} {}
+    // Implicit conversion from 'VlWide4ABToWData'
+    template <VlWide4ABPart Part>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataOutP(const VlWide4ABToWData<Part>& tmp) VL_PURE
+        : m_datap{reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(tmp.m_datap) | 1)} {}
+    WDataOutP(const WDataOutP& other) = default;
+    WDataOutP(WDataOutP&& other) = default;
+    WDataOutP& operator=(const WDataOutP& other) = default;
 
     // METHODS
-    EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
-    WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
+    EData* datap() const VL_PURE { return reinterpret_cast<EData*>(m_datap); }
+    operator bool() const VL_PURE { return basep(); }
+    EData& operator[](std::size_t index) const VL_PURE { return basep()[index << scale()]; }
+    WDataOutP operator+(std::size_t index) const VL_PURE {
+        return WDataOutP(reinterpret_cast<EData*>(m_datap + (index << scale()) * sizeof(EData)));
+    }
+    WDataOutP operator+(int index) const VL_PURE {
+        return WDataOutP(reinterpret_cast<EData*>(m_datap + (index << scale()) * sizeof(EData)));
+    }
 };
 static_assert(sizeof(WDataOutP) == sizeof(EData*), "WDataOutP should be a single pointer");
 
 // Read-Only VlWide handle
 class WDataInP final {
-    const EData* m_datap;  // The backing store - non const as the handle is assignable
+    const char* m_datap;  // The backing store - non const as the handle is assignable
+
+    const EData* basep() const VL_PURE {
+        return reinterpret_cast<const EData*>(reinterpret_cast<uintptr_t>(m_datap) & ~0x1ULL);
+    }
+    size_t scale() const VL_PURE {  //
+        return reinterpret_cast<uintptr_t>(m_datap) & 0x1ULL;
+    }
 
     // Use WDataInP::external() to create a handle from a raw pointer
-    explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
+    explicit WDataInP(const EData* datap) VL_PURE : m_datap{reinterpret_cast<const char*>(datap)} {
+    }
 
 public:
     // FACTORY METHODS
@@ -169,26 +211,40 @@ public:
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE
+        : m_datap{reinterpret_cast<const char*>(vlWide.data())} {}
     // Implicit conversion from 'const VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
-    // Implicit conversion from 'WDataOutP'
+    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE
+        : m_datap{reinterpret_cast<const char*>(vlWide.data())} {}
+    // Implicit conversion from WDataOutP
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
-    // Initialize with 'nullptr'
-    explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
-    WDataInP(const WDataInP& other) VL_PURE = default;
-    WDataInP(WDataInP&& other) VL_PURE = default;
-    WDataInP& operator=(const WDataInP& other) VL_PURE = default;
+    /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE
+        : m_datap{reinterpret_cast<const char*>(owp.datap())} {}
+    explicit WDataInP(std::nullptr_t)  // Initialize to nullptr
+        : m_datap{nullptr} {}
+    // Implicit conversion from VlWide4ABToWData
+    // cppcheck-suppress noExplicitConstructor
+    template <VlWide4ABPart Part>
+    /* implicit */ WDataInP(const VlWide4ABToWData<Part>& tmp) VL_PURE
+        : m_datap{reinterpret_cast<const char*>(reinterpret_cast<uintptr_t>(tmp.m_datap) | 1)} {}
+    WDataInP(const WDataInP& other) = default;
+    WDataInP(WDataInP&& other) = default;
+    WDataInP& operator=(const WDataInP& other) = default;
 
     // METHODS
-    const EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
-    WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
+    const EData* datap() const VL_PURE { return reinterpret_cast<const EData*>(m_datap); }
+    operator bool() const VL_PURE { return basep(); }
+    const EData& operator[](std::size_t index) const VL_PURE { return basep()[index << scale()]; }
+    WDataInP operator+(std::size_t index) const VL_PURE {
+        return WDataInP(
+            reinterpret_cast<const EData*>(m_datap + (index << scale()) * sizeof(EData)));
+    }
+    WDataInP operator+(int index) const VL_PURE {
+        return WDataInP(
+            reinterpret_cast<const EData*>(m_datap + (index << scale()) * sizeof(EData)));
+    }
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
@@ -198,6 +254,51 @@ template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
     return _vl_cmp_w(N_Words, *this, rhs) < 0;
 }
+
+// 4-state VlWide with 'A' and 'B' bits interleaved
+template <std::size_t N_Words>
+struct VlWide4AB final {
+    static constexpr size_t Words = N_Words;
+    using EData4AB = EData[2];
+
+    // MEMBERS
+    // This should be the only data member, otherwise generated static initializers need updating
+    EData4AB m_storage[N_Words];  // Contents of the packed array
+
+    // CONSTRUCTORS
+    // Default constructors and destructor are used. Note however that C++20 requires that
+    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
+    // one.
+
+    // OPERATOR METHODS
+    // Default copy assignment operators are used.
+    bool operator==(const VlWide<N_Words>& that) const VL_PURE {
+        for (size_t i = 0; i < N_Words; ++i) {
+            if (m_storage[i][0] != that.m_storage[i][0]) return false;
+            if (m_storage[i][1] != that.m_storage[i][1]) return false;
+        }
+        return true;
+    }
+    bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
+    EData4AB& operator[](size_t index) { return m_storage[index]; }
+    const EData4AB& operator[](size_t index) const { return m_storage[index]; }
+
+    // METHODS
+    size_t size() const { return N_Words; }
+
+    VlWide4ABToWData<VlWide4ABPart::A_BITS> aBits() {
+        return VlWide4ABToWData<VlWide4ABPart::A_BITS>(&m_storage[0][0]);
+    }
+    VlWide4ABToWData<VlWide4ABPart::B_BITS> bBits() {
+        return VlWide4ABToWData<VlWide4ABPart::B_BITS>(&m_storage[0][1]);
+    }
+    VlWide4ABToWData<VlWide4ABPart::A_BITS> aBits() const {
+        return VlWide4ABToWData<VlWide4ABPart::A_BITS>(&m_storage[0][0]);
+    }
+    VlWide4ABToWData<VlWide4ABPart::B_BITS> bBits() const {
+        return VlWide4ABToWData<VlWide4ABPart::B_BITS>(&m_storage[0][1]);
+    }
+};
 
 //===================================================================
 // String formatters (required by below containers)
@@ -223,24 +324,24 @@ inline std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
-#define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+#define VL_SIGW(name, msb, lsb, words) VlWide4AB<words> name  ///< Declare signal, 65+ bits
 #endif
 
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
 #define VL_IN(name, msb, lsb) IData name  ///< Declare input signal, 17-32 bits
-#define VL_INW(name, msb, lsb, words) VlWide<words> name  ///< Declare input signal, 65+ bits
+#define VL_INW(name, msb, lsb, words) VlWide4AB<words> name  ///< Declare input signal, 65+ bits
 #define VL_INOUT8(name, msb, lsb) CData name  ///< Declare bidir signal, 1-8 bits
 #define VL_INOUT16(name, msb, lsb) SData name  ///< Declare bidir signal, 9-16 bits
 #define VL_INOUT64(name, msb, lsb) QData name  ///< Declare bidir signal, 33-64 bits
 #define VL_INOUT(name, msb, lsb) IData name  ///< Declare bidir signal, 17-32 bits
-#define VL_INOUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare bidir signal, 65+ bits
+#define VL_INOUTW(name, msb, lsb, words) VlWide4AB<words> name  ///< Declare bidir signal, 65+ bits
 #define VL_OUT8(name, msb, lsb) CData name  ///< Declare output signal, 1-8 bits
 #define VL_OUT16(name, msb, lsb) SData name  ///< Declare output signal, 9-16 bits
 #define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64 bits
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
-#define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
+#define VL_OUTW(name, msb, lsb, words) VlWide4AB<words> name  ///< Declare output signal, 65+ bits
 
 //===================================================================
 // Functions needed here
