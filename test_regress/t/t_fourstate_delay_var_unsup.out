@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_delay_var.v:14:8: Continuous assignment delays are unsupported with --fourstate
+                                        : ... note: In instance 't'
+   14 |   wire #1.1 d_const = in;
+      |        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_delay_var.v:15:8: Continuous assignment delays are unsupported with --fourstate
+                                        : ... note: In instance 't'
+   15 |   wire #idly d_int = in;
+      |        ^
+%Error-UNSUPPORTED: t/t_delay_var.v:16:8: Continuous assignment delays are unsupported with --fourstate
+                                        : ... note: In instance 't'
+   16 |   wire #rdly d_real = in;
+      |        ^
+%Error-UNSUPPORTED: t/t_delay_var.v:17:8: Continuous assignment delays are unsupported with --fourstate
+                                        : ... note: In instance 't'
+   17 |   wire #PDLY d_param = in;
+      |        ^
+%Error: Exiting due to
