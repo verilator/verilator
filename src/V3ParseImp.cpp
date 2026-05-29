@@ -94,6 +94,69 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
     }
 }
 
+AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, AstCaseItem* itemsp) {
+    AstNodeExpr* resultp = nullptr;
+    AstNodeExpr* matchedp = nullptr;
+    AstNodeExpr* defaultPropp = nullptr;
+    FileLine* defaultFlp = flp;
+
+    if (!itemsp) {
+        flp->v3error("Property case statement with no items");
+        exprp->deleteTree();
+        return new AstConst{flp, AstConst::BitTrue{}};
+    }
+
+    for (AstCaseItem *nextp, *itemp = itemsp; itemp; itemp = nextp) {
+        nextp = VN_AS(itemp->nextp(), CaseItem);
+        AstNodeExpr* const propp = VN_AS(itemp->stmtsp()->unlinkFrBack(), NodeExpr);
+
+        if (itemp->isDefault()) {
+            if (defaultPropp) {
+                itemp->v3error("Multiple default statements in property case statement");
+                defaultPropp->deleteTree();
+                exprp->deleteTree();
+                return new AstConst{flp, AstConst::BitTrue{}};
+            }
+            defaultFlp = itemp->fileline();
+            defaultPropp = propp;
+            continue;
+        }
+
+        AstNodeExpr* itemMatchp = nullptr;
+        for (AstNodeExpr *condNextp, *condp = itemp->condsp(); condp; condp = condNextp) {
+            condNextp = VN_AS(condp->nextp(), NodeExpr);
+            condp->unlinkFrBack();
+            AstNodeExpr* const eqp
+                = new AstEqCase{condp->fileline(), exprp->cloneTreePure(false), condp};
+            itemMatchp = itemMatchp ? new AstLogOr{itemp->fileline(), itemMatchp, eqp} : eqp;
+        }
+        UASSERT_OBJ(itemMatchp, itemp, "Property case item without condition");
+        AstNodeExpr* const guardp
+            = matchedp
+                  ? new AstLogAnd{itemp->fileline(), itemMatchp->cloneTreePure(false),
+                                  new AstLogNot{itemp->fileline(), matchedp->cloneTreePure(false)}}
+                  : itemMatchp->cloneTreePure(false);
+        AstNodeExpr* const branchp = new AstImplication{itemp->fileline(), guardp, propp, true};
+        resultp = resultp ? new AstSAnd{flp, resultp, branchp} : branchp;
+        matchedp = matchedp ? new AstLogOr{itemp->fileline(), matchedp, itemMatchp} : itemMatchp;
+    }
+    itemsp->deleteTree();
+
+    if (defaultPropp) {
+        if (!matchedp) {
+            exprp->deleteTree();
+            return defaultPropp;
+        }
+        AstNodeExpr* const noMatchp
+            = static_cast<AstNodeExpr*>(new AstLogNot{defaultFlp, matchedp->cloneTreePure(false)});
+        AstNodeExpr* const branchp = new AstImplication{defaultFlp, noMatchp, defaultPropp, true};
+        resultp = new AstSAnd{flp, resultp, branchp};
+    }
+    matchedp->deleteTree();
+    exprp->deleteTree();
+    return resultp;
+}
+
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
     // FileLine* const prevFl = lexFileline();
