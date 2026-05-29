@@ -63,7 +63,7 @@ class LinkIncVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modCompoundAssignmentsNum = 0;  // Var name counter
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
-    bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
+    bool m_condEvalContext = false;  // ++/-- is in a conditionally-evaluated position
     AstNodeExpr* m_incCondp = nullptr;  // Gating condition for ++/-- in short-circuit context
 
     // METHODS
@@ -149,8 +149,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void visit(AstCaseItem* nodep) override {
         {
-            VL_RESTORER(m_unsupportedHere);
-            m_unsupportedHere = true;
+            VL_RESTORER(m_condEvalContext);
+            m_condEvalContext = true;
             iterateAndNextNull(nodep->condsp());
         }
         m_insStmtp = nullptr;  // Next thing should be new statement
@@ -200,8 +200,11 @@ class LinkIncVisitor final : public VNVisitor {
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
-        VL_RESTORER(m_unsupportedHere);
-        m_unsupportedHere = true;
+        VL_RESTORER(m_condEvalContext);
+        VL_RESTORER(m_incCondp);
+        m_condEvalContext = true;
+        // Not rescuable by short-circuit gating; drop the gate so nested ++/-- errors
+        m_incCondp = nullptr;
         UINFO(9, "Marking unsupported " << nodep);
         iterateChildren(nodep);
     }
@@ -229,14 +232,15 @@ class LinkIncVisitor final : public VNVisitor {
     void handleShortCircuit(AstNodeBiop* const nodep, bool isOr) {
         // insertBeforeStmt retargets the parent iterator; skip on re-visit
         if (nodep->user1SetOnce()) return;
-        VL_RESTORER(m_unsupportedHere);
+        VL_RESTORER(m_condEvalContext);
         VL_RESTORER(m_incCondp);
         iterateAndNextNull(nodep->lhsp());
-        m_unsupportedHere = true;
+        m_condEvalContext = true;
         AstNodeExpr* ownedCondp = nullptr;
-        if (nodep->rhsp()->exists([](const AstNode* n) {
-                return VN_IS(n, PreInc) || VN_IS(n, PreDec) || VN_IS(n, PostInc)
-                       || VN_IS(n, PostDec) || VN_IS(n, AssignCompound);
+        // Gate the RHS by the LHS condition if it evaluates any ++/-- anywhere within
+        if (nodep->rhsp()->exists([](const AstNode* np) {
+                return VN_IS(np, PreInc) || VN_IS(np, PreDec) || VN_IS(np, PostInc)
+                       || VN_IS(np, PostDec) || VN_IS(np, AssignCompound);
             })) {
             // Const LHS or no statement context: clone-and-evaluate-twice is safe
             AstNodeExpr* lhsRefp = (!m_insStmtp || VN_IS(nodep->lhsp(), Const))
@@ -390,12 +394,12 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_expr_visit(AstNodeUniop* const nodep) {
         iterateChildren(nodep);
-        if (m_unsupportedHere && !m_incCondp) {
+        if (m_condEvalContext && !m_incCondp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
                                          " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
-        const bool needGating = m_unsupportedHere && m_incCondp;
+        const bool needGating = m_condEvalContext && m_incCondp;
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(readp, false);

@@ -153,6 +153,11 @@ module t;
       a = 4;   if (a != 4 || a++ < 10) begin end  `checkh(a, 5);
       a = 6;   if (a != 4 || a++ < 10) begin end  `checkh(a, 6);
 
+      // ---- Nested gate: inner && with non-const LHS inside an outer gate ----
+      a = 4;   if (a == 4 && (a < 10 && a++ < 20)) begin end  `checkh(a, 5);
+      a = 20;  if (a == 20 && (a < 10 && a++ < 30)) begin end `checkh(a, 20);
+      a = 0;   if (a == 4 && (a < 10 && a++ < 20)) begin end  `checkh(a, 0);
+
       // ---- ++/-- in && / || inside a function (function-local temp) ----
       `checkh(f_and(5), 6);     // 5>0 true, post-inc runs -> 6
       `checkh(f_and(0), 0);     // 0>0 false, short-circuit -> unchanged
@@ -164,6 +169,12 @@ module t;
       // ---- Impure (side-effecting) LHS must be evaluated exactly once ----
       side = 0;  a = 0;  if (bump() > 0 && a++ < 5) begin end  `checkh(side, 1);  `checkh(a, 1);
       side = 0;  a = 0;  if (bump() < 0 && a++ < 5) begin end  `checkh(side, 1);  `checkh(a, 0);
+
+      // ---- ++/-- on LHS, side-effecting function on opposite (RHS) side ----
+      side = 0;  a = 0;  if (a++ < 5 && bump() > 0) begin end  `checkh(a, 1);  `checkh(side, 1);
+      side = 0;  a = 0;  if (a++ > 5 && bump() > 0) begin end  `checkh(a, 1);  `checkh(side, 0);
+      side = 0;  a = 0;  if (a++ > 5 || bump() > 0) begin end  `checkh(a, 1);  `checkh(side, 1);
+      side = 0;  a = 0;  if (a++ < 5 || bump() > 0) begin end  `checkh(a, 1);  `checkh(side, 0);
 
       $write("*-* All Finished *-*\n");
       $finish;
