@@ -1893,11 +1893,8 @@ class AssertNfaVisitor final : public VNVisitor {
         AstUntil* const untilp = VN_CAST(p, Until);
         if (!untilp) return false;
         if (untilp->isStrong()) return false;
-        const auto hasSeq = [](const AstNode* ep) {
-            return ep->exists([](const AstNode* np) {
-                if (const auto* const nep = VN_CAST(np, NodeExpr)) return nep->isMultiCycleSva();
-                return false;
-            });
+        const auto hasSeq = [](const AstNodeExpr* ep) {
+            return ep->exists([](const AstNodeExpr* np) { return np->isMultiCycleSva(); });
         };
         if (hasSeq(untilp->lhsp()) || hasSeq(untilp->rhsp())) return false;
         return true;
