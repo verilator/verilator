@@ -301,6 +301,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
@@ -351,6 +352,8 @@ public:
     string origName() const override { return m_origName; }
     string someInstanceName() const VL_MT_SAFE { return m_someInstanceName; }
     void someInstanceName(const string& name) { m_someInstanceName = name; }
+    AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
+    void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void depth(int value) { m_depth = value; }
@@ -2809,6 +2812,7 @@ class AstGenBlock final : public AstNodeGen {
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
     const bool m_implied;  // Not inserted by user
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
 public:
     AstGenBlock(FileLine* fl, const string& name, AstNode* itemsp, bool implied)
@@ -2825,6 +2829,8 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool unnamed() const { return m_unnamed; }
     bool implied() const { return m_implied; }
+    AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
+    void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
 };
 class AstGenCase final : public AstNodeGen {
     // Generate 'case'

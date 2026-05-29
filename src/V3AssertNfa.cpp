@@ -26,6 +26,7 @@
 
 #include "V3AssertNfa.h"
 
+#include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Task.h"
@@ -2301,7 +2302,7 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultDisablep);
         m_modp = nodep;
         m_defaultClockingp = nullptr;
-        m_defaultDisablep = nullptr;
+        m_defaultDisablep = nodep->defaultDisablep();
         SvaNfaLowering lowering{nodep};
         m_loweringp = &lowering;
         iterateChildren(nodep);
@@ -2310,9 +2311,12 @@ class AssertNfaVisitor final : public VNVisitor {
         if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstDefaultDisable* nodep) override {
-        if (!m_defaultDisablep) m_defaultDisablep = nodep;
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
+        iterateChildren(nodep);
     }
+    void visit(AstDefaultDisable* nodep) override {}
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }
     void visit(AstRestrict* nodep) override {

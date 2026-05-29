@@ -6664,14 +6664,8 @@ property_spec<propSpecp>:               // IEEE: property_spec
                         { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
         |       '@' senitemVar pexpr
                         { $$ = new AstPropSpec{$1, $2, nullptr, $3}; }
-        //                      // Disable applied after the event occurs,
-        //                      // so no existing AST can represent this
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
-                        { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
-                          BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
-                                  + $<fl>1->warnMore()
-                                  + "... Suggest use property '(@(...) disable iff (...))'"); }
-        //UNSUP remove above
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' pexpr
+                        { $$ = new AstPropSpec{$1, $8, $4, $10}; }
         |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
         ;

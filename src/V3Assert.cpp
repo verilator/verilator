@@ -23,6 +23,79 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace {
+
+class DefaultDisableLocalVisitor final : public VNVisitor {
+    // STATE
+    AstNode* m_scopep = nullptr;
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        nodep->defaultDisablep(nullptr);
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        nodep->defaultDisablep(nullptr);
+        iterateChildren(nodep);
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        UASSERT_OBJ(nodep, m_scopep,
+                    "default disable iff must be inside a module or generate block");
+        AstDefaultDisable* defaultp = nullptr;
+        if (const AstNodeModule* const modp = VN_CAST(m_scopep, NodeModule)) {
+            defaultp = modp->defaultDisablep();
+        } else {
+            defaultp = VN_AS(m_scopep, GenBlock)->defaultDisablep();
+        }
+        if (VL_UNLIKELY(defaultp)) {
+            nodep->v3error("Only one 'default disable iff' allowed per "
+                           << (VN_IS(m_scopep, NodeModule) ? "module" : "generate block")
+                           << " (IEEE 1800-2023 16.15)");
+        } else if (AstNodeModule* const modp = VN_CAST(m_scopep, NodeModule)) {
+            modp->defaultDisablep(nodep);
+        } else {
+            VN_AS(m_scopep, GenBlock)->defaultDisablep(nodep);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit DefaultDisableLocalVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
+class DefaultDisablePropagateVisitor final : public VNVisitor {
+    // STATE
+    AstDefaultDisable* m_defaultDisablep = nullptr;
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        if (!nodep->defaultDisablep()) nodep->defaultDisablep(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit DefaultDisablePropagateVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
+}  // namespace
+
+void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
+    { DefaultDisableLocalVisitor{nodep}; }
+    { DefaultDisablePropagateVisitor{nodep}; }
+}
+
 //######################################################################
 // AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,
