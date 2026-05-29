@@ -54,12 +54,17 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkIncVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstLogAnd/AstLogOr::user1()  -> bool.  True if already lowered
+    const VNUser1InUse m_inuser1;
+
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modCompoundAssignmentsNum = 0;  // Var name counter
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
-    bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
+    bool m_condEvalContext = false;  // ++/-- is in a conditionally-evaluated position
+    AstNodeExpr* m_incCondp = nullptr;  // Gating condition for ++/-- in short-circuit context
 
     // METHODS
     void insertOnTop(AstNode* newp) {
@@ -144,8 +149,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void visit(AstCaseItem* nodep) override {
         {
-            VL_RESTORER(m_unsupportedHere);
-            m_unsupportedHere = true;
+            VL_RESTORER(m_condEvalContext);
+            m_condEvalContext = true;
             iterateAndNextNull(nodep->condsp());
         }
         m_insStmtp = nullptr;  // Next thing should be new statement
@@ -195,13 +200,64 @@ class LinkIncVisitor final : public VNVisitor {
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
-        VL_RESTORER(m_unsupportedHere);
-        m_unsupportedHere = true;
+        VL_RESTORER(m_condEvalContext);
+        VL_RESTORER(m_incCondp);
+        m_condEvalContext = true;
+        // Not rescuable by short-circuit gating; drop the gate so nested ++/-- errors
+        m_incCondp = nullptr;
         UINFO(9, "Marking unsupported " << nodep);
         iterateChildren(nodep);
     }
-    void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
-    void visit(AstLogOr* nodep) override { unsupported_visit(nodep); }
+    // Hoist LHS into a BLOCKTEMP so it is evaluated exactly once; otherwise the
+    // gated RHS ++/-- could modify a variable the LHS reads.
+    AstNodeExpr* captureLogicalLhsToTemp(AstNodeBiop* const nodep) {
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        const string name = "__VincGate"s + cvtToStr(++m_modCompoundAssignmentsNum);
+        AstVar* const varp = new AstVar{
+            fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
+            new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, lhsp->cloneTree(true)}};
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        if (m_ftaskp) varp->funcLocal(true);
+        insertOnTop(varp);
+        AstNode* tempInitp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, lhsp};
+        // Gate by the enclosing condition so a side-effecting LHS isn't run on short-circuit
+        if (m_incCondp) {
+            tempInitp = new AstIf{fl, m_incCondp->cloneTreePure(true), tempInitp, nullptr};
+        }
+        insertBeforeStmt(nodep, tempInitp);
+        nodep->lhsp(new AstVarRef{fl, varp, VAccess::READ});
+        return new AstVarRef{fl, varp, VAccess::READ};
+    }
+    void handleShortCircuit(AstNodeBiop* const nodep, bool isOr) {
+        // insertBeforeStmt retargets the parent iterator; skip on re-visit
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_condEvalContext);
+        VL_RESTORER(m_incCondp);
+        iterateAndNextNull(nodep->lhsp());
+        m_condEvalContext = true;
+        AstNodeExpr* ownedCondp = nullptr;
+        // Gate the RHS by the LHS condition if it evaluates any ++/-- anywhere within
+        if (nodep->rhsp()->exists([](const AstNode* np) {
+                return VN_IS(np, PreInc) || VN_IS(np, PreDec) || VN_IS(np, PostInc)
+                       || VN_IS(np, PostDec) || VN_IS(np, AssignCompound);
+            })) {
+            // Const LHS or no statement context: clone-and-evaluate-twice is safe
+            AstNodeExpr* lhsRefp = (!m_insStmtp || VN_IS(nodep->lhsp(), Const))
+                                       ? nodep->lhsp()->cloneTreePure(true)
+                                       : captureLogicalLhsToTemp(nodep);
+            // For ||, RHS runs when LHS is false; gate by !LHS
+            if (isOr) lhsRefp = new AstLogNot{nodep->fileline(), lhsRefp};
+            ownedCondp = m_incCondp ? new AstLogAnd{nodep->fileline(),
+                                                    m_incCondp->cloneTreePure(true), lhsRefp}
+                                    : lhsRefp;
+            m_incCondp = ownedCondp;
+        }
+        iterateAndNextNull(nodep->rhsp());
+        if (ownedCondp) VL_DO_DANGLING(ownedCondp->deleteTree(), ownedCondp);
+    }
+    void visit(AstLogAnd* nodep) override { handleShortCircuit(nodep, /*isOr=*/false); }
+    void visit(AstLogOr* nodep) override { handleShortCircuit(nodep, /*isOr=*/true); }
     void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
     void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
     void visit(AstCond* nodep) override { unsupported_visit(nodep); }
@@ -338,11 +394,12 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_expr_visit(AstNodeUniop* const nodep) {
         iterateChildren(nodep);
-        if (m_unsupportedHere) {
+        if (m_condEvalContext && !m_incCondp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
                                          " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
+        const bool needGating = m_condEvalContext && m_incCondp;
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(readp, false);
@@ -365,7 +422,19 @@ class LinkIncVisitor final : public VNVisitor {
         // Define what operation will we be doing
         AstNodeExpr* const operp = getOperationp(nodep, readp->cloneTreePure(true), newconstp);
 
-        if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
+        if (needGating) {
+            // Short-circuit context: mutate the variable only when the gate is true.
+            // The temp holds the old value, plus the new value for pre-inc/dec.
+            AstAssign* const assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                     readp->cloneTreePure(true)};
+            AstNode* const incp = new AstAssign{fl, writep, operp};
+            if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
+                incp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                            readp->cloneTreePure(true)});
+            }
+            assignp->addNextHere(new AstIf{fl, m_incCondp->cloneTreePure(true), incp, nullptr});
+            insertBeforeStmt(nodep, assignp);
+        } else if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
             // PreInc/PreDec operations
             // Immediately after declaration - increment it by one
             AstAssign* const assignp
