@@ -920,7 +920,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
                 const size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
                 if (usedTriggers.find(idx) != usedTriggers.end()) {
                     usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
-                                         [1 << (idx % TriggerKit::WORD_SIZE)]
+                                         [size_t{1} << (idx % TriggerKit::WORD_SIZE)]
                                              .push_back(shedp);
                 }
             }

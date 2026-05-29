@@ -17,10 +17,12 @@ module t;
   endfunction
 
   task automatic t1(output int o1);
-    fork begin
-      #1 $stop;
-      o1 = 0;
-    end join_none
+    fork
+      begin
+        #1 $stop;
+        o1 = 0;
+      end
+    join_none
   endtask
 
   function automatic int f2(inout io2);

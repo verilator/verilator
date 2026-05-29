@@ -182,6 +182,15 @@ AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeEx
     }
 }
 
+void AstAbortOn::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " [" << kind().ascii() << "]";
+}
+void AstAbortOn::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kind", kind().ascii());
+    dumpJsonGen(str);
+}
+
 void AstAddrOfCFunc::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -2779,15 +2788,15 @@ AstVarScope* AstNetlist::stlFirstIterationp() {
     return vscp;
 }
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
-    UASSERT(v3Global.rootp()->stdPackageClassp(), "'std' should be imported");
+    UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
-    for (AstNode* itemp = v3Global.rootp()->stdPackageClassp()->stmtsp(); itemp;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
          itemp = itemp->nextp()) {
         if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
     }
     UASSERT(selfp, "'std::process::self' should be found");
     AstFuncRef* const processSelfp = new AstFuncRef{flp, selfp};
-    processSelfp->classOrPackagep(v3Global.rootp()->stdPackageClassp());
+    processSelfp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
     return processSelfp;
 }
 void AstNodeModule::dump(std::ostream& str) const {

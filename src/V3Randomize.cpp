@@ -1166,7 +1166,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             exprp->user1(true);  // Mark as formatted
         } else {
             exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
-            if (!isGlobalConstrained) { VL_DO_DANGLING(pushDeletep(nodep), nodep); }
+            if (!isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
@@ -4818,7 +4818,12 @@ class RandomizeVisitor final : public VNVisitor {
                     pinp->addPinsp(namep);
                     pinp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
                                                 static_cast<uint64_t>(sizeVarp->width())});
-                    pinp->addPinsp(new AstVarRef{fl, sizeVarp, VAccess::READ});
+                    // sizeVarp may live in a base class when the constrained
+                    // array is inherited; route VarRef through its declaring
+                    // class so V3Scope can resolve it.
+                    AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
+                    sizeVarRefp->classOrPackagep(VN_AS(sizeVarp->user2p(), NodeModule));
+                    pinp->addPinsp(sizeVarRefp);
                     randomizep->addStmtsp(pinp->makeStmt());
                 }
 
@@ -5265,12 +5270,18 @@ class RandomizeVisitor final : public VNVisitor {
                 bool wasCreated = false;
                 AstVar* const sizeVarp
                     = createOrGetSizeVar(classp, arrVarp, fl, methodp->findIntDType(), wasCreated);
+                // arrVarp and sizeVarp may live in a base class when the
+                // array is inherited; route VarRefs through their declaring
+                // class so V3Scope can resolve them.
+                AstNodeModule* const arrClassp = VN_AS(arrVarp->user2p(), NodeModule);
+                AstNodeModule* const sizeClassp = VN_AS(sizeVarp->user2p(), NodeModule);
                 if (wasCreated) {
                     // Generate resize for dynamic arrays/queues (not assoc arrays)
                     if (!VN_IS(arrVarp->dtypep()->skipRefp(), AssocArrayDType)) {
                         AstCMethodHard* const resizep = new AstCMethodHard{
-                            fl, new AstVarRef{fl, classp, arrVarp, VAccess::READWRITE},
-                            VCMethod::DYN_RESIZE, new AstVarRef{fl, sizeVarp, VAccess::READ}};
+                            fl, new AstVarRef{fl, arrClassp, arrVarp, VAccess::READWRITE},
+                            VCMethod::DYN_RESIZE,
+                            new AstVarRef{fl, sizeClassp, sizeVarp, VAccess::READ}};
                         resizep->dtypep(methodp->findVoidDType());
                         inlineResizeStmtsp
                             = AstNode::addNext(inlineResizeStmtsp, new AstStmtExpr{fl, resizep});
@@ -5279,7 +5290,8 @@ class RandomizeVisitor final : public VNVisitor {
                     // Append size >= 0 constraint so ConstraintExprVisitor processes it
                     capturedTreep->addNext(createSizeGteZeroConstraint(fl, sizeVarp));
                 }
-                AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
+                AstVarRef* const sizeVarRefp
+                    = new AstVarRef{fl, sizeClassp, sizeVarp, VAccess::READ};
                 sizeVarRefp->user1(true);
                 methodp->replaceWith(sizeVarRefp);
                 VL_DO_DANGLING(methodp->deleteTree(), methodp);
@@ -5496,7 +5508,7 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         // For std::process, seed the per-process RNG via m_process->srandom()
         // For regular classes, seed the per-object RNG via __Vm_rng
         if (basep->name() == "process") {
-            funcp->addStmtsp(new AstCStmt{basep->fileline(), "__PVT__m_process->srandom(seed);"});
+            funcp->addStmtsp(new AstCStmt{basep->fileline(), "m_process->srandom(seed);"});
         } else {
             funcp->addStmtsp(new AstCStmt{basep->fileline(), "__Vm_rng.srandom(seed);"});
             basep->needRNG(true);

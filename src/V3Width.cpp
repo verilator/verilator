@@ -1550,6 +1550,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->propp(), WidthVP{SELF, BOTH}.p());
+            AstNodeExpr* propp = nodep->propp();
             if (!VN_IS(nodep->loBoundp(), Unbounded)) {
                 userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
                 V3Const::constifyParamsEdit(nodep->loBoundp());
@@ -1588,9 +1589,9 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("always range high bound must be >= low bound"
                                " (IEEE 1800-2023 16.12.11)");
             }
-            bool hasPropertyOp = nodep->propp()->isMultiCycleSva();
+            bool hasPropertyOp = propp->isMultiCycleSva();
             if (!hasPropertyOp) {
-                nodep->propp()->foreach([&](const AstNode* np) {
+                propp->foreach([&](const AstNode* np) {
                     if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
                         hasPropertyOp = true;
                     }
@@ -1601,6 +1602,7 @@ class WidthVisitor final : public VNVisitor {
                               "Unsupported: property/sequence operator inside bounded"
                               " always (IEEE 1800-2023 16.12.11)");
             }
+            VL_DO_DANGLING(fixWidthReduce(propp), propp);
             nodep->dtypeSetBit();
         }
     }
@@ -1716,6 +1718,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstAbortOn* nodep) override { visitAbortProp(nodep); }
 
     void visit(AstRand* nodep) override {
         assertAtExpr(nodep);
@@ -3762,6 +3765,16 @@ class WidthVisitor final : public VNVisitor {
                         return;
                     }
                 }
+                if (AstNodeFTask* const ftaskp = VN_CAST(foundp, NodeFTask)) {
+                    AstMethodCall* const newp = new AstMethodCall{
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
+                    newp->taskp(ftaskp);
+                    newp->dtypep(ftaskp->dtypep());
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    userIterate(newp, m_vup);
+                    return;
+                }
                 UINFO(1, "found object " << foundp);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
@@ -5624,8 +5637,6 @@ class WidthVisitor final : public VNVisitor {
             }
 
             if (patp) {
-                // Don't want the RHS an array
-                allConstant &= VN_IS(patp->lhssp(), Const);
                 patp->dtypep(arrayDtp->subDTypep());
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
@@ -5634,7 +5645,50 @@ class WidthVisitor final : public VNVisitor {
                             = new AstInitArray{nodep->fileline(), arrayDtp, nullptr};
                         newp = newap;
                     }
-                    VN_AS(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
+                    // If valuep is a reference to an array constant (or a
+                    // slice of one), flatten its elements into the target
+                    // array.  Width resolution has already run (including
+                    // early resolution in patVectorMap), so slices appear
+                    // as AstSliceSel.
+                    const AstInitArray* subInitp = nullptr;
+                    int flattenLo = 0;
+                    int flattenElements = 0;
+                    if (const AstNodeVarRef* vrp = VN_CAST(valuep, NodeVarRef)) {
+                        subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
+                        if (subInitp) {
+                            if (const AstNodeArrayDType* adtp
+                                = VN_CAST(vrp->varp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                                flattenElements = adtp->declRange().elements();
+                            }
+                        }
+                    } else if (const AstSliceSel* slicep = VN_CAST(valuep, SliceSel)) {
+                        if (const AstNodeVarRef* vrp = VN_CAST(slicep->fromp(), NodeVarRef)) {
+                            subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
+                            if (subInitp) {
+                                flattenLo = slicep->declRange().lo();
+                                flattenElements = slicep->declRange().elements();
+                            }
+                        }
+                    }
+                    if (subInitp && flattenElements > 0) {
+                        // Sub-array values are always constant
+                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                        for (int sn = 0; sn < flattenElements; ++sn) {
+                            UASSERT_OBJ(entn < range.elements(), nodep,
+                                        "Flattened sub-array overflows target array");
+                            VN_AS(newp, InitArray)
+                                ->addIndexValuep(ent - range.lo(),
+                                                 subInitp->getIndexDefaultedValuep(flattenLo + sn)
+                                                     ->cloneTree(false));
+                            if (sn < flattenElements - 1) {
+                                ++entn;
+                                ent += range.leftToRightInc();
+                            }
+                        }
+                    } else {
+                        allConstant &= VN_IS(valuep, Const);
+                        VN_AS(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
+                    }
                 } else {  // Packed. Convert to concat for now.
                     if (!newp) {
                         newp = valuep;
@@ -6176,6 +6230,11 @@ class WidthVisitor final : public VNVisitor {
                                        "Target fixed size variable ("
                                            << lwidth << " bits) is narrower than the stream ("
                                            << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
+                }
+                if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
+                    && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                    const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
+                    UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
                 }
                 if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)) {
                     streamp->unlinkFrBack();
@@ -7761,6 +7820,18 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visitAbortProp(AstAbortOn* nodep) {
+        // IEEE 1800-2023 16.12.14: abort condition is a 1-bit self-determined
+        // Boolean; property subexpression carries its own type checking.
+        // VAbortKind distinguishes accept/reject and sync/async, but the
+        // type-check path is identical for all four.
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "cond", nodep->condp(), BOTH);
+            iterateCheckBool(nodep, "prop", nodep->propp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
     void visit_red_and_or(AstNodeUniop* nodep) {
         // CALLER: RedAnd, RedOr, ...
         // Signed: Output unsigned, Lhs/Rhs/etc non-real (presumed, not in IEEE)
@@ -8483,6 +8554,7 @@ class WidthVisitor final : public VNVisitor {
         // Attempt to fix it quietly
         const int expWidth = 1;
         const int expSigned = false;
+        if (nodep->width() == expWidth) return;
         UINFO(4, "  widthReduce_old: " << nodep);
         AstConst* const constp = VN_CAST(nodep, Const);
         if (constp) {
@@ -9692,7 +9764,29 @@ class WidthVisitor final : public VNVisitor {
             if (!newEntry) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             }
-            element += range.leftToRightInc();
+            // For positional members that reference an array (or a slice
+            // of one), advance by that array/slice's element count so
+            // subsequent members are mapped correctly.  Width-resolve the
+            // value expression so its dtype is set
+            int elementAdvance = 1;
+            if (!patp->keyp()
+                && (VN_IS(patp->lhssp(), NodeVarRef) || VN_IS(patp->lhssp(), SelExtract))) {
+                userIterateAndNext(patp->lhssp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+                AstNodeExpr* const exprp = patp->lhssp();
+                const AstNodeDType* const dtypep = exprp->dtypep();
+                if (const AstUnpackArrayDType* adtp
+                    = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+                    // Only flatten constant arrays backed by InitArray
+                    const AstNodeVarRef* vrp = VN_CAST(exprp, NodeVarRef);
+                    if (!vrp) {
+                        if (const AstSliceSel* slicep = VN_CAST(exprp, SliceSel))
+                            vrp = VN_CAST(slicep->fromp(), NodeVarRef);
+                    }
+                    if (vrp && VN_IS(vrp->varp()->valuep(), InitArray))
+                        elementAdvance = adtp->declRange().elements();
+                }
+            }
+            element += range.leftToRightInc() * elementAdvance;
         }
         return patmap;
     }

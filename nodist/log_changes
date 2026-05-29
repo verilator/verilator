@@ -68,6 +68,8 @@ def process() -> None:
                     author += ", Heidelberg University"
                 if re.search(r'tenstorrent', email):
                     author += ", Testorrent USA, Inc."
+                if re.search(r'secturion', email):
+                    author += ", Secturion Systems, Inc."
                 if re.search(r'github action', author):
                     author = ""
                     continue

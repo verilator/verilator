@@ -178,8 +178,10 @@ class CaseVisitor final : public VNVisitor {
             for (uint32_t i = 0; i < numCases; ++i) {
                 if ((i & mask) == val) {
                     if (!m_valueItem[i]) {
-                        nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
-                                                                   << " not covered by case\n");
+                        if (!nodep->unique0Pragma())
+                            nodep->v3warn(CASEINCOMPLETE, "Enum item "
+                                                              << itemp->prettyNameQ()
+                                                              << " not covered by case\n");
                         m_caseIncomplete = true;
                         return false;  // enum has uncovered value by case items
                     }
@@ -310,9 +312,10 @@ class CaseVisitor final : public VNVisitor {
             } else {
                 for (uint32_t i = 0; i < numCases; ++i) {
                     if (!m_valueItem[i]) {  // has uncovered case
-                        nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
-                                                      "(example pattern 0x"
-                                                          << std::hex << i << ")");
+                        if (!nodep->unique0Pragma())
+                            nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
+                                                          "(example pattern 0x"
+                                                              << std::hex << i << ")");
                         m_caseIncomplete = true;
                         m_caseNoOverlapsAllCovered = false;
                         return false;

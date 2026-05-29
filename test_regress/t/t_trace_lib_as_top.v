@@ -5,15 +5,15 @@
 
 `define STRINGIFY(x) `"x`"
 
-module t(
-  input clk
+module t (
+    input clk
 );
 
   int cyc = 1;
 
-  Factorial factorial(
-    .clk(clk),
-    .i(cyc)
+  Factorial factorial (
+      .clk(clk),
+      .i(cyc)
   );
 
   initial begin
@@ -22,16 +22,16 @@ module t(
   end
 
   always @(posedge clk) begin
-    cyc <= cyc+1;
+    cyc <= cyc + 1;
     if (cyc == 5) begin
       $finish;
     end
   end
 endmodule
 
-module Factorial(
-  input clk,
-  input int i
+module Factorial (
+    input clk,
+    input int i
 );
   int fact = 1;
   always @(posedge clk) begin

@@ -1,0 +1,16 @@
+// DESCRIPTION: Verilator: FSM register wrapper VLT warning coverage
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+fsm_register_wrapper -module "odd_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "rst_n" -reset_value "ResetValue"
+fsm_register_wrapper -module "missing_q_fsm_flop" -d "din" -q "missing" -clock "clk" -reset "rst_n" -reset_value "ResetValue"
+fsm_register_wrapper -module "missing_clock_fsm_flop" -d "din" -q "dout" -clock "missing" -reset "rst_n" -reset_value "ResetValue"
+fsm_register_wrapper -module "partial_reset_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "rst_n"
+fsm_register_wrapper -module "missing_reset_value_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "rst_n" -reset_value "MissingParam"
+fsm_register_wrapper -module "value_no_reset_fsm_flop" -d "din" -q "dout" -clock "clk" -reset_value "ResetValue"
+fsm_register_wrapper -module "sync_reset_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "rst" -reset_value "ResetValue"
+fsm_register_wrapper -module "missing_reset_connection_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "missing_rst" -reset_value "ResetValue"

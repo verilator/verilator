@@ -100,7 +100,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     // The actual hierarchy of scopes
     std::map<const std::string, std::vector<std::string>> m_vpiScopeHierarchy;
-    int m_coverBins = 0;  // Coverage bin number
+    int m_coverBins = 0;  // Global coverage bin number for non-object helper functions
+    // Counts bins within the current module. Coverage storage is also emitted
+    // on each module object so no-inline instances keep independent counters
+    // when forcePerInstance is used.
+    int m_modCoverBins = 0;  // Per-module coverage bin number
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     std::vector<std::string> m_splitFuncNames;  // Split file names
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
@@ -567,7 +571,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_modCoverBins);
         m_modp = nodep;
+        // Restart bin numbering for the object-local coverage array of this
+        // module class.
+        m_modCoverBins = 0;
         iterateChildrenConst(nodep);
     }
     void visit(AstCellInlineScope* nodep) override {
@@ -638,10 +646,14 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
     void visit(AstNodeCoverDecl* nodep) override {
-        // Assign numbers to all bins, so we know how big of an array to use
+        // Assign both global and module-local bin numbers. Most generated
+        // coverage uses module-local counters, but static/package/class helper
+        // functions may have no vlSelf and still need the global array.
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins);
             m_coverBins += nodep->size();
+            nodep->localBinNum(m_modCoverBins);
+            m_modCoverBins += nodep->size();
         }
     }
     void visit(AstCFunc* nodep) override {

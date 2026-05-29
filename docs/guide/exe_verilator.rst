@@ -113,6 +113,15 @@ Summary:
    In versions before 5.038, these were disabled by default, and `--assert`
    or `--assert-case` was required to enable case assertions.
 
+.. option:: --assert-unroll-limit <iterations>
+
+   Rarely needed. Specifies the maximum repetition or range count Verilator
+   will unroll inside an SVA concurrent assertion (e.g. ``[*N]``, ``[->M:N]``,
+   ``always[lo:hi]``). Beyond this, the assertion is rejected with an error
+   so that pathological counts do not blow up compile time or memory.
+
+   Defaults to 1024. Increase if a design needs larger repetition counts.
+
 .. option:: --autoflush
 
    After every $display or $fdisplay, flush the output stream. This ensures
@@ -307,6 +316,20 @@ Summary:
    Rarely needed. Specify the maximum bit width of a signal subject to
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
+
+.. option:: --coverage-per-instance
+
+   For Verilator-inserted coverage, preserve generated coverage counters and
+   ``.dat`` records per hierarchy instance. This option must be specified when
+   Verilating the model, together with one or more coverage instrumentation
+   options, for example :vlopt:`--coverage`, :vlopt:`--coverage-line`,
+   :vlopt:`--coverage-toggle`, :vlopt:`--coverage-expr`,
+   :vlopt:`--coverage-fsm`, or :vlopt:`--coverage-user`. It may increase
+   generated model size, counter memory, coverage write time, and ``.dat`` file
+   size.
+
+   This does not affect SystemVerilog ``cover``, which uses the IEEE-specified
+   coverage option ``per_instance``.
 
 .. option:: --coverage-toggle
 

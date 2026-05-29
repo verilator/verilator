@@ -393,8 +393,6 @@
 %000004   state_t state_q;
 %000004   state_t state_d;
         
-%000001   initial side = 1'b0;
-        
  000010   always_comb begin
  000010     state_d = state_q;
  000010     case (state_q)
@@ -404,8 +402,10 @@
           end
         
 %000009   always_ff @(posedge clk) begin
-%000007     if (rst) state_q <= S0;
-%000007     else begin
+%000007     if (rst) begin
+%000002       side <= 1'b0;
+%000002       state_q <= S0;
+%000007     end else begin
 %000007       side <= ~side;
 %000007       state_q <= state_d;
             end

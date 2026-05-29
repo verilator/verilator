@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM enum width limit test
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-# FSM coverage currently stores recovered enum state values in the detector's
-# 32-bit internal representation, so wider enum-backed FSMs are rejected.
-test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--stats"])
+
+test.file_grep(test.stats, r'Non-overlapping force sels\s+(\d+)', 2)
+
+test.execute()
 
 test.passes()

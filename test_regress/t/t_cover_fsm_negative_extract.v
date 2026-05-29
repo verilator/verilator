@@ -332,7 +332,26 @@ module fsm_if_reduction_bad (
 
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
-
+module fsm_direct_active_low_dynamic_reset_bad (
+    input logic clk,
+    input logic rst_n,
+    input logic [1:0] dyn_reset
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+  always_comb begin
+    state_d = state_q;
+    if (state_q == S0) state_d = S1;
+    else state_d = S0;
+  end
+  always_ff @(posedge clk or negedge rst_n) begin
+    state_q <= rst_n ? state_d : state_t'(dyn_reset);
+  end
+endmodule
 module t (
     input logic clk
 );
@@ -343,10 +362,11 @@ module t (
     S2 = 3'd2
   } state_t;
 
-  int cyc;
-  logic start;
-  logic side;
-  logic [2:0] dyn_case;
+  int cyc = 0;
+  logic start = 1'b0;
+  logic side = 1'b0;
+  logic dyn_side = 1'b0;
+  logic [2:0] dyn_case = 3'd7;
   state_t state  /*verilator fsm_reset_arc*/;
 
   fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
@@ -364,18 +384,13 @@ module t (
   fsm_if_alias_other_state_bad alias_other_state_u (.clk(clk));
   fsm_if_bit_or_bad bit_or_u (.clk(clk), .start(start));
   fsm_if_reduction_bad reduction_u (.clk(clk));
-
-  initial begin
-    cyc = 0;
-    start = 1'b0;
-    side = 1'b0;
-    dyn_case = 3'd7;
-  end
+  fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
+      .clk(clk), .rst_n(cyc != 0), .dyn_reset(dyn_case[1:0]));
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc == 1) side <= 1'b1;
-    dyn_case <= {2'b11, side};
+    if (cyc == 1) dyn_side <= 1'b1;
+    dyn_case <= {2'b11, dyn_side};
     if (cyc == 5) begin
       $write("*-* All Finished *-*\n");
       $finish;

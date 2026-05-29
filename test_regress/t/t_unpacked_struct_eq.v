@@ -14,6 +14,7 @@ module t;
       bit [7:0] arr[2][3];
       arr_str_t str[5];
     } sub;
+    bit [511:0] wide;
   } struct_t;
   struct_t s1;
   struct_t s2;
@@ -23,6 +24,8 @@ module t;
   assign {s2.sub.m0, s2.sub.m1} = {1'b0, 4'h5};
   assign s1.txt = "text";
   assign s2.txt = "text";
+  assign s1.wide = {16{32'hfeed0ca7}};
+  assign s2.wide = {16{32'hfeed0ca7}};
 
   assign {s1.sub.arr[0][0], s2.sub.arr[0][0]} = {8'h01, 8'h01};
   assign {s1.sub.arr[0][1], s2.sub.arr[0][1]} = {8'h02, 8'h02};
@@ -33,6 +36,7 @@ module t;
 
   assign {s3.sub.m0, s3.sub.m1} = {1'b0, 4'h5};
   assign s3.txt = "text";
+  assign s3.wide = {16{32'hfeed0ca7}};
 
   assign s3.sub.arr[0][0] = 8'h01;
   assign s3.sub.arr[0][1] = 8'h02;
@@ -44,6 +48,7 @@ module t;
   initial begin
     #1;
     if (s3 == s1) $stop;
+    if (s1 != s2) $stop;
     if (s1 == s2 && s3 != s1) begin
       $write("*-* All Finished *-*\n");
       $finish;

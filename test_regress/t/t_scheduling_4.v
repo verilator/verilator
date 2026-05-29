@@ -14,8 +14,8 @@
 `define IMPURE_ONE |($random | $random);
 `endif
 
-module top(
-  clk
+module top (
+    clk
 );
 
   input clk;
@@ -43,7 +43,7 @@ module top(
   end
 
   always @(edge cyc[0]) a = cyc + `IMPURE_ONE;
-  always @(edge a[0])   b = a   + `IMPURE_ONE;
-  assign                c = a   + `IMPURE_ONE;
+  always @(edge a[0]) b = a + `IMPURE_ONE;
+  assign c = a + `IMPURE_ONE;
 
 endmodule

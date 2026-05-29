@@ -150,6 +150,7 @@ class DelayedVisitor final : public VNVisitor {
         const AstVarRef* m_firstNbaRefp = nullptr;
         // Active block 'm_firstNbaRefp' is under
         const AstActive* m_fistActivep = nullptr;
+        bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
@@ -414,6 +415,8 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            // If whole array is target of NBA, use ShadowVar
+            if (vscpInfo.m_whole) return Scheme::ShadowVar;
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -1255,6 +1258,7 @@ class DelayedVisitor final : public VNVisitor {
             m_vscps.emplace_back(vscp);
         }
         // Note usage context
+        vscpInfo.m_whole |= VN_IS(nodep->lhsp(), VarRef);
         vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;

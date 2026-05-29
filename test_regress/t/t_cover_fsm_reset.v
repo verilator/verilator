@@ -54,13 +54,10 @@ module fsm_reset_other_assign_ok (
   state_t state_q;
   state_t state_d;
 
-  initial begin
-    aux = 1'b1;
-    start = 1'b1;
-  end
-
   always_ff @(posedge clk) begin
     if (rst) begin
+      aux <= 1'b1;
+      start <= 1'b1;
       state_q <= S0;
       aux <= 1'b0;
     end else begin
@@ -87,13 +84,8 @@ module fsm_oneblock_reset_mismatch_ok (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q;
-  state_t other_q;
-
-  initial begin
-    state_q = S0;
-    other_q = S2;
-  end
+  state_t state_q = S0;
+  state_t other_q = S2;
 
   always_ff @(posedge clk) begin
     if (rst) begin
@@ -117,13 +109,8 @@ module fsm_oneblock_reset_nonconst_ok (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q;
-  state_t other_q;
-
-  initial begin
-    state_q = S0;
-    other_q = S2;
-  end
+  state_t state_q = S0;
+  state_t other_q = S2;
 
   // Useful because the one-block reset fallback must ignore non-constant reset
   // assignments and still retain the supported case(state_q) FSM below.

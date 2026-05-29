@@ -349,7 +349,7 @@ void VlRandomVar::emitConcreteValue(std::ostream& s) const {
         } else if (w <= VL_QUADSIZE) {
             bit = (*static_cast<const QData*>(dp) >> i) & 1;
         } else {
-            const EData* const wp = static_cast<const EData*>(dp);
+            const WDataInP wp = WDataInP::external(static_cast<const EData*>(dp));
             bit = (wp[VL_BITWORD_E(i)] >> VL_BITBIT_E(i)) & 1;
         }
         s << (bit ? '1' : '0');
@@ -381,7 +381,7 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VL_SET_WQ(qiwp, 0ULL);
     if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
     const int nidx = qiwp[0];
-    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap(nidx));
+    if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
     if (!parseSMTNum(obits, owp, val)) return false;
 
     if (obits <= VL_BYTESIZE) {

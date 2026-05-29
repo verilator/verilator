@@ -1,0 +1,5 @@
+Hello World!
+Hello 3rd rock!
+Hello Mars!
+Hello Pluto!
+- t/t_runflag_logfile.v:20: Verilog $finish

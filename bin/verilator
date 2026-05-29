@@ -200,9 +200,9 @@ sub verilator_bin {
 
 sub gdb_works {
     $! = undef;  # Cleanup -x
-    system("gdb /bin/echo"
+    system("gdb /bin/sh"
            . " --batch-silent --quiet --return-child-result"
-           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'run -c exit'"  # `/bin/sh -c exit
            . " -ex 'set width 0'"
            . " -ex 'bt'"
            . " -ex 'quit'");
@@ -357,6 +357,7 @@ detailed descriptions of these arguments.
     --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
+    --assert-unroll-limit <iter> Max SVA assertion repetition before erroring
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -376,6 +377,7 @@ detailed descriptions of these arguments.
     --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
+    --coverage-per-instance     Enable per-instance coverage counters
     --coverage-toggle           Enable toggle coverage
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage
@@ -595,6 +597,7 @@ description of these arguments.
      +verilator+debugi+<value>             Enable debugging at a level
      +verilator+error+limit+<value>        Set error limit
      +verilator+help                       Show help
+     +verilator+log+file+<filename>        Log stdout and stderr output to filename
      +verilator+noassert                   Disable assert checking
      +verilator+prof+exec+file+<filename>  Set execution profile filename
      +verilator+prof+exec+start+<value>    Set execution profile starting point

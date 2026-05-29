@@ -1,0 +1,3 @@
+[0] %Error: t_runflag_logfile_error.v:11: Assertion failed in top.top: This is a generated error!
+%Error: t/t_runflag_logfile_error.v:11: Verilog $stop
+Aborting...

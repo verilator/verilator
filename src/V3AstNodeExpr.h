@@ -265,7 +265,16 @@ public:
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     bool isPure() override;
-
+    bool sameNode(const AstNode* samep) const override {
+        const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
+        return taskp() == asamep->taskp()  //
+               && classOrPackagep() == asamep->classOrPackagep()  //
+               && name() == asamep->name()  //
+               && dotted() == asamep->dotted()  //
+               && inlinedDots() == asamep->inlinedDots()  //
+               && pli() == asamep->pli()  //
+               && containsGenBlock() == asamep->containsGenBlock();
+    }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
@@ -574,6 +583,32 @@ public:
 };
 
 // === AstNodeExpr ===
+class AstAbortOn final : public AstNodeExpr {
+    // IEEE 1800-2023 16.12.14: accept_on/reject_on/sync_accept_on/sync_reject_on
+    // (cond) prop. The four operators share an identical AST shape and lowering
+    // scaffolding -- VAbortKind selects between Accept/Reject verdict and
+    // Async/Sync sampling.
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := propp : AstNodeExpr
+    VAbortKind m_kind{VAbortKind::ACCEPT_ON};
+
+public:
+    AstAbortOn(FileLine* fl, VAbortKind kind, AstNodeExpr* condp, AstNodeExpr* propp)
+        : ASTGEN_SUPER_AbortOn(fl)
+        , m_kind{kind} {
+        this->condp(condp);
+        this->propp(propp);
+    }
+    ASTGEN_MEMBERS_AstAbortOn;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VAbortKind kind() const { return m_kind; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
+};
 class AstAddrOfCFunc final : public AstNodeExpr {
     // Get address of CFunc
     // @astgen ptr := m_funcp : AstCFunc  // Pointer to function itself
@@ -4848,7 +4883,7 @@ class AstWordSel final : public AstNodeSel {
 public:
     AstWordSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_WordSel(fl, fromp, bitp) {
-        dtypeSetUInt32();  // Always used on WData arrays so returns edata size
+        dtypeSetUInt32();  // Always used on VlWide arrays so returns EData size
     }
     ASTGEN_MEMBERS_AstWordSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -4974,6 +5009,11 @@ public:
     AstFuncRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
         : ASTGEN_SUPER_FuncRef(fl, name, argsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
+    bool sameNode(const AstNode* samep) const override {
+        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
+        const AstFuncRef* const asamep = VN_DBG_AS(samep, FuncRef);
+        return superReference() == asamep->superReference();
+    }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
 };
@@ -5007,7 +5047,6 @@ public:
     ASTGEN_MEMBERS_AstNew;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool isImplicit() const { return m_isImplicit; }
     void isImplicit(bool flag) { m_isImplicit = flag; }
@@ -5025,6 +5064,11 @@ public:
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;
+    bool sameNode(const AstNode* samep) const override {
+        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
+        const AstTaskRef* const asamep = VN_DBG_AS(samep, TaskRef);
+        return superReference() == asamep->superReference();
+    }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
 };
@@ -5304,7 +5348,7 @@ public:
 class AstAtoN final : public AstNodeUniop {
     // string.atoi(), atobin(), atohex(), atooct(), atoireal()
 public:
-    enum FmtType { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
+    enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
     const FmtType m_fmt;  // Operation type

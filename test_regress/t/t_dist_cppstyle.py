@@ -90,6 +90,14 @@ for filename in sorted(files.keys()):
         r'.*(Need \(\)|: m_e\()|V3OPTION_PARSER_DEF',
         "Use brace instead of parenthesis-style constructors e.g. ': m_...{...}'")
 
+    check_pattern(
+        filename,
+        contents,
+        r'\s*enum\s+(class\s+)?([a-zA-Z0-9_]+)',
+        # Ignore common m_e enum constructors
+        r' enum m_e | enum en | : [a-zA-Z]',
+        "Add type to enum declaration e.g. 'enum class foo : uint8_t'")
+
     if re.search(r'\.(c|cpp)', filename):
         check_pattern(filename, contents, r'(\w+\s+)*(\binline\b)[^\n]*', None,
                       "'inline' keyword is on functions defined in .cpp files")

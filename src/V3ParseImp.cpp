@@ -39,6 +39,7 @@
 #include "V3PreShell.h"
 #include "V3Stats.h"
 
+#include <cctype>
 #include <sstream>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -83,8 +84,8 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
             for (AstNode* itemp = v3Global.rootp()->stdPackagep()->stmtsp(); itemp;
                  itemp = itemp->nextp()) {
                 if (itemp->name() == "process") {
-                    v3Global.rootp()->stdPackageClassp(VN_AS(itemp, Class));
-                    UASSERT_OBJ(v3Global.rootp()->stdPackageClassp(), v3Global.rootp(),
+                    v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
+                    UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
                                 "'std' package class should be found");
                     break;
                 }
@@ -843,6 +844,14 @@ int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
     tokenPipelineSym();  // sets yylval
     m_bisonLastFileline = yylval.fl;
+    if (m_tokenLastBison.token == '!'
+        && (yylval.token == '&' || yylval.token == '|' || yylval.token == '^'
+            || yylval.token == yP_NAND || yylval.token == yP_NOR || yylval.token == yP_XNOR)) {
+        m_tokenLastBison.fl->v3warn(NOTREDOP,
+                                    "Logical not directly before reduction operator is illegal\n"
+                                        << m_tokenLastBison.fl->warnMore()
+                                        << "... Suggest use parentheses, e.g. '!(|expr)'");
+    }
     m_tokenLastBison = yylval;
 
     if (debug() >= 6 || debugFlex() >= 6

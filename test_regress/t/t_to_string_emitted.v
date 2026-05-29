@@ -100,8 +100,8 @@ endclass
 
 module t;
   struct_t s;
-  iface i1();
-  iface2 i2();
+  iface i1 ();
+  iface2 i2 ();
   Class c;
   Derived d;
   Derived2 d2;
@@ -113,38 +113,38 @@ module t;
   OuterClass::NestedClass nc;
   Class3 c3;
   Class4 c4;
-  iface3 i3();
+  iface3 i3 ();
 
   initial begin
-  c = new;
-  c.i1 = i1;
-  c.i2[0][0] = i2;
-  d = new;
-  d2 = new;
-  d2.c2 = new;
-  b2 = d2;
-  d3 = new;
-  iclass = d3;
-  d4 = new;
-  iclass2 = d4;
-  nc = new;
-  c3 = new;
-  c3.i = i3;
-  c4 = new;
-  c4.i = i3;
+    c = new;
+    c.i1 = i1;
+    c.i2[0][0] = i2;
+    d = new;
+    d2 = new;
+    d2.c2 = new;
+    b2 = d2;
+    d3 = new;
+    iclass = d3;
+    d4 = new;
+    iclass2 = d4;
+    nc = new;
+    c3 = new;
+    c3.i = i3;
+    c4 = new;
+    c4.i = i3;
 
 `ifdef DISPLAY_OBJECTS
-  $display("struct: '%p'", s);
-  $display("class: '%p'", c);
-  $display("class from subclass: '%p'", d);
-  $display("class from superclass: '%p'", b2);
-  $display("class from interface: '%p'", iclass);
-  $display("class from interface 2: '%p'", d4);
-  $display("nested class: '%p'", nc);
-  $display("classes with shared field types: '%p', '%p'", c3, c4);
+    $display("struct: '%p'", s);
+    $display("class: '%p'", c);
+    $display("class from subclass: '%p'", d);
+    $display("class from superclass: '%p'", b2);
+    $display("class from interface: '%p'", iclass);
+    $display("class from interface 2: '%p'", d4);
+    $display("nested class: '%p'", nc);
+    $display("classes with shared field types: '%p', '%p'", c3, c4);
 `endif
 
-  $write("*-* All Finished *-*\n");
-  $finish;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule

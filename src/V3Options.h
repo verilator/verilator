@@ -228,6 +228,7 @@ private:
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
+    bool m_coveragePerInstance = false;  // main switch: --coverage-per-instance
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
     bool m_coverageUser = false;    // main switch: --coverage-func
@@ -311,6 +312,7 @@ private:
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 
+    int         m_assertUnrollLimit = 1024;  // main switch: --assert-unroll-limit
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 10000;  // main switch: --converge-limit
@@ -523,6 +525,7 @@ public:
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
     bool coverageLine() const { return m_coverageLine; }
+    bool coveragePerInstance() const { return m_coveragePerInstance; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
@@ -606,6 +609,7 @@ public:
     bool serializeOnly() const { return m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
+    int assertUnrollLimit() const { return m_assertUnrollLimit; }
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }

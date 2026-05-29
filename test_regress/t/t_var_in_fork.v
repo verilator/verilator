@@ -20,14 +20,12 @@ module t;
           int my_var;
           int my_other_var;
           my_var = captured_var;
-          my_other_var = captured_var; /* Capture the same value "twice" */
+          my_other_var = captured_var;  /* Capture the same value "twice" */
           my_var++;
-          static_var++; /* Write to a value with static lifetime (valid) */
+          static_var++;  /* Write to a value with static lifetime (valid) */
           $display("Vars in forked process: %0d %0d", my_var, my_other_var);
-          if (my_var != 2)
-            $stop;
-          if (my_other_var != 1)
-            $stop;
+          if (my_var != 2) $stop;
+          if (my_other_var != 1) $stop;
           send_event();
         end
       join_none
@@ -45,14 +43,13 @@ module t;
 
   always @(evt) begin
     $display("Static variable: %0d", static_var);
-    if (static_var != 1)
-      $stop;
+    if (static_var != 1) $stop;
     fork
       begin
-          automatic int my_auto_var = 0;
-          my_auto_var++;
-          $display("Automatic variable in fork: %0d", my_auto_var);
-          if (my_auto_var != 1) $stop;
+        automatic int my_auto_var = 0;
+        my_auto_var++;
+        $display("Automatic variable in fork: %0d", my_auto_var);
+        if (my_auto_var != 1) $stop;
       end
     join_none
     $write("*-* All Finished *-*\n");

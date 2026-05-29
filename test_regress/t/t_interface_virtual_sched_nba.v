@@ -20,9 +20,9 @@ module t;
 
   logic clk = 0;
   integer cyc = 0;
-  Bus1 intf1();
-  Bus2 intf2();
-  Bus3 intf3();
+  Bus1 intf1 ();
+  Bus2 intf2 ();
+  Bus3 intf3 ();
   virtual Bus1 vif1 = intf1;
   virtual Bus2 vif2 = intf2;
   virtual Bus3 vif3 = intf3;
@@ -35,18 +35,12 @@ module t;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc == 1)
-      vif1.data = 'hdead;
-    else if (cyc == 2)
-      data = vif1.data;
-    else if (cyc == 3)
-      vif1.data = 'hbeef;
-    else if (cyc == 4)
-      data = vif1.data;
-    else if (cyc == 5)
-      intf3.data <= 'hface;
-    else if (cyc == 6)
-      intf3.data <= 'hcafe;
+    if (cyc == 1) vif1.data = 'hdead;
+    else if (cyc == 2) data = vif1.data;
+    else if (cyc == 3) vif1.data = 'hbeef;
+    else if (cyc == 4) data = vif1.data;
+    else if (cyc == 5) intf3.data <= 'hface;
+    else if (cyc == 6) intf3.data <= 'hcafe;
   end
 
   // Finish on negedge so that $finish is last

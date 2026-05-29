@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Do not reindent - spaces are critical to this test
-
+// verilog_format: off
 // verilator lint_off UNUSEDLOOP
 
 module t;

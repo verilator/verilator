@@ -44,6 +44,20 @@ interface If_Dead;
   modport modport_Dead(import if_func_Dead);
 endinterface
 
+interface Dead_caller_if;
+  task automatic imported_task_Dead;
+  endtask
+  modport mp_Dead(import imported_task_Dead);
+endinterface
+
+module Dead_caller_test;
+  Dead_caller_if di ();
+
+  task automatic uncalled_caller_Dead;
+    di.imported_task_Dead;
+  endtask
+endmodule
+
 package Pkg_public_kpt;
   parameter int public_int_Keep  /*verilator public_flat_rd*/ = 5;
 endpackage
@@ -76,6 +90,7 @@ module t (  /*AUTOARG*/);
 
   Mod_Empty_Dead cell_empty_Dead ();
   Mod_Parent_Empty_Dead cell_parent_empty_Dead ();
+  Dead_caller_test dead_caller_test_i ();
 
   typedef_Dead1_t assigned_to_Dead1;
   typedef_Dead2_t assigned_to_Dead2;

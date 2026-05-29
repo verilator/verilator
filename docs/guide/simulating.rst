@@ -235,6 +235,12 @@ encodings in these common forms:
   with a combinational next-state block using the same supported
   ``case`` or top-level ``if`` / ``else if`` dispatch forms
 
+Scalar state encodings may be wider than 32 bits. This allows sparse
+state encodings, such as high-Hamming-distance enum or localparam values,
+to be preserved in the detected FSM model. Verilator uses the declared
+enum item name, parameter name, or localparam name as the reported state
+label where possible.
+
 Simple input guards are supported when they appear inside a recognized
 state branch, or as a top-level conjunction containing exactly one state
 comparison, such as ``(state_q == IDLE) && ready``. Directly traceable
@@ -255,6 +261,35 @@ the extracted coverage model:
   summary.
 - ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
   arcs that would otherwise be skipped by the conservative extractor.
+
+State registers may also be wrapped by a transparent instance, for
+example a project flop wrapper or primitive. Such wrappers must be
+described explicitly with a VLT command file action before Verilator will
+use their data, state, clock, or reset connections for FSM extraction:
+
+.. code-block:: sv
+
+   `verilator_config
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i"
+
+The same command may be placed in a separate ``.vlt`` file:
+
+.. code-block:: sv
+
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i"
+
+Optional reset metadata may also be supplied:
+
+.. code-block:: sv
+
+   fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" \
+      -reset "rst_ni" -reset_value "ResetValue"
+
+Reset arcs are emitted only when the configured reset port has an
+inferable edge in the wrapper and the configured reset value parameter is
+statically resolvable. If reset metadata is incomplete, Verilator warns
+and may still emit FSM state and transition coverage, but reset arcs are
+omitted.
 
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather

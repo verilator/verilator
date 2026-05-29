@@ -11,7 +11,7 @@ typedef struct packed {
 } pack_t;
 
 module t (
-  input clk
+    input clk
 );
 
   integer cyc = 0;

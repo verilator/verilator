@@ -151,14 +151,13 @@
             if (rst) state <= 2'd0;
 %000003     else if (state == 2'd0) state <= 2'd1;
         // [FSM coverage]
-%000001        // [fsm_arc t.literal_forced_u.state::ANY->S0[reset]] [reset arc, excluded from %]
-%000003        // [fsm_arc t.literal_forced_u.state::S0->S1]
-%000003        // [fsm_arc t.literal_forced_u.state::S1->S2]
-%000003        // [fsm_arc t.literal_forced_u.state::S2->S0]
-%000003        // [fsm_state t.literal_forced_u.state::S0]
-%000003        // [fsm_state t.literal_forced_u.state::S1]
-%000003        // [fsm_state t.literal_forced_u.state::S2]
-%000000        // [fsm_state t.literal_forced_u.state::S3] *** UNCOVERED ***
+%000003        // [fsm_arc t.literal_forced_u.state::2'h0->2'h1]
+%000003        // [fsm_arc t.literal_forced_u.state::2'h1->2'h2]
+%000003        // [fsm_arc t.literal_forced_u.state::2'h2->2'h0]
+%000001        // [fsm_arc t.literal_forced_u.state::ANY->2'h0[reset]] [reset arc, excluded from %]
+%000003        // [fsm_state t.literal_forced_u.state::2'h0]
+%000003        // [fsm_state t.literal_forced_u.state::2'h1]
+%000003        // [fsm_state t.literal_forced_u.state::2'h2]
             else if (state == 2'd1) state <= 2'd2;
             else if (state == 2'd2) state <= 2'd0;
           end

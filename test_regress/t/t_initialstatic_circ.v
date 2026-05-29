@@ -9,21 +9,19 @@ package pkg;
 
   function int unsigned func();
     int unsigned local_id;
-    local_id  = id + 1;
+    local_id = id + 1;
     id = local_id;
     return local_id;
   endfunction : func
 endpackage
 
-module t(/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
   import pkg::*;
   int unsigned func_id = func();
 
-  always @ (posedge clk) begin
+  always @(posedge clk) begin
     $display(id);
     $write("*-* All Finished *-*\n");
     $finish;

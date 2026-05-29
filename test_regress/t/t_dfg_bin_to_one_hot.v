@@ -32,7 +32,12 @@ module t (
     end
   end
 
-  sub u_sub(clk, cyc, cntB, cntC);
+  sub u_sub (
+      clk,
+      cyc,
+      cntB,
+      cntC
+  );
 
   // Should create decoder
   wire [127:0] cntAOneHot = {
@@ -585,16 +590,16 @@ module alt;
 endmodule
 
 module sub (
-  input wire clk,
-  input wire [31:0] cyc,
-  input wire [6:0] cntB,
-  input wire [6:0] cntC
+    input wire clk,
+    input wire [31:0] cyc,
+    input wire [6:0] cntB,
+    input wire [6:0] cntC
 );
 
   reg [6:0] cntB_q;
   always @(posedge clk) cntB_q <= cntB;
 
-  alt u_alt();
+  alt u_alt ();
   always @(posedge clk) u_alt.cntC_q <= cntC;
 
   // Should create decoder
