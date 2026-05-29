@@ -1391,9 +1391,9 @@ port<nodep>:                    // ==IEEE: port
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, $<fl>4, "", *$2, *$4};
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
-        |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
+        |       portDirNetE yINTERFACE                           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; GRAMMARP->createGenericIface($3, $4, $5); }
-        |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
+        |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { $$ = $5; GRAMMARP->createGenericIface($5, $6, $7, $<fl>4, *$4); }
         //
         |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE

@@ -338,7 +338,8 @@ public:
         m_varDeclTyped = true;
         const std::string uniqueName = "__VGIfaceParam" + nodep->name();
         AstNode::addNext(nodep,
-                         createVariable(nodep->fileline(), uniqueName, rangep, sigAttrListp));
+                         createVariable(nodep->fileline(), uniqueName, nullptr,
+                                        sigAttrListp ? sigAttrListp->cloneTree(true) : nullptr));
         m_varDecl = VVarType::IFACEREF;
         AstIfaceGenericDType* const refdtypep
             = new AstIfaceGenericDType{nodep->fileline(), modportFileline, modportstrp};

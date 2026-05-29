@@ -106,6 +106,13 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
     }
+    // If array, returns element dtype, otherwise returns skipRef dtype
+    // If skipRef is false, RefDTypes are not followed (safe before typedef linking)
+    const AstNodeDType* elemDTypep(bool skipRef = true) const VL_MT_STABLE;
+    AstNodeDType* elemDTypep(bool skipRef = true) VL_MT_STABLE {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->elemDTypep(skipRef));
+    }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
