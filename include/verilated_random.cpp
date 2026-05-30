@@ -671,9 +671,11 @@ bool VlRandomizer::next(VlRNG& rngr) {
                         if (!dropped[k]) os << " a" << k;
                     os << "))\n";
                     if (parseSolution(os, false)) break;
+                    // get-unsat-assumptions only echoes still-active literals,
+                    // so the first in-range index is a live conflicting bit.
                     const std::vector<int> core = readUnsatAssumptions(os);
                     for (const int idx : core)
-                        if (idx >= 0 && idx < npins && !dropped[idx]) {
+                        if (idx < npins) {
                             dropped[idx] = true;
                             break;
                         }
