@@ -788,7 +788,7 @@ Verilator 5.038 2025-07-08
 * Support non-overlapping blocking/non-blocking assignments (#6137). [Geza Lore]
 * Support parameter forward types.
 * Support constant functions with left-hand-side concatenates.
-* Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
+* Add PROCINITASSIGN on initial assignments to process variables (#2481) (#7640). [Niraj Menon]
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
 * Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]

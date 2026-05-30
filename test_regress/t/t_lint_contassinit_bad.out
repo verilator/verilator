@@ -1,10 +1,10 @@
-%Error-CONTASSINIT: t/t_lint_contassinit_bad.v:11:13: Continuous assignment to variable with initial value: 'a'
+%Error-CONTASSINIT: t/t_lint_contassinit_bad.v:15:13: Continuous assignment to variable with initial value: 'a'
                                                     : ... note: In instance 't'
                                                     : ... Location of variable initialization
-   11 |   logic a = 1'b0;   
+   15 |   logic a = 1'b0;   
       |             ^~~~
-                    t/t_lint_contassinit_bad.v:12:10: ... Location of continuous assignment
-   12 |   assign a = 1'b1;   
+                    t/t_lint_contassinit_bad.v:16:10: ... Location of continuous assignment
+   16 |   assign a = 1'b1;   
       |          ^
                     ... For error description see https://verilator.org/warn/CONTASSINIT?v=latest
 %Error: Exiting due to

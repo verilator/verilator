@@ -594,7 +594,10 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (m_alwaysCombp) entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
             }
-            if (nodep->access().isWriteOrRW()) {
+            if (nodep->access().isWriteOrRW() && !VN_IS(nodep, VarXRef)) {
+                // Ignoring xrefs as the initial and assignment to track might refer to two
+                // different instances.  Ideally all of V3Undriven would move after V3Scope,
+                // then could use VarScope tracking instead.
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
                 if (m_inInitial && !entryp->initialp()) entryp->initialp(nodep);
                 if (m_inContAssign && !entryp->contAssignp()) entryp->contAssignp(nodep);
