@@ -148,23 +148,23 @@ class VariableOrder final {
         varps.clear();
 
         // Helper function to sort given vector, then append to 'varps'
-        const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps,
-                                                  bool alignFirst) {
-            simpleSortVars(subVarps);
-            bool aligned = !alignFirst;
-            for (AstVar* const varp : subVarps) {
-                if (!aligned && !varp->isStatic()) {
-                    varp->mtaskCacheLineAlign(true);
-                    V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
-                    aligned = true;
-                }
-                varps.push_back(varp);
-            }
-        };
+        const auto sortAndAppend
+            = [this, &varps](std::vector<AstVar*>& subVarps, bool alignFirst) {
+                  simpleSortVars(subVarps);
+                  bool aligned = !alignFirst;
+                  for (AstVar* const varp : subVarps) {
+                      if (!aligned && !varp->isStatic()) {
+                          varp->mtaskCacheLineAlign(true);
+                          V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
+                          aligned = true;
+                      }
+                      varps.push_back(varp);
+                  }
+              };
 
         // Sort non-empty MTask affinity groups in the map's deterministic key order. This keeps
-        // memory linear in the number of affinity groups, unlike the old complete pairwise-distance
-        // ordering.
+        // memory linear in the number of affinity groups, unlike the old complete
+        // pairwise-distance ordering.
         size_t affinityGroups = 0;
         for (auto& pair : m2v) {
             if (emptyAffinity(pair.first)) continue;
