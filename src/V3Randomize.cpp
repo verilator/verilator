@@ -4329,22 +4329,43 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintIf{fl, condp, thenBodyp, nullptr};
     }
 
-    // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
+    // Replace AstDist with weighted bucket selection via hidden random variables.
     // Supports both constant and variable weight expressions.
-    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp) {
+    // Replace AstDist with weighted bucket selection via hidden random variables.
+    // Supports both constant and variable weight expressions.
+    // Returns a pointer to the replacement node if the entire subtree was lowered.
+    AstNode* lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp,
+                                  AstNodeForeach* foreachp = nullptr,
+                                  AstFunc* randomizep = nullptr, AstVar* genp = nullptr) {
+        AstNode* headp = constrItemsp;
         for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
             nextip = itemp->nextp();
 
             // Recursively handle ConstraintIf nodes (dist can be inside if/else)
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp()) lowerDistConstraints(taskp, cifp->thensp());
-                if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp());
+                AstNode* const newThenp
+                    = lowerDistConstraints(taskp, cifp->thensp(), foreachp, randomizep, genp);
+                if (newThenp != cifp->thensp()) {
+                    if (cifp->thensp()) pushDeletep(cifp->thensp()->unlinkFrBackWithNext());
+                    if (newThenp) cifp->addThensp(newThenp);
+                }
+                AstNode* const newElsep
+                    = lowerDistConstraints(taskp, cifp->elsesp(), foreachp, randomizep, genp);
+                if (newElsep != cifp->elsesp()) {
+                    if (cifp->elsesp()) pushDeletep(cifp->elsesp()->unlinkFrBackWithNext());
+                    if (newElsep) cifp->addElsesp(newElsep);
+                }
                 continue;
             }
 
             // Recursively handle ConstraintForeach nodes (dist can be inside foreach)
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp());
+                AstNode* const newBodyp
+                    = lowerDistConstraints(taskp, cfep->bodyp(), cfep, randomizep, genp);
+                if (newBodyp != cfep->bodyp()) {
+                    if (cfep->bodyp()) pushDeletep(cfep->bodyp()->unlinkFrBackWithNext());
+                    if (newBodyp) cfep->addBodyp(newBodyp);
+                }
                 continue;
             }
 
@@ -4362,9 +4383,10 @@ class RandomizeVisitor final : public VNVisitor {
                 }
                 if (VN_IS(chainEndp, Dist)) {
                     AstConstraintIf* const liftedp = liftLogIfChainToConstraintIf(topLogIfp);
+                    if (itemp == headp) headp = liftedp;
                     constrExprp->replaceWith(liftedp);
                     VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                    lowerDistConstraints(taskp, liftedp->thensp());
+                    lowerDistConstraints(taskp, liftedp->thensp(), foreachp, randomizep, genp);
                     continue;
                 }
             }
@@ -4419,10 +4441,9 @@ class RandomizeVisitor final : public VNVisitor {
 
             if (buckets.empty()) {
                 // All weights are zero: dist is vacuously true (unconstrained)
-                AstConstraintExpr* const truep
-                    = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
-                constrExprp->replaceWith(truep);
-                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+                AstNodeExpr* const truep = new AstConst{fl, AstConst::BitTrue{}};
+                truep->dtypeSetBit();
+                constrExprp->exprp(truep);
                 continue;
             }
 
@@ -4438,102 +4459,201 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
 
-            // Store totalWeight in temp var (evaluated once, used twice)
+            // Fix for Issue 1 & 2: Use a hidden random variable to select the bucket.
+            // This ensures weighted distribution while allowing the SMT solver to
+            // natively handle global consistency.
             const int distId = m_distNum++;
-            const std::string totalName = "__Vdist_total" + cvtToStr(distId);
-            AstVar* const totalVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, totalName, taskp->findUInt64DType()};
-            totalVarp->noSubst(true);
-            totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            totalVarp->funcLocal(true);
-            totalVarp->isInternal(true);
-            taskp->addStmtsp(totalVarp);
-            taskp->addStmtsp(
-                new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
+            const std::string weightName = "__Vdistw" + cvtToStr(distId);
+            AstNodeDType* const weightDtp = m_modp->findUInt64DType();
+            AstVar* weightVarp;
 
-            // bucketVar = (rand64() % totalWeight) + 1
-            const std::string bucketName = "__Vdist_bucket" + cvtToStr(distId);
-            AstVar* const bucketVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, bucketName, taskp->findUInt64DType()};
-            bucketVarp->noSubst(true);
-            bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            bucketVarp->funcLocal(true);
-            bucketVarp->isInternal(true);
-            taskp->addStmtsp(bucketVarp);
+            if (foreachp) {
+                // Inside a foreach: create a hidden array to hold weights per element
+                AstNodeDType* const arrayDtp = new AstDynArrayDType{fl, weightDtp};
+                arrayDtp->dtypep(arrayDtp);
+                v3Global.rootp()->typeTablep()->addTypesp(arrayDtp);
 
-            AstNodeExpr* randp = new AstRand{fl, nullptr, false};
-            randp->dtypeSetUInt64();
-            taskp->addStmtsp(new AstAssign{
-                fl, new AstVarRef{fl, bucketVarp, VAccess::WRITE},
-                new AstAdd{
-                    fl, new AstConst{fl, AstConst::Unsized64{}, 1},
-                    new AstModDiv{fl, randp, new AstVarRef{fl, totalVarp, VAccess::READ}}}});
+                weightVarp = new AstVar{fl, VVarType::MEMBER, weightName, arrayDtp};
+                weightVarp->rand(VRandAttr::RAND);
+                weightVarp->user2p(m_modp);
+                m_modp->addStmtsp(weightVarp);
 
-            // Build cumulative sum expressions forward: cumSum[i] = w[0]+...+w[i]
-            std::vector<AstNodeExpr*> cumSums;
+                // Ensure the hidden weight array is resized to match the design array
+                AstTask* const resizeAllTaskp = getCreateAggrResizeTask(VN_AS(m_modp, Class));
+                AstNodeExpr* const arraySizeExprp = new AstCMethodHard{
+                    fl, static_cast<AstNodeExpr*>(foreachp->headerp()->fromp()->cloneTreePure(false)),
+                    VCMethod::DYN_SIZE};
+                arraySizeExprp->dtypeSetUInt32();
+                AstCMethodHard* const resizeCallp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, m_modp, weightVarp, VAccess::WRITE},
+                                         VCMethod::DYN_RESIZE, arraySizeExprp};
+                resizeCallp->dtypeSetVoid();
+                resizeAllTaskp->addStmtsp(resizeCallp->makeStmt());
+
+                if (randomizep && genp) {
+                    // Manual write_var for hidden choice array (must happen after resize)
+                    AstCMethodHard* const methodp = new AstCMethodHard{
+                        fl,
+                        new AstVarRef{fl, VN_AS(genp->user2p(), NodeModule), genp,
+                                      VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_WRITE_VAR};
+                    methodp->dtypeSetVoid();
+                    methodp->addPinsp(new AstVarRef{fl, m_modp, weightVarp, VAccess::WRITE});
+                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 64});
+                    methodp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "\"" + weightName + "\""});
+                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 1});  // Dimension
+                    randomizep->addStmtsp(methodp->makeStmt());
+                }
+            } else {
+                // Scalar dist: create a single hidden member
+                weightVarp = new AstVar{fl, VVarType::MEMBER, weightName, weightDtp};
+                weightVarp->rand(VRandAttr::RAND);
+                weightVarp->user2p(m_modp);
+                m_modp->addStmtsp(weightVarp);
+
+                if (genp) {
+                    // Manual write_var for hidden choice variable
+                    AstCMethodHard* const methodp = new AstCMethodHard{
+                        fl,
+                        new AstVarRef{fl, VN_AS(genp->user2p(), NodeModule), genp,
+                                      VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_WRITE_VAR};
+                    methodp->dtypeSetVoid();
+                    methodp->addPinsp(new AstVarRef{fl, m_modp, weightVarp, VAccess::WRITE});
+                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 64});
+                    methodp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "\"" + weightName + "\""});
+                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0});  // Dimension
+                    taskp->addStmtsp(methodp->makeStmt());
+                }
+            }
+
+            // Mark variable as already processed by write_var pass and handled by solver
+            weightVarp->user3(true);
+            weightVarp->globalConstrained(true);
+
+            // choiceVar = weightVarp or weightVarp[i]
+            AstNodeExpr* choicep = new AstVarRef{fl, m_modp, weightVarp, VAccess::READ};
+            choicep->user1(true);
+            if (foreachp) {
+                // Use the same loop variables as the foreach
+                AstNodeExpr* indexp = nullptr;
+                for (AstNode* loopVarp = foreachp->headerp()->elementsp(); loopVarp;
+                     loopVarp = loopVarp->nextp()) {
+                    if (VN_IS(loopVarp, Empty)) continue;
+                    AstNodeExpr* const refp
+                        = new AstVarRef{fl, m_modp, VN_AS(loopVarp, Var), VAccess::READ};
+                    if (!indexp)
+                        indexp = refp;
+                    else
+                        indexp = new AstArraySel{fl, indexp, refp};
+                }
+                choicep = new AstArraySel{fl, choicep, indexp};
+                choicep->user1(true);
+            }
+
+            // Build weighted disjunction:
+            //   (choice < totalWeight) && (or (choice in bucket0_range && item in bucket0) ...)
+            AstNodeExpr* unionExprp = nullptr;
+
+            // Re-implementing with proper variable weight support
             AstNodeExpr* runningSump = nullptr;
-            for (size_t i = 0; i < buckets.size(); ++i) {
+            for (auto& bucket : buckets) {
+                AstNodeExpr* lowerp;
                 if (!runningSump) {
-                    runningSump = buckets[i].weightExprp->cloneTreePure(false);
+                    lowerp = new AstConst{fl, AstConst::Unsized64{}, 0};
+                    runningSump = bucket.weightExprp->cloneTreePure(false);
                 } else {
+                    lowerp = static_cast<AstNodeExpr*>(runningSump->cloneTreePure(false));
                     runningSump = new AstAdd{fl, runningSump,
-                                             buckets[i].weightExprp->cloneTreePure(false)};
+                                             bucket.weightExprp->cloneTreePure(false)};
                     runningSump->dtypeSetUInt64();
                 }
-                cumSums.push_back(runningSump->cloneTreePure(true));
-            }
+                AstNodeExpr* const upperp
+                    = static_cast<AstNodeExpr*>(runningSump->cloneTreePure(false));
 
-            // Build ConstraintIf chain backward (last bucket is unconditional default)
-            AstNode* chainp = nullptr;
-            for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
-                AstNodeExpr* constraintExprp;
-                if (const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange)) {
-                    AstNodeExpr* const exprCopy1p = distp->exprp()->cloneTreePure(false);
-                    exprCopy1p->user1(true);
-                    AstNodeExpr* const exprCopy2p = distp->exprp()->cloneTreePure(false);
-                    exprCopy2p->user1(true);
-                    AstGte* const gtep
-                        = new AstGte{fl, exprCopy1p, irp->lhsp()->cloneTreePure(false)};
-                    gtep->user1(true);
-                    AstLte* const ltep
-                        = new AstLte{fl, exprCopy2p, irp->rhsp()->cloneTreePure(false)};
-                    ltep->user1(true);
-                    constraintExprp = new AstLogAnd{fl, gtep, ltep};
-                    constraintExprp->user1(true);
+                // bucketActive = choiceVar >= lowerp && choiceVar < upperp
+                AstNodeExpr* const choiceClonep
+                    = static_cast<AstNodeExpr*>(choicep->cloneTreePure(false));
+                choiceClonep->user1(true);
+                AstNodeExpr* const gtep = new AstGte{fl, choiceClonep, lowerp};
+                gtep->user1(true);
+
+                AstNodeExpr* const choiceClone2p
+                    = static_cast<AstNodeExpr*>(choicep->cloneTreePure(false));
+                choiceClone2p->user1(true);
+                AstNodeExpr* const ltp = new AstLt{fl, choiceClone2p, upperp};
+                ltp->user1(true);
+
+                AstNodeExpr* const bucketActivep = new AstLogAnd{fl, gtep, ltp};
+                bucketActivep->user1(true);
+
+                // rangeExpr = item in Range
+                AstNodeExpr* rangeExprp;
+                if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
+                    AstNodeExpr* const itemClonep
+                        = static_cast<AstNodeExpr*>(distp->exprp()->cloneTreePure(false));
+                    itemClonep->user1(true);
+                    AstNodeExpr* const itemGtep
+                        = new AstGte{fl, itemClonep,
+                                     static_cast<AstNodeExpr*>(irp->lhsp()->cloneTreePure(false))};
+                    itemGtep->user1(true);
+
+                    AstNodeExpr* const itemClone2p
+                        = static_cast<AstNodeExpr*>(distp->exprp()->cloneTreePure(false));
+                    itemClone2p->user1(true);
+                    AstNodeExpr* const itemLtep
+                        = new AstLte{fl, itemClone2p,
+                                     static_cast<AstNodeExpr*>(irp->rhsp()->cloneTreePure(false))};
+                    itemLtep->user1(true);
+                    rangeExprp = new AstLogAnd{fl, itemGtep, itemLtep};
                 } else {
-                    AstNodeExpr* const exprCopyp = distp->exprp()->cloneTreePure(false);
-                    exprCopyp->user1(true);
-                    constraintExprp
-                        = new AstEq{fl, exprCopyp, buckets[i].rangep->cloneTreePure(false)};
-                    constraintExprp->user1(true);
+                    AstNodeExpr* const itemClonep
+                        = static_cast<AstNodeExpr*>(distp->exprp()->cloneTreePure(false));
+                    itemClonep->user1(true);
+                    rangeExprp
+                        = new AstEq{fl, itemClonep,
+                                    static_cast<AstNodeExpr*>(bucket.rangep->cloneTreePure(false))};
                 }
+                rangeExprp->user1(true);
 
-                AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
+                // combined = bucketActive && rangeExpr
+                AstNodeExpr* const combinedp = new AstLogAnd{fl, bucketActivep, rangeExprp};
+                combinedp->user1(true);
 
-                if (!chainp) {
-                    chainp = thenp;
-                } else {
-                    AstNodeExpr* const condp
-                        = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
-                    chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+                if (!unionExprp)
+                    unionExprp = combinedp;
+                else {
+                    unionExprp = new AstLogOr{fl, unionExprp, combinedp};
+                    unionExprp->user1(true);
                 }
             }
 
-            if (chainp) {
-                constrExprp->replaceWith(chainp);
-                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-            }
+            // Final constraint: (choiceVar < totalWeight) && unionExprp
+            AstNodeExpr* const choiceCloneFinalp
+                = static_cast<AstNodeExpr*>(choicep->cloneTreePure(false));
+            choiceCloneFinalp->user1(true);
+            AstNodeExpr* const boundp
+                = new AstLt{fl, choiceCloneFinalp,
+                            static_cast<AstNodeExpr*>(totalWeightExprp->cloneTreePure(false))};
+            boundp->user1(true);
 
-            // Clean up nodes used only as clone templates (never inserted into tree)
+            AstNodeExpr* const finalConstrp = new AstLogAnd{fl, boundp, unionExprp};
+            finalConstrp->user1(true);
+            finalConstrp->dtypeSetBit();
+
+            // Update original dist expression
+            constrExprp->exprp(finalConstrp);
+
+            // Clean up nodes used only as clone templates
             for (auto& bucket : buckets) {
                 VL_DO_DANGLING(pushDeletep(bucket.weightExprp), bucket.weightExprp);
             }
+            VL_DO_DANGLING(pushDeletep(totalWeightExprp), totalWeightExprp);
             VL_DO_DANGLING(pushDeletep(runningSump), runningSump);
-            // Last cumSum is unused (last bucket is unconditional default)
-            pushDeletep(cumSums.back());
+            VL_DO_DANGLING(pushDeletep(choicep), choicep);
         }
+        return headp;
     }
-
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -4597,7 +4717,8 @@ class RandomizeVisitor final : public VNVisitor {
                 }
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
-                if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
+                if (constrp->itemsp())
+                    lowerDistConstraints(taskp, constrp->itemsp(), nullptr, randomizep, genp);
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
                                       nullptr,       genp,        randModeVarp,
