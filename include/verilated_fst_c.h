@@ -299,6 +299,9 @@ public:
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
         m_sptrace.dumpvars(level, hier);
     }
+    void dumpvars(const VerilatedTraceDumpVarsEntries& entries) VL_MT_SAFE {
+        m_sptrace.dumpvars(entries);
+    }
 
     // Internal class access
     VerilatedFst* spTrace() { return &m_sptrace; }

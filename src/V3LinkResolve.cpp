@@ -389,6 +389,14 @@ class LinkResolveVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstDumpCtl* nodep) override {
+        if (nodep->ctlType() == VDumpCtlType::VARS && !nodep->scopeNamep()) {
+            // Attach AstScopeName so V3Scope/V3Inline build the call-site scope path
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstUdpTable* nodep) override {
         UINFO(5, "UDPTABLE  " << nodep);
         if (!v3Global.opt.bboxUnsup()) {
