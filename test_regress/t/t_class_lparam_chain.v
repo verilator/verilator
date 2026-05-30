@@ -17,23 +17,25 @@
 // verilog_format: on
 
 module t;
-  virtual class C #(parameter int a);
+  virtual class C #(
+      parameter int a
+  );
     localparam int b = a;
   endclass
 
-  typedef C#(0)  inst0;
+  typedef C#(0) inst0;
   typedef C#(42) inst42;
 
   // Direct: inst::b Dot in the value
-  localparam int b0  = inst0::b;
+  localparam int b0 = inst0::b;
   localparam int b42 = inst42::b;
 
   // One-step chain: refers to a deferred lparam
-  localparam int c0  = b0;
+  localparam int c0 = b0;
   localparam int c42 = b42;
 
   // Multi-step chain: d -> c -> b -> inst::b
-  localparam int d0  = c0;
+  localparam int d0 = c0;
   localparam int d42 = c42;
 
   // Expression referencing two deferred lparams

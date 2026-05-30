@@ -15,8 +15,8 @@ module child (
 
   // The user cover and generated line/branch coverage below share one
   // module body but must produce independent counters per instance.
-  same_stmt:
-    cover property (@(posedge clk) en);
+  same_stmt :
+  cover property (@(posedge clk) en);
 
   always @(posedge clk) begin
     if (en) seen <= 1'b1;

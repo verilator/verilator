@@ -11,14 +11,15 @@ module child (
   reg observed = 1'b0;
   reg [3:0] count = 0;
 
-  same_stmt:
-    cover property (@(posedge clk) en);
+  same_stmt :
+  cover property (@(posedge clk) en);
 
   always @(posedge clk) begin
     observed <= en;
     if (en) begin
       count <= count + 1'b1;
-    end else begin
+    end
+    else begin
       count <= count;
     end
   end

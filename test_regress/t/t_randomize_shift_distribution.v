@@ -70,9 +70,21 @@ module t;
     for (int b = 0; b < 15; b++) `check_le(r.fa15.m_ones[b], HI);
     for (int b = 0; b < 31; b++) `check_le(r.fa31.m_ones[b], HI);
     for (int b = 0; b < 32; b++) `check_le(r.fa32.m_ones[b], HI);
-    for (int b = 0; b < 15; b++) if (r.fa15.m_ones[b] < LO) begin $write("%%Error: fa15[%0d] ones=%0d < %0d\n", b, r.fa15.m_ones[b], LO); `stop; end
-    for (int b = 0; b < 31; b++) if (r.fa31.m_ones[b] < LO) begin $write("%%Error: fa31[%0d] ones=%0d < %0d\n", b, r.fa31.m_ones[b], LO); `stop; end
-    for (int b = 0; b < 32; b++) if (r.fa32.m_ones[b] < LO) begin $write("%%Error: fa32[%0d] ones=%0d < %0d\n", b, r.fa32.m_ones[b], LO); `stop; end
+    for (int b = 0; b < 15; b++)
+    if (r.fa15.m_ones[b] < LO) begin
+      $write("%%Error: fa15[%0d] ones=%0d < %0d\n", b, r.fa15.m_ones[b], LO);
+      `stop;
+    end
+    for (int b = 0; b < 31; b++)
+    if (r.fa31.m_ones[b] < LO) begin
+      $write("%%Error: fa31[%0d] ones=%0d < %0d\n", b, r.fa31.m_ones[b], LO);
+      `stop;
+    end
+    for (int b = 0; b < 32; b++)
+    if (r.fa32.m_ones[b] < LO) begin
+      $write("%%Error: fa32[%0d] ones=%0d < %0d\n", b, r.fa32.m_ones[b], LO);
+      `stop;
+    end
     // High bits beyond m_size must remain 0.
     for (int b = 1; b < 64; b++) `checkd(r.fa1.m_ones[b], 0);
     for (int b = 15; b < 64; b++) `checkd(r.fa15.m_ones[b], 0);

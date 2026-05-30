@@ -4,14 +4,14 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t(
-  input clk
+module t (
+    input clk
 );
 
   localparam MAX = 15;
   integer cyc = 0;
 
-  assert property (@(posedge clk) always[1:2] 1);
+  assert property (@(posedge clk) always[1: 2] 1);
 
   always @(clk) begin
     ++cyc;

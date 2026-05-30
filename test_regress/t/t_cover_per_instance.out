@@ -34,7 +34,8 @@
 -000004  point: type=branch comment=if hier=tb.dut.u_a
 -000001  point: type=branch comment=if hier=tb.dut.u_b
 -000002  point: type=branch comment=if hier=tb.dut.u_wide
-%000008     end else begin
+            end
+%000008     else begin
 -000005  point: type=branch comment=else hier=tb.dut.u_a
 -000008  point: type=branch comment=else hier=tb.dut.u_b
 -000007  point: type=branch comment=else hier=tb.dut.u_wide
@@ -86,9 +87,7 @@
 %000001   reg clk = 0;
 -000001  point: type=line comment=block hier=tb
         
-          t dut (
-              .clk(clk)
-          );
+          t dut (.clk(clk));
         
  000017   always #1 clk = !clk;
 +000017  point: type=line comment=block hier=tb

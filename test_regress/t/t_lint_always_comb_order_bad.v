@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    input  logic [3:0] a,
-    input  logic [3:0] b,
-    input  logic [3:0] c,
-    input  logic       sel,
+    input logic [3:0] a,
+    input logic [3:0] b,
+    input logic [3:0] c,
+    input logic sel,
     output logic [3:0] result1,
     output logic [3:0] result2,
     output logic [3:0] result3,
@@ -21,11 +21,11 @@ module t (
 
   always_comb begin
     result1 = a + accum1;
-    accum1  = b;
+    accum1 = b;
   end
 
   always_comb begin
-    accum2  = b;
+    accum2 = b;
     result2 = a + accum2;  // write-before-read: do not warn
   end
 
@@ -38,7 +38,8 @@ module t (
   always_comb begin
     if (sel) begin
       result3 = a + accum3;
-    end else begin
+    end
+    else begin
       result3 = c;
     end
     accum3 = b;

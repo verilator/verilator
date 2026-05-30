@@ -21,9 +21,7 @@ module pass_through (
     intf.source in_port,
     output logic [31:0] item_qty
 );
-  intf #(
-      .ITEM_QTY(in_port.ITEM_QTY)
-  ) internal_port ();
+  intf #(.ITEM_QTY(in_port.ITEM_QTY)) internal_port ();
 
   if (internal_port.ITEM_QTY == 1) begin : g_saw_default_item_qty
     $error("generate if evaluated internal_port.ITEM_QTY as interface default 1");
@@ -37,16 +35,14 @@ module pass_through (
 endmodule
 
 module t;
-  intf #(
-      .ITEM_QTY(20)
-  ) in_port ();
+  intf #(.ITEM_QTY(20)) in_port ();
 
   logic [31:0] item_qty;
 
   assign in_port.item = 1'b0;
 
   pass_through dut (
-      .in_port (in_port),
+      .in_port(in_port),
       .item_qty(item_qty)
   );
 
