@@ -235,8 +235,8 @@ class VlRandomizer VL_NOT_FINAL {
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& os, bool log = false);
     bool checkSat(std::iostream& os);
-    // Indices of the "pin<N>" assertions named by (get-unsat-core).
-    std::vector<int> readUnsatCorePins(std::iostream& os);
+    // Indices of the "a<N>" literals named by (get-unsat-assumptions).
+    std::vector<int> readUnsatAssumptions(std::iostream& os);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints() const;

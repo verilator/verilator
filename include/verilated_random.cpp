@@ -30,16 +30,18 @@
 #include <sstream>
 #include <streambuf>
 
-// Diversity:
-//   Scalar rand vars -> pin every free bit to a random target as a :named
-//     assertion on a dedicated (push) level. If UNSAT, (get-unsat-core) names
-//     just the pins that clash with the feasible hard+soft base; drop that
-//     batch and recheck until SAT. Only pins are :named, so the core never
-//     holds a user constraint and only the pin level is ever popped --
-//     hard/soft/randc semantics are untouched. Fixes the boundary bias under
-//     `value < (1<<N)` (issue #7563).
-//   Array/queue rand vars -> XOR-parity fallback (the boundary bug needs
-//     power-of-2 ranges, which per-element arrays don't have).
+// Diversity (scalar rand vars): tie each free bit to a random target via a
+//   boolean assumption literal, then force the bits with (check-sat-assuming).
+//   If UNSAT, (get-unsat-assumptions) names the literals clashing with the
+//   feasible hard+soft base; drop one per round and recheck until SAT, which
+//   keeps the maximal set of bits compatible with the constraints. Only these
+//   private literals are assumed (never user constraints), and assumptions are
+//   ephemeral, so hard/soft/randc semantics are untouched and rounds need no
+//   push/pop or re-asserting. The surviving assumptions steer each free bit
+//   from the random target, spreading a wide range uniformly (fixing the
+//   boundary bias under `value < (1<<N)`, issue #7563) while keeping run-to-run
+//   diversity on tightly coupled bits. Array/queue rand vars skip pinning
+//   (per-element ranges aren't power-of-2 boundaries) and use the XOR rounds.
 #define _VL_SOLVER_HASH_LEN 1
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
 
@@ -526,8 +528,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
         // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
         // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
-        // Lets the scalar pin path batch-drop just the conflicting free-bit pins.
-        os << "(set-option :produce-unsat-cores true)\n";
+        // Lets the scalar pin path learn which free-bit assumptions conflict.
+        os << "(set-option :produce-unsat-assumptions true)\n";
         os << "(set-logic QF_ABV)\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -637,7 +639,17 @@ bool VlRandomizer::next(VlRNG& rngr) {
                 }
             }
             if (!hasArray) {
-                os << "(push 1)\n";
+                // Tie each free bit to a fresh random target via a boolean
+                // assumption literal a_k <=> (bit_k == target_k), then force the
+                // bits with (check-sat-assuming ...). If UNSAT,
+                // (get-unsat-assumptions) names the literals clashing with the
+                // feasible base; drop ONE per round so the maximal compatible
+                // set survives -- dropping a whole conflicting group at once
+                // would collapse the diversity of tightly coupled bits (one-hot,
+                // 2-value sets) onto the solver's fixed default. Assumptions are
+                // ephemeral, so rounds need no push/pop or re-asserting and the
+                // solver keeps its learned clauses. Each round drops >= 1 -> ends
+                // in <= npins rounds.
                 std::vector<bool> targets;
                 int npins = 0;
                 for (const auto& var : m_vars) {
@@ -645,53 +657,27 @@ bool VlRandomizer::next(VlRNG& rngr) {
                     for (int b = 0; b < w; b++) {
                         const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
                         targets.push_back(target);
-                        os << "(assert (! (=";
+                        os << "(declare-fun a" << npins << " () Bool)\n";
+                        os << "(assert (= a" << npins << " (=";
                         var.second->emitExtract(os, b);
-                        os << " #b" << (target ? '1' : '0') << ") :named pin" << npins << "))\n";
+                        os << " #b" << (target ? '1' : '0') << ")))\n";
                         ++npins;
                     }
                 }
-                os << "(check-sat)\n";
-                if (!checkSat(os)) {
-                    // Drop the conflicting pins named by each core and recheck.
-                    // Every round drops >= 1 pin, so it ends in <= npins rounds.
-                    std::vector<bool> dropped(npins, false);
-                    while (true) {
-                        const std::vector<int> core = readUnsatCorePins(os);
-                        bool changed = false;
-                        for (const int idx : core) {
-                            if (idx >= 0 && idx < npins && !dropped[idx]) {
-                                dropped[idx] = true;
-                                changed = true;
-                            }
-                        }
-                        if (!changed) {
-                            // Uninformative core: drop all pins, keep the base.
-                            os << "(pop 1)\n";
+                std::vector<bool> dropped(npins, false);
+                for (int round = 0; round <= npins; ++round) {
+                    os << "(check-sat-assuming (";
+                    for (int k = 0; k < npins; k++)
+                        if (!dropped[k]) os << " a" << k;
+                    os << "))\n";
+                    if (parseSolution(os, false)) break;
+                    const std::vector<int> core = readUnsatAssumptions(os);
+                    for (const int idx : core)
+                        if (idx >= 0 && idx < npins && !dropped[idx]) {
+                            dropped[idx] = true;
                             break;
                         }
-                        os << "(pop 1)\n(push 1)\n";
-                        int k = 0;
-                        for (const auto& var : m_vars) {
-                            const int w = var.second->totalWidth();
-                            for (int b = 0; b < w; b++) {
-                                if (!dropped[k]) {
-                                    os << "(assert (! (=";
-                                    var.second->emitExtract(os, b);
-                                    os << " #b" << (targets[k] ? '1' : '0') << ") :named pin" << k
-                                       << "))\n";
-                                }
-                                ++k;
-                            }
-                        }
-                        os << "(check-sat)\n";
-                        if (checkSat(os)) break;
-                    }
                 }
-                // Read the model; surviving pins force their bits to target.
-                os << "(check-sat)\n";
-                sat = parseSolution(os, false);
-                (void)sat;
             } else {
                 // Array present: original XOR-rounds path.
                 for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
@@ -720,23 +706,23 @@ bool VlRandomizer::checkSat(std::iostream& os) {
     return result == "sat";
 }
 
-std::vector<int> VlRandomizer::readUnsatCorePins(std::iostream& os) {
-    os << "(get-unsat-core)\n";
+std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
+    os << "(get-unsat-assumptions)\n";
     std::string line;
     do { std::getline(os, line); } while (line.empty());
-    // The core line lists only "pin<N>" names; collect each full integer run.
-    std::vector<int> pins;
+    // The response lists only "a<N>" literals; collect each full integer run.
+    std::vector<int> idxs;
     std::string num;
     for (const char c : line) {
         if (std::isdigit(static_cast<unsigned char>(c))) {
             num += c;
         } else if (!num.empty()) {
-            pins.push_back(std::stoi(num));
+            idxs.push_back(std::stoi(num));
             num.clear();
         }
     }
-    if (!num.empty()) pins.push_back(std::stoi(num));
-    return pins;
+    if (!num.empty()) idxs.push_back(std::stoi(num));
+    return idxs;
 }
 
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
