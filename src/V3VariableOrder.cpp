@@ -27,9 +27,9 @@
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
-#include "V3TSP.h"
 #include "V3ThreadPool.h"
 
+#include <algorithm>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -90,41 +90,6 @@ public:
     }
 };
 
-//######################################################################
-// Establish mtask variable sort order in mtasks mode
-
-class VarTspSorter final : public V3TSP::TspStateBase {
-    // MEMBERS
-    const MTaskIdVec& m_mTaskIds;  // Mtask we're ordering
-    static uint32_t s_serialNext;  // Unique ID to establish serial order
-    const uint32_t m_serial = ++s_serialNext;  // Serial ordering
-public:
-    // CONSTRUCTORS
-    explicit VarTspSorter(const MTaskIdVec& mTaskIds)
-        : m_mTaskIds{mTaskIds} {
-        UASSERT(mTaskIds.size() == ExecMTask::numUsedIds(), "Wrong size for MTask ID vector");
-    }
-    ~VarTspSorter() override = default;
-    // METHODS
-    bool operator<(const TspStateBase& other) const override {
-        return operator<(static_cast<const VarTspSorter&>(other));
-    }
-    bool operator<(const VarTspSorter& other) const { return m_serial < other.m_serial; }
-    const MTaskIdVec& mTaskIds() const { return m_mTaskIds; }
-    int cost(const TspStateBase* otherp) const override VL_MT_SAFE {
-        return cost(static_cast<const VarTspSorter*>(otherp));
-    }
-    int cost(const VarTspSorter* otherp) const VL_MT_SAFE {
-        // Compute the number of MTasks not shared (Hamming distance)
-        int cost = 0;
-        const size_t size = ExecMTask::numUsedIds();
-        for (size_t i = 0; i < size; ++i) cost += m_mTaskIds.at(i) ^ otherp->m_mTaskIds.at(i);
-        return cost;
-    }
-};
-
-uint32_t VarTspSorter::s_serialNext = 0;
-
 struct VarAttributes final {
     uint8_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
     bool anonOk;  // Can be emitted as part of anonymous structure
@@ -165,10 +130,14 @@ class VariableOrder final {
                     });
     }
 
+    static bool emptyAffinity(const MTaskIdVec& vec) {
+        return std::find(vec.begin(), vec.end(), true) == vec.end();
+    }
+
     // Sort by MTask-affinity first, then the same as simpleSortVars
-    void tspSortVars(std::vector<AstVar*>& varps) {
+    void mtaskSortVars(std::vector<AstVar*>& varps) {
         // Map from "MTask affinity" -> "variable list"
-        std::map<const MTaskIdVec, std::vector<AstVar*>> m2v;
+        std::map<MTaskIdVec, std::vector<AstVar*>> m2v;
         const MTaskIdVec emptyVec(ExecMTask::numUsedIds(), false);
         for (AstVar* const varp : varps) {
             const auto it = m_mTaskAffinity.find(varp);
@@ -176,35 +145,38 @@ class VariableOrder final {
             m2v[key].push_back(varp);
         }
 
-        // Create a TSP sort state for each unique MTaskIdSet, except for the empty set
-        V3TSP::StateVec states;
-        for (const auto& pair : m2v) {
-            const MTaskIdVec& vec = pair.first;
-            const bool empty = std::find(vec.begin(), vec.end(), true) == vec.end();
-            if (!empty) states.push_back(new VarTspSorter{vec});
-        }
-
-        // Do the TSP sort
-        V3TSP::StateVec sortedStates;
-        V3TSP::tspSort(states, &sortedStates);
-
         varps.clear();
 
         // Helper function to sort given vector, then append to 'varps'
-        const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps) {
+        const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps,
+                                                  bool alignFirst) {
             simpleSortVars(subVarps);
-            for (AstVar* const varp : subVarps) varps.push_back(varp);
+            bool aligned = !alignFirst;
+            for (AstVar* const varp : subVarps) {
+                if (!aligned && !varp->isStatic()) {
+                    varp->mtaskCacheLineAlign(true);
+                    V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
+                    aligned = true;
+                }
+                varps.push_back(varp);
+            }
         };
 
-        // Enumerate by sorted MTaskIdSet, sort within the set separately
-        for (const V3TSP::TspStateBase* const stateBasep : sortedStates) {
-            const VarTspSorter* const statep = dynamic_cast<const VarTspSorter*>(stateBasep);
-            sortAndAppend(m2v[statep->mTaskIds()]);
-            VL_DO_DANGLING(delete statep, statep);
+        // Sort non-empty MTask affinity groups in the map's deterministic key order. This keeps
+        // memory linear in the number of affinity groups, unlike the old complete pairwise-distance
+        // ordering.
+        size_t affinityGroups = 0;
+        for (auto& pair : m2v) {
+            if (emptyAffinity(pair.first)) continue;
+            sortAndAppend(pair.second, true);
+            ++affinityGroups;
         }
 
         // Finally add the variables with no known MTask affinity
-        sortAndAppend(m2v[emptyVec]);
+        sortAndAppend(m2v[emptyVec], false);
+
+        V3Stats::addStatSum("VariableOrder, MTask affinity groups", affinityGroups);
+        V3Stats::addStatSum("VariableOrder, no-affinity variables", m2v[emptyVec].size());
     }
 
     // cppcheck-suppress constParameterPointer
@@ -236,7 +208,7 @@ class VariableOrder final {
             if (!v3Global.opt.mtasks()) {
                 simpleSortVars(m_varps);
             } else {
-                tspSortVars(m_varps);
+                mtaskSortVars(m_varps);
             }
         }
     }

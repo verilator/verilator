@@ -937,13 +937,14 @@ macro-task's dataset fits in one core's local caches.
 
 To achieve spatial locality, we tag each variable with the set of
 macro-tasks that access it. Let's call this set the "footprint" of that
-variable. The variables in a given module have a set of footprints. We can
-order those footprints to minimize the distance between them (distance is
-the number of macro-tasks that are different across any two footprints) and
-then emit all variables into the struct in ordered-footprint order.
+variable. The variables in a given module have a set of footprints. We group
+variables with identical non-empty footprints, emit those groups in deterministic
+footprint-key order, then emit variables with no footprint information last.
 
-The footprint ordering is literally the traveling salesman problem, and we
-use a TSP-approximation algorithm to get close to an optimal sort.
+The first emitted variable in each footprint group is aligned to a cache-line
+boundary. This avoids false sharing between different macro-task footprints
+without building a complete pairwise-distance graph over all footprints, which
+would use excessive memory on very large models.
 
 This is an old idea. Simulators designed at DEC in the early 1990s used
 similar techniques to optimize both single-thread and multithread modes.
