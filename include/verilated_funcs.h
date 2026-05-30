@@ -150,8 +150,21 @@ extern void VL_FCLOSE_I(IData fdi) VL_MT_SAFE;
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi,
                         IData start, IData count) VL_MT_SAFE;
 
-extern void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
-extern void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
+template <typename... Args>
+inline void VL_WRITEF_NX(const std::string& format, int, Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    VL_PRINTF_MT("%s", output.c_str());
+}
+
+void _vl_fputs(IData fpi, const char* str) VL_MT_SAFE;
+
+template <typename... Args>
+inline void VL_FWRITEF_NX(IData fpi, const std::string& format, int, Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_fputs(fpi, output.c_str());
+}
 
 extern IData VL_FSCANF_INX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
 extern IData VL_SSCANF_IINX(int lbits, IData ld, const std::string& format, int argc,
@@ -161,16 +174,54 @@ extern IData VL_SSCANF_IQNX(int lbits, QData ld, const std::string& format, int 
 extern IData VL_SSCANF_IWNX(int lbits, WDataInP const lwp, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
 
-extern void VL_SFORMAT_NX(int obits, CData& destr, const std::string& format, int argc,
-                          ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits, SData& destr, const std::string& format, int argc,
-                          ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits, IData& destr, const std::string& format, int argc,
-                          ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, int argc,
-                          ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc,
-                          ...) VL_MT_SAFE;
+void _vl_string_to_vint(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE;
+
+template <typename... Args>
+inline void VL_SFORMAT_NX(int obits, CData& dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_string_to_vint(obits, &dest, output.length(), output.c_str());
+}
+template <typename... Args>
+inline void VL_SFORMAT_NX(int obits, SData& dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_string_to_vint(obits, &dest, output.length(), output.c_str());
+}
+template <typename... Args>
+inline void VL_SFORMAT_NX(int obits, IData& dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_string_to_vint(obits, &dest, output.length(), output.c_str());
+}
+template <typename... Args>
+inline void VL_SFORMAT_NX(int obits, QData& dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_string_to_vint(obits, &dest, output.length(), output.c_str());
+}
+template <typename... Args>
+inline void VL_SFORMAT_NX(int obits, WDataOutP dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    const std::string& output = formatter.result();
+    _vl_string_to_vint(obits, dest.datap(), output.length(), output.c_str());
+}
+template <typename... Args>
+inline void VL_SFORMAT_NX(int /*obits*/, std::string& dest, const std::string& format, int,
+                          Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    dest = formatter.result();
+}
+template <typename... Args>
+inline std::string VL_SFORMATF_N_NX(const std::string& format, int, Args&&... args) VL_MT_SAFE {
+    VlFormatString formatter{format, std::forward<Args>(args)...};
+    return formatter.result();
+}
 
 extern void VL_STACKTRACE() VL_MT_SAFE;
 extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
@@ -3594,9 +3645,7 @@ extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
                           QData end) VL_MT_SAFE;
 extern IData VL_SSCANF_INNX(int lbits, const std::string& ld, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format,
-                          int argc, ...) VL_MT_SAFE;
-extern std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
+
 extern void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision,
                                bool hasSuffix, const std::string& suffix, bool hasWidth, int width,
                                VerilatedContext* contextp) VL_MT_SAFE;
