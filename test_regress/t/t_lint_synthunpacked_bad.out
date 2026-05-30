@@ -1,0 +1,7 @@
+%Warning-SYNTHUNPACKED: t/t_lint_synthunpacked_bad.v:6:28: Unpacked array on port 'data' is typically flattened to packed bits by synthesis, breaking pre-synthesis testbench connectivity for gate-level simulation
+                                                         : ... note: In instance 't'
+    6 | module t (input wire [7:0] data [0:3]);
+      |                            ^~~~
+                        ... For warning description see https://verilator.org/warn/SYNTHUNPACKED?v=latest
+                        ... Use "/* verilator lint_off SYNTHUNPACKED */" and lint_on around source to disable this message.
+%Error: Exiting due to
