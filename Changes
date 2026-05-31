@@ -110,6 +110,7 @@ Verilator 5.049 devel
 * Fix width of unsized literal in property expression (#7668). [Artur Bieniek, Antmicro Ltd.]
 * Fix loss of events due to bit shift (#7670). [Artur Bieniek, Antmicro Ltd.]
 * Fix parameter read through locally-declared interface instance (#7679). [Nick Brereton]
+* Fix skipping nulls in $sscanf (#7689).
 
 
 Verilator 5.048 2026-04-26
