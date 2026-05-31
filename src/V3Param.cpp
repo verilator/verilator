@@ -2713,10 +2713,33 @@ class ParamVisitor final : public VNVisitor {
         // LCOV_EXCL_STOP
     }
 
-    void checkParamNotHier(AstNode* valuep) {
-        if (!valuep) return;
-        valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
-            if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
+    // True if nodep is a $bits/$size-style type query, reading the operand's type
+    static bool isTypeQueryAttr(const AstNode* nodep) {
+        const AstAttrOf* const attrp = VN_CAST(nodep, AttrOf);
+        if (!attrp) return false;
+        switch (attrp->attrType()) {
+        case VAttrType::DIM_BITS:
+        case VAttrType::DIM_BITS_OR_NUMBER:
+        case VAttrType::DIM_DIMENSIONS:
+        case VAttrType::DIM_HIGH:
+        case VAttrType::DIM_INCREMENT:
+        case VAttrType::DIM_LEFT:
+        case VAttrType::DIM_LOW:
+        case VAttrType::DIM_RIGHT:
+        case VAttrType::DIM_SIZE:
+        case VAttrType::DIM_UNPK_DIMENSIONS:
+        case VAttrType::TYPEID:
+        case VAttrType::TYPENAME: return true;
+        default: return false;
+        }
+    }
+
+    // Flag hierarchical refs in a parameter value. Single top-down pass.
+    void checkParamNotHier(AstNode* nodep, bool underTypeQuery = false) {
+        for (; nodep; nodep = nodep->nextp()) {
+            // Refs read only for their type ($bits etc.) are allowed
+            const bool childUnderQuery = underTypeQuery || isTypeQueryAttr(nodep);
+            if (const AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
                 // Allow hierarchical ref to interface params through interface/modport ports
                 // or local interface instances
                 bool isIfaceRef = false;
@@ -2726,18 +2749,21 @@ class ParamVisitor final : public VNVisitor {
                         = !refname.empty()
                           && (m_ifacePortNames.count(refname) || m_ifaceInstCells.count(refname));
                 }
-
-                if (!isIfaceRef) {
+                if (!isIfaceRef && !underTypeQuery) {
                     refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
                                             " (IEEE 1800-2023 6.20.2)");
                 }
-            } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
+            } else if (const AstNodeFTaskRef* const refp = VN_CAST(nodep, NodeFTaskRef)) {
                 if (refp->dotted() != "") {
                     refp->v3error("Parameter values cannot call hierarchical functions"
                                   " (IEEE 1800-2023 6.20.2)");
                 }
             }
-        });
+            checkParamNotHier(nodep->op1p(), childUnderQuery);
+            checkParamNotHier(nodep->op2p(), childUnderQuery);
+            checkParamNotHier(nodep->op3p(), childUnderQuery);
+            checkParamNotHier(nodep->op4p(), childUnderQuery);
+        }
     }
 
     // Deparameterize and constify nested interface cells within ifaceModp.
