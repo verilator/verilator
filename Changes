@@ -41,6 +41,7 @@ Verilator 5.049 devel
 * Support FSM detection in primitive wrappers (#7607). [Yogish Sekhar]
 * Support busses with mix of pullup/pulldown (#7632). [Lucas Amaral]
 * Support pre/post increment/decrement inside && and || (#7683). [Nick Brereton]
+* Support streaming into 2-D unpacked arrays (#7686) (#7687). [Paul Swirhun]
 * Add `+verilator+log+file` (#4505) (#7645). [Tracy Narine]
 * Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
 * Add error on mixed-initialization (#7352) (#7357).
@@ -54,6 +55,7 @@ Verilator 5.049 devel
 * Optimize forced signal handling (#7554 partial) (#7572) (#7594) (#7596). [Krzysztof Bieganski, Artur Bieniek, Antmicro Ltd.]
 * Optimize primitive runtime functions. [Geza Lore, Testorrent USA, Inc.]
 * Optimize if branches with same trailing statements (#7674). [Geza Lore, Testorrent USA, Inc.]
+* Fix TSP variable ordering for mtasks (#5342) (#7610). [Muzaffer Kal]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
 * Fix segmentation fault when using --trace with --lib-create (#7299) (#7518). [anonkey]
 * Fix destructive event state before dynamic waits (#7340). [Nick Brereton]
