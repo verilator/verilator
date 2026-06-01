@@ -253,8 +253,7 @@ class AssertVisitor final : public VNVisitor {
         }
     }
     AstSampled* newSampledExpr(AstNodeExpr* nodep) {
-        AstSampled* const sampledp = new AstSampled{nodep->fileline(), nodep};
-        sampledp->dtypeFrom(nodep);
+        AstSampled* const sampledp = new AstSampled{nodep->fileline(), nodep, nodep->dtypep()};
         return sampledp;
     }
     AstVarRef* newMonitorNumVarRefp(const AstNode* nodep, VAccess access) {

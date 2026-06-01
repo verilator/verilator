@@ -4531,7 +4531,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}; }
         |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
-        |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
+        |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3, $3->dtypep()}; }
         |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::ExprFormat{}, $3, 'd', false}; }
         |       yD_SHORTREALTOBITS '(' expr ')'         { $$ = new AstRealToBits{$1, $3}; UNSUPREAL($1); }
         |       yD_SIGNED '(' expr ')'                  { $$ = new AstSigned{$1, $3}; }

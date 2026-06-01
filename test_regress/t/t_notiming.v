@@ -36,6 +36,8 @@ module t;
        s.get();
    end
    assert property (@(e) s_eventually 1'h1);
+   assert property (@(e) 1'h1 s_until 1'h1);
+   assert property (@(e) 1'h1 s_until_with 1'h1);
 endmodule
 
 `ifdef VERILATOR_TIMING

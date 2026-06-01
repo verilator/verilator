@@ -2519,9 +2519,10 @@ class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
     // @astgen op1 := exprp : AstNode<AstNodeExpr|AstPropSpec>
 public:
-    AstSampled(FileLine* fl, AstNode* exprp)
+    AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep)
         : ASTGEN_SUPER_Sampled(fl) {
         this->exprp(exprp);
+        this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstSampled;
     string emitVerilog() override { return "$sampled(%l)"; }
@@ -2906,6 +2907,9 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    string verilogKwd() const override {
+        return (isStrong() ? "s_" : string()) + "until" + (isOverlapping() ? "_with" : "");
+    }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }

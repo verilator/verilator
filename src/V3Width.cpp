@@ -1714,6 +1714,13 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstUntil* nodep) override {
+        if (nodep->isStrong()
+            && (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue())) {
+            nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
