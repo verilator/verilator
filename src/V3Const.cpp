@@ -1653,6 +1653,9 @@ class ConstVisitor final : public VNVisitor {
         if (VN_IS(thensp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         if (VN_IS(elsesp->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
+        if (m_doCpp) {  // Do not combine ifs cretaed by V3Premit
+            if (VN_IS(thensp->lhsp(), VarRef) && thensp->lhsp()->isWide()) return false;
+        }
         // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
         return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
                && !VN_IS(elsesp->rhsp(), NodeFTaskRef)  //
