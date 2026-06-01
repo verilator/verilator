@@ -1715,6 +1715,12 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
+            // Coerce unsized constant operands (e.g. literal 0/1) to actual
+            // 1-bit width; iterateCheckBool keeps widthMin-fitting unsized
+            // constants at their nominal 32-bit width, which trips the
+            // downstream NFA lowering's Log* chains in V3AssertNfa.
+            if (nodep->lhsp()->width() != 1) fixWidthReduce(nodep->lhsp());
+            if (nodep->rhsp()->width() != 1) fixWidthReduce(nodep->rhsp());
             nodep->dtypeSetBit();
         }
     }

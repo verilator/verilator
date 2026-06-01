@@ -858,22 +858,6 @@ class SvaNfaBuilder final {
         }
 
         const bool ov = nodep->isOverlapping();
-        // V3Width's iterateCheckBool leaves unsized constants (e.g. literal `0`
-        // and `1` in `0 until 1`) at their nominal 32-bit dtype. Coerce both
-        // operands to bit via reduction-OR in-place so hoist-temp assignments
-        // stay width-clean (the downstream Log* ops would themselves be 1-bit).
-        if (lhsp->width() != 1) {
-            AstNodeExpr* const wp = lhsp->unlinkFrBack();
-            AstRedOr* const orp = new AstRedOr{wp->fileline(), wp};
-            orp->dtypeSetBit();
-            nodep->lhsp(orp);
-        }
-        if (rhsp->width() != 1) {
-            AstNodeExpr* const wp = rhsp->unlinkFrBack();
-            AstRedOr* const orp = new AstRedOr{wp->fileline(), wp};
-            orp->dtypeSetBit();
-            nodep->rhsp(orp);
-        }
         AstNodeExpr* const lhsBitp = nodep->lhsp();
         AstNodeExpr* const rhsBitp = nodep->rhsp();
         // p hoist count: continue, require (ov: 1 use; nov: 1 use). At least 2 uses.
