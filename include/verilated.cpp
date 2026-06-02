@@ -1888,9 +1888,7 @@ void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc,
     _vl_string_to_vint(obits, destp, t_output.length(), t_output.c_str());
 }
 
-void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format, int argc,
-                   ...) VL_MT_SAFE {
-    (void)obits_ignored;  // So VL_SFORMAT_NNX function signatures all match
+void VL_SFORMAT_NX(std::string& output, const std::string& format, int argc, ...) VL_MT_SAFE {
     std::string temp_output;
     va_list ap;
     va_start(ap, argc);
