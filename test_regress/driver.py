@@ -1790,7 +1790,7 @@ class VlTest:
 
     @property
     def have_dbg(self) -> bool:
-        return Capabilities.have_gdb | Capabilities.have_lldb
+        return Capabilities.have_gdb or Capabilities.have_lldb
 
     @property
     def have_dev_asan(self) -> bool:
