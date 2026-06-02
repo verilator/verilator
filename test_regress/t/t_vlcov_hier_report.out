@@ -1,0 +1,128 @@
+$ verilator_coverage --report summary t/t_vlcov_data_e.dat
+Coverage Summary:
+  line      : 88.6% ( 39/ 44)
+  toggle    : 33.3% ( 35/105)
+  branch    : 78.1% ( 50/ 64)
+  expr      : 66.7% (  8/ 12)
+  fsm_state : 0.0% (  0/  0)
+  fsm_arc   : 0.0% (  0/  0)
+
+$ verilator_coverage --report summary empty.dat
+
+$ verilator_coverage --report hierarchy t/t_cover_hier.out
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_a.same_stmt
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b.same_stmt
+    user      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hierarchy --levels 2 t/t_cover_hier.out
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hierarchy --levels -1 t/t_cover_hier.out
+Note: --levels must be non-negative; using --levels 0.
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hier --levels 2 t/t_cover_hier.out
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hierarchy collapsed.dat
+Note: hierarchy report contains collapsed hierarchy paths; it is not precise per-instance coverage.
+Hierarchy Coverage Summary:
+  tb
+    line      : 50.0% (1/2)
+    branch    : 50.0% (1/2)
+  tb.cluster*
+    line      : 50.0% (1/2)
+    branch    : 100.0% (1/1)
+  tb.cluster*.u_core
+    line      : 50.0% (1/2)
+    branch    : 100.0% (1/1)
+  tb.cluster?
+    branch    : 0.0% (0/1)
+  tb.cluster?.u_core
+    branch    : 0.0% (0/1)
+Design Unit Coverage Summary:
+  core
+    line      : 50.0% (1/2)
+    branch    : 50.0% (1/2)

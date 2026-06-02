@@ -64,6 +64,7 @@ public:
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
+    string page() const { return keyExtract("page", m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
     string thresh() const {
         // string as maybe ""

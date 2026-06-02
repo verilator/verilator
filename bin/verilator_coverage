@@ -157,6 +157,10 @@ verilator_coverage - Verilator coverage analyzer
 
     verilator_coverage --annotate <obj>
 
+    verilator_coverage --report summary <datafiles>...
+
+    verilator_coverage --report hier <datafiles>...
+
     verilator_coverage  -write merged.dat <datafiles>...
 
     verilator_coverage  -write-info merged.info <datafiles>...
@@ -176,7 +180,9 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --filter-type <regex>         Keep only records of given coverage type.
     --help                        Displays this message and version and exits.
     --include-reset-arcs          Include reset arcs in FSM arc summaries.
+    --levels <depth>              Limit displayed hierarchy report depth.
     --rank                        Compute relative importance of tests.
+    --report <kind>               Generate a report: summary, hier, or hierarchy.
     --unlink                      With --write, unlink all inputs
     --version                     Displays program version and exits.
     --write <filename>            Write aggregate coverage results.

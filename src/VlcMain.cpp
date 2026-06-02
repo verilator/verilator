@@ -70,7 +70,15 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
     DECL_OPTION("-include-reset-arcs", OnOff, &m_includeResetArcs);
+    DECL_OPTION("-levels", CbVal, [this](int v) {
+        m_reportLevels = v;
+        if (m_reportLevels < 0) {
+            m_reportLevels = 0;
+            m_reportLevelsNegative = true;
+        }
+    });
     DECL_OPTION("-rank", OnOff, &m_rank);
+    DECL_OPTION("-report", Set, &m_report);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
         showVersion(true);
@@ -100,6 +108,10 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             addReadFile(argv[i]);
             ++i;
         }
+    }
+    if (!m_report.empty() && m_report != "summary" && m_report != "hierarchy"
+        && m_report != "hier") {
+        v3fatal("Invalid --report option: " << m_report);
     }
 }
 
@@ -141,7 +153,11 @@ int main(int argc, char** argv) {
         top.points().dump();
     }
 
-    if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()) {
+    if (top.opt.reportSummary()) {
+        top.printTypeSummary();
+    } else if (top.opt.reportHierarchy()) {
+        top.printHierarchyReport();
+    } else if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()) {
         top.printTypeSummary();
     }
 
