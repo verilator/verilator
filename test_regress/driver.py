@@ -1669,11 +1669,8 @@ class VlTest:
                 trailer = "'"
             elif Args.rrsim:
                 debugger = "rr record "
-            cmd = [
-                (run_env + debugger + param['executable'] + run_flags),
-                *param['all_run_flags'],
-                trailer
-            ]
+            cmd = [(run_env + debugger + param['executable'] + run_flags), *param['all_run_flags'],
+                   trailer]
             cmd += self.driver_verilated_flags
             self.run(
                 cmd=cmd,
