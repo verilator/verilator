@@ -4459,7 +4459,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstNodeSel* const ichildp = VN_CAST(childp, NodeSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
-        } else if (VN_IS(childp, LambdaArgRef)) {
+        } else if (VN_IS(childp, LambdaArgRef) || VN_IS(childp, FuncRef)) {
             // NOP
         } else {
             UINFO(1, "    Related node: " << childp);
