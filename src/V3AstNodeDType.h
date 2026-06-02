@@ -204,7 +204,7 @@ public:
     }  // HashedDT doesn't recurse, so need to check children
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         const AstNodeArrayDType* const asamep = VN_DBG_AS(samep, NodeArrayDType);
-        return hi() == asamep->hi() && rangenp()->sameTree(asamep->rangenp())
+        return elementsConst() == asamep->elementsConst()
                && subDTypep()->similarDType(asamep->subDTypep());
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -1445,6 +1445,7 @@ public:
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;
     }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     bool isAggregateType() const override { return true; }
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
