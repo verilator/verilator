@@ -2132,6 +2132,14 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newTaskp->addStmtsp(newPortp);
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
+            if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
+                const VAccess refAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+                AstVarRef* const refp = VN_AS(valuep->cloneTree(false), VarRef);
+                refp->access(refAccess);
+                AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(), refp};
+                newCallp->addArgsp(newArgp);
+                continue;
+            }
             // Create local temporary
             newPortp = new AstVar{portp->fileline(), VVarType::BLOCKTEMP, portp->name(),
                                   portp->dtypep()};
