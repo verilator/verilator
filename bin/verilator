@@ -439,6 +439,7 @@ detailed descriptions of these arguments.
     --hierarchical-threads <threads>  Number of threads for hierarchical scheduling
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
+    --ignore-initial-multidriven  Disable MULTIDRIVEN for initial+always pairs
      +incdir+<dir>              Directory to search for includes
     --inline-cfuncs <value>     Inline CFuncs with <=value nodes (0=off)
     --inline-cfuncs-product <value>  Inline CFuncs if size*calls <= value

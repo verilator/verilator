@@ -935,6 +935,13 @@ Summary:
    Rarely needed. Set the depth at which the IFDEPTH warning will fire,
    defaults to 0, which disables this warning.
 
+.. option:: --ignore-initial-multidriven
+
+   Disables the :option:`MULTIDRIVEN` warning for variables that are
+   assigned by both an ``initial`` block and a single ``always_ff`` or
+   ``always_comb`` block. Multiple ``always`` drivers of the same variable
+   still warn.
+
 .. option:: +incdir+<dir>
 
    See :vlopt:`-y`. Unlike with :vlopt:`-y`, multiple directories may be

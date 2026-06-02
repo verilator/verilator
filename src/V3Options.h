@@ -257,6 +257,7 @@ private:
     bool m_fourstate = false;       // main switch: --fourstate
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
+    bool m_ignoreInitialMultidriven = false;  // main switch: --ignore-initial-multidriven
     bool m_jsonOnly = false;        // main switch: --json-only
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
@@ -598,6 +599,7 @@ public:
     bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
+    bool ignoreInitialMultidriven() const { return m_ignoreInitialMultidriven; }
     bool quietBuild() const VL_MT_SAFE { return m_quietBuild; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }

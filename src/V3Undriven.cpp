@@ -527,10 +527,12 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        : entryp->callNodep();
                 const bool sameFileLine
                     = otherVarRefp && nodep->fileline() == otherVarRefp->fileline();
+                const bool ignoreInitialMD = v3Global.opt.ignoreInitialMultidriven()
+                                             && (m_inInitial || m_inInitialStatic);
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
                     && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
-                    && !ftaskDef
+                    && !ftaskDef && !ignoreInitialMD
                     && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
@@ -585,7 +587,11 @@ class UndrivenVisitor final : public VNVisitorConst {
                 }
                 if (!m_inInitialSetup || nodep->varp()->hasUserInit()) {
                     // Else don't count default initialization as a driver to a net/variable
-                    entryp->drivenWhole(nodep, ftaskDef);
+                    if (ignoreInitialMD) {
+                        entryp->drivenWhole(static_cast<const AstNode*>(nodep));
+                    } else {
+                        entryp->drivenWhole(nodep, ftaskDef);
+                    }
                 }
                 if (m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()
                     && m_alwaysCombp != entryp->getAlwCombp()

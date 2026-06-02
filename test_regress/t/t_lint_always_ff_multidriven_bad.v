@@ -11,7 +11,7 @@ module t(input wire clk);
   initial a = 1'b0;
 
   always_ff @(posedge a) begin
-    a <= 1'b1;  // <--- Warning
+    a <= 1'b1;  // <--- Warning (suppressed with --ignore-initial-multidriven)
   end
 
   logic b;
@@ -20,7 +20,7 @@ module t(input wire clk);
     b <= 1'b1;
   end
 
-  initial b = 1'b0;  // <--- Warning
+  initial b = 1'b0;  // <--- Warning (suppressed with --ignore-initial-multidriven)
 
   reg [1:0][1:0] q;
 
