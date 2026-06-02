@@ -11,12 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-have_gdb = 'VERILATOR_GDB' in os.environ
-if not have_gdb:
-    if 'VERILATOR_TEST_NO_GDB' in os.environ:
-        test.skip("Skipping due to VERILATOR_TEST_NO_GDB")
-    if not test.have_gdb:
-        test.skip("No gdb installed")
+if 'VERILATOR_TEST_NO_GDB' in os.environ:
+    test.skip("Skipping due to VERILATOR_TEST_NO_GDB")
+if not test.have_dbg:
+    test.skip("No debugger installed")
 
 test.compile()
 
