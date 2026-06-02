@@ -246,6 +246,30 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:104:64: Ignoring unsupported coverage cross option: 'per_instance'
   104 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
       |                                                                ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:98:11: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                               : ... note: In instance 't'
+   98 |     cross a, b iff (!rst);
+      |           ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:101:11: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                                : ... note: In instance 't'
+  101 |     cross a, b iff (!rst) {}
+      |           ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:104:11: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                                : ... note: In instance 't'
+  104 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
+      |           ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:107:11: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                                : ... note: In instance 't'
+  107 |     cross a, b {
+      |           ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:113:21: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                                : ... note: In instance 't'
+  113 |     my_cg_id: cross a, b iff (!rst);
+      |                     ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:177:11: Unsupported: cross of 'a' which is not a coverpoint (implicit coverpoint)
+                                                : ... note: In instance 't'
+  177 |     cross a, b {
+      |           ^
 %Warning-COVERIGN: t/t_covergroup_unsup.v:209:5: Unsupported: 'covergroup' clocking event on member variable
                                                : ... note: In instance 't'
   209 |     covergroup cov1 @m_z;

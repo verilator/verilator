@@ -216,7 +216,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
             if (optp->optionType() == VCoverOptionType::AT_LEAST) {
                 atLeastOut = constp->toSInt();
-            } else if (optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
+            } else {
+                // V3LinkParse only converts at_least/auto_bin_max coverpoint options into
+                // AstCoverOption (others are dropped there), so this is the only alternative.
+                UASSERT_OBJ(optp->optionType() == VCoverOptionType::AUTO_BIN_MAX, optp,
+                            "Unexpected coverpoint option type reaching V3Covergroup");
                 autoBinMaxOut = constp->toSInt();
             }
         }
@@ -879,7 +883,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 AstNodeExpr* const maxp = V3Const::constifyEdit(insideRangep->rhsp());
                 AstConst* const minConstp = VN_CAST(minp, Const);
                 AstConst* const maxConstp = VN_CAST(maxp, Const);
-                if (minConstp && maxConstp) {  // LCOV_EXCL_BR_LINE
+                if (minConstp && maxConstp) {
                     const int minVal = minConstp->toSInt();
                     const int maxVal = maxConstp->toSInt();
                     UINFO(6, "      Expanding InsideRange [" << minVal << ":" << maxVal << "]");
@@ -1104,9 +1108,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverpoint* const foundCpp = (it != m_coverpointMap.end()) ? it->second : nullptr;
 
             if (!foundCpp) {
-                // Name not found as an explicit coverpoint - it's likely a direct variable
-                // reference (implicit coverpoint). Silently ignore; cross is dropped.
-                UINFO(4, "  Ignoring cross with implicit variable reference: " << refp->name());
+                // Name not found as an explicit coverpoint - it's a direct variable
+                // reference (implicit coverpoint), which Verilator does not support.
+                // Warn and drop the whole cross.
+                refp->v3warn(COVERIGN, "Unsupported: cross of '"
+                                           << refp->prettyName()
+                                           << "' which is not a coverpoint (implicit coverpoint)");
                 return;
             }
 

@@ -398,6 +398,8 @@ module t (/*AUTOARG*/
       bins t01  = (3'b000 => 3'b001);
       bins t12  = (3'b001 => 3'b010);
       bins talt = (3'b010 => 3'b011), (3'b100 => 3'b101);  // multiple transition sets
+      bins trep = (3'b000 => 3'b001 [->2]);  // repetition op -> non-NONE VTransRepType (exercises ascii())
+      bins tarr[] = (3'b000 => 3'b001), (3'b001 => 3'b010);  // array transition bins -> m_isArray
     }
   endgroup
 

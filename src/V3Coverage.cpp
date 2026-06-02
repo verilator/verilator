@@ -289,7 +289,6 @@ class CoverageVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstClass* nodep) override {
-        const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         VL_RESTORER(m_exprTempNames);
@@ -299,10 +298,6 @@ class CoverageVisitor final : public VNVisitor {
         // Covergroup declarations are not executable statements; suppress line/expr/toggle
         // coverage so declarative elements (covergroup, coverpoint, cross) are not annotated
         m_state.m_inModOff = nodep->isCovergroup();
-        if (!origModp) {
-            m_varnames.clear();
-            m_handleLines.clear();
-        }
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {

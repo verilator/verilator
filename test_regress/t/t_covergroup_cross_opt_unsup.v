@@ -12,7 +12,9 @@ module t;
       cross_ab: cross cp_a, cp_b {
          option.per_instance = 1;  // unsupported for cross; triggers COVERIGN
       }
+      cross_implicit: cross cp_a, var_x;
    endgroup
+   logic var_x = 1'b0;
    cg cg_i = new;
    initial begin
       cg_i.sample();
