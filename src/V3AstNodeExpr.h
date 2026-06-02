@@ -2352,7 +2352,7 @@ class AstSFormatF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNodeExpr]
     // @astgen op2 := scopeNamep : Optional[AstScopeName]
     string m_text;
-    const bool m_hidden;  // Under display, etc
+    bool m_hidden;  // Under display, etc
     bool m_exprFormat
         = false;  // Runtime Node* format, false = text() format code, false = possibly r
     bool m_optionalFormat
@@ -2411,6 +2411,7 @@ public:
         return false;
     }
     bool hidden() const { return m_hidden; }
+    void hidden(bool flag) { m_hidden = flag; }
     bool exprFormat() const { return m_exprFormat; }
     void exprFormat(bool flag) { m_exprFormat = flag; }
     bool optionalFormat() const { return m_optionalFormat; }
