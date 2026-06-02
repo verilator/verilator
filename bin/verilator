@@ -159,7 +159,7 @@ if ($opt_gdb) {
     if ($lldb_selected) {
         run (ulimit_stack_unlimited()
              . aslr(0)
-             . "lldb"
+             . ($ENV{VERILATOR_GDB} || "lldb")
              . " " . verilator_bin()
              . " -o 'b exit'"  # Need break to keep process active for bt
              . " --batch --source-quietly"
@@ -169,7 +169,7 @@ if ($opt_gdb) {
     } else {
         run (ulimit_stack_unlimited()
              . aslr(0)
-             . "gdb"
+             . ($ENV{VERILATOR_GDB} || "gdb")
              . " " . verilator_bin()
              . " --batch --quiet --return-child-result"
              . " -ex \"run " . join(' ', @quoted_sw)."\""
