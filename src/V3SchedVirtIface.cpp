@@ -70,6 +70,26 @@ private:
         }
         iterateChildren(nodep);
     }
+    void visit(AstVarRef* nodep) override {
+        if (nodep->access().isWriteOrRW()) {
+            if (const AstIface* const ifacep = nodep->varp()->sensIfacep()) {
+                if (supportsValueChangeTrigger(nodep->varp()->dtypep())) {
+                    m_vifWrittenMembers.emplace(ifacep, nodep->varp()->name());
+                }
+            }
+        }
+        iterateChildren(nodep);
+    }
+    // Mirrors the type check in V3SchedTrigger; events/strings/chandles are excluded.
+    static bool supportsValueChangeTrigger(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
+            return !bdtypep->isEvent() && !bdtypep->isString()
+                   && bdtypep->keyword() != VBasicDTypeKwd::CHANDLE;
+        }
+        return VN_IS(dtypep, PackArrayDType) || VN_IS(dtypep, UnpackArrayDType)
+               || VN_IS(dtypep, NodeUOrStructDType) || VN_IS(dtypep, ClassRefDType);
+    }
     void visit(AstVarScope* nodep) override {
         // Collect candidate VarScopes. sensIfacep() is set on interface members
         // accessed via any MemberSel (virtual or non-virtual).
