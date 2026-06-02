@@ -267,7 +267,7 @@ public:
 class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
     // Base class for functional coverage items (coverpoints, crosses)
 protected:
-    string m_name; // Item name
+    string m_name;  // Item name
 
 public:
     AstNodeFuncCovItem(VNType t, FileLine* fl, const string& name)
