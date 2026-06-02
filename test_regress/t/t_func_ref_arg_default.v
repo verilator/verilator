@@ -9,40 +9,44 @@
 // 'const ref' default must observe later updates to the variable.
 
 module t;
-   logic clk = 0;
-   initial forever #5 clk = ~clk;
+  int shared = 5;
+  logic flag = 0;
+  logic done = 0;
 
-   int   shared = 5;
-   logic flag = 0;
-   logic done = 0;
+  // writable 'ref' default: a write through it must reach 'shared'
+  task automatic incr(ref int r = shared);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
+    r = r + 10;
+  endtask
 
-   // writable 'ref' default: a write through it must reach 'shared'
-   task automatic incr(ref int r = shared);
-      r = r + 10;
-   endtask
+  // 'const ref' default: must observe a later update to 'flag'
+  task automatic waitflag(output logic odone, const ref logic r = flag);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
+    while (!r) #1;
+    odone = 1'b1;
+  endtask
 
-   // 'const ref' default: must observe a later update to 'flag'
-   task automatic waitflag(const ref logic r = flag);
-      @(posedge clk);
-      while (!r) @(posedge clk);
-      done <= 1'b1;
-   endtask
-
-   initial begin
-      incr();
-      if (shared !== 15) begin
-         $write("%%Error: write through default 'ref' lost (shared=%0d)\n", shared);
-         $stop;
-      end
-      fork waitflag(); join_none
-      repeat (3) @(posedge clk);
-      flag = 1'b1;
-      repeat (5) @(posedge clk);
-      if (done !== 1'b1) begin
-         $write("%%Error: default 'const ref' did not observe update\n");
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    incr();
+    if (shared !== 15) begin
+      $write("%%Error: write through default 'ref' lost (shared=%0d)\n", shared);
+      $stop;
+    end
+    fork
+      waitflag(done);
+    join_none
+    #5;
+    flag = 1'b1;
+    #5;
+    if (done !== 1'b1) begin
+      $write("%%Error: default 'const ref' did not observe update\n");
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -119,6 +119,8 @@ class TaskStateVisitor final : public VNVisitor {
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
     std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
+    bool m_underPortVar = false;  // Visiting under a port AstVar; any expression there
+                                  // is a default value, evaluated at call sites only
 
 public:
     // METHODS
@@ -289,11 +291,14 @@ private:
         }
     }
     void visit(AstVar* nodep) override {
+        VL_RESTORER(m_underPortVar);
+        if (nodep->isIO()) m_underPortVar = true;
         iterateChildren(nodep);
         nodep->user4p(m_curVxp);  // Remember what task it's under
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
+        if (m_underPortVar) return;
         AstVar* const varp = nodep->varp();
         if (varp->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
@@ -1404,6 +1409,7 @@ class TaskVisitor final : public VNVisitor {
                         // Move it to new function
                         unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
+                        if (portp->valuep()) portp->valuep()->unlinkFrBack()->deleteTree();
                         cfuncp->addArgsp(portp);
                     } else {
                         // "Normal" variable, mark inside function
