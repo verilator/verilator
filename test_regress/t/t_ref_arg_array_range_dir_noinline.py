@@ -9,8 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
+test.top_filename = "t/t_ref_arg_array_range_dir.v"
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--binary"], v_flags2=['+define+T_NOINLINE'])
+
+test.execute()
 
 test.passes()

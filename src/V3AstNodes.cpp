@@ -282,13 +282,13 @@ bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
           || (m.m_keyword == VBasicDTypeKwd::LOGIC
               && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
         return false;
-    // IEEE 1800-2023 7.6: equivalent by bit width, not range direction
+    // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
     if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
     if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
     // Squash so NOSIGN == UNSIGNED
     if (numeric().isSigned() != sp->numeric().isSigned()) return false;
     if (!rangep() && !sp->rangep()) return true;
-    return rangep() && sp->rangep() && rangep()->elementsConst() == sp->rangep()->elementsConst();
+    return rangep() && rangep()->sameTree(sp->rangep());
 }
 
 int AstNodeUOrStructDType::widthTotalBytes() const {
