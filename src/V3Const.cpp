@@ -2233,6 +2233,22 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
 
+    bool replaceAssignSFormatF(AstNodeAssign* nodep) {
+        // Rewrite 'x = sformatf(...)' into 'sformat(x, ...)', which is more efficient
+        // at the call site as it does not need to check if 'x' needs to be freed first.
+        // This is a somewhat common pattern after lowering assertions.
+        if (!VN_IS(nodep, Assign)) return false;
+        AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef);
+        if (!lhsp) return false;
+        AstSFormatF* const fmtp = VN_CAST(nodep->rhsp(), SFormatF);
+        if (!fmtp) return false;
+        lhsp->unlinkFrBack();
+        fmtp->unlinkFrBack();
+        nodep->replaceWith(new AstSFormat{nodep->fileline(), fmtp, lhsp});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
     bool varNotReferenced(AstNode* nodep, AstVar* varp, int level = 0) {
         // Return true if varp never referenced under node.
         // Return false if referenced, or tree too deep to be worth it, or side effects
@@ -2606,6 +2622,8 @@ class ConstVisitor final : public VNVisitor {
                 }
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
+            return true;
+        } else if (replaceAssignSFormatF(nodep)) {
             return true;
         }
         return false;
@@ -3820,6 +3838,25 @@ class ConstVisitor final : public VNVisitor {
             nodep->replaceWith(VN_AS(nodep->exprsp(), SFormatArg)->exprp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
+        }
+    }
+    void visit(AstSFormat* nodep) override {
+        iterateChildren(nodep);
+        if (!m_doNConst) return;
+        if (m_doNConst) {
+            // If it's a constant string written to a string variable, inline it as an assignment
+            AstSFormatF* const fmtp = nodep->fmtp();
+            AstNodeExpr* const lhsp = nodep->lhsp();
+            AstBasicDType* const basicp = VN_CAST(lhsp->dtypep()->skipRefp(), BasicDType);
+            if (basicp && basicp->isString() && !fmtp->exprsp()
+                && fmtp->text().find('%') == string::npos) {
+                AstConst* const strp
+                    = new AstConst{fmtp->fileline(), AstConst::String{}, fmtp->text()};
+                lhsp->unlinkFrBack();
+                nodep->replaceWith(new AstAssign{nodep->fileline(), lhsp, strp});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
     }
     void visit(AstNodeFTask* nodep) override {

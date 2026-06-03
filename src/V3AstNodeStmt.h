@@ -1137,6 +1137,12 @@ public:
         fmtp(newp);
         this->lhsp(lhsp);
     }
+    AstSFormat(FileLine* fl, AstSFormatF* fmtp, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_SFormat(fl) {
+        this->fmtp(fmtp);
+        this->lhsp(lhsp);
+        fmtp->hidden(true);
+    }
     ASTGEN_MEMBERS_AstSFormat;
     const char* broken() const override {
         BROKEN_RTN(!fmtp());
