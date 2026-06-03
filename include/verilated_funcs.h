@@ -803,10 +803,12 @@ static inline IData VL_COUNTBITS_W(int lbits, int words, WDataInP const lwp, IDa
 }
 
 static inline IData VL_ONEHOT_I(IData lhs) VL_PURE {
-    return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
+    const IData y = lhs - 1;
+    return y < (lhs ^ y);
 }
 static inline IData VL_ONEHOT_Q(QData lhs) VL_PURE {
-    return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
+    const QData y = lhs - 1;
+    return y < (lhs ^ y);
 }
 static inline IData VL_ONEHOT_W(int words, WDataInP const lwp) VL_PURE {
     EData one = 0;
