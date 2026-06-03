@@ -1405,6 +1405,13 @@ class TaskVisitor final : public VNVisitor {
                         unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
                         cfuncp->addArgsp(portp);
+                        // Pass inputs to DPI import wrappers by reference, unless fits in register
+                        if (cfuncp->dpiImportWrapper() && portp->isReadOnly()) {
+                            AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                            if (dtypep->isCompound() || dtypep->isWide()) {
+                                portp->direction(VDirection::CONSTREF);
+                            }
+                        }
                     } else {
                         // "Normal" variable, mark inside function
                         portp->funcLocal(true);
