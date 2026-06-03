@@ -128,6 +128,7 @@ class AssertVisitor final : public VNVisitor {
     //  AstNode::user1()         -> bool.  True if processed
     //  AstAlways::user2p()      -> std::vector<AstVar*>. Delayed variables via 'm_delayed'
     //  AstNodeVarRef::user2()   -> bool.  True if shouldn't be sampled
+    //  AstIf::user2()           -> bool.  True for assertOn() checks inserted in this pass
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     AstUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
@@ -146,6 +147,8 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
     VDouble0 m_statPastVars;  // Statistic tracking
+    VDouble0 m_statAssertOnCombined;  // Statistic tracking
+    VDouble0 m_statAssertOnHoisted;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
@@ -274,16 +277,16 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    static AstNodeStmt* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
-                                      VAssertType type = VAssertType::INTERNAL) {
+    static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                VAssertType type = VAssertType::INTERNAL) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
 
         AstNodeExpr* const condp = assertOnCond(fl, type, directiveType);
-        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
-        newp->user1(true);  // Don't assert/cover this if
+        newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
 
@@ -297,9 +300,8 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    AstNode* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
-                        AstNode* failsp) {
-        AstNode* bodyp = nullptr;
+    AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
+                            AstNode* failsp) {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
             forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
@@ -312,11 +314,10 @@ class AssertVisitor final : public VNVisitor {
                 }
             }
             VL_DO_DANGLING2(pushDeletep(pexprp), pexprp, propp);
-            bodyp = forkp;
-        } else {
-            bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
+            return forkp;
         }
-        return newIfAssertOn(bodyp, nodep->directive(), nodep->userType());
+
+        return assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
     }
 
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
@@ -487,14 +488,12 @@ class AssertVisitor final : public VNVisitor {
         } else {
             propExprp = nodep->propp()->unlinkFrBack();
         }
+        FileLine* const flp = nodep->fileline();
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
-        if (disablep) {
-            bodysp
-                = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), disablep}, bodysp};
-        }
-        if (sentreep) {
-            bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
-        }
+        if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
+        // Add assertOn check last, for better combining
+        bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
+        if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
@@ -512,66 +511,120 @@ class AssertVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    bool isEmptyStmt(AstNode* nodep) {
+        if (!nodep) return true;
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
+            if (beginp->declsp()) return false;
+            for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (!isEmptyStmt(stmtp)) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
     // VISITORS
     void visit(AstIf* nodep) override {
-        if (nodep->user1SetOnce()) return;
-        if (nodep->uniquePragma() || nodep->unique0Pragma()) {
-            const AstNodeIf* ifp = nodep;
-            AstNodeExpr* propp = nullptr;
-            bool hasDefaultElse = false;
-            do {
-                // If this statement ends with 'else if', then nextIf will point to the
-                // nextIf statement.  Otherwise it will be null.
-                const AstNodeIf* const nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
-                iterateAndNextNull(ifp->condp());
+        if (!nodep->user1SetOnce()) {
+            if (nodep->uniquePragma() || nodep->unique0Pragma()) {
+                const AstNodeIf* ifp = nodep;
+                AstNodeExpr* propp = nullptr;
+                bool hasDefaultElse = false;
+                do {
+                    // If this statement ends with 'else if', then nextIf will point to the
+                    // nextIf statement.  Otherwise it will be null.
+                    const AstNodeIf* const nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
+                    iterateAndNextNull(ifp->condp());
 
-                // Recurse into the true case.
-                iterateAndNextNull(ifp->thensp());
+                    // Recurse into the true case.
+                    iterateAndNextNull(ifp->thensp());
 
-                // If the last else is not an else if, recurse into that too.
-                if (ifp->elsesp() && !nextifp) {  //
-                    iterateAndNextNull(ifp->elsesp());
-                }
+                    // If the last else is not an else if, recurse into that too.
+                    if (ifp->elsesp() && !nextifp) {  //
+                        iterateAndNextNull(ifp->elsesp());
+                    }
 
-                // Build a bitmask of the true predicates
-                AstNodeExpr* const predp = ifp->condp()->cloneTreePure(false);
-                if (propp) {
-                    propp = new AstConcat{nodep->fileline(), predp, propp};
-                } else {
-                    propp = predp;
-                }
+                    // Build a bitmask of the true predicates
+                    AstNodeExpr* const predp = ifp->condp()->cloneTreePure(false);
+                    if (propp) {
+                        propp = new AstConcat{nodep->fileline(), predp, propp};
+                    } else {
+                        propp = predp;
+                    }
 
-                // Record if this ends with an 'else' that does not have an if
-                if (ifp->elsesp() && !nextifp) hasDefaultElse = true;
+                    // Record if this ends with an 'else' that does not have an if
+                    if (ifp->elsesp() && !nextifp) hasDefaultElse = true;
 
-                ifp = nextifp;
-            } while (ifp);
+                    ifp = nextifp;
+                } while (ifp);
 
-            AstIf* const newifp = nodep->cloneTree(false);
-            const bool allow_none = nodep->unique0Pragma();
+                AstIf* const newifp = nodep->cloneTree(false);
+                const bool allow_none = nodep->unique0Pragma();
 
-            // Empty case means no property
-            if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                // Empty case means no property
+                if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
 
-            // Note: if this ends with an 'else', then we don't need to validate that one of the
-            // predicates evaluates to true.
-            AstNodeExpr* const ohot
-                = ((allow_none || hasDefaultElse)
-                       ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
-                       : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            const VAssertType assertType
-                = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
-            AstIf* const checkifp
-                = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                            newFireAssert(nodep, VAssertDirectiveType::VIOLATION_IF, assertType,
-                                          "'unique if' statement violated"),
-                            newifp};
-            checkifp->isBoundsCheck(true);  // To avoid LATCH warning
-            checkifp->branchPred(VBranchPred::BP_UNLIKELY);
-            nodep->replaceWith(checkifp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {
+                // Note: if this ends with an 'else', then we don't need to validate that one of
+                // the predicates evaluates to true.
+                AstNodeExpr* const ohot
+                    = ((allow_none || hasDefaultElse)
+                           ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
+                           : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
+                const VAssertType assertType
+                    = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
+                AstIf* const checkifp
+                    = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
+                                newFireAssert(nodep, VAssertDirectiveType::VIOLATION_IF,
+                                              assertType, "'unique if' statement violated"),
+                                newifp};
+                checkifp->isBoundsCheck(true);  // To avoid LATCH warning
+                checkifp->branchPred(VBranchPred::BP_UNLIKELY);
+                nodep->replaceWith(checkifp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+
             iterateChildren(nodep);
+        }
+
+        // Swap assertOn check with single statement 'if' statement to bubble up for combining
+        // Note we can't just swap the conditions as they two Ifs have different flags,
+        // so swapping the Ifs themeselves then swapping back the bodies.
+        if (nodep->condp()->isPure()) {
+            if (nodep->thensp() && !nodep->thensp()->nextp() && isEmptyStmt(nodep->elsesp())) {
+                AstIf* const checkp = VN_CAST(nodep->thensp(), If);
+                if (checkp && checkp->user2()) {
+                    ++m_statAssertOnHoisted;
+                    nodep->replaceWith(checkp->unlinkFrBack());
+                    nodep->addThensp(checkp->thensp()->unlinkFrBackWithNext());
+                    checkp->addThensp(nodep);
+                    return;
+                }
+            }
+            if (nodep->elsesp() && !nodep->elsesp()->nextp() && isEmptyStmt(nodep->thensp())) {
+                AstIf* const checkp = VN_CAST(nodep->elsesp(), If);
+                if (checkp && checkp->user2()) {
+                    ++m_statAssertOnHoisted;
+                    nodep->replaceWith(checkp->unlinkFrBack());
+                    nodep->addElsesp(checkp->thensp()->unlinkFrBackWithNext());
+                    checkp->addThensp(nodep);
+                    return;
+                }
+            }
+        }
+
+        // Combine consecutive assertOn checks if possible
+        if (nodep->user2()) {
+            if (AstIf* const backp = VN_CAST(nodep->backp(), If)) {
+                if (backp->nextp() == nodep  //
+                    && backp->user2()  //
+                    && backp->condp()->sameTree(nodep->condp())) {
+                    ++m_statAssertOnCombined;
+                    backp->addThensp(nodep->thensp()->unlinkFrBackWithNext());
+                    nodep->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
+            }
         }
     }
 
@@ -979,6 +1032,17 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_beginp);
         m_beginp = nodep;
         iterateChildren(nodep);
+        // If the body is a single assertOn check, bubble it up for combining
+        if (!nodep->declsp()) {
+            if (AstIf* const ifp = VN_CAST(nodep->stmtsp(), If)) {
+                if (ifp->user2() && !ifp->nextp()) {
+                    ++m_statAssertOnHoisted;
+                    nodep->replaceWith(ifp->unlinkFrBack());
+                    nodep->addStmtsp(ifp->thensp()->unlinkFrBackWithNext());
+                    ifp->addThensp(nodep);
+                }
+            }
+        }
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -992,6 +1056,8 @@ public:
         V3Stats::addStat("Assertions, cover statements", m_statCover);
         V3Stats::addStat("Assertions, full/parallel case", m_statAsFull);
         V3Stats::addStat("Assertions, $past variables", m_statPastVars);
+        V3Stats::addStat("Assertions, assertOn checks combined", m_statAssertOnCombined);
+        V3Stats::addStat("Assertions, assertOn checks hoisted", m_statAssertOnHoisted);
     }
 };
 
