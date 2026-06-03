@@ -282,6 +282,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_PARAM    "--param"
+%token<fl>              yVLT_D_PATH     "--path"
 %token<fl>              yVLT_D_PORT     "--port"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_Q        "--q"
@@ -8444,6 +8445,8 @@ vltItem:
                           }}
         |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrSpecE attr_event_controlE
                         { V3Control::addVarAttr($<fl>1, *$2, *$3, GRAMMARP->m_vltVarSpecKind, *$4, $1, $5); }
+        |       vltVarAttrFront vltDPath
+                        { V3Control::addHierVarAttr($<fl>1, *$2, $1); }
         |       vltVarAttrFrontDeprecated vltDModuleE vltDFTaskE vltVarAttrSpecE
                         { /* Historical, now has no effect */ }
         |       vltInlineFront vltDModuleE vltDFTaskE
@@ -8567,6 +8570,10 @@ vltDModuleE<strp>:  // [--module <arg>]
                         { static string unit = "$unit"; $$ = &unit; }  // .vlt uses prettyName
         |       vltDModule
                         { $$ = $1; }
+        ;
+
+vltDPath<strp>:  // --path <arg>
+                yVLT_D_PATH str                         { $$ = $2; }
         ;
 
 vltDScope<strp>:  // --scope <arg>

@@ -1,0 +1,8 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.\foo[abc] 
+       VAR 0x#: \var.with.dot 
+    SCOPE 0x#: top.\inst.with.dot 
+       VAR 0x#: \var.with.dot 
+
+*-* All Finished *-*

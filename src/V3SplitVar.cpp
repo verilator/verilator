@@ -172,6 +172,7 @@ struct SplitVarImpl VL_NOT_FINAL {
             return reason;
         }
         if (varp->isSigPublic()) return "it is public";
+        if (varp->mayBecomePublic()) return "it may become public from .vlt";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
         if (varp->isForceable()) return "it is forceable";
         return nullptr;

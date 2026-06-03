@@ -1,0 +1,10 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.sub_a
+       VAR 0x#: some_var
+    SCOPE 0x#: top.sub_b
+       VAR 0x#: some_var
+    SCOPE 0x#: top.sub_c
+       VAR 0x#: some_var
+
+*-* All Finished *-*

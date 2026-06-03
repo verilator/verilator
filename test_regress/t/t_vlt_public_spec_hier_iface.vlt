@@ -1,0 +1,16 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Single interface instance: per-instance selective.
+public_flat -path "top.i_single.data"
+
+// 1D interface array: marks the var in every iteration.
+public_flat -path "top.i_arr[1].data"
+
+// Multidimensional interface array: marks the var in every iteration.
+public_flat -path "top.i_md[1][0].data"

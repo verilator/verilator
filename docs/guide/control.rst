@@ -266,10 +266,13 @@ The grammar of control commands is as follows:
 
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
+.. option:: public_flat -path "<hier.path.signame>"
 .. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
+.. option:: public_flat_rd -path "<hier.path.signame>"
 .. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
+.. option:: public_flat_rw -path "<hier.path.signame>"
 .. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"] ["@(edge)"]
 
    Sets the specified signal to be public. Same as
@@ -282,6 +285,23 @@ The grammar of control commands is as follows:
    ports, parameters, and regular variables or nets). In all three, the
    following ``<signame>`` can contain ``*`` and ``?`` wildcard
    characters that match any substring or any single character respectively.
+
+   For ``public_flat``, ``public_flat_rd``, ``public_flat_rw``, and
+   ``public``, ``-path`` may instead be given a fully qualified
+   hierarchical path (e.g. ``-path "top.i_sub.signame"``).
+   Verilator then walks the design hierarchy to find the named signal.
+   Wildcards are not supported in hierarchical paths. A ``\`` introducing a
+   Verilog escaped identifier must be written in the quoted string as ``\\``
+   and have trailing whitespace, for example
+   ``-path "top.\\inst.with.dot .\\sig.with.dot "``.
+
+   When a hierarchical ``-path`` traverses an arrayed instance (e.g.
+   ``sub i_sub [3:0] ();``), per-iteration selectivity is not currently
+   supported. Naming a single iteration such as
+   ``-path "top.i_sub[2].signame"`` marks the signal as public in **all**
+   iterations of that cell array. Non-arrayed sibling instantiations
+   (e.g. ``sub i_a(); sub i_b();``) and generate-for iterations do support
+   per-instance selectivity.
 
 .. option:: sc_biguint -module "<modulename>" -var "<signame>"
 

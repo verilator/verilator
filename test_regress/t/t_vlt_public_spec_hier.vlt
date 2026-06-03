@@ -1,0 +1,22 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Same effect as t_vlt_public_spec.vlt but using hierarchical -path
+// (without -module) where applicable. Demonstrates fine-grained per-signal
+// public control by fully qualified instance path.
+
+public_flat_rd -module "top" -param "*"
+public_flat_rw -module "top" -port "*"
+
+public_flat_rd -module "mid" -param "*"
+public_flat_rw -module "mid" -function "*" -port "top_f_port_o"
+public_flat    -path "top.i_mid_0.mid_tmp_b"
+public_flat    -path "top.i_mid_1.mid_tmp_b"
+
+public_flat    -module "sub" -port "*"
+public_flat_rd -module "sub" -function "*" -param "SUB_F_LOCALPARAM"

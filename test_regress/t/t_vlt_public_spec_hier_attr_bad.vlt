@@ -1,0 +1,15 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Hierarchical -path is only supported with public-family attributes.
+sc_bv -path "top.i_mid_0.mid_tmp_b"
+sc_biguint -path "top.i_mid_0.mid_tmp_b"
+sformat -path "top.i_mid_0.mid_tmp_b"
+split_var -path "top.i_mid_0.mid_tmp_b"
+isolate_assignments -path "top.i_mid_0.mid_tmp_b"
+forceable -path "top.i_mid_0.mid_tmp_b"

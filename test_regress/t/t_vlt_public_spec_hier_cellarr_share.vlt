@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Name a single iteration of a cell array. Per-instance selectivity is not
+// yet supported for arrayed cells (see .v for the architectural reason),
+// so this currently marks ALL iterations.
+public_flat -path "top.i_sub[1].leaf"
