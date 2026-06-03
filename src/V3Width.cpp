@@ -10072,17 +10072,13 @@ AstNode* V3Width::selectNonConstantRecurse(AstNode* nodep, bool inSel) {
     } else if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) {
         if (inSel && !anodep->varp()->isParam() && !anodep->varp()->isGenVar()) return anodep;
     } else {
-        if (AstNode* const refp = nodep->op1p())
-            resultp = selectNonConstantRecurse(refp, inSel);
+        if (AstNode* const refp = nodep->op1p()) resultp = selectNonConstantRecurse(refp, inSel);
         if (resultp) return resultp;
-        if (AstNode* const refp = nodep->op2p())
-            resultp = selectNonConstantRecurse(refp, inSel);
+        if (AstNode* const refp = nodep->op2p()) resultp = selectNonConstantRecurse(refp, inSel);
         if (resultp) return resultp;
-        if (AstNode* const refp = nodep->op3p())
-            resultp = selectNonConstantRecurse(refp, inSel);
+        if (AstNode* const refp = nodep->op3p()) resultp = selectNonConstantRecurse(refp, inSel);
         if (resultp) return resultp;
-        if (AstNode* const refp = nodep->op4p())
-            resultp = selectNonConstantRecurse(refp, inSel);
+        if (AstNode* const refp = nodep->op4p()) resultp = selectNonConstantRecurse(refp, inSel);
     }
     return resultp;
 }
