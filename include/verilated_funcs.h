@@ -150,9 +150,6 @@ extern void VL_FCLOSE_I(IData fdi) VL_MT_SAFE;
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi,
                         IData start, IData count) VL_MT_SAFE;
 
-extern void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
-extern void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
-
 extern IData VL_FSCANF_INX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
 extern IData VL_SSCANF_IINX(int lbits, IData ld, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
@@ -161,6 +158,7 @@ extern IData VL_SSCANF_IQNX(int lbits, QData ld, const std::string& format, int 
 extern IData VL_SSCANF_IWNX(int lbits, WDataInP const lwp, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
 
+// String formatting functions taking const std::string& as format string
 extern void VL_SFORMAT_NX(int obits, CData& destr, const std::string& format, int argc,
                           ...) VL_MT_SAFE;
 extern void VL_SFORMAT_NX(int obits, SData& destr, const std::string& format, int argc,
@@ -171,6 +169,22 @@ extern void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, in
                           ...) VL_MT_SAFE;
 extern void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc,
                           ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(std::string& output, const std::string& format, int argc,
+                          ...) VL_MT_SAFE;
+extern std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
+extern void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
+extern void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
+
+// String formatting functions taking const char* format string
+extern void VL_SFORMAT_NX(int obits, CData& destr, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(int obits, SData& destr, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(int obits, IData& destr, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(int obits, QData& destr, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(int obits, EData* destp, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(std::string& output, const char* formatp, int argc, ...) VL_MT_SAFE;
+extern std::string VL_SFORMATF_N_NX(const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_WRITEF_NX(const char* formatp, int argc, ...) VL_MT_SAFE;
+extern void VL_FWRITEF_NX(IData fpi, const char* formatp, int argc, ...) VL_MT_SAFE;
 
 extern void VL_STACKTRACE() VL_MT_SAFE;
 extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
@@ -789,10 +803,12 @@ static inline IData VL_COUNTBITS_W(int lbits, int words, WDataInP const lwp, IDa
 }
 
 static inline IData VL_ONEHOT_I(IData lhs) VL_PURE {
-    return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
+    const IData y = lhs - 1;
+    return y < (lhs ^ y);
 }
 static inline IData VL_ONEHOT_Q(QData lhs) VL_PURE {
-    return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
+    const QData y = lhs - 1;
+    return y < (lhs ^ y);
 }
 static inline IData VL_ONEHOT_W(int words, WDataInP const lwp) VL_PURE {
     EData one = 0;
@@ -3668,9 +3684,6 @@ extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
                           QData end) VL_MT_SAFE;
 extern IData VL_SSCANF_INNX(int lbits, const std::string& ld, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format,
-                          int argc, ...) VL_MT_SAFE;
-extern std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
 extern void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision,
                                bool hasSuffix, const std::string& suffix, bool hasWidth, int width,
                                VerilatedContext* contextp) VL_MT_SAFE;

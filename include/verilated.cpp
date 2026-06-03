@@ -998,7 +998,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
     bool widthSet = false;
     bool left = false;
     size_t width = 0;
-    output = "";
+    output.clear();
     output.reserve(format.length());
     for (std::string::const_iterator pos = format.cbegin(); pos != format.cend(); ++pos) {
         if (!inPct && pos[0] == '%') {
@@ -1833,9 +1833,11 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
     Verilated::threadContextp()->impp()->fdClose(fdi);
 }
 
+//===========================================================================
+// String formatting functions taking const std::string& as format string
+
 void VL_SFORMAT_NX(int obits, CData& destr, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1846,7 +1848,6 @@ void VL_SFORMAT_NX(int obits, CData& destr, const std::string& format, int argc,
 
 void VL_SFORMAT_NX(int obits, SData& destr, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1857,7 +1858,6 @@ void VL_SFORMAT_NX(int obits, SData& destr, const std::string& format, int argc,
 
 void VL_SFORMAT_NX(int obits, IData& destr, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1868,7 +1868,6 @@ void VL_SFORMAT_NX(int obits, IData& destr, const std::string& format, int argc,
 
 void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1879,7 +1878,6 @@ void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, int argc,
 
 void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1888,9 +1886,7 @@ void VL_SFORMAT_NX(int obits, EData* destp, const std::string& format, int argc,
     _vl_string_to_vint(obits, destp, t_output.length(), t_output.c_str());
 }
 
-void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format, int argc,
-                   ...) VL_MT_SAFE {
-    (void)obits_ignored;  // So VL_SFORMAT_NNX function signatures all match
+void VL_SFORMAT_NX(std::string& output, const std::string& format, int argc, ...) VL_MT_SAFE {
     std::string temp_output;
     va_list ap;
     va_start(ap, argc);
@@ -1900,19 +1896,17 @@ void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& fo
 }
 
 std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE {
-    static thread_local std::string t_output;  // static only for speed
-    t_output = "";
+    std::string output;
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, argc, ap);
+    _vl_vsformat(output, format, argc, ap);
     va_end(ap);
 
-    return t_output;
+    return output;
 }
 
 void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE {
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
@@ -1924,11 +1918,102 @@ void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE {
 void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     static thread_local std::string t_output;  // static only for speed
-    t_output = "";
-
     va_list ap;
     va_start(ap, argc);
     _vl_vsformat(t_output, format, argc, ap);
+    va_end(ap);
+
+    Verilated::threadContextp()->impp()->fdWrite(fpi, t_output);
+}
+
+//===========================================================================
+// String formatting functions taking const char* as format string
+
+void VL_SFORMAT_NX(int obits, CData& destr, const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
+}
+
+void VL_SFORMAT_NX(int obits, SData& destr, const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
+}
+
+void VL_SFORMAT_NX(int obits, IData& destr, const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
+}
+
+void VL_SFORMAT_NX(int obits, QData& destr, const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
+}
+
+void VL_SFORMAT_NX(int obits, EData* destp, const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    _vl_string_to_vint(obits, destp, t_output.length(), t_output.c_str());
+}
+
+void VL_SFORMAT_NX(std::string& output, const char* formatp, int argc, ...) VL_MT_SAFE {
+    std::string temp_output;
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(temp_output, formatp, argc, ap);
+    va_end(ap);
+    output = temp_output;
+}
+
+std::string VL_SFORMATF_N_NX(const char* formatp, int argc, ...) VL_MT_SAFE {
+    std::string output;
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(output, formatp, argc, ap);
+    va_end(ap);
+
+    return output;
+}
+
+void VL_WRITEF_NX(const char* formatp, int argc, ...) VL_MT_SAFE {
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
+    va_end(ap);
+
+    VL_PRINTF_MT("%s", t_output.c_str());
+}
+
+void VL_FWRITEF_NX(IData fpi, const char* formatp, int argc, ...) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
+    static thread_local std::string t_output;  // static only for speed
+    va_list ap;
+    va_start(ap, argc);
+    _vl_vsformat(t_output, formatp, argc, ap);
     va_end(ap);
 
     Verilated::threadContextp()->impp()->fdWrite(fpi, t_output);

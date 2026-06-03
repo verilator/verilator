@@ -78,12 +78,14 @@ public:
         m_setBeforeUse = setBeforeUse;
     }
 
-    void simpleAssign(AstNodeAssign* nodep) {  // New simple A=.... assignment
+    void simpleAssign(AstNodeStmt* nodep) {  // New simple A=.... assignment
         UASSERT_OBJ(!m_isNew, nodep, "Uninitialized new entry");
         m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
-        if (VN_IS(nodep->rhsp(), Const)) m_constp = VN_AS(nodep->rhsp(), Const);
+        if (AstNodeAssign* const assp = VN_CAST(nodep, Assign)) {
+            if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
+        }
     }
     void complexAssign() {  // A[x]=... or some complicated assignment
         UASSERT(!m_isNew, "Uninitialized new entry");
@@ -144,7 +146,7 @@ public:
         ++m_statep->m_statAssnDel;
         VL_DO_DANGLING(m_deleter.pushDeletep(oldassp), oldassp);
     }
-    void simpleAssign(AstVarScope* nodep, AstNodeAssign* assp) {
+    void simpleAssign(AstVarScope* nodep, AstNodeStmt* assp) {
         // Do we have a old assignment we can nuke?
         UINFO(4, "     ASSIGNof: " << nodep);
         UINFO(7, "       new: " << assp);
@@ -267,6 +269,29 @@ class LifeVisitor final : public VNVisitor {
         m_lifep->clear();
     }
 
+    void processAssignment(AstNodeStmt* nodep, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        // Collect any used variables first, as lhs may also be on rhs
+        // Similar code in V3Dead
+        VL_RESTORER(m_sideEffect);
+        m_sideEffect = false;
+        m_lifep->clearReplaced();
+        rhsp = VN_AS(iterateSubtreeReturnEdits(rhsp), NodeExpr);
+        if (m_lifep->replaced()) {
+            // We changed something, try to constant propagate, but don't delete the
+            // assignment as we still need nodep to remain.
+            V3Const::constifyEdit(rhsp);
+            VL_DANGLING(rhsp);  // rhsp may change
+        }
+        // Has to be direct assignment without any EXTRACTing.
+        if (VN_IS(lhsp, VarRef) && !m_sideEffect && !m_noopt) {
+            AstVarScope* const vscp = VN_AS(lhsp, VarRef)->varScopep();
+            UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
+            m_lifep->simpleAssign(vscp, nodep);
+        } else {
+            iterateAndNextNull(lhsp);
+        }
+    }
+
     // VISITORS
     void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
@@ -290,25 +315,11 @@ class LifeVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        // Collect any used variables first, as lhs may also be on rhs
-        // Similar code in V3Dead
-        VL_RESTORER(m_sideEffect);
-        m_sideEffect = false;
-        m_lifep->clearReplaced();
-        iterateAndNextNull(nodep->rhsp());
-        if (m_lifep->replaced()) {
-            // We changed something, try to constant propagate, but don't delete the
-            // assignment as we still need nodep to remain.
-            V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
-        }
-        // Has to be direct assignment without any EXTRACTing.
-        if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
-            AstVarScope* const vscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
-            UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
-            m_lifep->simpleAssign(vscp, nodep);
-        } else {
-            iterateAndNextNull(nodep->lhsp());
-        }
+        processAssignment(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstSFormat* nodep) override {
+        // AstSFormat is just a special form of assignment
+        processAssignment(nodep, nodep->lhsp(), nodep->fmtp());
     }
     void visit(AstAssignDly* nodep) override {
         // V3Life doesn't understand time sense
