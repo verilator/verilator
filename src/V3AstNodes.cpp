@@ -282,7 +282,9 @@ bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
           || (m.m_keyword == VBasicDTypeKwd::LOGIC
               && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
         return false;
-    if (!(m.m_nrange == sp->m.m_nrange)) return false;
+    // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
+    if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
+    if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
     // Squash so NOSIGN == UNSIGNED
     if (numeric().isSigned() != sp->numeric().isSigned()) return false;
     if (!rangep() && !sp->rangep()) return true;
@@ -3002,6 +3004,11 @@ bool AstWildcardArrayDType::sameNode(const AstNode* samep) const {
 bool AstWildcardArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+}
+bool AstUnpackArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstUnpackArrayDType* const asamep = VN_DBG_AS(samep, UnpackArrayDType);
+    return hi() == asamep->hi() && rangep()->sameTree(asamep->rangep())
+           && subDTypep()->similarDType(asamep->subDTypep());
 }
 void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
