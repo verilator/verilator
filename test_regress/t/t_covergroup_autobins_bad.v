@@ -52,11 +52,22 @@ module t;
     }
   endgroup
 
+  // Error: four-state (x/z) value in bin range bound, and non-constant lower bound
+  covergroup cg5;
+    cp1: coverpoint cp_expr {
+      bins b_xz = {[4'bxxxx:4'hF]};                // four-state lower bound (match-code path)
+      ignore_bins ign_xz_lo = {[4'bxxxx:4'hF]};    // four-state lower bound (range-enum path)
+      ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};    // four-state upper bound (range-enum path)
+      ignore_bins ign_nclo = {[size_var:4]};       // non-constant lower bound
+    }
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
   cg3 cg3_inst = new;
   cg4 cg4_inst = new;
+  cg5 cg5_inst = new;
 
   initial $finish;
 endmodule

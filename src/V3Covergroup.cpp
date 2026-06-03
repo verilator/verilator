@@ -1166,6 +1166,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                  "range bounds must be constants");
                     return nullptr;
                 }
+                if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
+                    irp->v3error("Four-state (x/z) value in bin range bound; "
+                                 "range bounds must be two-state constants");
+                    return nullptr;
+                }
                 if (minConstp->toUQuad() == maxConstp->toUQuad()) {
                     // Single value
                     if (isWildcard) {
@@ -1516,7 +1521,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Find the sample() method and constructor
             m_sampleFuncp = VN_CAST(m_memberMap.findMember(nodep, "sample"), Func);
-            if (m_sampleFuncp) m_sampleFuncp->isCovergroupSample(true);
+            // V3LinkParse always synthesizes a sample() method for every covergroup, and the
+            // sampling-code generation below dereferences m_sampleFuncp unconditionally.
+            UASSERT_OBJ(m_sampleFuncp, nodep, "Covergroup missing synthesized sample() method");
+            m_sampleFuncp->isCovergroupSample(true);
             m_constructorp = VN_CAST(m_memberMap.findMember(nodep, "new"), Func);
             UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no"));
             UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no"));
