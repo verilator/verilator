@@ -8316,8 +8316,7 @@ class WidthVisitor final : public VNVisitor {
                     break;
                 case 'p':  // FALLTHRU
                 case 's':
-                    // Keep enum `%p`/`%s` behavior aligned with enum.name():
-                    // valid enum values print the mnemonic; invalid values print numeric fallback.
+                    // As with enum.name(): valid values print the mnemonic, else numeric
                     if (subargp) {
                         if (AstEnumDType* const enumDtp = formatEnumDType(subargp)) {
                             string fallbackFormat = "%0d";
@@ -8361,6 +8360,8 @@ class WidthVisitor final : public VNVisitor {
                 enumDtp = VN_CAST(varrefp->varp()->dtypep()->skipRefToEnump(), EnumDType);
             }
         }
+        // Enums > 64 bits have no name table (see enumMaxValue); format as plain numbers
+        if (enumDtp && enumDtp->width() > VL_QUADSIZE) return nullptr;
         return enumDtp;
     }
 

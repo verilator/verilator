@@ -944,20 +944,6 @@ std::string _vl_vsformat_time(std::string& tmp, T ld, int timeunit, bool left,
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define VL_VA_ARG_Q_(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
 
-static void _vl_vsformat_read_qint(va_list app, int lbits, QData& ld, std::vector<EData>& strwide,
-                                   WDataInP& lwp, int& lsb) VL_MT_SAFE {
-    if (lbits <= VL_QUADSIZE) {
-        ld = VL_VA_ARG_Q_(app, lbits);
-        strwide.resize(2);
-        VL_SET_WQ(strwide, ld);
-        lwp = strwide.data();
-    } else {
-        lwp = va_arg(app, WDataInP);
-        ld = VL_SET_QW(lwp);  // Keep the low 64 bits for time/numeric fallback paths.
-    }
-    lsb = lbits - 1;
-}
-
 void _vl_vsformat(std::string& output, const std::string& format, int argc,
                   va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
@@ -1113,9 +1099,14 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
             } else if (formatAttr == VL_VFORMATATTR_ENUM) {
+                // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
                 lbits = va_arg(ap, int);
-                _vl_vsformat_read_qint(ap, lbits, ld, strwide, lwp, lsb);
-                ++argn;  // Internal ABI: runtime enum args are followed by generated name string
+                ld = VL_VA_ARG_Q_(ap, lbits);
+                strwide.resize(2);
+                VL_SET_WQ(strwide, ld);
+                lwp = strwide.data();
+                lsb = lbits - 1;
+                ++argn;  // Enum value is followed by the generated name string argument
                 static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
                 enump = va_arg(ap, std::string*);
                 if (enump && !enump->empty()) {
@@ -1136,7 +1127,15 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 }
             } else {  // Numeric
                 lbits = va_arg(ap, int);
-                _vl_vsformat_read_qint(ap, lbits, ld, strwide, lwp, lsb);
+                if (lbits <= VL_QUADSIZE) {
+                    ld = VL_VA_ARG_Q_(ap, lbits);
+                    strwide.resize(2);
+                    VL_SET_WQ(strwide, ld);
+                    lwp = strwide.data();
+                } else {
+                    lwp = va_arg(ap, WDataInP);
+                    ld = VL_SET_QW(lwp);  // Low 64 bits, for %c/%t
+                }
                 if (fmt == 'p') {
                     if (widthSet && width == 0) {  // For %0p, IEEE our choice, use 'h%0h
                         output += "'h";
@@ -1147,6 +1146,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                         fmt = 'd';
                     }
                 }
+                lsb = lbits - 1;
                 if (widthSet && width == 0) {
                     while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
                 }

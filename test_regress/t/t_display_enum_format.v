@@ -19,10 +19,16 @@ module t (
     W64A = 64'h1,
     W64B = 64'h0000_0001_0000_0001
   } wide64_e;
+  // Enums > 64 bits are beyond enum.name() support, so %p/%s format numerically
+  typedef enum logic [95:0] {
+    W96A = 96'h1,
+    W96B = 96'hA_0000_0000_0000_0001
+  } wide96_e;
   typedef logic signed [4095:0] uvm_bitstream_t;
 
   my_e e;
   wide64_e e64;
+  wide96_e e96;
   logic [63:0] n64;
   uvm_bitstream_t bitstream_value;
 `define check(got, exp) do if ((got) != (exp)) begin \
@@ -110,6 +116,13 @@ module t (
     `check($sformatf("%s", e64), "8589934593");
     n64 = 64'h0000_0000_0000_0001;
     `check($sformatf("%0p", n64), "'h1");
+    // > 64-bit enums print numerically for %p (no name table support)
+    e96 = W96B;  // 10 * 2**64 + 1
+    if (empty_no_opt != "") e96 = W96A;  // Defeat constant folding
+    `check($sformatf("%p", e96), "184467440737095516161");
+    `check($sformatf("%0p", e96), "'ha0000000000000001");
+    `check($sformatf("%0d", e96), "184467440737095516161");
+    `check($sformatf("%0h", e96), "a0000000000000001");
     // Exercise display/write-family formatting path in addition to $sformatf checks.
     $display("display-valid:%s:%0d:%p", e, 7, e);
     $write("write-valid:%s:%0d:%p\n", e, 8, e);
@@ -162,6 +175,11 @@ module t (
     `check($sformatf(fmt, e, 4'hA, e), "3 a 3");
     fmt = {"%", "p", empty_no_opt};
     `check($sformatf(fmt, e64), "8589934593");
+    // > 64-bit enums use the non-ENUM format in runtime formats too
+    fmt = {"%", "p", empty_no_opt};
+    `check($sformatf(fmt, e96), "184467440737095516161");
+    fmt = {"%0d", empty_no_opt};
+    `check($sformatf(fmt, e96), "184467440737095516161");
     bitstream_value = 30;
     `check($sformatf("%0s%0t", "", bitstream_value), "30");
     bitstream_value = '0;
@@ -170,6 +188,10 @@ module t (
     bitstream_value = '0;
     bitstream_value[63:0] = 64'h0000_0001_0000_0001;
     `check($sformatf("%0s%0t", "", bitstream_value), "4294967297");
+    bitstream_value[7:0] = "A";
+    // verilator lint_off WIDTHTRUNC
+    `check($sformatf("%c", bitstream_value), "A");
+    // verilator lint_on WIDTHTRUNC
 
     $write("*-* All Finished *-*\n");
     $finish;
