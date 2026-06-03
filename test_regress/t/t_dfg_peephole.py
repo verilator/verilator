@@ -58,10 +58,10 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
         pdeclFh.write("output " + sig + ";\n")
         checkFh.write("if (ref." + sig + " != opt." + sig + ") {\n")
         checkFh.write("    std::cout << \"Mismatched " + sig + "\" << std::endl;\n")
-        checkFh.write("    std::cout << \"Ref: 0x\" << std::hex << (ref." + sig +
-                      " + 0) << std::endl;\n")
-        checkFh.write("    std::cout << \"Opt: 0x\" << std::hex << (opt." + sig +
-                      " + 0) << std::endl;\n")
+        checkFh.write("    std::cout << \"Ref: \" << VL_TO_STRING(ref." + sig +
+                      ") << std::endl;\n")
+        checkFh.write("    std::cout << \"Opt: \" << VL_TO_STRING(opt." + sig +
+                      ") << std::endl;\n")
         checkFh.write("    std::exit(1);\n")
         checkFh.write("}\n")
 

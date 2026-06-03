@@ -1270,6 +1270,58 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+
+            // Not of unsigned comparisons
+            if (DfgLt* const p = vtxp->srcp()->cast<DfgLt>()) {
+                APPLYING(REPLACE_NOT_LT) {
+                    replace(make<DfgGte>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGte* const p = vtxp->srcp()->cast<DfgGte>()) {
+                APPLYING(REPLACE_NOT_GTE) {
+                    replace(make<DfgLt>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGt* const p = vtxp->srcp()->cast<DfgGt>()) {
+                APPLYING(REPLACE_NOT_GT) {
+                    replace(make<DfgLte>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgLte* const p = vtxp->srcp()->cast<DfgLte>()) {
+                APPLYING(REPLACE_NOT_LTE) {
+                    replace(make<DfgGt>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+
+            // Not of signed comparisons
+            if (DfgLtS* const p = vtxp->srcp()->cast<DfgLtS>()) {
+                APPLYING(REPLACE_NOT_LTS) {
+                    replace(make<DfgGteS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGteS* const p = vtxp->srcp()->cast<DfgGteS>()) {
+                APPLYING(REPLACE_NOT_GTES) {
+                    replace(make<DfgLtS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGtS* const p = vtxp->srcp()->cast<DfgGtS>()) {
+                APPLYING(REPLACE_NOT_GTS) {
+                    replace(make<DfgLteS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgLteS* const p = vtxp->srcp()->cast<DfgLteS>()) {
+                APPLYING(REPLACE_NOT_LTES) {
+                    replace(make<DfgGtS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
         }
     }
 
@@ -2007,10 +2059,28 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgDiv* const vtxp) override {
         if (binary(vtxp)) return;
+
+        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            if (isEqOne(rConstp)) {
+                APPLYING(REMOVE_DIV_ONE) {
+                    replace(vtxp->lhsp());
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgDivS* const vtxp) override {
         if (binary(vtxp)) return;
+
+        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            if (isEqOne(rConstp)) {
+                APPLYING(REMOVE_DIVS_ONE) {
+                    replace(vtxp->lhsp());
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgGt* const vtxp) override {
@@ -2179,10 +2249,48 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgMul* const vtxp) override {
         if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (isZero(lConstp)) {
+                APPLYING(REMOVE_MUL_ZERO) {
+                    replace(makeZero(flp, vtxp->dtype()));
+                    return;
+                }
+            }
+            if (isEqOne(lConstp)) {
+                APPLYING(REMOVE_MUL_ONE) {
+                    replace(rhsp);
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgMulS* const vtxp) override {
         if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (isZero(lConstp)) {
+                APPLYING(REMOVE_MULS_ZERO) {
+                    replace(makeZero(flp, vtxp->dtype()));
+                    return;
+                }
+            }
+            if (isEqOne(lConstp)) {
+                APPLYING(REMOVE_MULS_ONE) {
+                    replace(rhsp);
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgEq* const vtxp) override {
@@ -2493,6 +2601,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_SUB) {
+                replace(makeZero(flp, vtxp->dtype()));
+                return;
+            }
+        }
 
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             if (rConstp->isZero()) {

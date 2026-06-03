@@ -56,6 +56,7 @@ class LinkParseVisitor final : public VNVisitor {
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstRSProd* m_rsProdp = nullptr;  // Current randsequence production
     AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
     AstNodeStmt* m_blockAddAutomaticStmtp = nullptr;  // Initial statements to add to block
     AstNodeStmt* m_blockAddStaticStmtp = nullptr;  // Initial statements to add to block
@@ -69,6 +70,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_randSequenceNum = 0;  // RandSequence uniqify number
     VLifetime m_lifetime = VLifetime::STATIC_IMPLICIT;  // Propagating lifetime
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
+    bool m_hasTimingControl = false;  // If current task has timing control
     bool m_moduleWithGenericIface = false;  // If current module contains generic interface
     std::set<AstVar*> m_portDups;  // Non-ANSI port datatype duplicating input/output decls
 
@@ -248,6 +250,9 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         m_lifetimeAllowed = true;
+        VL_RESTORER(m_hasTimingControl);
+        m_hasTimingControl
+            = nodep->exists([](const AstNode* const nodep) { return nodep->isTimingControl(); });
         if (!nodep->lifetime().isNone()) {
             m_lifetime = nodep->lifetime().makeImplicit();
         } else {
@@ -382,7 +387,13 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }
         } else if (m_ftaskp) {
-            if (!nodep->lifetime().isAutomatic()) nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
+            // Variables in static tasks with timing control can be used after the task has ended
+            // with use of join..fork_none, so they need to be static
+            if (m_ftaskp->lifetime().isStatic() && m_hasTimingControl) {
+                nodep->lifetime(VLifetime::STATIC_IMPLICIT);
+            } else {
+                nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
+            }
         } else if (nodep->lifetime().isNone()) {
             // lifetime shouldn't be unknown, set static if none
             nodep->lifetime(VLifetime::STATIC_IMPLICIT);
@@ -405,7 +416,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Mark parameters declared inside interfaces
-        if (nodep->isParam() && m_inInterface) { nodep->isIfaceParam(true); }
+        if (nodep->isParam() && m_inInterface) nodep->isIfaceParam(true);
         if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNode* dtypep = nodep->valuep();
@@ -449,7 +460,8 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        m_moduleWithGenericIface |= VN_IS(nodep->childDTypep(), IfaceGenericDType);
+        const AstNodeDType* const dtypep = nodep->childDTypep();
+        m_moduleWithGenericIface |= dtypep && VN_IS(dtypep->elemDTypep(false), IfaceGenericDType);
 
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
@@ -498,8 +510,10 @@ class LinkParseVisitor final : public VNVisitor {
                 // Earlier moved any valuep() under the duplicate to the IO declaration
                 UINFO(9, "VarInit case0 " << nodep);
             } else if (nodep->isParam() || nodep->isGenVar()
-                       || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))) {
-                // 1. Parameters and function inputs: It's a default to use if not overridden
+                       || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))
+                       || (m_rsProdp && nodep->isNonOutput())) {
+                // 1. Parameters, function inputs, and randsequence production formal
+                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden
                 UINFO(9, "VarInit case1 " << nodep);
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
                        && !nodep->isInput()) {
@@ -887,6 +901,11 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->name(newName);
             nodep->origName(newName);
         }
+        iterateChildren(nodep);
+    }
+    void visit(AstRSProd* nodep) override {
+        VL_RESTORER(m_rsProdp);
+        m_rsProdp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNodeBlock* nodep) override {

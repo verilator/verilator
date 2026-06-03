@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator: FSM register wrapper VLT descriptors
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" -reset "rst_ni" -reset_value "ResetValue"
+fsm_register_wrapper -module "prim_flop" -d "d_i" -q "q_o" -clock "clk_i" -reset "rst_ni" -reset_value "ResetValue"
+fsm_register_wrapper -module "prim_sparse_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" -reset "rst_ni" -reset_value "ResetValue"
+fsm_register_wrapper -module "odd_fsm_flop" -d "din" -q "dout" -clock "clk" -reset "rst_n" -reset_value "ResetValue"

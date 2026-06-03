@@ -2164,9 +2164,12 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (nodep->fvarp())
             nodep->fvarp()->v3warn(E_UNSUPPORTED,
                                    "Unsupported: randsequence production function variable");
-        if (nodep->portsp())
-            nodep->portsp()->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: randsequence production function ports");
+        // Mark formal ports as port-checked so the primary resolve pass does not
+        // flag them with "does not appear in port list" -- V3RandSequence will
+        // later move them onto the generated task as real input ports.
+        for (AstNode* itp = nodep->portsp(); itp; itp = itp->nextp()) {
+            VN_AS(itp, Var)->user4(true);
+        }
         iterateChildren(nodep);
     }
 
@@ -3550,24 +3553,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_ds.init(m_curSymp);
         iterateNull(nodep);
     }
-    static const AstNodeDType* getElemDTypep(const AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
-        while (true) {
-            if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
-                dtypep = adtypep->subDTypep()->skipRefp();
-            } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
-                dtypep = adtypep->subDTypep()->skipRefp();
-            } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
-                dtypep = adtypep->subDTypep()->skipRefp();
-            } else if (const AstUnpackArrayDType* const adtypep
-                       = VN_CAST(dtypep, UnpackArrayDType)) {
-                dtypep = adtypep->subDTypep()->skipRefp();
-            } else {
-                break;
-            }
-        }
-        return dtypep;
-    }
     static const AstNodeDType* getExprDTypep(const AstNodeExpr* selp) {
         while (const AstNodePreSel* const sp = VN_CAST(selp, NodePreSel)) selp = sp->fromp();
         if (const AstMemberSel* const sp = VN_CAST(selp, MemberSel)) {
@@ -3579,7 +3564,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             dtypep = nodep->childDTypep();
                             return nodep->name() == name;
                         });
-                    if (found) return getElemDTypep(dtypep);
+                    if (found) return dtypep->elemDTypep();
                     selp->v3error("Class " << classRefp->prettyNameQ()
                                            << " does not contain field " << selp->prettyNameQ());
                 } else {
@@ -3589,7 +3574,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
         } else if (const AstNodeVarRef* const varRefp = VN_CAST(selp, NodeVarRef)) {
-            return getElemDTypep(varRefp->varp()->childDTypep());
+            return varRefp->varp()->childDTypep()->elemDTypep();
         }
         return nullptr;
     }
@@ -3614,7 +3599,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
              pinp = VN_CAST(pinp->nextp(), Pin),
                            modIfaceVarp = getNextVarp(modIfaceVarp->nextp())) {
             if (modIfaceVarp->varType() != VVarType::IFACEREF
-                || !VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) {
+                || !VN_IS(modIfaceVarp->childDTypep()->elemDTypep(), IfaceGenericDType)) {
                 continue;
             }
             AstNode* exprp = pinp->exprp();
@@ -3659,7 +3644,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (varRefp) {
                 const AstVar* const varp = varRefp->varp();
                 if (const AstIfaceRefDType* const refp
-                    = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
+                    = VN_CAST(varp->childDTypep()->elemDTypep(), IfaceRefDType)) {
                     AstIface* const ifacep = VN_AS(refp->cellp()->modp(), Iface);
                     AstIfaceRefDType* newIfaceRefp;
                     if (refp->modportp()) {
@@ -5451,7 +5436,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
 
-        if (packedArrayDtp) { m_packedArrayDtp = packedArrayDtp; }
+        if (packedArrayDtp) m_packedArrayDtp = packedArrayDtp;
     }
     void visit(AstMemberSel* nodep) override {
         // checkNoDot not appropriate, can be under a dot

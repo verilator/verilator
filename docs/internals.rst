@@ -937,13 +937,14 @@ macro-task's dataset fits in one core's local caches.
 
 To achieve spatial locality, we tag each variable with the set of
 macro-tasks that access it. Let's call this set the "footprint" of that
-variable. The variables in a given module have a set of footprints. We can
-order those footprints to minimize the distance between them (distance is
-the number of macro-tasks that are different across any two footprints) and
-then emit all variables into the struct in ordered-footprint order.
+variable. The variables in a given module have a set of footprints. We group
+variables with identical non-empty footprints, emit those groups in deterministic
+footprint-key order, then emit variables with no footprint information last.
 
-The footprint ordering is literally the traveling salesman problem, and we
-use a TSP-approximation algorithm to get close to an optimal sort.
+The first emitted variable in each footprint group is aligned to a cache-line
+boundary. This avoids false sharing between different macro-task footprints
+without building a complete pairwise-distance graph over all footprints, which
+would use excessive memory on very large models.
 
 This is an old idea. Simulators designed at DEC in the early 1990s used
 similar techniques to optimize both single-thread and multithread modes.
@@ -1768,6 +1769,12 @@ LCOV_EXCL_BR_LINE``.
 The assertions ``UASSERT`` and similar are automatically excluded from
 coverage, and as such should not require exclusion meta comments.
 
+As getting to complete code coverage typically takes many passes,
+developers should please iterate coverage improvements using a personal
+machine, or a personal branch on GitHub with personal action runners,
+rather than the Verilator GitHub runners, to avoid lots of mail to watchers
+and CI queue blockage.
+
 
 Fuzzing
 -------
@@ -2196,6 +2203,41 @@ When the bisection ends, the first value that makes the discriminator
 command fail is printed, which identifies the exact offending application
 of the transform.
 
+Debugging Non-Deterministic Results
+-----------------------------------
+
+The Verilator binary should be deterministic, producing the same Verilated
+C++ and stdout when run multiple times with the same inputs. A common
+source of non-determinism is (mis-)use of pointers in container
+comparisons, causing arbitrary changes im memory layout to make container
+comparisons differ, and in turn creating differences in Ast layout, and
+ultimately different C++ code.
+
+To debug this, compile Verilator with the `VL_ALLOC_RANDOM_CHECKS` define,
+then Verilator may be run with a seed e.g. `-debug-alloc-random 22` and
+`-debug-alloc-random 33` which will randomly change the memory allocation
+order. If multiple seeds are run, `verilator_difftree` may then be used to
+see where netlists start to differ. Once the Ast difference is determined,
+the debugging tips above can then further isolate the C++ code causing a
+specific node to be created or changed.
+
+The typical fix is to add a comparison operator to the problematic
+container, e.g. compare using `AstNodeComparator` or by `name()`.
+
+The following script is an example of this debugging:
+
+.. code-block:: bash
+
+   # Before this: ./configure CXX="g++ -DVL_ALLOC_RANDOM_CHECKS" && make -j
+   # Example script for finding nondeterminism
+   cd $VERILATOR_ROOT
+   set -e
+   t=t_split_var_0  # Test name
+   test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
+   test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
+   bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@
+
+
 Adding a New Feature
 ====================
 
@@ -2261,9 +2303,6 @@ IEEE 1800-2023 31 Timing checks
 
 IEEE 1800-2023 32 SDF annotation
    No longer relevant with static timing analysis tools.
-
-IEEE 1800-2023 33 Config
-   Little industry use.
 
 
 Test Driver

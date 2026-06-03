@@ -13,7 +13,7 @@
 module t_assert;
   logic clk;
   logic zeroize;
-  logic [7:0] key_mem [0:0];
+  logic [7:0] key_mem[0:0];
   assert property (@(posedge clk) zeroize |=> (key_mem[0] == 0));
   initial force zeroize = 0;
 endmodule
@@ -22,7 +22,7 @@ module t (
     input clk
 );
 
-  t_assert t_assert_i();
+  t_assert t_assert_i ();
 
   integer cyc = 0;
   localparam logic [95:0] WIDE_INIT = 96'h12345678_9abcdef0_13579bdf;
@@ -32,7 +32,7 @@ module t (
   tri [3:0] bus = in;
   logic [95:0] wide_src;
   wire [95:0] wide_bus = wide_src;
-  logic [7:0] unpacked [0:3];
+  logic [7:0] unpacked[0:3];
 
   int never_driven;
   int never_forced;

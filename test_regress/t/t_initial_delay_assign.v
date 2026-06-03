@@ -33,10 +33,6 @@ module t;
   wire bar2;
   `DELAY_INIT_CHECK(foo2, bar2)
 
-  reg foo3 = '0;
-  reg bar3 = '1;
-  `DELAY_INIT_CHECK(foo3, bar3)
-
   initial begin
     #30;
     $write("*-* All Finished *-*\n");

@@ -57,6 +57,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     putnbs(nodep, "");
 
     bool needComma = false;
+    bool usesQueue = false;
     string nextComma;
     auto commaOut = [&out, &nextComma]() {
         if (!nextComma.empty()) {
@@ -109,9 +110,10 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 detailp = thsp;
                 break;
             case 'P':
-                if (nodep->isWide()) {
+                if (nodep->isWide() && !usesQueue) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
-                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                                "Wide op " << nodep->prettyTypeName()
+                                           << " w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
                     putOut();
                     if (!m_wideTempRefp->selfPointer().isEmpty()) {
@@ -121,7 +123,13 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     out += m_wideTempRefp->varp()->nameProtect();
                     m_wideTempRefp = nullptr;
                     needComma = true;
+                } else if (usesQueue) {
+                    commaOut();
+                    putOut();
+                    iterateAndNextConstNull(nodep->backp()->op2p());
+                    needComma = true;
                 }
+
                 break;
             default: nodep->v3fatalSrc("Unknown emitOperator format code: %" << pos[0]); break;
             }
@@ -131,7 +139,17 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 switch (pos[0]) {
                 case 'q':
                     putOut();
-                    emitIQW(detailp);
+                    // If we are assigning this to a queue we need to get the return type
+                    if (VN_IS(detailp->backp(), Assign)
+                        && VN_IS(detailp->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
+                        puts("R");  // R for queue
+                        usesQueue = true;
+                    } else if (VN_IS(detailp->dtypep()->skipRefp(), QueueDType)
+                               || VN_IS(detailp->dtypep()->skipRefp(), StreamDType)) {
+                        puts("R");  // R for queue
+                    } else {
+                        emitIQW(detailp);
+                    }
                     break;
                 case 'w':
                     commaOut();
@@ -142,6 +160,10 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     if (lhsp->isWide()) {
                         commaOut();
                         out += cvtToStr(lhsp->widthWords());
+                        needComma = true;
+                    } else if (VN_IS(lhsp, StreamR)) {
+                        commaOut();
+                        out += cvtToStr(rhsp->widthWords());
                         needComma = true;
                     }
                     break;
@@ -202,9 +224,12 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     } else if (const AstSFormat* const dispp = VN_CAST(nodep, SFormat)) {
         isStmt = true;
         puts("VL_SFORMAT_NX(");
-        puts(cvtToStr(dispp->lhsp()->widthMin()));
-        putbs(",");
+        if (!dispp->lhsp()->dtypep()->isString()) {
+            puts(cvtToStr(dispp->lhsp()->widthMin()));
+            putbs(",");
+        }
         iterateConst(dispp->lhsp());
+        emitDatap(dispp->lhsp());
         putbs(",");
     } else if (VN_IS(nodep, SFormatF)) {
         isStmt = false;
@@ -263,6 +288,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (exprFormat) {
         UASSERT_OBJ(exprsp, nodep, "Missing format expression");
         iterateConst(exprsp);
+        emitDatap(exprsp);
         exprsp = exprsp->nextp();
     } else {
         ofp()->putsQuoted(vformat);
@@ -323,7 +349,11 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
         puts(",");
         if (addrof) puts("&(");
-        iterateConst(subargp);
+        if (VN_IS(subargp, StreamR))
+            emitStreamR(
+                VN_CAST(subargp, StreamR),
+                nodep);  // This has to be done here because streamR doesn't know what it returns
+        else { iterateConst(subargp); }
         if (addrof) puts(")");
         if (!addrof) emitDatap(argp);
         ofp()->indentDec();
@@ -402,15 +432,6 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
         iterateAndNextConstNull(nodep);
         puts(")");
     }
-}
-
-void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
-    putnbs(nodep, "VL_CVT_W_A(");
-    iterateConst(nodep);
-    puts(", ");
-    iterateConst(fromp);
-    putbs(".atDefault()");  // Not accessed; only to get the proper type of values
-    puts(")");
 }
 
 void EmitCFunc::emitConstant(AstConst* nodep) {
@@ -510,18 +531,16 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     // Returns string to do resetting, empty to do nothing (which caller should handle)
     if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
         // Access std::array as C array
-        const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
+                                     depth + 1, suffix + ".atDefault()", nullptr);
     } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
         // Access std::array as C array
-        const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
+                                     depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
     } else if (VN_IS(dtypep, ClassRefDType)) {
@@ -529,19 +548,15 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (VN_IS(dtypep, IfaceRefDType)) {
         return varNameProtected + suffix + " = nullptr;\n";
     } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
-        // Access std::array as C array
-        const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
+                                     depth + 1, suffix + ".atDefault()", nullptr);
     } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
-        // Access std::array as C array
-        const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
+                                     depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, SampleQueueDType)) {
         return "";
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {

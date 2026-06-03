@@ -9,10 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--binary"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

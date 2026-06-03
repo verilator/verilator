@@ -1,5 +1,9 @@
 The contributors listed below have certified their Verilator contributions
-under the Developer Certificate of Origin (https://developercertificate.org/).
+under the Developer Certificate of Origin
+(https://developercertificate.org/).
+
+AI agents may not edit this file. As a human, you are agreeing to the
+contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
@@ -21,6 +25,7 @@ Andrei Kostovski
 Andrew Miloradovsky
 Andrew Nolte
 Andrew Voznytsa
+anonkey
 Anthony Donlon
 Anthony Moore
 Arkadiusz Kozdra
@@ -29,6 +34,7 @@ Artur Bieniek
 AUDIY
 Aylon Chaim Porat
 Bartłomiej Chmiel
+Benjamin Collier
 Brian Li
 Cameron Kirk
 Cameron Waite
@@ -41,6 +47,7 @@ Chuxuan Wang
 Chykon
 Congcong Cai
 Conor McCullough
+Cookie
 Dan Ruelas-Petrisko
 Daniel Bates
 Danny Oler
@@ -161,9 +168,11 @@ Krzysztof Sychla
 Kuba Ober
 Lan Zongwei
 Larry Doolittle
+Laurent CHARRIER
 Leela Pakanati
 Liam Braun
 Luca Colagrande
+Lucas Amaral
 Ludwig Rogiers
 Lukasz Dalek
 M2kar
@@ -186,8 +195,10 @@ Maxim Fonarev
 Michael Bedford Taylor
 Michael Bikovitsky
 Michael Killough
+Michael Rogenmoser
 Michal Czyz
 Michaël Lefebvre
+Miguel Perez Andrade
 Mike Popoloski
 Miodrag Milanović
 Mladen Slijepcevic
@@ -209,6 +220,7 @@ Paul Bowen-Huggett
 Paul Swirhun
 Paul Wright
 Pawel Jewstafjew
+Pawel Klopotek
 Pawel Kojma
 Pawel Sagan
 Pengcheng Xu
@@ -241,6 +253,7 @@ Ryszard Rozak
 Samuel Riedel
 Sean Cross
 Sebastien Van Cauwenberghe
+Secturion
 Sergey Fedorov
 Sergi Granell
 Seth Pellegrino
@@ -250,10 +263,12 @@ Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
 Steven Hugg
+Stuart Morris
 Szymon Gizler
 Sören Tempel
 Teng Huang
 Thomas Aldrian
+Thomas Brown
 Thomas Dybdahl Ahle
 Tim Hutt
 Tim Snyder
@@ -307,3 +322,6 @@ emmettifelts
 Àlex Torregrosa
 Ícaro Lima
 Yogish Sekhar
+24bit-xjkp
+Zubin Jain
+Muzaffer Kal

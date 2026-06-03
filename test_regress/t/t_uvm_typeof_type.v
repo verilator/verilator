@@ -43,13 +43,13 @@ class uvm_reg_item extends uvm_sequence_item;
 endclass
 
 virtual class uvm_sequence #(
-  type REQ = uvm_sequence_item,
-  type RSP = REQ
+    type REQ = uvm_sequence_item,
+    type RSP = REQ
 ) extends uvm_object;
 endclass
 
 class uvm_reg_sequence #(
-  type BASE = uvm_sequence#(uvm_reg_item)
+    type BASE = uvm_sequence#(uvm_reg_item)
 ) extends BASE;
   function new;
     factory.register(this, "uvm_reg_sequence");

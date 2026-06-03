@@ -23,7 +23,7 @@ module t;
     foo.wait_dynamically();
     if ($time != `DELAY) $stop;
     Foo::wait_statically();
-    if ($time != 2*`DELAY) $stop;
+    if ($time != 2 * `DELAY) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

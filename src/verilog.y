@@ -66,12 +66,6 @@ static void STRENGTH_LIST(AstNode* listp, AstStrengthSpec* specp) {
         assignp->strengthSpecp(specp->backp() ? specp->cloneTree(false) : specp);
     }
 }
-static void STRENGTHUNSUP(AstStrengthSpec* nodep) {
-    if (!nodep) return;
-    BBUNSUP((nodep->fileline()), "Unsupported: Strength specifier on this gate type");
-    nodep->deleteTree();
-}
-
 //======================================================================
 // Statics (for here only)
 
@@ -245,6 +239,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
 %token<fl>              yVLT_COVERAGE_ON            "coverage_on"
 %token<fl>              yVLT_FORCEABLE              "forceable"
+%token<fl>              yVLT_FSM_REGISTER_WRAPPER   "fsm_register_wrapper"
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
@@ -275,6 +270,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_BLOCK    "--block"
 %token<fl>              yVLT_D_CONTENTS "--contents"
 %token<fl>              yVLT_D_COST     "--cost"
+%token<fl>              yVLT_D_CLOCK    "--clock"
+%token<fl>              yVLT_D_D        "--d"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
 %token<fl>              yVLT_D_HIER_DPI "--hier-dpi"
@@ -287,6 +284,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_PARAM    "--param"
 %token<fl>              yVLT_D_PORT     "--port"
 %token<fl>              yVLT_D_RULE     "--rule"
+%token<fl>              yVLT_D_Q        "--q"
+%token<fl>              yVLT_D_RESET    "--reset"
+%token<fl>              yVLT_D_RESET_VALUE "--reset_value"
 %token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
@@ -1385,9 +1385,9 @@ port<nodep>:                    // ==IEEE: port
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, $<fl>4, "", *$2, *$4};
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
-        |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
+        |       portDirNetE yINTERFACE                           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; GRAMMARP->createGenericIface($3, $4, $5); }
-        |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
+        |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { $$ = $5; GRAMMARP->createGenericIface($5, $6, $7, $<fl>4, *$4); }
         //
         |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE
@@ -3595,10 +3595,12 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       fexprLvalue yP_LTE cycle_delay expr ';'
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
         //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
-        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
-                        { $$ = new AstAssignCont{$1, $2, $5, $4}; }
+        |       yASSIGN variable_lvalue '=' delay_or_event_controlE expr ';'
+                        { $$ = new AstAssignCont{$1, $2, $5, $4};
+                          $1->v3warn(IEEEMAYDEPRECATE, "Feature may be deprecated in future IEEE standard"); v3Global.setHasAssignDeassign(); }
         |       yDEASSIGN variable_lvalue ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); DEL($2); }
+                        { $$ = new AstDeassign{$1, $2};
+                          $1->v3warn(IEEEMAYDEPRECATE, "Feature may be deprecated in future IEEE standard"); v3Global.setHasAssignDeassign(); }
         |       yFORCE variable_lvalue '=' expr ';'
                         { $$ = new AstAssignForce{$1, $2, $4}; v3Global.setHasForceableSignals(); }
         |       yRELEASE variable_lvalue ';'
@@ -5605,12 +5607,12 @@ let_port_item<varp>:  // IEEE: let_port_Item
 // Gate declarations
 
 gateDecl<nodep>:
-                yBUF    driveStrengthE delay_controlE gateBufList ';'     { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
-        |       yBUFIF0 driveStrengthE delay_controlE gateBufif0List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
-        |       yBUFIF1 driveStrengthE delay_controlE gateBufif1List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+                yBUF    driveStrengthE delay_controlE gateBufList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yBUFIF0 driveStrengthE delay_controlE gateBufif0List ';'  { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yBUFIF1 driveStrengthE delay_controlE gateBufif1List ';'  { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
         |       yNOT    driveStrengthE delay_controlE gateNotList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
-        |       yNOTIF0 driveStrengthE delay_controlE gateNotif0List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
-        |       yNOTIF1 driveStrengthE delay_controlE gateNotif1List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yNOTIF0 driveStrengthE delay_controlE gateNotif0List ';'  { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yNOTIF1 driveStrengthE delay_controlE gateNotif1List ';'  { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
         |       yAND    driveStrengthE delay_controlE gateAndList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
         |       yNAND   driveStrengthE delay_controlE gateNandList ';'    { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
         |       yOR     driveStrengthE delay_controlE gateOrList ';'      { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
@@ -6562,9 +6564,11 @@ property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item
                 id variable_dimensionListE
-                        { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
+                        { VARDECL(VAR);
+                          $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
-                        { $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                        { VARDECL(VAR);
+                          $$ = VARDONEA($<fl>1, *$1, $2, $4);
                           BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
@@ -6737,7 +6741,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // Expanded below
         //
                 yNOT pexpr
-                        { $$ = new AstLogNot{$1, $2}; }
+                        { $$ = new AstLogNot{$1, $2, /*fromProperty=*/true}; }
         |       ySTRONG '(' sexpr ')'
                         { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
         |       yWEAK '(' sexpr ')'
@@ -6755,10 +6759,12 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE-2012: yIF and yCASE
         |       property_exprCaseIf                     { $$ = $1; }
         //
+        //                      // IEEE: "sequence_expr yP_POUNDMINUSPD pexpr" (followed-by #-#/#=#)
+        //                      // Reuses AstImplication with m_isFollowedBy to carry non-vacuous-fail polarity
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, true, true}; }
         |       ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: #=# (in property expression)"); DEL($3); }
+                        { $$ = new AstImplication{$2, $1, $3, false, true}; }
         |       yNEXTTIME pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: nexttime (in property expression)"); }
         |       yS_NEXTTIME pexpr
@@ -6776,7 +6782,10 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_ALWAYS pexpr
                         { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
         |       yS_EVENTUALLY pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
+                        {
+                            $$ = new AstSEventually{$1, $2};
+                            PARSEP->importIfInStd($1, "process", true);
+                        }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
         |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
@@ -6795,13 +6804,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr yIFF pexpr
                         { $$ = new AstLogEq{$2, $1, $3}; }
         |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); DEL($3); }
+                        { $$ = new AstAbortOn{$1, VAbortKind::ACCEPT_ON, $3, $5}; }
         |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: reject_on (in property expression)"); DEL($3); }
+                        { $$ = new AstAbortOn{$1, VAbortKind::REJECT_ON, $3, $5}; }
         |       ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_accept_on (in property expression)"); DEL($3); }
+                        { $$ = new AstAbortOn{$1, VAbortKind::SYNC_ACCEPT_ON, $3, $5}; }
         |       ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_reject_on (in property expression)"); DEL($3); }
+                        { $$ = new AstAbortOn{$1, VAbortKind::SYNC_REJECT_ON, $3, $5}; }
         //
         //                      // IEEE: "property_instance"
         //                      // Looks just like a function/method call
@@ -6853,15 +6862,15 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: goto_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ']'
                         { $$ = new AstSGotoRep{$<fl>2, $1, $3}; }
-        //                      // IEEE: goto_repetition (range form -- unsupported)
+        //                      // IEEE: goto_repetition (range form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAMINUSGT constExpr ':' constExpr ']'
-                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [-> range goto repetition"); DEL($3); DEL($5); }
+                        { $$ = new AstSGotoRep{$<fl>2, $1, $3, $5}; }
         //                      // IEEE: nonconsecutive_repetition (single count form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ']'
                         { $$ = new AstSNonConsRep{$<fl>2, $1, $3}; }
-        //                      // IEEE: nonconsecutive_repetition (range form -- unsupported)
+        //                      // IEEE: nonconsecutive_repetition (range form)
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAEQ constExpr ':' constExpr ']'
-                        { $$ = $1; BBUNSUP($<fl>2, "Unsupported: [= range nonconsecutive repetition"); DEL($3); DEL($5); }
+                        { $$ = new AstSNonConsRep{$<fl>2, $1, $3, $5}; }
         //                      // All boolean_abbrev forms are now handled above:
         //                      // [*N], [*N:M], [+], [*] via AstSConsRep
         //                      // [->N], [->M:N] via AstSGotoRep
@@ -6949,8 +6958,8 @@ sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
 
 //      boolean_abbrev -- all forms now handled directly in sexpr rule:
 //                      // IEEE: consecutive_repetition -- [*N], [*N:M], [+], [*] via AstSConsRep
-//                      // IEEE: goto_repetition -- [->N] via AstSGotoRep, [->M:N] unsupported
-//                      // IEEE: nonconsecutive_repetition -- [=N] via AstSNonConsRep, [=M:N] unsupported
+//                      // IEEE: goto_repetition -- [->N], [->M:N] via AstSGotoRep
+//                      // IEEE: nonconsecutive_repetition -- [=N], [=M:N] via AstSNonConsRep
 
 //************************************************
 // Covergroup
@@ -8282,6 +8291,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
+                        { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule
                         { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
         ;
@@ -8320,6 +8331,28 @@ vltDCost<nump>:  // --cost <arg>
 
 vltDFile<strp>:  // --file <arg>
                 yVLT_D_FILE str                         { $$ = $2; }
+        ;
+
+vltDFsmClock<strp>:  // --clock <arg>
+                yVLT_D_CLOCK str                        { $$ = $2; }
+        ;
+
+vltDFsmD<strp>:  // --d <arg>
+                yVLT_D_D str                            { $$ = $2; }
+        ;
+
+vltDFsmQ<strp>:  // --q <arg>
+                yVLT_D_Q str                            { $$ = $2; }
+        ;
+
+vltDFsmResetE<strp>:  // [--reset <arg>]
+                /* empty */                             { static string empty; $$ = &empty; }
+        |       yVLT_D_RESET str                        { $$ = $2; }
+        ;
+
+vltDFsmResetValueE<strp>:  // [--reset_value <arg>]
+                /* empty */                             { static string empty; $$ = &empty; }
+        |       yVLT_D_RESET_VALUE str                  { $$ = $2; }
         ;
 
 vltDHierDpi<strp>:  // --hier-dpi <arg>

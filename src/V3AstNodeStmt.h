@@ -539,6 +539,16 @@ public:
     }
     // but isPure()  true
 };
+class AstDeassign final : public AstNodeStmt {
+    // Procedural 'deassign' statement
+    // @astgen op1 := lhsp : AstNodeExpr
+public:
+    AstDeassign(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_Deassign(fl) {
+        this->lhsp(lhsp);
+    }
+    ASTGEN_MEMBERS_AstDeassign;
+};
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
@@ -1127,6 +1137,12 @@ public:
         fmtp(newp);
         this->lhsp(lhsp);
     }
+    AstSFormat(FileLine* fl, AstSFormatF* fmtp, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_SFormat(fl) {
+        this->fmtp(fmtp);
+        this->lhsp(lhsp);
+        fmtp->hidden(true);
+    }
     ASTGEN_MEMBERS_AstSFormat;
     const char* broken() const override {
         BROKEN_RTN(!fmtp());
@@ -1445,7 +1461,7 @@ public:
     };
 
 private:
-    enum operation m_operation;
+    operation m_operation;
 
 public:
     AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,

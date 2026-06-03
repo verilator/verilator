@@ -130,22 +130,22 @@ module Test (  /*AUTOARG*/
     wdata_d1r <= wdata;
   end
 
-  reg [31:0] csr0000;
-  reg [31:0] csr0001;
-  reg [31:0] csr0002;
-  reg [31:0] csr0003;
-  reg [31:0] csr0004;
-  reg [31:0] csr0005;
-  reg [31:0] csr0006;
-  reg [31:0] csr0007;
-  reg [31:0] csr0008;
-  reg [31:0] csr0009;
-  reg [31:0] csr000a;
-  reg [31:0] csr000b;
-  reg [31:0] csr000c;
-  reg [31:0] csr000d;
-  reg [31:0] csr000e;
-  reg [31:0] csr000f;
+  reg [31:0] csr0000 = 32'he172d365;
+  reg [31:0] csr0001 = 32'h35cc25e2;
+  reg [31:0] csr0002 = 32'haf48436e;
+  reg [31:0] csr0003 = 32'h135e55e4;
+  reg [31:0] csr0004 = 32'h5fd6e48a;
+  reg [31:0] csr0005 = 32'hb07d34ad;
+  reg [31:0] csr0006 = 32'h2aa05deb;
+  reg [31:0] csr0007 = 32'hfe97b680;
+  reg [31:0] csr0008 = 32'h960f20bb;
+  reg [31:0] csr0009 = 32'h251129f0;
+  reg [31:0] csr000a = 32'hef3d2f93;
+  reg [31:0] csr000b = 32'hef4bc127;
+  reg [31:0] csr000c = 32'h3dfecb10;
+  reg [31:0] csr000d = 32'h1b4690f5;
+  reg [31:0] csr000e = 32'ha07822ab;
+  reg [31:0] csr000f = 32'hf817cbf6;
   wire [31:0] csr0010 = 32'h33675230;
   wire [31:0] csr0011 = 32'h00fa2144;
   wire [31:0] csr0012 = 32'h6a5e8e10;
@@ -162,25 +162,6 @@ module Test (  /*AUTOARG*/
   wire [31:0] csr001d = 32'h02e7b33c;
   wire [31:0] csr001e = 32'h12101533;
   wire [31:0] csr001f = 32'h2cc1cce5;
-  initial begin
-    csr0000 = 32'he172d365;
-    csr0001 = 32'h35cc25e2;
-    csr0002 = 32'haf48436e;
-    csr0003 = 32'h135e55e4;
-    csr0004 = 32'h5fd6e48a;
-    csr0005 = 32'hb07d34ad;
-    csr0006 = 32'h2aa05deb;
-    csr0007 = 32'hfe97b680;
-    csr0008 = 32'h960f20bb;
-    csr0009 = 32'h251129f0;
-    csr000a = 32'hef3d2f93;
-    csr000b = 32'hef4bc127;
-    csr000c = 32'h3dfecb10;
-    csr000d = 32'h1b4690f5;
-    csr000e = 32'ha07822ab;
-    csr000f = 32'hf817cbf6;
-  end
-
   always_ff @(posedge clk) begin
     if (we_d1r && sel_d1r == 16'h0000) csr0000 <= wdata_d1r;
     if (we_d1r && sel_d1r == 16'h0001) csr0001 <= wdata_d1r;

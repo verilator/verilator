@@ -29,11 +29,11 @@ class Foo;
         my_bit = 1;
       end : finish_before
     join_none
-    #1 $display("After fork."); // Check if there's no skipped coroutine
+    #1 $display("After fork.");  // Check if there's no skipped coroutine
   endtask
 endclass
 
-module test();
+module test;
   initial begin
     Foo::fork_w_zerodly($time);
     $write("*-* All Finished *-*\n");

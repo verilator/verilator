@@ -15,7 +15,7 @@ module warn_edge (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   // Plain edge-sensitive next-state logic should warn even when the selector
@@ -46,7 +46,7 @@ module warn_case_next (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   // Plain always also warns for the near-supported case(state_d) style.
@@ -76,7 +76,7 @@ module warn_default_incl (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/ /*verilator fsm_arc_include_cond*/;
+  state_t state_q  /*verilator fsm_reset_arc*/  /*verilator fsm_arc_include_cond*/;
   state_t state_d;
 
   // default becomes supported only because include_cond is set, but the block
@@ -100,7 +100,7 @@ module t;
   logic rst;
   logic start;
 
-  warn_edge warn_edge_u(.*);
-  warn_case_next warn_case_next_u(.*);
-  warn_default_incl warn_default_incl_u(.*);
+  warn_edge warn_edge_u (.*);
+  warn_case_next warn_case_next_u (.*);
+  warn_default_incl warn_default_incl_u (.*);
 endmodule

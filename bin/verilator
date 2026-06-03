@@ -101,9 +101,15 @@ if (defined $ENV{VERILATOR_ROOT}) {
     $ENV{VERILATOR_ROOT} = $verilator_root;
 }
 
-if ($opt_gdbbt && !gdb_works()) {
-    warn "-Info: --gdbbt ignored: gdb doesn't seem to be working\n" if $Debug;
-    $opt_gdbbt = 0;
+my $lldb_selected = 0;
+if (($opt_gdb || $opt_gdbbt) && !gdb_works()) {
+    if (lldb_works()) {
+        $lldb_selected = 1;
+    } else {
+        warn "-Info: --gdb or --gdbbt ignored: gdb doesn't seem to be working\n" if $Debug;
+        $opt_gdbbt = 0;
+        $opt_gdb = 0;
+    }
 }
 
 # Determine runtime flags and run
@@ -113,22 +119,35 @@ if ($opt_gdbbt && !gdb_works()) {
 # then see exactly the contents of @Opt_Verilator_Sw.
 my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
-    # Generic GDB interactive
-    run (ulimit_stack_unlimited()
-         . aslr(0)
-         . ($ENV{VERILATOR_GDB} || "gdb")
-         . " " . verilator_bin()
-         # Note, uncomment to set breakpoints before running:
-         #  ." -ex 'break main'"
-
-         # Note, we must use double-quotes ("run <switches>")
-         # and not single ('run <switches>') below. Bash swallows
-         # escapes as you would expect in a double-quoted string.
-         # That's not true for a single-quoted string, where \'
-         # actually terminates the string -- not what we want!
-         . " -ex \"run " . join(' ', @quoted_sw) . "\""
-         . " -ex 'set width 0'"
-         . " -ex 'bt'");
+    # Note, we must use double-quotes ("run <switches>")
+    # and not single ('run <switches>') below. Bash swallows
+    # escapes as you would expect in a double-quoted string.
+    # That's not true for a single-quoted string, where \'
+    # actually terminates the string -- not what we want!
+    if ($lldb_selected) {
+        # Generic lldb interactive
+        run (ulimit_stack_unlimited()
+             . aslr(0)
+             . ($ENV{VERILATOR_GDB} || "lldb")
+             . " " . verilator_bin()
+             # Note, uncomment to set breakpoints before running:
+             #  . " -o 'b main'"
+             . " -o 'b exit'"  # Need break to keep process active for bt
+             . " -o \"run " . join(' ', @quoted_sw) . "\""
+             . " -o 'settings set term-width 1024'"
+             . " -o 'bt'");
+    } else {
+        # Generic GDB interactive
+        run (ulimit_stack_unlimited()
+             . aslr(0)
+             . ($ENV{VERILATOR_GDB} || "gdb")
+             . " " . verilator_bin()
+             # Note, uncomment to set breakpoints before running:
+             #  . " -ex 'break main'"
+             . " -ex \"run " . join(' ', @quoted_sw) . "\""
+             . " -ex 'set width 0'"
+             . " -ex 'bt'");
+    }
 } elsif ($opt_rr) {
     # Record with rr
     run (ulimit_stack_unlimited()
@@ -136,15 +155,27 @@ if ($opt_gdb) {
          . "rr record " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
-    # Run under GDB to get gdbbt
-    run (ulimit_stack_unlimited()
-         . aslr(0)
-         . "gdb"
-         . " " . verilator_bin()
-         . " --batch --quiet --return-child-result"
-         . " -ex \"run " . join(' ', @quoted_sw)."\""
-         . " -ex 'set width 0'"
-         . " -ex 'bt' -ex 'quit'");
+    # Run under debugger to get gdbbt
+    if ($lldb_selected) {
+        run (ulimit_stack_unlimited()
+             . aslr(0)
+             . ($ENV{VERILATOR_GDB} || "lldb")
+             . " " . verilator_bin()
+             . " -o 'b exit'"  # Need break to keep process active for bt
+             . " --batch --source-quietly"
+             . " -o \"run " . join(' ', @quoted_sw)."\""
+             . " -o 'settings set term-width 1024'"
+             . " -o 'bt' -o 'quit'");
+    } else {
+        run (ulimit_stack_unlimited()
+             . aslr(0)
+             . ($ENV{VERILATOR_GDB} || "gdb")
+             . " " . verilator_bin()
+             . " --batch --quiet --return-child-result"
+             . " -ex \"run " . join(' ', @quoted_sw)."\""
+             . " -ex 'set width 0'"
+             . " -ex 'bt' -ex 'quit'");
+    }
 } elsif ($opt_valgrind) {
     # Run under valgrind
     my $valgrind_bin = ($ENV{VERILATOR_VALGRIND} || "valgrind --error-exitcode=1 --max-stackframe=2815880"
@@ -200,12 +231,24 @@ sub verilator_bin {
 
 sub gdb_works {
     $! = undef;  # Cleanup -x
-    system("gdb /bin/echo"
+    system("gdb /bin/sh"
            . " --batch-silent --quiet --return-child-result"
-           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'run -c exit'"  # `/bin/sh -c exit
            . " -ex 'set width 0'"
            . " -ex 'bt'"
            . " -ex 'quit'");
+    my $status = $?;
+    return $status == 0;
+}
+
+sub lldb_works {
+    $! = undef;  # Cleanup -x
+    # macOS system integrity stops attach to system binaries like /bin/sh
+    system("lldb --version"
+           . " --batch --source-quietly"
+           . " -o 'settings set term-width 1024'"
+           . " -o 'bt'"
+           . " -o 'quit'");
     my $status = $?;
     return $status == 0;
 }
@@ -357,6 +400,7 @@ detailed descriptions of these arguments.
     --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
+    --assert-unroll-limit <iter> Max SVA assertion repetition before erroring
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -376,6 +420,7 @@ detailed descriptions of these arguments.
     --coverage-fsm              Enable FSM state/arc coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
+    --coverage-per-instance     Enable per-instance coverage counters
     --coverage-toggle           Enable toggle coverage
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage
@@ -595,6 +640,7 @@ description of these arguments.
      +verilator+debugi+<value>             Enable debugging at a level
      +verilator+error+limit+<value>        Set error limit
      +verilator+help                       Show help
+     +verilator+log+file+<filename>        Log stdout and stderr output to filename
      +verilator+noassert                   Disable assert checking
      +verilator+prof+exec+file+<filename>  Set execution profile filename
      +verilator+prof+exec+start+<value>    Set execution profile starting point

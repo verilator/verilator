@@ -4,19 +4,18 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module vlvbound_test
-  (
-    input logic [15:0]  i_a,
-    input logic [15:0]  i_b,
-    output logic [6:0]  o_a,
-    output logic [6:0]  o_b
-  );
+module vlvbound_test (
+    input logic [15:0] i_a,
+    input logic [15:0] i_b,
+    output logic [6:0] o_a,
+    output logic [6:0] o_b
+);
 
   function automatic logic [6:0] foo(input logic [15:0] val);
     logic [6:0] ret;
     integer i;
-    for (i=0 ; i < 7; i++) begin
-      ret[i] = (val[i*2 +: 2] == 2'b00);
+    for (i = 0; i < 7; i++) begin
+      ret[i] = (val[i*2+:2] == 2'b00);
     end
     return ret;
   endfunction

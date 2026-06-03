@@ -183,6 +183,7 @@ static void process() {
         V3Param::param(v3Global.rootp());
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+        V3Param::finalizeDeferredParams(v3Global.rootp());
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         // Link cleanup of 'with' as final link phase before V3Width
@@ -315,6 +316,7 @@ static void process() {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
             // V3Scope's V3LinkDot is in the AstVar.
+            if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
             if (v3Global.opt.fInline()) {
                 V3Inline::inlineAll(v3Global.rootp());
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
@@ -422,7 +424,10 @@ static void process() {
             // Convert forceable signals, process force/release statements.
             // After V3TraceDecl so we don't trace additional signals inserted to implement
             // forcing.
-            V3Force::forceAll(v3Global.rootp());
+            // Convert forceable signals and assign/deassign statements in one combined pass set.
+            // We reserve AST user slots across both sub-passes so helper pointers can be handed
+            // directly from force discovery to assign/deassign lowering without rediscovery.
+            V3Force::forceAndAssignAll(v3Global.rootp());
 
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());

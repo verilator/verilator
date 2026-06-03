@@ -180,6 +180,7 @@ Guo
 Gustafsson
 Güzel
 Hameed
+Hamming
 Hammoud
 Hao
 Haojin
@@ -429,6 +430,7 @@ Sasselli
 Sauter
 Scharrer
 Schless
+Secturion
 Seitz
 Shahid
 Shahrestani
@@ -579,6 +581,7 @@ Yujia
 Yurii
 Zaruba
 Zhang
+Zhi
 abirkmanis
 accessor
 accessors
@@ -667,6 +670,7 @@ concatenatable
 concats
 conf
 config
+consequents
 const
 constexpr
 constification
@@ -698,6 +702,7 @@ datafiles
 david
 ddd
 de
+dearray
 deassign
 debugi
 defenv
@@ -864,6 +869,7 @@ impot
 incdir
 includer
 incrementing
+inferable
 inferfaces
 informationals
 inhibitSim
@@ -899,6 +905,7 @@ libext
 libgoogle
 libjemalloc
 liblist
+liblz
 libsystemc
 libtcmalloc
 libverilated
@@ -1209,6 +1216,7 @@ unnamedblk
 unopt
 unoptflat
 unoptimizable
+unparenthesized
 unroller
 unsatisfiable
 unsized

@@ -27,7 +27,7 @@ class AstNetlist;
 
 class V3Force final {
 public:
-    static void forceAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void forceAndAssignAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

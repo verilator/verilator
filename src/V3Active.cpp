@@ -486,6 +486,18 @@ class ActiveVisitor final : public VNVisitor {
         }
     }
 
+    static void markEventEdges(AstSenTree* sentreep) {
+        for (AstSenItem* senip = sentreep->sensesp(); senip;
+             senip = VN_AS(senip->nextp(), SenItem)) {
+            if (!senip->sensp()) continue;
+            if (const AstNodeDType* const dtypep = senip->sensp()->dtypep()) {
+                if (const AstBasicDType* const basicp = dtypep->basicp()) {
+                    if (basicp->isEvent()) senip->edgeType(VEdgeType::ET_EVENT);
+                }
+            }
+        }
+    }
+
     // VISITORS
     void visit(AstScope* nodep) override {
         m_namer.main(nodep);  // Clear last scope's names, and collect this scope's existing names
@@ -497,7 +509,12 @@ class ActiveVisitor final : public VNVisitor {
 
     void visit(AstInitialStatic* nodep) override { moveUnderSpecial<AstSenItem::Static>(nodep); }
     void visit(AstInitial* nodep) override {
-        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        const bool timedInitial
+            = v3Global.opt.timing().isSetTrue() && nodep->exists([](const AstNode* const subp) {
+                  return VN_IS(subp, Delay) || VN_IS(subp, EventControl);
+              });
+        const ActiveDlyVisitor dlyvisitor{nodep, timedInitial ? ActiveDlyVisitor::CT_SUSPENDABLE
+                                                              : ActiveDlyVisitor::CT_INITIAL};
         visitSenItems(nodep);
         moveUnderSpecial<AstSenItem::Initial>(nodep);
     }
@@ -528,6 +545,7 @@ class ActiveVisitor final : public VNVisitor {
     }
     void visit(AstAlwaysObserved* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
+        markEventEdges(nodep->sentreep());
         AstSenTree* const sentreep = nodep->sentreep();
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched
@@ -536,6 +554,7 @@ class ActiveVisitor final : public VNVisitor {
     }
     void visit(AstAlwaysReactive* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
+        markEventEdges(nodep->sentreep());
         AstSenTree* const sentreep = nodep->sentreep();
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched

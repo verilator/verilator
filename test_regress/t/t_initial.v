@@ -13,7 +13,7 @@ module t (
   `include "t_initial_inc.vh"
 
   // surefire lint_off STMINI
-  initial assign user_loaded_value = 1;
+  initial user_loaded_value = 1;
 
   initial _ranit = 0;
 

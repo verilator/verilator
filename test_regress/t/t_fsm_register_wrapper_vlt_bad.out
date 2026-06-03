@@ -1,0 +1,21 @@
+%Error: t/t_fsm_register_wrapper_vlt_bad.vlt:9:1: fsm_register_wrapper missing -module
+    9 | fsm_register_wrapper -module "" -d "din" -q "dout" -clock "clk"
+      | ^~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_fsm_register_wrapper_vlt_bad.vlt:10:1: fsm_register_wrapper missing -module, -d, -q, -clock
+   10 | fsm_register_wrapper -module "" -d "" -q "" -clock ""
+      | ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_fsm_register_wrapper_vlt_bad.vlt:11:1: fsm_register_wrapper missing -d
+   11 | fsm_register_wrapper -module "missing_d_fsm_flop" -d "" -q "dout" -clock "clk"
+      | ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_fsm_register_wrapper_vlt_bad.vlt:12:1: fsm_register_wrapper missing -q
+   12 | fsm_register_wrapper -module "missing_q_fsm_flop" -d "din" -q "" -clock "clk"
+      | ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_fsm_register_wrapper_vlt_bad.vlt:13:1: fsm_register_wrapper missing -clock
+   13 | fsm_register_wrapper -module "missing_clock_fsm_flop" -d "din" -q "dout" -clock ""
+      | ^~~~~~~~~~~~~~~~~~~~
+%Error-BADVLTPRAGMA: t/t_fsm_register_wrapper_vlt_bad.vlt:15:1: Duplicate fsm_register_wrapper descriptor for module 'duplicate_fsm_flop'; replacing previous descriptor
+   15 | fsm_register_wrapper -module "duplicate_fsm_flop" -d "din" -q "dout" -clock "clk"
+      | ^~~~~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error: Exiting due to

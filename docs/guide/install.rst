@@ -64,7 +64,7 @@ In brief, to install from git:
    #sudo apt-get install libgoogle-perftools-dev libjemalloc-dev numactl perl-doc
    #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
    #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-   #sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+   #sudo apt-get install zlibc zlib1g zlib1g-dev liblz4 liblz4-dev  # Ubuntu only (ignore if gives error)
 
    git clone https://github.com/verilator/verilator   # Only first time
 
@@ -116,7 +116,7 @@ To build or run Verilator, you need these standard packages:
    sudo apt-get install libgz  # Non-Ubuntu (ignore if gives error)
    sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
    sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-   sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+   sudo apt-get install zlibc zlib1g zlib1g-dev liblz4 liblz4-dev  # Ubuntu only (ignore if gives error)
 
 For SystemC:
 
@@ -169,6 +169,9 @@ virtual environment and all dependencies automatically, run the following
 once, after ``configure``:
 
 .. code-block:: bash
+
+   # Install dependencies
+   sudo apt install python3-pip
 
    # Create Python virutal environment in .venv:
    make venv

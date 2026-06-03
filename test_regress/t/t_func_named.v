@@ -11,8 +11,8 @@
 
 module t;
 
-  function automatic int f( int j = 1, int s = 0 );
-    return (j<<16) | s;
+  function automatic int f(int j = 1, int s = 0);
+    return (j << 16) | s;
   endfunction
 
   initial begin

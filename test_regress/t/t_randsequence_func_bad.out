@@ -1,0 +1,23 @@
+%Error: t/t_randsequence_func_bad.v:13:21: Too many arguments in call to task 't.__Vrs0_add'
+   13 |       main : add(1, 2);
+      |              ^~~
+                                         : ... Location of task 't.__Vrs0_add' declaration:
+   14 |       void add(int y) : { $display(y); };
+      |            ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_randsequence_func_bad.v:19:14: Missing argument on non-defaulted argument 'y' in function call to TASK 't.__Vrs1_add'
+   19 |       main : add();
+      |              ^~~
+%Error: t/t_randsequence_func_bad.v:25:19: No such argument 'bogus' in call to task 't.__Vrs2_add'
+   25 |       main : add(.bogus(1));
+      |              ^~~
+                                         : ... Location of task 't.__Vrs2_add' declaration
+   26 |       void add(int y) : { $display(y); };
+      |            ^~~
+%Error: t/t_randsequence_func_bad.v:25:14: Missing argument on non-defaulted argument 'y' in function call to TASK 't.__Vrs2_add'
+   25 |       main : add(.bogus(1));
+      |              ^~~
+%Error: t/t_randsequence_func_bad.v:31:26: Duplicate argument 'y' in function call to TASK 't.__Vrs3_add'
+   31 |       main : add(.y(1), .y(2));
+      |                          ^
+%Error: Exiting due to

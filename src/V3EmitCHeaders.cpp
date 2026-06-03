@@ -36,6 +36,24 @@ class EmitCHeader final : public EmitCConstInit {
     V3UniqueNames m_names;
     // METHODS
 
+    class CoverCountVisitor final : public VNVisitorConst {
+        int m_bins = 0;
+
+        void visit(AstNodeCoverDecl* nodep) override {
+            // Each module class owns the counters for declarations it emits;
+            // duplicate no-inline instances need separate arrays for
+            // forcePerInstance reporting.
+            if (!nodep->dataDeclNullp()) m_bins += nodep->size();
+        }
+        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    public:
+        explicit CoverCountVisitor(const AstNodeModule* modp) {
+            iterateConst(const_cast<AstNodeModule*>(modp));
+        }
+        int bins() const { return m_bins; }
+    };
+
     void decorateFirst(bool& first, const string& str) {
         if (first) {
             putsDecoration(nullptr, str);
@@ -132,6 +150,15 @@ class EmitCHeader final : public EmitCConstInit {
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
             puts(EmitCUtil::symClassName() + "* vlSymsp;\n");
             puts("const char* vlNamep;\n");
+            // Allocate object-local coverage counters only on modules that
+            // contain emitted coverage declarations.
+            const int coverBins = CoverCountVisitor{modp}.bins();
+            if (coverBins) {
+                puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
+                puts(" __Vcoverage[");
+                puts(std::to_string(coverBins));
+                puts("]{};\n");
+            }
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -195,7 +222,8 @@ class EmitCHeader final : public EmitCConstInit {
             decorateFirst(first, section);
             puts("void __vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
                  "linescovp,\n");
             puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
@@ -206,7 +234,8 @@ class EmitCHeader final : public EmitCConstInit {
             decorateFirst(first, section);
             puts("void __vlCoverToggleInsert(int begin, int end, bool ranged, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp);\n");
         }
 
@@ -279,12 +308,12 @@ class EmitCHeader final : public EmitCConstInit {
             emitUnpackedUOrSBody(sdtypep);
         }
     }
-    enum class AttributeType { Width, Dimension };
+    enum class AttributeType : uint8_t { WIDTH, DIMENSION };
     // Get member attribute based on type
     int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
         const bool isArrayType = itemp->dtypep()->isNonPackedArray();
         switch (type) {
-        case AttributeType::Width: {
+        case AttributeType::WIDTH: {
             if (isArrayType) {
                 // For arrays, get innermost element width
                 const AstNodeDType* dtype = itemp->dtypep();
@@ -293,7 +322,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
             return itemp->width();
         }
-        case AttributeType::Dimension: {
+        case AttributeType::DIMENSION: {
             // Return array dimension or 0 for non-arrays
             return isArrayType ? itemp->dtypep()->dimensions(true).second : 0;
         }
@@ -345,10 +374,10 @@ class EmitCHeader final : public EmitCConstInit {
             puts("};\n}\n");
 
             putns(sdtypep, "\nstd::vector<int> memberWidth(void) const {\n");
-            emitMemberVector<AttributeType::Width>(sdtypep);
+            emitMemberVector<AttributeType::WIDTH>(sdtypep);
 
             putns(sdtypep, "\nstd::vector<int> memberDimension(void) const {\n");
-            emitMemberVector<AttributeType::Dimension>(sdtypep);
+            emitMemberVector<AttributeType::DIMENSION>(sdtypep);
 
             needComma = false;
             putns(sdtypep, "\nauto memberIndices(void) const {\n");
@@ -455,31 +484,29 @@ class EmitCHeader final : public EmitCConstInit {
             puts("}\n");
         } else if (VN_IS(dtypep, NodeUOrStructDType)) {
             const std::string tmp = m_names.get("__Vtmp");
-            const std::string suffixName = dtypep->isWide() ? tmp + ".data()" : tmp;
             if (getfunc) {  // Emit `get` func;
                 // auto __tmp = field.get();
                 puts("auto " + tmp + " = " + fieldname + ".get();\n");
                 // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
-                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, tmp, getfunc);
             } else {  // Emit `set` func
                 const std::string tmptype = AstCDType::typeToHold(dtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
                 // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
-                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+                emitVlAssign(dtypep, parentDtypep, offset, tmp, retOrArg, getfunc);
                 // field.set(__tmp);
                 puts(fieldname + ".set(" + tmp + ");\n");
             }
         } else {
             UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), dtypep,
                         "Unsupported type in packed struct or union");
-            const std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : fieldname;
             if (getfunc) {  // Emit `get` func;
                 // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
-                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, fieldname, getfunc);
             } else {  // Emit `set` func
                 // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
-                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+                emitVlAssign(dtypep, parentDtypep, offset, fieldname, retOrArg, getfunc);
             }
         }
     }
@@ -501,7 +528,6 @@ class EmitCHeader final : public EmitCConstInit {
         }
 
         const std::string retArgName = m_names.get("__v");
-        const std::string suffixName = sdtypep->isWide() ? retArgName + ".data()" : retArgName;
         const std::string retArgType = AstCDType::typeToHold(sdtypep->width());
 
         // Emit `get` member function
@@ -510,12 +536,12 @@ class EmitCHeader final : public EmitCConstInit {
         if (VN_IS(sdtypep, StructDType)) {
             for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
-                                 std::to_string(itemp->lsb()), /*getfunc=*/true, suffixName);
+                                 std::to_string(itemp->lsb()), /*getfunc=*/true, retArgName);
             }
         } else {
             // We only need to fill the widest field of union
             emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
-                             std::to_string(witemp->lsb()), /*getfunc=*/true, suffixName);
+                             std::to_string(witemp->lsb()), /*getfunc=*/true, retArgName);
         }
         puts("return " + retArgName + ";\n");
         puts("}\n");
@@ -525,12 +551,12 @@ class EmitCHeader final : public EmitCConstInit {
         if (VN_IS(sdtypep, StructDType)) {
             for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
-                                 std::to_string(itemp->lsb()), /*getfunc=*/false, suffixName);
+                                 std::to_string(itemp->lsb()), /*getfunc=*/false, retArgName);
             }
         } else {
             // We only need to fill the widest field of union
             emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
-                             std::to_string(witemp->lsb()), /*getfunc=*/false, suffixName);
+                             std::to_string(witemp->lsb()), /*getfunc=*/false, retArgName);
         }
 
         puts("}\n");

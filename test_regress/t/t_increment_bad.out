@@ -1,23 +1,26 @@
-%Error-UNSUPPORTED: t/t_increment_bad.v:19:29: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   19 |     if (0 && test_string[pos++] != "e");
-      |                             ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_increment_bad.v:20:17: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   20 |     if (1 || pos-- != 1);
-      |                 ^~
 %Error-UNSUPPORTED: t/t_increment_bad.v:22:15: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
    22 |     if (a <-> --b);
       |               ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_increment_bad.v:23:14: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
    23 |     if (0 -> ++b);
       |              ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:25:22: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   25 |     pos = (a > 0) ? a++ : --b;
+%Error-UNSUPPORTED: t/t_increment_bad.v:26:24: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   26 |     if (1 && (a > 0 ? a++ : --b));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_increment_bad.v:26:29: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   26 |     if (1 && (a > 0 ? a++ : --b));
+      |                             ^~
+%Error-UNSUPPORTED: t/t_increment_bad.v:27:24: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   27 |     if (0 || (a > 0 -> ++b));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_increment_bad.v:29:22: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   29 |     pos = (a > 0) ? a++ : --b;
       |                      ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:25:27: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   25 |     pos = (a > 0) ? a++ : --b;
+%Error-UNSUPPORTED: t/t_increment_bad.v:29:27: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   29 |     pos = (a > 0) ? a++ : --b;
       |                           ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:30:36: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   30 |   assert property (@(posedge clk) a++ >= 0);
+%Error-UNSUPPORTED: t/t_increment_bad.v:34:36: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
+   34 |   assert property (@(posedge clk) a++ >= 0);
       |                                    ^~
 %Error: Exiting due to

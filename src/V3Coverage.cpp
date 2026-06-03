@@ -290,8 +290,15 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
-            // Don't want line coverage for it, iterate for expression/toggle coverage only
+            // Handle continuous assigns for expression coverage (but not line coverage)
+            VL_RESTORER(m_state);
+            VL_RESTORER(m_exprStmtsp);
+            VL_RESTORER(m_inToggleOff);
+            m_exprStmtsp = nodep;
+            m_inToggleOff = true;
+            createHandle(nodep);
             iterateChildren(nodep);
+            // Note: No line coverage for continuous assigns
             return;
         }
         iterateProcedure(nodep);

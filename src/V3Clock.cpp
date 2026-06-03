@@ -77,18 +77,22 @@ class ClockVisitor final : public VNVisitor {
         AstNodeExpr* comparedp = nullptr;
         incp->toggleExprp(origp->cloneTree(false));
         incp->toggleCovExprp(changeRdp->cloneTree(false));
+        FileLine* const flp = nodep->fileline();
         // Xor will optimize better than Eq, when CoverToggle has bit selects,
         // but can only use Xor with non-opaque types
         if (const AstBasicDType* const bdtypep
             = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
-            if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
+            if (!bdtypep->isOpaque()) {
+                AstNodeExpr* const zp = new AstConst{flp, AstConst::DTyped{}, origp->dtypep()};
+                comparedp = new AstNeq{flp, zp, new AstXor{flp, origp, changeRdp}};
+            }
         }
-        if (!comparedp) comparedp = AstNeq::newTyped(nodep->fileline(), origp, changeRdp);
-        AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
+        if (!comparedp) comparedp = AstNeq::newTyped(flp, origp, changeRdp);
+        AstIf* const newp = new AstIf{flp, comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addThensp(new AstAssign{nodep->fileline(), changeWrp, origp->cloneTree(false)});
+        newp->addThensp(new AstAssign{flp, changeWrp, origp->cloneTree(false)});
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

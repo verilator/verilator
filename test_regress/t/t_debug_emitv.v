@@ -93,6 +93,7 @@ module t (/*AUTOARG*/
     if (|downto_32[60-:7]) $write("");
     if (the_ifaces[2].ifsig) $write("");
     #1 $write("After #1 delay");
+    wait(clk == 1) $write("After wait(clk == 1)");
   end
 
   bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];
@@ -338,6 +339,14 @@ module t (/*AUTOARG*/
 
   assert_prop_always: assert property (@(posedge clk) always [0:3] in);
   assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
+  assert_prop_overlap_impl: assert property (@(posedge clk) in |-> in);
+  assert_prop_nonoverlap_impl: assert property (@(posedge clk) in |=> in);
+  assert_prop_overlap_fb: assert property (@(posedge clk) in #-# in);
+  assert_prop_nonoverlap_fb: assert property (@(posedge clk) in #=# in);
+  assert_prop_accept_on: assert property (@(posedge clk) accept_on (in) in);
+  assert_prop_reject_on: assert property (@(posedge clk) reject_on (in) in);
+  assert_prop_sync_accept_on: assert property (@(posedge clk) sync_accept_on (in) in);
+  assert_prop_sync_reject_on: assert property (@(posedge clk) sync_reject_on (in) in);
 
 
   int a;

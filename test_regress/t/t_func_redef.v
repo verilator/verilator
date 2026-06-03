@@ -23,6 +23,6 @@ module t #(
   input [B-1:0] b;
   output logic [min(A,B)-1:0] c;
 
-  always_comb for (int i = 0; i < min(A, B); i++) assign c[i] = a[i] | b[i];
+  always_comb for (int i = 0; i < min(A, B); i++) c[i] = a[i] | b[i];
 
 endmodule

@@ -120,17 +120,13 @@ using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
 using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
 using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
-using EData = uint32_t;   ///< Data representing one element of WData array
-using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
+using EData = uint32_t;   ///< Data representing one element of VlWide
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
 //    N     = std::string;  // No typedef needed; Verilator uses string
 //    U     = VlUnpacked;
 //    R     = VlQueue;
 // clang-format on
-
-using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
-using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
 enum VerilatedVarType : uint8_t {
     VLVT_UNKNOWN = 0,
@@ -139,12 +135,12 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT16,  // AKA SData
     VLVT_UINT32,  // AKA IData
     VLVT_UINT64,  // AKA QData
-    VLVT_WDATA,  // AKA WData
+    VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
     VLVT_REAL  // AKA double
 };
 
-enum VerilatedVarFlags {
+enum VerilatedVarFlags : uint32_t {
     VLVD_0 = 0,  // None
     VLVD_IN = 1,  // == vpiInput
     VLVD_OUT = 2,  // == vpiOutput
@@ -391,7 +387,7 @@ protected:
         int m_errorCount = 0;  // Number of errors
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
-        int m_randSeed = 0;  // Random seed: 0=random
+        int m_randSeed = 1;  // Random seed (default 1; +verilator+seed+0 picks at parse time)
         static constexpr int UNITS_NONE = 99;  // Default based on precision
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
@@ -413,6 +409,7 @@ protected:
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
         std::string m_coverageFilename;  // +coverage+file filename
+        std::string m_logFilename;  // +log+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
@@ -421,6 +418,9 @@ protected:
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
+        int m_stdoutFD;  // Duplicated stdout file descriptor
+        int m_stderrFD;  // Duplicated stderr file descriptor
+        int m_logFD;  // Log file descriptor
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -653,6 +653,13 @@ public:
     // Internal: coverage
     std::string coverageFilename() const VL_MT_SAFE;
     void coverageFilename(const std::string& flag) VL_MT_SAFE;
+
+    // Internal: logfile
+    std::string logFilename() const VL_MT_SAFE;
+    void logFilename(const std::string& flag) VL_MT_SAFE;
+    bool logOutputToFile() const VL_MT_SAFE;
+    void logOutputToFile(bool append) VL_MT_SAFE;
+    void logRestoreOutput() VL_MT_SAFE;
 
     // Internal: $dumpfile
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);

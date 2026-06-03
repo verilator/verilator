@@ -131,7 +131,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {os: windows-2025, cc: msvc}
+          - {os: windows-2025-vs2026, cc: msvc}
     env:
       CI_OS_NAME: win
       CCACHE_COMPRESS: 1

@@ -233,6 +233,12 @@ void V3Stats::infoHeader(std::ofstream& os, const string& prefix) {
 void V3Stats::statsReport() {
     UINFO(2, __FUNCTION__ << ":");
 
+    uint64_t memPeak;
+    uint64_t memCurrent;
+    VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
+    const double memory = memPeak / 1024.0 / 1024.0;
+    V3Stats::addStat("Peak Memory Usage (MB)", memory);
+
     // Open stats file
     const string filename
         = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__stats.txt";

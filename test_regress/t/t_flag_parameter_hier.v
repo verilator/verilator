@@ -10,7 +10,7 @@
 // verilog_format: on
 
 module t (
-  input clk
+    input clk
 );
 
   u u ();

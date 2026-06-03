@@ -10,8 +10,8 @@
 // verilog_format: on
 
 module t (
-  input clk
-  );
+    input clk
+);
 
   integer      cyc = 0;
   reg [63:0]   crc;

@@ -96,21 +96,21 @@ List Of Warnings
 
 .. option:: ALWCOMBORDER
 
-   .. TODO better example
-
-   Warns that an ``always_comb`` block has a variable that is set after it
-   is used. This may cause simulation-synthesis mismatches, as not all
-   simulators allow this ordering.
+   Warns that an ``always_comb`` block reads a variable before assigning it
+   later in the same block. Because statements in a procedural block execute
+   in source order, the read observes the variable's previous value for that
+   activation. This can imply latch/state-like behavior and is not purely
+   combinational.
 
    .. code-block:: sv
 
       always_comb begin
-        a = b;
-        b = 1;
+        y = a + tmp;  // Reads the previous value of tmp
+        tmp = b;
       end
 
-   Ignoring this warning will only suppress the lint check; it will
-   simulate correctly.
+   If the new value of ``tmp`` is intended, assign ``tmp`` before reading it.
+   Suppressing this warning may make results vary between simulators.
 
 
 .. option:: ALWNEVER
@@ -382,6 +382,9 @@ List Of Warnings
    non-enumerated values (IEEE 1800-2023 12.5.3). Verilator checks that
    illegal values are not hit, unless :vlopt:`--no-assert-case` was used.
 
+   Unique0 case statements will never cause this warning. (Although unique0
+   should be avoided in synthesizable code as may result in latch behavior.)
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -520,6 +523,48 @@ List Of Warnings
 
    Suppressing this error will suppress the error message check; it will
    simulate as if the ``const`` as not present.
+
+.. option:: CONTASSINIT
+
+   Error that a continuous assignment is setting a variable with an initial
+   value. Use either the initial value or the continuous assignment, but not
+   both.
+
+   For example:
+
+   .. code-block:: sv
+      :emphasize-lines: 2,4
+
+      module t;
+        logic b = 1'b0;
+        logic a;
+        assign b = a; //<--- Error
+      endmodule
+
+   Results in:
+
+   .. code-block::
+
+      %Error-CONTASSINIT: example.sv:4:10: Continuous assignment to variable with initial value: 'b'
+                                                  : ... note: In instance 't'
+                                                  : ... Location of variable initialization
+          2 |   logic b = 1'b0;
+            |         ^
+                            example.sv:4:10: ... Location of continuous assignment
+          4 |   assign b = a;
+            |          ^
+      %Error: Exiting due to 1 error(s)
+
+   The following is legal because the driven variable does not have a declaration
+   initializer:
+
+   .. code-block:: sv
+
+      module t;
+        logic b;
+        logic a = 1'b0;
+        assign b = a;
+      endmodule
 
 
 .. option:: CONTASSREG
@@ -956,6 +1001,13 @@ List Of Warnings
    port list, since these are references to interfaces/modports declared at a higher level and are
    already specialized. These types of accesses do not require waiving HIERPARAM.
 
+.. option:: IEEEMAYDEPRECATE
+
+   This feature is not yet deprecated, but may be in a future version of the IEEE standard.
+   This warning is to alert users that they may want to avoid using this feature, as it
+   may be removed in a future version of the IEEE standard, and thus may not be supported
+   in future versions of Verilator.
+
 .. option:: IFDEPTH
 
    Warns that if/if else statements have exceeded the depth specified with
@@ -1130,7 +1182,10 @@ List Of Warnings
 
    Warns that the code has a delayed assignment inside of an ``initial`` or
    ``final`` block. If this message is suppressed, Verilator will convert
-   this to a non-delayed assignment. See also :option:`COMBDLY`.
+   this to a non-delayed assignment. With :vlopt:`--timing`, delayed
+   assignments in ``initial`` blocks that also contain a `#` delay
+   control, or `@` even control statement are scheduled as
+   non-blocking assignments. See also :option:`COMBDLY`.
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
@@ -1359,9 +1414,11 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   Warns that the specified signal comes from multiple ``always``
-   blocks, each with different clocking. This warning does not look at
-   individual bits (see the example below).
+   Warns that the specified signal has multiple procedural drivers.
+
+   One case is when the signal comes from multiple ``always`` blocks,
+   each with different clocking. This warning does not look at individual
+   bits (see the example below).
 
    This is considered bad style, as the consumer of a given signal may be
    unaware of the inconsistent clocking, causing clock domain crossing
@@ -1375,8 +1432,28 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_msg.rst
 
-   Ignoring this warning will only slow simulations; it will simulate
-   correctly. It may, however, cause longer simulation runtimes due to
+   Another case is when a variable written in an ``always_comb`` or
+   ``always_ff`` block is also written by another process. IEEE 1800
+   requires variables written in these specialized always blocks to be
+   written only by that process.
+
+   Faulty ``always_ff`` example:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVEN_alwaysff_faulty.rst
+
+   To retain an initialization without adding another process, use a
+   declaration initializer (or, for synthesizable code, add a reset term):
+
+   .. code-block:: sv
+
+      logic q = 1'b0;
+
+      always_ff @(posedge clk) begin
+        q <= d;
+      end
+
+   Ignoring this warning may hide clock domain crossing, timing, or
+   portability bugs. It may also cause longer simulation runtimes due to
    reduced optimizations.
 
 
@@ -1502,6 +1579,25 @@ List Of Warnings
    Error when a timing-related construct that requires :vlopt:`--timing` has
    been encountered. Issued only if Verilator is run with the
    :vlopt:`--no-timing` option.
+
+
+.. option:: NOTREDOP
+
+   Error that a logical not operator is directly followed by an
+   unparenthesized reduction operator, such as ``!|a``. The IEEE 1800-2023 Annex A
+   grammar requires the operand of ``!`` to be a primary expression, not an
+   unparenthesized reduction expression.
+
+   For example:
+
+   .. include:: ../../docs/gen/ex_NOTREDOP_msg.rst
+
+   Some simulators support this syntax as an extension, but it is recommended to fix
+   these to match IEEE. To do so, add parentheses around the reduction expression,
+   for example use ``!(|a)`` instead of ``!|a``.
+
+   Suppressing this error will suppress the error message check; it will simulate
+   correctly.
 
 
 .. option:: NULLPORT
@@ -1724,11 +1820,17 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_PROCASSINIT_fixed.rst
 
-   Alternatively, use an initial block for the initialization:
+   For non-``always_ff`` logic, alternatively use an initial block for
+   the initialization:
 
    .. code-block:: sv
 
       initial flop_out = 1;  // <--- Fixed
+
+   Do not use a separate initial block for a variable assigned by an
+   ``always_ff`` process, as IEEE 1800 requires an ``always_ff`` variable
+   to be written only by that process. Use a declaration initializer, or
+   initialize the variable from reset logic inside the ``always_ff``.
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.

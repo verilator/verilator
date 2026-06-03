@@ -84,6 +84,8 @@ jobs:
           - "OpenPiton:1x1:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
+          - "Servant:serv:*"
+          - "Servant:qerv:*"
           - "VeeR-EH1:asic*"
           - "VeeR-EH1:default*"
           - "VeeR-EH1:hiperf*"
@@ -128,6 +130,8 @@ jobs:
           - "OpenPiton:1x1:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
+          - "Servant:serv:*"
+          - "Servant:qerv:*"
           - "VeeR-EH1:asic*"
           - "VeeR-EH1:default*"
           - "VeeR-EH1:hiperf*"
@@ -237,7 +241,7 @@ jobs:
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.1.1
+        uses: actions/create-github-app-token@v3.2.0
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
@@ -394,7 +398,7 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.1.1
+        uses: actions/create-github-app-token@v3.2.0
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

@@ -180,6 +180,20 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
     std::set<int> cores;
     {
         int processor = -1;
+        int core = -1;
+
+        const auto finishEntry = [&]() {
+            if (processor == -1) return;
+            // If "core id" is not known, assume all processors are on separate cores with same id.
+            if (core == -1) core = processor;
+            cores.emplace(core);
+            processor_core[processor] = core;
+            core_processors.emplace(core, processor);
+            unassigned_processors.push_back(processor);
+            processor = -1;
+            core = -1;
+        };
+
         while (!is.eof()) {
             std::string line;
             std::getline(is, line);
@@ -187,17 +201,13 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
             int number = -1;
             if (pos != std::string::npos) number = atoi(line.c_str() + pos + 1);
             if (line.compare(0, std::strlen("processor"), "processor") == 0) {
+                finishEntry();
                 processor = number;
             } else if (line.compare(0, std::strlen("core id"), "core id") == 0) {
-                const int core = number;
-                // std::cout << "p" << processor << " socket " << socket << " c" << core <<
-                // std::endl;
-                cores.emplace(core);
-                processor_core[processor] = core;
-                core_processors.emplace(core, processor);
-                unassigned_processors.push_back(processor);
+                core = number;
             }
         }
+        finishEntry();
     }
 
     // Start scheduling on the current CPU + 1.
@@ -268,8 +278,13 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
         }
         status += ";";
 
+#ifdef __TERMUX__
+        const int rc = sched_setaffinity(m_workers[thread]->m_cthread.native_handle(),
+                                         sizeof(cpu_set_t), &cpuset);
+#else
         const int rc = pthread_setaffinity_np(m_workers[thread]->m_cthread.native_handle(),
                                               sizeof(cpu_set_t), &cpuset);
+#endif
         if (rc != 0) return "%Warning: pthread_setaffinity_np failed";
     }
     // std::cout << "Status: " << status << std::endl;

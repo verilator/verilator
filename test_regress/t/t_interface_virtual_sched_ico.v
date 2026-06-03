@@ -15,8 +15,8 @@ module top;
   logic [31:0] inc2 = 0;
   int cyc = 0;
 
-  If intf1();
-  If intf2();
+  If intf1 ();
+  If intf2 ();
   virtual If vif1 = intf1;
   virtual If vif2 = intf2;
 

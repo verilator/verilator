@@ -22,6 +22,7 @@
           integer some_int;
           integer other_int;
           logic some_bool;
+          logic [1:0] assign_lhs;
         
           wire t1 = cyc[0];
           wire t2 = cyc[1];
@@ -282,6 +283,18 @@
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
           end
+        
+%000005   assign assign_lhs[0] = t1 && t2;
+-000005  point: type=expr comment=(t1==0) => 0 hier=top.t
+-000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
+-000005  point: type=expr comment=(t2==0) => 0 hier=top.t
+%000003   assign assign_lhs[1] = (t1 && t2) || (t3 && t4);
+-000003  point: type=expr comment=(t1==0 && t3==0) => 0 hier=top.t
+-000003  point: type=expr comment=(t1==0 && t4==0) => 0 hier=top.t
+-000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
+-000003  point: type=expr comment=(t2==0 && t3==0) => 0 hier=top.t
+-000003  point: type=expr comment=(t2==0 && t4==0) => 0 hier=top.t
+-000000  point: type=expr comment=(t3==1 && t4==1) => 1 hier=top.t
         
           logic ta, tb, tc;
           initial begin

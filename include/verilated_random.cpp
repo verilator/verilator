@@ -30,6 +30,18 @@
 #include <sstream>
 #include <streambuf>
 
+// Diversity (scalar rand vars): tie each free bit to a random target via a
+//   boolean assumption literal, then force the bits with (check-sat-assuming).
+//   If UNSAT, (get-unsat-assumptions) names the literals clashing with the
+//   feasible hard+soft base; drop one per round and recheck until SAT, which
+//   keeps the maximal set of bits compatible with the constraints. Only these
+//   private literals are assumed (never user constraints), and assumptions are
+//   ephemeral, so hard/soft/randc semantics are untouched and rounds need no
+//   push/pop or re-asserting. The surviving assumptions steer each free bit
+//   from the random target, spreading a wide range uniformly (fixing the
+//   boundary bias under `value < (1<<N)`, issue #7563) while keeping run-to-run
+//   diversity on tightly coupled bits. Array/queue rand vars skip pinning
+//   (per-element ranges aren't power-of-2 boundaries) and use the XOR rounds.
 #define _VL_SOLVER_HASH_LEN 1
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
 
@@ -349,7 +361,7 @@ void VlRandomVar::emitConcreteValue(std::ostream& s) const {
         } else if (w <= VL_QUADSIZE) {
             bit = (*static_cast<const QData*>(dp) >> i) & 1;
         } else {
-            const EData* const wp = static_cast<const EData*>(dp);
+            const WDataInP wp = WDataInP::external(static_cast<const EData*>(dp));
             bit = (wp[VL_BITWORD_E(i)] >> VL_BITBIT_E(i)) & 1;
         }
         s << (bit ? '1' : '0');
@@ -381,7 +393,7 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VL_SET_WQ(qiwp, 0ULL);
     if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
     const int nidx = qiwp[0];
-    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap(nidx));
+    if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
     if (!parseSMTNum(obits, owp, val)) return false;
 
     if (obits <= VL_BYTESIZE) {
@@ -516,6 +528,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
         // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
         // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
+        // Lets the scalar pin path learn which free-bit assumptions conflict.
+        os << "(set-option :produce-unsat-assumptions true)\n";
         os << "(set-logic QF_ABV)\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -616,15 +630,66 @@ bool VlRandomizer::next(VlRNG& rngr) {
             return false;
         }
 
-        // Pinned vars: salting cannot diversify, only burn solver calls.
         if (!m_checkOnly) {
-            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-                os << "(assert ";
-                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-                os << ")\n";
-                os << "\n(check-sat)\n";
-                sat = parseSolution(os, false);
-                (void)sat;
+            bool hasArray = false;
+            for (const auto& var : m_vars) {
+                if (var.second->dimension() > 0) {
+                    hasArray = true;
+                    break;
+                }
+            }
+            if (!hasArray) {
+                // Tie each free bit to a fresh random target via a boolean
+                // assumption literal a_k <=> (bit_k == target_k), then force the
+                // bits with (check-sat-assuming ...). If UNSAT,
+                // (get-unsat-assumptions) names the literals clashing with the
+                // feasible base; drop ONE per round so the maximal compatible
+                // set survives -- dropping a whole conflicting group at once
+                // would collapse the diversity of tightly coupled bits (one-hot,
+                // 2-value sets) onto the solver's fixed default. Assumptions are
+                // ephemeral, so rounds need no push/pop or re-asserting and the
+                // solver keeps its learned clauses. Each round drops >= 1 -> ends
+                // in <= npins rounds.
+                std::vector<bool> targets;
+                int npins = 0;
+                for (const auto& var : m_vars) {
+                    const int w = var.second->totalWidth();
+                    for (int b = 0; b < w; b++) {
+                        const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
+                        targets.push_back(target);
+                        os << "(declare-fun a" << npins << " () Bool)\n";
+                        os << "(assert (= a" << npins << " (=";
+                        var.second->emitExtract(os, b);
+                        os << " #b" << (target ? '1' : '0') << ")))\n";
+                        ++npins;
+                    }
+                }
+                std::vector<bool> dropped(npins, false);
+                for (int round = 0; round <= npins; ++round) {
+                    os << "(check-sat-assuming (";
+                    for (int k = 0; k < npins; k++)
+                        if (!dropped[k]) os << " a" << k;
+                    os << "))\n";
+                    if (parseSolution(os, false)) break;
+                    // get-unsat-assumptions only echoes still-active literals,
+                    // so the first in-range index is a live conflicting bit.
+                    const std::vector<int> core = readUnsatAssumptions(os);
+                    for (const int idx : core)
+                        if (idx < npins) {
+                            dropped[idx] = true;
+                            break;
+                        }
+                }
+            } else {
+                // Array present: original XOR-rounds path.
+                for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                    os << "(assert ";
+                    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                    os << ")\n";
+                    os << "\n(check-sat)\n";
+                    sat = parseSolution(os, false);
+                    (void)sat;
+                }
             }
         }
 
@@ -641,6 +706,25 @@ bool VlRandomizer::checkSat(std::iostream& os) {
     std::string result;
     do { std::getline(os, result); } while (result.empty());
     return result == "sat";
+}
+
+std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
+    os << "(get-unsat-assumptions)\n";
+    std::string line;
+    do { std::getline(os, line); } while (line.empty());
+    // The response lists only "a<N>" literals; collect each full integer run.
+    std::vector<int> idxs;
+    std::string num;
+    for (const char c : line) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+            num += c;
+        } else if (!num.empty()) {
+            idxs.push_back(std::stoi(num));
+            num.clear();
+        }
+    }
+    if (!num.empty()) idxs.push_back(std::stoi(num));
+    return idxs;
 }
 
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {

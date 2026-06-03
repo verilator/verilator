@@ -39,6 +39,29 @@ class VFlagLogicPacked {};
 
 // ######################################################################
 
+class VAbortKind final {
+public:
+    // IEEE 1800-2023 16.12.14 property abort operators.
+    enum en : uint8_t {
+        ACCEPT_ON,  // accept_on(cond) prop: async abort, property succeeds
+        REJECT_ON,  // reject_on(cond) prop: async abort, property fails
+        SYNC_ACCEPT_ON,  // sync_accept_on(cond) prop: sampled at matured clock, succeeds
+        SYNC_REJECT_ON  // sync_reject_on(cond) prop: sampled at matured clock, fails
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAbortKind(en _e)
+        : m_e{_e} {}
+    const char* ascii() const {
+        static const char* const names[]
+            = {"accept_on", "reject_on", "sync_accept_on", "sync_reject_on"};
+        return names[m_e];
+    }
+    bool isAccept() const { return m_e == ACCEPT_ON || m_e == SYNC_ACCEPT_ON; }
+};
+
+//######################################################################
+
 class VAccess final {
 public:
     enum en : uint8_t {
@@ -815,6 +838,7 @@ public:
         FORCE_ADD,
         FORCE_READ,
         FORCE_READ_INDEX,
+        FORCE_READ_SEL,
         FORCE_RELEASE,
         FORCE_TOUCH,
         FORK_DONE,
@@ -968,6 +992,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORCE_ADD, "addForce", false}, \
            {FORCE_READ, "read", true}, \
            {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_READ_SEL, "readSel", true}, \
            {FORCE_RELEASE, "release", false}, \
            {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \

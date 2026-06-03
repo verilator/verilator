@@ -420,12 +420,10 @@ class PackThreads final {
         // schedule to ensure that indexes for simulation-time thread pool workers are not shadowed
         // by another tasks.
         // For retaining control over thread schedules, we distinguish SchedulingModes:
-        enum class SchedulingMode {
-            SCHEDULING  // Schedule normal tasks
-            ,
-            WIDE_TASK_DISCOVERED  // We found a wide task, if this is the only one available,
-                                  // switch to WIDE_TASK_SCHEDULING
-            ,
+        enum class SchedulingMode : uint8_t {
+            SCHEDULING,  // Schedule normal tasks
+            WIDE_TASK_DISCOVERED,  // Found a wide task, if this is the only one available,
+                                   // switch to WIDE_TASK_SCHEDULING
             WIDE_TASK_SCHEDULING  // Schedule wide tasks
         };
         SchedulingMode mode = SchedulingMode::SCHEDULING;

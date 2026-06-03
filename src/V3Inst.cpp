@@ -173,6 +173,64 @@ public:
 };
 
 //######################################################################
+// Replace any leftover VarRef to an interface-array var that the cell
+// dearrayer just deleted. The dearrayer handles VarRefs in pin / array-select
+// / array-assign contexts itself; this rewriter catches the rest (a class
+// new() arg, a function call arg, etc) by rebuilding an array literal over
+// the per-element vars. Runs once, only if anything was actually deleted.
+
+class InstDeOrphanVisitor final : public VNVisitor {
+    // STATE
+    const std::unordered_map<AstVar*, std::vector<AstVar*>>& m_dearrayed;
+
+    static bool isDearrayerHandled(const AstNode* backp) {
+        // VarRefs under these are rewritten by the cell dearrayer itself.
+        return VN_IS(backp, Pin) || VN_IS(backp, ArraySel) || VN_IS(backp, SliceSel)
+               || VN_IS(backp, NodeAssign);
+    }
+
+    // Build a (possibly nested) InitArray matching dtp's array nesting; leaves
+    // are VarRefs to perElem, consumed in flat row-major order.
+    static AstNodeExpr* buildPattern(FileLine* flp, AstNodeDType* dtp,
+                                     const std::vector<AstVar*>& perElem, size_t& idxr,
+                                     const VAccess& access) {
+        AstNodeDType* const skipDtp = dtp->skipRefp();
+        if (AstUnpackArrayDType* const arrp = VN_CAST(skipDtp, UnpackArrayDType)) {
+            AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
+            const int elems = arrp->elementsConst();
+            for (int i = 0; i < elems; ++i) {
+                initp->addIndexValuep(static_cast<uint64_t>(i),
+                                      buildPattern(flp, arrp->subDTypep(), perElem, idxr, access));
+            }
+            return initp;
+        }
+        UASSERT(idxr < perElem.size(), "buildPattern outran per-element vars");
+        return new AstVarRef{flp, perElem[idxr++], access};
+    }
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override {
+        const auto it = m_dearrayed.find(nodep->varp());
+        if (it == m_dearrayed.end()) return;
+        if (isDearrayerHandled(nodep->backp())) return;
+        size_t idx = 0;
+        AstNodeExpr* const newp = buildPattern(nodep->fileline(), it->first->dtypep(), it->second,
+                                               idx, nodep->access());
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    InstDeOrphanVisitor(AstNode* rootp,
+                        const std::unordered_map<AstVar*, std::vector<AstVar*>>& dearrayed)
+        : m_dearrayed{dearrayed} {
+        iterate(rootp);
+    }
+    ~InstDeOrphanVisitor() override = default;
+};
+
+//######################################################################
 
 class InstDeVisitor final : public VNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
@@ -181,6 +239,10 @@ private:
     const AstRange* m_cellRangep = nullptr;  // Outer range; nullptr for non-arrayed cells
     int m_instSelNum = 0;  // Row-major flat index for 1D-compat pin expansion
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
+    // Iface-array vars deleted by visit(AstCell), mapped to their per-element
+    // replacements in row-major order. The post-pass uses this to fix up any
+    // leftover VarRefs (see InstDeOrphanVisitor).
+    std::unordered_map<AstVar*, std::vector<AstVar*>> m_dearrayedIfaceVars;
 
     // VISITORS
     void visit(AstVar* nodep) override {
@@ -261,6 +323,10 @@ private:
             }
             const bool isIface = origIfaceRefp && !origIfaceRefp->isVirtual();
 
+            // Collected in row-major order for the orphan VarRef rewriter.
+            std::vector<AstVar*> perElemVarps;
+            if (isIface) perElemVarps.reserve(totalElems);
+
             std::vector<int> idx(ndim, 0);
             for (int n = 0; n < totalElems; ++n) {
                 // Unflatten n into a row-major cartesian index; outer dim most significant.
@@ -290,6 +356,11 @@ private:
 
                 // Interface instantiation: also clone the IfaceRef in the parent module.
                 if (isIface) {
+                    // Cache the interface module on the dtype so ifaceViaCellp()
+                    // still works after we clear cellp and delete the cell.
+                    if (!origIfaceRefp->ifacep()) {
+                        origIfaceRefp->ifacep(VN_AS(nodep->modp(), Iface));
+                    }
                     origIfaceRefp->cellp(nullptr);
                     AstVar* const varNewp = ifaceVarp->cloneTree(false);
                     AstIfaceRefDType* const ifaceRefp = origIfaceRefp->cloneTree(false);
@@ -300,6 +371,7 @@ private:
                     varNewp->origName(varNewp->origName() + suffix);
                     varNewp->dtypep(ifaceRefp);
                     newp->addNextHere(varNewp);
+                    perElemVarps.emplace_back(varNewp);
                     if (debug() == 9) {
                         varNewp->dumpTree("-  newintf: ");
                         cout << '\n';
@@ -316,6 +388,10 @@ private:
             // Done.  Delete original
             m_cellRangep = nullptr;
             if (isIface) {
+                // Hand the per-element vars to the orphan-VarRef rewriter.
+                if (!perElemVarps.empty()) {
+                    m_dearrayedIfaceVars.emplace(ifaceVarp, std::move(perElemVarps));
+                }
                 ifaceVarp->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(ifaceVarp), ifaceVarp);
             }
@@ -628,6 +704,19 @@ private:
         for (size_t i = 0; i < indices.size(); ++i) {
             indexStr += "__BRA__" + AstNode::encodeNumber(indices[i] + arrs[i]->lo()) + "__KET__";
         }
+        AstMemberSel* const parentSelp = VN_CAST(nodep->backp(), MemberSel);
+        if (parentSelp && parentSelp->fromp() == nodep && parentSelp->varp()) {
+            AstVar* const memberVarp = parentSelp->varp();
+            AstVarXRef* const newp
+                = new AstVarXRef{parentSelp->fileline(), memberVarp->name(),
+                                 varrefp->name() + indexStr, parentSelp->access()};
+            newp->varp(memberVarp);
+            newp->dtypep(parentSelp->dtypep());
+            newp->classOrPackagep(varrefp->classOrPackagep());
+            parentSelp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(parentSelp), parentSelp);
+            return;
+        }
         AstVarXRef* const newp
             = new AstVarXRef{nodep->fileline(), varrefp->name() + indexStr, "", VAccess::READ};
         newp->dtypep(irp);
@@ -709,7 +798,11 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit InstDeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit InstDeVisitor(AstNetlist* nodep) {
+        iterate(nodep);
+        // Skip when nothing was deleted; designs without iface arrays pay nothing.
+        if (!m_dearrayedIfaceVars.empty()) { InstDeOrphanVisitor{nodep, m_dearrayedIfaceVars}; }
+    }
     ~InstDeVisitor() override = default;
 };
 

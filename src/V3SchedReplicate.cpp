@@ -217,15 +217,15 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
+            V3Sched::util::VarScopeSet forceReadEdgeIgnores;
+            V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
+
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
-
-                // If read, add var -> logic edge
-                // Note: Use same heuristic as ordering does to ignore written variables
-                // TODO: Use live variable analysis.
                 if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
-                    && readTriggersThisLogic(vscp) && !vscp->user2()) {  //
+                    && readTriggersThisLogic(vscp) && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp)) {  //
                     addEdge(vvtxp, lvtxp);
                 }
                 // If written, add logic -> var edge

@@ -24,6 +24,7 @@
 #include "V3Name.h"
 
 #include "V3LanguageWords.h"
+#include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
 #include <vector>
@@ -80,10 +81,9 @@ class NameVisitor final : public VNVisitorConst {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
+        rename(nodep, false);
     }
     // Add __PVT__ to names of local signals
     void visit(AstVar* nodep) override {
@@ -91,7 +91,11 @@ class NameVisitor final : public VNVisitorConst {
         rename(nodep,
                ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
-                && !nodep->isTemp()));  // Don't bother to rename internal signals
+                && !nodep->isTemp()  // Don't bother to rename internal signals
+                // Special case, hardcoded m_process references in verilated_std.h and elsewhere
+                && !(m_modp && m_modp->name() == "std__03a__03aprocess"
+                     && nodep->name() == "m_process")));
+        iterateChildrenConst(nodep);
     }
     void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {

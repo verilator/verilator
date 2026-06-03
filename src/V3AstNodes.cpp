@@ -182,6 +182,15 @@ AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeEx
     }
 }
 
+void AstAbortOn::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " [" << kind().ascii() << "]";
+}
+void AstAbortOn::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kind", kind().ascii());
+    dumpJsonGen(str);
+}
+
 void AstAddrOfCFunc::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -541,6 +550,29 @@ AstNetlist::AstNetlist()
     , m_constPoolp{new AstConstPool{fileline()}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
+}
+
+const char* AstNetlist::broken() const {
+    for (const AstVar* const varp : m_deferredParamVarps) {
+        BROKEN_RTN(!varp || !varp->brokeExists());
+    }
+    return nullptr;
+}
+
+string AstNetlist::astConstOrigParamName(const AstConst* nodep) const {
+    if (!nodep->num().hasOrigParamName()) return "";
+    const auto it = m_constOrigParamNames.find(nodep);
+    UASSERT_OBJ(it != m_constOrigParamNames.end(), nodep, "Missing originating parameter name");
+    return it->second;
+}
+
+void AstNetlist::astConstOrigParamName(const AstConst* nodep, const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
+    m_constOrigParamNames[nodep] = name;
+}
+
+void AstNetlist::astConstOrigParamNameErase(const AstConst* nodep) {
+    m_constOrigParamNames.erase(nodep);
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
@@ -1016,6 +1048,25 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     }
     this->v3errorEnd(V3Error::v3errorStr());
     return nullptr;
+}
+
+const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
+    const AstNodeDType* dtypep = this;
+    while (true) {
+        if (skipRef) dtypep = dtypep->skipRefp();
+        if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else {
+            break;
+        }
+    }
+    return dtypep;
 }
 
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
@@ -1819,6 +1870,46 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+AstConst::~AstConst() {
+    // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
+    // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit
+    // is set, erase the entry before this AstConst address can be reused by a different node.
+    if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
+}
+
+string AstConst::origParamName() const {
+    if (!m_num.hasOrigParamName()) return "";
+    return v3Global.rootp()->astConstOrigParamName(this);
+}
+
+void AstConst::origParamName(const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
+    v3Global.rootp()->astConstOrigParamName(this, name);
+    m_num.hasOrigParamName(true);
+}
+
+void AstConst::cloneRelink() {
+    // Preserve parameter-origin metadata across AST clones; the side-table key must be this
+    // new AstConst, not the original node.
+    if (const AstConst* const oldp = clonep()) {
+        const string name = oldp->origParamName();
+        m_num.hasOrigParamName(false);
+        if (!name.empty()) origParamName(name);
+    }
+    m_num.nodep(this);
+}
+
+void AstConst::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    const string name = origParamName();
+    if (!name.empty()) str << " origParamName=" << name;
+}
+void AstConst::dumpJson(std::ostream& str) const {
+    const string name = origParamName();
+    if (!name.empty()) dumpJsonStr(str, "origParamName", name);
+    dumpJsonGen(str);
+}
+
 bool AstNodeExpr::isLValue() const {
     if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
         return varrefp->access().isWriteOrRW();
@@ -1847,6 +1938,14 @@ void AstCCast::dump(std::ostream& str) const {
 }
 void AstCCast::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, size);
+    dumpJsonGen(str);
+}
+void AstLogNot::dump(std::ostream& str) const {
+    this->AstNodeUniop::dump(str);
+    if (fromProperty()) str << " [fromProperty]";
+}
+void AstLogNot::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, fromProperty);
     dumpJsonGen(str);
 }
 void AstCvtArrayToArray::dump(std::ostream& str) const {
@@ -1932,6 +2031,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
     if (useVirtualPublic()) str << " [VIRPUB]";
+    if (isPrintedFrom()) str << " [PRINTED]";
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
@@ -1939,6 +2039,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExtended);
     dumpJsonBoolFuncIf(str, isInterfaceClass);
     dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isPrintedFrom);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
@@ -2160,6 +2261,16 @@ void AstIfaceRefDType::dumpJson(std::ostream& str) const {
 void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
+}
+void AstImplication::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isOverlapped()) str << " [overlapped]";
+    if (isFollowedBy()) str << " [followed-by]";
+}
+void AstImplication::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isOverlapped);
+    dumpJsonBoolFuncIf(str, isFollowedBy);
 }
 void AstInitArray::dumpInitList(std::ostream& str) const {
     int n = 0;
@@ -2527,10 +2638,12 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (emitToString()) str << " [EMITSTR]";
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, emitToString);
     dumpJsonGen(str);
 }
 void AstUnionDType::dump(std::ostream& str) const {
@@ -2692,6 +2805,18 @@ AstVarScope* AstNetlist::stlFirstIterationp() {
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
     return vscp;
+}
+AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
+    UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
+    AstFunc* selfp = nullptr;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
+         itemp = itemp->nextp()) {
+        if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
+    }
+    UASSERT(selfp, "'std::process::self' should be found");
+    AstFuncRef* const processSelfp = new AstFuncRef{flp, selfp};
+    processSelfp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+    return processSelfp;
 }
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);

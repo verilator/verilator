@@ -264,23 +264,14 @@ protected:
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam)
-        : VerilatedVarProps{vltype, vlflags, udims, pdims}
-        , m_datap{datap}
-        , m_namep{namep}
-        , m_isParam{isParam} {}
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
-                 std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals)
-        : VerilatedVarProps{vltype, vlflags, udims, pdims}
-        , m_datap{datap}
-        , m_namep{namep}
-        , m_forceControlSignals{std::move(forceControlSignals)}
-        , m_isParam{isParam} {}
+                 std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);
 
 public:
-    ~VerilatedVar() = default;
-    VerilatedVar(VerilatedVar&&) = default;
+    ~VerilatedVar();
+    VerilatedVar(VerilatedVar&&);
     // ACCESSORS
     void* datap() const { return m_datap; }
     const char* name() const { return m_namep; }
@@ -298,5 +289,23 @@ struct VerilatedForceControlSignals final {
     const VerilatedVar* forceValueSignalp{nullptr};  // __VforceVal signal
     const VerilatedVar forceReadSignal;  // __VforceRd signal
 };
+
+inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
+                                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam)
+    : VerilatedVarProps{vltype, vlflags, udims, pdims}
+    , m_datap{datap}
+    , m_namep{namep}
+    , m_isParam{isParam} {}
+inline VerilatedVar::VerilatedVar(
+    const char* namep, void* datap, VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims,
+    int pdims, bool isParam,
+    std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals)
+    : VerilatedVarProps{vltype, vlflags, udims, pdims}
+    , m_datap{datap}
+    , m_namep{namep}
+    , m_forceControlSignals{std::move(forceControlSignals)}
+    , m_isParam{isParam} {}
+inline VerilatedVar::~VerilatedVar() = default;
+inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
 
 #endif  // Guard

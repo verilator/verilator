@@ -106,6 +106,13 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
     }
+    // If array, returns element dtype, otherwise returns skipRef dtype
+    // If skipRef is false, RefDTypes are not followed (safe before typedef linking)
+    const AstNodeDType* elemDTypep(bool skipRef = true) const VL_MT_STABLE;
+    AstNodeDType* elemDTypep(bool skipRef = true) VL_MT_STABLE {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->elemDTypep(skipRef));
+    }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
@@ -239,6 +246,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
+    bool m_emitToString = false;  // Generate to_string() for this struct/union if set
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
@@ -293,6 +301,8 @@ public:
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
     bool isConstrainedRand() const { return m_constrainedRand; }
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
+    bool emitToString() const { return m_emitToString; }
+    void setEmitToString() { m_emitToString = true; }
 };
 
 // === Concrete node types =====================================================

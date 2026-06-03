@@ -24,7 +24,8 @@ module fsm_style_incl (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= S0;
-    end else begin
+    end
+    else begin
       case (state)
         S0:
         if (start) state <= S1;
@@ -47,7 +48,7 @@ module fsm_default_incl_ok (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q /*verilator fsm_arc_include_cond*/;
+  state_t state_q  /*verilator fsm_arc_include_cond*/;
   state_t state_d;
 
   always_comb begin
@@ -73,7 +74,8 @@ module fsm_forced_ok (
   always_ff @(posedge clk) begin
     if (rst) begin
       state <= 2'd0;
-    end else begin
+    end
+    else begin
       case (state)
         2'd0: state <= 2'd1;
         2'd1: state <= 2'd2;
@@ -90,9 +92,20 @@ module t (
   logic rst;
   logic start;
 
-  fsm_style_incl style_u (.clk(clk), .rst(rst), .start(start));
-  fsm_default_incl_ok default_incl_u (.clk(clk), .rst(rst), .start(start));
-  fsm_forced_ok forced_u (.clk(clk), .rst(rst));
+  fsm_style_incl style_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_default_incl_ok default_incl_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
+  );
+  fsm_forced_ok forced_u (
+      .clk(clk),
+      .rst(rst)
+  );
 
   initial begin
     cyc = 0;

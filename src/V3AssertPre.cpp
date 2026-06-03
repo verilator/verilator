@@ -67,9 +67,11 @@ private:
     V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
+    V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
@@ -411,6 +413,7 @@ private:
         }
     }
     void visit(AstDelay* nodep) override {
+        m_hasCycleDelay = true;
         // Only cycle delays are relevant in this stage; also only process once
         if (!nodep->isCycleDelay()) {
             if (m_inSynchDrive) {
@@ -792,6 +795,121 @@ private:
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    static AstAssocArrayDType* getProcessAssocArrayType(FileLine* const flp) {
+        // Type of __VassertsActive___x[std::process]
+        AstNodeDType* valp
+            = v3Global.rootp()->typeTablep()->findBasicDType(flp, VBasicDTypeKwd::BIT);
+        AstClassRefDType* keyp
+            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageProcessp(), nullptr};
+        keyp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+        v3Global.rootp()->typeTablep()->addTypesp(keyp);
+        AstAssocArrayDType* const typep = new AstAssocArrayDType{flp, valp, keyp};
+        typep->dtypep(typep);
+        v3Global.rootp()->typeTablep()->addTypesp(typep);
+        return typep;
+    }
+    static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
+        // Constructs refp.delete(std::process::self()) statement
+        FileLine* const flp = refp->fileline();
+        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+        AstCMethodHard* const deletep = new AstCMethodHard{
+            flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
+        deletep->dtypep(refp->findVoidDType());
+        return new AstStmtExpr{flp, deletep};
+    }
+    static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
+        // Constructs refp.size() statement
+        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+        AstCMethodHard* const sizep
+            = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
+        sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
+        return sizep;
+    }
+    void visit(AstSEventually* nodep) override {
+        UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+
+        AstSenTree* const sentreep = newSenTree(nodep);
+        if (!sentreep->sensesp()) {
+            VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
+        FileLine* const flp = nodep->fileline();
+
+        // Track active assertions
+        AstVar* const activep = new AstVar{flp, VVarType::MODULETEMP, m_activeNames.get(""),
+                                           getProcessAssocArrayType(flp)};
+        activep->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(activep);
+
+        // Assertion condition check
+        AstLoop* const loopp = new AstLoop{flp};
+        AstNodeExpr* const condp = new AstSampled{flp, nodep->exprp()->unlinkFrBack()};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLogNot{flp, condp}});
+        loopp->addStmtsp(new AstEventControl{flp, sentreep, nullptr});
+
+        // Add assertion to the active set
+        AstAssocSel* const selp = new AstAssocSel{flp, new AstVarRef{flp, activep, VAccess::WRITE},
+                                                  v3Global.rootp()->stdPackageProcessSelfp(flp)};
+        AstAssign* const incrementp = new AstAssign{flp, selp, new AstConst{flp, 1}};
+        AstPExprClause* const clausep = new AstPExprClause{flp};
+        AstStmtExpr* const deletep
+            = getProcessAssocArrayDelete(new AstVarRef{flp, activep, VAccess::WRITE});
+
+        // Main assertion block
+        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+        bodyp->addStmtsp(incrementp);
+        bodyp->addStmtsp(loopp);
+        bodyp->addStmtsp(clausep);
+        bodyp->addStmtsp(deletep);
+
+        // Validate assertion condition for each active assert
+        AstVar* const activeCountp = new AstVar{flp, VVarType::BLOCKTEMP, "__VassertCount",
+                                                nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        activeCountp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstAssign* const initActiveCountp
+            = new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                            getProcessAssocArraySize(new AstVarRef{flp, activep, VAccess::READ})};
+        AstLoop* const finalLoopp = new AstLoop{flp};
+        AstIf* const finalBodypCondp
+            = new AstIf{flp, condp->cloneTreePure(false), new AstPExprClause{flp},
+                        new AstPExprClause{flp, false}};
+        finalLoopp->addStmtsp(
+            new AstLoopTest{flp, finalLoopp,
+                            new AstNeq{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                       new AstConst{flp, 0}}});
+        finalLoopp->addStmtsp(finalBodypCondp);
+        finalLoopp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
+                          new AstSub{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
+                                     new AstConst{flp, 1}}});
+
+        // Final assertion block
+        AstBegin* const finalp = new AstBegin{flp, "", nullptr, true};
+        finalp->addStmtsp(activeCountp);
+        finalp->addStmtsp(initActiveCountp);
+        finalp->addStmtsp(finalLoopp);
+
+        m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
+        VL_RESTORER(m_hasCycleDelay);
+        m_hasCycleDelay = false;
+        iterate(bodyp);
+        iterate(finalp);
+
+        if (m_hasCycleDelay) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
+            return;
+        }
+
+        nodep->replaceWith(m_pexprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstStable* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
@@ -964,6 +1082,19 @@ private:
         return new AstPExpr{flp, beginp, exprp->findBitDType()};
     }
 
+    // Reject [=M:N] nonconsecutive range that reached V3AssertPre.
+    // [->M:N] is fully handled upstream (NFA path); only [=M:N] still lands
+    // here because AstSNonConsRep lowering is not yet implemented there.
+    // Replaces the node with BitFalse so lowering continues after the warning.
+    bool rejectNonconsecRange(AstNode* nodep, AstNodeExpr* maxCountp) {
+        if (!maxCountp) return false;
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: [=M:N] nonconsecutive range repetition"
+                                     " (IEEE 1800-2023 16.9.2)");
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
     void visit(AstSGotoRep* nodep) override {
         // Standalone goto rep (not inside implication antecedent)
         iterateChildren(nodep);
@@ -979,6 +1110,7 @@ private:
     void visit(AstSNonConsRep* nodep) override {
         // Standalone nonconsecutive rep (not inside implication antecedent)
         iterateChildren(nodep);
+        if (rejectNonconsecRange(nodep, nodep->maxCountp())) return;
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* countp = nodep->countp()->unlinkFrBack();
         if (!validateRepCount(nodep, countp)) return;
@@ -1002,6 +1134,18 @@ private:
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
+        // Top-level followed-by is claimed by V3AssertNfa; anything reaching here
+        // is nested inside iff/implies/or. IEEE 1800-2023 16.12.9 permits the
+        // composition, but silent lowering would drop non-vacuous-fail semantics.
+        if (nodep->isFollowedBy()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: followed-by (#-# / #=#) nested inside property operator"
+                          " (iff/implies/or) (IEEE 1800-2023 16.12.9)");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+
         // Handle goto repetition as antecedent before iterateChildren,
         // so the standalone AstSGotoRep visitor doesn't process it
         if (AstSGotoRep* const gotop = VN_CAST(nodep->lhsp(), SGotoRep)) {
@@ -1024,6 +1168,7 @@ private:
         if (AstSNonConsRep* const ncrp = VN_CAST(nodep->lhsp(), SNonConsRep)) {
             iterateChildren(ncrp);
             iterateAndNextNull(nodep->rhsp());
+            if (rejectNonconsecRange(nodep, ncrp->maxCountp())) return;
             FileLine* const flp = nodep->fileline();
             AstNodeExpr* countp = ncrp->countp()->unlinkFrBack();
             if (!validateRepCount(nodep, countp)) return;
@@ -1260,6 +1405,17 @@ private:
         m_pexprp = nodep;
 
         if (m_disablep) {
+            const AstSampled* sampledp = nullptr;
+            if (m_disablep->exists([&sampledp](const AstSampled* const sp) {
+                    sampledp = sp;
+                    return true;
+                })) {
+                sampledp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: $sampled inside disabled condition of a sequence");
+                m_disablep = new AstConst{m_disablep->fileline(), AstConst::BitFalse{}};
+                // always a copy is used, so remove it now
+                pushDeletep(m_disablep);
+            }
             FileLine* const flp = nodep->fileline();
             // Add counter which counts times the condition turned true
             AstVar* const disableCntp

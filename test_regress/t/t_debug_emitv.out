@@ -77,6 +77,7 @@ module Vt_debug_emitv_t;
             end
             #1;
             $write("After #1 delay");
+            wait((clk == 'sh1)) $write("After wait(clk == 1)");
         end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
@@ -666,6 +667,78 @@ module Vt_debug_emitv_t;
         else begin
         end
     end
+    begin : assert_prop_overlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_impl
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_overlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_nonoverlap_fb
+        assert property (@(posedge clk) 
+            ???? // IMPLICATION
+            inin
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_accept_on
+        assert property (@(posedge clk) accept_on (
+                                                   in) 
+                         in
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_reject_on
+        assert property (@(posedge clk) reject_on (
+                                                   in) 
+                         in
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_sync_accept_on
+        assert property (@(posedge clk) sync_accept_on (
+                                                        in) 
+                         in
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_sync_reject_on
+        assert property (@(posedge clk) sync_reject_on (
+                                                        in) 
+                         in
+        ) begin
+        end
+        else begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin
@@ -685,6 +758,12 @@ endmodule
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_semaphore;
         int signed m_keyCount;
+        int signed m_nextKeyCount;
+        m_nextKeyCount = 32'hffffffff;
+        longint m_ticket;
+        m_ticket = 64'h0;
+        longint m_nextTicket;
+        m_nextTicket = 64'h0;
         function new;
             input int signed keyCount;
             m_keyCount = keyCount;
@@ -694,29 +773,41 @@ package Vt_debug_emitv_std;
             m_keyCount = (m_keyCount + keyCount);
         endtask
         task get;
+            longint __Vincrement1;
             input int signed keyCount;
-            while ((m_keyCount < keyCount)) begin
-                begin
-
-                    ???? // WAIT
-                    (m_keyCount >= keyCount)end
-            end
-            m_keyCount = (m_keyCount - keyCount);
-        endtask
-        function try_get;
-            input int signed keyCount;
+            longint ticket;
             begin : label3
-                try_get = /*CRESET*/;
-                if ((m_keyCount >= keyCount)) begin
+                ticket = /*CRESET*/;
+                if (((m_keyCount >= keyCount) && (m_nextKeyCount 
+                                                  > 
+                                                  m_keyCount))) begin
                     begin
                         m_keyCount = (m_keyCount - 
                                       keyCount);
-                        try_get = 'sh1;
                         disable label3;
                     end
                 end
-                try_get = 'sh0;
-                disable label3;
+                __Vincrement1 = m_nextTicket;
+                m_nextTicket = (m_nextTicket + 64'h1);
+                ticket = __Vincrement1;
+                wait((m_ticket == ticket));
+                m_nextKeyCount = keyCount;
+                wait((m_keyCount >= keyCount));
+                m_keyCount = (m_keyCount - keyCount);
+                m_ticket = (m_ticket + 64'h1);
+            end
+        endtask
+        function try_get;
+            input int signed keyCount;
+            begin : label4
+                try_get = /*CRESET*/;
+                if ((m_keyCount < keyCount)) begin
+                    try_get = 'sh0;
+                    disable label4;
+                end
+                m_keyCount = (m_keyCount - keyCount);
+                try_get = 'sh1;
+                disable label4;
             end
         endfunction
     endclass
@@ -735,12 +826,12 @@ package Vt_debug_emitv_std;
              p
             ???? // CLASSREFDTYPE 'process'
             ;
-            begin : label4
+            begin : label5
                 self = /*CRESET*/;
                 p = new();
                 $c(p.m_process = vlProcess;);
                 self = p;
-                disable label4;
+                disable label5;
             end
         endfunction
         task set_status;
@@ -748,10 +839,10 @@ package Vt_debug_emitv_std;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label5
+            begin : label6
                 status = /*CRESET*/;
                 status = ($c(m_process->state()));
-                disable label5;
+                disable label6;
             end
         endfunction
         task kill;
@@ -765,12 +856,9 @@ package Vt_debug_emitv_std;
             set_status(process::RUNNING);
         endtask
         task await;
-
-            ???? // WAIT
-            ((status() == process::FINISHED) || (status() 
-                                                 == 
-                                                 process::
-                                                 KILLED))endtask
+            wait(((status() == process::FINISHED) || 
+                  (status() == process::KILLED)));
+        endtask
         task killQueue;
             ref 
             ???? // CLASSREFDTYPE 'process'
@@ -826,12 +914,12 @@ package Vt_debug_emitv_std;
         ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
-            begin : label6
+            begin : label7
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label6;
+                disable label7;
             end
         endfunction
         task set_randstate;
@@ -917,11 +1005,11 @@ package Vt_debug_emitv___024unit;
         ???? // CLASSREFDTYPE 'Cls'
         ;
         input int signed member;
-        begin : label7
+        begin : label8
             rand_restricted = randomize() with (
                 ???? // CONSTRAINTEXPR
                 (item.rmember1 < member)) ;
-            disable label7;
+            disable label8;
         end
     endfunction
 endpackage
@@ -942,13 +1030,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label8
+        begin : label9
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label8;
+                disable label9;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label8;
+            disable label9;
         end
     endfunction
     real r;
