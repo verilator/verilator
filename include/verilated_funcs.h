@@ -3668,8 +3668,8 @@ extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
                           QData end) VL_MT_SAFE;
 extern IData VL_SSCANF_INNX(int lbits, const std::string& ld, const std::string& format, int argc,
                             ...) VL_MT_SAFE;
-extern void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format,
-                          int argc, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_NX(std::string& output, const std::string& format, int argc,
+                          ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
 extern void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision,
                                bool hasSuffix, const std::string& suffix, bool hasWidth, int width,

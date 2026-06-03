@@ -224,8 +224,10 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     } else if (const AstSFormat* const dispp = VN_CAST(nodep, SFormat)) {
         isStmt = true;
         puts("VL_SFORMAT_NX(");
-        puts(cvtToStr(dispp->lhsp()->widthMin()));
-        putbs(",");
+        if (!dispp->lhsp()->dtypep()->isString()) {
+            puts(cvtToStr(dispp->lhsp()->widthMin()));
+            putbs(",");
+        }
         iterateConst(dispp->lhsp());
         emitDatap(dispp->lhsp());
         putbs(",");
