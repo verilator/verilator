@@ -1088,6 +1088,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             // Similar code flow in V3Number::displayed
             int lbits = 0;
             void* thingp = nullptr;
+            const std::string* enump = nullptr;
             QData ld = 0;
             std::vector<EData> strwide;
             WDataInP lwp{nullptr};
@@ -1108,6 +1109,34 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             } else if (formatAttr == VL_VFORMATATTR_STRING) {
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
+            } else if (formatAttr == VL_VFORMATATTR_ENUM) {
+                // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
+                lbits = va_arg(ap, int);
+                ld = VL_VA_ARG_Q_(ap, lbits);
+                strwide.resize(2);
+                WDataOutP strwidep = WDataOutP::external(strwide.data());
+                VL_SET_WQ(strwidep, ld);
+                lwp = strwidep;
+                lsb = lbits - 1;
+                ++argn;  // Enum value is followed by the generated name string argument
+                static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
+                enump = va_arg(ap, std::string*);
+                if (enump && !enump->empty()) {
+                    formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    thingp = const_cast<std::string*>(enump);
+                } else if (fmt == 'p' && widthSet && width == 0) {
+                    output += "'h";
+                    fmt = 'h';
+                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                } else {
+                    if (fmt == 'p') width = 0;
+                    widthSet = true;
+                    fmt = 'd';
+                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                }
+                if (widthSet && width == 0) {
+                    while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
+                }
             } else {  // Numeric
                 lbits = va_arg(ap, int);
                 if (lbits <= VL_QUADSIZE) {
@@ -1118,7 +1147,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     lwp = strwidep;
                 } else {
                     lwp = WDataInP::external(va_arg(ap, EData*));
-                    ld = lwp[0];
+                    ld = VL_SET_QW(lwp);  // Low 64 bits, for %c/%t
                 }
                 if (fmt == 'p') {
                     if (widthSet && width == 0) {  // For %0p, IEEE our choice, use 'h%0h
