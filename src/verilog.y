@@ -901,7 +901,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 // Lowest precedence
 // These are in IEEE 17.7.1
-%nonassoc       yALWAYS yS_ALWAYS yEVENTUALLY yS_EVENTUALLY yACCEPT_ON yREJECT_ON ySYNC_ACCEPT_ON ySYNC_REJECT_ON
+%nonassoc       prALWAYS prS_ALWAYS prEVENTUALLY prS_EVENTUALLY prIF prACCEPT_ON prREJECT_ON prSYNC_ACCEPT_ON prSYNC_REJECT_ON
 
 %right          yP_ORMINUSGT yP_OREQGT yP_POUNDMINUSPD yP_POUNDEQPD
 %right          yUNTIL yS_UNTIL yUNTIL_WITH yS_UNTIL_WITH yIMPLIES
@@ -6685,10 +6685,12 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
                           BBUNSUP($<fl>1, "Unsupported: property case expression");
                           DEL($3); }
-        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE
-                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3); }
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
+                        { $$ = new AstImplication{$1, $3, $5, true}; }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
-                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3, $7); }
+                        { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
+                          $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
+                                           new AstImplication{$1, elseCondp, $7, true}}; }
         ;
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
@@ -6773,22 +6775,22 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
                         { $$ = $5; BBUNSUP($1, "Unsupported: nexttime[] (in property expression)"); DEL($3); }
         |       yS_NEXTTIME '[' constExpr ']' pexpr %prec yS_NEXTTIME
                         { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); DEL($3); }
-        |       yALWAYS pexpr
+        |       yALWAYS pexpr  %prec prALWAYS
                         { $$ = $2; }
-        |       yALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yALWAYS
+        |       yALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec prALWAYS
                         { $$ = new AstPropAlways{$1, $7, $3, $5, false}; }
-        |       yS_ALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec yS_ALWAYS
+        |       yS_ALWAYS '[' constExpr ':' constExpr ']' pexpr  %prec prS_ALWAYS
                         { $$ = new AstPropAlways{$1, $7, $3, $5, true}; }
-        |       yS_ALWAYS pexpr
+        |       yS_ALWAYS pexpr  %prec prS_ALWAYS
                         { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
-        |       yS_EVENTUALLY pexpr
+        |       yS_EVENTUALLY pexpr  %prec prS_EVENTUALLY
                         {
                             $$ = new AstSEventually{$1, $2};
                             PARSEP->importIfInStd($1, "process", true);
                         }
-        |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
+        |       yS_EVENTUALLY anyrange pexpr  %prec prS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
-        |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
+        |       yEVENTUALLY anyrange pexpr  %prec prEVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($2); }
         |       ~o~pexpr yUNTIL pexpr
                         { $$ = new AstUntil{$2, $1, $3, false, false}; }
@@ -6803,13 +6805,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // yIFF also used by event_expression
         |       ~o~pexpr yIFF pexpr
                         { $$ = new AstLogEq{$2, $1, $3}; }
-        |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
+        |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec prACCEPT_ON
                         { $$ = new AstAbortOn{$1, VAbortKind::ACCEPT_ON, $3, $5}; }
-        |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
+        |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec prREJECT_ON
                         { $$ = new AstAbortOn{$1, VAbortKind::REJECT_ON, $3, $5}; }
-        |       ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON
+        |       ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec prSYNC_ACCEPT_ON
                         { $$ = new AstAbortOn{$1, VAbortKind::SYNC_ACCEPT_ON, $3, $5}; }
-        |       ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON
+        |       ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec prSYNC_REJECT_ON
                         { $$ = new AstAbortOn{$1, VAbortKind::SYNC_REJECT_ON, $3, $5}; }
         //
         //                      // IEEE: "property_instance"
