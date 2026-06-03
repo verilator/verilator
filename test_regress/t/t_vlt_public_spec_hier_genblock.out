@@ -1,0 +1,13 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.gen_if
+       VAR 0x#: if_local
+    SCOPE 0x#: top.gen_if.i_sub
+       VAR 0x#: sub_tmp
+    SCOPE 0x#: top.gen_loop[0]
+    SCOPE 0x#: top.gen_loop[0].i_sub
+       VAR 0x#: sub_tmp
+    SCOPE 0x#: top.gen_loop[1]
+       VAR 0x#: loop_local
+
+*-* All Finished *-*

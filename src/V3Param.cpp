@@ -50,6 +50,7 @@
 #include "V3Param.h"
 
 #include "V3Case.h"
+#include "V3Control.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Hasher.h"
@@ -1946,6 +1947,14 @@ class ParamProcessor final {
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
         string longname = srcModp->name() + "_";
+        // Clone for .vlt -path'ed variants
+        if (VN_IS(nodep, Cell)) {
+            const string pubSig = V3Control::cellPathPublicSignature(srcModp->someInstanceName());
+            if (!pubSig.empty()) {
+                any_overrides = true;
+                longname += "__Vhier" + V3Hash{pubSig}.toString();
+            }
+        }
         if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 
         if (srcModp->hierBlock()) {

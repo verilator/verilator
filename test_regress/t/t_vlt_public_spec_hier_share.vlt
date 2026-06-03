@@ -1,0 +1,16 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// sub_a and sub_b: identical marking -> share one deparam clone.
+public_flat -path "top.sub_a.some_var"
+public_flat -path "top.sub_b.some_var"
+
+// sub_c: different attribute -> distinct clone, still per-instance public.
+public_flat_rd -path "top.sub_c.some_var"
+
+// sub_d is left untagged: its some_var must NOT be public.

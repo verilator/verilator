@@ -1,0 +1,20 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.i_arr[0]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_arr[1]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_arr[2]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_md[0][0]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_md[0][1]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_md[1][0]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_md[1][1]
+       VAR 0x#: data
+    SCOPE 0x#: top.i_single
+       VAR 0x#: data
+
+*-* All Finished *-*

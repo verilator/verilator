@@ -1,0 +1,12 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.gen_loop[-1]
+       VAR 0x#: loop_local
+    SCOPE 0x#: top.i_sub[-1]
+       VAR 0x#: sub_leaf
+    SCOPE 0x#: top.i_sub[-2]
+       VAR 0x#: sub_leaf
+    SCOPE 0x#: top.i_sub[0]
+       VAR 0x#: sub_leaf
+
+*-* All Finished *-*

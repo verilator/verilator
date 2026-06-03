@@ -1,0 +1,14 @@
+%Error: t/t_vlt_public_spec_hier_genblock_bad.vlt:13:1: -path 'top.no_such_gen.x': cannot find scope 'no_such_gen' in scope 'top'
+   13 | public_flat -path "top.no_such_gen.x"
+      | ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_public_spec_hier_genblock_bad.vlt:16:1: -path 'top.gen_loop[0].no_such_var': cannot find variable 'no_such_var' in scope 'gen_loop'
+   16 | public_flat -path "top.gen_loop[0].no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_genblock_bad.vlt:19:1: -path 'top.gen_if.no_such_var': cannot find variable 'no_such_var' in scope 'gen_if'
+   19 | public_flat -path "top.gen_if.no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_genblock_bad.vlt:22:1: -path 'top.gen_loop[0].no_such_cell.sub_tmp': cannot find scope 'no_such_cell' in scope 'gen_loop'
+   22 | public_flat -path "top.gen_loop[0].no_such_cell.sub_tmp"
+      | ^~~~~~~~~~~
+%Error: Exiting due to

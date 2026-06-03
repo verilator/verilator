@@ -21,9 +21,12 @@
 #include "V3InstrCount.h"
 #include "V3String.h"
 
+#include <charconv>
+#include <map>
 #include <memory>
 #include <set>
 #include <unordered_map>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -796,11 +799,53 @@ public:
     FileLine* flp() const { return m_flp; }
 };
 
+// Deferred application of a public attribute given by hierarchical -path
+enum class V3ControlHierKind : uint8_t {
+    UNKNOWN,  // Not yet classified
+    CELL,
+    BLOCK
+};
+struct V3ControlHierSegment final {
+    std::string m_name;  // Identifier without trailing array index(es)
+    std::vector<int> m_indices;  // Trailing array indices
+    V3ControlHierKind m_kind = V3ControlHierKind::UNKNOWN;
+};
+struct V3ControlHierVarEntry final {
+    FileLine* m_fl;
+    std::string m_path;  // Full path
+    VAttrType m_attr;
+    std::string m_topName;  // First segment: top module name
+    std::vector<V3ControlHierSegment> m_middle;  // Intermediate cells/blocks
+    std::string m_leafName;  // Final segment: variable name
+    V3ControlHierVarEntry(FileLine* fl, const std::string& path, VAttrType attr)
+        : m_fl{fl}
+        , m_path{path}
+        , m_attr{attr} {}
+};
+
+// Prefix tree over all -path entries
+struct V3ControlHierTreeNode final {
+    V3ControlHierKind m_kind = V3ControlHierKind::UNKNOWN;  // Kind of this node's segment
+    // Public'ed vars directly in this scope: (leaf var pretty name, attribute).
+    std::vector<std::pair<std::string, VAttrType>> m_vars;
+    // Child scopes keyed by pretty segment text.
+    std::map<std::string, std::unique_ptr<V3ControlHierTreeNode>> m_children;
+
+    V3ControlHierTreeNode* getOrAddChild(const std::string& key) {
+        std::unique_ptr<V3ControlHierTreeNode>& slot = m_children[key];
+        if (!slot) slot = std::make_unique<V3ControlHierTreeNode>();
+        return slot.get();
+    }
+};
+
 class V3ControlResolver final {
     enum ProfileDataMode : uint8_t { NONE = 0, MTASK = 1, HIER_DPI = 2 };
     V3ControlModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ControlFileResolver m_files;  // Access to file names (with wildcards)
     V3ControlScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
+    std::vector<V3ControlHierVarEntry> m_hierVarAttrs;  // -path public attrs
+    V3ControlHierTreeNode m_hierVarTreeRoot;  // Prefix tree over m_hierVarAttrs
+    std::unordered_map<std::string, V3ControlHierTreeNode*> m_hierVarCellPaths;
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;
@@ -818,6 +863,11 @@ public:
     V3ControlModuleResolver& modules() { return m_modules; }
     V3ControlFileResolver& files() { return m_files; }
     V3ControlScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
+    std::vector<V3ControlHierVarEntry>& hierVarAttrs() { return m_hierVarAttrs; }
+    V3ControlHierTreeNode& hierVarTreeRoot() { return m_hierVarTreeRoot; }
+    std::unordered_map<std::string, V3ControlHierTreeNode*>& hierVarCellPaths() {
+        return m_hierVarCellPaths;
+    }
 
     void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
         // Empty key for hierarchical DPI wrapper costs.
@@ -1026,6 +1076,20 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
     }
 }
 
+// For -path'ed vars
+void V3Control::addHierVarAttr(FileLine* fl, const string& path, VAttrType attr) {
+    switch (attr) {
+    case VAttrType::VAR_PUBLIC:
+    case VAttrType::VAR_PUBLIC_FLAT:
+    case VAttrType::VAR_PUBLIC_FLAT_RD:
+    case VAttrType::VAR_PUBLIC_FLAT_RW:
+        V3ControlResolver::s().hierVarAttrs().emplace_back(fl, path, attr);
+        v3Global.dpi(true);
+        return;
+    default: fl->v3error("'"s + attr.ascii() + "' attribute does not support -path"); return;
+    }
+}
+
 void V3Control::applyCase(AstCase* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
@@ -1093,6 +1157,516 @@ void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* f
     } else {
         resolveThenApply(*modp, varp);
     }
+}
+
+// Parse one decimal array index from 'indexText' and append it to seg.m_indices.
+static bool parseIndexDigits(const std::string& indexText, V3ControlHierSegment& seg) {
+    int index = 0;
+    const char* const first = indexText.data();
+    const char* const last = first + indexText.size();
+    const auto [ptr, ec] = std::from_chars(first, last, index);
+    if (ec != std::errc{} || ptr != last) return false;
+    seg.m_indices.push_back(index);
+    return true;
+}
+
+enum class IndexRunResult : uint8_t {
+    OK,  // Parsed a (possibly empty) run of "[N]" groups, pos past last ']'
+    UNTERMINATED,  // A '[' has no matching ']'; pos left at the offending '['
+    BAD_DIGITS  // A "[...]" body is not a valid index; pos left at the offending '['
+};
+
+static IndexRunResult parseIndexRun(const std::string& str, std::string::size_type& pos,
+                                    V3ControlHierSegment& seg) {
+    while (pos < str.size() && str[pos] == '[') {
+        const std::string::size_type closep = str.find(']', pos);
+        if (closep == std::string::npos) return IndexRunResult::UNTERMINATED;
+        if (!parseIndexDigits(str.substr(pos + 1, closep - pos - 1), seg)) {
+            return IndexRunResult::BAD_DIGITS;
+        }
+        pos = closep + 1;
+    }
+    return IndexRunResult::OK;
+}
+
+static bool parseEscapedIndex(FileLine* fl, const std::string& path, std::string::size_type& pos,
+                              V3ControlHierSegment& seg) {
+    const IndexRunResult result = parseIndexRun(path, pos, seg);
+    if (result == IndexRunResult::UNTERMINATED) {
+        fl->v3error("-path '" << path << "': unterminated '[' in escaped-name array index");
+        return false;
+    }
+    if (result == IndexRunResult::BAD_DIGITS) {
+        const std::string::size_type closep = path.find(']', pos);
+        fl->v3error("-path '" << path << "': malformed array index '"
+                              << path.substr(pos, closep - pos + 1) << "'");
+        return false;
+    }
+    return true;
+}
+
+static bool parsePlainSegment(FileLine* fl, const std::string& path, const std::string& raw,
+                              V3ControlHierSegment& seg) {
+    const std::string::size_type firstOpen = raw.find('[');
+    if (firstOpen == std::string::npos) {
+        if (raw.find(']') != std::string::npos) {
+            fl->v3error("-path '" << path << "': malformed array index in segment '" << raw
+                                  << "'");
+            return false;
+        }
+        seg.m_name = raw;
+        return true;
+    }
+    seg.m_name = raw.substr(0, firstOpen);
+    std::string::size_type pos = firstOpen;
+    const bool ok = firstOpen != 0 && parseIndexRun(raw, pos, seg) == IndexRunResult::OK;
+    if (!ok || pos != raw.size() || seg.m_name.find(']') != std::string::npos) {
+        fl->v3error("-path '" << path << "': malformed array index in segment '" << raw << "'");
+        return false;
+    }
+    return true;
+}
+
+static std::vector<V3ControlHierSegment> splitHierPath(FileLine* fl, const std::string& path,
+                                                       bool& errOut) {
+    static const std::string WHITESPACE = " \t\n\v\f\r";
+    errOut = false;
+    std::vector<V3ControlHierSegment> segs;
+    std::string::size_type i = 0;
+    const std::string::size_type len = path.size();
+    while (i < len) {
+        V3ControlHierSegment seg;
+        if (path[i] == '\\') {
+            ++i;  // skip '\'
+            const std::string::size_type start = i;
+            i = path.find_first_of(WHITESPACE, i);
+            if (i == std::string::npos) i = len;
+            seg.m_name = path.substr(start, i - start);
+            if (seg.m_name.empty()) {
+                fl->v3error("-path '" << path << "': empty escaped identifier");
+                errOut = true;
+                return {};
+            }
+            // Skip the terminating whitespace of the escaped identifier
+            i = path.find_first_not_of(WHITESPACE, i);
+            if (i == std::string::npos) i = len;
+            if (i < len && path[i] == '[') {
+                if (!parseEscapedIndex(fl, path, i, seg)) {
+                    errOut = true;
+                    return {};
+                }
+            }
+        } else {
+            const std::string::size_type start = i;
+            while (i < len && path[i] != '.') ++i;
+            const std::string raw = path.substr(start, i - start);
+            if (raw.empty()) {
+                fl->v3error("-path '" << path << "': empty identifier in path");
+                errOut = true;
+                return {};
+            }
+            if (!parsePlainSegment(fl, path, raw, seg)) {
+                errOut = true;
+                return {};
+            }
+        }
+        segs.push_back(seg);
+        if (i < len) {
+            if (path[i] != '.') {
+                fl->v3error("-path '" << path << "': expected '.' separator between identifiers");
+                errOut = true;
+                return {};
+            }
+            ++i;  // skip '.'
+            if (i >= len) {
+                fl->v3error("-path '" << path << "': trailing '.' with no identifier");
+                errOut = true;
+                return {};
+            }
+        }
+    }
+    return segs;
+}
+
+static std::string segmentPrettyText(const V3ControlHierSegment& seg) {
+    std::string out = seg.m_name;
+    for (const int index : seg.m_indices) out += "[" + std::to_string(index) + "]";
+    return out;
+}
+
+static void applyHierVarAttrToVar(AstVar* varp, VAttrType attr) {
+    switch (attr) {
+    case VAttrType::VAR_PUBLIC:
+        varp->sigUserRWPublic(true);
+        varp->sigModPublic(true);
+        break;
+    case VAttrType::VAR_PUBLIC_FLAT:
+    case VAttrType::VAR_PUBLIC_FLAT_RW: varp->sigUserRWPublic(true); break;
+    case VAttrType::VAR_PUBLIC_FLAT_RD: varp->sigUserRdPublic(true); break;
+    default: break;
+    }
+}
+
+static std::string scopeName(const AstNode* scopep) {
+    if (const AstNodeModule* m = VN_CAST(scopep, NodeModule)) return m->prettyDehashOrigOrName();
+    if (const AstBegin* b = VN_CAST(scopep, Begin)) return b->prettyDehashOrigOrName();
+    if (const AstGenBlock* g = VN_CAST(scopep, GenBlock)) return g->prettyDehashOrigOrName();
+    return scopep ? scopep->prettyName() : std::string{"<null>"};
+}
+
+static void collectScopeMatches(AstNode* firstp, const std::string& name,
+                                const std::string& stripped, std::vector<AstNode*>& out) {
+    for (AstNode* p = firstp; p; p = p->nextp()) {
+        if (AstCell* const cellp = VN_CAST(p, Cell)) {
+            if (cellp->prettyDehashOrigOrName() == name || cellp->origName() == name
+                || cellp->name() == name) {
+                out.push_back(cellp);
+                continue;
+            }
+            // Currently touching one element in a cell array touches them all
+            if (cellp->rangep()
+                && (cellp->prettyDehashOrigOrName() == stripped || cellp->origName() == stripped
+                    || cellp->name() == stripped))
+                out.push_back(cellp);
+        } else if (AstBegin* const beginp = VN_CAST(p, Begin)) {
+            if (beginp->prettyDehashOrigOrName() == name || beginp->name() == name
+                || beginp->prettyDehashOrigOrName() == stripped || beginp->name() == stripped)
+                out.push_back(beginp);
+        } else if (AstGenBlock* const genp = VN_CAST(p, GenBlock)) {
+            if (genp->prettyDehashOrigOrName() == name || genp->name() == name
+                || genp->prettyDehashOrigOrName() == stripped || genp->name() == stripped) {
+                out.push_back(genp);
+                continue;
+            }
+            if (genp->implied() || genp->unnamed())
+                collectScopeMatches(genp->itemsp(), name, stripped, out);
+        } else if (AstGenIf* const ifp = VN_CAST(p, GenIf)) {
+            collectScopeMatches(ifp->thensp(), name, stripped, out);
+            collectScopeMatches(ifp->elsesp(), name, stripped, out);
+        } else if (AstGenCase* const casep = VN_CAST(p, GenCase)) {
+            for (AstGenCaseItem* itemp = casep->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
+                collectScopeMatches(itemp->itemsp(), name, stripped, out);
+            }
+        }
+    }
+}
+
+using ScopeChildrenCache
+    = std::map<std::pair<const AstNode*, std::string>, std::vector<AstNode*>>;
+
+static const std::vector<AstNode*>& findScopeChildren(AstNode* scopep,
+                                                      const V3ControlHierSegment& seg,
+                                                      ScopeChildrenCache& cache) {
+    const std::string name = segmentPrettyText(seg);
+    const auto key = std::make_pair(static_cast<const AstNode*>(scopep), name);
+    const auto pair = cache.emplace(key, std::vector<AstNode*>{});
+    std::vector<AstNode*>& out = pair.first->second;
+    if (!pair.second) return out;  // Cache hit
+    const std::string& stripped = seg.m_name;
+    if (const AstNodeModule* m = VN_CAST(scopep, NodeModule))
+        collectScopeMatches(m->stmtsp(), name, stripped, out);
+    else if (const AstBegin* b = VN_CAST(scopep, Begin))
+        collectScopeMatches(b->stmtsp(), name, stripped, out);
+    else if (const AstGenBlock* g = VN_CAST(scopep, GenBlock)) {
+        collectScopeMatches(g->itemsp(), name, stripped, out);
+        if (const AstGenFor* const forp = VN_CAST(g->genforp(), GenFor))
+            collectScopeMatches(forp->itemsp(), name, stripped, out);
+    }
+    return out;
+}
+
+static AstVar* matchVarList(AstNode* firstp, const std::string& name) {
+    for (AstNode* p = firstp; p; p = p->nextp()) {
+        if (AstVar* const varp = VN_CAST(p, Var)) {
+            if (varp->prettyDehashOrigOrName() == name || varp->name() == name) return varp;
+        }
+    }
+    return nullptr;
+}
+
+static AstVar* findVarInScope(AstNode* scopep, const std::string& name) {
+    if (const AstNodeModule* m = VN_CAST(scopep, NodeModule))
+        return matchVarList(m->stmtsp(), name);
+    if (const AstBegin* b = VN_CAST(scopep, Begin)) return matchVarList(b->stmtsp(), name);
+    if (const AstGenBlock* g = VN_CAST(scopep, GenBlock)) {
+        if (AstVar* const varp = matchVarList(g->itemsp(), name)) return varp;
+        if (const AstGenFor* const forp = VN_CAST(g->genforp(), GenFor))
+            return matchVarList(forp->itemsp(), name);
+    }
+    return nullptr;
+}
+
+struct PathWalkResult final {
+    bool anyApplied = false;
+    size_t deepestIdx = 0;
+    AstNode* deepestScopep = nullptr;
+};
+static void walkAndApply(AstNode* scopep, const std::vector<V3ControlHierSegment>& segs,
+                         size_t idx, V3ControlHierVarEntry& entry, PathWalkResult& result,
+                         ScopeChildrenCache& cache) {
+    if (idx > result.deepestIdx) {
+        result.deepestIdx = idx;
+        result.deepestScopep = scopep;
+    }
+    if (idx == segs.size() - 1) {
+        AstVar* const varp = findVarInScope(scopep, segmentPrettyText(segs[idx]));
+        if (varp) {
+            varp->mayBecomePublic(true);
+            result.anyApplied = true;
+        }
+        return;
+    }
+    const std::vector<AstNode*>& children = findScopeChildren(scopep, segs[idx], cache);
+    for (AstNode* const childp : children) {
+        AstNode* nextScopep = nullptr;
+        V3ControlHierKind kindSeen = V3ControlHierKind::UNKNOWN;
+        if (AstCell* const cellp = VN_CAST(childp, Cell)) {
+            if (!cellp->modp()) continue;  // Unresolved
+            nextScopep = cellp->modp();
+            kindSeen = V3ControlHierKind::CELL;
+        } else {
+            nextScopep = childp;
+            kindSeen = V3ControlHierKind::BLOCK;
+        }
+        // idx-1 indexes into entry.m_middle (m_topName is segs[0]).
+        if (idx >= 1 && (idx - 1) < entry.m_middle.size()
+            && entry.m_middle[idx - 1].m_kind == V3ControlHierKind::UNKNOWN) {
+            entry.m_middle[idx - 1].m_kind = kindSeen;
+        }
+        walkAndApply(nextScopep, segs, idx + 1, entry, result, cache);
+    }
+}
+
+static void insertEntryIntoHierTree(const V3ControlHierVarEntry& entry) {
+    V3ControlHierTreeNode& root = V3ControlResolver::s().hierVarTreeRoot();
+    auto& cellPaths = V3ControlResolver::s().hierVarCellPaths();
+    // Top module is the first tree level
+    V3ControlHierTreeNode* nodep = root.getOrAddChild(entry.m_topName);
+    nodep->m_kind = V3ControlHierKind::CELL;
+    const bool registerCells
+        = !entry.m_middle.empty() && entry.m_middle.back().m_kind == V3ControlHierKind::CELL;
+    std::string instPath = entry.m_topName;
+    for (const V3ControlHierSegment& seg : entry.m_middle) {
+        const std::string key = segmentPrettyText(seg);
+        instPath += ".";
+        instPath += key;
+        nodep = nodep->getOrAddChild(key);
+        nodep->m_kind = seg.m_kind;
+        if (registerCells && seg.m_kind == V3ControlHierKind::CELL) cellPaths[instPath] = nodep;
+    }
+    nodep->m_vars.emplace_back(entry.m_leafName, entry.m_attr);
+}
+
+// Mark all possibly -path'ed vars as mayBecomePublic
+void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
+    auto& entries = V3ControlResolver::s().hierVarAttrs();
+    if (entries.empty()) return;
+    // Reduce scanning for similar paths
+    ScopeChildrenCache scopeChildrenCache;
+    std::unordered_map<std::string, AstNodeModule*> topModCache;
+    for (V3ControlHierVarEntry& entry : entries) {
+        bool splitErr = false;
+        const std::vector<V3ControlHierSegment> segs
+            = splitHierPath(entry.m_fl, entry.m_path, splitErr);
+        if (splitErr) continue;
+        if (segs.size() < 2) {
+            entry.m_fl->v3error("-path '" << entry.m_path
+                                          << "': must name at least a scope and a variable");
+            continue;
+        }
+        const std::string topName = segmentPrettyText(segs[0]);
+        entry.m_topName = topName;
+        entry.m_leafName = segmentPrettyText(segs.back());
+        entry.m_middle.assign(segs.begin() + 1, segs.end() - 1);
+        const auto topPair = topModCache.emplace(topName, nullptr);
+        AstNodeModule*& topModp = topPair.first->second;
+        if (topPair.second) {  // Cache miss: scan the netlist once for this name
+            for (AstNodeModule* modp = netlistp->modulesp(); modp;
+                 modp = VN_AS(modp->nextp(), NodeModule)) {
+                if (!modp->isTop()) continue;
+                if (modp->prettyDehashOrigOrName() == topName || modp->origName() == topName
+                    || modp->name() == topName) {
+                    topModp = modp;
+                    break;
+                }
+            }
+        }
+        if (!topModp) {
+            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find top scope '"
+                                          << topName << "'");
+            continue;
+        }
+        // Walk cells / begins / genblocks to var
+        PathWalkResult result;
+        walkAndApply(topModp, segs, 1, entry, result, scopeChildrenCache);
+        if (result.anyApplied) {
+            insertEntryIntoHierTree(entry);
+            continue;
+        }
+        // No path resolved - report at the deepest level reached for a useful error.
+        const size_t failIdx = result.deepestIdx;
+        AstNode* const failScopep = result.deepestScopep;
+        const std::string failName = segmentPrettyText(segs[failIdx]);
+        if (failIdx == segs.size() - 1) {
+            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find variable '"
+                                          << failName << "' in scope '" << scopeName(failScopep)
+                                          << "'");
+        } else {
+            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find scope '" << failName
+                                          << "' in scope '" << scopeName(failScopep) << "'");
+        }
+    }
+    // Note: entries are NOT cleared
+}
+
+//----------------------------------------------------------------------
+// V3Param time per-cell -path unique cloning
+static void appendNodeSignature(const V3ControlHierTreeNode* nodep, std::string& out) {
+    // Leaf vars: "<name>=<attr>;" sorted by (name, attr).
+    std::vector<std::pair<std::string, VAttrType>> vars = nodep->m_vars;
+    std::sort(vars.begin(), vars.end(), [](const auto& a, const auto& b) {
+        if (a.first != b.first) return a.first < b.first;
+        return a.second.ascii() < b.second.ascii();
+    });
+    // NOCOMMIT -- is this too verbose?
+    out += "v{";
+    for (const auto& var : vars) {
+        out += var.first;
+        out += "=";
+        out += var.second.ascii();
+        out += ";";
+    }
+    out += "}";
+    // Child scopes: "<key>(<kind>:<subsig>)" in sorted key order (std::map).
+    out += "c{";
+    for (const auto& child : nodep->m_children) {
+        out += child.first;
+        out += ":";
+        out += std::to_string(static_cast<int>(child.second->m_kind));
+        out += "(";
+        appendNodeSignature(child.second.get(), out);
+        out += ")";
+    }
+    out += "}";
+}
+
+// -path'ed public marking as a string for V3Param uniquification and cloning
+std::string V3Control::cellPathPublicSignature(const std::string& cellInstancePath) {
+    const auto& cellPaths = V3ControlResolver::s().hierVarCellPaths();
+    const auto it = cellPaths.find(cellInstancePath);
+    if (it == cellPaths.end()) return "";
+    std::string sig;
+    appendNodeSignature(it->second, sig);
+    return sig;
+}
+
+//----------------------------------------------------------------------
+// Post-V3Begin, pre-V3Inline cell walk and public stamp
+static std::string mangleHierSegment(const V3ControlHierSegment& seg) {
+    std::string out = seg.m_name;
+    for (const int index : seg.m_indices) {
+        out += "__BRA__" + AstNode::encodeNumber(index) + "__KET__";
+    }
+    return out;
+}
+
+// Join two mangled name parts with V3Begin's "__DOT__" separator.
+static std::string mangledJoin(const std::string& a, const std::string& b) {
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+    return a + "__DOT__" + b;
+}
+
+struct StageDCache final {
+    std::unordered_map<std::string, AstNodeModule*> m_topMods;
+    std::map<std::pair<const AstNodeModule*, std::string>, AstCell*> m_cells;
+};
+
+static AstNodeModule* findModuleByOrigName(AstNetlist* netlistp, const std::string& name,
+                                           StageDCache& cache) {
+    const auto pair = cache.m_topMods.emplace(name, nullptr);
+    AstNodeModule*& slot = pair.first->second;
+    if (!pair.second) return slot;  // Cache hit
+    for (AstNodeModule* modp = netlistp->modulesp(); modp;
+         modp = VN_AS(modp->nextp(), NodeModule)) {
+        if (modp->prettyDehashOrigOrName() == name || modp->origName() == name
+            || modp->name() == name) {
+            slot = modp;
+            break;
+        }
+    }
+    return slot;
+}
+
+static AstCell* findCellInModule(AstNodeModule* modp, const std::string& mangledName,
+                                 StageDCache& cache) {
+    const auto key = std::make_pair(static_cast<const AstNodeModule*>(modp), mangledName);
+    const auto pair = cache.m_cells.emplace(key, nullptr);
+    AstCell*& slot = pair.first->second;
+    if (!pair.second) return slot;  // Cache hit
+    const std::string prettyLookup = AstNode::prettyName(mangledName);
+    for (AstNode* p = modp->stmtsp(); p; p = p->nextp()) {
+        AstCell* const cellp = VN_CAST(p, Cell);
+        if (!cellp) continue;
+        if (cellp->name() == mangledName || cellp->origName() == mangledName
+            || cellp->prettyDehashOrigOrName() == mangledName
+            || cellp->prettyDehashOrigOrName() == prettyLookup) {
+            slot = cellp;
+            break;
+        }
+    }
+    return slot;
+}
+
+static AstVar* findVarInModuleByMangledName(AstNodeModule* modp, const std::string& mangledName) {
+    const std::string prettyLookup = AstNode::prettyName(mangledName);
+    for (AstNode* p = modp->stmtsp(); p; p = p->nextp()) {
+        AstVar* const varp = VN_CAST(p, Var);
+        if (!varp) continue;
+        if (varp->name() == mangledName || varp->origName() == mangledName
+            || varp->prettyDehashOrigOrName() == mangledName
+            || varp->prettyDehashOrigOrName() == prettyLookup)
+            return varp;
+    }
+    return nullptr;
+}
+
+static void applyOneHierVarMarker(AstNetlist* netlistp, V3ControlHierVarEntry& entry,
+                                  StageDCache& cache) {
+    AstNodeModule* currentModp = findModuleByOrigName(netlistp, entry.m_topName, cache);
+    if (!currentModp) return;  // Error already issued at V3LinkParse time.
+    std::string mangledPrefix;  // Flattened BLOCK segments accumulate here.
+    for (const V3ControlHierSegment& seg : entry.m_middle) {
+        const std::string segMangled = mangleHierSegment(seg);
+        const std::string lookup = mangledJoin(mangledPrefix, segMangled);
+        if (seg.m_kind == V3ControlHierKind::CELL) {
+            AstCell* const cellp = findCellInModule(currentModp, lookup, cache);
+            if (!cellp || !cellp->modp()) return;  // Pruned generate iteration, etc.
+            currentModp = cellp->modp();
+            mangledPrefix.clear();
+        } else {
+            mangledPrefix = lookup;
+        }
+    }
+    const std::string leafLookup = mangledJoin(mangledPrefix, entry.m_leafName);
+    AstVar* const varp = findVarInModuleByMangledName(currentModp, leafLookup);
+    if (varp) applyHierVarAttrToVar(varp, entry.m_attr);
+}
+
+// Finialize public flags
+void V3Control::applyHierVarScopes(AstNetlist* netlistp) {
+    auto& entries = V3ControlResolver::s().hierVarAttrs();
+    if (entries.empty()) return;
+
+    StageDCache cache;
+    for (V3ControlHierVarEntry& entry : entries) applyOneHierVarMarker(netlistp, entry, cache);
+
+    netlistp->foreach([](AstVar* varp) {
+        if (varp->mayBecomePublic() && !varp->isSigPublic()) varp->mayBecomePublic(false);
+    });
+
+    entries.clear();
 }
 
 int V3Control::getHierWorkers(const string& model) {

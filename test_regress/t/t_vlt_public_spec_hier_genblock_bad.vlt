@@ -1,0 +1,22 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Each line below exercises an error case for hierarchical -path that
+// descends through generate blocks.
+
+// Unknown generate block name directly under the top module
+public_flat -path "top.no_such_gen.x"
+
+// Unknown variable inside a generate-for iteration
+public_flat -path "top.gen_loop[0].no_such_var"
+
+// Unknown variable inside a generate-if block
+public_flat -path "top.gen_if.no_such_var"
+
+// Unknown cell name inside a generate-for iteration
+public_flat -path "top.gen_loop[0].no_such_cell.sub_tmp"

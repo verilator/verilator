@@ -1168,6 +1168,7 @@ public:
 
 void V3LinkParse::linkParse(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": ");
+    V3Control::applyHierVarAttrs(rootp);
     { LinkParseVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTreeEitherLevel() >= 6);
 }
