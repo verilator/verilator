@@ -4008,10 +4008,8 @@ VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
     va_list ap;
     va_start(ap, pdims);
     for (int i = 0; i < udims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        forceReadSignal.m_unpacked[i].m_left = msb;
-        forceReadSignal.m_unpacked[i].m_right = lsb;
+        forceReadSignal.m_unpacked[i].m_left = va_arg(ap, int);
+        forceReadSignal.m_unpacked[i].m_right = va_arg(ap, int);
     }
     for (int i = 0; i < pdims; ++i) {
         const int msb = va_arg(ap, int);
@@ -4031,10 +4029,8 @@ VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
 
     va_start(ap, pdims);
     for (int i = 0; i < udims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        var.m_unpacked[i].m_left = msb;
-        var.m_unpacked[i].m_right = lsb;
+        var.m_unpacked[i].m_left = va_arg(ap, int);
+        var.m_unpacked[i].m_right = va_arg(ap, int);
     }
     for (int i = 0; i < pdims; ++i) {
         const int msb = va_arg(ap, int);
