@@ -307,9 +307,12 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     if (forInputs && anyNonVerilog) os << "\n`verilog\n";
 }
 
-void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
-                           bool inLibMap, const string& libname,
-                           const string& errmsg) {  // "" for no error, make fake node
+void V3ParseImp::parseFile(
+    FileLine* fileline, const string& modfilename, bool inLibrary, bool inLibMap,
+    const string& libname,
+    const string& errmsg,  // "" for no error, make fake node
+    const std::string& notFoundName) {  // name for AstNotFoundModule - modfilename will be used if
+                                        // notFoundName is empty
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
 
@@ -327,7 +330,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname, libname};
+        AstNodeModule* const nodep = new AstNotFoundModule{
+            fileline, notFoundName.empty() ? modname : notFoundName, libname};
         v3Global.rootp()->addModulesp(nodep);
         return;
     }
@@ -893,8 +897,9 @@ V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
 void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary, bool inLibMap,
-                        const string& libname, const string& errmsg) {
-    m_impp->parseFile(fileline, modname, inLibrary, inLibMap, libname, errmsg);
+                        const string& libname, const string& errmsg,
+                        const std::string& notFoundName) {
+    m_impp->parseFile(fileline, modname, inLibrary, inLibMap, libname, errmsg, notFoundName);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     if (text != "") impp->ppPushText(text);
