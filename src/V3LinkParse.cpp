@@ -460,7 +460,8 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        m_moduleWithGenericIface |= VN_IS(nodep->childDTypep(), IfaceGenericDType);
+        const AstNodeDType* const dtypep = nodep->childDTypep();
+        m_moduleWithGenericIface |= dtypep && VN_IS(dtypep->elemDTypep(false), IfaceGenericDType);
 
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
