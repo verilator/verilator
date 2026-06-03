@@ -143,6 +143,7 @@ class Capabilities:
     _cached_have_dev_asan = None
     _cached_have_dev_gcov = None
     _cached_have_gdb = None
+    _cached_have_lldb = None
     _cached_have_sc = None
     _cached_have_solver = None
     _cached_make_version = None
@@ -197,6 +198,13 @@ class Capabilities:
         return Capabilities._cached_have_gdb
 
     @staticproperty
+    def have_lldb() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_lldb is None:
+            out = VtOs.run_capture('lldb --help 2>/dev/null', check=False)
+            Capabilities._cached_have_lldb = bool('USAGE: lldb' in out)
+        return Capabilities._cached_have_lldb
+
+    @staticproperty
     def have_sc() -> bool:  # pylint: disable=no-method-argument
         if Capabilities._cached_have_sc is None:
             if 'SYSTEMC' in os.environ:
@@ -237,6 +245,7 @@ class Capabilities:
         _ignore = Capabilities.have_dev_asan
         _ignore = Capabilities.have_dev_gcov
         _ignore = Capabilities.have_gdb
+        _ignore = Capabilities.have_lldb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
 
@@ -1541,8 +1550,9 @@ class VlTest:
             debugger_exec_cmd_start = ""
             debugger_exec_cmd_end = ""
             if Args.gdbsim:
-                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
-                debugger_exec_cmd_start = " -ex 'run "
+                use_lldb = not self.have_gdb and self.have_lldb
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "lldb" if use_lldb else "gdb") + " "
+                debugger_exec_cmd_start = " -b -o 'run " if use_lldb else " -ex 'run "
                 debugger_exec_cmd_end = "'"
             cmd = [
                 run_env + debugger + 'vvp', debugger_exec_cmd_start,
@@ -1649,15 +1659,18 @@ class VlTest:
             if not param['executable']:
                 param['executable'] = self.obj_dir + "/" + param['vm_prefix']
             debugger = ""
+            run_flags = ""
+            trailer = ""
             if Args.gdbsim:
-                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
+                use_lldb = not self.have_gdb and self.have_lldb
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "lldb" if use_lldb else "gdb") + " "
+                run_flag = " -o " if use_lldb else " -ex "
+                run_flags = run_flag + "'run "
+                trailer = "'"
             elif Args.rrsim:
                 debugger = "rr record "
-            cmd = [
-                (run_env + debugger + param['executable'] + (" -ex 'run " if Args.gdbsim else "")),
-                *param['all_run_flags'],
-                ("'" if Args.gdbsim else ""),
-            ]
+            cmd = [(run_env + debugger + param['executable'] + run_flags), *param['all_run_flags'],
+                   trailer]
             cmd += self.driver_verilated_flags
             self.run(
                 cmd=cmd,
@@ -1773,6 +1786,10 @@ class VlTest:
         return Capabilities.have_coroutines
 
     @property
+    def have_dbg(self) -> bool:
+        return Capabilities.have_gdb or Capabilities.have_lldb
+
+    @property
     def have_dev_asan(self) -> bool:
         return Capabilities.have_dev_asan
 
@@ -1783,6 +1800,10 @@ class VlTest:
     @property
     def have_gdb(self) -> bool:
         return Capabilities.have_gdb
+
+    @property
+    def have_lldb(self) -> bool:
+        return Capabilities.have_lldb
 
     @property
     def have_sc(self) -> bool:
@@ -2898,10 +2919,6 @@ def run_them() -> None:
 
 if __name__ == '__main__':
     os.environ['PYTHONUNBUFFERED'] = "1"
-
-    # GDB is broken on macOS
-    if platform.system() == "Darwin":
-        os.environ['VERILATOR_TEST_NO_GDB'] = "1"
 
     if ('VERILATOR_ROOT' not in os.environ) and os.path.isfile('../bin/verilator'):
         os.environ['VERILATOR_ROOT'] = os.getcwd() + "/.."

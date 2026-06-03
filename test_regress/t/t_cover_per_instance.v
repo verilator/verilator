@@ -18,7 +18,8 @@ module child #(
   always @(posedge clk) begin
     if (en) begin
       count <= count + 1'b1;
-    end else begin
+    end
+    else begin
       count <= count;
     end
   end
@@ -60,9 +61,7 @@ endmodule
 module tb;
   reg clk = 0;
 
-  t dut (
-      .clk(clk)
-  );
+  t dut (.clk(clk));
 
   always #1 clk = !clk;
 

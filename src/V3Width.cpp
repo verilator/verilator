@@ -1033,8 +1033,10 @@ class WidthVisitor final : public VNVisitor {
             const bool inParameterizedTemplate
                 = m_modep && (m_modep->dead() || m_modep->parameterizedTemplate());
             const bool inTypeTable = !m_modep;
-            if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
-                && !VN_IS(nodep->backp(), Cell)  // For cells we warn in V3Inst
+            const AstNode* basep = nodep->backp();
+            while (VN_IS(basep, Range)) basep = basep->backp();
+            if (nodep->ascending() && !VN_IS(basep, UnpackArrayDType)
+                && !VN_IS(basep, Cell)  // For cells we warn in V3Inst
                 && !m_paramsOnly  // Skip during parameter evaluation
                 && !inDeadModule && !inParameterizedTemplate && !inTypeTable) {
                 nodep->v3warn(ASCRANGE, "Ascending bit range vector: left < right of bit range: ["
@@ -1715,6 +1717,12 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
+            // Coerce unsized constant operands (e.g. literal 0/1) to actual
+            // 1-bit width; iterateCheckBool keeps widthMin-fitting unsized
+            // constants at their nominal 32-bit width, which trips the
+            // downstream NFA lowering's Log* chains in V3AssertNfa.
+            if (nodep->lhsp()->width() != 1) fixWidthReduce(nodep->lhsp());
+            if (nodep->rhsp()->width() != 1) fixWidthReduce(nodep->rhsp());
             nodep->dtypeSetBit();
         }
     }
@@ -4453,7 +4461,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstNodeSel* const ichildp = VN_CAST(childp, NodeSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
-        } else if (VN_IS(childp, LambdaArgRef)) {
+        } else if (VN_IS(childp, LambdaArgRef) || VN_IS(childp, FuncRef)) {
             // NOP
         } else {
             UINFO(1, "    Related node: " << childp);

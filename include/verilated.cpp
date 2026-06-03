@@ -1396,7 +1396,7 @@ static void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
                                const std::string& fstr) VL_MT_SAFE {
     while (true) {
         const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
-        if (c == EOF || !std::isspace(c)) return;
+        if (c == EOF || !(std::isspace(c) || c == '\0')) return;
         _vl_vsss_advance(fp, floc);
     }
 }
@@ -1413,7 +1413,6 @@ static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const s
         *cp++ = c;
         _vl_vsss_advance(fp, floc);
     }
-    // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
 static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
                                char* beginp, std::size_t n,

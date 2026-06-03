@@ -2134,6 +2134,16 @@ static inline IData VL_PACK_I_RI(int /*obits*/, int lbits, const VlQueue<IData>&
     return ret;
 }
 
+template <typename T>
+struct VlUnpackedElements final {
+    static constexpr size_t count = 1;
+};
+
+template <typename T, size_t N>
+struct VlUnpackedElements<VlUnpacked<T, N>> final {
+    static constexpr size_t count = N * VlUnpackedElements<T>::count;
+};
+
 template <std::size_t N_Depth>
 static inline IData VL_PACK_I_UI(int /*obits*/, int lbits, const VlUnpacked<CData, N_Depth>& q) {
     IData ret = 0;
@@ -2154,6 +2164,18 @@ template <std::size_t N_Depth>
 static inline IData VL_PACK_I_UI(int /*obits*/, int lbits, const VlUnpacked<IData, N_Depth>& q) {
     IData ret = 0;
     for (size_t i = 0; i < N_Depth; ++i) ret |= q[N_Depth - 1 - i] << (i * lbits);
+    return ret;
+}
+
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline IData VL_PACK_I_UI(const int obits, const int lbits,
+                                 const VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q) {
+    IData ret = 0;
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        const IData sub_val = VL_PACK_I_UI(sub_bits, lbits, q[N_Depth - 1 - i]);
+        ret |= sub_val << (i * sub_bits);
+    }
     return ret;
 }
 
@@ -3145,6 +3167,17 @@ static inline void VL_UNPACK_UI_I(int lbits, int /*rbits*/, VlUnpacked<IData, N_
     for (size_t i = 0; i < N_Depth; ++i) q[i] = (from >> ((N_Depth - 1 - i) * lbits)) & mask;
 }
 
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline void VL_UNPACK_UI_I(const int lbits, const int rbits,
+                                  VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q,
+                                  const IData from) {
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        const IData sub_from = (from >> ((N_Depth - 1 - i) * sub_bits));
+        VL_UNPACK_UI_I(lbits, sub_bits, q[i], sub_from);
+    }
+}
+
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UI_Q(int lbits, int /*rbits*/, VlUnpacked<CData, N_Depth>& q,
                                   QData from) {
@@ -3166,6 +3199,17 @@ static inline void VL_UNPACK_UI_Q(int lbits, int /*rbits*/, VlUnpacked<IData, N_
     for (size_t i = 0; i < N_Depth; ++i) q[i] = (from >> ((N_Depth - 1 - i) * lbits)) & mask;
 }
 
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline void VL_UNPACK_UI_Q(const int lbits, const int rbits,
+                                  VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q,
+                                  const QData from) {
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        const QData sub_from = (from >> ((N_Depth - 1 - i) * sub_bits));
+        VL_UNPACK_UI_Q(lbits, sub_bits, q[i], sub_from);
+    }
+}
+
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UQ_Q(int lbits, int /*rbits*/, VlUnpacked<QData, N_Depth>& q,
                                   QData from) {
@@ -3173,43 +3217,73 @@ static inline void VL_UNPACK_UQ_Q(int lbits, int /*rbits*/, VlUnpacked<QData, N_
     for (size_t i = 0; i < N_Depth; ++i) q[i] = (from >> ((N_Depth - 1 - i) * lbits)) & mask;
 }
 
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline void VL_UNPACK_UI_W(const int lbits, const int rbits,
+                                  VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q, WDataInP rwp,
+                                  const int bit_offset = 0) {
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        VL_UNPACK_UI_W(lbits, rbits, q[i], rwp, bit_offset + (N_Depth - 1 - i) * sub_bits);
+    }
+}
+
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline void VL_UNPACK_UQ_W(const int lbits, const int rbits,
+                                  VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q, WDataInP rwp,
+                                  const int bit_offset = 0) {
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        VL_UNPACK_UQ_W(lbits, rbits, q[i], rwp, bit_offset + (N_Depth - 1 - i) * sub_bits);
+    }
+}
+
+template <typename T_Sub, std::size_t N_Sub, std::size_t N_Depth>
+static inline void VL_UNPACK_UW_W(const int lbits, const int rbits,
+                                  VlUnpacked<VlUnpacked<T_Sub, N_Sub>, N_Depth>& q, WDataInP rwp,
+                                  const int bit_offset = 0) {
+    const int sub_bits = VlUnpackedElements<VlUnpacked<T_Sub, N_Sub>>::count * lbits;
+    for (size_t i = 0; i < N_Depth; ++i) {
+        VL_UNPACK_UW_W(lbits, rbits, q[i], rwp, bit_offset + (N_Depth - 1 - i) * sub_bits);
+    }
+}
+
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UI_W(int lbits, int rbits, VlUnpacked<CData, N_Depth>& q,
-                                  WDataInP rwp) {
+                                  WDataInP rwp, const int bit_offset = 0) {
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < N_Depth; ++i)
-        q[i] = VL_SEL_IWII(rbits, rwp, (N_Depth - 1 - i) * lbits, lbits) & mask;
+        q[i] = VL_SEL_IWII(rbits, rwp, bit_offset + (N_Depth - 1 - i) * lbits, lbits) & mask;
 }
 
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UI_W(int lbits, int rbits, VlUnpacked<SData, N_Depth>& q,
-                                  WDataInP rwp) {
+                                  WDataInP rwp, const int bit_offset = 0) {
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < N_Depth; ++i)
-        q[i] = VL_SEL_IWII(rbits, rwp, (N_Depth - 1 - i) * lbits, lbits) & mask;
+        q[i] = VL_SEL_IWII(rbits, rwp, bit_offset + (N_Depth - 1 - i) * lbits, lbits) & mask;
 }
 
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UI_W(int lbits, int rbits, VlUnpacked<IData, N_Depth>& q,
-                                  WDataInP rwp) {
+                                  WDataInP rwp, const int bit_offset = 0) {
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < N_Depth; ++i)
-        q[i] = VL_SEL_IWII(rbits, rwp, (N_Depth - 1 - i) * lbits, lbits) & mask;
+        q[i] = VL_SEL_IWII(rbits, rwp, bit_offset + (N_Depth - 1 - i) * lbits, lbits) & mask;
 }
 
 template <std::size_t N_Depth>
 static inline void VL_UNPACK_UQ_W(int lbits, int rbits, VlUnpacked<QData, N_Depth>& q,
-                                  WDataInP rwp) {
+                                  WDataInP rwp, const int bit_offset = 0) {
     const QData mask = VL_MASK_Q(lbits);
     for (size_t i = 0; i < N_Depth; ++i)
-        q[i] = VL_SEL_QWII(rbits, rwp, (N_Depth - 1 - i) * lbits, lbits) & mask;
+        q[i] = VL_SEL_QWII(rbits, rwp, bit_offset + (N_Depth - 1 - i) * lbits, lbits) & mask;
 }
 
 template <std::size_t N_Depth, std::size_t N_Words>
 static inline void VL_UNPACK_UW_W(int lbits, int rbits, VlUnpacked<VlWide<N_Words>, N_Depth>& q,
-                                  WDataInP rwp) {
+                                  WDataInP rwp, const int bit_offset = 0) {
     for (size_t i = 0; i < N_Depth; ++i)
-        VL_SEL_WWII(lbits, rbits, q[i], rwp, (N_Depth - 1 - i) * lbits, lbits);
+        VL_SEL_WWII(lbits, rbits, q[i], rwp, bit_offset + (N_Depth - 1 - i) * lbits, lbits);
 }
 
 // Return QData from double (numeric)

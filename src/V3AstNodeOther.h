@@ -1285,7 +1285,7 @@ class AstNetlist final : public AstNode {
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
-    std::vector<AstVar*> m_deferredParamVarps;
+    std::set<AstVar*> m_deferredParamVarps;
     // Sparse metadata for constants produced from named parameters/localparams. Keep this off
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
@@ -1295,8 +1295,8 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
-    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.push_back(varp); }
-    const std::vector<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
+    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
+    const std::set<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
     void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
@@ -2008,6 +2008,7 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
+    bool m_mtaskCacheLineAlign : 1;  // Start MTask affinity group on a cache line
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2070,6 +2071,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_processQueue = false;
+        m_mtaskCacheLineAlign = false;
     }
 
 public:
@@ -2318,6 +2320,8 @@ public:
     }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
+    bool mtaskCacheLineAlign() const { return m_mtaskCacheLineAlign; }
+    void mtaskCacheLineAlign(bool flag) { m_mtaskCacheLineAlign = flag; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const VL_MT_STABLE;

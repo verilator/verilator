@@ -170,6 +170,9 @@ once, after ``configure``:
 
 .. code-block:: bash
 
+   # Install dependencies
+   sudo apt install python3-pip
+
    # Create Python virutal environment in .venv:
    make venv
 

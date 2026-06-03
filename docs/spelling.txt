@@ -670,6 +670,7 @@ concatenatable
 concats
 conf
 config
+consequents
 const
 constexpr
 constification
@@ -701,6 +702,7 @@ datafiles
 david
 ddd
 de
+dearray
 deassign
 debugi
 defenv
@@ -1214,6 +1216,7 @@ unnamedblk
 unopt
 unoptflat
 unoptimizable
+unparenthesized
 unroller
 unsatisfiable
 unsized

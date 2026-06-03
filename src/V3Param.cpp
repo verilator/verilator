@@ -1710,7 +1710,9 @@ class ParamProcessor final {
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* pinp = pinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             const AstVar* const modvarp = pinp->modVarp();
-            if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
+            if (modvarp && VN_IS(arraySubDTypeDeepp(modvarp->subDTypep()), IfaceGenericDType)) {
+                continue;
+            }
             if (modvarp->isIfaceRef()) {
                 // arraySubDTypeDeepp returns input unchanged if not an array.
                 AstIfaceRefDType* const portIrefp
@@ -1798,10 +1800,12 @@ class ParamProcessor final {
         for (const AstNode* nodep = pinsp; nodep; nodep = nodep->nextp()) {
             if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
                 if (AstVar* const varp = pinp->modVarp()) {
+                    AstNodeDType* dtypep = varp->childDTypep()->elemDTypep();
                     if (AstIfaceGenericDType* const ifaceGDTypep
-                        = VN_CAST(varp->childDTypep(), IfaceGenericDType)) {
+                        = VN_CAST(dtypep, IfaceGenericDType)) {
                         const auto iter = paramspMap.find(varp->name());
                         if (iter == paramspMap.end()) continue;
+                        AstNode* const backp = ifaceGDTypep->backp();
                         ifaceGDTypep->unlinkFrBack();
                         const AstPin* const paramp = iter->second;
                         paramspMap.erase(iter);
@@ -1812,7 +1816,13 @@ class ParamProcessor final {
                             ifaceGDTypep->name(), ifacerefp->ifaceName(),
                             ifaceGDTypep->modportName()};
                         newIfacerefp->ifacep(ifacerefp->ifacep());
-                        varp->childDTypep(newIfacerefp);
+                        if (auto* const arrDtp = VN_CAST(backp, NodeArrayDType)) {
+                            arrDtp->childDTypep(newIfacerefp);
+                        } else if (auto* const arrDtp = VN_CAST(backp, BracketArrayDType)) {
+                            arrDtp->childDTypep(newIfacerefp);
+                        } else {
+                            varp->childDTypep(newIfacerefp);
+                        }
                         VL_DO_DANGLING(m_deleter.pushDeletep(ifaceGDTypep), ifaceGDTypep);
                         if (paramspMap.empty()) return;
                     }
@@ -1924,7 +1934,6 @@ class ParamProcessor final {
                     classRefDType->addParamsp(newPinp);
                 }
                 // Update local tracking so future dependent defaults can find it
-                pinsByIndex.resize(paramIdx + 1, nullptr);
                 pinsByIndex[paramIdx] = newPinp;
                 if (!paramsp) paramsp = newPinp;
             }
@@ -2510,7 +2519,8 @@ class ParamVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Module iterating
     std::unordered_set<std::string> m_ifacePortNames;  // Interface port names in current module
-    std::unordered_set<std::string> m_ifaceInstNames;  // Interface decl names in current module
+    std::unordered_map<std::string, AstCell*>
+        m_ifaceInstCells;  // Local interface instance cells in current module, keyed by name
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // METHODS
@@ -2548,10 +2558,10 @@ class ParamVisitor final : public VNVisitor {
                 {
                     VL_RESTORER(m_modp);
                     VL_RESTORER(m_ifacePortNames);
-                    VL_RESTORER(m_ifaceInstNames);
+                    VL_RESTORER(m_ifaceInstCells);
                     m_modp = modp;
                     m_ifacePortNames.clear();
-                    m_ifaceInstNames.clear();
+                    m_ifaceInstCells.clear();
                     iterateChildren(modp);
                 }
             }
@@ -2723,7 +2733,7 @@ class ParamVisitor final : public VNVisitor {
                     const string refname = getRefBaseName(refp);
                     isIfaceRef
                         = !refname.empty()
-                          && (m_ifacePortNames.count(refname) || m_ifaceInstNames.count(refname));
+                          && (m_ifacePortNames.count(refname) || m_ifaceInstCells.count(refname));
                 }
 
                 if (!isIfaceRef) {
@@ -2780,7 +2790,7 @@ class ParamVisitor final : public VNVisitor {
                         const string refname = getRefBaseName(refp);
                         if (!refname.empty()
                             && (m_ifacePortNames.count(refname)
-                                || m_ifaceInstNames.count(refname)))
+                                || m_ifaceInstCells.count(refname)))
                             return true;
                     }
                 }
@@ -2879,8 +2889,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstCell* nodep) override {
         checkParamNotHier(nodep->paramsp());
-        // Build cache of locally declared interface instance names
-        if (VN_IS(nodep->modp(), Iface)) { m_ifaceInstNames.insert(nodep->name()); }
+        if (VN_IS(nodep->modp(), Iface)) m_ifaceInstCells.emplace(nodep->name(), nodep);
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstIfaceRefDType* nodep) override {
@@ -2924,10 +2933,22 @@ class ParamVisitor final : public VNVisitor {
                     }
                 });
                 if (hasUnresolvedLparamXRef) return;
-                // Defer if value contains a class::member Dot. By V3Param time the only
-                // surviving such Dots are paramed-class refs awaiting linkDotParamed.
-                if (nodep->valuep()->exists(
-                        [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); })) {
+                // Defer if value has a class::member Dot, or references a deferred lparam
+                const bool hasDot = nodep->valuep()->exists(
+                    [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); });
+                bool refsDeferred = false;
+                if (!hasDot) {
+                    const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
+                    nodep->valuep()->foreach([&](const AstVarRef* refp) {
+                        if (refsDeferred) return;
+                        AstVar* const refVarp = refp->varp();
+                        if (refVarp && refVarp->varType() == VVarType::LPARAM
+                            && deferredVarps.count(refVarp)) {
+                            refsDeferred = true;
+                        }
+                    });
+                }
+                if (hasDot || refsDeferred) {
                     v3Global.rootp()->pushDeferredParamVarp(nodep);
                     return;
                 }
@@ -2972,6 +2993,21 @@ class ParamVisitor final : public VNVisitor {
         }
         return false;
     }
+
+    void deparamIfaceCellNow(AstCell* cellp) {
+        if (!cellp->paramsp()) return;
+        if (!VN_IS(cellp->modp(), Iface)) return;
+        AstNodeModule* const srcModp = cellp->modp();
+        AstNodeModule* const newModp
+            = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+        if (newModp && newModp != srcModp) {
+            if (V3LinkDotIfaceCapture::enabled()) {
+                m_processor.retargetIfaceRefs(m_modp, cellp->name());
+            }
+            specializeNestedIfaceCells(newModp);
+        }
+    }
+
     void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->containsGenBlock()) {
             // Needs relink, as may remove pointed-to task/func
@@ -3022,15 +3058,23 @@ class ParamVisitor final : public VNVisitor {
                         }
                     }
                     // Interfaces declared in this module have cells
-                    else if (const AstCell* const cellp = ifacerefp->cellp()) {
+                    else if (AstCell* const cellp = ifacerefp->cellp()) {
                         if (dotted == cellp->name()) {
                             UINFO(9, "Iface matching scope:  " << cellp);
+                            deparamIfaceCellNow(cellp);
                             if (ifaceParamReplace(nodep, cellp->modp()->stmtsp())) {  //
                                 return;
                             }
                         }
                     }
                 }
+            }
+            // Fallback: a direct local interface instance ("inst.PARAM"), not reached via a port.
+            const auto ifaceCellIt = m_ifaceInstCells.find(dotted);
+            if (ifaceCellIt != m_ifaceInstCells.end()) {
+                AstCell* const cellp = ifaceCellIt->second;
+                deparamIfaceCellNow(cellp);
+                ifaceParamReplace(nodep, cellp->modp()->stmtsp());
             }
         }
     }

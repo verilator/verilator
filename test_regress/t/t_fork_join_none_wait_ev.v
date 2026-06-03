@@ -9,8 +9,8 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t(
-  input clk
+module t (
+    input clk
 );
   int cyc = 0;
   int cnt = 0;

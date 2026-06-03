@@ -15,14 +15,22 @@ module t;
   monitor mon = new;
   always #5 mon.clk = ~mon.clk;
   initial begin
-    fork mon.run(); join_none
+    fork
+      mon.run();
+    join_none
 
-    repeat(4) @(posedge mon.clk);
-    if (mon.fired !== 0) begin $display("FAIL: fired before iff guard satisfied"); $stop; end
+    repeat (4) @(posedge mon.clk);
+    if (mon.fired !== 0) begin
+      $display("FAIL: fired before iff guard satisfied");
+      $stop;
+    end
 
     mon.enable = 1;
     repeat (2) @(posedge mon.clk);
-    if (mon.fired !== 1) begin $display("FAIL: did not fire when guard true"); $stop; end
+    if (mon.fired !== 1) begin
+      $display("FAIL: did not fire when guard true");
+      $stop;
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end

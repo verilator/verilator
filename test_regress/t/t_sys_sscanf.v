@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 module t;
@@ -18,12 +19,22 @@ module t;
   logic [XLEN-1:0] val;
   int code;
 
+  reg [255:0] line;
+  reg [63:0] token;
+
   initial begin
     // All digits after % is to get line coverage in verilated.cpp
     code = $sscanf("P20=4cff0000", "P%h=%80123456789h", idx, val);
     `checkh(code, 2);
     `checkh(idx, 32'h20);
     `checkh(val, 32'h4cff0000);
+
+    line = "Hello 1 2 3";
+    code = $sscanf(line, "%s %x\n", token, idx);
+    `checkh(code, 2);
+    `checks(token, "\0\0\0Hello");
+    `checkh(idx, 1);
+
     $finish;
   end
 
