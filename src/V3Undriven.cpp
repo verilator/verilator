@@ -422,6 +422,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                                             true);  // Complain just once for any usage
         }
     }
+
     // VISITORS
     void visit(AstVar* nodep) override {
         const bool funcInout = nodep->isFuncLocal() && nodep->isInout();
