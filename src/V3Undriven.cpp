@@ -29,6 +29,7 @@
 
 #include "V3Stats.h"
 #include "V3UndrivenCapture.h"
+#include "V3Width.h"
 
 #include <vector>
 
@@ -369,6 +370,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
+    bool m_inSelLhs = false;  // Iterating the fromp of an AstSel (a partial-bit write target)
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
@@ -473,8 +475,11 @@ class UndrivenVisitor final : public VNVisitorConst {
                     entryp->usedBit(lsb, nodep->width(), varrefp);
             }
         } else {
-            // else other varrefs handled as unknown mess in AstVarRef
-            iterateChildrenConst(nodep);
+            // skip over static longest static prefix
+            iterateConst(nodep->lsbp());
+            VL_RESTORER(m_inSelLhs);
+            m_inSelLhs = !V3Width::selectNonConstantRecurse(nodep->lsbp(), /*inSel=*/true);
+            iterateConst(nodep->fromp());
         }
     }
     void visit(AstNodeVarRef* nodep) override {
@@ -530,7 +535,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
                     && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
-                    && !ftaskDef
+                    && !ftaskDef && !m_inSelLhs
                     && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();

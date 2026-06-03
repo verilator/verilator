@@ -9948,41 +9948,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void checkForceReleaseLhs(AstNode* nodep, AstNode* lhsp) {
         // V3Force can't check as vector may have expanded, or propagated constant into index
-        if (AstNode* const selNodep = selectNonConstantRecurse(lhsp))
+        if (AstNode* const selNodep = V3Width::selectNonConstantRecurse(lhsp))
             nodep->v3error((VN_IS(nodep, Release) ? "Release"s : "Force"s)
                                + " left-hand-side must not have variable bit/part select "
                                  "(IEEE 1800-2023 10.6.2)\n"
                            << nodep->warnContextPrimary() << '\n'
                            << selNodep->warnOther() << "... Location of non-constant index\n"
                            << selNodep->warnContextSecondary());
-    }
-    AstNode* selectNonConstantRecurse(AstNode* nodep, bool inSel = false) {
-        // If node has a non-constant select, return that select
-        AstNode* resultp = nullptr;
-        if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
-            resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
-            if (resultp) return resultp;
-            resultp = selectNonConstantRecurse(anodep->bitp(), true);
-        } else if (AstSel* const anodep = VN_CAST(nodep, Sel)) {
-            resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
-            if (resultp) return resultp;
-            resultp = selectNonConstantRecurse(anodep->lsbp(), true);
-        } else if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) {
-            if (inSel && !anodep->varp()->isParam() && !anodep->varp()->isGenVar()) return anodep;
-        } else {
-            if (AstNode* const refp = nodep->op1p())
-                resultp = selectNonConstantRecurse(refp, inSel);
-            if (resultp) return resultp;
-            if (AstNode* const refp = nodep->op2p())
-                resultp = selectNonConstantRecurse(refp, inSel);
-            if (resultp) return resultp;
-            if (AstNode* const refp = nodep->op3p())
-                resultp = selectNonConstantRecurse(refp, inSel);
-            if (resultp) return resultp;
-            if (AstNode* const refp = nodep->op4p())
-                resultp = selectNonConstantRecurse(refp, inSel);
-        }
-        return resultp;
     }
 
     //----------------------------------------------------------------------
@@ -10138,4 +10110,29 @@ AstNode* V3Width::widthGenerateParamsEdit(
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
+}
+
+AstNode* V3Width::selectNonConstantRecurse(AstNode* nodep, bool inSel) {
+    // If node has a non-constant select, return that select
+    AstNode* resultp = nullptr;
+    if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
+        resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
+        if (resultp) return resultp;
+        resultp = selectNonConstantRecurse(anodep->bitp(), true);
+    } else if (AstSel* const anodep = VN_CAST(nodep, Sel)) {
+        resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
+        if (resultp) return resultp;
+        resultp = selectNonConstantRecurse(anodep->lsbp(), true);
+    } else if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) {
+        if (inSel && !anodep->varp()->isParam() && !anodep->varp()->isGenVar()) return anodep;
+    } else {
+        if (AstNode* const refp = nodep->op1p()) resultp = selectNonConstantRecurse(refp, inSel);
+        if (resultp) return resultp;
+        if (AstNode* const refp = nodep->op2p()) resultp = selectNonConstantRecurse(refp, inSel);
+        if (resultp) return resultp;
+        if (AstNode* const refp = nodep->op3p()) resultp = selectNonConstantRecurse(refp, inSel);
+        if (resultp) return resultp;
+        if (AstNode* const refp = nodep->op4p()) resultp = selectNonConstantRecurse(refp, inSel);
+    }
+    return resultp;
 }
