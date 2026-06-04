@@ -57,6 +57,24 @@ string VlcOptions::version() {
     return ver;
 }
 
+void VlcOptions::parseReportOption() {
+    if (m_report.empty()) return;
+    string::size_type start = 0;
+    while (true) {
+        const string::size_type comma = m_report.find(',', start);
+        const string kind = m_report.substr(start, comma - start);
+        if (kind == "summary") {
+            m_reportSummary = true;
+        } else if (kind == "hier" || kind == "hierarchy") {
+            m_reportHierarchy = true;
+        } else {
+            v3fatal("Invalid --report option: " << m_report);
+        }
+        if (comma == string::npos) break;
+        start = comma + 1;
+    }
+}
+
 void VlcOptions::parseOptsList(int argc, char** argv) {
     V3OptionParser parser;
     V3OptionParser::AppendHelper DECL_OPTION{parser};
@@ -103,7 +121,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             ++i;
         }
     }
-    if (!reportValid()) { v3fatal("Invalid --report option: " << m_report); }
+    parseReportOption();
 }
 
 void VlcOptions::showVersion(bool verbose) {

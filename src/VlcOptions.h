@@ -44,6 +44,8 @@ class VlcOptions final {
     VlStringSet m_readFiles;    // main switch: --read
     int m_reportLevels = -1;    // main switch: --levels, negative means all depths
     string m_report;            // main switch: --report
+    bool m_reportSummary = false;  // main switch: --report summary
+    bool m_reportHierarchy = false;  // main switch: --report hier or hierarchy
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
     string m_writeFile;         // main switch: --write
@@ -52,24 +54,7 @@ class VlcOptions final {
 
 private:
     // METHODS
-    static bool reportKindValid(const string& kind) {
-        return kind == "summary" || kind == "hier" || kind == "hierarchy";
-    }
-    static bool reportKindMatches(const string& kind, const string& match) {
-        if (kind == match) return true;
-        return match == "hierarchy" && kind == "hier";
-    }
-    bool reportHasKind(const string& match) const {
-        string::size_type start = 0;
-        while (true) {
-            const string::size_type comma = m_report.find(',', start);
-            const string kind = m_report.substr(start, comma - start);
-            if (reportKindMatches(kind, match)) return true;
-            if (comma == string::npos) break;
-            start = comma + 1;
-        }
-        return false;
-    }
+    void parseReportOption() VL_MT_DISABLED;
     static void showVersion(bool verbose) VL_MT_DISABLED;
 
 public:
@@ -91,20 +76,8 @@ public:
     bool includeResetArcs() const { return m_includeResetArcs; }
     int reportLevels() const { return m_reportLevels; }
     bool reportSpecified() const { return !m_report.empty(); }
-    bool reportValid() const {
-        if (m_report.empty()) return true;
-        string::size_type start = 0;
-        while (true) {
-            const string::size_type comma = m_report.find(',', start);
-            const string kind = m_report.substr(start, comma - start);
-            if (!reportKindValid(kind)) return false;
-            if (comma == string::npos) break;
-            start = comma + 1;
-        }
-        return true;
-    }
-    bool reportSummary() const { return reportHasKind("summary"); }
-    bool reportHierarchy() const { return reportHasKind("hierarchy"); }
+    bool reportSummary() const { return m_reportSummary; }
+    bool reportHierarchy() const { return m_reportHierarchy; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
