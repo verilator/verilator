@@ -10,15 +10,12 @@ import os
 import re
 
 
-class VlcovRunContext:
-    def __init__(self, test, log, tmp_log):
-        self.test = test
-        self.log = log
-        self.tmp_log = tmp_log
-
-
 def vlcov_bin():
     return os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage"
+
+
+def vlcov_run_context(test, log, tmp_log):
+    return test, log, tmp_log
 
 
 def init_log(log):
@@ -27,20 +24,17 @@ def init_log(log):
 
 
 def run_vlcov(context, label, args, fails=False, normalize_errors=False):
-    with open(context.log, "a", encoding="utf-8") as log_fh:
+    test, log, tmp_log = context
+    with open(log, "a", encoding="utf-8") as log_fh:
         if log_fh.tell():
             log_fh.write("\n")
         log_fh.write("$ " + label + "\n")
 
-    context.test.run(cmd=[vlcov_bin(), *args],
-                     logfile=context.tmp_log,
-                     fails=fails,
-                     tee=False,
-                     verilator_run=True)
+    test.run(cmd=[vlcov_bin(), *args], logfile=tmp_log, fails=fails, tee=False, verilator_run=True)
 
-    with open(context.tmp_log, encoding="utf-8") as in_fh:
+    with open(tmp_log, encoding="utf-8") as in_fh:
         text = in_fh.read()
     if normalize_errors:
         text = re.sub(r"verilator_doc[.]html[?]v=[^ ]+", "verilator_doc.html?v=latest", text)
-    with open(context.log, "a", encoding="utf-8") as log_fh:
+    with open(log, "a", encoding="utf-8") as log_fh:
         log_fh.write(text)

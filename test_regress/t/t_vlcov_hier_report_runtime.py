@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-from coverage_common import VlcovRunContext, init_log, run_vlcov
+from coverage_common import init_log, run_vlcov, vlcov_run_context
 
 test.scenarios('simulator')
 
@@ -34,10 +34,10 @@ hier_log = test.obj_dir + "/hierarchy.log"
 combined_log = test.obj_dir + "/vlcov.log"
 
 init_log(combined_log)
-run_vlcov(VlcovRunContext(test, combined_log, summary_log),
+run_vlcov(vlcov_run_context(test, combined_log, summary_log),
           "verilator_coverage --report summary coverage.dat",
           args=["--report", "summary", test.obj_dir + "/coverage.dat"])
-run_vlcov(VlcovRunContext(test, combined_log, hier_log),
+run_vlcov(vlcov_run_context(test, combined_log, hier_log),
           "verilator_coverage --report hierarchy --levels 3 coverage.dat",
           args=["--report", "hierarchy", "--levels", "3", test.obj_dir + "/coverage.dat"])
 

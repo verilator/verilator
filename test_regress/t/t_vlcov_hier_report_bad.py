@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-from coverage_common import VlcovRunContext, init_log, run_vlcov
+from coverage_common import init_log, run_vlcov, vlcov_run_context
 
 test.scenarios('dist')
 
@@ -17,7 +17,7 @@ log = test.obj_dir + "/vlcov.log"
 tmp_log = test.obj_dir + "/vlcov.tmp"
 
 init_log(log)
-vlcov = VlcovRunContext(test, log, tmp_log)
+vlcov = vlcov_run_context(test, log, tmp_log)
 
 missing_cov = test.obj_dir + "/missing.dat"
 with open(missing_cov, "w", encoding="utf-8") as fh:
