@@ -119,6 +119,8 @@ class TaskStateVisitor final : public VNVisitor {
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
     std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
+    bool m_underPortVar = false;  // Visiting under a port AstVar; any expression there
+                                  // is a default value, evaluated at call sites only
 
 public:
     // METHODS
@@ -289,11 +291,14 @@ private:
         }
     }
     void visit(AstVar* nodep) override {
+        VL_RESTORER(m_underPortVar);
+        if (nodep->isIO()) m_underPortVar = true;
         iterateChildren(nodep);
         nodep->user4p(m_curVxp);  // Remember what task it's under
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
+        if (m_underPortVar) return;
         AstVar* const varp = nodep->varp();
         if (varp->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
@@ -1404,6 +1409,7 @@ class TaskVisitor final : public VNVisitor {
                         // Move it to new function
                         unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
+                        if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
                         cfuncp->addArgsp(portp);
                         // Pass inputs to DPI import wrappers by reference, unless fits in register
                         if (cfuncp->dpiImportWrapper() && portp->isReadOnly()) {
@@ -2139,6 +2145,14 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newTaskp->addStmtsp(newPortp);
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
+            if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
+                const VAccess refAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+                AstVarRef* const refp = VN_AS(valuep->cloneTree(false), VarRef);
+                refp->access(refAccess);
+                AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(), refp};
+                newCallp->addArgsp(newArgp);
+                continue;
+            }
             // Create local temporary
             newPortp = new AstVar{portp->fileline(), VVarType::BLOCKTEMP, portp->name(),
                                   portp->dtypep()};
