@@ -1409,7 +1409,7 @@ class TaskVisitor final : public VNVisitor {
                         // Move it to new function
                         unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
-                        if (portp->valuep()) portp->valuep()->unlinkFrBack()->deleteTree();
+                        if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
                         cfuncp->addArgsp(portp);
                     } else {
                         // "Normal" variable, mark inside function
