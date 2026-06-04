@@ -7,6 +7,114 @@ Coverage Summary:
   fsm_state : 0.0% (  0/  0)
   fsm_arc   : 0.0% (  0/  0)
 
+$ verilator_coverage t/t_cover_hier.out
+Coverage Summary:
+  line      : 100.0% (4/4)
+  toggle    : 0.0% (0/0)
+  branch    : 100.0% (4/4)
+  expr      : 0.0% (0/0)
+  fsm_state : 0.0% (0/0)
+  fsm_arc   : 0.0% (0/0)
+  user      : 100.0% (2/2)
+
+$ verilator_coverage --report summary,hier t/t_cover_hier.out
+Coverage Summary:
+  line      : 100.0% (4/4)
+  toggle    : 0.0% (0/0)
+  branch    : 100.0% (4/4)
+  expr      : 0.0% (0/0)
+  fsm_state : 0.0% (0/0)
+  fsm_arc   : 0.0% (0/0)
+  user      : 100.0% (2/2)
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_a.same_stmt
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b.same_stmt
+    user      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hier,summary --levels 0 t/t_cover_hier.out
+Coverage Summary:
+  line      : 100.0% (4/4)
+  toggle    : 0.0% (0/0)
+  branch    : 100.0% (4/4)
+  expr      : 0.0% (0/0)
+  fsm_state : 0.0% (0/0)
+  fsm_arc   : 0.0% (0/0)
+  user      : 100.0% (2/2)
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
+$ verilator_coverage --report hier,summary --levels -4 t/t_cover_hier.out
+Coverage Summary:
+  line      : 100.0% (4/4)
+  toggle    : 0.0% (0/0)
+  branch    : 100.0% (4/4)
+  expr      : 0.0% (0/0)
+  fsm_state : 0.0% (0/0)
+  fsm_arc   : 0.0% (0/0)
+  user      : 100.0% (2/2)
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_a.same_stmt
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b.same_stmt
+    user      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  child
+    line      : 100.0% (2/2)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  t
+    line      : 100.0% (2/2)
+
 $ verilator_coverage --report summary empty.dat
 
 $ verilator_coverage --report hierarchy t/t_cover_hier.out
@@ -66,12 +174,27 @@ Design Unit Coverage Summary:
     line      : 100.0% (2/2)
 
 $ verilator_coverage --report hierarchy --levels -1 t/t_cover_hier.out
-Note: --levels must be non-negative; using --levels 0.
 Hierarchy Coverage Summary:
   top
     line      : 100.0% (4/4)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
+  top.t
+    line      : 100.0% (4/4)
+    branch    : 100.0% (4/4)
+    user      : 100.0% (2/2)
+  top.t.u_a
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_a.same_stmt
+    user      : 100.0% (1/1)
+  top.t.u_b
+    line      : 100.0% (1/1)
+    branch    : 100.0% (2/2)
+    user      : 100.0% (1/1)
+  top.t.u_b.same_stmt
+    user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
     line      : 100.0% (2/2)

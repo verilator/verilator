@@ -545,14 +545,11 @@ void VlcTop::printHierarchyReport() {
         return;
     }
 
-    if (opt.reportLevelsNegative()) {
-        std::cout << "Note: --levels must be non-negative; using --levels 0.\n";
-    }
+    const int levels = opt.reportLevels();
     if (hasCollapsedHier) {
         std::cout << "Note: hierarchy report contains collapsed hierarchy paths; "
                   << "it is not precise per-instance coverage.\n";
     }
-    const int levels = opt.reportLevels();
     std::cout << "Hierarchy Coverage Summary:\n";
     for (std::map<string, TypeTally>::const_iterator it = hierTallies.begin();
          it != hierTallies.end(); ++it) {

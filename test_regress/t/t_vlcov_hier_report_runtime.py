@@ -9,6 +9,8 @@
 
 import vltest_bootstrap
 
+from coverage_common import init_log, run_vlcov
+
 test.scenarios('simulator')
 
 if not test.have_coroutines:
@@ -31,35 +33,17 @@ summary_log = test.obj_dir + "/summary.log"
 hier_log = test.obj_dir + "/hierarchy.log"
 combined_log = test.obj_dir + "/vlcov.log"
 
-test.run(cmd=[
-    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--report",
-    "summary",
-    test.obj_dir + "/coverage.dat",
-],
-         logfile=summary_log,
-         tee=False,
-         verilator_run=True)
-
-test.run(cmd=[
-    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
-    "--report",
-    "hierarchy",
-    "--levels",
-    "3",
-    test.obj_dir + "/coverage.dat",
-],
-         logfile=hier_log,
-         tee=False,
-         verilator_run=True)
-
-with open(combined_log, "w", encoding="utf-8") as out:
-    out.write("$ verilator_coverage --report summary coverage.dat\n")
-    with open(summary_log, encoding="utf-8") as fh:
-        out.write(fh.read())
-    out.write("\n$ verilator_coverage --report hierarchy --levels 3 coverage.dat\n")
-    with open(hier_log, encoding="utf-8") as fh:
-        out.write(fh.read())
+init_log(combined_log)
+run_vlcov(test,
+          log=combined_log,
+          tmp_log=summary_log,
+          label="verilator_coverage --report summary coverage.dat",
+          args=["--report", "summary", test.obj_dir + "/coverage.dat"])
+run_vlcov(test,
+          log=combined_log,
+          tmp_log=hier_log,
+          label="verilator_coverage --report hierarchy --levels 3 coverage.dat",
+          args=["--report", "hierarchy", "--levels", "3", test.obj_dir + "/coverage.dat"])
 
 test.files_identical(combined_log, test.golden_filename)
 

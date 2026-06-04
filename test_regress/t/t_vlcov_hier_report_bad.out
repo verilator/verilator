@@ -2,6 +2,10 @@ $ verilator_coverage --report unknown t/t_cover_hier.out
 %Error: Invalid --report option: unknown
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 
+$ verilator_coverage --report summary,unknown t/t_cover_hier.out
+%Error: Invalid --report option: summary,unknown
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
 $ verilator_coverage --report hierarchy missing.dat
 %Warning: --report hierarchy input has no hierarchy fields; printing flat summary instead.
 Coverage Summary:
