@@ -7,3 +7,12 @@ cg_mixed.opcode.load: 1
 cg_mixed.opcode.nop: 1
 cg_mixed.opcode.other: 1
 cg_mixed.opcode.store: 1
+cg_sel.cp.hi: 1
+cg_sel.cp.lo: 1
+cg_unbounded.cp.lo: 1
+cg_unbounded.cp.others: 1
+cg_unbounded_all.cp.all: 1
+cg_unbounded_lo.cp.rest: 1
+cg_unbounded_lo.cp.start: 1
+cg_unbounded_signed.cp.hi: 1
+cg_unbounded_signed.cp.lo: 1

@@ -234,10 +234,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
-    // Extract individual values from a range expression list.
-    // Iterates over all siblings (nextp) in the list, handling AstConst (single value)
-    // and AstInsideRange ([lo:hi]).
-    void extractValuesFromRange(AstNode* nodep, std::set<uint64_t>& values) {
+    // Extract individual values from a range expression list, used only to carve values
+    // out of implicit auto-bins.  Iterates over all siblings (nextp) in the list, handling
+    // AstConst (single value) and AstInsideRange ([lo:hi]); an open-ended bound ('$',
+    // AstUnbounded) resolves to the coverpoint domain min (lower) or max (upper, == maxVal).
+    void extractValuesFromRange(AstNode* nodep, std::set<uint64_t>& values, uint64_t maxVal) {
+        // Cap enumeration so a '$'-bounded or otherwise huge range cannot blow up memory;
+        // auto-bins are per-value only for small domains, so a partial set is harmless here.
+        constexpr size_t maxEnumerate = 1ULL << 16;
         for (AstNode* np = nodep; np; np = np->nextp()) {
             if (AstConst* constp = VN_CAST(np, Const)) {
                 if (constp->num().isFourState())
@@ -246,17 +250,24 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else if (AstInsideRange* rangep = VN_CAST(np, InsideRange)) {
                 AstNodeExpr* const lhsp = V3Const::constifyEdit(rangep->lhsp());
                 AstNodeExpr* const rhsp = V3Const::constifyEdit(rangep->rhsp());
+                const bool loUnbounded = VN_IS(lhsp, Unbounded);
+                const bool hiUnbounded = VN_IS(rhsp, Unbounded);
                 AstConst* const loConstp = VN_CAST(lhsp, Const);
                 AstConst* const hiConstp = VN_CAST(rhsp, Const);
-                if (!loConstp || !hiConstp) {
+                if ((!loConstp && !loUnbounded) || (!hiConstp && !hiUnbounded)) {
                     rangep->v3error("Non-constant expression in bin range; "
                                     "range bounds must be constants");
                     continue;
                 }
-                if (loConstp->num().isFourState() || hiConstp->num().isFourState()) continue;
-                const uint64_t lo = loConstp->toUQuad();
-                const uint64_t hi = hiConstp->toUQuad();
-                for (uint64_t v = lo; v <= hi; v++) values.insert(v);
+                if ((loConstp && loConstp->num().isFourState())
+                    || (hiConstp && hiConstp->num().isFourState()))
+                    continue;
+                const uint64_t lo = loUnbounded ? 0 : loConstp->toUQuad();
+                const uint64_t hi = hiUnbounded ? maxVal : hiConstp->toUQuad();
+                for (uint64_t v = lo; v <= hi; v++) {
+                    if (values.size() >= maxEnumerate) break;
+                    values.insert(v);
+                }
             } else {
                 np->v3error("Non-constant expression in bin value list; values must be constants");
             }
@@ -266,14 +277,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Single-pass categorization: determine whether any regular (non-ignore/illegal) bins exist
     // and collect the set of excluded values from ignore/illegal bins.
     void categorizeBins(AstCoverpoint* coverpointp, bool& hasRegularOut,
-                        std::set<uint64_t>& excludedOut) {
+                        std::set<uint64_t>& excludedOut, uint64_t maxVal) {
         hasRegularOut = false;
         for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
             const VCoverBinsType btype = cbinp->binsType();
             if (btype == VCoverBinsType::BINS_IGNORE || btype == VCoverBinsType::BINS_ILLEGAL) {
                 if (AstNode* rangep = cbinp->rangesp()) {
-                    extractValuesFromRange(rangep, excludedOut);
+                    extractValuesFromRange(rangep, excludedOut, maxVal);
                 }
             } else {
                 hasRegularOut = true;
@@ -283,18 +294,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // Create implicit automatic bins when coverpoint has no explicit regular bins
     void createImplicitAutoBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp, int autoBinMax) {
-        // Single pass: check for regular bins and collect excluded values simultaneously
+        const int width = exprp->width();
+        const uint64_t maxVal = (width >= 64) ? UINT64_MAX : ((1ULL << width) - 1);
+
+        // Single pass: check for regular bins and collect excluded values simultaneously.
+        // maxVal resolves any '$' (open-ended) bound in ignore_bins/illegal_bins ranges.
         bool hasRegular = false;
         std::set<uint64_t> excluded;
-        categorizeBins(coverpointp, hasRegular, excluded);
+        categorizeBins(coverpointp, hasRegular, excluded, maxVal);
 
         // If already has regular bins, nothing to do
         if (hasRegular) return;
 
         UINFO(4, "  Creating implicit automatic bins for coverpoint: " << coverpointp->name());
 
-        const int width = exprp->width();
-        const uint64_t maxVal = (width >= 64) ? UINT64_MAX : ((1ULL << width) - 1);
         const uint64_t numTotalValues = (width >= 64) ? UINT64_MAX : (1ULL << width);
         const uint64_t numValidValues = numTotalValues - excluded.size();
 
@@ -836,6 +849,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
+    // Build a one-sided comparison for an open-ended bin range whose other bound is '$'.
+    // '$' denotes the coverpoint domain extreme, so {[lo:$]} == (expr >= lo) and
+    // {[$:hi]} == (expr <= hi).
+    AstNodeExpr* makeOpenRangeCondition(FileLine* fl, AstNodeExpr* exprp, AstConst* boundp,
+                                        bool isLowerBound) {
+        AstConst* const widep = widenConst(fl, boundp, exprp->widthMin());
+        if (isLowerBound) {
+            if (exprp->isSigned()) return new AstGteS{fl, exprp->cloneTree(false), widep};
+            return new AstGte{fl, exprp->cloneTree(false), widep};
+        }
+        if (exprp->isSigned()) return new AstLteS{fl, exprp->cloneTree(false), widep};
+        return new AstLte{fl, exprp->cloneTree(false), widep};
+    }
+
     // Build condition for a single transition item.
     // Returns expression that checks if exprp matches the item's value/range list.
     // Overload for when the expression is a variable read -- creates and manages the VarRef
@@ -1161,17 +1188,35 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 AstNodeExpr* const maxExprp = irp->rhsp();
                 AstConst* const minConstp = VN_CAST(minExprp, Const);
                 AstConst* const maxConstp = VN_CAST(maxExprp, Const);
-                if (!minConstp || !maxConstp) {
+                const bool loUnbounded = VN_IS(minExprp, Unbounded);
+                const bool hiUnbounded = VN_IS(maxExprp, Unbounded);
+                if (loUnbounded || hiUnbounded) {
+                    // Open-ended range: '$' is the coverpoint domain min/max, so the
+                    // range reduces to a single inequality (e.g. {[10:$]} -> expr >= 10).
+                    AstConst* const boundp = hiUnbounded ? minConstp : maxConstp;
+                    if (loUnbounded && hiUnbounded) {
+                        rangeCondp = new AstConst{irp->fileline(), AstConst::BitTrue{}};
+                    } else if (!boundp) {
+                        irp->v3error("Non-constant expression in bin range; "
+                                     "range bounds must be constants");
+                        return nullptr;
+                    } else if (boundp->num().isFourState()) {
+                        irp->v3error("Four-state (x/z) value in bin range bound; "
+                                     "range bounds must be two-state constants");
+                        return nullptr;
+                    } else {
+                        rangeCondp = makeOpenRangeCondition(irp->fileline(), exprp, boundp,
+                                                            /*isLowerBound=*/hiUnbounded);
+                    }
+                } else if (!minConstp || !maxConstp) {
                     irp->v3error("Non-constant expression in bin range; "
                                  "range bounds must be constants");
                     return nullptr;
-                }
-                if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
+                } else if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
                     irp->v3error("Four-state (x/z) value in bin range bound; "
                                  "range bounds must be two-state constants");
                     return nullptr;
-                }
-                if (minConstp->toUQuad() == maxConstp->toUQuad()) {
+                } else if (minConstp->toUQuad() == maxConstp->toUQuad()) {
                     // Single value
                     if (isWildcard) {
                         rangeCondp = buildWildcardCondition(binp, exprp, minConstp);

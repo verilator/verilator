@@ -59,6 +59,8 @@ module t;
       ignore_bins ign_xz_lo = {[4'bxxxx:4'hF]};    // four-state lower bound (range-enum path)
       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};    // four-state upper bound (range-enum path)
       ignore_bins ign_nclo = {[size_var:4]};       // non-constant lower bound
+      bins b_nc_ub = {[size_var:$]};                // non-constant lower bound, open-ended '$' upper
+      bins b_xz_ub = {[4'bxxxx:$]};                 // four-state lower bound, open-ended '$' upper
     }
   endgroup
 

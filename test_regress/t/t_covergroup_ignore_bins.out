@@ -9,6 +9,12 @@ cg2.cp_auto.auto_0: 1
 cg2.cp_auto.auto_1: 1
 cg2.cp_auto.ign [ignore]: 2
 cg2.cp_auto.ign_trans [ignore]: 1
+cg2.cp_auto_ub.auto_0: 1
+cg2.cp_auto_ub.auto_1: 1
+cg2.cp_auto_ub.ub [ignore]: 2
 cg2.cp_bounds.hi: 2
 cg2.cp_bounds.lo: 2
 cg2.cp_full.all: 4
+cg3.cp_auto_lb.auto_0: 1
+cg3.cp_auto_lb.auto_1: 1
+cg3.cp_auto_lb.lb [ignore]: 1

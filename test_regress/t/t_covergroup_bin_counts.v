@@ -15,6 +15,10 @@
 module t;
   logic [3:0] data;
   logic [7:0] opcode;
+  logic signed [3:0] sdata;
+
+  typedef struct packed {bit [7:0] value;} f_t;
+  f_t f1;
 
   // cg: basic bin count tracking
   covergroup cg;
@@ -43,14 +47,63 @@ module t;
     }
   endgroup
 
-  cg       cg_inst;
-  cg_mixed cg_mixed_inst;
-  cg_db    cg_db_inst;
+  // cg_unbounded: open-ended bin range - '$' resolves to the coverpoint domain max (15 for 4-bit)
+  covergroup cg_unbounded;
+    cp: coverpoint data {
+      bins lo     = {[0:9]};   // 1 bin: values 0..9
+      bins others = {[10:$]};  // 1 bin: values 10..15 ($ == domain max)
+    }
+  endgroup
+
+  // cg_unbounded_lo: open-ended LOWER bound - '$' resolves to the domain min (0)
+  covergroup cg_unbounded_lo;
+    cp: coverpoint data {
+      bins start = {[$:5]};   // 1 bin: values 0..5  ($ == domain min) -> expr <= 5
+      bins rest  = {[6:15]};
+    }
+  endgroup
+
+  // cg_unbounded_all: both bounds open ('[$:$]' covers the entire domain -> always true)
+  covergroup cg_unbounded_all;
+    cp: coverpoint data {
+      bins all = {[$:$]};  // 1 bin: every value
+    }
+  endgroup
+
+  // cg_unbounded_signed: signed coverpoint with open-ended bounds in both directions
+  covergroup cg_unbounded_signed;
+    cp: coverpoint sdata {
+      bins hi = {[2:$]};   // sdata >= 2   (signed >=)
+      bins lo = {[$:-2]};  // sdata <= -2  (signed <=)
+    }
+  endgroup
+
+  // cg_sel: coverpoint over a struct-member part-select expression (AstSel)
+  covergroup cg_sel;
+    cp: coverpoint f1.value[3:0] {  // low nibble only; upper bits ignored
+      bins lo = {[0:7]};
+      bins hi = {[8:15]};
+    }
+  endgroup
+
+  cg                  cg_inst;
+  cg_mixed            cg_mixed_inst;
+  cg_db               cg_db_inst;
+  cg_unbounded        cg_unbounded_inst;
+  cg_unbounded_lo     cg_unbounded_lo_inst;
+  cg_unbounded_all    cg_unbounded_all_inst;
+  cg_unbounded_signed cg_unbounded_signed_inst;
+  cg_sel              cg_sel_inst;
 
   initial begin
-    cg_inst       = new;
-    cg_mixed_inst = new;
-    cg_db_inst    = new;
+    cg_inst                  = new;
+    cg_mixed_inst            = new;
+    cg_db_inst               = new;
+    cg_unbounded_inst        = new;
+    cg_unbounded_lo_inst     = new;
+    cg_unbounded_all_inst    = new;
+    cg_unbounded_signed_inst = new;
+    cg_sel_inst              = new;
 
     data = 0; cg_inst.sample();    // zero: 1
     `checkr(cg_inst.get_inst_coverage(), 50.0);
@@ -74,6 +127,34 @@ module t;
     `checkr(cg_db_inst.get_inst_coverage(), 50.0);
     data = 10; cg_db_inst.sample();  // high
     `checkr(cg_db_inst.get_inst_coverage(), 100.0);
+
+    // Open-ended range: '$' upper bound covers values up to the domain max
+    data = 5;  cg_unbounded_inst.sample();  // lo
+    `checkr(cg_unbounded_inst.get_inst_coverage(), 50.0);
+    data = 12; cg_unbounded_inst.sample();  // others ([10:$] covers 12)
+    `checkr(cg_unbounded_inst.get_inst_coverage(), 100.0);
+
+    // Open-ended lower bound: '$' min covers values down to 0
+    data = 3;  cg_unbounded_lo_inst.sample();  // start ([$:5] covers 3)
+    `checkr(cg_unbounded_lo_inst.get_inst_coverage(), 50.0);
+    data = 10; cg_unbounded_lo_inst.sample();  // rest
+    `checkr(cg_unbounded_lo_inst.get_inst_coverage(), 100.0);
+
+    // Both-open range '[$:$]' matches any value
+    data = 7;  cg_unbounded_all_inst.sample();  // all
+    `checkr(cg_unbounded_all_inst.get_inst_coverage(), 100.0);
+
+    // Signed open-ended bounds: '$' resolves to signed domain max/min
+    sdata = 5;  cg_unbounded_signed_inst.sample();  // hi ([2:$] covers 5)
+    `checkr(cg_unbounded_signed_inst.get_inst_coverage(), 50.0);
+    sdata = -5; cg_unbounded_signed_inst.sample();  // lo ([$:-2] covers -5)
+    `checkr(cg_unbounded_signed_inst.get_inst_coverage(), 100.0);
+
+    // Part-select coverpoint: only the low nibble is sampled (upper bits ignored)
+    f1.value = 8'h03; cg_sel_inst.sample();  // nibble 3 -> lo
+    `checkr(cg_sel_inst.get_inst_coverage(), 50.0);
+    f1.value = 8'hF9; cg_sel_inst.sample();  // nibble 9 -> hi (upper bits F ignored)
+    `checkr(cg_sel_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

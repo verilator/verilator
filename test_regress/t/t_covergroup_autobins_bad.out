@@ -65,4 +65,12 @@
                                            : ... note: In instance 't'
    60 |       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};     
       |                                ^
+%Error: t/t_covergroup_autobins_bad.v:62:23: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   62 |       bins b_nc_ub = {[size_var:$]};                 
+      |                       ^
+%Error: t/t_covergroup_autobins_bad.v:63:23: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   63 |       bins b_xz_ub = {[4'bxxxx:$]};                  
+      |                       ^
 %Error: Exiting due to
