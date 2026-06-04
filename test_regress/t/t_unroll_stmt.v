@@ -12,6 +12,8 @@ module t;
     return ++static_loop_cond < 8;
   endfunction
 
+  int nonConst3 = $c("3");
+
   initial begin
     // Basic loop
     for (int i = 0; i < 3; ++i) begin : loop_0
@@ -58,6 +60,22 @@ module t;
           end
         end
       end
+    end
+    // Outer condition updated in inner loop
+    begin
+      automatic int i = 0;
+      while (i < 5) begin : loop_7
+        $display("loop_7 %0d", i);
+        for (int j = 0 ; j < 4; ++j) begin : loop_8
+          $display("loop_8 %0d", j);
+          if (j == 3) ++i;
+        end
+      end
+    end
+    // Data dependent break
+    for (int i = 0; i < 5; ++i) begin : loop_9
+      $display("loop_9 %0d", i);
+      if (i == nonConst3) break;
     end
     // Done
     $write("*-* All Finished *-*\n");
