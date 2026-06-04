@@ -1162,10 +1162,9 @@ class LinkParseVisitor final : public VNVisitor {
             paramp->funcLocal(true);
             paramp->direction(VDirection::INPUT);
             funcp->addStmtsp(paramp);
-            AstNodeExpr* const lhsp
-                = new AstDot{origVarp->fileline(), false,
-                             new AstParseRef{origVarp->fileline(), "this"},
-                             new AstParseRef{origVarp->fileline(), origVarp->name()}};
+            AstNodeExpr* const lhsp = new AstDot{
+                origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
+                new AstParseRef{origVarp->fileline(), origVarp->name()}};
             AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
             funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
         }
