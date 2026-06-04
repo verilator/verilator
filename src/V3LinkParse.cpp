@@ -64,6 +64,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
+    int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
@@ -1149,6 +1150,27 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    // Append, for each arg in argsp, an INPUT parameter plus a "this.<member> = <param>"
+    // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
+    // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
+    // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
+    // argsp may be null (no args appended).
+    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp) {
+        for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+            AstVar* const origVarp = VN_AS(argp, Var);
+            AstVar* const paramp = origVarp->cloneTree(false);
+            paramp->funcLocal(true);
+            paramp->direction(VDirection::INPUT);
+            funcp->addStmtsp(paramp);
+            AstNodeExpr* const lhsp
+                = new AstDot{origVarp->fileline(), false,
+                             new AstParseRef{origVarp->fileline(), "this"},
+                             new AstParseRef{origVarp->fileline(), origVarp->name()}};
+            AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
+            funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+        }
+    }
+
     // Create boilerplate covergroup methods on the given AstClass.
     // argsp/sampleArgsp are the raw arg lists still owned by the caller; they are iterated
     // (cloned) but not deleted here.
@@ -1164,20 +1186,11 @@ class LinkParseVisitor final : public VNVisitor {
         if (argsp) {
             UASSERT_OBJ(newFuncp, nodep,
                         "Covergroup class must have a 'new' constructor function");
-            // Save the existing body statements and unlink them
+            // Save the existing body statements and unlink them, so the arg assignments run
+            // before the coverage body, then re-append the body.
             AstNode* const existingBodyp = newFuncp->stmtsp();
             if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            // Add function parameters and assignments
-            for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
-                AstVar* const origVarp = VN_AS(argp, Var);
-                AstVar* const paramp = origVarp->cloneTree(false);
-                paramp->funcLocal(true);
-                paramp->direction(VDirection::INPUT);
-                newFuncp->addStmtsp(paramp);
-                AstNodeExpr* const lhsp = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
-                newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
-            }
+            addArgMemberCopies(newFuncp, argsp);
             if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
         }
 
@@ -1206,19 +1219,7 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            if (sampleArgsp) {
-                for (AstNode* argp = sampleArgsp; argp; argp = argp->nextp()) {
-                    AstVar* const origVarp = VN_AS(argp, Var);
-                    AstVar* const paramp = origVarp->cloneTree(false);
-                    paramp->funcLocal(true);
-                    paramp->direction(VDirection::INPUT);
-                    funcp->addStmtsp(paramp);
-                    AstNodeExpr* const lhsp
-                        = new AstParseRef{origVarp->fileline(), origVarp->name()};
-                    AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
-                    funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
-                }
-            }
+            addArgMemberCopies(funcp, sampleArgsp);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
@@ -1335,7 +1336,11 @@ class LinkParseVisitor final : public VNVisitor {
         // Add all boilerplate covergroup methods (reads argsp/sampleArgsp from nodep)
         createCovergroupMethods(cgClassp, newFuncp, nodep->argsp(), nodep->sampleArgsp());
 
-        // Replace AstCovergroup with AstClass and process the new class normally
+        // Replace AstCovergroup with AstClass and process the new class normally.
+        // Reset the unnamed-coverpoint counter so synthesized names are stable and
+        // independent of unrelated covergroups elsewhere in the file.
+        VL_RESTORER(m_coverpointNum);
+        m_coverpointNum = 0;
         nodep->replaceWith(cgClassp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(cgClassp);
@@ -1343,6 +1348,27 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverpoint* nodep) override {
         cleanFileline(nodep);
+        // Give every coverpoint a guaranteed-unique, deterministic name so all downstream
+        // consumers (generated bin-variable names, the cross coverpoint map, hierarchical
+        // report names) see a consistent identifier.  Unlabeled coverpoints arrive from the
+        // grammar with an empty name; left empty, two of them in one covergroup collide on
+        // the generated "__Vcov__<bin>" variable name (e.g. duplicate "__Vcov__auto_0").
+        if (nodep->name().empty()) {
+            // A single-identifier coverpoint expression is the only form that parses to an
+            // AstParseRef with a usable name here; a dotted/scoped/select/concatenation/call
+            // expression is either a different node (so the cast yields null) or a name-less
+            // AstParseRef (e.g. a member-select).  Either of those gets a synthesized name.
+            const AstParseRef* const refp = VN_CAST(nodep->exprp(), ParseRef);
+            if (refp && !refp->name().empty()) {
+                // Single-identifier coverpoint: take the variable's name (IEEE 1800-2023
+                // 19.5 - an unlabeled coverpoint of a single variable is named for it).
+                nodep->name(refp->name());
+            } else {
+                // Compound expression (member/part select, concatenation, ...): synthesize
+                // a unique name.  Leading "__V" keeps it out of the user namespace.
+                nodep->name("__Vcoverpoint" + cvtToStr(m_coverpointNum++));
+            }
+        }
         // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
         // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we

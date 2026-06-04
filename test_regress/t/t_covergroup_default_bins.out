@@ -18,3 +18,19 @@ cg6.cp_data65.hi: 1
 cg6.cp_data65.lo: 1
 cg7.data.hi: 1
 cg7.data.lo: 1
+cg_cross.a.auto_0: 1
+cg_cross.a.auto_1: 1
+cg_cross.ab.auto_0_x_auto_0 [cross]: 1
+cg_cross.ab.auto_0_x_auto_1 [cross]: 0
+cg_cross.ab.auto_1_x_auto_0 [cross]: 0
+cg_cross.ab.auto_1_x_auto_1 [cross]: 1
+cg_cross.b.auto_0: 1
+cg_cross.b.auto_1: 1
+cg_member.__Vcoverpoint0.auto_0: 1
+cg_member.__Vcoverpoint0.auto_1: 0
+cg_member.__Vcoverpoint1.auto_0: 0
+cg_member.__Vcoverpoint1.auto_1: 1
+cg_plain.a.auto_0: 1
+cg_plain.a.auto_1: 0
+cg_plain.b.auto_0: 0
+cg_plain.b.auto_1: 1

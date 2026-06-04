@@ -28,9 +28,17 @@ module t;
     cp_clocked: coverpoint i { bins lo = {[0:4]}; bins hi = {[5:9]}; }
   endgroup
 
+  // 'with function sample' covergroup whose coverpoint references its own sample-argument
+  // member.  That reference resolves to a member of the covergroup class itself and so must
+  // NOT be mistaken for an unsupported enclosing-class reference (and skipped).
+  covergroup cg_samp with function sample(bit [1:0] x);
+    cp: coverpoint x { bins b0 = {0}; bins b3 = {3}; }
+  endgroup
+
   cg cov1 = new(69, 77);
   cg cov2 = new(69);
   cg_clocked cov_clocked = new(10);
+  cg_samp cov_samp = new;
   PlainClass plain_inst = new;  // Non-covergroup class instance - must not affect covergroup coverage
 
   function void x();
@@ -69,6 +77,11 @@ module t;
     i = 3;
     x();             // samples cov1 with i=3 -> lo bin hit
     clk = 1;         // posedge: samples cov_clocked with i=3 -> lo bin hit
+    // Sample-arg coverpoint: the passed value must reach the coverpoint.  Sampling 0 then 3
+    // must hit b0 and b3 respectively; if the argument were dropped (member left at its
+    // default 0) b3 would never be hit.
+    cov_samp.sample(2'd0);
+    cov_samp.sample(2'd3);
     $finish;
   end
 

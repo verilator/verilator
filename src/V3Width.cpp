@@ -1920,11 +1920,10 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCoverpoint* nodep) override {
         // The coverpoint expression is self-determined (IEEE 1800-2023 19.5).  Width it
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
-        // reach assertAtExpr() with m_vup==null and fail as an internal error.  Bins,
-        // iff and options are widthed context-free, as by the default visitor.
+        // reach assertAtExpr() with m_vup==null and fail as an internal error.
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
         userIterateAndNext(nodep->binsp(), nullptr);
-        userIterateAndNext(nodep->iffp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
     void visit(AstPow* nodep) override {

@@ -29,6 +29,8 @@
 #include "V3Const.h"
 #include "V3MemberMap.h"
 
+#include <set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -1426,17 +1428,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             const std::string binName = binp->name();
 
             if (coverpointp) {
-                // Coverpoint bin: use coverpoint name or generate from expression
-                std::string cpName = coverpointp->name();
-                if (cpName.empty()) {
-                    // Unlabeled coverpoint: name comes from its expression (always a VarRef)
-                    UASSERT_OBJ(coverpointp->exprp(), coverpointp,
-                                "Coverpoint without expression and without name");
-                    cpName = coverpointp->exprp()->name();
-                    UASSERT_OBJ(!cpName.empty(), coverpointp,
-                                "Coverpoint expression has empty name");
-                }
-                hierName += "." + cpName;
+                // Coverpoint bin: V3LinkParse guarantees a non-empty name for every
+                // coverpoint (user label, single-variable name, or synthesized __Vcoverpoint<N>).
+                UASSERT_OBJ(!coverpointp->name().empty(), coverpointp,
+                            "Coverpoint without a name (should be set in V3LinkParse)");
+                hierName += "." + coverpointp->name();
             } else {
                 // Cross bin: grammar always provides a name (user label or auto "__crossN")
                 hierName += "." + crossp->name();
@@ -1493,6 +1489,35 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS
+    AstNode* findEnclosingMemberRef(AstClass* cgClassp) {
+        // An embedded covergroup is lowered into a sibling AstClass that has no handle to
+        // the enclosing object.  A coverpoint/iff/cross expression that references a
+        // (non-static) member of the enclosing class therefore emits C++ that accesses the
+        // member as if it were static ("invalid use of non-static data member").  Detect
+        // such references so the caller can skip lowering with a clean warning instead of
+        // producing uncompilable code.  Returns the first offending node, or nullptr.
+        // Collect the covergroup class's own member variables (sample/constructor args);
+        // references to those are legitimate.
+        std::set<const AstVar*> ownVars;
+        for (AstNode* itemp = cgClassp->membersp(); itemp; itemp = itemp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(itemp, Var)) ownVars.insert(varp);
+        }
+        AstNode* offenderp = nullptr;
+        const auto scan = [&](AstNode* rootp) {
+            rootp->foreach([&](AstVarRef* refp) {
+                if (offenderp) return;
+                const AstVar* const varp = refp->varp();  // Always set post-LinkDot
+                // A member of another class (the enclosing class) reached with no handle.
+                // Members of the covergroup class itself (sample/constructor args) are
+                // legitimate and excluded via ownVars.
+                if (varp->isClassMember() && !ownVars.count(varp)) offenderp = refp;
+            });
+        };
+        for (AstCoverpoint* cpp : m_coverpoints) scan(cpp);
+        for (AstCoverCross* crossp : m_coverCrosses) scan(crossp);
+        return offenderp;
+    }
+
     void visit(AstClass* nodep) override {
         UINFO(9, "Visiting class: " << nodep->name() << " isCovergroup=" << nodep->isCovergroup());
         if (nodep->isCovergroup()) {
@@ -1575,6 +1600,26 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no"));
 
             iterateChildren(nodep);
+
+            // Option B safety net for embedded covergroups: if a coverpoint/iff/cross
+            // references a member of the enclosing class, lowering would emit uncompilable
+            // C++ (no handle to the enclosing instance).  Skip this covergroup with a clean
+            // warning rather than crashing the C++ compile.  (Full support - an enclosing
+            // back-pointer - is the planned follow-up.)
+            if (AstNode* const offenderp = findEnclosingMemberRef(nodep)) {
+                offenderp->v3warn(COVERIGN,
+                                  "Unsupported: 'covergroup' coverpoint referencing enclosing "
+                                  "class member; ignoring covergroup "
+                                      << nodep->prettyNameQ());
+                for (AstCoverpoint* cpp : m_coverpoints) {
+                    VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
+                }
+                for (AstCoverCross* crossp : m_coverCrosses) {
+                    VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
+                }
+                return;
+            }
+
             processCovergroup();
             // Remove lowered coverpoints/crosses from the class - they have been
             // fully translated into C++ code and must not reach downstream passes

@@ -2,3 +2,5 @@ cg.cp1.hi: 0
 cg.cp1.lo: 1
 cg_clocked.cp_clocked.hi: 0
 cg_clocked.cp_clocked.lo: 1
+cg_samp.cp.b0: 1
+cg_samp.cp.b3: 1

@@ -24,6 +24,15 @@ module t;
   logic [64:0] data65;
   DataHelper helper;
 
+  // Signals for the unlabeled-coverpoint covergroups below
+  logic [1:0] a;
+  logic [1:0] b;
+  typedef struct packed {
+    logic [1:0] hi;
+    logic [1:0] lo;
+  } pair_t;
+  pair_t p;
+
   covergroup cg;
     coverpoint data {
       bins low = {[0:3]};
@@ -72,6 +81,30 @@ module t;
     coverpoint data { bins lo = {[0:7]}; bins hi = {[8:15]}; }
   endgroup
 
+  // Multiple unlabeled coverpoints: each gets a unique deterministic name (the variable
+  // name for a single identifier).  Previously two unlabeled coverpoints in one covergroup
+  // collided on the generated bin-variable name (e.g. duplicate '__Vcov__auto_0').
+  covergroup cg_plain;
+    option.auto_bin_max = 2;
+    coverpoint a;
+    coverpoint b;
+  endgroup
+
+  // Unlabeled coverpoints with compound (member-select) expressions get synthesized names.
+  covergroup cg_member;
+    option.auto_bin_max = 2;
+    coverpoint p.lo;
+    coverpoint p.hi;
+  endgroup
+
+  // A cross referencing unlabeled coverpoints by their derived names.
+  covergroup cg_cross;
+    option.auto_bin_max = 2;
+    coverpoint a;
+    coverpoint b;
+    ab: cross a, b;
+  endgroup
+
   initial begin
     cg  cg_inst;
     cg2 cg2_inst;
@@ -80,6 +113,9 @@ module t;
     cg5 cg5_inst;
     cg6 cg6_inst;
     cg7 cg7_inst;
+    cg_plain  cg_plain_inst;
+    cg_member cg_member_inst;
+    cg_cross  cg_cross_inst;
 
     cg_inst  = new();
     cg2_inst = new();
@@ -88,6 +124,9 @@ module t;
     cg5_inst = new();
     cg6_inst = new();
     cg7_inst = new();
+    cg_plain_inst  = new();
+    cg_member_inst = new();
+    cg_cross_inst  = new();
     helper   = new(8'h42);
     data = helper.val;   // Use helper to avoid optimization
 
@@ -150,6 +189,16 @@ module t;
     `checkr(cg7_inst.get_inst_coverage(), 50.0);
     data = 10; cg7_inst.sample();  // hits bin hi
     `checkr(cg7_inst.get_inst_coverage(), 100.0);
+
+    // cg_plain: two unlabeled coverpoints (a, b), 2 auto bins each -> distinct names
+    a = 0; b = 3; cg_plain_inst.sample();
+    `checkr(cg_plain_inst.get_inst_coverage(), 50.0);
+    // cg_member: unlabeled member-select coverpoints (synthesized names)
+    p.lo = 0; p.hi = 3; cg_member_inst.sample();
+    `checkr(cg_member_inst.get_inst_coverage(), 50.0);
+    // cg_cross: cross of unlabeled coverpoints referenced by derived name
+    a = 0; b = 0; cg_cross_inst.sample();
+    a = 3; b = 3; cg_cross_inst.sample();
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -8,6 +8,13 @@
 // Test iff (enable) guard: sampling is gated by the enable condition.
 // Covers iff on explicit value bins, default bin, array bins,
 // simple 2-step transition, and 3-step transition.
+//
+// Also covers compound iff expressions (&&, ||, unary !, bit/part-select,
+// relational compare, parenthesized bitwise, and a concatenation-valued
+// coverpoint with a compound iff).  Previously any iff that was not a bare
+// reference or a unary ! tripped an internal error ("Unexpected '...'
+// expression under 'COVERPOINT'") because the iff child was widthed with no
+// context.
 
 // verilog_format: off
 `define stop $stop
@@ -17,6 +24,13 @@
 module t;
   logic enable;
   int value;
+
+  // Signals for the compound-iff covergroups below
+  logic m_is_read;
+  logic [3:0] m_be;
+  logic [1:0] m_a;
+  logic [1:0] m_b;
+  int count;
 
   // iff on explicit value bins
   covergroup cg_iff;
@@ -57,11 +71,59 @@ module t;
     }
   endgroup
 
+  // --- compound iff expressions ---
+
+  // unary ! combined with && and a bit-select, on a concatenation-valued
+  // coverpoint expression -- the exact reported shape.
+  covergroup cg_and;
+    cp_concat: coverpoint {m_a[0], m_b[0]} iff (!m_is_read && m_be[0]) {
+      bins b00 = {2'b00};
+      bins b01 = {2'b01};
+      bins b10 = {2'b10};
+      bins b11 = {2'b11};
+    }
+  endgroup
+
+  // logical || guard
+  covergroup cg_or;
+    cp: coverpoint count iff (m_be[0] || m_be[1]) {
+      bins lo = {1};
+      bins hi = {2};
+    }
+  endgroup
+
+  // part-select compare guard
+  covergroup cg_part;
+    cp: coverpoint count iff (m_be[3:0] != 0) {
+      bins one = {1};
+    }
+  endgroup
+
+  // relational compare guard
+  covergroup cg_rel;
+    cp: coverpoint count iff (count > 3) {
+      bins five = {5};
+      bins two = {2};
+    }
+  endgroup
+
+  // parenthesized bitwise guard
+  covergroup cg_bitw;
+    cp: coverpoint count iff ((m_a & m_b) == 2'b10) {
+      bins seven = {7};
+    }
+  endgroup
+
   cg_iff          cg1 = new;
   cg_default_iff  cg2 = new;
   cg_array_iff    cg3 = new;
   cg_trans2_iff   cg4 = new;
   cg_trans3_iff   cg5 = new;
+  cg_and          ca = new;
+  cg_or           co = new;
+  cg_part         cpp = new;
+  cg_rel          cr = new;
+  cg_bitw         cb = new;
 
   initial begin
     // Sample disabled_lo and disabled_hi with enable=0 -- must not be recorded
@@ -117,6 +179,39 @@ module t;
     value = 2; cg5.sample();
     value = 3; cg5.sample();  // (1=>2=>3) fully hit with enable=1
     `checkr(cg5.get_inst_coverage(), 100.0);
+
+    // --- compound iff expressions ---
+    // cg_and: guard true -> {0,1}=2'b01 sampled into b01
+    m_is_read = 0; m_be = 4'b0001; m_a = 2'b10; m_b = 2'b11;  // m_a[0]=0,m_b[0]=1 -> 2'b01
+    ca.sample();  // b01 hit
+    `checkr(ca.get_inst_coverage(), 25.0);
+    m_is_read = 1; m_a = 2'b11; m_b = 2'b11;  // guard false -> gated
+    ca.sample();
+    `checkr(ca.get_inst_coverage(), 25.0);
+
+    // cg_or: guard true via bit1
+    m_be = 4'b0010; count = 1; co.sample();  // lo hit
+    `checkr(co.get_inst_coverage(), 50.0);
+    m_be = 4'b0000; count = 2; co.sample();  // gated
+    `checkr(co.get_inst_coverage(), 50.0);
+
+    // cg_part: part-select != 0
+    m_be = 4'b1000; count = 1; cpp.sample();  // one hit
+    `checkr(cpp.get_inst_coverage(), 100.0);
+    m_be = 4'b0000; count = 1; cpp.sample();  // gated
+    `checkr(cpp.get_inst_coverage(), 100.0);
+
+    // cg_rel: count > 3
+    count = 5; cr.sample();  // five hit (5>3)
+    `checkr(cr.get_inst_coverage(), 50.0);
+    count = 2; cr.sample();  // two gated (2>3 false)
+    `checkr(cr.get_inst_coverage(), 50.0);
+
+    // cg_bitw: (m_a & m_b) == 2'b10
+    m_a = 2'b10; m_b = 2'b11; count = 7; cb.sample();  // seven hit
+    `checkr(cb.get_inst_coverage(), 100.0);
+    m_a = 2'b00; m_b = 2'b11; count = 7; cb.sample();  // gated
+    `checkr(cb.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
