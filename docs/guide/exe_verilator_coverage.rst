@@ -38,6 +38,10 @@ verilator_coverage Example Usage
 
    verilator_coverage --annotate obj_dir coverage.dat
 
+   verilator_coverage --report summary coverage.dat
+
+   verilator_coverage --report hier --levels 3 coverage.dat
+
    verilator_coverage --write merged.dat coverage.dat ...
 
    verilator_coverage --write-info merged.info coverage.dat ...
@@ -143,6 +147,13 @@ verilator_coverage Arguments
    By default, reset arcs are tracked but summarized separately from the
    non-reset FSM arcs.
 
+.. option:: --levels <depth>
+
+   With :option:`--report hierarchy`, limits displayed hierarchy depth.
+   Deeper descendants still roll up into the visible parent totals. A depth
+   of 0 shows the top-level hierarchy rollup. If negative or omitted, all
+   depths are shown.
+
 .. option:: --rank
 
    Prints an experimental report listing the relative importance of each
@@ -154,6 +165,18 @@ verilator_coverage Arguments
    "RankPts" indicates the number of coverage points this test will
    contribute to overall coverage if all tests are run in the order of
    highest to the lowest rank.
+
+.. option:: --report <kind>[,<kind>...]
+
+   Generates a human-consumable report. Supported report kinds are
+   ``summary``, ``hier``, and ``hierarchy``. Multiple report kinds may be
+   comma-separated, for example ``summary,hier``. With no explicit
+   :option:`--report`, the legacy flat summary is printed. ``summary`` is
+   equivalent to the flat type summary. ``hier`` and ``hierarchy`` build a
+   deterministic hierarchy rollup from ``hier`` fields. Collapsed wildcard
+   hierarchy can be reported, but it is not precise per-instance coverage. If
+   no hierarchy fields are present, a warning is printed and the flat summary
+   is shown instead.
 
 .. option:: --unlink
 

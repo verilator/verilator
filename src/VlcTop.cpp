@@ -32,6 +32,139 @@
 
 //######################################################################
 
+namespace {
+
+// Report helpers only.  They keep the flat summary and hierarchy report using
+// the same hit/total accounting and output formatting.  These helpers read the
+// fields already exposed by VlcPoint; they do not affect coverage point
+// identity, merging, or .dat writing.
+
+// Map coverage type to (covered points, total points).
+using TypeTally = std::map<std::string, std::pair<uint64_t, uint64_t>>;
+
+static const char* const s_orderedTypes[]
+    = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
+static const size_t s_summaryIndent = 2;
+static const size_t s_reportRowIndent = 4;
+
+string displayType(const VlcPoint& point) {
+    const string type = point.type();
+    return type.empty() ? "point" : type;
+}
+
+bool isCollapsedHier(const string& hier) {
+    return hier.find('*') != string::npos || hier.find('?') != string::npos;
+}
+
+bool isOrderedType(const string& type) {
+    for (const char* const typep : s_orderedTypes) {
+        if (type == typep) return true;
+    }
+    return false;
+}
+
+string reportHier(const VlcPoint& point) {
+    // FSM records currently have useful instance scope in Fv.
+    if (point.isFsmState() || point.isFsmArc()) {
+        const string fsmVar = point.fsmVarName();
+        return fsmVar.substr(0, fsmVar.rfind('.'));
+    }
+    return point.hier();
+}
+
+std::vector<string> splitHier(const string& hier) {
+    // Verilator emits dot-separated non-empty hierarchy components.
+    std::vector<string> parts;
+    string::size_type start = 0;
+    while (true) {
+        const string::size_type dot = hier.find('.', start);
+        if (dot == string::npos) break;
+        parts.push_back(hier.substr(start, dot - start));
+        start = dot + 1;
+    }
+    parts.push_back(hier.substr(start));
+    return parts;
+}
+
+string duName(const VlcPoint& point) {
+    // Pages are emitted as v_<type>/<design-unit> for RTL coverage.  Use the
+    // suffix as the design-unit summary key.
+    const string page = point.page();
+    return page.substr(page.find('/') + 1);
+}
+
+void tallyPoint(TypeTally& tally, const string& type, uint64_t count) {
+    std::pair<uint64_t, uint64_t>& entry = tally[type];
+    if (count > 0) ++entry.first;
+    ++entry.second;
+}
+
+// Keep the percentage calculation in one place so flat summaries and hierarchy
+// reports cannot drift in formatting or zero-total handling.
+double pct(uint64_t hit, uint64_t total) {
+    return total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+}
+
+// Shared row formatter.  The callers choose which rows to print; this only keeps
+// the text layout identical between the flat and hierarchy reports.
+void printIndent(size_t indent) {
+    for (size_t i = 0; i < indent; ++i) std::cout << ' ';
+}
+
+void printTallyRow(const string& type, uint64_t hit, uint64_t total, size_t indent,
+                   size_t typeWidth, size_t countWidth) {
+    printIndent(indent);
+    std::cout << std::left << std::setw(typeWidth) << type << " : " << std::right << std::fixed
+              << std::setprecision(1) << pct(hit, total) << "% (" << std::setw(countWidth) << hit
+              << "/" << std::setw(countWidth) << total << ")\n";
+}
+
+size_t countWidth(const TypeTally& tally) {
+    size_t width = cvtToStr(0).size();
+    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
+        width = std::max(width, cvtToStr(it->second.first).size());
+        width = std::max(width, cvtToStr(it->second.second).size());
+    }
+    return width;
+}
+
+size_t typeWidth(const TypeTally& tally) {
+    size_t typeWidth = 0;
+    for (const char* const typep : s_orderedTypes) {
+        const string type = typep;
+        typeWidth = std::max(typeWidth, type.size());
+    }
+    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
+        typeWidth = std::max(typeWidth, it->first.size());
+    }
+    return typeWidth;
+}
+
+void printTypeTally(const TypeTally& tally, size_t indent, bool includeMissingOrdered) {
+    // Print standard coverage types first for stable output.  When requested,
+    // missing standard rows are printed with zero counts for compatibility with
+    // the historical flat summary output.
+    const size_t typWidth = typeWidth(tally);
+    const size_t cntWidth = countWidth(tally);
+    for (const char* const typep : s_orderedTypes) {
+        const string type = typep;
+        const TypeTally::const_iterator it = tally.find(type);
+        if (it != tally.end()) {
+            printTallyRow(type, it->second.first, it->second.second, indent, typWidth, cntWidth);
+        } else if (includeMissingOrdered) {
+            printTallyRow(type, 0, 0, indent, typWidth, cntWidth);
+        }
+    }
+    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
+        if (!isOrderedType(it->first)) {
+            printTallyRow(it->first, it->second.first, it->second.second, indent, typWidth,
+                          cntWidth);
+        }
+    }
+}
+
+}  // namespace
+
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2, "readCoverage " << filename);
 
@@ -372,47 +505,69 @@ void VlcTop::annotate(const string& dirname) {
 }
 
 void VlcTop::printTypeSummary() {
-    static const std::vector<std::string> orderedTypes
-        = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
-    std::map<std::string, std::pair<uint64_t, uint64_t>> tally;
-    for (const auto& i : m_points) {
+    TypeTally tally;
+    for (VlcPoints::ByName::value_type& i : m_points) {
         const VlcPoint& pt = m_points.pointNumber(i.second);
-        const string type = pt.type().empty() ? "point" : pt.type();
-        auto& entry = tally[type];
-        if (pt.count() > 0) ++entry.first;
-        ++entry.second;
+        tallyPoint(tally, displayType(pt), pt.count());
     }
     if (tally.empty()) return;
-    std::set<std::string> printed;
-    size_t typeWidth = 0;
-    size_t countWidth = 0;
-    for (const string& type : orderedTypes) typeWidth = std::max(typeWidth, type.size());
-    countWidth = std::max(countWidth, cvtToStr(0).size());
-    for (const auto& it : tally) {
-        typeWidth = std::max(typeWidth, it.first.size());
-        countWidth = std::max(countWidth, cvtToStr(it.second.first).size());
-        countWidth = std::max(countWidth, cvtToStr(it.second.second).size());
-    }
     std::cout << "Coverage Summary:\n";
-    for (const string& type : orderedTypes) {
-        const auto it = tally.find(type);
-        printed.insert(type);
-        const uint64_t hit = (it == tally.end()) ? 0 : it->second.first;
-        const uint64_t total = (it == tally.end()) ? 0 : it->second.second;
-        const double pct
-            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
-        std::cout << "  " << std::left << std::setw(typeWidth) << type << " : " << std::right
-                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
-                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+    // Keep the legacy summary behavior of showing standard coverage types even
+    // when the input has no points of that type.
+    printTypeTally(tally, s_summaryIndent, true);
+}
+
+void VlcTop::printHierarchyReport() {
+    std::map<string, TypeTally> hierTallies;
+    std::map<string, TypeTally> duTallies;
+    bool hasHier = false;
+    bool hasCollapsedHier = false;
+    for (VlcPoints::ByName::value_type& i : m_points) {
+        const VlcPoint& pt = m_points.pointNumber(i.second);
+        const string hier = reportHier(pt);
+        if (hier.empty()) continue;
+        hasHier = true;
+        if (isCollapsedHier(hier)) hasCollapsedHier = true;
+        const string type = displayType(pt);
+        const std::vector<string> parts = splitHier(hier);
+        string path;
+        for (std::vector<string>::const_iterator it = parts.begin(); it != parts.end(); ++it) {
+            path = path.empty() ? *it : path + "." + *it;
+            tallyPoint(hierTallies[path], type, pt.count());
+        }
+        tallyPoint(duTallies[duName(pt)], type, pt.count());
     }
-    for (const auto& it : tally) {
-        if (printed.count(it.first)) continue;
-        const uint64_t hit = it.second.first;
-        const uint64_t total = it.second.second;
-        const double pct
-            = total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
-        std::cout << "  " << std::left << std::setw(typeWidth) << it.first << " : " << std::right
-                  << std::fixed << std::setprecision(1) << pct << "% (" << std::setw(countWidth)
-                  << hit << "/" << std::setw(countWidth) << total << ")\n";
+
+    if (!hasHier) {
+        std::cout << "%Warning: --report hierarchy input has no hierarchy fields; "
+                  << "printing flat summary instead.\n";
+        printTypeSummary();
+        return;
+    }
+
+    const int levels = opt.reportLevels();
+    if (hasCollapsedHier) {
+        std::cout << "Note: hierarchy report contains collapsed hierarchy paths; "
+                  << "it is not precise per-instance coverage.\n";
+    }
+    std::cout << "Hierarchy Coverage Summary:\n";
+    for (std::map<string, TypeTally>::const_iterator it = hierTallies.begin();
+         it != hierTallies.end(); ++it) {
+        const std::vector<string> parts = splitHier(it->first);
+        if (levels >= 0 && static_cast<int>(parts.size()) > levels + 1) continue;
+        printIndent(s_summaryIndent);
+        std::cout << it->first << "\n";
+        // Hierarchy nodes can be numerous, so only print coverage types present
+        // under this node instead of repeating absent zero-count rows.
+        printTypeTally(it->second, s_reportRowIndent, false);
+    }
+    std::cout << "Design Unit Coverage Summary:\n";
+    for (std::map<string, TypeTally>::const_iterator it = duTallies.begin(); it != duTallies.end();
+         ++it) {
+        printIndent(s_summaryIndent);
+        std::cout << it->first << "\n";
+        // Design-unit summaries follow the hierarchy report style: present
+        // types only, but in the same stable order as the flat summary.
+        printTypeTally(it->second, s_reportRowIndent, false);
     }
 }

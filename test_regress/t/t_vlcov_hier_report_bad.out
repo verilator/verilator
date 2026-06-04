@@ -1,0 +1,17 @@
+$ verilator_coverage --report unknown t/t_cover_hier.out
+%Error: Invalid --report option: unknown
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --report summary,unknown t/t_cover_hier.out
+%Error: Invalid --report option: summary,unknown
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+
+$ verilator_coverage --report hierarchy missing.dat
+%Warning: --report hierarchy input has no hierarchy fields; printing flat summary instead.
+Coverage Summary:
+  line      : 100.0% (1/1)
+  toggle    : 0.0% (0/0)
+  branch    : 0.0% (0/0)
+  expr      : 0.0% (0/0)
+  fsm_state : 0.0% (0/0)
+  fsm_arc   : 0.0% (0/0)
