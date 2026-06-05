@@ -39,6 +39,7 @@ VLCOVGEN_ITEM("'name':'per_instance','short':'P',  'group':1, 'default':0,    'd
 VLCOVGEN_ITEM("'name':'thresh',      'short':'s',  'group':1, 'default':None, 'descr':'Number of hits to consider covered (aka at_least)'")
 VLCOVGEN_ITEM("'name':'type',        'short':'t',  'group':1, 'default':'',   'descr':'Type of coverage (block, line, fsm, etc)'")
 // Bin attributes
+VLCOVGEN_ITEM("'name':'cross_bins',   'short':'Cb', 'group':0, 'default':'',   'descr':'Comma-separated per-dimension bin names for cross coverage points'")
 VLCOVGEN_ITEM("'name':'comment',     'short':'o',  'group':0, 'default':'',   'descr':'Textual description for the item'")
 VLCOVGEN_ITEM("'name':'fsm_from',    'short':'Ff', 'group':0, 'default':'',   'descr':'FSM source state name for structured FSM coverage points'")
 VLCOVGEN_ITEM("'name':'fsm_tag',     'short':'Fg', 'group':0, 'default':'',   'descr':'FSM point tag such as reset, reset_include, or default'")
@@ -52,6 +53,7 @@ VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'd
 // VLCOVGEN_CIK_AUTO_EDIT_BEGIN
 #define VL_CIK_COLUMN "n"
 #define VL_CIK_COMMENT "o"
+#define VL_CIK_CROSS_BINS "Cb"
 #define VL_CIK_FILENAME "f"
 #define VL_CIK_FSM_FROM "Ff"
 #define VL_CIK_FSM_TAG "Fg"
@@ -77,6 +79,7 @@ public:
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
         if (key == "column") return VL_CIK_COLUMN;
         if (key == "comment") return VL_CIK_COMMENT;
+        if (key == "cross_bins") return VL_CIK_CROSS_BINS;
         if (key == "filename") return VL_CIK_FILENAME;
         if (key == "fsm_from") return VL_CIK_FSM_FROM;
         if (key == "fsm_tag") return VL_CIK_FSM_TAG;

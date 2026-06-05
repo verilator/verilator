@@ -225,6 +225,7 @@ class WidthVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstClass* m_cgClassp = nullptr;  // Current covergroup class
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
@@ -1896,9 +1897,34 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
-        // We report COVERIGN on the whole covergroup; if get more fine-grained add this
-        // nodep->v3warn(COVERIGN, "Ignoring unsupported: coverage option");
+        // Extract covergroup option values and store in AstClass before deleting.
+        // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
+        // class bodies, and visitClass sets m_cgClassp before iterating children.
+        if (nodep->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
+            // By V3Width time, V3Param has already folded any parameter references.
+            // If the value is still not a constant, it is a runtime expression - emit error.
+            if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
+                m_cgClassp->cgAutoBinMax(constp->toSInt());
+                UINFO(6, "  Covergroup " << m_cgClassp->name()
+                                         << " option.auto_bin_max = " << constp->toSInt() << endl);
+            } else {
+                nodep->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant "
+                                                  "'option.auto_bin_max'; using default value");
+            }
+        }
+        // Add more options here as needed (weight, goal, at_least, per_instance, comment)
+
+        // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstCoverpoint* nodep) override {
+        // The coverpoint expression is self-determined (IEEE 1800-2023 19.5).  Width it
+        // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
+        // reach assertAtExpr() with m_vup==null and fail as an internal error.
+        userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->binsp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
+        userIterateAndNext(nodep->optionsp(), nullptr);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -3539,7 +3565,16 @@ class WidthVisitor final : public VNVisitor {
         return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
     }
     void visit(AstInsideRange* nodep) override {
-        // Just do each side; AstInside will rip these nodes out later
+        // Just do each side; AstInside will rip these nodes out later.
+        // When m_vup is null, this range appears outside a normal expression context (e.g.
+        // in a covergroup bin declaration). Pre-fold constant arithmetic in that case
+        // (e.g., AstNegate(Const) -> Const) so children have their types set before widthing.
+        // We cannot do this unconditionally: in a normal 'inside' expression (m_vup set),
+        // range bounds may be enum refs not yet widthed, and constifyEdit would crash.
+        if (!m_vup) {
+            V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
+            V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
+        }
         userIterateAndNext(nodep->lhsp(), m_vup);
         userIterateAndNext(nodep->rhsp(), m_vup);
         nodep->dtypeFrom(nodep->lhsp());
@@ -7712,6 +7747,8 @@ class WidthVisitor final : public VNVisitor {
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
         userIterateAndNext(nodep->extendsp(), nullptr);
+        VL_RESTORER(m_cgClassp);
+        if (nodep->isCovergroup()) m_cgClassp = nodep;
         userIterateChildren(nodep, nullptr);  // First size all members
     }
     void visit(AstNodeModule* nodep) override {

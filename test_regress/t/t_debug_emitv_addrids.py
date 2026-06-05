@@ -15,6 +15,9 @@ test.top_filename = "t/t_debug_emitv.v"
 test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
-    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids"])
+    # --Wno-COVERIGN: shares t_debug_emitv.v, whose cg_trans uses a goto-repetition transition
+    # bin ([->N]); the count is unsupported (dropped) but the bin is still created with a
+    # non-NONE VTransRepType.
+    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids --Wno-COVERIGN"])
 
 test.passes()
