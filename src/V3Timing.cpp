@@ -711,14 +711,12 @@ class TimingControlVisitor final : public VNVisitor {
         m_netlistp->typeTablep()->addTypesp(m_forkDtp);
         return m_forkDtp;
     }
-    // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
-    // a variable initialization that whould be inserted before `insertBeforep`. All
-    // access to this variable should be contained within returned `AstCLocalScope`.
-    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
-        if (!insertBeforep || !m_underJumpBlock) return nullptr;
+    // Move `nodep` into `AstCLocalScope`.
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const nodep) const {
+        if (!nodep) return nullptr;
         VNRelinker handle;
-        insertBeforep->unlinkFrBack(&handle);
-        AstCLocalScope* const cscopep = new AstCLocalScope{flp, insertBeforep};
+        nodep->unlinkFrBack(&handle);
+        AstCLocalScope* const cscopep = new AstCLocalScope{flp, nodep};
         handle.relink(cscopep);
         return cscopep;
     }
@@ -781,6 +779,8 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = forkp->fileline();
         // Insert the sync var directly before the fork
         AstNode* const insertBeforep = forkp;
+        // Make sure all references to the fork var are contained within a single scope to prevent
+        // moving statements accessing it in case of large functions splitting.
         addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
@@ -1206,7 +1206,10 @@ class TimingControlVisitor final : public VNVisitor {
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
-        addCLocalScope(flp, insertBeforep);
+        // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
+        // a variable initialization that would be inserted before `insertBeforep`. All
+        // access to this variable should be contained within returned `AstCLocalScope`.
+        if (m_underJumpBlock) addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
