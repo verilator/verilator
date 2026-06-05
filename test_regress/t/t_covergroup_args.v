@@ -75,8 +75,8 @@ module t;
 
   initial begin
     i = 3;
-    x();             // samples cov1 with i=3 -> lo bin hit
-    clk = 1;         // posedge: samples cov_clocked with i=3 -> lo bin hit
+    x();  // samples cov1 with i=3 -> lo bin hit
+    clk = 1;  // posedge: samples cov_clocked with i=3 -> lo bin hit
     // Sample-arg coverpoint: the passed value must reach the coverpoint.  Sampling 0 then 3
     // must hit b0 and b3 respectively; if the argument were dropped (member left at its
     // default 0) b3 would never be hit.

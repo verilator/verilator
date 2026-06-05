@@ -287,7 +287,7 @@ module par();
   // revisit this.
   function automatic int param_func(int i);
     if (i == 0) begin
-      i = 99; // Uncovered
+      i = 99;  // Uncovered
     end
     else begin
       i = i + 1;

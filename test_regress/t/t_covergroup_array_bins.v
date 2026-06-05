@@ -27,23 +27,23 @@ module t;
   // cg2: array bins using a range expression - one bin per value in the range
   covergroup cg2;
     cp: coverpoint data {
-      bins range_arr[] = {[0:3]};   // range expression: creates 4 separate bins
+      bins range_arr[] = {[0 : 3]};  // range expression: creates 4 separate bins
     }
   endgroup
 
   // cg3: sized array bins - bins r[N] = {[lo:hi]} distributes range into N bins
   covergroup cg3;
     cp: coverpoint data {
-      bins range_sized[4] = {[4:7]};  // explicit count: 4 bins covering [4:7]
+      bins range_sized[4] = {[4 : 7]};  // explicit count: 4 bins covering [4:7]
     }
   endgroup
 
   initial begin
-    cg  cg_inst;
+    cg cg_inst;
     cg2 cg2_inst;
     cg3 cg3_inst;
 
-    cg_inst  = new();
+    cg_inst = new();
     cg2_inst = new();
     cg3_inst = new();
 
@@ -73,19 +73,25 @@ module t;
     `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     // Hit range_arr bins ([0:3])
-    data = 0; cg2_inst.sample();
+    data = 0;
+    cg2_inst.sample();
     `checkr(cg2_inst.get_inst_coverage(), 25.0);
-    data = 1; cg2_inst.sample();
+    data = 1;
+    cg2_inst.sample();
     `checkr(cg2_inst.get_inst_coverage(), 50.0);
-    data = 2; cg2_inst.sample();
+    data = 2;
+    cg2_inst.sample();
     `checkr(cg2_inst.get_inst_coverage(), 75.0);
 
     // Hit range_sized bins ([4:7])
-    data = 4; cg3_inst.sample();
+    data = 4;
+    cg3_inst.sample();
     `checkr(cg3_inst.get_inst_coverage(), 25.0);
-    data = 5; cg3_inst.sample();
+    data = 5;
+    cg3_inst.sample();
     `checkr(cg3_inst.get_inst_coverage(), 50.0);
-    data = 6; cg3_inst.sample();
+    data = 6;
+    cg3_inst.sample();
     `checkr(cg3_inst.get_inst_coverage(), 75.0);
 
     $write("*-* All Finished *-*\n");

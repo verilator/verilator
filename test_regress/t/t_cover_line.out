@@ -407,7 +407,7 @@
 %000000     if (i == 0) begin
 -000000  point: type=branch comment=if hier=top.t.par1
 -000000  point: type=branch comment=else hier=top.t.par1
-%000000       i = 99; // Uncovered
+%000000       i = 99;  // Uncovered
 -000000  point: type=branch comment=if hier=top.t.par1
             end
 %000000     else begin

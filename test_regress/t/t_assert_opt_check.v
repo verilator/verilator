@@ -38,20 +38,22 @@ module t;
   always @(posedge clk) begin
     if (rst) begin
       // Blank
-    end else if (assertEnable) begin
+    end
+    else if (assertEnable) begin
       assert (cntA == cntB - 100);
-      labelled_A: assert (cntB - cntA == 100);
+      labelled_A : assert (cntB - cntA == 100);
     end
   end
 
   // Should combine the 2 assertOn checks after hoisting
   always @(posedge clk) begin
     if (assertEnable) begin
-      labelled_B: assert (cntA + 100 == cntB);
+      labelled_B : assert (cntA + 100 == cntB);
     end
     if (!assertEnable) begin
       // Blank
-    end else begin
+    end
+    else begin
       assert (cntA - cntB == -100);
     end
   end

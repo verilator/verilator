@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(input wire clk);
+module t (
+    input wire clk
+);
 
   parameter int max_ports = 4;
 
@@ -14,9 +16,10 @@ module t(input wire clk);
 
   for (genvar port = 0; port < max_ports; port++) begin : g
     if (use_a[port]) begin : g_a
-      always_ff @(posedge clk) x[max_ports - port - 1] <= "a";
-    end else begin : g_b
-      always_ff @(posedge clk) x[max_ports - port - 1] <= "b";
+      always_ff @(posedge clk) x[max_ports-port-1] <= "a";
+    end
+    else begin : g_b
+      always_ff @(posedge clk) x[max_ports-port-1] <= "b";
     end
   end
 

@@ -89,7 +89,8 @@ associated programs.
 .. option:: VERILATOR_GDB
 
    If set, the command to run when using the :vlopt:`--gdb` option, such as
-   "ddd". If not specified, it will use "gdb".
+   "ddd". If not specified, it will use "gdb" if available, otherwise
+   "lldb" if available.
 
 .. option:: VERILATOR_NUMA_STRATEGY
 

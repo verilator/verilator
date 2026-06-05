@@ -24,8 +24,8 @@ class ubus_master_monitor;
   // Coverpoints reference 'trans_collected', a member of the enclosing class.
   // A cross is included so the safety-net cleanup also exercises cross removal.
   covergroup cov_trans;
-    trans_start_addr : coverpoint trans_collected.addr {option.auto_bin_max = 16;}
-    trans_dir        : coverpoint trans_collected.read_write;
+    trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
+    trans_dir: coverpoint trans_collected.read_write;
     trans_addr_x_dir : cross trans_start_addr, trans_dir;
   endgroup
 

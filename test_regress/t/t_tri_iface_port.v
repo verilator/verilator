@@ -43,21 +43,15 @@ module t (
     inout [0:0] bus_ext_mp,
     input drive_en
 );
-  zest_if_local zif_local (
-      .U27(bus_local)
-  );
+  zest_if_local zif_local (.U27(bus_local));
 
-  zest_if_ext zif_ext (
-      .U28(bus_ext)
-  );
+  zest_if_ext zif_ext (.U28(bus_ext));
   ext_drv u_ext_drv (
       .zif(zif_ext),
       .drive_en(drive_en)
   );
 
-  zest_if_ext_mp zif_ext_mp (
-      .U29(bus_ext_mp)
-  );
+  zest_if_ext_mp zif_ext_mp (.U29(bus_ext_mp));
   ext_drv_mp u_ext_drv_mp (
       .zif(zif_ext_mp),
       .drive_en(drive_en)

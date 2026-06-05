@@ -5,23 +5,23 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module fsm_core (
-    input  logic clk,
-    input  logic rst,
-    input  logic start,
-    input  logic finish,
-    input  logic fail,
-    input  logic retry
+    input logic clk,
+    input logic rst,
+    input logic start,
+    input logic finish,
+    input logic fail,
+    input logic retry
 );
   typedef enum logic [2:0] {
     S_IDLE = 3'd0,
     S_LOAD = 3'd1,
-    S_RUN  = 3'd2,
+    S_RUN = 3'd2,
     S_WAIT = 3'd3,
     S_DONE = 3'd4,
-    S_ERR  = 3'd5
+    S_ERR = 3'd5
   } state_t;
 
-  state_t state_q /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_reset_arc*/;
   state_t state_d;
 
   always_comb begin
@@ -78,7 +78,8 @@ module cluster #(
     if (MODE == 0) begin
       start = (cyc == 1) || (cyc == 7);
       finish = (cyc == 4) || (cyc == 10);
-    end else begin
+    end
+    else begin
       start = (cyc == 1);
       fail = (cyc == 3);
       retry = (cyc == 6);
@@ -112,6 +113,16 @@ module tb;
     end
   end
 
-  cluster #(.MODE(0)) cluster_a (.clk(clk), .rst(rst));
-  cluster #(.MODE(1)) cluster_b (.clk(clk), .rst(rst));
+  cluster #(
+      .MODE(0)
+  ) cluster_a (
+      .clk(clk),
+      .rst(rst)
+  );
+  cluster #(
+      .MODE(1)
+  ) cluster_b (
+      .clk(clk),
+      .rst(rst)
+  );
 endmodule

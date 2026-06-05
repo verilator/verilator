@@ -343,8 +343,8 @@ Summary:
 
 .. option:: --coverage-user
 
-   Enables adding user-inserted functional coverage. See :ref:`User
-   Coverage`.
+   Enables adding user-inserted functional covergroup coverage. See
+   :ref:`Covergroup Coverage`.
 
 .. option:: -D<var>=<value>
 

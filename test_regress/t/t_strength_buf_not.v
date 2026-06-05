@@ -30,7 +30,9 @@ module driver (
 
 endmodule
 
-module t (input clk);
+module t (
+    input clk
+);
 
   wire [3:0] bus;
 

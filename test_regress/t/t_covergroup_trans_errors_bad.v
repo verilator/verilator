@@ -12,8 +12,8 @@ module t;
 
   covergroup cg;
     cp1: coverpoint cp_expr {
-      bins t_single = (1);        // Error: requires at least two values
-      bins t_repeat = (1 [*2]);   // Error: unsupported repetition operator
+      bins t_single = (1);  // Error: requires at least two values
+      bins t_repeat = (1 [* 2]);  // Error: unsupported repetition operator
     }
   endgroup
 

@@ -1,7 +1,7 @@
-%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:14:29: Ignoring unsupported: non-constant 'option.auto_bin_max'; using default value
+%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:14:27: Ignoring unsupported: non-constant 'option.auto_bin_max'; using default value
                                                           : ... note: In instance 't'
-   14 |       option.auto_bin_max = size_var;
-      |                             ^~~~~~~~
+   14 |     option.auto_bin_max = size_var;
+      |                           ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Error: Exiting due to

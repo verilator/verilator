@@ -6,17 +6,17 @@
 // Test: Empty covergroup (no coverpoints)
 // Expected: Should compile, coverage should be 100% (nothing to cover)
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
   input clk;
 
   logic [7:0] value;
 
   // Empty covergroup - no coverpoints defined
   covergroup cg_empty;
-    // Intentionally empty
+  // Intentionally empty
   endgroup
 
   cg_empty cg_inst = new;

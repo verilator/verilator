@@ -62,7 +62,7 @@ module t;
     // Test mid_range bin: [0x40:0x4F]
     data = 8'h45;  // Should match 'mid_range'
     cg_inst.sample();
-    `checkr(cg_inst.get_inst_coverage(), 100.0); // 5/5: all bins now hit
+    `checkr(cg_inst.get_inst_coverage(), 100.0);  // 5/5: all bins now hit
 
     // wc_point (value 5) was already hit in the first sample; confirm no regression
     data = 8'd5;

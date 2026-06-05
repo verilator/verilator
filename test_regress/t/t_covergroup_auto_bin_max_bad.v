@@ -6,15 +6,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   int size_var;
-   logic [3:0] cp_expr;
+  int size_var;
+  logic [3:0] cp_expr;
 
-   // Error: option.auto_bin_max must be a constant expression (group level)
-   covergroup cg;
-      option.auto_bin_max = size_var;
-      cp: coverpoint cp_expr;
-   endgroup
+  // Error: option.auto_bin_max must be a constant expression (group level)
+  covergroup cg;
+    option.auto_bin_max = size_var;
+    cp: coverpoint cp_expr;
+  endgroup
 
-   cg cg_i = new;
-   initial $finish;
+  cg cg_i = new;
+  initial $finish;
 endmodule

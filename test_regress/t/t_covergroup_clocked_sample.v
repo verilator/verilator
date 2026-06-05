@@ -4,10 +4,10 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
   input clk;
 
   logic [1:0] data;
@@ -15,10 +15,7 @@ module t (/*AUTOARG*/
   // Covergroup with automatic sampling on posedge clk
   covergroup cg @(posedge clk);
     cp_data: coverpoint data {
-      bins zero  = {2'b00};
-      bins one   = {2'b01};
-      bins two   = {2'b10};
-      bins three = {2'b11};
+      bins zero = {2'b00}; bins one = {2'b01}; bins two = {2'b10}; bins three = {2'b11};
     }
   endgroup
 

@@ -19,10 +19,10 @@ module t (
 
   covergroup cg;
     cp_neg: coverpoint value {
-      bins negative = {[-100:-1]};
+      bins negative = {[-100 : -1]};
       bins zero = {0};
-      bins positive = {[1:100]};
-      bins mixed = {[-10:10]};
+      bins positive = {[1 : 100]};
+      bins mixed = {[-10 : 10]};
     }
   endgroup
 
@@ -34,11 +34,11 @@ module t (
     cyc <= cyc + 1;
 
     case (cyc)
-      0: value <= -50;    // Hit negative bin
-      1: value <= 0;      // Hit zero bin
-      2: value <= 50;     // Hit positive bin
-      3: value <= -5;     // Hit mixed bin (also negative)
-      4: value <= 5;      // Hit mixed bin (also positive)
+      0: value <= -50;  // Hit negative bin
+      1: value <= 0;  // Hit zero bin
+      2: value <= 50;  // Hit positive bin
+      3: value <= -5;  // Hit mixed bin (also negative)
+      4: value <= 5;  // Hit mixed bin (also positive)
       5: begin
         $write("*-* All Finished *-*\n");
         $finish;
@@ -53,10 +53,20 @@ module t (
     // cyc=2: value=50  -> hits 'positive' -> 4/4=100%
     // cyc=3: value=-5  -> 'negative' + 'mixed' already hit -> 4/4=100%
     // cyc=4: value=5   -> 'positive' + 'mixed' already hit -> 4/4=100%
-    if (cyc == 0) begin `checkr(cg_inst.get_inst_coverage(), 25.0); end
-    if (cyc == 1) begin `checkr(cg_inst.get_inst_coverage(), 75.0); end
-    if (cyc == 2) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
-    if (cyc == 3) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
-    if (cyc == 4) begin `checkr(cg_inst.get_inst_coverage(), 100.0); end
+    if (cyc == 0) begin
+      `checkr(cg_inst.get_inst_coverage(), 25.0);
+    end
+    if (cyc == 1) begin
+      `checkr(cg_inst.get_inst_coverage(), 75.0);
+    end
+    if (cyc == 2) begin
+      `checkr(cg_inst.get_inst_coverage(), 100.0);
+    end
+    if (cyc == 3) begin
+      `checkr(cg_inst.get_inst_coverage(), 100.0);
+    end
+    if (cyc == 4) begin
+      `checkr(cg_inst.get_inst_coverage(), 100.0);
+    end
   end
 endmodule

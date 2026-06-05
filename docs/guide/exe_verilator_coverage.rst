@@ -154,8 +154,8 @@ verilator_coverage Arguments
 .. option:: --levels <depth>
 
    With :option:`--report hierarchy`, limits displayed hierarchy depth.
-   Deeper descendants still roll up into the visible parent totals. A depth
-   of 0 shows the top-level hierarchy rollup. If negative or omitted, all
+   Deeper descendants still roll-up into the visible parent totals. A depth
+   of 0 shows the top-level hierarchy roll-up. If negative or omitted, all
    depths are shown.
 
 .. option:: --rank
@@ -177,10 +177,10 @@ verilator_coverage Arguments
    comma-separated, for example ``summary,hier``. With no explicit
    :option:`--report`, the legacy flat summary is printed. ``summary`` is
    equivalent to the flat type summary. ``hier`` and ``hierarchy`` build a
-   deterministic hierarchy rollup from ``hier`` fields. Collapsed wildcard
-   hierarchy can be reported, but it is not precise per-instance coverage. If
-   no hierarchy fields are present, a warning is printed and the flat summary
-   is shown instead.
+   deterministic hierarchy roll-up from ``hier`` fields. Collapsed wildcard
+   hierarchy can be reported, but it is not precise per-instance coverage.
+   If no hierarchy fields are present, a warning is printed and the flat
+   summary is shown instead.
 
 .. option:: --unlink
 

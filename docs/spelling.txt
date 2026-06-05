@@ -684,6 +684,7 @@ countones
 cout
 covergroup
 covergroups
+coverpoints
 cpp
 cppstyle
 cpu
@@ -915,6 +916,7 @@ linters
 linux
 liu
 livelock
+lldb
 ln
 loc
 localparam
@@ -1121,6 +1123,7 @@ specparam
 splitme
 spp
 sqrt
+srand
 srandom
 src
 srcdir

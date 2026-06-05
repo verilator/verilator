@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(input clk);
+module t (
+    input clk
+);
   class Packet;
     int m_z;
     int m_x;

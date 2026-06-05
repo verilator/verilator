@@ -45,22 +45,38 @@ module t;
     arr = 32'hdead_beef;
   endfunction
 
-  logic [3:0][7:0]  a;   // descending outer
-  logic [0:3][7:0]  b;   // ascending outer
-  logic [1:0][15:0] c;   // descending inner
-  logic [1:0][0:15] d;   // ascending inner
+  logic [3:0][7:0] a;  // descending outer
+  logic [0:3][7:0] b;  // ascending outer
+  logic [1:0][15:0] c;  // descending inner
+  logic [1:0][0:15] d;  // ascending inner
 
   initial begin
     // Outer-dimension direction mismatch
-    a = '0; fill_desc(a);        `checkh(a, 32'hdead_beef);
-    b = '0; fill_desc(b);        `checkh(b, 32'hdead_beef);
-    a = '0; fill_asc(a);         `checkh(a, 32'hdead_beef);
-    b = '0; fill_asc(b);         `checkh(b, 32'hdead_beef);
+    a = '0;
+    fill_desc(a);
+    `checkh(a, 32'hdead_beef);
+    b = '0;
+    fill_desc(b);
+    `checkh(b, 32'hdead_beef);
+    a = '0;
+    fill_asc(a);
+    `checkh(a, 32'hdead_beef);
+    b = '0;
+    fill_asc(b);
+    `checkh(b, 32'hdead_beef);
     // Inner-dimension direction mismatch
-    c = '0; fill_inner_desc(c);  `checkh(c, 32'hdead_beef);
-    d = '0; fill_inner_desc(d);  `checkh(d, 32'hdead_beef);
-    c = '0; fill_inner_asc(c);   `checkh(c, 32'hdead_beef);
-    d = '0; fill_inner_asc(d);   `checkh(d, 32'hdead_beef);
+    c = '0;
+    fill_inner_desc(c);
+    `checkh(c, 32'hdead_beef);
+    d = '0;
+    fill_inner_desc(d);
+    `checkh(d, 32'hdead_beef);
+    c = '0;
+    fill_inner_asc(c);
+    `checkh(c, 32'hdead_beef);
+    d = '0;
+    fill_inner_asc(d);
+    `checkh(d, 32'hdead_beef);
 
     $write("*-* All Finished *-*\n");
     $finish;

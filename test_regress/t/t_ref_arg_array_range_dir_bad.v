@@ -11,11 +11,11 @@
 // verilator lint_off ASCRANGE
 
 module t;
-  function automatic void fill(ref logic [31:0] arr [0:3]);
+  function automatic void fill(ref logic [31:0] arr[0:3]);
     arr[0] = '0;
   endfunction
 
-  logic [31:0] a [3:0];
+  logic [31:0] a[3:0];
 
   initial fill(a);
 endmodule

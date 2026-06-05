@@ -51,8 +51,8 @@ module t;
   // Covergroup with default + ignore + illegal bins - excluded values must not count toward coverage
   covergroup cg3;
     coverpoint data {
-      ignore_bins  bad = {255};    // excluded from coverage
-      illegal_bins err = {254};    // illegal value, excluded from coverage
+      ignore_bins  bad = {255};  // excluded from coverage
+      illegal_bins err = {254};  // illegal value, excluded from coverage
       bins normal = {[1:10]};
       bins other = default;
     }
@@ -117,18 +117,18 @@ module t;
     cg_member cg_member_inst;
     cg_cross  cg_cross_inst;
 
-    cg_inst  = new();
+    cg_inst = new();
     cg2_inst = new();
     cg3_inst = new();
     cg4_inst = new();
     cg5_inst = new();
     cg6_inst = new();
     cg7_inst = new();
-    cg_plain_inst  = new();
+    cg_plain_inst = new();
     cg_member_inst = new();
-    cg_cross_inst  = new();
-    helper   = new(8'h42);
-    data = helper.val;   // Use helper to avoid optimization
+    cg_cross_inst = new();
+    helper = new(8'h42);
+    data = helper.val;  // Use helper to avoid optimization
 
     // Hit low bin
     data = 2;
@@ -155,15 +155,19 @@ module t;
     `checkr(cg2_inst.get_inst_coverage(), 100.0);
 
     // Sample cg3: verify ignore/illegal bins do not contribute to coverage
-    data = 2;   cg3_inst.sample();  // hits normal bin
+    data = 2;
+    cg3_inst.sample();  // hits normal bin
     `checkr(cg3_inst.get_inst_coverage(), 50.0);  // 1/2 bins hit (normal)
-    data = 7;   cg3_inst.sample();  // hits normal bin again
+    data = 7;
+    cg3_inst.sample();  // hits normal bin again
     `checkr(cg3_inst.get_inst_coverage(), 50.0);  // no new bins
-    data = 255; cg3_inst.sample();  // ignore_bins value; Verilator counts it toward default bin
-    `checkr(cg3_inst.get_inst_coverage(), 100.0); // 2/2: Verilator hits 'other' (default) even for ignore_bins
+    data = 255;
+    cg3_inst.sample();  // ignore_bins value; Verilator counts it toward default bin
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // 2/2: Verilator hits 'other' (default) even for ignore_bins
     // note: do not sample 254 (illegal_bins would cause runtime assertion)
-    data = 100; cg3_inst.sample();  // hits default (other) bin
-    `checkr(cg3_inst.get_inst_coverage(), 100.0); // 2/2 bins hit
+    data = 100;
+    cg3_inst.sample();  // hits default (other) bin
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // 2/2 bins hit
 
     // Sample cg4: auto-bins with one excluded value
     // idx=2 is in ignore_bins, so auto-bins cover 0, 1, 3 only (3 bins total)
@@ -179,15 +183,19 @@ module t;
     `checkr(cg5_inst.get_inst_coverage(), 25.0);  // same bin, no increase
 
     // Sample cg6: 65-bit signal with range bins
-    data65 = 5;   cg6_inst.sample();  // hits bin lo=[0:15]
+    data65 = 5;
+    cg6_inst.sample();  // hits bin lo=[0:15]
     `checkr(cg6_inst.get_inst_coverage(), 50.0);
-    data65 = 150; cg6_inst.sample();  // hits bin hi=[100:200]
+    data65 = 150;
+    cg6_inst.sample();  // hits bin hi=[100:200]
     `checkr(cg6_inst.get_inst_coverage(), 100.0);
 
     // Sample cg7: unlabeled coverpoint
-    data = 3;  cg7_inst.sample();  // hits bin lo
+    data = 3;
+    cg7_inst.sample();  // hits bin lo
     `checkr(cg7_inst.get_inst_coverage(), 50.0);
-    data = 10; cg7_inst.sample();  // hits bin hi
+    data = 10;
+    cg7_inst.sample();  // hits bin hi
     `checkr(cg7_inst.get_inst_coverage(), 100.0);
 
     // cg_plain: two unlabeled coverpoints (a, b), 2 auto bins each -> distinct names
