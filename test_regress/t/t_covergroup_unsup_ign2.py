@@ -14,6 +14,7 @@ test.top_filename = "t/t_covergroup_unsup.v"
 
 test.lint(verilator_flags2=[
     '--assert --coverage --Wwarn-UNSUPPORTED -Wno-fatal +define+T_COVERGROUP_UNSUP_IGN'
-])
+],
+          expect_filename=test.golden_filename)
 
 test.passes()

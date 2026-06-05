@@ -42,6 +42,10 @@ class VlcOptions final {
     bool m_includeResetArcs = false;  // main switch: --include-reset-arcs
     string m_filterType = "*";  // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
+    int m_reportLevels = -1;    // main switch: --levels, negative means all depths
+    string m_report;            // main switch: --report
+    bool m_reportSummary = false;  // main switch: --report summary
+    bool m_reportHierarchy = false;  // main switch: --report hier or hierarchy
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
     string m_writeFile;         // main switch: --write
@@ -50,6 +54,7 @@ class VlcOptions final {
 
 private:
     // METHODS
+    void parseReportOption() VL_MT_DISABLED;
     static void showVersion(bool verbose) VL_MT_DISABLED;
 
 public:
@@ -69,6 +74,10 @@ public:
     bool countOk(uint64_t count) const { return count >= static_cast<uint64_t>(m_annotateMin); }
     bool annotatePoints() const { return m_annotatePoints; }
     bool includeResetArcs() const { return m_includeResetArcs; }
+    int reportLevels() const { return m_reportLevels; }
+    bool reportSpecified() const { return !m_report.empty(); }
+    bool reportSummary() const { return m_reportSummary; }
+    bool reportHierarchy() const { return m_reportHierarchy; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }

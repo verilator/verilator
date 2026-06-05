@@ -64,7 +64,13 @@ public:
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
+    string page() const { return keyExtract("page", m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
+    // Covergroup-specific key accessors (long keys, no short-key alias)
+    string bin() const { return keyExtract("bin", m_name.c_str()); }
+    string binType() const { return keyExtract("bin_type", m_name.c_str()); }
+    bool isCross() const { return !keyExtract("cross", m_name.c_str()).empty(); }
+    string crossBins() const { return keyExtract(VL_CIK_CROSS_BINS, m_name.c_str()); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
@@ -122,6 +128,23 @@ public:
         os << std::setw(6) << std::setfill('0') << count();
         os << "  point: type=" << type() << " comment=" << comment() << " hier=" << hier();
         os << "\n";
+        if (isCross()) {
+            const string bins = crossBins();
+            if (!bins.empty()) {
+                os << "        //  cross: [";
+                bool first = true;
+                size_t start = 0;
+                while (true) {
+                    const size_t comma = bins.find(',', start);
+                    if (!first) os << ", ";
+                    os << bins.substr(start, comma == string::npos ? string::npos : comma - start);
+                    first = false;
+                    if (comma == string::npos) break;
+                    start = comma + 1;
+                }
+                os << "]\n";
+            }
+        }
     }
 };
 

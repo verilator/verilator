@@ -739,7 +739,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // Check if the var is owned by a different module (cross-module reference).
                 // For interface vars this is expected; for regular modules it's unsupported.
                 AstNodeModule* const ownerModp = findParentModule(invarp);
-                const bool isCrossModule = ownerModp && ownerModp != nodep && !invarp->isIO();
+                const bool isCrossModule = ownerModp && ownerModp != nodep;
                 const bool isIfaceTri = isCrossModule && VN_IS(ownerModp, Iface);
 
                 if (isCrossModule && !isIfaceTri) {
@@ -778,7 +778,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                               kv.second.inlinedDots,
                                               findModportForDotted(nodep, kv.first));
                     }
-                } else if (VN_IS(nodep, Iface)) {
+                } else if (VN_IS(nodep, Iface) && !invarp->isIO()) {
                     // Local driver in an interface module - use contribution mechanism
                     // so it can be combined with any external drivers later
                     insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);

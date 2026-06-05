@@ -47,10 +47,4 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:120:7: Unsupported: property case expression
   120 |       case (a) default: b; endcase
       |       ^~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:123:7: Unsupported: property case expression
-  123 |       if (a) b
-      |       ^~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:126:7: Unsupported: property case expression
-  126 |       if (a) b else c
-      |       ^~
 %Error: Exiting due to

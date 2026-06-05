@@ -582,6 +582,52 @@ class GateInline final {
         return false;
     }
 
+    bool shouldInline(GateVarVertex* vVtxp, GateLogicVertex* lVtxp, size_t nReads,
+                      AstNodeExpr* substp, bool allowMultiIn) {
+        AstVarScope* const vscp = vVtxp->varScp();
+
+        // Always inline constants
+        if (VN_IS(substp, Const)) return true;
+        // Don't inline non-constant static initializers
+        if (lVtxp->staticInit()) return false;
+        // Inline simple variable references
+        if (VN_IS(substp, VarRef)) return true;
+        // Only inline arrays if a simple variable or constant
+        if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        // Inline constant array selects
+        if (VN_IS(substp, ArraySel) && nReads <= 1) return true;
+
+        // Don't inline expensive wide operations
+        if (excludedWide(vVtxp, substp)) {
+            ++m_statExcluded;
+            UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'");
+            vVtxp->clearReducible("Excluded wide");  // Check once.
+            return false;
+        }
+
+        if (nReads == 0) {
+            // Reads no variables, likely unfolded constant expression
+            return true;
+        } else if (nReads == 1) {
+            // Reads one variable
+            return true;
+        } else {
+            // Reads more two or more variables
+            if (!allowMultiIn) return false;
+            // Do it if not used, or used only once, ignoring slow code
+            int n = 0;
+            for (V3GraphEdge& edge : vVtxp->outEdges()) {
+                const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
+                // Ignore slow code, or if the destination is not used
+                if (dstVtxp->slow()) continue;
+                if (dstVtxp->outEmpty() && !dstVtxp->consumed()) continue;
+                n += edge.weight();
+                if (n > 1) return false;
+            }
+            return true;
+        }
+    }
+
     void recordSubstitution(AstVarScope* vscp, AstNodeExpr* substp, AstNode* logicp) {
         m_hasPending.emplace(logicp, ++m_ord);  // It's OK if already present
         const auto pair = m_substitutions(logicp).emplace(vscp, nullptr);
@@ -676,45 +722,20 @@ class GateInline final {
             if (!okVisitor.isSimple()) continue;
             // If the varScope is already removed from logicp, no need to try substitution.
             if (!okVisitor.varAssigned(vVtxp->varScp())) continue;
-            if (excludedWide(vVtxp, okVisitor.substitutionp())) {
-                ++m_statExcluded;
-                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'");
-                vVtxp->clearReducible("Excluded wide");  // Check once.
-                continue;
-            }
 
-            // Does it read multiple source variables?
-            if (okVisitor.readVscps().size() > 1) {
-                if (!allowMultiIn) {
-                    continue;
-                } else {
-                    // Do it if not used, or used only once, ignoring slow code
-                    int n = 0;
-                    for (V3GraphEdge& edge : vVtxp->outEdges()) {
-                        const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
-                        // Ignore slow code, or if the destination is not used
-                        if (dstVtxp->slow()) continue;
-                        if (dstVtxp->outEmpty() && !dstVtxp->consumed()) continue;
-                        n += edge.weight();
-                        if (n > 1) break;
-                    }
-                    if (n > 1) continue;
-                }
-            }
-
-            AstVarScope* const vscp = vVtxp->varScp();
+            // Expression we are considering to substitute with
             AstNodeExpr* const substp = okVisitor.substitutionp();
+            // Number of variables read by the substitution
+            const size_t nReads = okVisitor.readVscps().size();
 
-            // Only inline arrays if a simple variable
-            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!VN_IS(substp, NodeVarRef)) continue;
-            }
-
-            // Only inline static initializer if constant known at compile time
-            if (lVtxp->staticInit() && !VN_IS(substp, Const)) continue;
+            // Check if it should be inlined
+            if (!shouldInline(vVtxp, lVtxp, nReads, substp, allowMultiIn)) continue;
 
             // Process it
             ++m_statInlined;
+
+            // Variable we are considering to substitute
+            AstVarScope* const vscp = vVtxp->varScp();
 
             if (debug() >= 9) {
                 vscp->dumpTree("substituting: ");

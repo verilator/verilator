@@ -309,7 +309,7 @@ class DeadVisitor final : public VNVisitor {
             VL_RESTORER(m_inAssign);
             VL_RESTORER(m_sideEffect);
             m_inAssign = true;
-            m_sideEffect = false;
+            m_sideEffect = nodep->isTimingControl();  // Can't remove the delay
             iterateAndNextNull(nodep->rhsp());
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.

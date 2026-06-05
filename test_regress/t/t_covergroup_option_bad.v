@@ -1,25 +1,48 @@
 // DESCRIPTION: Verilator: Verilog Test module
-//
-// This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2023 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Verilator lint_off COVERIGN
+// Tests for invalid coverage option names
 
 module t;
+  logic [3:0] data;
 
-  covergroup cg_opt;
-    type_option.weight = 1;  // ok
-    option.name = "the_name";  // pk
-    bad_cg_non_option.name = "xx";  // <--- Bad
+  // Error: misspelled option.* name at covergroup level
+  covergroup cg1;
+    option.auto_bin_ma = 4;
+    cp: coverpoint data;
   endgroup
 
-  covergroup cg_cross3;
-    cross a, b{
-      option.comment = "cross";  // ok
-      bad_cross_non_option.name = "xx";  // <--- Bad
+  // Error: misspelled option.* name at coverpoint level
+  covergroup cg2;
+    cp: coverpoint data {
+      option.at_lest = 2;
     }
   endgroup
 
-  initial $stop;
+  // Error: option.* name used under type_option.* (wrong namespace)
+  covergroup cg3;
+    type_option.auto_bin_max = 4;
+    cp: coverpoint data;
+  endgroup
+
+  // Error: option.* name used under type_option.* at coverpoint level
+  covergroup cg4;
+    cp: coverpoint data {
+      type_option.at_least = 2;
+    }
+  endgroup
+
+  // Error: completely unknown type_option.* name
+  covergroup cg5;
+    type_option.bogus = 1;
+    cp: coverpoint data;
+  endgroup
+
+  cg1 cg1_i = new;
+  cg2 cg2_i = new;
+  cg3 cg3_i = new;
+  cg4 cg4_i = new;
+  cg5 cg5_i = new;
+  initial $finish;
 endmodule

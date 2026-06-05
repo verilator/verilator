@@ -1,0 +1,6 @@
+%Error: t/t_ref_arg_array_range_dir_bad.v:20:16: Ref argument requires matching types; port 'arr' requires 'logic[31:0]$[0:3]' but connection is 'logic[31:0]$[3:0]'.
+                                               : ... note: In instance 't'
+   20 |   initial fill(a);
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
