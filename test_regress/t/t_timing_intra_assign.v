@@ -10,6 +10,7 @@ module t;
   logic[1:0] idx1 = 0;
   logic[1:0] idx2 = 0;
   logic[0:0] idx3 = 0;
+  int        not_read = 0;
   event e;
 
   always @val $write("[%0t] val[0]=%0d val[1]=%0d val[2]=%0d net[0]=%0d net[1]=%0d\n",
@@ -18,6 +19,12 @@ module t;
   assign {net[0], net[1]} = {val[1], 4'hf-val[1]};
   assign #4 val[1] = val[0];
   assign #6 val[2] = val[0];
+
+  initial begin
+    automatic time tm = $time;
+    not_read = #1 1;
+    if (tm != $time - 1) $stop;
+  end
 
   always #10 begin  // always so we can use NBA
     val[0] = 1;
