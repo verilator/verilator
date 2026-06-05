@@ -251,17 +251,6 @@ public:
         return varRefp;
     }
 
-    static std::vector<int> unpackedDimSizes(const AstNodeDType* dtypep,
-                                             const AstNodeDType** leafDtypeOut) {
-        std::vector<int> dims;
-        const AstNodeDType* curp = dtypep->skipRefp();
-        while (const AstUnpackArrayDType* const arrp = VN_CAST(curp, UnpackArrayDType)) {
-            dims.push_back(arrp->elementsConst());
-            curp = arrp->subDTypep()->skipRefp();
-        }
-        if (leafDtypeOut) *leafDtypeOut = curp;
-        return dims;
-    }
 
     static AstNodeExpr* buildNestedArraySel(FileLine* flp, AstNodeExpr* fromp,
                                             const std::vector<int>& indicies) {
@@ -271,14 +260,15 @@ public:
     }
 
     template <typename Fn>
-    static AstNodeStmt* foreachUnpackedLeaf(const std::vector<int>& dimSizes, Fn buildLeaf) {
+    static AstNodeStmt* foreachUnpackedLeaf(const std::vector<AstUnpackArrayDType*>& dims,
+                                            Fn buildLeaf) {
         AstNodeStmt* headp = nullptr;
         AstNodeStmt* tailp = nullptr;
-        if (dimSizes.empty()) return nullptr;
+        if (dims.empty()) return nullptr;
         int total = 1;
-        for (const int d : dimSizes) total *= d;
+        for (const AstUnpackArrayDType* const d : dims) total *= d->elementsConst();
         if (total <= 0) return nullptr;
-        std::vector<int> idx(dimSizes.size(), 0);
+        std::vector<int> idx(dims.size(), 0);
         for (int flat = 0; flat < total; ++flat) {
             AstNodeStmt* const stmtp = buildLeaf(idx, flat);
             if (!headp) {
@@ -287,8 +277,8 @@ public:
                 tailp->addNext(stmtp);
             }
             tailp = stmtp;
-            for (int d = static_cast<int>(dimSizes.size()) - 1; d >= 0; --d) {
-                if (++idx[d] < dimSizes[d]) break;
+            for (int d = static_cast<int>(dims.size()) - 1; d >= 0; --d) {
+                if (++idx[d] < dims[d]->elementsConst()) break;
                 idx[d] = 0;
             }
         }
@@ -417,9 +407,11 @@ public:
     AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo) const {
         FileLine* const flp = varInfo.m_varVscp->fileline();
         AstVar* const varp = varInfo.m_varVscp->varp();
-        const std::vector<int> dimSizes = unpackedDimSizes(varp->dtypep(), nullptr);
+        AstUnpackArrayDType* const arrDtypep
+            = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
+        const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
         return foreachUnpackedLeaf(
-            dimSizes, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
+            dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
                 AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
                 markNonReplaceable(baseRefp);
                 AstNodeExpr* const baseSelp = buildNestedArraySel(flp, baseRefp, idx);
@@ -639,13 +631,13 @@ public:
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
                 activeInitp->senTreeStorep(activeInitp->sentreep());
                 AstNodeStmt* initStmtp = nullptr;
-                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                    const AstNodeDType* leafDtypep = nullptr;
-                    const std::vector<int> dimSizes
-                        = unpackedDimSizes(varp->dtypep(), &leafDtypep);
-                    const int innerWidth = leafDtypep->width();
+                if (AstUnpackArrayDType* const arrDtypep
+                    = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                    const std::vector<AstUnpackArrayDType*> dims
+                        = arrDtypep->unpackDimensions();
+                    const int innerWidth = dims.back()->subDTypep()->skipRefp()->width();
                     initStmtp = foreachUnpackedLeaf(
-                        dimSizes, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
+                        dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
                             AstNodeExpr* const lhsp = buildNestedArraySel(
                                 flp, new AstVarRef{flp, info.m_forceEnVscp, VAccess::WRITE}, idx);
                             return new AstAssign{flp, lhsp, makeZeroConst(varp, innerWidth)};
@@ -784,12 +776,12 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
     bool m_inClockedActive = false;
 
     void buildForceableUnpackedArray(AstVarScope* const nodep,
-                                     const AstUnpackArrayDType* const arrDtypep) {
+                                     AstUnpackArrayDType* const arrDtypep) {
         AstVar* const varp = nodep->varp();
-        const AstNodeDType* leafDtypep = nullptr;
-        const std::vector<int> dimSizes = ForceState::unpackedDimSizes(arrDtypep, &leafDtypep);
-        UASSERT_OBJ(leafDtypep && !dimSizes.empty(), varp,
+        const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
+        UASSERT_OBJ(!dims.empty(), varp,
                     "buildForceableUnpackedArray called with non-unpacked dtype");
+        const AstNodeDType* const leafDtypep = dims.back()->subDTypep()->skipRefp();
         const AstBasicDType* const innerBasicp = leafDtypep->basicp();
         const bool innerBitwise = innerBasicp && !innerBasicp->isDouble()
                                   && !innerBasicp->isString() && !innerBasicp->isOpaque();
@@ -838,7 +830,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         activep->senTreeStorep(activep->sentreep());
 
         AstNodeStmt* const alwaysBodyHeadp = ForceState::foreachUnpackedLeaf(
-            dimSizes, [&](const std::vector<int>& idx, int flat) -> AstNodeStmt* {
+            dims, [&](const std::vector<int>& idx, int flat) -> AstNodeStmt* {
                 AstVarRef* const origRefp = new AstVarRef{flp, nodep, VAccess::READ};
                 ForceState::markNonReplaceable(origRefp);
                 AstNodeExpr* const origSelp = ForceState::buildNestedArraySel(flp, origRefp, idx);
@@ -949,7 +941,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                 }
             }
 
-            if (const AstUnpackArrayDType* const arrDtypep
+            if (AstUnpackArrayDType* const arrDtypep
                 = VN_CAST(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 buildForceableUnpackedArray(nodep, arrDtypep);
                 iterateChildrenConst(nodep);
