@@ -62,6 +62,7 @@ module t (
   //verilator lint_on WIDTH
   `signal(FOLD_UNARY_Extend, tmp_FOLD_UNARY_Extend);
   `signal(FOLD_UNARY_ExtendS, tmp_FOLD_UNARY_ExtendS);
+  `signal(FOLD_UNARY_CountOnes, $countones(const_a));
   `signal(FOLD_UNARY_OneHot,    $onehot(const_a));
   `signal(FOLD_UNARY_OneHot0,   $onehot0(const_a));
   `signal(FOLD_UNARY_OneHot_A,  $onehot(const_a[0]));

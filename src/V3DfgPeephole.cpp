@@ -138,6 +138,7 @@ template <> const DfgDataType& resultDType<DfgXor>        (const DfgVertex* lhsp
 
 // Unary constant folding
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
+template <> void foldOp<DfgCountOnes>  (V3Number& out, const V3Number& src) { out.opCountOnes(src); }
 template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
 template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
 template <> void foldOp<DfgLogNot>     (V3Number& out, const V3Number& src) { out.opLogNot(src); }
@@ -1194,6 +1195,10 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
     //  DfgVertexUnary
     //=========================================================================
+
+    void visit(DfgCountOnes* const vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
 
     void visit(DfgExtend* const vtxp) override {
         if (foldUnary(vtxp)) return;
