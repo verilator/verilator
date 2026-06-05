@@ -120,6 +120,8 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
         // Partial driver cannot be inlined
         if (srcp->is<DfgVertexSplice>()) continue;
         if (srcp->is<DfgUnitArray>()) continue;
+        // Don't inline CReset
+        if (srcp->is<DfgCReset>()) continue;
         // Okie dokie, here we go ...
         vtx.replaceWith(srcp);
     }

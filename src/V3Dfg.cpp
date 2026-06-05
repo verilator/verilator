@@ -91,6 +91,11 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     for (const DfgVertex& vtx : m_opVertices) {
         switch (vtx.type()) {
 #include "V3Dfg__gen_clone_cases.h"  // From ./astgen
+        case VDfgType::CReset: {  // LCOV_EXCL_START - No algorithm actually hits this today
+            DfgCReset* const cp = new DfgCReset{*clonep, vtx.fileline(), vtx.dtype()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }  // LCOV_EXCL_STOP
         case VDfgType::Sel: {
             DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtype()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
@@ -132,11 +137,14 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             VL_UNREACHABLE;
             break;
         }
-        default: {
-            vtx.v3fatalSrc("Unhandled operation vertex type: " + vtx.typeName());
+        case VDfgType::AstRd:  // LCOV_EXCL_START
+        case VDfgType::Const:
+        case VDfgType::VarArray:
+        case VDfgType::VarPacked: {
+            vtx.v3fatalSrc("Vertex should have been handled above: " + vtx.typeName());
             VL_UNREACHABLE;
             break;
-        }
+        }  // LCOV_EXCL_STOP
         }
     }
     UASSERT(size() == clonep->size(), "Size of clone should be the same");
@@ -616,6 +624,10 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     switch (type()) {
     case VDfgType::Const: {
         CHECK(isPacked(), "Should be Packed type");
+        return;
+    }
+    case VDfgType::CReset: {
+        CHECK(isPacked() || isArray(), "Should be Packed or Array type");
         return;
     }
     case VDfgType::AstRd: {

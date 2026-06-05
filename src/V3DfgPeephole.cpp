@@ -1158,7 +1158,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
             // Sel from a partial variable (including narrowed vertex)
             if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-                if (varp->srcp() && !varp->isVolatile()) {
+                if (varp->srcp() && !varp->isVolatile() && !varp->srcp()->is<DfgCReset>()) {
                     // Must be a splice, otherwise it would have been inlined
                     DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
                     DfgVertex* driverp = nullptr;
