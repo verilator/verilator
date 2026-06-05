@@ -110,6 +110,8 @@ class V3DfgCse final {
         case VDfgType::NeqCase:
         case VDfgType::NeqWild:
         case VDfgType::Not:
+        case VDfgType::OneHot:
+        case VDfgType::OneHot0:
         case VDfgType::Or:
         case VDfgType::Pow:
         case VDfgType::PowSS:
@@ -232,6 +234,8 @@ class V3DfgCse final {
         case VDfgType::NeqCase:
         case VDfgType::NeqWild:
         case VDfgType::Not:
+        case VDfgType::OneHot:
+        case VDfgType::OneHot0:
         case VDfgType::Or:
         case VDfgType::Pow:
         case VDfgType::PowSS:

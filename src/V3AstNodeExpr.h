@@ -5784,6 +5784,7 @@ public:
 };
 class AstOneHot final : public AstNodeUniop {
     // True if only single bit set in vector
+    // @astgen makeDfgVertex
 public:
     AstOneHot(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_OneHot(fl, lhsp) {
@@ -5801,6 +5802,7 @@ public:
 };
 class AstOneHot0 final : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
+    // @astgen makeDfgVertex
 public:
     AstOneHot0(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_OneHot0(fl, lhsp) {

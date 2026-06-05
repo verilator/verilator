@@ -774,7 +774,9 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     case VDfgType::LogNot:
     case VDfgType::RedAnd:
     case VDfgType::RedOr:
-    case VDfgType::RedXor: {
+    case VDfgType::RedXor:
+    case VDfgType::OneHot:
+    case VDfgType::OneHot0: {
         CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
         CHECK(inputp(0)->isPacked(), "Operand should be Packed type");
         return;
