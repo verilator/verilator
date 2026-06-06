@@ -251,7 +251,6 @@ public:
         return varRefp;
     }
 
-
     static AstNodeExpr* buildNestedArraySel(FileLine* flp, AstNodeExpr* fromp,
                                             const std::vector<int>& indicies) {
         AstNodeExpr* curp = fromp;
@@ -407,8 +406,7 @@ public:
     AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo) const {
         FileLine* const flp = varInfo.m_varVscp->fileline();
         AstVar* const varp = varInfo.m_varVscp->varp();
-        AstUnpackArrayDType* const arrDtypep
-            = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
+        AstUnpackArrayDType* const arrDtypep = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
         const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
         return foreachUnpackedLeaf(
             dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
@@ -633,8 +631,7 @@ public:
                 AstNodeStmt* initStmtp = nullptr;
                 if (AstUnpackArrayDType* const arrDtypep
                     = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                    const std::vector<AstUnpackArrayDType*> dims
-                        = arrDtypep->unpackDimensions();
+                    const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
                     const int innerWidth = dims.back()->subDTypep()->skipRefp()->width();
                     initStmtp = foreachUnpackedLeaf(
                         dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {

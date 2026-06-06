@@ -26,20 +26,26 @@ int main(int argc, char** argv) {
             bool changed = true;
             switch (topp->cyc) {
             case 1:
-                en[0][1] = 0x3; val[0][1] = 0x3;
-                en_a[0][1] = 0x3; val_a[0][1] = 0x2;
+                en[0][1] = 0x3;
+                val[0][1] = 0x3;
+                en_a[0][1] = 0x3;
+                val_a[0][1] = 0x2;
                 break;
             case 2:
-                en[1][0] = 0x3; val[1][0] = 0x2;
-                en_a[1][0] = 0x3; val_a[1][0] = 0x3;
+                en[1][0] = 0x3;
+                val[1][0] = 0x2;
+                en_a[1][0] = 0x3;
+                val_a[1][0] = 0x3;
                 break;
             case 3:
-                en[0][1] = 0x0; en_a[0][1] = 0x0;
+                en[0][1] = 0x0;
+                en_a[0][1] = 0x0;
                 break;
             case 4:
-                en[1][0] = 0x0; en_a[1][0] = 0x0;
+                en[1][0] = 0x0;
+                en_a[1][0] = 0x0;
                 break;
-            
+
             default: changed = false;
             }
             if (changed) topp->eval();
