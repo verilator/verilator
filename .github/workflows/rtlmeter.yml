@@ -289,91 +289,23 @@ jobs:
       - name: Setup RTLMeter venv
         working-directory: rtlmeter
         run: make venv
-      - name: Download combined results
-        uses: actions/download-artifact@v8
+      - name: Checkout Verilator
+        uses: actions/checkout@v6
         with:
-          pattern: all-results-*
-          path: all-results
-          merge-multiple: true
-      - name: Get scheduled run info
-        id: scheduled-info
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ID=$(gh run --repo ${{ github.repository }} list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
-          echo "id=$ID" >> $GITHUB_OUTPUT
-          URL=$(gh run --repo ${{ github.repository }} view $ID --json url --jq ".url")
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          NUM=$(gh run --repo ${{ github.repository }} view $ID --json number --jq ".number")
-          echo "num=$NUM" >> $GITHUB_OUTPUT
-          DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
-          echo "date=$DATE" >> $GITHUB_OUTPUT
-      - name: Download scheduled run results
-        uses: actions/download-artifact@v8
-        with:
-          name: published-results
-          path: nightly-results
-          run-id: ${{ steps.scheduled-info.outputs.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Compare results
-        working-directory: rtlmeter
-        run: |
-          for tag in gcc clang gcc-hier; do
-            ADATA=../nightly-results/all-results-${tag}.json
-            BDATA=../all-results/all-results-${tag}.json
-            touch ../verilate-${tag}.txt
-            touch ../execute-${tag}.txt
-            touch ../cppbuild-${tag}.txt
-            if [[ ! -e $ADATA ]]; then
-              continue
-            fi
-            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
-            cat ../verilate-${tag}.txt
-            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
-            cat ../execute-${tag}.txt
-            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild-${tag}.txt
-            cat ../cppbuild-${tag}.txt
-          done
+          path: verilator
       - name: Create report
+        working-directory: verilator
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -x
-          NUM=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json number --jq ".number")
-          URL=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json url    --jq ".url")
-          echo -n "Performance metrics for PR workflow [#$NUM]($URL) (B) compared to scheduled run" > report.txt
-          echo -n " [#${{ steps.scheduled-info.outputs.num }}](${{ steps.scheduled-info.outputs.url }}) (A)" >> report.txt
-          echo    " from ${{ steps.scheduled-info.outputs.date }}" >> report.txt
-          for tag in gcc clang gcc-hier; do
-            echo "" >> report.txt
-            if [[ $tag == "gcc" ]]; then
-              echo "<details open>" >> report.txt
-            else
-              echo "<details>" >> report.txt
-            fi
-            echo -n "<summary><strong><em>" >> report.txt
-            jq -rj ".[0].runName" all-results/all-results-${tag}.json >> report.txt
-            echo "</em></strong></summary>" >> report.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-verilate-%s.txt",NR,tag)}' verilate-${tag}.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-execute-%s.txt" ,NR,tag)}'  execute-${tag}.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf("frag-$02d-cppbuild-%s.txt",NR,tag)}' cppbuild-${tag}.txt
-            for f in $(ls -1 frag-*-verilate-${tag}.txt | sort) $(ls -1 frag-*-execute-${tag}.txt | sort) $(ls -1 frag-*-cppbuild-${tag}.txt | sort); do
-              if [[ $f == frag-01-verilate-${tag}.txt || $f == frag-01-execute-${tag}.txt ]]; then
-                echo "<details open>" >> report.txt
-              else
-                echo "<details>" >> report.txt
-              fi
-              echo -n "<summary>" >> report.txt
-              head -n 1 $f | tr -d '\n' >> report.txt
-              echo "</summary>" >> report.txt
-              echo '<pre>' >> report.txt
-              tail -n +2 $f >> report.txt
-              echo '</pre>' >> report.txt
-              echo "</details>" >> report.txt
-            done
-            echo "</details>" >> report.txt
-          done
-          cat report.txt
+          ln -s ../rtlmeter rtlmeter
+          gh repo set-default ${{ github.repository }}
+          # Compare to last successful scheduled run
+          REF_ID=$(gh run list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
+          NEW_ID=${{ github.run_id }}
+          ci/ci-rtlmeter-pr-report.bash $REF_ID $NEW_ID gcc clang gcc-hier
+          mv rtlmeter-pr-report/report.txt ../
+          cat ../report.txt
       - name: Upload report
         uses: actions/upload-artifact@v7
         with:
