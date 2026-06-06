@@ -2713,32 +2713,13 @@ class ParamVisitor final : public VNVisitor {
         // LCOV_EXCL_STOP
     }
 
-    // True if nodep is a $bits/$size-style type query, reading the operand's type
-    static bool isTypeQueryAttr(const AstNode* nodep) {
-        const AstAttrOf* const attrp = VN_CAST(nodep, AttrOf);
-        if (!attrp) return false;
-        switch (attrp->attrType()) {
-        case VAttrType::DIM_BITS:
-        case VAttrType::DIM_BITS_OR_NUMBER:
-        case VAttrType::DIM_DIMENSIONS:
-        case VAttrType::DIM_HIGH:
-        case VAttrType::DIM_INCREMENT:
-        case VAttrType::DIM_LEFT:
-        case VAttrType::DIM_LOW:
-        case VAttrType::DIM_RIGHT:
-        case VAttrType::DIM_SIZE:
-        case VAttrType::DIM_UNPK_DIMENSIONS:
-        case VAttrType::TYPEID:
-        case VAttrType::TYPENAME: return true;
-        default: return false;
-        }
-    }
-
     // Flag hierarchical refs in a parameter value. Single top-down pass.
-    void checkParamNotHier(AstNode* nodep, bool underTypeQuery = false) {
+    void checkParamNotHierRecurse(AstNode* nodep, bool underTypeQuery = false) {
         for (; nodep; nodep = nodep->nextp()) {
             // Refs read only for their type ($bits etc.) are allowed
-            const bool childUnderQuery = underTypeQuery || isTypeQueryAttr(nodep);
+            const AstAttrOf* const attrp = VN_CAST(nodep, AttrOf);
+            const bool childUnderQuery
+                = underTypeQuery || (attrp && attrp->attrType().isTypeQuery());
             if (const AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
                 // Allow hierarchical ref to interface params through interface/modport ports
                 // or local interface instances
@@ -2759,10 +2740,10 @@ class ParamVisitor final : public VNVisitor {
                                   " (IEEE 1800-2023 6.20.2)");
                 }
             }
-            checkParamNotHier(nodep->op1p(), childUnderQuery);
-            checkParamNotHier(nodep->op2p(), childUnderQuery);
-            checkParamNotHier(nodep->op3p(), childUnderQuery);
-            checkParamNotHier(nodep->op4p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op1p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op2p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op3p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op4p(), childUnderQuery);
         }
     }
 
@@ -2905,7 +2886,7 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
-        checkParamNotHier(nodep->paramsp());
+        checkParamNotHierRecurse(nodep->paramsp());
         if (VN_IS(nodep->modp(), Iface)) m_ifaceInstCells.emplace(nodep->name(), nodep);
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
@@ -2913,7 +2894,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override {
-        checkParamNotHier(nodep->paramsp());
+        checkParamNotHierRecurse(nodep->paramsp());
         visitCellOrClassRef(nodep, false);
     }
     void visit(AstClassOrPackageRef* nodep) override {
@@ -2930,7 +2911,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->isIfaceRef()) { m_ifacePortNames.insert(nodep->name()); }
         iterateChildren(nodep);
         if (nodep->isParam()) {
-            checkParamNotHier(nodep->valuep());
+            checkParamNotHierRecurse(nodep->valuep());
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
