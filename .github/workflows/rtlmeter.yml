@@ -26,6 +26,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
+env:
+  RUN_TAGS: gcc clang gcc-hier
+
 jobs:
   start:
     name: Start
@@ -235,18 +238,19 @@ jobs:
     name: Combine results
     needs: [run-gcc, run-clang, run-gcc-hier]
     # Skip if cancelled.
-    # On PRs, run if something succeded and nothign failed.
-    # On non-PRs, run if anything succeded or failed (so partial results are still publided).
+    # On PRs, run if something succeeded and nothing failed.
+    # On non-PRs, run if anything succeeded or failed (so partial results are still published).
     if: >-
       ${{ !cancelled() && (
                (github.event_name == 'pull_request' && (contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')))
             || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
           )}}
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        tag: [gcc, clang, gcc-hier]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # 'gh' resolves the repo from git otherwise, but this job has no checkout
+      # of this repo at the workspace root
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Checkout RTLMeter
         uses: actions/checkout@v6
@@ -259,20 +263,24 @@ jobs:
         run: make venv
 
       - name: Download all results
-        uses: actions/download-artifact@v8
-        with:
-          pattern: rtlmeter-${{ matrix.tag }}-results-*
-          path: all-results-${{ matrix.tag }}
-          merge-multiple: true
+        run: |
+          for tag in $RUN_TAGS; do
+            mkdir artifacts all-results-$tag
+            gh run download ${{ github.run_id }} --pattern "rtlmeter-$tag-results-*" --dir artifacts
+            mv $(find artifacts -name "*.json") all-results-$tag/
+            rm -rf artifacts
+          done
       - name: Combine results
         working-directory: rtlmeter
         run: |
-          ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
+          for tag in $RUN_TAGS; do
+            ./rtlmeter collate ../all-results-$tag/*.json > ../all-results-$tag.json
+          done
       - name: Upload combined results
         uses: actions/upload-artifact@v7
         with:
-          path: all-results-${{ matrix.tag }}.json
-          name: all-results-${{ matrix.tag }}
+          path: all-results-*.json
+          name: all-results
           overwrite: true
           retention-days: 30
 
@@ -280,22 +288,26 @@ jobs:
       # 'build-*-old' jobs run and the run jobs produce '*-reference-*' artifacts.
       - name: Download reference results
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/download-artifact@v8
-        with:
-          pattern: rtlmeter-${{ matrix.tag }}-reference-*
-          path: all-reference-${{ matrix.tag }}
-          merge-multiple: true
+        run: |
+          for tag in $RUN_TAGS; do
+            mkdir artifacts all-reference-$tag
+            gh run download ${{ github.run_id }} --pattern "rtlmeter-$tag-reference-*" --dir artifacts
+            mv $(find artifacts -name "*.json") all-reference-$tag/
+            rm -rf artifacts
+          done
       - name: Combine reference results
         if: ${{ github.event_name == 'pull_request' }}
         working-directory: rtlmeter
         run: |
-          ./rtlmeter collate ../all-reference-${{ matrix.tag }}/*.json > ../all-reference-${{ matrix.tag }}.json
+          for tag in $RUN_TAGS; do
+            ./rtlmeter collate ../all-reference-$tag/*.json > ../all-reference-$tag.json
+          done
       - name: Upload reference results
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v7
         with:
-          path: all-reference-${{ matrix.tag }}.json
-          name: all-reference-${{ matrix.tag }}
+          path: all-reference-*.json
+          name: all-reference
           overwrite: true
           retention-days: 30
 
@@ -313,9 +325,8 @@ jobs:
       - name: Download combined results
         uses: actions/download-artifact@v8
         with:
-          pattern: all-results-*
+          name: all-results
           path: results
-          merge-multiple: true
       - name: Upload published results
         uses: actions/upload-artifact@v7
         with:
@@ -359,7 +370,7 @@ jobs:
   prepare-pr-results:
     name: Prepare Pull Request results
     needs: combine-results
-    if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && contains(needs.*.result, 'success') && !cancelled() }}
+    if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && needs.combine-results.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       actions: read
@@ -387,7 +398,7 @@ jobs:
           ln -s ../rtlmeter rtlmeter
           gh repo set-default ${{ github.repository }}
           # Compare to last successful scheduled run
-          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} gcc clang gcc-hier
+          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} $RUN_TAGS
           # Create the report artifact
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/

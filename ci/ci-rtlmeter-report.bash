@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# This scipt builds the content of the response comment posten on PRs
+# This script builds the content of the response comment posted on PRs
 # at the end of RTLMeter runs.
 
 # Developer note: You should be able to run this script in your local checkout
@@ -31,27 +31,15 @@ mkdir rtlmeter-report
 pushd rtlmeter-report &> /dev/null
 TMP_DIR=$(readlink -f .)
 
-# Artifacts to download
-DOWNLOAD_NEW_ARTIFACTS=""
-DOWNLOAD_REF_ARTIFACTS=""
-for r in $RUNS; do
-  DOWNLOAD_NEW_ARTIFACTS="$DOWNLOAD_NEW_ARTIFACTS --name all-results-$r"
-  DOWNLOAD_REF_ARTIFACTS="$DOWNLOAD_REF_ARTIFACTS --name all-reference-$r"
-done
-
-# Download reference artifacts
-mkdir ref
-REF_DIR=$(readlink -f ref)
-gh run download ${RUN_ID} $DOWNLOAD_REF_ARTIFACTS --dir $REF_DIR
-mv $REF_DIR/*/*.json $REF_DIR/
-find $REF_DIR -mindepth 1 -type d -delete
-
-# Download new version artifacts
-mkdir new
+# Download the combined results. 'combine-results' uploads a single artifact
+# for each version, holding the per-tag JSON files (e.g. all-results-gcc.json):
+#  - 'all-results'   for the new version
+#  - 'all-reference' for the old reference version
+mkdir new ref
 NEW_DIR=$(readlink -f new)
-gh run download ${RUN_ID} $DOWNLOAD_NEW_ARTIFACTS --dir $NEW_DIR
-mv $NEW_DIR/*/*.json $NEW_DIR/
-find $NEW_DIR -mindepth 1 -type d -delete
+REF_DIR=$(readlink -f ref)
+gh run download ${RUN_ID} --name all-results   --dir $NEW_DIR
+gh run download ${RUN_ID} --name all-reference --dir $REF_DIR
 
 # Get Some metadata about the runs
 RUN_URL=$(gh run view $RUN_ID --json url --jq ".url")
