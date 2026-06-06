@@ -85,10 +85,10 @@ static void register_callbacks() {
     vpi_register_cb(&cb_data);
 }
 
-// IEEE 1800 §37: vlog_startup_routines[] — null-terminated array of startup functions
+// IEEE 1800 section 37: vlog_startup_routines[] -- null-terminated array of startup functions
 extern "C" {
 void (*vlog_startup_routines[])() = {register_callbacks, nullptr};
 
-// Named bootstrap entrypoint — used when library is loaded as <path>:my_vpi_bootstrap
+// Named bootstrap entrypoint -- used when library is loaded as <path>:my_vpi_bootstrap
 void my_vpi_bootstrap() { register_callbacks(); }
 }

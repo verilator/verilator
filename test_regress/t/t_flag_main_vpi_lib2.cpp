@@ -19,7 +19,7 @@
 
 static void lib2_startup() { vpi_printf(const_cast<char*>("- second VPI library loaded\n")); }
 
-// IEEE 1800 §37: vlog_startup_routines[] — null-terminated array of startup functions
+// IEEE 1800 section 37: vlog_startup_routines[] -- null-terminated array of startup functions
 extern "C" {
 void (*vlog_startup_routines[])() = {lib2_startup, nullptr};
 }
