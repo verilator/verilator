@@ -15,6 +15,14 @@ on:
         description: "Compiler to use: 'gcc' or 'clang'"
         type: string
         required: true
+      sha:
+        description: "Git SHA to build"
+        type: string
+        required: true
+    outputs:
+      archive:
+        description: "Name of the built installation archive artifact"
+        value: ${{ jobs.build.outputs.archive }}
 
 defaults:
   run:
@@ -26,8 +34,10 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ inputs.runs-on }}
     name: Build
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      archive: ${{ steps.create-archive.outputs.archive }}
     steps:
       - name: Install dependencies
         run: |
@@ -43,13 +53,17 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ccache
-          key: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
+          key: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.sha }}-${{ github.run_id }}
+            rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.sha }}
+            rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
 
       - name: Checkout
         uses: actions/checkout@v6
         with:
           path: repo
+          ref: ${{ inputs.sha }}
           fetch-depth: 0 # Required for 'git describe' used for 'verilator --version'
 
       - name: Configure
@@ -67,11 +81,16 @@ jobs:
         run: make install
 
       - name: Tar up installation
-        run: tar --posix -c -z -f verilator-rtlmeter.tar.gz install
+        id: create-archive
+        run: |
+          SHA=$(git -C repo rev-parse HEAD)
+          ARCHIVE=verilator-$SHA-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}.tar.gz
+          tar --posix -c -z -f $ARCHIVE install
+          echo "archive=$ARCHIVE" >> $GITHUB_OUTPUT
 
       - name: Upload Verilator installation archive
         uses: actions/upload-artifact@v7
         with:
-          path: verilator-rtlmeter.tar.gz
-          name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
+          path: ${{ steps.create-archive.outputs.archive }}
+          name: ${{ steps.create-archive.outputs.archive }}
           overwrite: true
