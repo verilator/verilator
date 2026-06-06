@@ -24,8 +24,10 @@ test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"]
 # Build the second VPI library (make_pli only builds libvpi.so), mirroring the
 # driver's own pli flags.
 root = os.environ['VERILATOR_ROOT']
-pli2_cmd = [os.environ['CXX'], "-I" + root + "/include/vltstd", "-I" + root + "/include", "-fPIC",
-            "-shared"]
+pli2_cmd = [
+    os.environ['CXX'], "-I" + root + "/include/vltstd", "-I" + root + "/include", "-fPIC",
+    "-shared"
+]
 pli2_cmd += (["-Wl,-undefined,dynamic_lookup"] if platform.system() == 'Darwin' else ["-rdynamic"])
 pli2_cmd += ["-o", test.obj_dir + "/libvpi2.so", "t/t_flag_main_vpi_lib2.cpp"]
 test.run(logfile=test.obj_dir + "/pli2_compile.log", cmd=pli2_cmd)

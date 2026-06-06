@@ -13,9 +13,7 @@ test.scenarios('vlt')
 
 # Compile with --binary --vpi to exercise the VPI-aware generated main.
 # Also compile a VPI shared library to be loaded at runtime via +verilator+vpi+.
-test.compile(
-    make_pli=True,
-    verilator_flags2=["--binary --vpi --public-flat-rw"])
+test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"])
 
 # With --vpi and an executable (--binary implies --exe), the Makefile must, on Linux,
 # export the executable's symbols (-rdynamic) and link libdl for the generated loader's
@@ -26,7 +24,6 @@ test.file_grep(mk, r'LDFLAGS \+= -rdynamic')
 test.file_grep(mk, r'LDLIBS \+= -ldl')
 
 # Run the generated binary; load the VPI library via the +verilator+vpi+ plusarg.
-test.execute(all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so"],
-             check_finished=True)
+test.execute(all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so"], check_finished=True)
 
 test.passes()

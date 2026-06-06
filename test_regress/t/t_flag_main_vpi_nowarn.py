@@ -13,15 +13,13 @@ test.scenarios('vlt')
 
 # Compile with --binary but WITHOUT --vpi.
 # Passing +verilator+vpi+ at runtime should emit a warning, not load anything.
-test.compile(
-    top_filename='t/t_flag_main.v',
-    verilator_flags2=["--binary"])
+test.compile(top_filename='t/t_flag_main.v', verilator_flags2=["--binary"])
 
-test.execute(
-    all_run_flags=["+verilator+vpi+/nonexistent.so"],
-    check_finished=True)
+test.execute(all_run_flags=["+verilator+vpi+/nonexistent.so"], check_finished=True)
 
-test.file_grep(test.run_log_filename,
-               r'%Warning: COMMAND_LINE:0: \+verilator\+vpi\+ ignored: simulation was not compiled with --vpi')
+test.file_grep(
+    test.run_log_filename,
+    r'%Warning: COMMAND_LINE:0: \+verilator\+vpi\+ ignored: simulation was not compiled with --vpi'
+)
 
 test.passes()
