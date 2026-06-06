@@ -653,6 +653,7 @@ description of these arguments.
      +verilator+solver+file+<filename>     Set random solver log filename
      +verilator+V                          Show verbose version and config
      +verilator+version                    Show version and exit
+     +verilator+vpi+<library>[:<bootstrap>]  Load VPI shared library (requires --vpi --main)
      +verilator+wno+unsatconstr+<value>    Disable constraint warnings
 
 

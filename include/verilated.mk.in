@@ -80,6 +80,9 @@ UNAME_S := $(shell uname -s)
 ######################################################################
 # C Preprocessor flags
 
+# Default for makefiles generated before --vpi tracking was added
+VM_VPI ?= 0
+
 # Add -MMD -MP if you're using a recent version of GCC.
 VK_CPPFLAGS_ALWAYS += \
   -MMD \
@@ -93,6 +96,7 @@ VK_CPPFLAGS_ALWAYS += \
   -DVM_TRACE_FST=$(VM_TRACE_FST) \
   -DVM_TRACE_VCD=$(VM_TRACE_VCD) \
   -DVM_TRACE_SAIF=$(VM_TRACE_SAIF) \
+  -DVM_VPI=$(VM_VPI) \
   $(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users

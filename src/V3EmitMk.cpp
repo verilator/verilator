@@ -567,6 +567,12 @@ public:
         of.puts("VM_TRACE_VCD = ");
         of.puts(v3Global.opt.traceEnabledVcd() ? "1" : "0");
         of.puts("\n");
+        of.puts("# VPI enabled?  0/1 (from --vpi)\n");
+        of.puts("VM_VPI = ");
+        of.puts(v3Global.opt.vpi() ? "1" : "0");
+        of.puts("\n");
+        // Link flags for runtime VPI library loading are platform-specific and emitted by
+        // emitOverallMake() after verilated.mk is included (so $(UNAME_S) is defined).
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
@@ -729,6 +735,17 @@ public:
             of.puts("\n### Executable rules... (from --exe)\n");
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
+
+            if (v3Global.opt.vpi()) {
+                // Runtime VPI library loading (+verilator+vpi+<lib>) needs platform-specific
+                // link flags.  Resolve them with $(UNAME_S)
+                of.puts("# Runtime VPI library loading (+verilator+vpi+) link requirements\n");
+                of.puts("ifeq ($(UNAME_S),Linux)\n");
+                of.puts(/**/ "LDFLAGS += -rdynamic\n");
+                of.puts(/**/ "LDLIBS += -ldl\n");
+                of.puts("endif\n");
+                of.puts("\n");
+            }
         }
 
         const string compilerIncludePch

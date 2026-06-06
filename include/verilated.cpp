@@ -3544,6 +3544,15 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             // and the run can be reproduced by passing +verilator+seed+<that_value>.
             if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
+        } else if (0 == std::strncmp(arg.c_str(), "+verilator+vpi+", std::strlen("+verilator+vpi+"))) {
+            // With --vpi the generated --main (vl_load_vpi_libs) consumes this, so accept
+            // it silently here.  Without --vpi there is no loader, so warn it is ignored.
+#if !VM_VPI
+            VL_WARN_MT("COMMAND_LINE", 0, "",
+                       ("+verilator+vpi+ ignored: simulation was not compiled with --vpi (" + arg
+                        + ")")
+                           .c_str());
+#endif
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",
