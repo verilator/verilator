@@ -26,9 +26,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
-env:
-  RUN_TAGS: gcc clang gcc-hier
-
 jobs:
   start:
     name: Start
@@ -45,7 +42,11 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       old-sha: ${{ steps.start.outputs.old-sha }}
+      cases: ${{ steps.cases.outputs.cases }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Startup
         id: start
         env:
@@ -56,6 +57,10 @@ jobs:
           # first parent is the target branch commit it was merged with for this run.
           OLD_SHA="$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.parents[0].sha')"
           echo "old-sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Load RTLMeter cases
+        id: cases
+        run: echo "cases=$(ci/ci-rtlmeter-cases.py --event-name ${{ github.event_name }})" >> "$GITHUB_OUTPUT"
 
   build-gcc-new:
     name: Build New Verilator - GCC
@@ -98,6 +103,7 @@ jobs:
   run-gcc:
     name: Run GCC | ${{ matrix.cases }}
     needs:
+      - start
       - build-gcc-new
       - build-gcc-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
@@ -118,39 +124,12 @@ jobs:
       fail-fast: false
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
-        cases:
-          - "BlackParrot:1x1:*"
-          - "BlackParrot:4x4:*"
-          - "Caliptra:default:*"
-          - "NVDLA:*"
-          - "OpenPiton:1x1:*"
-          - "OpenPiton:4x4:*"
-          - "OpenTitan:*"
-          - "Servant:serv:*"
-          - "Servant:qerv:*"
-          - "VeeR-EH1:asic*"
-          - "VeeR-EH1:default*"
-          - "VeeR-EH1:hiperf*"
-          - "VeeR-EH2:asic*"
-          - "VeeR-EH2:default*"
-          - "VeeR-EH2:hiperf*"
-          - "VeeR-EL2:asic*"
-          - "VeeR-EL2:default*"
-          - "VeeR-EL2:hiperf*"
-          - "Vortex:mini:*"
-          - "Vortex:sane:*"
-          - "XiangShan:default-chisel3:* !*:linux"
-          - "XiangShan:default-chisel6:* !*:linux"
-          - "XiangShan:mini-chisel3:* !*:linux"
-          - "XiangShan:mini-chisel6:* !*:linux"
-          - "XuanTie-E902:*"
-          - "XuanTie-E906:*"
-          - "XuanTie-C906:*"
-          - "XuanTie-C910:*"
+        cases: ${{ fromJSON(needs.start.outputs.cases)['gcc'] }}
 
   run-clang:
     name: Run Clang | ${{ matrix.cases }}
     needs:
+      - start
       - build-clang-new
       - build-clang-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
@@ -171,39 +150,12 @@ jobs:
       fail-fast: false
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
-        cases:
-          - "BlackParrot:1x1:*"
-          - "BlackParrot:4x4:*"
-          - "Caliptra:default:*"
-          - "NVDLA:*"
-          - "OpenPiton:1x1:*"
-          - "OpenPiton:4x4:*"
-          - "OpenTitan:*"
-          - "Servant:serv:*"
-          - "Servant:qerv:*"
-          - "VeeR-EH1:asic*"
-          - "VeeR-EH1:default*"
-          - "VeeR-EH1:hiperf*"
-          - "VeeR-EH2:asic*"
-          - "VeeR-EH2:default*"
-          - "VeeR-EH2:hiperf*"
-          - "VeeR-EL2:asic*"
-          - "VeeR-EL2:default*"
-          - "VeeR-EL2:hiperf*"
-          - "Vortex:mini:*"
-          - "Vortex:sane:*"
-          - "XiangShan:default-chisel3:* !*:linux"
-          - "XiangShan:default-chisel6:* !*:linux"
-          - "XiangShan:mini-chisel3:* !*:linux"
-          - "XiangShan:mini-chisel6:* !*:linux"
-          - "XuanTie-E902:*"
-          - "XuanTie-E906:*"
-          - "XuanTie-C906:*"
-          - "XuanTie-C910:*"
+        cases: ${{ fromJSON(needs.start.outputs.cases)['clang'] }}
 
   run-gcc-hier:
     name: Run GCC hier | ${{ matrix.cases }}
     needs:
+      - start
       - build-gcc-new
       - build-gcc-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
@@ -224,15 +176,7 @@ jobs:
       fail-fast: false
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
-        cases:
-          - "BlackParrot:1x1:* !-hier"
-          - "BlackParrot:4x4:* !-hier"
-          - "NVDLA:* !-hier"
-          - "OpenPiton:1x1:* !-hier"
-          - "OpenPiton:4x4:* !-hier"
-          - "OpenPiton:8x8:* !-hier"
-          - "OpenPiton:16x16:dhry !-hier"
-          - "XuanTie-C910:* !-hier"
+        cases: ${{ fromJSON(needs.start.outputs.cases)['gcc-hier'] }}
 
   combine-results:
     name: Combine results
@@ -246,12 +190,20 @@ jobs:
             || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
           )}}
     runs-on: ubuntu-24.04
+    outputs:
+      # The run tags, derived from the 'run-*' dependency job names
+      run-tags: ${{ steps.tags.outputs.tags }}
     env:
       GH_TOKEN: ${{ github.token }}
       # 'gh' resolves the repo from git otherwise, but this job has no checkout
       # of this repo at the workspace root
       GH_REPO: ${{ github.repository }}
     steps:
+      # Derive the run tags from the dependency job names ('run-<tag>')
+      - name: Determine run tags
+        id: tags
+        run: echo "tags=$(jq -r 'keys | map(sub("^run-"; "")) | join(" ")' <<< '${{ toJSON(needs) }}')" >> "$GITHUB_OUTPUT"
+
       - name: Checkout RTLMeter
         uses: actions/checkout@v6
         with:
@@ -264,7 +216,7 @@ jobs:
 
       - name: Download all results
         run: |
-          for tag in $RUN_TAGS; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             mkdir artifacts all-results-$tag
             gh run download ${{ github.run_id }} --pattern "rtlmeter-$tag-results-*" --dir artifacts
             mv $(find artifacts -name "*.json") all-results-$tag/
@@ -273,7 +225,7 @@ jobs:
       - name: Combine results
         working-directory: rtlmeter
         run: |
-          for tag in $RUN_TAGS; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             ./rtlmeter collate ../all-results-$tag/*.json > ../all-results-$tag.json
           done
       - name: Upload combined results
@@ -289,7 +241,7 @@ jobs:
       - name: Download reference results
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          for tag in $RUN_TAGS; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             mkdir artifacts all-reference-$tag
             gh run download ${{ github.run_id }} --pattern "rtlmeter-$tag-reference-*" --dir artifacts
             mv $(find artifacts -name "*.json") all-reference-$tag/
@@ -299,7 +251,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         working-directory: rtlmeter
         run: |
-          for tag in $RUN_TAGS; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             ./rtlmeter collate ../all-reference-$tag/*.json > ../all-reference-$tag.json
           done
       - name: Upload reference results
@@ -398,7 +350,7 @@ jobs:
           ln -s ../rtlmeter rtlmeter
           gh repo set-default ${{ github.repository }}
           # Compare to last successful scheduled run
-          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} $RUN_TAGS
+          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} ${{ needs.combine-results.outputs.run-tags }}
           # Create the report artifact
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
