@@ -297,12 +297,13 @@ void vl_load_vpi_libs(int argc, char** argv) VL_MT_UNSAFE {
                 (std::string{"Cannot load VPI library: "} + libpath + "\n- dlerror: " + dlerror())
                     .c_str());
         if (has_entry) {
-            vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
+            vlog_startup_t bsp
+                = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
             if (!bsp)
-                VL_FATAL_MT("", 0, "",
-                            (std::string{"Cannot find VPI bootstrap '"} + entry_name
-                             + "' in: " + libpath)
-                                .c_str());
+                VL_FATAL_MT(
+                    "", 0, "",
+                    (std::string{"Cannot find VPI bootstrap '"} + entry_name + "' in: " + libpath)
+                        .c_str());
             bsp();
         } else {
             vlog_startup_t* routinesp
