@@ -1,11 +1,11 @@
 cg.data.high: 1
 cg.data.low: 1
-cg.data.other: 2
-cg2.cp_only_default.all: 4
+cg.data.other [default]: 2
+cg2.cp_only_default.all [default]: 4
 cg3.data.bad [ignore]: 1
 cg3.data.err [illegal]: 0
 cg3.data.normal: 2
-cg3.data.other: 2
+cg3.data.other [default]: 2
 cg4.cp_idx.auto_0: 1
 cg4.cp_idx.auto_1: 1
 cg4.cp_idx.auto_2: 1
