@@ -7,6 +7,14 @@ assignees: ''
 
 ---
 
+<!--
+Thanks for taking the time to report this.
+
+If reporting a bug or requesting a feature please hit BACK on your browser and use a different issue templates.
+
+Please remove this block when composing, and all other blocks starting with < !--.
+-->
+
 How may we help - what is your question?
 
-(If reporting a bug or requesting a feature please hit BACK on your browser and use a different issue templates.)
+<!-- Please replace this with your answer - then hit "Preview" to see the formatted result before submitting. -->
