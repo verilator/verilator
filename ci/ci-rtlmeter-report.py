@@ -73,6 +73,8 @@ for ref, cmp in zip(sys.argv[1::2], sys.argv[2::2]):
             maxGain = max(maxGain, g)
             meanGain *= g
             count += 1
+        if count == 0:
+            continue
         meanGain = meanGain**(1 / count)
 
         if metric == "clocks":
@@ -92,12 +94,12 @@ for ref, cmp in zip(sys.argv[1::2], sys.argv[2::2]):
 
         table.append([
             runName, step, ref_json["metrics"][metric]["header"], f"{meanGain:.2f}x  {status} ",
-            f"{minGain:.2f}x", f"{maxGain:.2f}x"
+            f"{minGain:.2f}x", f"{maxGain:.2f}x", f"{count}"
         ])
 
 printTable(
     table,
-    headers=("Run", "Step", "Metric", "Improvement", "Min", "Max"),
-    colalign=("left", "left", "left", "right", "right", "right"),
+    headers=("Run", "Step", "Metric", "Improvement", "Min", "Max", "Samples"),
+    colalign=("left", "left", "left", "right", "right", "right", "right"),
     disable_numparse=True,
 )
