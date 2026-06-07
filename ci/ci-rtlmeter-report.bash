@@ -15,11 +15,11 @@
 [ "$GITHUB_ACTIONS" != "true" ] || set -x
 
 # Arguments:
-#  1. reference run ID
-#  2. new run ID
+#  1. run ID
+#  2. SHA of the event that triggered the run (for a PR, the test merge commit)
 #  rest: run tags
-REF_ID=$1; shift
-NEW_ID=$1; shift
+RUN_ID=$1; shift
+RUN_SHA=$1; shift
 RUNS="$@"
 
 # $VERILATOR_CHECKOUT/ci directory
@@ -32,31 +32,30 @@ pushd rtlmeter-report &> /dev/null
 TMP_DIR=$(readlink -f .)
 
 # Artifacts to download
-DOWNLOAD_ARTIFACTS=""
+DOWNLOAD_NEW_ARTIFACTS=""
+DOWNLOAD_REF_ARTIFACTS=""
 for r in $RUNS; do
-  DOWNLOAD_ARTIFACTS="$DOWNLOAD_ARTIFACTS --name all-results-$r"
+  DOWNLOAD_NEW_ARTIFACTS="$DOWNLOAD_NEW_ARTIFACTS --name all-results-$r"
+  DOWNLOAD_REF_ARTIFACTS="$DOWNLOAD_REF_ARTIFACTS --name all-reference-$r"
 done
 
-# Download reference run results
+# Download reference artifacts
 mkdir ref
 REF_DIR=$(readlink -f ref)
-gh run download ${REF_ID} $DOWNLOAD_ARTIFACTS --dir $REF_DIR
+gh run download ${RUN_ID} $DOWNLOAD_REF_ARTIFACTS --dir $REF_DIR
 mv $REF_DIR/*/*.json $REF_DIR/
 find $REF_DIR -mindepth 1 -type d -delete
 
-# Download current run results
+# Download new version artifacts
 mkdir new
 NEW_DIR=$(readlink -f new)
-gh run download ${NEW_ID} $DOWNLOAD_ARTIFACTS --dir $NEW_DIR
+gh run download ${RUN_ID} $DOWNLOAD_NEW_ARTIFACTS --dir $NEW_DIR
 mv $NEW_DIR/*/*.json $NEW_DIR/
 find $NEW_DIR -mindepth 1 -type d -delete
 
 # Get Some metadata about the runs
-REF_URL=$(gh run view $REF_ID --json url --jq ".url")
-REF_NUM=$(gh run view $REF_ID --json number --jq ".number")
-REF_DATE=$(gh run view $REF_ID --json createdAt --jq ".createdAt")
-NEW_URL=$(gh run view $NEW_ID --json url --jq ".url")
-NEW_NUM=$(gh run view $NEW_ID --json number --jq ".number")
+RUN_URL=$(gh run view $RUN_ID --json url --jq ".url")
+RUN_NUM=$(gh run view $RUN_ID --json number --jq ".number")
 
 # Repository owner and name of the default repository, used to build the
 # GitHub Pages URL of the detailed report. The owner is lowercased, as required
@@ -64,6 +63,12 @@ NEW_NUM=$(gh run view $NEW_ID --json number --jq ".number")
 # default repository's git context (before the 'cd rtlmeter' below).
 PAGES_OWNER=$(gh repo view --json owner --jq '.owner.login' | tr '[:upper:]' '[:lower:]')
 PAGES_NAME=$(gh repo view --json name --jq '.name')
+
+# The 'old' reference was built from the target branch base commit, which is
+# the first parent of the triggering merge commit (same as the 'start' job in
+# rtlmeter.yml). Resolved here, while still in the default repository's git
+# context (before the 'cd rtlmeter' below).
+REF_SHA=$(gh api "repos/{owner}/{repo}/commits/$RUN_SHA" --jq '.parents[0].sha')
 
 # Go back to root directory
 popd &> /dev/null
@@ -75,14 +80,14 @@ SUMMARY_ARGS=()
 for r in $RUNS; do
   CMP_JSON=$TMP_DIR/cmp-$r.json
   # Gather args for summary script
-  SUMMARY_ARGS+=($REF_DIR/all-results-$r.json $CMP_JSON)
+  SUMMARY_ARGS+=($NEW_DIR/all-results-$r.json $CMP_JSON)
   # Create JSON
   ./rtlmeter compare --format json --steps "*" --metrics "*" \
-    $REF_DIR/all-results-$r.json $NEW_DIR/all-results-$r.json > $CMP_JSON
+    $REF_DIR/all-reference-$r.json $NEW_DIR/all-results-$r.json > $CMP_JSON
   # Also create detailed tables
-  ./rtlmeter compare --format ascii --steps 'verilate' --metrics '* !system !user' $REF_DIR/all-results-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/verilate-$r.txt
-  ./rtlmeter compare --format ascii --steps 'cppbuild' --metrics '* !system !user' $REF_DIR/all-results-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/cppbuild-$r.txt
-  ./rtlmeter compare --format ascii --steps 'execute'  --metrics '* !system !user' $REF_DIR/all-results-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/execute-$r.txt
+  ./rtlmeter compare --format ascii --steps 'verilate' --metrics '*' $REF_DIR/all-reference-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/verilate-$r.txt
+  ./rtlmeter compare --format ascii --steps 'cppbuild' --metrics '*' $REF_DIR/all-reference-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/cppbuild-$r.txt
+  ./rtlmeter compare --format ascii --steps 'execute'  --metrics '*' $REF_DIR/all-reference-$r.json $NEW_DIR/all-results-$r.json > $TMP_DIR/execute-$r.txt
   # Chop them at new lines, into one table per file
   awk -v RS= -v prefix=$TMP_DIR/$r-frag '{print > sprintf("%s-verilate-%02d.txt",prefix,NR)}' $TMP_DIR/verilate-$r.txt
   awk -v RS= -v prefix=$TMP_DIR/$r-frag '{print > sprintf("%s-cppbuild-%02d.txt",prefix,NR)}' $TMP_DIR/cppbuild-$r.txt
@@ -97,8 +102,10 @@ cat $TMP_DIR/summary.txt
 # Create notification comment content
 NOTIFICATION=$TMP_DIR/notification.txt
 cat > $NOTIFICATION <<NOTIFICATION_TEMPLATE
-Performance metrics for PR workflow [#$NEW_NUM]($NEW_URL) (B)
-compared to scheduled run [#$REF_NUM]($REF_URL) (A) from $REF_DATE
+Performance metrics for PR workflow [#$RUN_NUM]($RUN_URL), comparing:
+- target branch commit [${REF_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${REF_SHA}) (A)
+- with PR merge commit [${RUN_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${RUN_SHA}) (B)
+
 <details open>
   <summary>Summary of all runs</summary>
   <pre>
@@ -106,7 +113,11 @@ $(cat $TMP_DIR/summary.txt)
   </pre>
 </details>
 
-Detailed report: [${NEW_ID}](https://${PAGES_OWNER}.github.io/${PAGES_NAME}/rtlmeter-reports/${NEW_ID}/index.html)
+The reported numbers are the geometric means of the ratios of the metrics over all cases,
+less than 1 is a regression, greater than 1 is an improvement.
+The jobs run on variable and noisy runners, so some variance is expected between runs.
+
+Detailed report: [${RUN_ID}](https://${PAGES_OWNER}.github.io/${PAGES_NAME}/rtlmeter-reports/${RUN_ID}/index.html)
 NOTIFICATION_TEMPLATE
 
 # Create detailed report
@@ -119,7 +130,7 @@ $(cat $TMP_DIR/summary.txt)
 SUMMARY_TEMPLATE
 echo "<h3>Detailed results</h3>" >> $REPORT
 for r in $RUNS; do
-  RUN_NAME=$(jq -rj ".[0].runName" $REF_DIR/all-results-$r.json)
+  RUN_NAME=$(jq -rj ".[0].runName" $NEW_DIR/all-results-$r.json)
   echo "<h4>$RUN_NAME</h4>" >> $REPORT
   for f in $(ls -1 $TMP_DIR/$r-frag-verilate-*.txt | sort) \
            $(ls -1 $TMP_DIR/$r-frag-cppbuild-*.txt | sort) \
@@ -141,7 +152,7 @@ cat > ${TMP_DIR}/report/index.html <<INDEX_TEMPLATE
 <html>
 
   <head>
-    <title>Verilator RTLMeter report #${NEW_NUM}</title>
+    <title>Verilator RTLMeter report #${RUN_NUM}</title>
     <style>
     body {
       font-family: courier, serif;

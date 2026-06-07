@@ -40,34 +40,73 @@ jobs:
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'push')
     runs-on: ubuntu-24.04
+    outputs:
+      old-sha: ${{ steps.start.outputs.old-sha }}
     steps:
       - name: Startup
-        run: echo
+        id: start
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "${{ github.event_name }}" == 'pull_request' ]] || exit 0
+          # For a pull request, 'github.sha' is the test merge commit. Its
+          # first parent is the target branch commit it was merged with for this run.
+          OLD_SHA="$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.parents[0].sha')"
+          echo "old-sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
 
-  build-gcc:
-    name: Build GCC
+  build-gcc-new:
+    name: Build New Verilator - GCC
     needs: start
     uses: ./.github/workflows/reusable-rtlmeter-build.yml
     with:
       runs-on: ubuntu-24.04
       cc: gcc
+      sha: ${{ github.sha }}
 
-  build-clang:
-    name: Build Clang
+  build-clang-new:
+    name: Build New Verilator - Clang
     needs: start
     uses: ./.github/workflows/reusable-rtlmeter-build.yml
     with:
       runs-on: ubuntu-24.04
       cc: clang
+      sha: ${{ github.sha }}
+
+  build-gcc-old:
+    name: Build Old Verilator - GCC
+    needs: start
+    if: ${{ needs.start.outputs.old-sha != '' }}
+    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: gcc
+      sha: ${{ needs.start.outputs.old-sha }}
+
+  build-clang-old:
+    name: Build Old Verilator - Clang
+    needs: start
+    if: ${{ needs.start.outputs.old-sha != '' }}
+    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: clang
+      sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:
     name: Run GCC | ${{ matrix.cases }}
-    needs: build-gcc
+    needs:
+      - build-gcc-new
+      - build-gcc-old
+    # Run even if 'build-*-old' was skipped (no old SHA), but not if any
+    # dependency failed or the workflow was cancelled.
+    if: ${{ !failure() && !cancelled() }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc
       runs-on: ubuntu-24.04
       cc: gcc
+      verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
+      verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
       cases: ${{ matrix.cases }}
       run-name: "gcc"
       compileArgs: ""
@@ -108,12 +147,19 @@ jobs:
 
   run-clang:
     name: Run Clang | ${{ matrix.cases }}
-    needs: build-clang
+    needs:
+      - build-clang-new
+      - build-clang-old
+    # Run even if 'build-*-old' was skipped (no old SHA), but not if any
+    # dependency failed or the workflow was cancelled.
+    if: ${{ !failure() && !cancelled() }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: clang
       runs-on: ubuntu-24.04
       cc: clang
+      verilator-archive-new: ${{ needs.build-clang-new.outputs.archive }}
+      verilator-archive-old: ${{ needs.build-clang-old.outputs.archive }}
       cases: ${{ matrix.cases }}
       run-name: "clang --threads 4"
       compileArgs: "--threads 4"
@@ -154,12 +200,19 @@ jobs:
 
   run-gcc-hier:
     name: Run GCC hier | ${{ matrix.cases }}
-    needs: build-gcc
+    needs:
+      - build-gcc-new
+      - build-gcc-old
+    # Run even if 'build-*-old' was skipped (no old SHA), but not if any
+    # dependency failed or the workflow was cancelled.
+    if: ${{ !failure() && !cancelled() }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc-hier
       runs-on: ubuntu-24.04
       cc: gcc
+      verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
+      verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
       cases: ${{ matrix.cases }}
       run-name: "gcc --hierarchical"
       compileArgs: "--hierarchical"
@@ -181,9 +234,14 @@ jobs:
   combine-results:
     name: Combine results
     needs: [run-gcc, run-clang, run-gcc-hier]
-    # Run if any of the dependencies have run, even if failed.
-    # That is: do not run if all skipped, or the workflow was cancelled.
-    if: ${{ (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) && !cancelled() }}
+    # Skip if cancelled.
+    # On PRs, run if something succeded and nothign failed.
+    # On non-PRs, run if anything succeded or failed (so partial results are still publided).
+    if: >-
+      ${{ !cancelled() && (
+               (github.event_name == 'pull_request' && (contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')))
+            || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
+          )}}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -195,9 +253,11 @@ jobs:
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
+
       - name: Setup RTLMeter venv
         working-directory: rtlmeter
         run: make venv
+
       - name: Download all results
         uses: actions/download-artifact@v8
         with:
@@ -213,6 +273,29 @@ jobs:
         with:
           path: all-results-${{ matrix.tag }}.json
           name: all-results-${{ matrix.tag }}
+          overwrite: true
+          retention-days: 30
+
+      # The reference (old) results only exist for pull requests, where the
+      # 'build-*-old' jobs run and the run jobs produce '*-reference-*' artifacts.
+      - name: Download reference results
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/download-artifact@v8
+        with:
+          pattern: rtlmeter-${{ matrix.tag }}-reference-*
+          path: all-reference-${{ matrix.tag }}
+          merge-multiple: true
+      - name: Combine reference results
+        if: ${{ github.event_name == 'pull_request' }}
+        working-directory: rtlmeter
+        run: |
+          ./rtlmeter collate ../all-reference-${{ matrix.tag }}/*.json > ../all-reference-${{ matrix.tag }}.json
+      - name: Upload reference results
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: all-reference-${{ matrix.tag }}.json
+          name: all-reference-${{ matrix.tag }}
           overwrite: true
           retention-days: 30
 
@@ -304,9 +387,7 @@ jobs:
           ln -s ../rtlmeter rtlmeter
           gh repo set-default ${{ github.repository }}
           # Compare to last successful scheduled run
-          REF_ID=$(gh run list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
-          NEW_ID=${{ github.run_id }}
-          ci/ci-rtlmeter-report.bash $REF_ID $NEW_ID gcc clang gcc-hier
+          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} gcc clang gcc-hier
           # Create the report artifact
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
