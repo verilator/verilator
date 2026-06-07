@@ -58,6 +58,13 @@ REF_DATE=$(gh run view $REF_ID --json createdAt --jq ".createdAt")
 NEW_URL=$(gh run view $NEW_ID --json url --jq ".url")
 NEW_NUM=$(gh run view $NEW_ID --json number --jq ".number")
 
+# Repository owner and name of the default repository, used to build the
+# GitHub Pages URL of the detailed report. The owner is lowercased, as required
+# for the '<owner>.github.io' Pages domain. Resolved here, while still in the
+# default repository's git context (before the 'cd rtlmeter' below).
+PAGES_OWNER=$(gh repo view --json owner --jq '.owner.login' | tr '[:upper:]' '[:lower:]')
+PAGES_NAME=$(gh repo view --json name --jq '.name')
+
 # Go back to root directory
 popd &> /dev/null
 # Go to RTLMeter directory
@@ -93,12 +100,13 @@ cat > $NOTIFICATION <<NOTIFICATION_TEMPLATE
 Performance metrics for PR workflow [#$NEW_NUM]($NEW_URL) (B)
 compared to scheduled run [#$REF_NUM]($REF_URL) (A) from $REF_DATE
 <details open>
-  <summary><strong>Summary of all runs</strong></summary>
+  <summary>Summary of all runs</summary>
   <pre>
 $(cat $TMP_DIR/summary.txt)
   </pre>
 </details>
-Blah Blah Blah
+
+Detailed report: [${NEW_ID}](https://${PAGES_OWNER}.github.io/${PAGES_NAME}/rtlmeter-reports/${NEW_ID}/index.html)
 NOTIFICATION_TEMPLATE
 
 # Create detailed report
