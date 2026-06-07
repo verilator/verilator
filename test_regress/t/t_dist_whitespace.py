@@ -13,7 +13,7 @@ test.scenarios('dist')
 
 Tabs_Exempt_Re = r'(\.out$)|(/fstcpp)|(Makefile)|(\.mk$)|(\.mk\.in$)|test_regress/t/t_preproc\.v|install-sh'
 
-Unicode_Exempt_Re = r'(Changes$|CONTRIBUTORS$|LICENSES?|contributors.rst$|spelling.txt$|ci-rtlmeter-pr-report.py)'
+Unicode_Exempt_Re = r'(Changes$|CONTRIBUTORS$|LICENSES?|contributors.rst$|spelling.txt$|ci-rtlmeter-report.py)'
 
 
 def get_source_files():

@@ -306,24 +306,26 @@ jobs:
           # Compare to last successful scheduled run
           REF_ID=$(gh run list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
           NEW_ID=${{ github.run_id }}
-          ci/ci-rtlmeter-pr-report.bash $REF_ID $NEW_ID gcc clang gcc-hier
-          mv rtlmeter-pr-report/report.txt ../
-          cat ../report.txt
-          # Generate notification comment content
-          mkdir -p ../notification
-          mv rtlmeter-pr-report/notification.txt ../notification/body.txt
-          echo ${{ github.event.number }} > ../notification/pr-number.txt
+          ci/ci-rtlmeter-report.bash $REF_ID $NEW_ID gcc clang gcc-hier
+          # Create the report artifact
+          mkdir ../report-artifact
+          mv rtlmeter-report/report ../report-artifact/
+          echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
+          # Create the notification artifact
+          mkdir ../notification-artifact
+          mv rtlmeter-report/notification.txt ../notification-artifact/body.txt
+          echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
 
       - name: Upload report
         uses: actions/upload-artifact@v7
         with:
-          path: report.txt
-          name: rtlmeter-pr-report
+          path: report-artifact
+          name: rtlmeter-report
 
       - name: Upload notification
         uses: actions/upload-artifact@v7
         with:
-          path: notification
+          path: notification-artifact
           name: pr-notification
 
   # Create GitHub issue for failed scheduled jobs

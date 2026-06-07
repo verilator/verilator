@@ -44,7 +44,7 @@ compile_coverage_reports() {
   jq "." completedRuns.json
 
   # Create artifacts root directory
-  local ARTIFACTS_ROOT=artifacts
+  local ARTIFACTS_ROOT=artifacts-coverage
   mkdir -p ${ARTIFACTS_ROOT}
 
   # Create coverage reports root directory
@@ -71,9 +71,7 @@ compile_coverage_reports() {
       jq "." workflow.json
 
       # Record run ID of PR job
-      if [[ $EVENT == "pull_request" ]]; then
-        PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
-      fi
+      [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
 
       # Create workflow artifacts directory
       local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
@@ -170,7 +168,7 @@ compile_rtlmeter_reports() {
   jq "." completedRuns.json
 
   # Create artifacts root directory
-  local ARTIFACTS_ROOT=artifacts
+  local ARTIFACTS_ROOT=artifacts-rtlmeter
   mkdir -p ${ARTIFACTS_ROOT}
 
   # Create rtlmeter reports root directory
@@ -197,20 +195,18 @@ compile_rtlmeter_reports() {
       jq "." workflow.json
 
       # Record run ID of PR job
-      if [[ $EVENT == "pull_request" ]]; then
-        PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
-      fi
+      [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
 
       # Create workflow artifacts directory
       local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
       mkdir -p ${ARTIFACTS_DIR}
 
       # Download artifacts of this run, if exists
-      gh run download ${RUN_ID} --name rtlmeter-pr-report --dir ${ARTIFACTS_DIR} || true
+      gh run download ${RUN_ID} --name rtlmeter-report --dir ${ARTIFACTS_DIR} || true
       ls -lsha ${ARTIFACTS_DIR}
 
       # Move on if no RTLMeter report is available
-      if [ ! -f ${ARTIFACTS_DIR}/report.txt ]; then
+      if [ ! -d ${ARTIFACTS_DIR}/report ]; then
         echo "No RTLMeter report found"
         continue
       fi
@@ -222,42 +218,21 @@ compile_rtlmeter_reports() {
         echo "<h4>RTLMeter reports for '${EVENT}' runs:</h4>" >> ${CONTENTS}
       fi
 
-      # Extract run metadata
-      local WORKFLOW_CREATED=$(jq -r '.createdAt' workflow.json)
-      local WOFKRLOW_NUMBER=$(jq -r '.number' workflow.json)
-
-      # Wrap the report into an HTML page. The report content is already HTML
-      # (produced by ci-rtlmeter-pr-report.bash), so we just embed it in the
-      # page body.
-      cat > ${RTLMETER_ROOT}/${RUN_ID}.html <<REPORT_TEMPLATE
-  <html>
-
-  <head>
-    <title>Verilator RTLMeter report #${WOFKRLOW_NUMBER}</title>
-    <style>
-    body {
-      font-family: courier, serif;
-      background-color: #f3f3f3;
-      a {
-        color: #008fd7;
-      }
-    }
-    </style>
-  </head>
-
-  <body>
-$(cat ${ARTIFACTS_DIR}/report.txt)
-  </body>
-
-  </html>
-REPORT_TEMPLATE
+      # Create pages subdirectory
+      mv ${ARTIFACTS_DIR}/report ${RTLMETER_ROOT}/${RUN_ID}
 
       # Add index page content
+      local WORKFLOW_CREATED=$(jq -r '.createdAt' workflow.json)
+      local WOFKRLOW_NUMBER=$(jq -r '.number' workflow.json)
       cat >> ${CONTENTS} <<CONTENTS_TEMPLATE
-        Run <a href="${RUN_ID}.html">#${WOFKRLOW_NUMBER}</a>
+        Run <a href="${RUN_ID}/index.html">#${WOFKRLOW_NUMBER}</a>
         | GitHub: <a href="${REPO_URL}/actions/runs/${RUN_ID}">${RUN_ID}</a>
         | started at: ${WORKFLOW_CREATED}
 CONTENTS_TEMPLATE
+      if [ -e ${ARTIFACTS_DIR}/pr-number.txt ]; then
+        local PRNUMBER=$(cat ${ARTIFACTS_DIR}/pr-number.txt)
+        echo " | Pull request: <a href=\"${REPO_URL}/pull/${PRNUMBER}\">#${PRNUMBER}</a>" >> ${CONTENTS}
+      fi
       echo "<br>" >> ${CONTENTS}
     done
 

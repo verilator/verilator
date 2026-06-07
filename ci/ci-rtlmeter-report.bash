@@ -26,9 +26,9 @@ RUNS="$@"
 SCRIPT_DIR=$(readlink -f $(dirname ${BASH_SOURCE[0]}))
 
 # Move into a temporary directory
-rm -rf rtlmeter-pr-report
-mkdir rtlmeter-pr-report
-pushd rtlmeter-pr-report &> /dev/null
+rm -rf rtlmeter-report
+mkdir rtlmeter-report
+pushd rtlmeter-report &> /dev/null
 TMP_DIR=$(readlink -f .)
 
 # Artifacts to download
@@ -83,7 +83,7 @@ for r in $RUNS; do
 done
 
 # Create summary
-venv/bin/python3 $SCRIPT_DIR/ci-rtlmeter-pr-report.py ${SUMMARY_ARGS[@]} > $TMP_DIR/summary.txt
+venv/bin/python3 $SCRIPT_DIR/ci-rtlmeter-report.py ${SUMMARY_ARGS[@]} > $TMP_DIR/summary.txt
 # Print it
 cat $TMP_DIR/summary.txt
 
@@ -102,22 +102,17 @@ Blah Blah Blah
 NOTIFICATION_TEMPLATE
 
 # Create detailed report
-REPORT=$TMP_DIR/report.txt
+REPORT=$TMP_DIR/body.html
 cat > $REPORT <<SUMMARY_TEMPLATE
-Preamble Preamble
-<details open>
-  <summary><strong>Summary of all runs</strong></summary>
-  <pre>
+<h3>Summary of all runs</h3>
+<pre>
 $(cat $TMP_DIR/summary.txt)
-  </pre>
-</details>
+</pre>
 SUMMARY_TEMPLATE
-echo "<details>" >> $REPORT
-echo "  <summary><strong>Detailed results</strong></summary>" >> $REPORT
+echo "<h3>Detailed results</h3>" >> $REPORT
 for r in $RUNS; do
   RUN_NAME=$(jq -rj ".[0].runName" $REF_DIR/all-results-$r.json)
-  echo "  <details>" >> $REPORT
-  echo "  <summary><strong><em>$RUN_NAME</em></strong></summary>" >> $REPORT
+  echo "<h4>$RUN_NAME</h4>" >> $REPORT
   for f in $(ls -1 $TMP_DIR/$r-frag-verilate-*.txt | sort) \
            $(ls -1 $TMP_DIR/$r-frag-cppbuild-*.txt | sort) \
            $(ls -1 $TMP_DIR/$r-frag-execute-*.txt | sort); do
@@ -130,6 +125,29 @@ $(tail -n +2 $f)
     </details>
 DETAIL_TAMPLATE
   done
-  echo "  </details>" >> $REPORT
 done
-echo "</details>" >> $REPORT
+
+# Turn the report into a proper HTML page
+mkdir -p ${TMP_DIR}/report
+cat > ${TMP_DIR}/report/index.html <<INDEX_TEMPLATE
+<html>
+
+  <head>
+    <title>Verilator RTLMeter report #${NEW_NUM}</title>
+    <style>
+    body {
+      font-family: courier, serif;
+      background-color: #f3f3f3;
+      a {
+        color: #008fd7;
+      }
+    }
+    </style>
+  </head>
+
+  <body>
+$(cat ${TMP_DIR}/body.html)
+  </body>
+
+</html>
+INDEX_TEMPLATE
