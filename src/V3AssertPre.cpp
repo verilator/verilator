@@ -811,7 +811,6 @@ private:
     static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
         // Constructs refp.delete(std::process::self()) statement
         FileLine* const flp = refp->fileline();
-        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         AstCMethodHard* const deletep = new AstCMethodHard{
             flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
         deletep->dtypep(refp->findVoidDType());
@@ -819,7 +818,6 @@ private:
     }
     static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
         // Constructs refp.size() statement
-        refp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         AstCMethodHard* const sizep
             = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
