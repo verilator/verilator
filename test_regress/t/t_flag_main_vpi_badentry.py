@@ -19,8 +19,7 @@ test.pli_filename = 't/t_flag_main_vpi.cpp'
 test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"])
 
 test.execute(fails=True,
-             all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so:no_such_fn"])
-
-test.file_grep(test.run_log_filename, r"Cannot find VPI bootstrap 'no_such_fn'")
+             all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so:no_such_fn"],
+             expect_filename=test.golden_filename)
 
 test.passes()

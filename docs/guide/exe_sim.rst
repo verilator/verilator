@@ -146,14 +146,12 @@ Options:
    :vlopt:`--binary`). ``<library>`` is the path to the shared library. If
    ``:<bootstrap>`` is given, that named no-argument function is called;
    otherwise the library's ``vlog_startup_routines`` array (IEEE 1800 Section 37) is
-   invoked. May be repeated to load multiple libraries. For signals to be
-   accessible by name, also Verilate with :vlopt:`--public-flat-rw`. If passed
-   to a model not compiled with :vlopt:`--vpi`, a warning is emitted and the
-   argument is ignored.
+   invoked. May be repeated to load multiple libraries.
 
    Runtime loading is supported on POSIX platforms only (it relies on the
    executable exporting its VPI symbols to the loaded library); on Windows the
-   argument is rejected and the VPI code must instead be linked into the model.
+   argument is rejected and the VPI code must instead be statically linked
+   into the model.
 
 .. option:: +verilator+wno+unsatconstr+<value>
 

@@ -17,8 +17,10 @@ test.top_filename = 't/t_flag_main_vpi.v'
 
 test.compile(verilator_flags2=["--binary --vpi --public-flat-rw"])
 
-test.execute(fails=True, all_run_flags=["+verilator+vpi+" + test.obj_dir + "/nonexistent.so"])
-
-test.file_grep(test.run_log_filename, r'Cannot load VPI library')
+# The fatal names the (stable, relative) library path; the platform-specific dlerror()
+# detail is emitted on a "- " line, which golden comparison strips, so the .out is portable.
+test.execute(fails=True,
+             all_run_flags=["+verilator+vpi+" + test.obj_dir + "/nonexistent.so"],
+             expect_filename=test.golden_filename)
 
 test.passes()

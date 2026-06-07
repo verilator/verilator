@@ -62,7 +62,7 @@ static PLI_INT32 start_of_sim_cb(p_cb_data /*cb_data*/) {
 }
 
 static PLI_INT32 end_of_sim_cb(p_cb_data /*cb_data*/) {
-    vpi_printf(const_cast<char*>("- VPI end of simulation\n"));
+    vpi_printf(const_cast<char*>("VPI end of simulation\n"));
     return 0;
 }
 

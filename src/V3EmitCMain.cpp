@@ -55,13 +55,7 @@ private:
         // Heavily commented output, as users are likely to look at or copy this code
 
         puts("#include \"verilated.h\"\n");
-        if (v3Global.opt.vpi()) {
-            puts("#include \"verilated_vpi.h\"\n");
-            puts("#ifndef _WIN32\n");
-            puts("# include <dlfcn.h>  // For runtime +verilator+vpi+ library loading\n");
-            puts("#endif\n");
-            puts("#include <cstring>\n");
-        }
+        if (v3Global.opt.vpi()) puts("#include \"verilated_vpi.h\"\n");
         puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
         if (v3Global.opt.debugRuntimeTimeout()) {
             puts("\n");
@@ -72,56 +66,6 @@ private:
         if (v3Global.opt.vpi()) {
             puts("// User VPI code adds to this array to get startup main() callbacks\n");
             puts("extern \"C\" void (*vlog_startup_routines[])() VL_ATTR_WEAK;\n");
-            puts("\n");
-
-            // Runtime loader for VPI shared libraries requested via +verilator+vpi+<lib>.
-            // POSIX only: relies on the executable exporting its VPI symbols.
-            puts(
-                "// Load VPI shared libraries requested via +verilator+vpi+<lib>[:<bootstrap>]\n");
-            puts("static void vl_load_vpi_libs(int argc, char** argv) {\n");
-            puts(/**/ "const char* prefix = \"+verilator+vpi+\";\n");
-            puts(/**/ "const size_t pfx_len = std::strlen(prefix);\n");
-            puts(/**/ "for (int i = 1; i < argc; ++i) {\n");
-            puts(/****/ "if (std::strncmp(argv[i], prefix, pfx_len) != 0) continue;\n");
-            puts(/****/ "const std::string arg(argv[i] + pfx_len);\n");
-            puts(/****/ "if (arg.empty()) continue;\n");
-            puts("#ifdef _WIN32\n");
-            puts(/****/ "VL_FATAL_MT(\"\", 0, \"\","
-                        " \"+verilator+vpi+: runtime VPI library loading is not supported on\"\n");
-            puts(/******/ "\" Windows; link the VPI code into the model instead\");\n");
-            puts("#else\n");
-            puts(/****/ "using vlog_startup_t = void (*)();\n");
-            puts(/****/ "// Split <lib>:<bootstrap> on the last ':'\n");
-            puts(/****/ "const std::string::size_type colon_pos = arg.rfind(':');\n");
-            puts(/****/ "const bool has_entry = (colon_pos != std::string::npos);\n");
-            puts(/****/ "const std::string libpath = has_entry ? arg.substr(0, colon_pos) : "
-                        "arg;\n");
-            puts(/****/ "const std::string entry_name\n");
-            puts(/******/ "= has_entry ? arg.substr(colon_pos + 1) : std::string{};\n");
-            puts(/****/ "void* handle = dlopen(libpath.c_str(), RTLD_LAZY);\n");
-            puts(/****/ "if (!handle)\n");
-            puts(/******/ "VL_FATAL_MT(\"\", 0, \"\","
-                          " (std::string{\"Cannot load VPI library: \"} + dlerror()).c_str());\n");
-            puts(/****/ "if (has_entry) {\n");
-            puts(/******/ "vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>("
-                          "dlsym(handle, entry_name.c_str()));\n");
-            puts(/******/ "if (!bsp)\n");
-            puts(/********/ "VL_FATAL_MT(\"\", 0, \"\", (std::string{\"Cannot find VPI bootstrap "
-                            "'\"}\n");
-            puts(/**********/ "+ entry_name + \"' in: \" + libpath).c_str());\n");
-            puts(/******/ "bsp();\n");
-            puts(/****/ "} else {\n");
-            puts(/******/ "vlog_startup_t* routinesp = reinterpret_cast<vlog_startup_t*>(\n");
-            puts(/********/ "dlsym(handle, \"vlog_startup_routines\"));\n");
-            puts(/******/ "if (!routinesp)\n");
-            puts(/********/ "VL_FATAL_MT(\"\", 0, \"\","
-                            " (std::string{\"Cannot find 'vlog_startup_routines' in: \"}\n");
-            puts(/**********/ "+ libpath).c_str());\n");
-            puts(/******/ "for (int j = 0; routinesp[j]; ++j) routinesp[j]();\n");
-            puts(/****/ "}\n");
-            puts("#endif\n");
-            puts(/**/ "}\n");
-            puts("}\n");
             puts("\n");
         }
 

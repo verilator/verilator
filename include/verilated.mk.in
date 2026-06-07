@@ -80,9 +80,6 @@ UNAME_S := $(shell uname -s)
 ######################################################################
 # C Preprocessor flags
 
-# Default for makefiles generated before --vpi tracking was added
-VM_VPI ?= 0
-
 # Add -MMD -MP if you're using a recent version of GCC.
 VK_CPPFLAGS_ALWAYS += \
   -MMD \

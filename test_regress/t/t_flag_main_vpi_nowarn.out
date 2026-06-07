@@ -1,0 +1,3 @@
+%Warning: COMMAND_LINE:0: +verilator+vpi+ ignored: simulation was not compiled with --vpi '+verilator+vpi+/nonexistent.so'
+[0] Hello
+*-* All Finished *-*

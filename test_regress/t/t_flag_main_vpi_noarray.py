@@ -18,8 +18,8 @@ test.pli_filename = 't/t_flag_main_vpi_noarray.cpp'
 
 test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"])
 
-test.execute(fails=True, all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so"])
-
-test.file_grep(test.run_log_filename, r"Cannot find 'vlog_startup_routines'")
+test.execute(fails=True,
+             all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so"],
+             expect_filename=test.golden_filename)
 
 test.passes()

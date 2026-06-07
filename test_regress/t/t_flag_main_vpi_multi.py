@@ -36,8 +36,7 @@ test.execute(all_run_flags=[
     "+verilator+vpi+" + test.obj_dir + "/libvpi.so",
     "+verilator+vpi+" + test.obj_dir + "/libvpi2.so"
 ],
-             check_finished=True)
-
-test.file_grep(test.run_log_filename, r'- second VPI library loaded')
+             check_finished=True,
+             expect_filename=test.golden_filename)
 
 test.passes()
