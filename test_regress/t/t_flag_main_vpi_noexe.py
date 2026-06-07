@@ -21,9 +21,10 @@ test.compile(make_main=False, verilator_make_gmake=False, verilator_flags2=["--v
 
 test.file_grep(test.obj_dir + "/V" + test.name + "_classes.mk", r'VM_VPI = 1')
 # Without --exe there is no executable to export symbols from or to dlopen into,
-# so the runtime-VPI link flags must not be emitted into the Makefile at all.
+# so the runtime-VPI link flags must not be emitted into the Makefile on any platform.
 mk = test.obj_dir + "/V" + test.name + ".mk"
-test.file_grep_not(mk, r'-rdynamic')
-test.file_grep_not(mk, r'-ldl')
+test.file_grep_not(mk, r'-rdynamic')  # Linux
+test.file_grep_not(mk, r'-ldl')  # Linux
+test.file_grep_not(mk, r'-export_dynamic')  # macOS
 
 test.passes()

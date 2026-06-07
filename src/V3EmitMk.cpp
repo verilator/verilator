@@ -738,11 +738,18 @@ public:
 
             if (v3Global.opt.vpi()) {
                 // Runtime VPI library loading (+verilator+vpi+<lib>) needs platform-specific
-                // link flags.  Resolve them with $(UNAME_S)
+                // link flags so the dlopen'd library can resolve the executable's VPI symbols.
+                // Resolve them with $(UNAME_S).
                 of.puts("# Runtime VPI library loading (+verilator+vpi+) link requirements\n");
+                // -rdynamic exports the executable's VPI symbols to the dlopen'd library;
+                // -ldl provides dlopen/dlsym.
                 of.puts("ifeq ($(UNAME_S),Linux)\n");
                 of.puts(/**/ "LDFLAGS += -rdynamic\n");
                 of.puts(/**/ "LDLIBS += -ldl\n");
+                of.puts("endif\n");
+                // macOS analog of -rdynamic; dlopen/dlsym live in libSystem so no -ldl needed.
+                of.puts("ifeq ($(UNAME_S),Darwin)\n");
+                of.puts(/**/ "LDFLAGS += -Wl,-export_dynamic\n");
                 of.puts("endif\n");
                 of.puts("\n");
             }
