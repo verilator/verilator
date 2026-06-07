@@ -17,9 +17,9 @@ interface axi_if #(
     parameter int ID_W = 8,
     parameter int ADDR_W = 32
 );
-  logic [ID_W-1:0]   AWID;
+  logic [ID_W-1:0] AWID;
   logic [ADDR_W-1:0] AWADDR;
-  logic [7:0]        AWLEN;
+  logic [7:0] AWLEN;
 endinterface
 
 module chkmod #(
@@ -47,8 +47,14 @@ module bridge #(
 endmodule
 
 module t;
-  axi_if #(.ID_W(12), .ADDR_W(64)) if0 ();  // 12 + 64 + 8 = 84
-  axi_if #(.ID_W(12), .ADDR_W(16)) if1 ();  // 12 + 16 + 8 = 36
+  axi_if #(
+      .ID_W(12),
+      .ADDR_W(64)
+  ) if0 ();  // 12 + 64 + 8 = 84
+  axi_if #(
+      .ID_W(12),
+      .ADDR_W(16)
+  ) if1 ();  // 12 + 16 + 8 = 36
 
   bridge #(.EXPECT(84)) dut0 (.axi(if0));
   bridge #(.EXPECT(36)) dut1 (.axi(if1));
