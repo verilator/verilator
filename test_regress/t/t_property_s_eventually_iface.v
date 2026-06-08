@@ -7,27 +7,29 @@
 // s_eventually (strong eventually) inside an interface used to trigger an
 // internal error in V3Scope ("Can't locate varref scope").
 
-interface my_if(input logic clk);
-   logic a;
-   assert property (@(posedge clk) s_eventually a);
+interface my_if (
+    input logic clk
+);
+  logic a;
+  assert property (@(posedge clk) s_eventually a);
 endinterface
 
-module t(/*AUTOARG*/);
-   bit clk = 0;
-   initial forever #1 clk = ~clk;
+module t (  /*AUTOARG*/);
+  bit clk = 0;
+  initial forever #1 clk = ~clk;
 
-   integer cyc = 0;
+  integer cyc = 0;
 
-   my_if u_if(.clk(clk));
+  my_if u_if (.clk(clk));
 
-   initial u_if.a = 0;
+  initial u_if.a = 0;
 
-   always @(posedge clk) begin
-      cyc <= cyc + 1;
-      u_if.a <= (cyc >= 3);
-      if (cyc == 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    u_if.a <= (cyc >= 3);
+    if (cyc == 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

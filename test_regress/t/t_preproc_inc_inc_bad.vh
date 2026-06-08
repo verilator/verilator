@@ -6,6 +6,6 @@
 
 module xx;
 
-   xx  // intentional error
+  xx  // intentional error
 
 endmodule
