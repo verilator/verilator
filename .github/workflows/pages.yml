@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          bash -x ./ci/ci-pages.bash
+          ./ci/ci-pages.bash
           ls -lsha
           tree -L 3 pages
       - name: Upload pages artifact
