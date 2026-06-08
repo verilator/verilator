@@ -577,4 +577,13 @@ module t (
   end
   `signal(VIA_CRESET, via_creset);
 
+  logic [1:0] LUT [2] = '{0: 2'b11, 1: 2'b10};
+  logic [1:0] array_read;
+  always_comb begin
+    array_read = 2'd0;
+    array_read += LUT[rand_a[0]];
+    array_read += LUT[rand_a[1]];
+  end
+  `signal(ARRAY_READ, array_read);
+
 endmodule

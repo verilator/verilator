@@ -987,6 +987,7 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     AstModule* modp() const { return m_modp; }
+    AstScope* scopep() const { return m_scopep; }
 
     // Find a table (unpacked array) within the constant pool which is initialized with the
     // given value, or create one if one does not already exists. The returned VarScope *might*
