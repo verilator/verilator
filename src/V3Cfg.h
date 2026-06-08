@@ -559,13 +559,11 @@ public:
 
 namespace V3Cfg {
 
-// Compute AstVars live on entry to given CFG. That is, variables that might
+// Compute AstVarScopes live on entry to given CFG. That is, variables that might
 // be read before wholly assigned in the CFG. Returns nullptr if the analysis
-// failed due to unhandled statements or data types involved in the CFG.
-// On success, returns a vector of AstVar or AstVarScope nodes live on entry.
-std::unique_ptr<std::vector<AstVar*>> liveVars(const CfgGraph&);
-
-// Same as liveVars, but return AstVarScopes insted
+// failed due to unhandled statements involved in the CFG. The analysis is
+// conservative and may return variables that are not actually live on entry.
+// On success, returns a vector of AstVarScope nodes that might be live on entry.
 std::unique_ptr<std::vector<AstVarScope*>> liveVarScopes(const CfgGraph&);
 
 }  //namespace V3Cfg

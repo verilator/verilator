@@ -25,25 +25,19 @@
 #include "V3Ast.h"
 #include "V3Cfg.h"
 
-#include <limits>
 #include <memory>
-#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-template <bool T_Scoped>
 class CfgLiveVariables final : VNVisitorConst {
-    // TYPES
-    using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
-
     // State associted with each basic block
     struct BlockState final {
         // Variables used in block, before a complete assignment in the same block
-        std::unordered_set<Variable*> m_gen;
+        std::unordered_set<AstVarScope*> m_gen;
         // Variables that are assigned a complete value in the basic block
-        std::unordered_set<Variable*> m_kill;
-        std::unordered_set<Variable*> m_liveIn;  // Variables live on entry to the block
-        std::unordered_set<Variable*> m_liveOut;  // Variables live on exit from the block
+        std::unordered_set<AstVarScope*> m_kill;
+        std::unordered_set<AstVarScope*> m_liveIn;  // Variables live on entry to the block
+        std::unordered_set<AstVarScope*> m_liveOut;  // Variables live on exit from the block
         bool m_isOnWorkList = false;  // Block is on work list
         bool m_wasProcessed = false;  // Already processed at least once
     };
@@ -56,14 +50,6 @@ class CfgLiveVariables final : VNVisitorConst {
     bool m_abort = false;  // Abort analysis - unhandled construct
 
     // METHODS
-    static Variable* getTarget(const AstNodeVarRef* refp) {
-        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            return reinterpret_cast<Variable*>(refp->varScopep());
-        } else {
-            return reinterpret_cast<Variable*>(refp->varp());
-        }
-    }
 
     // This is to match DFG, but can be extended independently - eventually should handle all
     static bool isSupportedPackedDType(const AstNodeDType* dtypep) {
@@ -81,52 +67,41 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
     // Check and return if variable is incompatible
-    bool incompatible(Variable* varp) {
-        if (!isSupportedPackedDType(varp->dtypep())) return true;
-        const AstVar* astVarp = nullptr;
-        // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
-        if VL_CONSTEXPR_CXX17 (T_Scoped) {
-            astVarp = reinterpret_cast<AstVarScope*>(varp)->varp();
-        } else {
-            astVarp = reinterpret_cast<AstVar*>(varp);
-        }
-        if (astVarp->ignoreSchedWrite()) return true;
+    bool incompatible(AstVarScope* vscp) {
+        if (!isSupportedPackedDType(vscp->dtypep())) return true;
+        if (vscp->varp()->ignoreSchedWrite()) return true;
         return false;
     }
 
     void updateGen(AstNode* nodep) {
         UASSERT_OBJ(!m_abort, nodep, "Doing useless work");
-        m_abort = nodep->exists([&](const AstNodeVarRef* refp) {
-            // Cross reference is ambiguous
-            if (VN_IS(refp, VarXRef)) return true;
+        m_abort = nodep->exists([&](const AstVarRef* refp) {
             // Only care about reads
             if (refp->access().isWriteOnly()) return false;
             // Grab referenced variable
-            Variable* const tgtp = getTarget(refp);
+            AstVarScope* const vscp = refp->varScopep();
             // Bail if not a compatible type
-            if (incompatible(tgtp)) return true;
+            if (incompatible(vscp)) return true;
             // Add to gen set, if not killed - assume whole variable read
-            if (m_currp->m_kill.count(tgtp)) return false;
-            m_currp->m_gen.emplace(tgtp);
+            if (m_currp->m_kill.count(vscp)) return false;
+            m_currp->m_gen.emplace(vscp);
             return false;
         });
     }
 
     void updateKill(AstNode* nodep) {
         UASSERT_OBJ(!m_abort, nodep, "Doing useless work");
-        m_abort = nodep->exists([&](const AstNodeVarRef* refp) {
-            // Cross reference is ambiguous
-            if (VN_IS(refp, VarXRef)) return true;
+        m_abort = nodep->exists([&](const AstVarRef* refp) {
             // Only care about writes
             if (refp->access().isReadOnly()) return false;
             // Grab referenced variable
-            Variable* const tgtp = getTarget(refp);
+            AstVarScope* const vscp = refp->varScopep();
             // Bail if not a compatible type
-            if (incompatible(tgtp)) return true;
+            if (incompatible(vscp)) return true;
             // If whole written, add to kill set
             if (refp->nextp()) return false;
             if (VN_IS(refp->abovep(), Sel)) return false;
-            m_currp->m_kill.emplace(tgtp);
+            m_currp->m_kill.emplace(vscp);
             return false;
         });
     }
@@ -144,8 +119,8 @@ class CfgLiveVariables final : VNVisitorConst {
         BlockState& state = m_blockState[bb];
 
         // liveIn = gen union (liveOut - kill)
-        std::unordered_set<Variable*> liveIn = state.m_gen;
-        for (Variable* const varp : state.m_liveOut) {
+        std::unordered_set<AstVarScope*> liveIn = state.m_gen;
+        for (AstVarScope* const varp : state.m_liveOut) {
             if (state.m_kill.count(varp)) continue;
             liveIn.insert(varp);
         }
@@ -219,25 +194,23 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
 public:
-    static std::unique_ptr<std::vector<Variable*>> apply(const CfgGraph& cfg) {
+    static std::unique_ptr<std::vector<AstVarScope*>> apply(const CfgGraph& cfg) {
         CfgLiveVariables analysis{cfg};
         // If failed, return nullptr
         if (analysis.m_abort) return nullptr;
-        // Gather variables live in to the entry blockstd::unique_ptr<std::vector<Variable*>>
-        const std::unordered_set<Variable*>& lin = analysis.m_blockState[cfg.enter()].m_liveIn;
-        std::vector<Variable*>* const resultp = new std::vector<Variable*>{lin.begin(), lin.end()};
+        // Gather variables live in to the entry blockstd::unique_ptr<std::vector<AstVarScope*>>
+        const std::unordered_set<AstVarScope*>& lin = analysis.m_blockState[cfg.enter()].m_liveIn;
+        std::vector<AstVarScope*>* const resultp
+            = new std::vector<AstVarScope*>{lin.begin(), lin.end()};
         // Sort for stability
-        std::stable_sort(resultp->begin(), resultp->end(), [](Variable* ap, Variable* bp) {  //
-            return ap->name() < bp->name();
-        });
-        return std::unique_ptr<std::vector<Variable*>>{resultp};
+        std::stable_sort(resultp->begin(), resultp->end(),
+                         [](AstVarScope* ap, AstVarScope* bp) {  //
+                             return ap->name() < bp->name();
+                         });
+        return std::unique_ptr<std::vector<AstVarScope*>>{resultp};
     }
 };
 
-std::unique_ptr<std::vector<AstVar*>> V3Cfg::liveVars(const CfgGraph& cfg) {
-    return CfgLiveVariables</* T_Scoped: */ false>::apply(cfg);
-}
-
 std::unique_ptr<std::vector<AstVarScope*>> V3Cfg::liveVarScopes(const CfgGraph& cfg) {
-    return CfgLiveVariables</* T_Scoped: */ true>::apply(cfg);
+    return CfgLiveVariables::apply(cfg);
 }
