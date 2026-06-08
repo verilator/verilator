@@ -7,16 +7,32 @@
                                                     : ... note: In instance 't'
    49 |   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, 49);
       |                                       ^~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:51:39: Unsupported: s_until (in property expresion)
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:51:44: Unsupported: s_until (in property expression)
                                                     : ... note: In instance 't'
-   51 |   assert property (@(posedge clk) val s_until !val) $display("[%0t] s_until, fileline:%d", $time, 51);
+   51 |   assert property (@(posedge clk) ##1 (val s_until val)) $display("[%0t] s_until in sequence, fileline:%d", $time, 51);
+      |                                            ^~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:53:39: Unsupported: s_until (in property expression)
+                                                    : ... note: In instance 't'
+   53 |   assert property (@(posedge clk) val s_until val s_until val) $display("[%0t] nested s_until, fileline:%d", $time, 53);
       |                                       ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:53:39: Unsupported: s_until_with (in property expresion)
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:55:39: Unsupported: s_until (in property expression)
                                                     : ... note: In instance 't'
-   53 |   assert property (@(posedge clk) val s_until_with val) $display("[%0t] s_until_with, fileline:%d", $time, 53);
+   55 |   assert property (@(posedge clk) val s_until (val ##1 val)) $display("[%0t] sequence in until_with, fileline:%d", $time, 55);
+      |                                       ^~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:57:44: Unsupported: s_until_with (in property expression)
+                                                    : ... note: In instance 't'
+   57 |   assert property (@(posedge clk) ##1 (val s_until_with val)) $display("[%0t] s_until_with in sequence, fileline:%d", $time, 57);
+      |                                            ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:59:39: Unsupported: s_until_with (in property expression)
+                                                    : ... note: In instance 't'
+   59 |   assert property (@(posedge clk) val s_until_with val s_until_with val) $display("[%0t] nested s_until_with, fileline:%d", $time, 59);
       |                                       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:55:40: Unsupported: 'until' in complex property expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:61:39: Unsupported: s_until_with (in property expression)
                                                     : ... note: In instance 't'
-   55 |   assert property (@(posedge clk) (val until val) or val) $display("[%0t] until inside or, fileline:%d", $time, 55);
+   61 |   assert property (@(posedge clk) val s_until_with (val ##1 val)) $display("[%0t] sequence in until_with, fileline:%d", $time, 61);
+      |                                       ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:63:40: Unsupported: 'until' in complex property expression
+                                                    : ... note: In instance 't'
+   63 |   assert property (@(posedge clk) (val until val) or val) $display("[%0t] until inside or, fileline:%d", $time, 63);
       |                                        ^~~~~
 %Error: Exiting due to
