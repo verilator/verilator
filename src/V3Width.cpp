@@ -1926,6 +1926,25 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
+    void visit(AstCoverBin* nodep) override {
+        // Bin range/value entries are self-determined constant expressions (IEEE 1800-2023
+        // 19.5).  Width each plain single-value entry self-determined so a referenced
+        // parameter acquires a dtype, then constify so the reference folds to the AstConst
+        // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
+        // visit(AstInsideRange).
+        for (AstNode *nextp, *itemp = nodep->rangesp(); itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (VN_IS(itemp, InsideRange)) {
+                userIterate(itemp, nullptr);
+            } else {
+                userIterate(itemp, WidthVP{SELF, BOTH}.p());
+                V3Const::constifyEdit(itemp);  // itemp may change
+            }
+        }
+        userIterateAndNext(nodep->iffp(), nullptr);
+        userIterateAndNext(nodep->arraySizep(), nullptr);
+        userIterateAndNext(nodep->transp(), nullptr);
+    }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
         // function result depends on both signs
@@ -3566,17 +3585,20 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later.
-        // When m_vup is null, this range appears outside a normal expression context (e.g.
-        // in a covergroup bin declaration). Pre-fold constant arithmetic in that case
-        // (e.g., AstNegate(Const) -> Const) so children have their types set before widthing.
-        // We cannot do this unconditionally: in a normal 'inside' expression (m_vup set),
-        // range bounds may be enum refs not yet widthed, and constifyEdit would crash.
         if (!m_vup) {
+            // This range appears outside a normal expression context (e.g. in a covergroup
+            // bin declaration).  Width the bounds self-determined first so each bound (and any
+            // referenced parameter) has a dtype, then constify so constant arithmetic is folded
+            // (e.g. AstNegate(Const) -> Const, or a parameter reference -> Const).  Folding
+            // preserves the now-present dtype, so no bound reaches V3WidthCommit without one.
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
             V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
             V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
+        } else {
+            userIterateAndNext(nodep->lhsp(), m_vup);
+            userIterateAndNext(nodep->rhsp(), m_vup);
         }
-        userIterateAndNext(nodep->lhsp(), m_vup);
-        userIterateAndNext(nodep->rhsp(), m_vup);
         nodep->dtypeFrom(nodep->lhsp());
     }
 
