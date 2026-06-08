@@ -107,8 +107,9 @@ jobs:
       - build-gcc-new
       - build-gcc-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
-    # dependency failed or the workflow was cancelled.
-    if: ${{ !failure() && !cancelled() }}
+    # dependency failed, the workflow was cancelled, or 'start' was skipped
+    # (e.g. the workflow was not enabled, so there is nothing to run against).
+    if: ${{ !failure() && !cancelled() && needs.start.result == 'success' }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc
@@ -133,8 +134,9 @@ jobs:
       - build-clang-new
       - build-clang-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
-    # dependency failed or the workflow was cancelled.
-    if: ${{ !failure() && !cancelled() }}
+    # dependency failed, the workflow was cancelled, or 'start' was skipped
+    # (e.g. the workflow was not enabled, so there is nothing to run against).
+    if: ${{ !failure() && !cancelled() && needs.start.result == 'success' }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: clang
@@ -159,8 +161,9 @@ jobs:
       - build-gcc-new
       - build-gcc-old
     # Run even if 'build-*-old' was skipped (no old SHA), but not if any
-    # dependency failed or the workflow was cancelled.
-    if: ${{ !failure() && !cancelled() }}
+    # dependency failed, the workflow was cancelled, or 'start' was skipped
+    # (e.g. the workflow was not enabled, so there is nothing to run against).
+    if: ${{ !failure() && !cancelled() && needs.start.result == 'success' }}
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc-hier
