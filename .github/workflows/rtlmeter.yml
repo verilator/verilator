@@ -122,7 +122,7 @@ jobs:
       executeArgs: ""
     strategy:
       fail-fast: ${{ github.event_name == 'pull_request' }}
-      max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
+      max-parallel: 7
       matrix:
         cases: ${{ fromJSON(needs.start.outputs.cases)['gcc'] }}
 
@@ -148,7 +148,7 @@ jobs:
       executeArgs: ""
     strategy:
       fail-fast: ${{ github.event_name == 'pull_request' }}
-      max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
+      max-parallel: 7
       matrix:
         cases: ${{ fromJSON(needs.start.outputs.cases)['clang'] }}
 
@@ -174,7 +174,7 @@ jobs:
       executeArgs: ""
     strategy:
       fail-fast: ${{ github.event_name == 'pull_request' }}
-      max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
+      max-parallel: 6
       matrix:
         cases: ${{ fromJSON(needs.start.outputs.cases)['gcc-hier'] }}
 
