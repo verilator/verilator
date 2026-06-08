@@ -82,8 +82,9 @@ for r in $RUNS; do
   awk -v RS= -v prefix=$TMP_DIR/$r-frag '{print > sprintf("%s-execute-%02d.txt" ,prefix,NR)}' $TMP_DIR/execute-$r.txt
 done
 
-# Create summary
-venv/bin/python3 $SCRIPT_DIR/ci-rtlmeter-report.py ${SUMMARY_ARGS[@]} > $TMP_DIR/summary.txt
+# Create summary, suppress failure, but save the status reported to pass back.
+STATUS=0
+venv/bin/python3 $SCRIPT_DIR/ci-rtlmeter-report.py ${SUMMARY_ARGS[@]} > $TMP_DIR/summary.txt || STATUS=$?
 # Print it
 cat $TMP_DIR/summary.txt
 
@@ -158,3 +159,5 @@ $(cat ${TMP_DIR}/body.html)
 
 </html>
 INDEX_TEMPLATE
+
+exit $STATUS
