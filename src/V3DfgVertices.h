@@ -248,6 +248,14 @@ public:
     }
 };
 
+class DfgCReset final : public DfgVertexNullary {
+public:
+    DfgCReset(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexNullary{dfg, dfgType(), flp, dtype} {}
+
+    ASTGEN_MEMBERS_DfgCReset;
+};
+
 //------------------------------------------------------------------------------
 // Unary vertices - 1 inputs
 
