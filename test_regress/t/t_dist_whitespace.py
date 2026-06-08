@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import collections
 
 test.scenarios('dist')
 
@@ -28,6 +29,39 @@ def get_source_files():
     return files
 
 
+def check_verilog_indent(filename, contents):
+    # Check for proper spacing
+    # This isn't automated as part of CI action auto-format because .out files
+    # might break as a result
+    indents = collections.defaultdict(int)
+    is_on = True
+    for line in contents.splitlines():
+        if re.search(r'// verilog_format: off', line):
+            is_on = False
+        if re.search(r'// verilog_format: on', line):
+            is_on = True
+        if not is_on:
+            continue
+        # verilog-format puts input/output as double levels, ignore
+        if re.match(r' *(input|output|inout) ', line):
+            continue
+
+        m = re.match(r'^ *', line)
+        num_spaces = m.end() if m else 0
+        if num_spaces > 0:
+            indents[num_spaces] += 1
+
+    # pprint(indents)
+    spacing = 2
+    if (indents[3] + indents[6] + indents[9]) > (indents[2] + indents[4] + indents[6]) * 2:
+        spacing = 3
+    elif indents[2] == 0 and indents[4] > 1:  # Hard because two levels of 2-space indents gives 4
+        spacing = 4
+    if spacing != 2:
+        warns[filename] = "Indents should be 2 spaces per level, not what seems to be " + str(
+            spacing) + "/level in: " + filename
+
+
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
@@ -46,7 +80,7 @@ for filename in sorted(files.keys()):
         continue  # Ignore binary files
     if contents != "" and contents[-1] != "\n":
         contents += "\n"
-        warns[filename] = "Missing trailing newline (add one) in " + filename
+        warns[filename] = "Missing trailing newline (add one) in: " + filename
     if "\r" in contents:
         contents = re.sub(r'\r', '', contents)
         warns[filename] = "Carriage returns (remove them) in: " + filename
@@ -84,7 +118,7 @@ for filename in sorted(files.keys()):
                 warns[filename] += " (last character is ASCII " + str(ord(line[-1])) + ")"
 
         if not eol_ws_exempt and re.search(r'\n\n+$', contents):  # Regexp repeated above
-            warns[filename] = "Trailing newlines at EOF in " + filename
+            warns[filename] = "Trailing newlines at EOF in: " + filename
 
     # Unicode checker; should this be done in another file?
     # No way to auto-fix.
@@ -92,7 +126,10 @@ for filename in sorted(files.keys()):
     m = re.search(r'(([^ \t\r\n\x20-\x7e]).*)', contents)
     if not unicode_exempt and m:
         warns[filename] = "Warning: non-ASCII contents '" + m.group(2) + "' at '" + m.group(
-            1) + "' in " + filename
+            1) + "' in: " + filename
+
+    if re.search(r'\.s?vh?$', filename):
+        check_verilog_indent(filename, contents)
 
     fcount += 1
 
@@ -106,7 +143,8 @@ if len(warns):
         msg += "Updated files with whitespace errors: " + ' '.join(sorted(warns.keys())) + "\n"
     else:
         msg += "Files have whitespace errors: " + ' '.join(sorted(warns.keys())) + "\n"
-        msg += "To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n"
+        msg += "To auto-fix (some): HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n"
+        msg += "If change any Verilog then remember to update .out files too (with --golden)\n"
     for filename in sorted(warns.keys()):
         msg += warns[filename] + "\n"
     test.error(msg)
