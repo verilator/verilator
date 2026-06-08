@@ -84,4 +84,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           PR_RUN_IDS: ${{ needs.build.outputs.pr-run-ids }}
-        run: bash -x ./ci/ci-pages-notify.bash
+        run: ./ci/ci-pages-notify.bash
