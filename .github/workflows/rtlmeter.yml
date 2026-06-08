@@ -343,14 +343,17 @@ jobs:
           path: verilator
 
       - name: Create report
+        id: report
         working-directory: verilator
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ln -s ../rtlmeter rtlmeter
           gh repo set-default ${{ github.repository }}
-          # Compare to last successful scheduled run
-          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} ${{ needs.combine-results.outputs.run-tags }}
+          # Create run report - save status to fail job if the script did
+          STATUS=0
+          ci/ci-rtlmeter-report.bash ${{ github.run_id }} ${{ github.sha }} ${{ needs.combine-results.outputs.run-tags }} || STATUS=$?
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           # Create the report artifact
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
@@ -371,6 +374,9 @@ jobs:
         with:
           path: notification-artifact
           name: pr-notification
+
+      - name: Report status
+        run: exit ${{ steps.report.outputs.status }}
 
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
