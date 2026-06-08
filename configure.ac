@@ -421,6 +421,15 @@ AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
     _MY_LDLIBS_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
+AC_DEFUN([_MY_LDLIBS_CHECK_SET],
+   [# _MY_LDLIBS_CHECK_SET(variable, flag) -- Check if linker supports specific
+    # options. If it does, set variable to flag, only if not previously set
+    # (so the first supported flag wins and the rest are not tested).
+    if test "$$1" = ""; then
+       _MY_LDLIBS_CHECK_IFELSE($2, $1="$2")
+    fi
+   ])
+
 # Add the coverage flags early as they influence later checks.
 if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,--coverage)
@@ -589,11 +598,6 @@ if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
-  LTCMALLOC="-Wl,--whole-archive -l:libtcmalloc_minimal.a -Wl,--no-whole-archive"
-  LJEMALLOC="-Wl,--whole-archive -l:libjemalloc.a -Wl,--no-whole-archive"
-else
-  LTCMALLOC=-ltcmalloc_minimal
-  LJEMALLOC=-ljemalloc
 fi
 AC_SUBST(CFG_LDFLAGS_SRC)
 AC_SUBST(CFG_LDFLAGS_VERILATED)
@@ -609,51 +613,56 @@ _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -latomic)
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpsapi)
 
-# Check if jemalloc is available based on --enable-jemalloc
-# jemalloc is preferred over tcmalloc when both are available
+# Figure out which malloc library to use:
+# - Prefer jemalloc over tcmalloc (it's faster)
+# - If partial static link enabled, prefer static libraries,
+#   but fall back on dynamic if static is not available
+
+# Test for jemalloc
 CFG_HAVE_JEMALLOC=no
-_MY_LDLIBS_CHECK_IFELSE(
-  $LJEMALLOC,
-  [if test "$CFG_WITH_JEMALLOC" != "no"; then
-    CFG_LIBS="$LJEMALLOC $CFG_LIBS";
-    CFG_HAVE_JEMALLOC=yes;
-    # If using jemalloc, add some extra options to make the compiler not assume
-    # it is using its own versions of the standard library functions
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+if test "$CFG_WITH_JEMALLOC" != "no"; then
+  if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
+    _MY_LDLIBS_CHECK_SET(CFG_LIBS_MALLOC, -Xlinker --whole-archive -l:libjemalloc.a -Xlinker --no-whole-archive)
+  fi
+  _MY_LDLIBS_CHECK_SET(CFG_LIBS_MALLOC, -ljemalloc)
+  if test "$CFG_LIBS_MALLOC" != ""; then
+    CFG_HAVE_JEMALLOC=yes
     AC_DEFINE([HAVE_JEMALLOC],[1],[Defined if have jemalloc])
-   fi],
-  [if test "$CFG_WITH_JEMALLOC" = "yes"; then
-    AC_MSG_ERROR([--enable-jemalloc was given but test for ${LJEMALLOC} failed])
-   fi])
+  elif test "$CFG_WITH_JEMALLOC" = "yes"; then
+    AC_MSG_ERROR([--enable-jemalloc was given but jemalloc is not available])
+  fi
+fi
 AC_SUBST(HAVE_JEMALLOC)
 
-# Check if tcmalloc is available based on --enable-tcmalloc
-# Only use tcmalloc if jemalloc was not found/enabled
-if test "$CFG_HAVE_JEMALLOC" = "yes"; then
-  AC_MSG_NOTICE([jemalloc found, skipping tcmalloc check])
-else
+# Test for tcmalloc
 CFG_HAVE_TCMALLOC=no
-_MY_LDLIBS_CHECK_IFELSE(
-  $LTCMALLOC,
-  [if test "$CFG_WITH_TCMALLOC" != "no"; then
-    CFG_LIBS="$LTCMALLOC $CFG_LIBS";
-    CFG_HAVE_TCMALLOC=yes;
-    # If using tcmalloc, add some extra options to make the compiler not assume
-    # it is using its own versions of the standard library functions
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
-    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+if test "$CFG_HAVE_JEMALLOC" = "yes"; then
+  AC_MSG_NOTICE([jemalloc found, skipping check for tcmalloc])
+elif test "$CFG_WITH_TCMALLOC" != "no"; then
+  if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
+    _MY_LDLIBS_CHECK_SET(CFG_LIBS_MALLOC, -Xlinker --whole-archive -l:libtcmalloc_minimal.a -Xlinker --no-whole-archive)
+  fi
+  _MY_LDLIBS_CHECK_SET(CFG_LIBS_MALLOC, -ltcmalloc_minimal)
+  if test "$CFG_LIBS_MALLOC" != ""; then
+    CFG_HAVE_TCMALLOC=yes
     AC_DEFINE([HAVE_TCMALLOC],[1],[Defined if have tcmalloc])
-   fi],
-  [if test "$CFG_WITH_TCMALLOC" = "yes"; then
-    AC_MSG_ERROR([--enable-tcmalloc was given but test for ${LTCMALLOC} failed])
-   fi])
+  elif test "$CFG_WITH_TCMALLOC" = "yes"; then
+    AC_MSG_ERROR([--enable-tcmalloc was given but tcmalloc is not available])
+  fi
 fi
 AC_SUBST(HAVE_TCMALLOC)
+
+if test "$CFG_HAVE_JEMALLOC" = "yes" || test "$CFG_HAVE_TCMALLOC" = "yes"; then
+  # If using custom malloc, add some extra options to make the compiler not assume
+  # it is using its own versions of the standard library functions
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+fi
+
+# Finished with libraries
+CFG_LIBS="$CFG_LIBS_MALLOC $CFG_LIBS"
 AC_SUBST(CFG_LIBS)
 
 # Need C++14 at least
