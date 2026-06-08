@@ -1,26 +1,26 @@
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:128:21: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:115:21: Unsupported: Unclocked assertion
                                                      : ... note: In instance 't'
-  128 |   assert property ((s_eventually a) implies (s_eventually a));
+  115 |   assert property ((s_eventually a) implies (s_eventually a));
       |                     ^~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:128:46: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:115:46: Unsupported: Unclocked assertion
                                                      : ... note: In instance 't'
-  128 |   assert property ((s_eventually a) implies (s_eventually a));
+  115 |   assert property ((s_eventually a) implies (s_eventually a));
       |                                              ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:128:3: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:115:3: Unsupported: Unclocked assertion
                                                     : ... note: In instance 't'
-  128 |   assert property ((s_eventually a) implies (s_eventually a));
+  115 |   assert property ((s_eventually a) implies (s_eventually a));
       |   ^~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:130:21: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:117:21: Unsupported: Unclocked assertion
                                                      : ... note: In instance 't'
-  130 |   assert property ((s_eventually a) iff (s_eventually a));
+  117 |   assert property ((s_eventually a) iff (s_eventually a));
       |                     ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:130:42: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:117:42: Unsupported: Unclocked assertion
                                                      : ... note: In instance 't'
-  130 |   assert property ((s_eventually a) iff (s_eventually a));
+  117 |   assert property ((s_eventually a) iff (s_eventually a));
       |                                          ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:130:3: Unsupported: Unclocked assertion
+%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:117:3: Unsupported: Unclocked assertion
                                                     : ... note: In instance 't'
-  130 |   assert property ((s_eventually a) iff (s_eventually a));
+  117 |   assert property ((s_eventually a) iff (s_eventually a));
       |   ^~~~~~
 %Error: Exiting due to

@@ -110,19 +110,6 @@ module t (
   property p_arg_seqence(sequence inseq);
     inseq;
   endproperty
-
-  property p_case_1;
-    case (a) endcase
-  endproperty
-  property p_case_2;
-    case (a) default: b; endcase
-  endproperty
-  property p_if;
-    if (a) b
-  endproperty
-  property p_ifelse;
-    if (a) b else c
-  endproperty
 `endif
 
   assert property ((s_eventually a) implies (s_eventually a));

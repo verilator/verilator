@@ -41,10 +41,4 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:110:26: Unsupported: sequence argument data type
   110 |   property p_arg_seqence(sequence inseq);
       |                          ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:115:5: Unsupported: property case expression
-  115 |     case (a) endcase
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:118:5: Unsupported: property case expression
-  118 |     case (a) default: b; endcase
-      |     ^~~~
 %Error: Exiting due to
