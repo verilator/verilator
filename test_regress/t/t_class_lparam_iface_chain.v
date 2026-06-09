@@ -21,7 +21,7 @@ interface SubIface #(
   logic [IW-1:0] data;
 endinterface
 
-// Module that takes an interface port — must elaborate after the iface
+// Module that takes an interface port - must elaborate after the iface
 // cell pin is fully constified.
 module Consumer (
     SubIface si
@@ -50,7 +50,7 @@ module t;
   SubIface #(b8_alias) i_chain ();
   // Iface pin = expression mixing deferred lparams
   SubIface #(b8 + b13) i_expr ();
-  // Iface used as a module port — exercises the iface-cell-first path
+  // Iface used as a module port - exercises the iface-cell-first path
   Consumer cons (.si(i_bare));
 
   initial begin
