@@ -852,8 +852,9 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
         flagVscp->varp()->setIgnorePostWrite();
         // Set the flag at the original NBA
-        nodep->addHereThisAsNext(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
-                                               new AstConst{flp, AstConst::BitTrue{}}});
+        nodep->addHereThisAsNext(  //
+            new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                          new AstConst{flp, AstConst::BitTrue{}}});
         // Add the 'Post' scheduled commit
         AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
         vscpInfo.flagUniqueKit().postp->addStmtsp(ifp);
