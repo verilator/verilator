@@ -2190,62 +2190,50 @@ public:
         });
     }
 
-    // Resolve `class::member` Dots depended on by `rootp`'s tree, and also recursively through
-    // VarRefs to all leaf dependencies. Then resolve these to typedefs.
+    // Walk every subtree reachable from `rootp` for three kinds of deferred work
+    // V3LinkDot left behind when `class#(...)::member` couldn't yet be resolved:
+    //   (1) `AstDot` with a ClassOrPackageRef lhs — a `class::lparam` value Dot to
+    //       constify (e.g. `c8::b` in a pin expression).
+    //   (2) `AstRefDType` with a typedefp — descend into the typedef's subDType
+    //       to find buried Dots (typedef range like `logic [(CFG::w - 1):0]`) and
+    //       unresolved class-scoped struct-member RefDTypes (`CFG::input_meta_t`
+    //       as a struct member).
+    //   (3) `AstVarRef` to a deferred lparam — descend into its valuep so the
+    //       chain `pin -> lparam -> ... -> class::lparam Dot` reaches the Dot.
+    // Discoveries of (2) and (3) feed back into the walk worklist; (1) and (2)
+    // are also kept in lists for the resolution passes at the end.
     void resolveDeferredDotsReachableFrom(AstNode* rootp, AstNodeModule* modp) {
         std::vector<AstDot*> dotps;
         std::vector<AstTypedef*> tdefps;
         const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
         std::set<AstVar*> reachedDeferred;
         std::set<const AstTypedef*> reachedTypedefs;
-        auto collectDots = [&](AstNode* p) {
+        std::vector<AstNode*> worklist{rootp};
+        while (!worklist.empty()) {
+            AstNode* const p = worklist.back();
+            worklist.pop_back();
             p->foreach([&](AstDot* dotp) {
                 if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
             });
-        };
-        auto collectTypedefs = [&](AstNode* p) {
             p->foreach([&](const AstRefDType* refp) {
                 AstTypedef* const tdefp = refp->typedefp();
-                if (tdefp && reachedTypedefs.insert(tdefp).second) tdefps.push_back(tdefp);
-            });
-        };
-        std::vector<AstVar*> workVarps;
-        auto enqueueRefs = [&](AstNode* p) {
-            p->foreach([&](const AstVarRef* refp) {
-                AstVar* const refVarp = refp->varp();
-                if (refVarp && refVarp->varType() == VVarType::LPARAM
-                    && deferredVarps.count(refVarp) && reachedDeferred.insert(refVarp).second) {
-                    workVarps.push_back(refVarp);
+                if (tdefp && reachedTypedefs.insert(tdefp).second) {
+                    tdefps.push_back(tdefp);
+                    if (tdefp->subDTypep()) worklist.push_back(tdefp->subDTypep());
                 }
             });
-        };
-        collectDots(rootp);
-        collectTypedefs(rootp);
-        enqueueRefs(rootp);
-        // Handle deferred VarRefs recursively until no more, accumulating Dots and
-        // typedef references along the way.
-        while (!workVarps.empty()) {
-            AstVar* const varp = workVarps.back();
-            workVarps.pop_back();
-            if (!varp->valuep()) continue;
-            collectDots(varp->valuep());
-            collectTypedefs(varp->valuep());
-            enqueueRefs(varp->valuep());
-        }
-        // Descend into each collected typedef's subDType for Dots (e.g. class-scoped
-        // lparams used in a packed range like `logic [(CFG::pc_width - 1):0]`) and
-        // nested typedef references. The loop grows tdefps as it goes; the
-        // `i < tdefps.size()` re-check carries us to fixpoint.
-        for (size_t i = 0; i < tdefps.size(); ++i) {
-            AstNodeDType* const subp = tdefps[i]->subDTypep();
-            if (!subp) continue;
-            collectDots(subp);
-            collectTypedefs(subp);
+            p->foreach([&](const AstVarRef* refp) {
+                AstVar* const varp = refp->varp();
+                if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
+                    && reachedDeferred.insert(varp).second && varp->valuep()) {
+                    worklist.push_back(varp->valuep());
+                }
+            });
         }
         if (dotps.empty() && tdefps.empty()) return;
         VL_RESTORER(m_modp);
         m_modp = modp;
-        // Resolve unresolved class-scoped RefDTypes buried in any typedef reachable from
+        // Link unresolved class-scoped RefDTypes buried in any typedef reachable from
         // the pin/expr tree (e.g. `$bits(wrap_t)` where `wrap_t`'s struct members
         // reference `CFG::data_t` from a parameterized-class typedef alias).
         for (AstTypedef* const tdefp : tdefps) resolveParamClassRefDType(tdefp->subDTypep());
