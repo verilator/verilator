@@ -15,7 +15,7 @@
 /// \brief Verilated functional-coverage model interfaces
 ///
 /// Defines interface classes to runtime covergroup coverage-collection classes.
-/// These are used to query coverage achievement at runtime, and (future) 
+/// These are used to query coverage achievement at runtime, and (future)
 /// when writing coverage to the coverage database.
 ///
 //=============================================================================
@@ -30,7 +30,7 @@
 
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.
-enum class VlCovBinKind : uint8_t { 
+enum class VlCovBinKind : uint8_t {
     NORMAL  = 0, // Base coverage-collecting bin
     DEFAULT = 1, // Bin declared with 'default' range (which is excluded per LRM)
     IGNORE  = 2, // Ignore bin
