@@ -33,47 +33,46 @@ void VlCoverpoint::init(const char* hier, uint32_t atLeast, int nBins) {
 
 void VlCoverpoint::addNamer(VlCovBinKind set, int count, VlCovBinNaming naming, const char* name,
                             const char* file, int line, int col) {
-    m_namers.push_back(VlCovNamer{set, count, m_nextBase, naming, name, file, line, col});
+    m_namers.emplace_back(set, count, m_nextBase, naming, name, file, line, col);
     m_nextBase += count;
-    if (set == VlCovBinKind::Normal) m_normal += count;
+    if (set == VlCovBinKind::NORMAL) m_normal += count;
 }
 
 const VlCovNamer& VlCoverpoint::namerFor(int i) const {
     // Namers are appended in ascending, contiguous index order covering [0, m_total),
     // and i is always a valid bin index, so the matching namer always exists.
     for (const VlCovNamer& nm : m_namers) {
-        if (i < nm.base + nm.count) return nm;
+        if (i < nm.base() + nm.count()) return nm;
     }
     VL_UNREACHABLE;
 }
 
-const char* VlCoverpoint::binName(int i, std::string& buf) const {
+std::string VlCoverpoint::binName(int i) const {
     const VlCovNamer& nm = namerFor(i);
-    buf = nm.name;
-    if (nm.naming == VlCovBinNaming::Array) buf += '[' + std::to_string(i - nm.base) + ']';
-    return buf.c_str();
+    std::string name = nm.name();
+    if (nm.naming() == VlCovBinNaming::Array) name += '[' + std::to_string(i - nm.base()) + ']';
+    return name;
 }
 
 void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* page) {
-    std::string buf;
     for (int i = 0; i < binCount(); ++i) {
         const VlCovNamer& nm = namerFor(i);
         const VlCovBinKind kind = binKind(i);
-        const char* const binp = binName(i, buf);
+        const std::string binp = binName(i);
         const std::string full = m_hier + "." + binp;
-        const std::string lineStr = std::to_string(nm.line);
-        const std::string colStr = std::to_string(nm.col);
-        if (kind == VlCovBinKind::Normal) {
+        const std::string lineStr = std::to_string(nm.line());
+        const std::string colStr = std::to_string(nm.col());
+        if (kind == VlCovBinKind::NORMAL) {
             VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
-                            nm.file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                            binp);
+                            nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
+                            binp.c_str());
         } else {
-            const char* const binType = kind == VlCovBinKind::Ignore    ? "ignore"
-                                        : kind == VlCovBinKind::Illegal ? "illegal"
+            const char* const binType = kind == VlCovBinKind::IGNORE    ? "ignore"
+                                        : kind == VlCovBinKind::ILLEGAL ? "illegal"
                                                                         : "default";
             VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
-                            nm.file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                            binp, "bin_type", binType);
+                            nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
+                            binp.c_str(), "bin_type", binType);
         }
     }
 }

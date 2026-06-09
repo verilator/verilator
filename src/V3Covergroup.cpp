@@ -655,22 +655,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return refp;
     }
 
-    // VlCovBinKind enumerator naming the bin's set
-    static const char* binSetEnum(AstCoverBin* binp) {
-        switch (binp->binsType()) {
-        case VCoverBinsType::BINS_IGNORE: return "VlCovBinKind::Ignore";
-        case VCoverBinsType::BINS_ILLEGAL: return "VlCovBinKind::Illegal";
-        case VCoverBinsType::BINS_DEFAULT: return "VlCovBinKind::Default";
-        default: return "VlCovBinKind::Normal";
-        }
-    }
-    // Normal bins (feed coverage) are anything but ignore/illegal/default
-    static bool binIsNormal(AstCoverBin* binp) {
-        const VCoverBinsType btype = binp->binsType();
-        return btype != VCoverBinsType::BINS_IGNORE && btype != VCoverBinsType::BINS_ILLEGAL
-               && btype != VCoverBinsType::BINS_DEFAULT;
-    }
-
     // Individual equality targets of an array bin (bins b[N] = {values/ranges}), in order.
     std::vector<AstNodeExpr*> extractArrayValues(AstCoverBin* arrayBinp, AstNodeExpr* exprp) {
         std::vector<AstNodeExpr*> values;
@@ -703,10 +687,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                 + std::to_string(fl->lineno()) + ", "
                                 + std::to_string(fl->firstColumn()) + ");";
         if (count < 0) {  // single bin
-            cs->add(".addSingleNamer(" + std::string{binSetEnum(binp)} + ", \"" + binp->name()
+            cs->add(".addSingleNamer(" + std::string{binp->binsType().binSetEnum()} + ", \""
+                    + binp->name()
                     + "\", " + loc);
         } else {  // value array bin
-            cs->add(".addArrayNamer(" + std::string{binSetEnum(binp)} + ", "
+            cs->add(".addArrayNamer(" + std::string{binp->binsType().binSetEnum()} + ", "
                     + std::to_string(count) + ", \"" + binp->name() + "\", " + loc);
         }
         return cs;
@@ -718,7 +703,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         AstCStmt* const hitp = new AstCStmt{fl};
         hitp->add(memberRef(fl, cpVarp));
-        hitp->add((binIsNormal(binp) ? ".incrementBin(" : ".recordHit(") + std::to_string(idx)
+        hitp->add((binp->binsType().binIsNormal() ? ".incrementBin(" : ".recordHit(")
+                  + std::to_string(idx)
                   + ");");
         AstNode* actionp = hitp;
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
@@ -1508,7 +1494,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
             int legacyRegular = 0;
             for (const BinInfo& bi : m_binInfos) {
-                if (!binIsNormal(bi.binp)) continue;
+                if (!bi.binp->binsType().binIsNormal()) continue;
                 ++legacyRegular;
                 AstCStmt* const cs = new AstCStmt{fl};
                 cs->add("if (");
@@ -1532,7 +1518,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         int totalBins = 0;
         for (const BinInfo& bi : m_binInfos) {
             UINFO(6, "      Bin: " << bi.binp->name() << " type=" << bi.binp->binsType().ascii());
-            if (binIsNormal(bi.binp)) totalBins++;
+            if (bi.binp->binsType().binIsNormal()) totalBins++;
         }
 
         UINFO(4, "    Total regular bins: " << totalBins << " of " << m_binInfos.size());
@@ -1560,7 +1546,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // For each regular bin, if count > 0, increment covered_count
         for (const BinInfo& bi : m_binInfos) {
             // Skip ignore/illegal/default bins in coverage calculation
-            if (!binIsNormal(bi.binp)) continue;
+            if (!bi.binp->binsType().binIsNormal()) continue;
 
             // if (bin_count >= at_least) covered_count++;
             AstIf* ifp = new AstIf{
