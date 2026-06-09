@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: Verilog Test for dpi unpack array
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# author: Yilin Li
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# 9-Jun-2026: Modifications for this test contributed by Yilin Li.
 
 import vltest_bootstrap
 
