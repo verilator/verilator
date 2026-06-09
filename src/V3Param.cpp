@@ -1302,8 +1302,50 @@ class ParamProcessor final {
                     V3Const::constifyParamsEdit(varp);
                 }
                 if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
-                    dotp->replaceWith(constp->cloneTree(false));
-                    VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                    // Walk up any outer `.fieldN[.fieldM...]` chain (struct lparam
+                    // member access like `CFG::cfg.jt.cam_type`) and accumulate the
+                    // packed-struct bit offset.  Replace the topmost Dot with a
+                    // Sel(constp, lsb, width) that constify can fold.
+                    int totalLsb = 0;
+                    int sliceWidth = varp->width();
+                    AstNodeDType* curDTypep = varp->dtypep();
+                    AstNode* topp = dotp;
+                    AstDot* outerDot = VN_CAST(dotp->backp(), Dot);
+                    while (outerDot && outerDot->lhsp() == topp) {
+                        const AstParseRef* const fieldRef = VN_CAST(outerDot->rhsp(), ParseRef);
+                        if (!fieldRef) break;
+                        AstNodeDType* const skippedp = curDTypep ? curDTypep->skipRefp() : nullptr;
+                        AstNodeUOrStructDType* const structp
+                            = VN_CAST(skippedp, NodeUOrStructDType);
+                        if (!structp) break;
+                        AstMemberDType* foundMemp = nullptr;
+                        for (AstMemberDType* memp = structp->membersp(); memp;
+                             memp = VN_AS(memp->nextp(), MemberDType)) {
+                            if (memp->name() == fieldRef->name()) {
+                                foundMemp = memp;
+                                break;
+                            }
+                        }
+                        if (!foundMemp) break;
+                        totalLsb += foundMemp->lsb();
+                        sliceWidth = foundMemp->width();
+                        curDTypep = foundMemp->subDTypep();
+                        topp = outerDot;
+                        outerDot = VN_CAST(outerDot->backp(), Dot);
+                    }
+                    if (topp == dotp) {
+                        dotp->replaceWith(constp->cloneTree(false));
+                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                    } else {
+                        AstConst* const clonep = static_cast<AstConst*>(constp->cloneTree(false));
+                        AstSel* const selp
+                            = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
+                        // Preserve the field's actual dtype (e.g. enum) on the Sel so
+                        // assignments to enum-typed pins don't trip ENUMVALUE.
+                        if (curDTypep) selp->dtypep(curDTypep);
+                        topp->replaceWith(selp);
+                        VL_DO_DANGLING(topp->deleteTree(), topp);
+                    }
                 }
             }
         }
@@ -2190,8 +2232,8 @@ public:
         });
     }
 
-    // Walk every subtree reachable from `rootp` for three kinds of deferred work
-    // V3LinkDot left behind when `class#(...)::member` couldn't yet be resolved:
+    // Walk every subtree reachable from `rootp` for  deferred work V3LinkDot left behind
+    // when `class#(...)::member` couldn't yet be resolved:
     //   (1) `AstDot` with a ClassOrPackageRef lhs — a `class::lparam` value Dot to
     //       constify (e.g. `c8::b` in a pin expression).
     //   (2) `AstRefDType` with a typedefp — descend into the typedef's subDType
