@@ -688,8 +688,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                 + std::to_string(fl->firstColumn()) + ");";
         if (count < 0) {  // single bin
             cs->add(".addSingleNamer(" + std::string{binp->binsType().binSetEnum()} + ", \""
-                    + binp->name()
-                    + "\", " + loc);
+                    + binp->name() + "\", " + loc);
         } else {  // value array bin
             cs->add(".addArrayNamer(" + std::string{binp->binsType().binSetEnum()} + ", "
                     + std::to_string(count) + ", \"" + binp->name() + "\", " + loc);
@@ -704,8 +703,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstCStmt* const hitp = new AstCStmt{fl};
         hitp->add(memberRef(fl, cpVarp));
         hitp->add((binp->binsType().binIsNormal() ? ".incrementBin(" : ".recordHit(")
-                  + std::to_string(idx)
-                  + ");");
+                  + std::to_string(idx) + ");");
         AstNode* actionp = hitp;
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()

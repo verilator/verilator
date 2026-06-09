@@ -31,9 +31,9 @@
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.
 enum class VlCovBinKind : uint8_t {
-    NORMAL  = 0, // Base coverage-collecting bin
-    DEFAULT = 1, // Bin declared with 'default' range (which is excluded per LRM)
-    IGNORE  = 2, // Ignore bin
+    NORMAL = 0,  // Base coverage-collecting bin
+    DEFAULT = 1,  // Bin declared with 'default' range (which is excluded per LRM)
+    IGNORE = 2,  // Ignore bin
     ILLEGAL = 3  // Illegal bin
 };
 
