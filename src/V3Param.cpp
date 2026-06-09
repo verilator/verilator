@@ -2178,15 +2178,8 @@ public:
         });
     }
 
-    // Resolve `class::member` Dots in `rootp`'s tree, and also in any deferred
-    // lparam reachable transitively through VarRefs from `rootp`. By V3Param
-    // time the surviving such Dots are paramed-class refs that need
-    // linkDotParamed for scope, but `resolveDotToTypedef` can handle the
-    // typedef-aliased subset inline. Resolving them here turns a deferred
-    // lparam's value into a Const so subsequent constify on `rootp` can fold
-    // expressions that reference the lparam.
-    // `modp` is the enclosing module — resolveDotToTypedef may call into
-    // classRefDeparam which needs m_modp set for level/recursion bookkeeping.
+    // Resolve `class::member` Dots depended on by `rootp`'s tree, and also recursively through
+    // VarRefs to all leaf dependencies. Then resolve these to typedefs.
     void resolveDeferredDotsReachableFrom(AstNode* rootp, AstNodeModule* modp) {
         std::vector<AstDot*> dotps;
         const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
@@ -2208,6 +2201,7 @@ public:
         };
         collectDots(rootp);
         enqueueRefs(rootp);
+        // Handle deferred VarRefs recursively until no more, accumulating Dots along the way.
         while (!workVarps.empty()) {
             AstVar* const varp = workVarps.back();
             workVarps.pop_back();
