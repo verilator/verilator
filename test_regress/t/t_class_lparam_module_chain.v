@@ -8,7 +8,7 @@
 // inline so constify on the cell can fold.
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Edmund Lam
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off

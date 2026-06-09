@@ -7,7 +7,7 @@
 // for cell pins must be applied here so the deferred lparam folds.
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Edmund Lam
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
