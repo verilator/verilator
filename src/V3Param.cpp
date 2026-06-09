@@ -1288,7 +1288,19 @@ class ParamProcessor final {
             // Param/lparam member: substitute its constant value so the caller's constify can
             // succeed.
             if (varp->isParam() && varp->valuep()) {
-                if (!VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
+                if (!VN_IS(varp->valuep(), Const)) {
+                    // If the value contains nested class::member Dots (e.g. this
+                    // member's expression references another paramed class), resolve
+                    // those first so constify can fold the whole chain.
+                    std::vector<AstDot*> nestedDots;
+                    varp->valuep()->foreach([&](AstDot* dp) {
+                        if (VN_IS(dp->lhsp(), ClassOrPackageRef)) nestedDots.push_back(dp);
+                    });
+                    for (auto it = nestedDots.rbegin(); it != nestedDots.rend(); ++it) {
+                        resolveDotToTypedef(*it);
+                    }
+                    V3Const::constifyParamsEdit(varp);
+                }
                 if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
                     dotp->replaceWith(constp->cloneTree(false));
                     VL_DO_DANGLING(dotp->deleteTree(), dotp);
@@ -2182,11 +2194,19 @@ public:
     // VarRefs to all leaf dependencies. Then resolve these to typedefs.
     void resolveDeferredDotsReachableFrom(AstNode* rootp, AstNodeModule* modp) {
         std::vector<AstDot*> dotps;
+        std::vector<AstTypedef*> tdefps;
         const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
         std::set<AstVar*> reachedDeferred;
+        std::set<const AstTypedef*> reachedTypedefs;
         auto collectDots = [&](AstNode* p) {
             p->foreach([&](AstDot* dotp) {
                 if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
+            });
+        };
+        auto collectTypedefs = [&](AstNode* p) {
+            p->foreach([&](const AstRefDType* refp) {
+                AstTypedef* const tdefp = refp->typedefp();
+                if (tdefp && reachedTypedefs.insert(tdefp).second) tdefps.push_back(tdefp);
             });
         };
         std::vector<AstVar*> workVarps;
@@ -2200,18 +2220,25 @@ public:
             });
         };
         collectDots(rootp);
+        collectTypedefs(rootp);
         enqueueRefs(rootp);
-        // Handle deferred VarRefs recursively until no more, accumulating Dots along the way.
+        // Handle deferred VarRefs recursively until no more, accumulating Dots and
+        // typedef references along the way.
         while (!workVarps.empty()) {
             AstVar* const varp = workVarps.back();
             workVarps.pop_back();
             if (!varp->valuep()) continue;
             collectDots(varp->valuep());
+            collectTypedefs(varp->valuep());
             enqueueRefs(varp->valuep());
         }
-        if (dotps.empty()) return;
+        if (dotps.empty() && tdefps.empty()) return;
         VL_RESTORER(m_modp);
         m_modp = modp;
+        // Resolve unresolved class-scoped RefDTypes buried in any typedef reachable from
+        // the pin/expr tree (e.g. `$bits(wrap_t)` where `wrap_t`'s struct members
+        // reference `CFG::data_t` from a parameterized-class typedef alias).
+        for (AstTypedef* const tdefp : tdefps) resolveParamClassRefDType(tdefp->subDTypep());
         // Reverse-iterate so inner Dots resolve before outer.
         for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
     }
