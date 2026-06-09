@@ -47,11 +47,11 @@ module t;
   typedef B#(5) BInst;
   typedef C#(2) CInst;
 
-  // (1) Standalone localparam — resolves via deferred-lparam path
+  // (1) Standalone localparam - resolves via deferred-lparam path
   localparam int two_level = BInst::width;  // = A#(6)::v = 12
   localparam int three_level = CInst::total;  // = B#(6)::width = A#(7)::v = 14
 
-  // (2) Cell pin uses the nested-class value directly — exercises the
+  // (2) Cell pin uses the nested-class value directly - exercises the
   //     recursive Dot resolution inside resolveDotToTypedef
   Sub #(BInst::width) m_pin_direct ();
   Sub #(CInst::total) m_pin_deep ();

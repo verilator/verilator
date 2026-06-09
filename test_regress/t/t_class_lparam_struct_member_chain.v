@@ -18,37 +18,37 @@
 // verilog_format: on
 
 package pkg;
-    virtual class C #(parameter int W = 1);
-        typedef logic [W-1:0] data_t;
-    endclass
+  virtual class C #(parameter int W = 1);
+    typedef logic [W-1:0] data_t;
+  endclass
 endpackage
 
 module Sink #(parameter int BITS = 1) ();
-    logic [BITS-1:0] data;
+  logic [BITS-1:0] data;
 endmodule
 
 module Sub #(parameter int W = 8) ();
-    typedef pkg::C#(W) CFG;
+  typedef pkg::C#(W) CFG;
 
-    // Struct typedef whose member is a class-scope-resolved typedef from
-    // a parameterized-class typedef alias. Without the V3Param fix, the
-    // member's RefDType stays UNLINKED and the cell pin's $bits trips an
-    // internal error.
-    typedef struct packed {
-        CFG::data_t payload;
-        logic       v;
-    } wrap_t;
+  // Struct typedef whose member is a class-scope-resolved typedef from
+  // a parameterized-class typedef alias. Without the V3Param fix, the
+  // member's RefDType stays UNLINKED and the cell pin's $bits trips an
+  // internal error.
+  typedef struct packed {
+    CFG::data_t payload;
+    logic       v;
+  } wrap_t;
 
-    Sink #(.BITS($bits(wrap_t))) u_sink ();
+  Sink #(.BITS($bits(wrap_t))) u_sink ();
 endmodule
 
 module t;
-    Sub #(.W(8)) u ();
+  Sub #(.W(8)) u ();
 
-    initial begin
-        // $bits(wrap_t) = 8 (payload) + 1 (v) = 9
-        `checkh($bits(u.u_sink.data), 32'd9);
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    // $bits(wrap_t) = 8 (payload) + 1 (v) = 9
+    `checkh($bits(u.u_sink.data), 32'd9);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

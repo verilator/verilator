@@ -2234,13 +2234,13 @@ public:
 
     // Walk every subtree reachable from `rootp` for  deferred work V3LinkDot left behind
     // when `class#(...)::member` couldn't yet be resolved:
-    //   (1) `AstDot` with a ClassOrPackageRef lhs — a `class::lparam` value Dot to
+    //   (1) `AstDot` with a ClassOrPackageRef lhs - a `class::lparam` value Dot to
     //       constify (e.g. `c8::b` in a pin expression).
-    //   (2) `AstRefDType` with a typedefp — descend into the typedef's subDType
+    //   (2) `AstRefDType` with a typedefp - descend into the typedef's subDType
     //       to find buried Dots (typedef range like `logic [(CFG::w - 1):0]`) and
     //       unresolved class-scoped struct-member RefDTypes (`CFG::input_meta_t`
     //       as a struct member).
-    //   (3) `AstVarRef` to a deferred lparam — descend into its valuep so the
+    //   (3) `AstVarRef` to a deferred lparam - descend into its valuep so the
     //       chain `pin -> lparam -> ... -> class::lparam Dot` reaches the Dot.
     // Discoveries of (2) and (3) feed back into the walk worklist; (1) and (2)
     // are also kept in lists for the resolution passes at the end.
