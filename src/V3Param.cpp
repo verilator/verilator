@@ -2178,6 +2178,50 @@ public:
         });
     }
 
+    // Resolve `class::member` Dots in `rootp`'s tree, and also in any deferred
+    // lparam reachable transitively through VarRefs from `rootp`. By V3Param
+    // time the surviving such Dots are paramed-class refs that need
+    // linkDotParamed for scope, but `resolveDotToTypedef` can handle the
+    // typedef-aliased subset inline. Resolving them here turns a deferred
+    // lparam's value into a Const so subsequent constify on `rootp` can fold
+    // expressions that reference the lparam.
+    // `modp` is the enclosing module — resolveDotToTypedef may call into
+    // classRefDeparam which needs m_modp set for level/recursion bookkeeping.
+    void resolveDeferredDotsReachableFrom(AstNode* rootp, AstNodeModule* modp) {
+        std::vector<AstDot*> dotps;
+        const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
+        std::set<AstVar*> reachedDeferred;
+        auto collectDots = [&](AstNode* p) {
+            p->foreach([&](AstDot* dotp) {
+                if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
+            });
+        };
+        std::vector<AstVar*> workVarps;
+        auto enqueueRefs = [&](AstNode* p) {
+            p->foreach([&](const AstVarRef* refp) {
+                AstVar* const refVarp = refp->varp();
+                if (refVarp && refVarp->varType() == VVarType::LPARAM
+                    && deferredVarps.count(refVarp) && reachedDeferred.insert(refVarp).second) {
+                    workVarps.push_back(refVarp);
+                }
+            });
+        };
+        collectDots(rootp);
+        enqueueRefs(rootp);
+        while (!workVarps.empty()) {
+            AstVar* const varp = workVarps.back();
+            workVarps.pop_back();
+            if (!varp->valuep()) continue;
+            collectDots(varp->valuep());
+            enqueueRefs(varp->valuep());
+        }
+        if (dotps.empty()) return;
+        VL_RESTORER(m_modp);
+        m_modp = modp;
+        // Reverse-iterate so inner Dots resolve before outer.
+        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
+    }
+
     AstNodeModule* nodeDeparam(AstNode* nodep, AstNodeModule* srcModp, AstNodeModule* modp,
                                const string& someInstanceName) {
         // Return new or reused de-parameterized module
@@ -2218,14 +2262,9 @@ public:
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
-        // Resolve `class::member` Dots in pin values so constify sees Consts.
-        // Single-pass: filter-collect class-scoped Dots, then reverse-iterate so inner
-        // Dots resolve before outer (vector stays empty for cells with no class Dots).
-        std::vector<AstDot*> dotps;
-        nodep->foreach([&](AstDot* dotp) {
-            if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
-        });
-        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
+        // Resolve `class::member` Dots in pin values, and in any deferred
+        // lparam reachable from the pin tree, so constify sees Consts.
+        resolveDeferredDotsReachableFrom(nodep, modp);
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
@@ -3173,6 +3212,9 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstGenIf* nodep) override {
         UINFO(9, "  GENIF " << nodep);
         iterateAndNextNull(nodep->condp());
+        // condp may reference deferred lparams whose Dot is still pending;
+        // resolve them so widthing/constify can see Consts.
+        m_processor.resolveDeferredDotsReachableFrom(nodep->condp(), m_modp);
         // We suppress errors when widthing params since short-circuiting in
         // the conditional evaluation may mean these error can never occur. We
         // then make sure that short-circuiting is used by constifyParamsEdit.
@@ -3208,6 +3250,9 @@ class ParamVisitor final : public VNVisitor {
             iterateAndNextNull(forp->initsp());
             iterateAndNextNull(forp->condp());
             iterateAndNextNull(forp->incsp());
+            // Cond/init/inc may reference deferred lparams whose Dot is still
+            // pending; resolve them so widthing/constify can see Consts.
+            m_processor.resolveDeferredDotsReachableFrom(forp, m_modp);
             V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
             // Outer wrapper around generate used to hold genvar, and to ensure genvar
             // doesn't conflict in V3LinkDot resolution with other genvars
@@ -3241,6 +3286,9 @@ class ParamVisitor final : public VNVisitor {
         AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
+        // expr / case items may reference deferred lparams whose Dot is still
+        // pending; resolve them so widthing/constify can see Consts.
+        m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the
                                           // body, don't trigger errors yet.
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
