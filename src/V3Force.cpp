@@ -1095,8 +1095,8 @@ class ForceConvertVisitor final : public VNVisitor {
         const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
         const bool arrayBitSel
             = info.m_hasArraySel && selLhsp && ForceState::getArraySelInfo(lhsp).m_hasBitSel
-            && ForceState::isBitwiseDType(selLhsp->fromp())
-            && (info.m_padMsb - info.m_padLsb + 1) < selLhsp->fromp()->width();
+              && ForceState::isBitwiseDType(selLhsp->fromp())
+              && (info.m_padMsb - info.m_padLsb + 1) < selLhsp->fromp()->width();
         AstNodeExpr* const rhsDatap = ForceState::buildRhsDataExpr(flp, info);
         AstCExpr* const rhsAddrp = new AstCExpr{flp};
         rhsAddrp->add("&(");
@@ -1108,7 +1108,7 @@ class ForceConvertVisitor final : public VNVisitor {
         addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_rangeMsb));
         addForceCallp->addPinsp(rhsAddrp);
         addForceCallp->addPinsp(
-            ForceState::makeConst32(flp, arrayBitSel ?  info.m_padLsb : info.m_rangeLsb));
+            ForceState::makeConst32(flp, arrayBitSel ? info.m_padLsb : info.m_rangeLsb));
         if (arrayBitSel) {
             addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_padLsb));
             addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_padMsb));
@@ -1153,12 +1153,11 @@ class ForceConvertVisitor final : public VNVisitor {
         const ForceState::ForceRangeInfo rangeInfo
             = m_state.getForceRangeInfo(lhsp, releasedVarp, false);
 
-
         const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
         const bool arrayBitSel
             = rangeInfo.m_hasArraySel && selLhsp && rangeInfo.m_arrayInfo.m_hasBitSel
-            && ForceState::isBitwiseDType(selLhsp->fromp())
-            && (rangeInfo.m_padMsb - rangeInfo.m_padLsb + 1) < selLhsp->fromp()->width();
+              && ForceState::isBitwiseDType(selLhsp->fromp())
+              && (rangeInfo.m_padMsb - rangeInfo.m_padLsb + 1) < selLhsp->fromp()->width();
         AstCMethodHard* const releaseCallp = new AstCMethodHard{
             flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::WRITE},
             VCMethod::FORCE_RELEASE, ForceState::makeConst32(flp, rangeInfo.m_rangeLsb)};

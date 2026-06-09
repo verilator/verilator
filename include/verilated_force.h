@@ -105,11 +105,11 @@ private:
         int m_msb;  // Inclusive upper bit for scalar path or element index for unpacked
         int m_rhsLsb;  // Destination index that maps to RHS index 0
         const void* m_rhsDatap;  // Pointer to RHS storage
-        int m_bitLsb = 0; 
+        int m_bitLsb = 0;
         int m_bitMsb = 0;
         int m_elemWidth = 0;
 
-        bool operator<(const Entry& other) const { 
+        bool operator<(const Entry& other) const {
             return m_msb != other.m_msb ? m_msb < other.m_msb : m_bitLsb < other.m_bitLsb;
         }
     };
@@ -141,9 +141,9 @@ private:
 
     std::size_t trimElementBitRange(int elem, int bitLsb, int bitMsb) {
         auto it = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
-                                   [](const Entry& e, int idx) {return e.m_msb <idx; });
-        while(it != m_entries.end() && it->m_lsb <= elem) {
-            if(it->m_elemWidth == 0 || it->m_bitMsb < bitLsb || it ->m_bitLsb > bitMsb) {
+                                   [](const Entry& e, int idx) { return e.m_msb < idx; });
+        while (it != m_entries.end() && it->m_lsb <= elem) {
+            if (it->m_elemWidth == 0 || it->m_bitMsb < bitLsb || it->m_bitLsb > bitMsb) {
                 ++it;
                 continue;
             }
@@ -166,7 +166,7 @@ private:
             it = m_entries.erase(it);
         }
         auto ins = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
-                                    [](const Entry& e, int idx) {return e.m_msb < idx; });
+                                    [](const Entry& e, int idx) { return e.m_msb < idx; });
         while (ins != m_entries.end() && ins->m_lsb <= elem
                && (ins->m_elemWidth == 0 || ins->m_bitLsb <= bitLsb)) {
             ++ins;
@@ -238,15 +238,15 @@ private:
     template <typename Elem>
     static typename std::enable_if<!VlIsVlWide<Elem>::value, Elem>::type
     blendElem(Elem cur, const Entry& e) {
-        if(e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
+        if (e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
         const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
         return applyEntry(cur, bitEntry);
     }
 
     template <typename Elem>
-    static typename std::enable_if<VlIsVlWide<Elem>::value, Elem>::type
-    blendElem(Elem cur, const Entry& e) {
-        if(e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
+    static typename std::enable_if<VlIsVlWide<Elem>::value, Elem>::type blendElem(Elem cur,
+                                                                                  const Entry& e) {
+        if (e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
         Elem res = cur;
         const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
         applyEntry(res, bitEntry, e.m_bitLsb, e.m_bitMsb, 0);
@@ -293,7 +293,7 @@ public:
                 for (int idx = startIdx; idx <= endIdx; idx++) {
                     const std::size_t uidx = static_cast<std::size_t>(idx);
                     Elem& dst = VlForceArrayIndexer<T>::elem(result, uidx);
-                    if(entry.m_elemWidth == 0){
+                    if (entry.m_elemWidth == 0) {
                         const Elem* const rhsBasep = static_cast<const Elem*>(entry.m_rhsDatap);
                         const int rhsIndex = idx - entry.m_rhsLsb;
                         dst = rhsBasep[rhsIndex];
@@ -366,7 +366,6 @@ public:
         const std::size_t at = trimElementBitRange(lsb, bitLsb, bitMsb);
         m_entries.insert(m_entries.begin() + at,
                          Entry{lsb, msb, rhsLsb, rhsDatap, bitLsb, bitMsb, elemWidth});
-
     }
 
     void release(int lsb, int msb) {
