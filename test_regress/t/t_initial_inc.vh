@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define foo bar
 `ifdef foo
  `ifdef baz `else

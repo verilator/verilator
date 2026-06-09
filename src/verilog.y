@@ -4531,7 +4531,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}; }
         |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
-        |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
+        |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3, $3->dtypep()}; }
         |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::ExprFormat{}, $3, 'd', false}; }
         |       yD_SHORTREALTOBITS '(' expr ')'         { $$ = new AstRealToBits{$1, $3}; UNSUPREAL($1); }
         |       yD_SIGNED '(' expr ')'                  { $$ = new AstSigned{$1, $3}; }
@@ -6678,13 +6678,9 @@ property_spec<propSpecp>:               // IEEE: property_spec
 
 property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                 yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: property case expression");
-                          DEL($3, $5); }
+                        { $$ = PARSEP->makePropertyCase($1, $3, $5); }
         |       yCASE '(' expr/*expression_or_dist*/ ')' yENDCASE
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: property case expression");
-                          DEL($3); }
+                        { $$ = PARSEP->makePropertyCase($1, $3, nullptr); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
                         { $$ = new AstImplication{$1, $3, $5, true}; }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
@@ -6695,16 +6691,15 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
                 property_case_item                      { $$ = $1; }
-        |       property_case_itemList ',' property_case_item   { $$ = addNextNull($1, $3); }
+        |       property_case_itemList property_case_item   { $$ = addNextNull($1, $2); }
         ;
 
 property_case_item<caseItemp>:  // ==IEEE: property_case_item
-        //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_statement
+        //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_expr
         //                      // IEEE 1800-2012 changed from property_statement to property_expr
         //                      // IEEE 1800-2017 changed to require the semicolon
-                caseCondList ':' pexpr                  { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       caseCondList ':' pexpr ';'              { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT pexpr                          { $$ = new AstCaseItem{$1, nullptr, $2}; }
+                caseCondList ':' pexpr ';'              { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT pexpr ';'                      { $$ = new AstCaseItem{$1, nullptr, $2}; }
         |       yDEFAULT ':' pexpr ';'                  { $$ = new AstCaseItem{$1, nullptr, $3}; }
         ;
 

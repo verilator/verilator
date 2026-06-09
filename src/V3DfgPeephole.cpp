@@ -138,11 +138,14 @@ template <> const DfgDataType& resultDType<DfgXor>        (const DfgVertex* lhsp
 
 // Unary constant folding
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
+template <> void foldOp<DfgCountOnes>  (V3Number& out, const V3Number& src) { out.opCountOnes(src); }
 template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
 template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
 template <> void foldOp<DfgLogNot>     (V3Number& out, const V3Number& src) { out.opLogNot(src); }
 template <> void foldOp<DfgNegate>     (V3Number& out, const V3Number& src) { out.opNegate(src); }
 template <> void foldOp<DfgNot>        (V3Number& out, const V3Number& src) { out.opNot(src); }
+template <> void foldOp<DfgOneHot>     (V3Number& out, const V3Number& src) { out.opOneHot(src); }
+template <> void foldOp<DfgOneHot0>    (V3Number& out, const V3Number& src) { out.opOneHot0(src); }
 template <> void foldOp<DfgRedAnd>     (V3Number& out, const V3Number& src) { out.opRedAnd(src); }
 template <> void foldOp<DfgRedOr>      (V3Number& out, const V3Number& src) { out.opRedOr(src); }
 template <> void foldOp<DfgRedXor>     (V3Number& out, const V3Number& src) { out.opRedXor(src); }
@@ -1155,7 +1158,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
             // Sel from a partial variable (including narrowed vertex)
             if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-                if (varp->srcp() && !varp->isVolatile()) {
+                if (varp->srcp() && !varp->isVolatile() && !varp->srcp()->is<DfgCReset>()) {
                     // Must be a splice, otherwise it would have been inlined
                     DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
                     DfgVertex* driverp = nullptr;
@@ -1192,6 +1195,10 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
     //  DfgVertexUnary
     //=========================================================================
+
+    void visit(DfgCountOnes* const vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
 
     void visit(DfgExtend* const vtxp) override {
         if (foldUnary(vtxp)) return;
@@ -1323,6 +1330,14 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
+    }
+
+    void visit(DfgOneHot* const vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgOneHot0* const vtxp) override {
+        if (foldUnary(vtxp)) return;
     }
 
     void visit(DfgRedOr* const vtxp) override {

@@ -125,6 +125,12 @@ class ColorStronglyConnectedComponents final {
 
         // Initialize state of operation vertices
         for (const DfgVertex& vtx : m_dfg.opVertices()) {
+            // If it has no inputs or no outputs, it cannot be part of a non-trivial SCC.
+            if (!vtx.nInputs() || !vtx.hasSinks()) {
+                index(vtx) = 0;
+                component(vtx) = 0;
+                continue;
+            }
             index(vtx) = UNASSIGNED;
             component(vtx) = UNASSIGNED;
         }

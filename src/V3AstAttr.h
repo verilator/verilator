@@ -370,6 +370,24 @@ public:
         // clang-format on
         return names[m_e];
     }
+    // True for attributes that read an operand's type rather than its value, such as $bits.
+    bool isTypeQuery() const {
+        switch (m_e) {
+        case DIM_BITS:
+        case DIM_BITS_OR_NUMBER:
+        case DIM_DIMENSIONS:
+        case DIM_HIGH:
+        case DIM_INCREMENT:
+        case DIM_LEFT:
+        case DIM_LOW:
+        case DIM_RIGHT:
+        case DIM_SIZE:
+        case DIM_UNPK_DIMENSIONS:
+        case TYPEID:
+        case TYPENAME: return true;
+        default: return false;
+        }
+    }
     VAttrType()
         : m_e{ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor

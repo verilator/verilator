@@ -2722,10 +2722,14 @@ class ParamVisitor final : public VNVisitor {
         // LCOV_EXCL_STOP
     }
 
-    void checkParamNotHier(AstNode* valuep) {
-        if (!valuep) return;
-        valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
-            if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
+    // Flag hierarchical refs in a parameter value. Single top-down pass.
+    void checkParamNotHierRecurse(AstNode* nodep, bool underTypeQuery = false) {
+        for (; nodep; nodep = nodep->nextp()) {
+            // Refs read only for their type ($bits etc.) are allowed
+            const AstAttrOf* const attrp = VN_CAST(nodep, AttrOf);
+            const bool childUnderQuery
+                = underTypeQuery || (attrp && attrp->attrType().isTypeQuery());
+            if (const AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
                 // Allow hierarchical ref to interface params through interface/modport ports
                 // or local interface instances
                 bool isIfaceRef = false;
@@ -2735,18 +2739,21 @@ class ParamVisitor final : public VNVisitor {
                         = !refname.empty()
                           && (m_ifacePortNames.count(refname) || m_ifaceInstCells.count(refname));
                 }
-
-                if (!isIfaceRef) {
+                if (!isIfaceRef && !underTypeQuery) {
                     refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
                                             " (IEEE 1800-2023 6.20.2)");
                 }
-            } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
+            } else if (const AstNodeFTaskRef* const refp = VN_CAST(nodep, NodeFTaskRef)) {
                 if (refp->dotted() != "") {
                     refp->v3error("Parameter values cannot call hierarchical functions"
                                   " (IEEE 1800-2023 6.20.2)");
                 }
             }
-        });
+            checkParamNotHierRecurse(nodep->op1p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op2p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op3p(), childUnderQuery);
+            checkParamNotHierRecurse(nodep->op4p(), childUnderQuery);
+        }
     }
 
     // Deparameterize and constify nested interface cells within ifaceModp.
@@ -2888,7 +2895,7 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
-        checkParamNotHier(nodep->paramsp());
+        checkParamNotHierRecurse(nodep->paramsp());
         if (VN_IS(nodep->modp(), Iface)) m_ifaceInstCells.emplace(nodep->name(), nodep);
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
@@ -2896,7 +2903,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override {
-        checkParamNotHier(nodep->paramsp());
+        checkParamNotHierRecurse(nodep->paramsp());
         visitCellOrClassRef(nodep, false);
     }
     void visit(AstClassOrPackageRef* nodep) override {
@@ -2913,7 +2920,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->isIfaceRef()) { m_ifacePortNames.insert(nodep->name()); }
         iterateChildren(nodep);
         if (nodep->isParam()) {
-            checkParamNotHier(nodep->valuep());
+            checkParamNotHierRecurse(nodep->valuep());
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());

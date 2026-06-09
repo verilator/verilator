@@ -1,0 +1,8 @@
+%Error: t/t_property_case_bad.v:13:7: Multiple default statements in property case statement
+   13 |       default: 1'b0;
+      |       ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_property_case_bad.v:18:5: Property case statement with no items
+   18 |     case (sel)
+      |     ^~~~
+%Error: Exiting due to

@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2025 Geza Lore
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Notify PRs via comment that their coverage reports are available
+# Notify PRs via comment that their workflow reports are available
 
 # Get the current repo URL - might differ on a fork
 readonly REPO_URL=$(gh repo view --json url --jq .url)
@@ -13,7 +13,7 @@ readonly REPO_URL=$(gh repo view --json url --jq .url)
 ARTIFACTS_ROOT=artifacts
 mkdir -p ${ARTIFACTS_ROOT}
 
-for RUN_ID in ${COVERAGE_PR_RUN_IDS//,/ }; do
+for RUN_ID in ${PR_RUN_IDS//,/ }; do
   echo "@@@ Processing run ${RUN_ID}"
 
   # Create workflow artifacts directory
@@ -21,7 +21,7 @@ for RUN_ID in ${COVERAGE_PR_RUN_IDS//,/ }; do
   mkdir -p ${ARTIFACTS_DIR}
 
   # Download artifact of this run, if exists
-  gh run download ${RUN_ID} --name coverage-pr-notification --dir ${ARTIFACTS_DIR} || true
+  gh run download ${RUN_ID} --name pr-notification --dir ${ARTIFACTS_DIR} || true
   ls -lsha ${ARTIFACTS_DIR}
 
   # Move on if no notification is required
@@ -35,7 +35,7 @@ for RUN_ID in ${COVERAGE_PR_RUN_IDS//,/ }; do
   gh pr comment $(cat ${ARTIFACTS_DIR}/pr-number.txt) --body-file ${ARTIFACTS_DIR}/body.txt
 
   # Get the artifact ID
-  ARTIFACT_ID=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "coverage-pr-notification") | .id')
+  ARTIFACT_ID=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "pr-notification") | .id')
 
   # Delete it, so we only notify once
   gh api --method DELETE "repos/{owner}/{repo}/actions/artifacts/${ARTIFACT_ID}"

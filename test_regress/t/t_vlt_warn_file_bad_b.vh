@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module sub;
-   int warn_sub = 64'h1;
+  int warn_sub = 64'h1;
 endmodule

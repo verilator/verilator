@@ -48,6 +48,7 @@
 //END_MODULE_NAME--------------------------------------------------------------
 
 //See also: https://github.com/twosigma/verilator_support
+// verilog_format: off
 // verilator lint_off COMBDLY,INITIALDLY,LATCH,MULTIDRIVEN,UNSIGNED,WIDTH
 
 // BEGINNING OF MODULE

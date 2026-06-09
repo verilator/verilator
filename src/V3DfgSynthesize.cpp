@@ -384,6 +384,24 @@ class AstToDfgConverter final : public VNVisitor {
             nodep->user2p(vtxp);
         }
     }
+    void visit(AstCReset* nodep) override {
+        UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
+        UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
+        if (unhandled(nodep)) return;
+
+        const DfgDataType* const dtypep = DfgDataType::fromAst(nodep->dtypep());
+        if (!dtypep) {
+            m_foundUnhandled = true;
+            ++m_ctx.m_conv.nonRepDType;
+            return;
+        }
+
+        UASSERT_OBJ(!nodep->constructing(), nodep,
+                    "CReset should be non-constructing at this stage");
+
+        DfgVertex* const vtxp = make<DfgCReset>(nodep->fileline(), *dtypep);
+        nodep->user2p(vtxp);
+    }
     void visit(AstReplicate* nodep) override {
         UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
         UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");

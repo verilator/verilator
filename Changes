@@ -21,6 +21,15 @@ Verilator 5.049 devel
 
 **Other:**
 
+* Add `+verilator+log+file` (#4505) (#7645). [Tracy Narine]
+* Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
+* Add error on mixed-initialization (#7352) (#7357).
+* Add `--coverage-per-instance` (#7636). [Yogish Sekhar]
+* Add NOTREDOP error on reduction and negation operators (#7417) (#7623) (#7624).
+* Add hierarchy-aware reporting to `verilator_coverage` (#7657). [Yogish Sekhar]
+* Improve `--coverage-fsm` (#7490) (#7529) (#7561) (#7573) (#7619). [Yogish Sekhar]
+* Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
+* Change JSON to include parameter constant mnemonics for FSM Coverage (#7531). [Yogish Sekhar]
 * Support printing enum names for %p and %s (#5523) (#7338 repair) (#7521) (#7527). [Nick Brereton]
 * Support weak `until` / `until_with` property operators (#7290) (#7548) (#7685). [Yilou Wang]
 * Support `s_eventually` (#7291) (#7508). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -44,20 +53,12 @@ Verilator 5.049 devel
 * Support generic interface arrays (#7604). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support FSM detection in primitive wrappers (#7607). [Yogish Sekhar]
 * Support busses with mix of pullup/pulldown (#7632). [Lucas Amaral]
+* Support forceable on unpacked array variables (#7677) (#7678). [Nikolai Kumar]
 * Support pre/post increment/decrement inside && and || (#7683). [Nick Brereton]
 * Support streaming into 2-D unpacked arrays (#7686) (#7687). [Paul Swirhun]
 * Support if/if-else in properties (#7692). [Artur Bieniek, Antmicro Ltd.]
 * Support process::self().srand() (#7695). [Igor Zaworski, Antmicro Ltd.]
 * Support MacOS lldb (#7697). [Tracy Narine]
-* Add `+verilator+log+file` (#4505) (#7645). [Tracy Narine]
-* Add peak memory usage to `--stats`. [Geza Lore, Testorrent USA, Inc.]
-* Add error on mixed-initialization (#7352) (#7357).
-* Add `--coverage-per-instance` (#7636). [Yogish Sekhar]
-* Add NOTREDOP error on reduction and negation operators (#7417) (#7623) (#7624).
-* Add hierarchy-aware reporting to `verilator_coverage` (#7657). [Yogish Sekhar]
-* Improve `--coverage-fsm` (#7490) (#7529) (#7561) (#7573) (#7619). [Yogish Sekhar]
-* Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
-* Change JSON to include parameter constant mnemonics for FSM Coverage (#7531). [Yogish Sekhar]
 * Optimize emitting to_string() for compiler speedup (#7468). [Jakub Michalski, Antmicro Ltd.]
 * Optimize additional DFG peephole cases (#7553). [Varun Koyyalagunta, Testorrent USA, Inc.]
 * Optimize forced signal handling (#7554 partial) (#7572) (#7594) (#7596). [Krzysztof Bieganski, Artur Bieniek, Antmicro Ltd.]
@@ -68,6 +69,8 @@ Verilator 5.049 devel
 * Optimize formatting functions (#7701) (#7702) (#7703). [Geza Lore, Testorrent USA, Inc.]
 * Optimize DPI import argument passing (#7704). [Geza Lore, Testorrent USA, Inc.]
 * Optimize runtime assertOn() checks (#7707). [Geza Lore, Testorrent USA, Inc.]
+* Optimize $countones and $onehot in DFG. [Geza Lore, Testorrent USA, Inc.]
+* Optimize procedural loop unrolling. [Geza Lore, Testorrent USA, Inc.]
 * Fix TSP variable ordering for mtasks (#5342) (#7610). [Muzaffer Kal]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
 * Fix segmentation fault when using --trace with --lib-create (#7299) (#7518). [anonkey]
@@ -96,6 +99,7 @@ Verilator 5.049 devel
 * Fix internal error on consecutive repetition with N > 256 (#7552) (#7603). [Yilou Wang]
 * Fix inherited rand array with .size + foreach constraint (#7558) (#7650). [Yilou Wang]
 * Fix biased bit distribution under value < (1 << N) constraints (#7563) (#7684). [Yilou Wang]
+* Fix HIERPARAM lint checking (#7570) (#7690). [em2machine]
 * Fix display of %m in non-first argument (#7574).
 * Fix floating point compile warning on min/max delays.
 * Fix force of unpacked arrays (#7579) (#7580). [Zubin Jain]

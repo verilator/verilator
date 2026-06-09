@@ -100,6 +100,9 @@ class DfgRegularize final {
         // No need to add a temporary if the single sink is a variable already
         if (sink.is<DfgVertexVar>()) return false;
 
+        // CReset always needs to be driving a variable
+        if (aVtx.is<DfgCReset>()) return true;
+
         // Do not inline expressions into a loop body
         if (const DfgAstRd* const astRdp = sink.cast<DfgAstRd>()) { return astRdp->inLoop(); }
 

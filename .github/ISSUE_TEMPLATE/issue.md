@@ -7,18 +7,34 @@ assignees: ''
 
 ---
 
+<!--
 Thanks for taking the time to report this.
 
-Can you please attach an example that shows the issue or missing feature?  (Must be openly licensed, completely self-contained so can directly run what you provide. Ideally use test_regress format, see https://veripool.org/guide/latest/contributing.html?highlight=test_regress#reporting-bugs)
+Please avoid attaching screenshots that show text - you can convert images to text using e.g. https://ocr.space
+
+Please remove this block when composing, and all other blocks starting with < !--.
+-->
+
+Can you please attach an example that shows the issue or missing feature?
+
+<!-- Please replace this with your answer. Examples must be openly licensed, completely self-contained so can directly run what you provide. Ideally use test_regress format, see https://veripool.org/guide/latest/contributing.html?highlight=test_regress#reporting-bugs -->
 
 What output from that test indicates it is wrong, and what is the correct or expected output?  (Or, please make test self-checking if possible.)
 
+<!-- Please replace this with your answer -->
+
 What 'verilator' command line do we use to run your example?
+
+<!-- Please replace this with your answer -->
 
 What 'verilator --version' are you using?  Did you try it with the git master version?  Did you try it with other simulators?
 
+<!-- Please replace this with your answer -->
+
 What OS and distribution are you using?
+
+<!-- Please replace this with your answer -->
 
 May we assist you in trying to fix this in Verilator yourself?
 
-(Please avoid attaching screenshots that show text - you can convert images to text using e.g. https://ocr.space)
+<!-- Please replace this with your answer - then hit "Preview" to see the formatted result before submitting.  -->

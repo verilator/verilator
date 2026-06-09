@@ -89,6 +89,9 @@ class V3DfgPushDownSels final {
             m_stack.push_back(&vtx);
         }
         for (DfgConst& vtx : m_dfg.constVertices()) m_stack.push_back(&vtx);
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            if (!vtx.nInputs()) m_stack.push_back(&vtx);
+        }
 
         // Reverse post order number to assign to next vertex
         uint32_t rpoNext = m_dfg.size();

@@ -182,8 +182,7 @@ struct BuildResult final {
 };
 
 static AstNodeExpr* sampled(AstNodeExpr* exprp) {
-    AstSampled* const sp = new AstSampled{exprp->fileline(), exprp};
-    sp->dtypeFrom(exprp);
+    AstSampled* const sp = new AstSampled{exprp->fileline(), exprp, exprp->dtypep()};
     return sp;
 }
 
@@ -838,13 +837,14 @@ class SvaNfaBuilder final {
     BuildResult buildUntil(AstUntil* nodep, SvaStateVertex* entryVtxp, bool isTopLevelStep) {
         FileLine* const flp = nodep->fileline();
         if (!isTopLevelStep) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: '" << nodep->verilogKwd()
+                                                          << "' in complex property expression");
             return BuildResult::failWithError();
         }
         if (nodep->isStrong()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_until"
                                              << (nodep->isOverlapping() ? "_with" : "")
-                                             << " (in property expresion)");
+                                             << " (in property expression)");
             return BuildResult::failWithError();
         }
         AstNodeExpr* const lhsp = nodep->lhsp();
@@ -853,7 +853,8 @@ class SvaNfaBuilder final {
             return ep->exists([](const AstNodeExpr* np) { return np->isMultiCycleSva(); });
         };
         if (hasSeq(lhsp) || hasSeq(rhsp)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'until' in complex property expression");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: '" << nodep->verilogKwd()
+                                                          << "' in complex property expression");
             return BuildResult::failWithError();
         }
 
@@ -1926,16 +1927,16 @@ class AssertNfaVisitor final : public VNVisitor {
 
     // Bare `assert property (p until q)` with boolean operands stays on
     // V3AssertPre's AstLoop lowering, which preserves per-attempt action-block
-    // firings that this NFA's single-bit aggregated state cannot. NFA still
-    // owns strong forms, sequence operands, and any embedding inside a
-    // multi-cycle context (implication consequent, or/and operands, etc.).
+    // firings that this NFA's single-bit aggregated state cannot. Strong bare
+    // forms are also lowered there. NFA still owns sequence operands and any
+    // embedding inside a multi-cycle context (implication consequent, or/and
+    // operands, etc.).
     static bool isBareTopLevelUntil(AstNode* propp) {
         AstNode* p = propp;
         if (AstPropSpec* const specp = VN_CAST(p, PropSpec)) p = specp->propp();
         while (AstLogNot* const notp = VN_CAST(p, LogNot)) p = notp->lhsp();
         AstUntil* const untilp = VN_CAST(p, Until);
         if (!untilp) return false;
-        if (untilp->isStrong()) return false;
         const auto hasSeq = [](const AstNodeExpr* ep) {
             return ep->exists([](const AstNodeExpr* np) { return np->isMultiCycleSva(); });
         };

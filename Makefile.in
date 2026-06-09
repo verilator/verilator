@@ -535,6 +535,7 @@ PY_PROGRAMS = \
 # Python files, subject to format but not lint
 PY_FILES = \
   $(PY_PROGRAMS) \
+  ci/*.py \
   test_regress/t/*.py \
 
 # Python files, test_regress tests

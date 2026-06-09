@@ -182,7 +182,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           path: repo/notification
-          name: coverage-pr-notification
+          name: pr-notification
 
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)

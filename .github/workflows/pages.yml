@@ -10,7 +10,7 @@ on:
     paths: ["ci/**", ".github/workflows"]
   workflow_dispatch:
   workflow_run:
-    workflows: ["Code coverage"]
+    workflows: ["Code coverage", "RTLMeter"]
     types: [completed]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -35,7 +35,7 @@ jobs:
     name: Build content
     runs-on: ubuntu-24.04
     outputs:
-      coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
+      pr-run-ids: ${{ steps.build.outputs.pr-run-ids }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          bash -x ./ci/ci-pages.bash
+          ./ci/ci-pages.bash
           ls -lsha
           tree -L 3 pages
       - name: Upload pages artifact
@@ -83,5 +83,5 @@ jobs:
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          COVERAGE_PR_RUN_IDS: ${{ needs.build.outputs.coverage-pr-run-ids }}
-        run: bash -x ./ci/ci-pages-notify.bash
+          PR_RUN_IDS: ${{ needs.build.outputs.pr-run-ids }}
+        run: ./ci/ci-pages-notify.bash

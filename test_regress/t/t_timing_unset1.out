@@ -52,4 +52,12 @@
    38 |    assert property (@(e) s_eventually 1'h1);
       |                          ^~~~~~~~~~~~
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error-NOTIMING: t/t_notiming.v:39:31: s_until requires --timing
+                                     : ... note: In instance 't'
+   39 |    assert property (@(e) 1'h1 s_until 1'h1);
+      |                               ^~~~~~~
+%Error-NOTIMING: t/t_notiming.v:40:31: s_until_with requires --timing
+                                     : ... note: In instance 't'
+   40 |    assert property (@(e) 1'h1 s_until_with 1'h1);
+      |                               ^~~~~~~~~~~~
 %Error: Exiting due to
