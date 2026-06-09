@@ -131,7 +131,7 @@ public:
         // path (incrementBin) stays a plain counter bump.
         int numCovered = 0;
         for (const VlCovNamer& nm : m_namers) {
-            if (nm.set() != VlCovBinKind::NORMAL) continue;
+            if (nm.set() != VlCovBinKind::KIND_NORMAL) continue;
             for (int i = nm.base(); i < nm.base() + nm.count(); ++i) {
                 if (m_counts[i] >= m_atLeast) ++numCovered;
             }

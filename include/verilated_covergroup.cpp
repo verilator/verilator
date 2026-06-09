@@ -35,7 +35,7 @@ void VlCoverpoint::addNamer(VlCovBinKind set, int count, VlCovBinNaming naming, 
                             const char* file, int line, int col) {
     m_namers.emplace_back(set, count, m_nextBase, naming, name, file, line, col);
     m_nextBase += count;
-    if (set == VlCovBinKind::NORMAL) m_normal += count;
+    if (set == VlCovBinKind::KIND_NORMAL) m_normal += count;
 }
 
 const VlCovNamer& VlCoverpoint::namerFor(int i) const {
@@ -62,14 +62,14 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         const std::string full = m_hier + "." + binp;
         const std::string lineStr = std::to_string(nm.line());
         const std::string colStr = std::to_string(nm.col());
-        if (kind == VlCovBinKind::NORMAL) {
+        if (kind == VlCovBinKind::KIND_NORMAL) {
             VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
                             nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
                             binp.c_str());
         } else {
-            const char* const binType = kind == VlCovBinKind::IGNORE    ? "ignore"
-                                        : kind == VlCovBinKind::ILLEGAL ? "illegal"
-                                                                        : "default";
+            const char* const binType = kind == VlCovBinKind::KIND_IGNORE    ? "ignore"
+                                        : kind == VlCovBinKind::KIND_ILLEGAL ? "illegal"
+                                                                             : "default";
             VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
                             nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
                             binp.c_str(), "bin_type", binType);
