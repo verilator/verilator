@@ -23,7 +23,7 @@ task loadHEX;
   readHEX(file, stimuli);
 endtask
 
-module tb();
+module tb ();
 
   logic [7:0] result[32'h00010000];
   initial begin

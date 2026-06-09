@@ -463,9 +463,9 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     // 'constructing' indicates that the object was just constructed, so if it is a string or
     // something that starts off clear already, no need to clear it again
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
-    const string vlSelf = m_cfuncp && m_cfuncp->isStatic() ? 
-                          "vlSymsp->TOP__" + m_modp->name() + "." :
-                          VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
+    const string vlSelf = m_cfuncp && m_cfuncp->isStatic()
+                              ? "vlSymsp->TOP__" + m_modp->name() + "."
+                              : VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const string varNameProtected
         = ((VN_IS(m_modp, Class) || varp->isFuncLocal()) || !prefix.empty())
               ? varp->nameProtect()
