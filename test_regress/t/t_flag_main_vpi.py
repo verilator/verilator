@@ -32,7 +32,12 @@ else:
 # Run the generated binary; load the VPI library via the +verilator+vpi+ plusarg.
 # The VPI library's output (observed 'count' reaching MAX_TICKS, then end-of-sim) is
 # checked against the golden .out file.
-test.execute(all_run_flags=["+verilator+vpi+" + test.obj_dir + "/libvpi.so"],
+# Also pass a non-VPI plusarg (skipped by the loader's prefix check) and a bare
+# +verilator+vpi+ with an empty payload (skipped by the empty-arg check), so both
+# loader-skip branches are exercised alongside the real library load.
+test.execute(all_run_flags=[
+    "+othertest", "+verilator+vpi+", "+verilator+vpi+" + test.obj_dir + "/libvpi.so"
+],
              check_finished=True,
              expect_filename=test.golden_filename)
 
