@@ -2232,6 +2232,16 @@ public:
             collectTypedefs(varp->valuep());
             enqueueRefs(varp->valuep());
         }
+        // Descend into each collected typedef's subDType for Dots (e.g. class-scoped
+        // lparams used in a packed range like `logic [(CFG::pc_width - 1):0]`) and
+        // nested typedef references. The loop grows tdefps as it goes; the
+        // `i < tdefps.size()` re-check carries us to fixpoint.
+        for (size_t i = 0; i < tdefps.size(); ++i) {
+            AstNodeDType* const subp = tdefps[i]->subDTypep();
+            if (!subp) continue;
+            collectDots(subp);
+            collectTypedefs(subp);
+        }
         if (dotps.empty() && tdefps.empty()) return;
         VL_RESTORER(m_modp);
         m_modp = modp;
