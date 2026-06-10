@@ -219,14 +219,14 @@ module t (
   `signal(ARRAY_1, 3); // UNOPTFLAT
   assign ARRAY_1 = array_1[0];
 
-  wire [2:0] array_2a [2];
-  wire [2:0] array_2b [2];
+  wire [2:0] array_2a [2]; // UNOPTFLAT
+  wire [2:0] array_2b [2]; // UNOPTFLAT
   assign array_2a[0][0] = rand_a[0];
   assign array_2a[0][1] = array_2b[1][0];
   assign array_2a[0][2] = array_2b[1][1];
   assign array_2a[1] = array_2a[0];
   assign array_2b = array_2a;
-  `signal(ARRAY_2, 3); // UNOPTFLAT
+  `signal(ARRAY_2, 3);
   assign ARRAY_2 = array_2a[0];
 
   wire [2:0] array_3 [2];
