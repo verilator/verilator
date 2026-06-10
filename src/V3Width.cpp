@@ -4352,6 +4352,12 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallAssoc(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
         AstCMethodHard* newp = nullptr;
+        if (nodep->withp() && adtypep->subDTypep()->isWide()) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: `with` clause on assoc arrays with wide value types in method '"
+                    << nodep->prettyName() << "'");
+        }
         if (nodep->name() == "num"  // function int num()
             || nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
