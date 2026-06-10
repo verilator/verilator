@@ -337,7 +337,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SplitVar.o \
   V3StackCount.o \
   V3Subst.o \
-  V3TSP.o \
   V3Table.o \
   V3Task.o \
   V3Timing.o \
