@@ -4,14 +4,21 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_initial_dlyass.v"
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(fails=True, expect_filename=test.golden_filename)
+
+test.extract(in_filename=test.top_filename,
+             out_filename=test.root + "/docs/gen/ex_FINALDLY_faulty.rst",
+             lines="8-9")
+
+test.extract(in_filename=test.golden_filename,
+             out_filename=test.root + "/docs/gen/ex_FINALDLY_msg.rst",
+             lines="1-3")
 
 test.passes()

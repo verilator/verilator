@@ -1751,6 +1751,7 @@ public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
+    class InitialNBA {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
@@ -1768,6 +1769,9 @@ public:
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
+    AstSenItem(FileLine* fl, InitialNBA)
+        : ASTGEN_SUPER_SenItem(fl)
+        , m_edgeType{VEdgeType::ET_INITIAL_NBA} {}
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}

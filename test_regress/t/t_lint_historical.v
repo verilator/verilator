@@ -40,6 +40,7 @@ module t;
   // verilator lint_off ENUMITEMWIDTH
   // verilator lint_off ENUMVALUE
   // verilator lint_off EOFNEWLINE
+  // verilator lint_off FINALDLY
   // verilator lint_off FUNCTIMECTL
   // verilator lint_off GENCLK
   // verilator lint_off GENUNNAMED

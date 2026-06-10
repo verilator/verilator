@@ -882,6 +882,22 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FINALDLY
+
+   Error issued when a non-blocking assignment `<=` is used in a
+   `final` block.
+
+   This error can be disabled. If disabled, the assignment will be
+   executed as a `=` blocking assignment.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_FINALDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_FINALDLY_msg.rst
+
 .. option:: FSMMULTI
 
    Warns that the same always block contains multiple enum-typed case
@@ -1178,7 +1194,7 @@ List Of Warnings
 
 .. option:: INITIALDLY
 
-   .. TODO better example
+   Historical, never issued since version 5.050.
 
    Warns that the code has a delayed assignment inside of an ``initial`` or
    ``final`` block. If this message is suppressed, Verilator will convert
