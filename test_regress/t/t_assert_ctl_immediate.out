@@ -3,9 +3,10 @@
 [0] %Error: t_assert_ctl_immediate.v:58: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
 [0] %Error: t_assert_ctl_immediate.v:46: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
 [0] %Error: t_assert_ctl_immediate.v:46: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:138: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:122: Assertion failed in top.t.module_with_method_ctl.Ctl.check_positive: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:148: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:90: Assertion failed in top.t.module_with_method_ctl.iface.check_positive: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:158: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:146: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:124: Assertion failed in top.t.module_with_method_ctl.Ctl.check_positive: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:156: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:91: Assertion failed in top.t.module_with_method_ctl.iface.check_positive: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:167: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:173: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
 *-* All Finished *-*

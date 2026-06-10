@@ -77,6 +77,7 @@ endmodule
 //   - assert that lives inside a class method (obeys context-global gating)
 //   - interface function $assertoff / $asserton
 //   - assert inside an interface function
+//   - virtual interface dispatch to an assertion-control function
 //   - interface class (AstClass with isInterfaceClass) via a concrete impl
 
 interface AssertCtlIf;
@@ -109,6 +110,7 @@ endclass
 
 module module_with_method_ctl;
   class Ctl;
+    virtual AssertCtlIf vif;
     static function void off_all();
       $assertcontrol(4);
     endfunction
@@ -120,6 +122,12 @@ module module_with_method_ctl;
     endfunction
     function void check_positive(int v);
       assert (v > 0);
+    endfunction
+    function void vif_suppress();
+      vif.suppress();
+    endfunction
+    function void vif_enable();
+      vif.enable();
     endfunction
   endclass
 
@@ -150,6 +158,13 @@ module module_with_method_ctl;
     iface.check_positive(-1);  // assert inside iface fn, gated -> no fire
     iface.enable();
     iface.check_positive(-2);  // assert inside iface fn, fires
+
+    // --- virtual interface dispatch coverage ---
+    c.vif = iface;
+    c.vif_suppress();
+    assert (0);  // gated via virtual interface dispatch -> no fire
+    c.vif_enable();
+    assert (0);  // fires
 
     // --- interface class via concrete impl ---
     impl.suppress();
