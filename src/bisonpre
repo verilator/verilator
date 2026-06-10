@@ -154,7 +154,8 @@ def clean_output(filename: str, outname: str, is_output: bool, is_c: bool) -> No
                 if modify:
                     out.insert(-1, ifdefined)
                     out.insert(-1, "  _Pragma (\"GCC diagnostic push\")\n")
-                    out.insert(-1,
+                    out.insert(
+                        -1,
                         "  _Pragma (\"GCC diagnostic ignored \\\"-Wfree-nonheap-object\\\"\")\n")
                     out.insert(-1, endif)
                 out.append(line)
