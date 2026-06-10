@@ -573,8 +573,14 @@ public:
                      + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
                     memberVarp, resetp->constructing());
             } else {
-                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
-                emitVarReset("", varp, resetp->constructing());
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                AstVar* const varp = fromVarRefp->varp();
+                const string prefix
+                    = fromVarRefp->selfPointer().isEmpty()
+                          ? ""
+                          : dereferenceString(
+                                VN_AS(fromp, NodeVarRef)->selfPointerProtect(m_useSelfForThis));
+                emitVarReset(prefix, varp, resetp->constructing());
             }
             return;
         }
