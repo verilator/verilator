@@ -41,8 +41,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Support classes
 
 namespace V3TSP {
-static uint32_t s_edgeIdNext = 0;
-
 static void selfTestStates();
 static void selfTestString();
 }  // namespace V3TSP
@@ -77,6 +75,7 @@ public:
 
     // MEMBERS
     std::unordered_map<T_Key, Vertex*> m_vertices;  // T_Key to Vertex lookup map
+    uint32_t m_edgeIdNext = 0;  // Next edge ID; IDs need only be unique within this graph
 
     // CONSTRUCTORS
     TspGraphTmpl()
@@ -105,7 +104,7 @@ public:
         // The only time we may create duplicate edges is when
         // combining the MST with the perfect-matched pairs,
         // and in that case, we want to permit duplicate edges.
-        const uint32_t edgeId = ++V3TSP::s_edgeIdNext;
+        const uint32_t edgeId = ++m_edgeIdNext;
 
         // We want to be able to compare edges quickly for a total
         // ordering, so pre-compute a sorting key and store it in
