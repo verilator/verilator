@@ -12,17 +12,17 @@
 // (requires --public-flat-rw).
 module t;
 
-   reg clk /*verilator public_flat_rw*/;
-   reg [31:0] count /*verilator public_flat_rw*/;
+  reg clk /*verilator public_flat_rw*/;
+  reg [31:0] count /*verilator public_flat_rw*/;
 
-   initial begin
-      clk = 0;
-      count = 0;
-   end
+  initial begin
+    clk = 0;
+    count = 0;
+  end
 
-   // Self-driving clock: the design itself keeps the simulation alive
-   always #5 clk = ~clk;
+  // Self-driving clock: the design itself keeps the simulation alive
+  always #5 clk = ~clk;
 
-   always @(posedge clk) count <= count + 1;
+  always @(posedge clk) count <= count + 1;
 
 endmodule
