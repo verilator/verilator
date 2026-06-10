@@ -103,7 +103,6 @@
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
-#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
@@ -734,7 +733,6 @@ static bool verilate(const string& argString) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
