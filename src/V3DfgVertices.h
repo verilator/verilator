@@ -299,6 +299,7 @@ public:
     void fromp(DfgVertex* vtxp) { srcp(vtxp); }
     uint32_t lsb() const { return m_lsb; }
     void lsb(uint32_t value) { m_lsb = value; }
+    uint32_t msb() const { return m_lsb + width() - 1; }
 };
 
 class DfgUnitArray final : public DfgVertexUnary {

@@ -1188,6 +1188,102 @@ class V3DfgPeephole final : public DfgVisitor {
         return {fromp, lsb};
     }
 
+    // Given a pair of vertices, returns a vertex representing the common LSBs of the two,
+    // and the number of common LSBs. Returns {nullptr, 0} if no common LSBs are found.
+    std::pair<DfgVertex*, uint32_t> commonLSBs(DfgVertex* ap, DfgVertex* bp) {
+        if (ap == bp) return {ap, ap->width()};
+
+        // If both constants, check LSBs
+        if (DfgConst* const aConstp = ap->cast<DfgConst>()) {
+            if (DfgConst* const bConstp = bp->cast<DfgConst>()) {
+                const V3Number& aNum = aConstp->num();
+                const V3Number& bNum = bConstp->num();
+                // Max match is the shorter constant
+                const uint32_t maxMatch = std::min(aConstp->width(), bConstp->width());
+                // Check all bits
+                uint32_t matchWidth = 0;
+                for (; matchWidth < maxMatch; ++matchWidth) {
+                    if (aNum.bitIs0(matchWidth) != bNum.bitIs0(matchWidth)) break;
+                }
+                // Will always return the shorter constant in case it can be used directly
+                DfgConst* const shorterp = aConstp->width() < bConstp->width() ? aConstp : bConstp;
+                return {matchWidth ? shorterp : nullptr, matchWidth};
+            }
+        }
+
+        // If Concat, check against the RHS
+        if (DfgConcat* const catp = ap->cast<DfgConcat>()) return commonLSBs(catp->rhsp(), bp);
+        if (DfgConcat* const catp = bp->cast<DfgConcat>()) return commonLSBs(ap, catp->rhsp());
+
+        // If selecting the LSBs, check against the source of the Sel
+        if (DfgSel* const selp = ap->cast<DfgSel>()) {
+            if (selp->lsb() == 0) {
+                DfgVertex* const fromp = selp->fromp();
+                const std::pair<DfgVertex*, uint32_t> common = commonLSBs(fromp, bp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+        if (DfgSel* const selp = bp->cast<DfgSel>()) {
+            if (selp->lsb() == 0) {
+                DfgVertex* const fromp = selp->fromp();
+                const std::pair<DfgVertex*, uint32_t> common = commonLSBs(ap, fromp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+
+        // Otherwise no common LSBs
+        return {nullptr, 0};
+    }
+
+    // Given a pair of vertices, returns a vertex representing the common MSBs of the two,
+    // and the number of common LSBs. Returns {nullptr, 0} if no common LSBs are found.
+    std::pair<DfgVertex*, uint32_t> commonMSBs(DfgVertex* ap, DfgVertex* bp) {
+        if (ap == bp) return {ap, ap->width()};
+
+        // If both constants, check MSBs
+        if (DfgConst* const aConstp = ap->cast<DfgConst>()) {
+            if (DfgConst* const bConstp = bp->cast<DfgConst>()) {
+                const uint32_t aMsb = aConstp->width() - 1;
+                const uint32_t bMsb = bConstp->width() - 1;
+                const V3Number& aNum = aConstp->num();
+                const V3Number& bNum = bConstp->num();
+                // Max match is the shorter constant
+                const uint32_t maxMatch = std::min(aConstp->width(), bConstp->width());
+                // Check all bits
+                uint32_t matchWidth = 0;
+                for (; matchWidth < maxMatch; ++matchWidth) {
+                    if (aNum.bitIs0(aMsb - matchWidth) != bNum.bitIs0(bMsb - matchWidth)) break;
+                }
+                // Will always return the shorter constant in case it can be used directly
+                DfgConst* const shorterp = aMsb < bMsb ? aConstp : bConstp;
+                return {matchWidth ? shorterp : nullptr, matchWidth};
+            }
+        }
+
+        // If Concat, check against the LHS
+        if (DfgConcat* const catp = ap->cast<DfgConcat>()) return commonMSBs(catp->lhsp(), bp);
+        if (DfgConcat* const catp = bp->cast<DfgConcat>()) return commonMSBs(ap, catp->lhsp());
+
+        // If selecting the MSBs, check against the source of the Sel
+        if (DfgSel* const selp = ap->cast<DfgSel>()) {
+            DfgVertex* const fromp = selp->fromp();
+            if (selp->msb() == fromp->width() - 1) {
+                const std::pair<DfgVertex*, uint32_t> common = commonMSBs(fromp, bp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+        if (DfgSel* const selp = bp->cast<DfgSel>()) {
+            DfgVertex* const fromp = selp->fromp();
+            if (selp->msb() == fromp->width() - 1) {
+                const std::pair<DfgVertex*, uint32_t> common = commonMSBs(ap, fromp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+
+        // Otherwise no common MSBs
+        return {nullptr, 0};
+    }
+
     // VISIT methods
 
     void visit(DfgVertex*) override {}
@@ -2834,56 +2930,62 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        if (DfgConcat* const tConcatp = thenp->cast<DfgConcat>()) {
-            if (DfgConcat* const eConcatp = elsep->cast<DfgConcat>()) {
-                DfgVertex* const tRhsp = tConcatp->rhsp();
-                DfgVertex* const tLhsp = tConcatp->lhsp();
-                DfgVertex* const eRhsp = eConcatp->rhsp();
-                DfgVertex* const eLhsp = eConcatp->lhsp();
-
-                if (isSame(tRhsp, eRhsp)) {
-                    APPLYING(REPLACE_COND_SAME_CAT_RHS) {
-                        DfgCond* const newCondp
-                            = make<DfgCond>(flp, tLhsp->dtype(), condp, tLhsp, eLhsp);
-                        replace(make<DfgConcat>(vtxp, newCondp, tRhsp));
+        if (!thenp->is<DfgConst>() && !elsep->is<DfgConst>()) {
+            const std::pair<DfgVertex*, uint32_t> cLSBs = commonLSBs(thenp, elsep);
+            if (cLSBs.first) {
+                APPLYING(REPLACE_COND_COMMON_LSBS) {
+                    // Create new RHS
+                    const uint32_t rWidth = cLSBs.second;
+                    DfgVertex* rhsp = cLSBs.first;
+                    if (rWidth != rhsp->width()) {
+                        const DfgDataType& rDtype = DfgDataType::packed(rWidth);
+                        rhsp = make<DfgSel>(flp, rDtype, rhsp, 0U);
+                    }
+                    // If it's all the same, just replace
+                    if (rhsp->dtype() == vtxp->dtype()) {
+                        // Note this branch can only be hit if rules run in the right order,
+                        // it might have missing code coverage after a refactor.
+                        replace(rhsp);
                         return;
                     }
-                }
-
-                if (isSame(tLhsp, eLhsp)) {
-                    APPLYING(REPLACE_COND_SAME_CAT_LHS) {
-                        DfgCond* const newCondp
-                            = make<DfgCond>(flp, tRhsp->dtype(), condp, tRhsp, eRhsp);
-                        replace(make<DfgConcat>(vtxp, tLhsp, newCondp));
-                        return;
-                    }
+                    // Create new LHS
+                    const uint32_t lWidth = vtxp->width() - rWidth;
+                    const DfgDataType& lDtype = DfgDataType::packed(lWidth);
+                    DfgVertex* const lThenp = make<DfgSel>(flp, lDtype, thenp, rWidth);
+                    DfgVertex* const lElsep = make<DfgSel>(flp, lDtype, elsep, rWidth);
+                    DfgVertex* const lhsp = make<DfgCond>(flp, lDtype, condp, lThenp, lElsep);
+                    // Replace with concat
+                    replace(make<DfgConcat>(vtxp, lhsp, rhsp));
+                    return;
                 }
             }
 
-            if (!tConcatp->hasMultipleSinks()) {
-                if (DfgConcat* const tRCatp = tConcatp->rhsp()->cast<DfgConcat>()) {
-                    if (!tRCatp->hasMultipleSinks()) {
-                        if (DfgSel* const tLSelp = tConcatp->lhsp()->cast<DfgSel>()) {
-                            if (DfgSel* const tRRSelp = tRCatp->rhsp()->cast<DfgSel>()) {
-                                if (tLSelp->lsb() == tRCatp->width()  //
-                                    && tRRSelp->lsb() == 0  //
-                                    && isSame(tLSelp->fromp(), elsep)  //
-                                    && isSame(tRRSelp->fromp(), elsep)) {
-                                    APPLYING(REPLACE_COND_INSERT) {
-                                        DfgVertex* const newTp = tRCatp->lhsp();
-                                        DfgVertex* const newEp = make<DfgSel>(
-                                            flp, newTp->dtype(), elsep, tRRSelp->width());
-                                        DfgCond* const newCp = make<DfgCond>(flp, newTp->dtype(),
-                                                                             condp, newTp, newEp);
-                                        replace(make<DfgConcat>(
-                                            vtxp, tLSelp,
-                                            make<DfgConcat>(tRCatp, newCp, tRRSelp)));
-                                        return;
-                                    }
-                                }
-                            }
-                        }
+            const std::pair<DfgVertex*, uint32_t> cMSBs = commonMSBs(thenp, elsep);
+            if (cMSBs.first) {
+                APPLYING(REPLACE_COND_COMMON_MSBS) {
+                    // Create new LHS
+                    const uint32_t lWidth = cMSBs.second;
+                    DfgVertex* lhsp = cMSBs.first;
+                    if (lWidth != lhsp->width()) {
+                        const DfgDataType& lDtype = DfgDataType::packed(lWidth);
+                        lhsp = make<DfgSel>(flp, lDtype, lhsp, lhsp->width() - lWidth);
                     }
+                    // If it's all the same, just replace
+                    if (lhsp->dtype() == vtxp->dtype()) {
+                        // Note this branch can only be hit if rules run in the right order,
+                        // it might have missing code coverage after a refactor.
+                        replace(lhsp);
+                        return;
+                    }
+                    // Create new RHS
+                    const uint32_t rWidth = vtxp->width() - lWidth;
+                    const DfgDataType& rDtype = DfgDataType::packed(rWidth);
+                    DfgVertex* const rThenp = make<DfgSel>(flp, rDtype, thenp, 0U);
+                    DfgVertex* const rElsep = make<DfgSel>(flp, rDtype, elsep, 0U);
+                    DfgVertex* const rhsp = make<DfgCond>(flp, rDtype, condp, rThenp, rElsep);
+                    // Replace with concat
+                    replace(make<DfgConcat>(vtxp, lhsp, rhsp));
+                    return;
                 }
             }
         }
