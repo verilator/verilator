@@ -3045,6 +3045,19 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->delayp(), WidthVP{nodep->dtypep(), PRELIM}.p());
         UINFO(4, "varWidthed " << nodep);
         // UINFOTREE(1, nodep, "", "InitOut");
+        // Warn about unpacked arrays on module IO ports. Synthesis tools
+        // typically flatten these to packed bits in the netlist, which breaks
+        // pre-synthesis testbench connectivity for gate-level simulation.
+        if (nodep->isIO() && !nodep->isIfaceRef()) {
+            if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+                nodep->v3warn(SYNTHUNPACKED,
+                              "Unpacked array on port "
+                                  << nodep->prettyNameQ()
+                                  << " is typically flattened to packed bits by synthesis,"
+                                     " breaking pre-synthesis testbench connectivity for"
+                                     " gate-level simulation");
+            }
+        }
         nodep->didWidth(true);
         nodep->doingWidth(false);
     }
