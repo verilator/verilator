@@ -1606,12 +1606,18 @@ public:
 };
 class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
+    bool m_isCoverSeq = false;  // 'cover sequence' (IEEE 1800-2023 16.14.3): fires per
+                                // end-of-match, not per property success
 public:
     ASTGEN_MEMBERS_AstCover;
     AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
              const string& name = "")
         : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
     string verilogKwd() const override { return "cover"; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isCoverSeq() const { return m_isCoverSeq; }
+    void isCoverSeq(bool flag) { m_isCoverSeq = flag; }
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:

@@ -176,6 +176,10 @@ struct BuildResult final {
     // Mid-window sources for range delays (pure boolean RHS): match-only (isUnbounded)
     std::vector<SvaStateVertex*> midSources;
     bool errorEmitted = false;  // Builder already emitted specific error; skip generic
+    // For cover_sequence: when true, midSources already enumerate every
+    // end-of-match, so wireMatchAndMidSources must NOT add the main
+    // termVtxp -> matchVertex Link (would double-count via the merge vertex).
+    bool termIsMidMerge = false;
     bool valid() const { return termVertexp != nullptr; }
     static BuildResult fail(bool errored = false) { return {nullptr, nullptr, {}, errored}; }
     static BuildResult failWithError() { return {nullptr, nullptr, {}, true}; }
@@ -198,6 +202,10 @@ class SvaNfaBuilder final {
     // (IEEE 1800-2023 16.12.14 outer-wraps-inner).
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
+    // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
+    // not just the first. Builder builds parallel-branch (no first-match-wins)
+    // topology when true. Default false preserves cover_property semantics.
+    bool m_isCoverSeq = false;
 
     AstNodeExpr* throughoutCond(AstNodeExpr* baseCondp, FileLine* flp) {
         if (m_throughoutStack.empty()) return baseCondp;
@@ -405,6 +413,15 @@ class SvaNfaBuilder final {
         // count is O(1) in range regardless of user input; no adversarial N
         // blowup is possible.
         constexpr int kChainLimit = 256;
+        // IEEE 1800-2023 16.14.3: only a small bounded range before a plain
+        // boolean enumerates every end-of-match below. The counter FSM drops
+        // overlapping ends and the nested-sequence merge collapses them, so
+        // reject those for a cover sequence rather than under-count.
+        if (m_isCoverSeq && (range > kChainLimit || VN_IS(rhsExprp, SExpr))) {
+            flp->v3warn(E_UNSUPPORTED, "Unsupported: cover sequence with this ranged cycle delay");
+            outErrorEmitted = true;
+            return false;
+        }
         if (range > kChainLimit) {
             // Large range: counter FSM. Overlapping triggers during an active
             // count are dropped (non-overlapping semantics only).
@@ -427,13 +444,21 @@ class SvaNfaBuilder final {
         } else {
             // Pure boolean RHS: register chain. Each mid-position links to
             // match (match-only); last position is the reject source.
-            AstVar* const hoistVarp = tryHoistSampled(rhsExprp, flp, range);
+            // For cover_sequence (IEEE 1800-2023 16.14.3) the advance edge is
+            // unconditional so every (start, end) pair fires independently --
+            // dropping NOT(b) turns "first-match-wins" into "every end fires".
+            AstVar* const hoistVarp
+                = m_isCoverSeq ? nullptr : tryHoistSampled(rhsExprp, flp, range);
             midSources.push_back(currentp);
             for (int i = 0; i < range; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
-                AstNodeExpr* const notExprp
-                    = new AstLogNot{flp, sampledRefOrClone(hoistVarp, rhsExprp, flp)};
-                guardedEdge(currentp, nextVtxp, notExprp, flp);
+                if (m_isCoverSeq) {
+                    guardedEdge(currentp, nextVtxp, flp);
+                } else {
+                    AstNodeExpr* const notExprp
+                        = new AstLogNot{flp, sampledRefOrClone(hoistVarp, rhsExprp, flp)};
+                    guardedEdge(currentp, nextVtxp, notExprp, flp);
+                }
                 if (i < range - 1) midSources.push_back(nextVtxp);
                 currentp = nextVtxp;
             }
@@ -516,6 +541,10 @@ class SvaNfaBuilder final {
         if (exceedsAssertUnrollLimit(repp, totalSites)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, totalSites);
 
+        // Cover-sequence (IEEE 1800-2023 16.14.3): collect each end-of-match
+        // position so they all fire the action, not just the merged terminal.
+        std::vector<SvaStateVertex*> consMidSources;
+
         SvaStateVertex* currentp = entryVtxp;
         for (int i = 0; i < minN; ++i) {
             if (i > 0) {
@@ -530,6 +559,10 @@ class SvaNfaBuilder final {
                 = guardedLink(currentp, condVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
             if (isTopLevelStep && (i == 0 || i == minN - 1)) { linkp->m_rejectOnFail = true; }
             currentp = condVtxp;
+        }
+        // After minN: currentp is the first valid end-of-match position for [*m:n].
+        if (m_isCoverSeq && (repp->unbounded() || repp->maxCountp())) {
+            consMidSources.push_back(currentp);
         }
 
         if (repp->unbounded()) {
@@ -564,11 +597,19 @@ class SvaNfaBuilder final {
                 guardedLink(nextVtxp, checkVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
                 guardedLink(checkVtxp, mergeVtxp, flp);
                 currentp = checkVtxp;
+                if (m_isCoverSeq) consMidSources.push_back(checkVtxp);
             }
             currentp = mergeVtxp;
         }
         // finalCond = nullptr (already checked via Links)
-        return {currentp, nullptr, {}};
+        BuildResult res;
+        res.termVertexp = currentp;
+        res.finalCondp = nullptr;
+        res.midSources = std::move(consMidSources);
+        // mergeVtxp is the OR of all the end-positions we already pushed to
+        // midSources, so the main termVtxp -> matchVertex Link would duplicate.
+        res.termIsMidMerge = m_isCoverSeq && !res.midSources.empty();
+        return res;
     }
 
     // always[lo:hi] / s_always[lo:hi] (IEEE 1800-2023 16.12.11).
@@ -606,6 +647,16 @@ class SvaNfaBuilder final {
         const int maxN = hasMax ? getConstInt(repp->maxCountp()) : minN;
         UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
         if (exceedsAssertUnrollLimit(repp, maxN)) return BuildResult::failWithError();
+
+        // IEEE 1800-2023 16.14.3: a ranged goto repetition b[->M:N] ends at every
+        // M..N-th match, but only the shared merge vertex below reaches the
+        // terminal, so a cover sequence would under-count. Reject the ranged form
+        // (the single-count b[->N] has one end and is enumerated correctly).
+        if (m_isCoverSeq && hasMax && maxN > minN) {
+            flp->v3warn(E_UNSUPPORTED,
+                        "Unsupported: cover sequence with a ranged goto repetition");
+            return BuildResult::failWithError();
+        }
 
         // Wait + match per iter -> 2 sites per iteration; range form needs
         // sites for every iteration in [0..maxN). NOT($sampled(x)) matches
@@ -661,6 +712,16 @@ class SvaNfaBuilder final {
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
             return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
         }  // LCOV_EXCL_STOP
+        // IEEE 1800-2023 16.14.3: a cover sequence counts every end-of-match. A
+        // sequence operand of 'or' can end more than once, but only its final
+        // end reaches the merge vertex below, so reject sequence operands rather
+        // than under-count. Plain boolean disjunction has one end per cycle and
+        // is handled by the OR-fold.
+        if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
+            flp->v3warn(E_UNSUPPORTED,
+                        "Unsupported: cover sequence with a sequence operand of 'or'");
+            return BuildResult::failWithError();
+        }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         if (lhs.finalCondp) {
             guardedLink(lhs.termVertexp, mergeVtxp, sampled(lhs.finalCondp->cloneTreePure(false)),
@@ -970,10 +1031,12 @@ class SvaNfaBuilder final {
     }
 
 public:
-    SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames)
+    SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
+                  bool isCoverSeq = false)
         : m_graph{graph}
         , m_modp{modp}
-        , m_propTempNames{propTempNames} {}
+        , m_propTempNames{propTempNames}
+        , m_isCoverSeq{isCoverSeq} {}
 
     // Reset scope between antecedent and consequent: liveness must not leak.
     void resetScope() {
@@ -1346,8 +1409,11 @@ class SvaNfaLowering final {
     // throughout-drop reject; clean up intermediate state signals.
     // Phase 3: terminalActive and rejectBase from Links to matchVertex.
     // Builder only adds Links (non-clocked) to matchVertex via addLink in
-    // wireMatchAndMidSources.
-    void computeTerminalMatchAndReject(LowerCtx& c, AstNodeExpr* snapshotOkp, SignalSet& sigs) {
+    // wireMatchAndMidSources. When outPerMidSrcsp is non-null, also collect
+    // the per-edge match signal (IEEE 1800-2023 16.14.3 cover sequence: each
+    // end-of-match fires the action independently, no OR-fold).
+    void computeTerminalMatchAndReject(LowerCtx& c, AstNodeExpr* snapshotOkp, SignalSet& sigs,
+                                       std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
         for (const SvaTransEdge* const tep : c.edges) {
             if (tep->toVtxp() != c.graph.m_matchVertexp) continue;
             const int fi = tep->fromVtxp()->color();
@@ -1358,6 +1424,18 @@ class SvaNfaLowering final {
             srcSigp = andCond(c.flp, srcSigp, tep->m_condp);
             if (snapshotOkp) {
                 srcSigp = new AstLogAnd{c.flp, srcSigp, snapshotOkp->cloneTreePure(false)};
+            }
+            if (outPerMidSrcsp) {
+                // Per-mid signal must also AND in matchCondp (the final boolean
+                // check, e.g. sampled(b) for `a ##[1:3] b`). assembleResult does
+                // this for the OR-collapsed terminalActivep; we replicate it
+                // per-edge here so each end-of-match is gated identically.
+                AstNodeExpr* perMidp = srcSigp->cloneTreePure(false);
+                if (c.matchCondp) {
+                    perMidp = new AstLogAnd{c.flp, perMidp,
+                                            sampled(c.matchCondp->cloneTreePure(false))};
+                }
+                outPerMidSrcsp->push_back(perMidp);
             }
 
             if (tep->fromVtxp()->m_isCounter) {
@@ -1409,7 +1487,8 @@ class SvaNfaLowering final {
         }
     }
 
-    SignalSet computeSignals(LowerCtx& c, std::vector<AstNodeExpr*>* outRequiredStepSrcsp) {
+    SignalSet computeSignals(LowerCtx& c, std::vector<AstNodeExpr*>* outRequiredStepSrcsp,
+                             std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
         SignalSet sigs;
 
         // Snapshot comparison expression for disable-iff counter.
@@ -1421,7 +1500,7 @@ class SvaNfaLowering final {
                                     new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
         }
 
-        computeTerminalMatchAndReject(c, snapshotOkp, sigs);
+        computeTerminalMatchAndReject(c, snapshotOkp, sigs, outPerMidSrcsp);
 
         // Phase 3a: required-step rejection.
         // Builder only sets m_rejectOnFail on non-clocked Links with m_condp,
@@ -1648,7 +1727,8 @@ public:
                        AstNodeExpr* disableExprp = nullptr, bool negated = false,
                        AstNodeExpr** outMatchpp = nullptr, AstVar* disableCntVarp = nullptr,
                        AstVar* snapshotVarp = nullptr,
-                       std::vector<AstNodeExpr*>* outRequiredStepSrcsp = nullptr) {
+                       std::vector<AstNodeExpr*>* outRequiredStepSrcsp = nullptr,
+                       std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
         const std::string baseName = m_names.get("");
 
         // Number vertices with sequential colors for array indexing.
@@ -1734,7 +1814,7 @@ public:
         emitAndCombinerDoneLatchNba(c);
 
         // Phase 3/3a/3b: Compute terminal match/reject signals (cleans up stateSig).
-        const SignalSet sigs = computeSignals(c, outRequiredStepSrcsp);
+        const SignalSet sigs = computeSignals(c, outRequiredStepSrcsp, outPerMidSrcsp);
 
         AstNodeExpr* const resultp = assembleResult(
             flp, isCover, negated, matchCondp, sigs.terminalActivep, sigs.rejectBasep,
@@ -1765,7 +1845,10 @@ class AssertNfaVisitor final : public VNVisitor {
     // Wire match vertex and mid-window sources for a successful NFA build.
     static void wireMatchAndMidSources(SvaGraph& graph, const BuildResult& result, FileLine* flp) {
         graph.createMatchVertex();
-        graph.addLink(result.termVertexp, graph.m_matchVertexp);
+        // Skip the main term Link when midSources already cover every
+        // end-of-match (cover_sequence path); otherwise the per-mid extraction
+        // double-counts via the merge vertex.
+        if (!result.termIsMidMerge) { graph.addLink(result.termVertexp, graph.m_matchVertexp); }
         for (SvaStateVertex* srcVtxp : result.midSources) {
             AstNodeExpr* condp = nullptr;
             for (AstNodeExpr* const tc : srcVtxp->m_throughoutConds) {
@@ -2234,9 +2317,11 @@ class AssertNfaVisitor final : public VNVisitor {
 
         FileLine* const flp = assertp->fileline();
         const bool isCover = VN_IS(assertp, Cover);
+        AstCover* const coverp = VN_CAST(assertp, Cover);
+        const bool isCoverSeq = coverp && coverp->isCoverSeq();
 
         SvaGraph graph;
-        SvaNfaBuilder builder{graph, m_modp, m_propTempNames};
+        SvaNfaBuilder builder{graph, m_modp, m_propTempNames, isCoverSeq};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);
@@ -2268,12 +2353,18 @@ class AssertNfaVisitor final : public VNVisitor {
             = !isCover && !parts.hasImplication && assertWithFailp && assertWithFailp->failsp();
         std::vector<AstNodeExpr*> requiredStepSrcs;
 
+        // For `cover sequence` (IEEE 1800-2023 16.14.3) collect per-edge match
+        // signals so each end-of-match fires the action independently, rather
+        // than getting OR-folded into a single per-cycle terminalActive.
+        // coverp / isCoverSeq are computed earlier (passed to SvaNfaBuilder).
+        std::vector<AstNodeExpr*> perMidSrcs;
+
         AstNodeExpr* const alwaysTriggerp = new AstConst{flp, AstConst::BitTrue{}};
-        AstNodeExpr* const outputExprp
-            = m_loweringp->lower(flp, graph, alwaysTriggerp, senTreep, result.finalCondp, isCover,
-                                 disableExprp ? disableExprp->cloneTreePure(false) : nullptr,
-                                 negated, needMatch ? &matchExprp : nullptr, disableCntVarp,
-                                 snapshotVarp, needPerSrcFail ? &requiredStepSrcs : nullptr);
+        AstNodeExpr* const outputExprp = m_loweringp->lower(
+            flp, graph, alwaysTriggerp, senTreep, result.finalCondp, isCover,
+            disableExprp ? disableExprp->cloneTreePure(false) : nullptr, negated,
+            needMatch ? &matchExprp : nullptr, disableCntVarp, snapshotVarp,
+            needPerSrcFail ? &requiredStepSrcs : nullptr, isCoverSeq ? &perMidSrcs : nullptr);
 
         AstSenTree* const perSrcSenTreep
             = (requiredStepSrcs.size() >= 2) ? senTreep->cloneTree(false) : nullptr;
@@ -2286,9 +2377,38 @@ class AssertNfaVisitor final : public VNVisitor {
         attachMatchHandlers(flp, assertAssertp, assertWithFailp, needMatch ? matchExprp : nullptr,
                             perSrcSenTreep, requiredStepSrcs);
 
-        AstNode* const innerPropp = propSpecp->propp();
-        innerPropp->replaceWith(outputExprp);
-        VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
+        if (isCoverSeq && perMidSrcs.size() > 1) {
+            // Clone AstCover (N-1) times, each gated by its own per-mid signal.
+            // V3Assert sees N independent covers and emits N `if (cond_i) {coverinc;
+            // userAction}` bodies; the shared AstCoverDecl bucket is incremented
+            // per fire, matching IEEE "executed each time the sequence matches."
+            // Clones reuse AstCover->propp's original SVA tree, but we overwrite
+            // each clone's inner propp with the corresponding per-mid signal
+            // BEFORE the next iterator step, so hasMultiCycleExpr() returns false
+            // and processAssertion skips them on revisit.
+            std::vector<AstCover*> coverList;
+            coverList.push_back(coverp);
+            for (size_t i = 1; i < perMidSrcs.size(); ++i) {
+                AstCover* const clonep = coverp->cloneTree(false);
+                coverp->addNextHere(clonep);
+                coverList.push_back(clonep);
+            }
+            for (size_t i = 0; i < perMidSrcs.size(); ++i) {
+                AstPropSpec* const clonePropSpecp = VN_CAST(coverList[i]->propp(), PropSpec);
+                AstNode* const innerp = clonePropSpecp->propp();
+                innerp->replaceWith(perMidSrcs[i]);
+                VL_DO_DANGLING(pushDeletep(innerp), innerp);
+            }
+            // Discard the OR-collapsed fallback signal -- cover_sequence path
+            // does not use it.
+            VL_DO_DANGLING(outputExprp->deleteTree(), outputExprp);
+        } else {
+            AstNode* const innerPropp = propSpecp->propp();
+            innerPropp->replaceWith(outputExprp);
+            VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
+            // If we collected per-mid (N==1) but didn't clone, drop the spare.
+            for (AstNodeExpr* const sp : perMidSrcs) pushDeletep(sp);
+        }
 
         UINFO(4, "NFA converted assertion at " << flp << endl);
     }

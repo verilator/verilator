@@ -1,0 +1,17 @@
+%Error-UNSUPPORTED: t/t_cover_sequence_unsup.v:21:33: Unsupported: cover sequence with a sequence operand of 'or'
+   21 |   cover sequence ((a ##[1:3] b) or 1'b0);
+      |                                 ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_cover_sequence_unsup.v:24:32: Unsupported: cover sequence with a sequence operand of 'or'
+   24 |   cover sequence ((a [* 1: 3]) or 1'b0);
+      |                                ^~
+%Error-UNSUPPORTED: t/t_cover_sequence_unsup.v:27:21: Unsupported: cover sequence with this ranged cycle delay
+   27 |   cover sequence (a ##[1:2] (b ##1 c));
+      |                     ^~
+%Error-UNSUPPORTED: t/t_cover_sequence_unsup.v:30:21: Unsupported: cover sequence with this ranged cycle delay
+   30 |   cover sequence (a ##[1:300] b);
+      |                     ^~
+%Error-UNSUPPORTED: t/t_cover_sequence_unsup.v:33:21: Unsupported: cover sequence with a ranged goto repetition
+   33 |   cover sequence (a [-> 2: 3]);
+      |                     ^~~
+%Error: Exiting due to
