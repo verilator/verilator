@@ -607,8 +607,8 @@ class CaseVisitor final : public VNVisitor {
 
     bool neverItem(const AstCase* casep, const AstConst* itemp) {
         // Xs in case or casez are impossible due to two state simulations
-        if (casep->casex()) {
-        } else if (casep->casez() || casep->caseInside()) {
+        if (casep->casex() || casep->caseInside()) {
+        } else if (casep->casez()) {
             if (itemp->num().isAnyX()) return true;
         } else {
             if (itemp->num().isFourState()) return true;
