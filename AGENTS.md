@@ -2,97 +2,127 @@
      SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
      SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0 -->
 
-# Verilator Coding Guidelines
+# Verilator Guidelines for AI Coding Agents
 
-When to check: read this file before making any change in this repository, then read the directory guide for the area being edited.
+This file has two parts. **Orientation** gets you productive in the codebase from
+a cold start. **Before you open a PR** is the checklist of conventions reviewers
+otherwise have to enforce by hand -- read it before submitting any change.
 
-## Topic guides
+Then read the directory guide for the area you are editing:
 
-- [src/AGENTS.md](src/AGENTS.md) -- compiler C++ sources: style, AST, visitors, parser, file-specific rules
-- [test_regress/AGENTS.md](test_regress/AGENTS.md) -- regression tests: naming, drivers, golden files, Verilog style
-- [docs/AGENTS.md](docs/AGENTS.md) -- documentation (`*.rst`) writing rules
-- `docs/internals.rst` -- architecture, AST, and pass overview
-- `docs/CONTRIBUTING.rst` -- contribution process
+- [src/AGENTS.md](src/AGENTS.md) -- compiler C++ sources: AST, visitors, passes, parser, style
+- [test_regress/AGENTS.md](test_regress/AGENTS.md) -- regression tests: harness, drivers, golden files
+- [docs/AGENTS.md](docs/AGENTS.md) -- documentation (`*.rst`)
 
-## Build and test
+---
 
-- Build in the source tree: `autoconf && ./configure && make -j8`; developers should configure with `--enable-ccwarn` to stop the build on new warnings.
+# Orientation
 
-- Run a single test from the repository root: `test_regress/t/t_<name>.py`; run the full regression with `make test`.
+## What Verilator is
 
-## Error classification
+Verilator is a *compiler*, not an interpreter. It translates synthesizable (and
+much behavioral) SystemVerilog into a cycle-accurate C++ model that you then
+compile and run. Almost every decision is made at compile ("verilation") time;
+the generated C++ just advances state each evaluation. Optimize for verilation-
+time work over runtime work.
 
-Choose the diagnostic API by what went wrong; the choice determines which test must accompany the change.
+## The pipeline is the spine
+
+A run is an ordered sequence of passes over one shared AST (abstract syntax
+tree). In source order:
+
+| Stage | What it does | Key files |
+|---|---|---|
+| Preprocess + parse | Lex and parse text into a raw AST -- builds nodes only, no semantic checks | `verilog.l`, `verilog.y` |
+| Link / elaborate | Resolve names, scopes, parameters; instantiate the hierarchy | `V3LinkParse`, `V3LinkDot`, `V3Param` |
+| Width / type | Assign and check data types and bit widths | `V3Width` |
+| Transform / optimize / schedule | Constant fold, lower language features, schedule events | `V3Const`, `V3Randomize`, `V3Assert*`, `V3Sched`, `V3Timing`, `V3Dfg` |
+| Emit | Lower the final AST to generated C++ | `V3EmitC*` |
+| Runtime | Library the generated model links against | `include/verilated*` |
+
+`docs/internals.rst` is the authoritative architecture and pass reference. Read
+it before any non-trivial change.
+
+## Where to make a change
+
+Map the symptom to the pass that owns it, then start by reading that pass's
+top-of-file comment.
+
+| Symptom or feature area | Start in |
+|---|---|
+| Type/width error, "what type is this", implicit conversion | `V3Width` |
+| Name/scope/parameter resolution ("Can't find...", hierarchy) | `V3LinkDot`, `V3Param` |
+| `randomize` / `constraint` / `rand` / `randc` | `V3Randomize` |
+| `assert` / `property` / `sequence` / `cover` | `V3Assert`, `V3AssertPre`, `V3AssertNfa` |
+| `fork` / timing / `#delay` / NBA / event scheduling | `V3Sched`, `V3Timing`, `V3Fork` |
+| Syntax wrongly accepted or rejected | `verilog.y`, `verilog.l` |
+| Wrong generated C++ | `V3EmitC*` |
+| Runtime model behavior | `include/verilated*` |
+
+## Build and run a test
+
+- Build in the source tree: `autoconf && ./configure && make -j8`. Configure with
+  `--enable-ccwarn` so a new compiler warning stops the build.
+- Run one test from the repository root: `test_regress/t/t_<name>.py`.
+- Run the full regression: `make test`.
+
+---
+
+# Before you open a PR
+
+## Scope and process
+
+- [ ] Searched open PRs and issues -- duplicating in-flight work wastes review time.
+- [ ] Fixed the general root cause, not just the reported case -- if it also
+      affects other modules/classes/interfaces, cover them or expect rejection.
+- [ ] PR is single-purpose. Refactors, drive-by fixes found along the way, and new
+      features each go in separate PRs; land standalone cleanups first.
+- [ ] Every bug fix has a test that fails *without* the fix; include the issue's
+      own reproducer when possible.
+- [ ] New code aims for 100% line coverage; branch coverage far below line coverage
+      signals guards callers never violate -- justify or remove them.
+- [ ] Ran `make format` (clang-format) and `make cppcheck`; self-reviewed the diff
+      for leftover debug code, stale comments, and copy-paste errors.
+- [ ] Did not edit `docs/CONTRIBUTORS` (humans only) or `Changes` (maintainer
+      updates it near release).
+
+## Pick the right diagnostic (and its required test)
+
+The API you choose determines which test must accompany the change.
 
 | API | Output | Meaning | Required test |
 |---|---|---|---|
-| `v3error("...")` | `%Error:` | User wrote invalid SystemVerilog (IEEE violation) | `t_*_bad*.v` + `.out` golden |
-| `v3error("Unsupported: ...")` | `%Error-UNSUPPORTED:` | Legal SystemVerilog that Verilator does not yet support | `t_*_unsup*.v` + `.out` golden |
+| `v3error("...")` | `%Error:` | User wrote invalid SystemVerilog | `t_*_bad*.v` + `.out` golden |
+| `v3error("Unsupported: ...")` | `%Error-UNSUPPORTED:` | Legal SV that Verilator does not yet support | `t_*_unsup*.v` + `.out` golden |
 | `v3warn(CODE, "...")` | `%Warning-CODE:` | Legal but suspicious code | warning test + `.out` golden |
 | `v3fatalSrc("...")` | `%Error: Internal Error` | Should-never-happen internal assertion | none -- not user-triggerable |
 
-- Include the IEEE reference in errors about spec-defined restrictions: `(IEEE 1800-2023 XX.X)` -- makes the restriction verifiable.
-
-- Every `v3error`/`v3warn` message needs a test in `test_regress/t/` -- enforced by the warn-coverage distribution test; `v3fatalSrc` is exempt.
-
-- Reserve "Unsupported:" for not-yet-implemented features, never for user mistakes; when partially implementing a feature, keep errors on the still-unsupported sub-features.
-
-- On error paths, clean up or replace invalid AST (e.g. with `AstConst::BitFalse`) so later passes do not crash after the error.
-
-- Update `docs/guide/warnings.rst` when adding or changing warnings -- documentation for every warning is enforced by a distribution test.
-
-## Process
-
-- Search existing open pull requests and issues for overlapping work before starting -- duplicating an open PR wastes both author and reviewer time.
-
-- Cite IEEE 1800-2023 with section numbers in error messages, code comments, and PR text -- verify against the actual standard text, not recalled knowledge.
-
-- Do not edit `docs/CONTRIBUTORS` -- only humans may edit it; remind the user to read and agree to the statement in it.
-
-- Do not edit the `Changes` file unless explicitly asked -- the maintainer updates it near release time; contributor edits cause merge conflicts.
-
-- Fix the general case, not just the reported case -- if the root cause also affects modules/classes/interfaces beyond the trigger scenario, cover them or expect the fix to be rejected.
-
-- Keep changes single-purpose: refactoring, drive-by bug fixes found along the way, and new features belong in separate PRs; land standalone cleanups first.
-
-- Split large features into a chain of small, independently mergeable PRs, each adding one dimension of complexity -- keeps review scope bounded.
-
-- Do not expand scope opportunistically -- even an IEEE-justified diagnostic tightening reclassifies user-facing behavior, re-goldens existing tests, and widens the review blast radius; file it as its own PR.
-
-- When changing a warning's or error's classification, update the warning documentation and regression expectations in the same change -- diagnostic class and suppressibility are part of the user-facing contract.
-
-- Very large PRs include an explicit risk summary: what semantics changed, what stayed invariant, and what validation proves safety -- review bandwidth drops sharply as changed-file count grows.
-
-- Build, export, or reporting features must show that a downstream consumer can actually parse the produced output -- format-only checks miss consumer-visible breakage.
-
-- After a framework PR lands, plan a follow-up that simplifies and unifies what review revealed -- a negative line count in the follow-up is a sign of maturity, not failure.
-
-- Every bug fix includes a test that fails without the fix; include the issue's own reproducer as a regression test when possible.
-
-- Aim for 100% line coverage on new code and justify or remove uncovered branches -- branch coverage markedly below line coverage signals guards that callers never violate; request a CI coverage report and check it.
-
-- Run `make format` (clang-format) and `make cppcheck` before pushing; self-review the diff for leftover debug code, stale comments, and copy-paste errors.
-
-- Apply new code patterns globally or not at all -- do not introduce a one-off convention in a single file.
-
-## Commits
-
-- Commit messages are one short line referencing issue and PR numbers: `Short description (#issue) (#pr)`.
-
-- Do not add Co-Authored-By or any AI attribution to commits.
+- Every `v3error`/`v3warn` needs a test in `test_regress/t/` -- enforced by the
+  warn-coverage distribution test. `v3fatalSrc` is exempt.
+- Reserve "Unsupported:" for not-yet-implemented features, never for user mistakes.
+- When an error enforces a spec-defined restriction, cite the clause
+  (`IEEE 1800-2023 11.4.7`) so it is verifiable. Update `docs/guide/warnings.rst`
+  when adding or changing a warning.
+- On error paths, clean up or replace invalid AST (e.g. `AstConst::BitFalse`) so
+  later passes do not crash after the error.
 
 ## Cross-cutting code rules
 
-- No non-ASCII characters in C++ sources or headers -- use `--` not em dashes and plain `'` not smart quotes, at write time, not just when CI complains.
+- [ ] No non-ASCII characters in C++ sources or headers -- `--` not em dashes,
+      plain `'` not smart quotes. At write time, not when CI complains.
+- [ ] Lists stay sorted: lexer/parser tokens, option declarations, enum values,
+      configure feature lists, documented option lists.
+- [ ] `bin/` scripts are Python (distributed cross-platform); `nodist/` may use
+      bash and platform-specific code (developer-only, not packaged).
+- [ ] Runtime code in `include/` targets C++14 (`--no-timing` builds must work);
+      C++20 only in timing code paths.
+- [ ] In `include/` public headers, prefix public classes with `Verilated`/`Vl`
+      and document the API with `///` comments.
+- [ ] A new code pattern is applied globally or not at all -- no one-off
+      convention in a single file.
 
-- Keep lists sorted: lexer/parser tokens, option declarations, enum values, configure feature lists, documented option lists.
+## Commits
 
-- `bin/` scripts must be Python -- they are distributed cross-platform; `nodist/` may use bash and platform-specific code (developer-only, not packaged).
-
-- Runtime code in `include/` targets C++14 (`--no-timing` builds must work); C++20 features are allowed only in timing code paths.
-
-- In `include/` public headers, prefix public classes and types with `Verilated`/`Vl` and use `///` comments for API documentation -- prevents collisions with user code and feeds doc generation.
-
-- Apply the same const, naming, and portability discipline in infrastructure and test code as in core passes -- review standards are not relaxed for helper code.
-
-- Keep deprecated command-line options active with warning-only handlers (`v3warn(DEPRECATED, ...)`) -- removing an option outright breaks existing user scripts.
+- Subject line is short and imperative and conventionally ends with the PR number:
+  `Support property case (#7721)`. A body is optional and common for non-trivial
+  changes.
