@@ -11,6 +11,7 @@ otherwise have to enforce by hand -- read it before submitting any change.
 Then read the directory guide for the area you are editing:
 
 - [src/AGENTS.md](src/AGENTS.md) -- compiler C++ sources: AST, visitors, passes, parser, style
+- [include/AGENTS.md](include/AGENTS.md) -- runtime library (`verilated*`): C++14, MT-safety, fixed-width types
 - [test_regress/AGENTS.md](test_regress/AGENTS.md) -- regression tests: harness, drivers, golden files
 - [docs/AGENTS.md](docs/AGENTS.md) -- documentation (`*.rst`)
 
