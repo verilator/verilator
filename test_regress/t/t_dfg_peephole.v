@@ -283,10 +283,20 @@ module t (
   `signal(REPLACE_COND_CONST_ZERO_ONAE, rand_a[0] ?  80'b0 : -80'b1);
   `signal(REPLACE_COND_CAT_LHS_CONST_ONE_ZERO, rand_a[0] ? {8'b1, rand_b[0]} : {8'b0, rand_b[1]});
   `signal(REPLACE_COND_CAT_LHS_CONST_ZERO_ONE, rand_a[0] ? {8'b0, rand_b[0]} : {8'b1, rand_b[1]});
-  `signal(REPLACE_COND_SAME_CAT_LHS, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
-  `signal(REPLACE_COND_SAME_CAT_RHS, rand_a[0] ? {rand_b[0], 8'd0} : {rand_b[1], 8'd0});
   `signal(REPLACE_COND_SAM_COND_THEN, rand_a[0] ? (rand_a[0] ? rand_b[1:0] : rand_b[3:2]) : rand_b[5:4]);
   `signal(REPLACE_COND_SAM_COND_ELSE, rand_a[0] ? rand_b[1:0] : (rand_a[0] ? rand_b[3:2] : rand_b[5:4]));
+
+  `signal(REPLACE_COND_COMMON_MSBS_A, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
+  `signal(REPLACE_COND_COMMON_MSBS_B, rand_a[0] ? {8'hf0, rand_b[1:0]} : {9'h1e2, rand_b[1]});
+  `signal(REPLACE_COND_COMMON_MSBS_C, rand_a[0] ? {rand_a[63 -: 3] , rand_b[0]} : {rand_a[63 -: 2],  rand_b[2:1]});
+  `signal(REPLACE_COND_COMMON_LSBS_A, rand_a[0] ? {rand_b[0], 8'd0} : {rand_b[1], 8'd0});
+  `signal(REPLACE_COND_COMMON_LSBS_B, rand_a[0] ? {rand_b[2:1], 8'h0f} : {rand_b[1], 9'h08f});
+  `signal(REPLACE_COND_COMMON_LSBS_C, rand_a[0] ? {rand_b[0], rand_a[3:0]} : {rand_b[1:0], rand_a[2:0]});
+  wire [5:0] tmp_REPLACE_COND_COMMON_LSBS_D = rand_b[5:0];
+  wire [5:0] tmp_REPLACE_COND_COMMON_MSBS_D = rand_b[63:58];
+  `signal(REPLACE_COND_COMMON_LSBS_D, rand_a[0] ? rand_b[4:0] : tmp_REPLACE_COND_COMMON_LSBS_D[4:0]);
+  `signal(REPLACE_COND_COMMON_MSBS_D, rand_a[0] ? rand_b[63:59] : tmp_REPLACE_COND_COMMON_MSBS_D[5:1]);
+
   `signal(REMOVE_SHIFTL_ZERO, rand_a << 0);
   `signal(REPLACE_SHIFTL_OVER, rand_a << 64);
   `signal(REPLACE_SHIFTL_SEL, rand_a[27:0] << 4);
@@ -352,7 +362,6 @@ module t (
   `signal(REMOVE_EQ_BIT_1, 1'b1 == rand_a[0]);
   `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
   `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
-  `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
   `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths

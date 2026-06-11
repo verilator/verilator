@@ -139,6 +139,7 @@ public:
 
     // Returns a Packed type of the given width
     static const DfgDataType& packed(uint32_t width) {
+        UASSERT(width > 0, "Width must be positive");
         // Find or create the right sized packed type
         const DfgDataType*& entryr = s_packedTypes[width];
         if (!entryr) entryr = new DfgDataType{width};
