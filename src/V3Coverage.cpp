@@ -530,8 +530,10 @@ class CoverageVisitor final : public VNVisitor {
                     newent.cleanup();
                 }
             }
-        } else if (VN_IS(dtypep, QueueDType)) {
+        } else if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, AssocArrayDType)
+                   || VN_IS(dtypep, WildcardArrayDType)) {
             // Not covered
+            varp->v3warn(COVERIGN, "Coverage ignored for type " << dtypep->prettyTypeName());
         } else {
             dtypep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "
                                << dtypep->prettyTypeName());
