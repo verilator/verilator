@@ -1305,7 +1305,7 @@ class ParamProcessor final {
                     // Walk up any outer `.fieldN[.fieldM...]` chain (struct lparam
                     // member access like `CFG::cfg.jt.cam_type`) and accumulate the
                     // packed-struct bit offset.  Replace the topmost Dot with a
-                    // Sel(constp, lsb, width) that constify can fold.
+                    // Sel(constp, lsb, width) matching V3Width::memberSelStruct.
                     int totalLsb = 0;
                     int sliceWidth = varp->width();
                     AstNodeDType* curDTypep = varp->dtypep();
@@ -1318,14 +1318,8 @@ class ParamProcessor final {
                         AstNodeUOrStructDType* const structp
                             = VN_CAST(skippedp, NodeUOrStructDType);
                         if (!structp) break;
-                        AstMemberDType* foundMemp = nullptr;
-                        for (AstMemberDType* memp = structp->membersp(); memp;
-                             memp = VN_AS(memp->nextp(), MemberDType)) {
-                            if (memp->name() == fieldRef->name()) {
-                                foundMemp = memp;
-                                break;
-                            }
-                        }
+                        AstMemberDType* const foundMemp = VN_CAST(
+                            m_memberMap.findMember(structp, fieldRef->name()), MemberDType);
                         if (!foundMemp) break;
                         totalLsb += foundMemp->lsb();
                         sliceWidth = foundMemp->width();
@@ -1340,9 +1334,10 @@ class ParamProcessor final {
                         AstConst* const clonep = static_cast<AstConst*>(constp->cloneTree(false));
                         AstSel* const selp
                             = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
-                        // Preserve the field's actual dtype (e.g. enum) on the Sel so
-                        // assignments to enum-typed pins don't trip ENUMVALUE.
-                        if (curDTypep) selp->dtypep(curDTypep);
+                        // Match V3Width::memberSelStruct: skip RefDTypes to surface
+                        // enum dtype, and mark didWidth so V3Width doesn't reflatten.
+                        if (curDTypep) selp->dtypep(curDTypep->skipRefToEnump());
+                        selp->didWidth(true);
                         topp->replaceWith(selp);
                         VL_DO_DANGLING(topp->deleteTree(), topp);
                     }
@@ -2254,21 +2249,21 @@ public:
         while (!worklist.empty()) {
             AstNode* const p = worklist.back();
             worklist.pop_back();
-            p->foreach([&](AstDot* dotp) {
-                if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
-            });
-            p->foreach([&](const AstRefDType* refp) {
-                AstTypedef* const tdefp = refp->typedefp();
-                if (tdefp && reachedTypedefs.insert(tdefp).second) {
-                    tdefps.push_back(tdefp);
-                    if (tdefp->subDTypep()) worklist.push_back(tdefp->subDTypep());
-                }
-            });
-            p->foreach([&](const AstVarRef* refp) {
-                AstVar* const varp = refp->varp();
-                if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
-                    && reachedDeferred.insert(varp).second && varp->valuep()) {
-                    worklist.push_back(varp->valuep());
+            p->foreach([&](AstNode* np) {
+                if (AstDot* const dotp = VN_CAST(np, Dot)) {
+                    if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
+                } else if (const AstRefDType* const refp = VN_CAST(np, RefDType)) {
+                    AstTypedef* const tdefp = refp->typedefp();
+                    if (tdefp && reachedTypedefs.insert(tdefp).second) {
+                        tdefps.push_back(tdefp);
+                        if (tdefp->subDTypep()) worklist.push_back(tdefp->subDTypep());
+                    }
+                } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
+                    AstVar* const varp = refp->varp();
+                    if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
+                        && reachedDeferred.insert(varp).second && varp->valuep()) {
+                        worklist.push_back(varp->valuep());
+                    }
                 }
             });
         }
