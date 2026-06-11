@@ -130,14 +130,13 @@ public:
 };
 
 // NFA graph container
-class SvaGraph final {
-public:
-    V3Graph m_graph;  // Owns all vertices and edges
+class SvaGraph final : public V3Graph {
     SvaStateVertex* m_startVertexp = nullptr;  // Trigger/start vertex
     SvaStateVertex* m_matchVertexp = nullptr;  // Sequence-match terminal vertex
 
+public:
     // Create a new state vertex
-    SvaStateVertex* createStateVertex() { return new SvaStateVertex{&m_graph}; }
+    SvaStateVertex* createStateVertex() { return new SvaStateVertex{this}; }
     // Create the match terminal vertex
     SvaStateVertex* createMatchVertex() {
         SvaStateVertex* const vtxp = createStateVertex();
@@ -148,24 +147,27 @@ public:
     // Add a clocked transition edge (##1)
     SvaTransEdge* addClockedEdge(SvaStateVertex* fromp, SvaStateVertex* top,
                                  AstNodeExpr* condp = nullptr) {
-        return new SvaTransEdge{&m_graph, fromp, top, condp, /*consumesCycle=*/true};
+        return new SvaTransEdge{this, fromp, top, condp, /*consumesCycle=*/true};
     }
     // Add a combinational link (##0 / boolean condition)
     SvaTransEdge* addLink(SvaStateVertex* fromp, SvaStateVertex* top,
                           AstNodeExpr* condp = nullptr) {
-        return new SvaTransEdge{&m_graph, fromp, top, condp, /*consumesCycle=*/false};
+        return new SvaTransEdge{this, fromp, top, condp, /*consumesCycle=*/false};
     }
     // Collect all edges into a flat vector for iteration.
     // Used by the lowering phase which needs global edge scans.
     std::vector<const SvaTransEdge*> allEdges() const {
         std::vector<const SvaTransEdge*> result;
-        for (const V3GraphVertex& vtxr : m_graph.vertices()) {
+        for (const V3GraphVertex& vtxr : vertices()) {
             for (const V3GraphEdge& er : vtxr.outEdges()) {
                 result.push_back(static_cast<const SvaTransEdge*>(&er));
             }
         }
         return result;
     }
+    SvaStateVertex* startVertexp() const { return m_startVertexp; }
+    void startVertexp(SvaStateVertex* vtxp) { m_startVertexp = vtxp; }
+    SvaStateVertex* matchVertexp() const { return m_matchVertexp; }
 };
 
 //######################################################################
@@ -1102,8 +1104,8 @@ public:
     }
 
     BuildResult build(AstNodeExpr* exprp) {
-        m_graph.m_startVertexp = scopedCreateVertex();
-        return buildExpr(exprp, m_graph.m_startVertexp, /*isTopLevelStep=*/true);
+        m_graph.startVertexp(scopedCreateVertex());
+        return buildExpr(exprp, m_graph.startVertexp(), /*isTopLevelStep=*/true);
     }
 };
 
@@ -1349,7 +1351,7 @@ class SvaNfaLowering final {
     // wireMatchAndMidSources.
     void computeTerminalMatchAndReject(LowerCtx& c, AstNodeExpr* snapshotOkp, SignalSet& sigs) {
         for (const SvaTransEdge* const tep : c.edges) {
-            if (tep->toVtxp() != c.graph.m_matchVertexp) continue;
+            if (tep->toVtxp() != c.graph.matchVertexp()) continue;
             const int fi = tep->fromVtxp()->color();
             UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, tep->fromVtxp(),
                         "Terminal-link source missing stateSig");
@@ -1380,7 +1382,7 @@ class SvaNfaLowering final {
         }
         // wireMatchAndMidSources always adds a Link from result.termVertexp
         // to m_matchVertexp, so the loop above always sets terminalActivep.
-        UASSERT_OBJ(sigs.terminalActivep, c.graph.m_matchVertexp,
+        UASSERT_OBJ(sigs.terminalActivep, c.graph.matchVertexp(),
                     "No terminal edge to match vertex");
     }
 
@@ -1653,13 +1655,13 @@ public:
 
         // Number vertices with sequential colors for array indexing.
         int N = 0;
-        for (V3GraphVertex& vtxr : graph.m_graph.vertices()) { vtxr.color(N++); }
+        for (V3GraphVertex& vtxr : graph.vertices()) { vtxr.color(N++); }
         std::vector<SvaStateVertex*> vtx(N, nullptr);
-        for (V3GraphVertex& vtxr : graph.m_graph.vertices()) {
+        for (V3GraphVertex& vtxr : graph.vertices()) {
             vtx[vtxr.color()] = static_cast<SvaStateVertex*>(&vtxr);
         }
-        const int startIdx = graph.m_startVertexp->color();
-        const int matchIdx = graph.m_matchVertexp ? graph.m_matchVertexp->color() : -1;
+        const int startIdx = graph.startVertexp()->color();
+        const int matchIdx = graph.matchVertexp() ? graph.matchVertexp()->color() : -1;
         const std::vector<const SvaTransEdge*> edges = graph.allEdges();
 
         // Allocate per-vertex lowering data (stored via V3GraphVertex::userp()).
@@ -1765,14 +1767,14 @@ class AssertNfaVisitor final : public VNVisitor {
     // Wire match vertex and mid-window sources for a successful NFA build.
     static void wireMatchAndMidSources(SvaGraph& graph, const BuildResult& result, FileLine* flp) {
         graph.createMatchVertex();
-        graph.addLink(result.termVertexp, graph.m_matchVertexp);
+        graph.addLink(result.termVertexp, graph.matchVertexp());
         for (SvaStateVertex* srcVtxp : result.midSources) {
             AstNodeExpr* condp = nullptr;
             for (AstNodeExpr* const tc : srcVtxp->m_throughoutConds) {
                 AstNodeExpr* const tcClone = tc->cloneTreePure(false);
                 condp = condp ? new AstLogAnd{flp, condp, tcClone} : tcClone;
             }
-            graph.addLink(srcVtxp, graph.m_matchVertexp, condp);
+            graph.addLink(srcVtxp, graph.matchVertexp(), condp);
             srcVtxp->m_isUnbounded = true;
         }
     }
@@ -2021,8 +2023,8 @@ class AssertNfaVisitor final : public VNVisitor {
                                     const PropertyParts& parts, FileLine* flp) {
         if (!parts.hasImplication) return builder.build(seqBodyp);
 
-        graph.m_startVertexp = graph.createStateVertex();
-        return builder.buildImplicationEdges(parts.triggerExprp, seqBodyp, graph.m_startVertexp,
+        graph.startVertexp(graph.createStateVertex());
+        return builder.buildImplicationEdges(parts.triggerExprp, seqBodyp, graph.startVertexp(),
                                              parts.isOverlapped, parts.isFollowedBy,
                                              parts.triggerExprp, flp);
     }
@@ -2290,7 +2292,9 @@ class AssertNfaVisitor final : public VNVisitor {
         innerPropp->replaceWith(outputExprp);
         VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
 
-        UINFO(4, "NFA converted assertion at " << flp << endl);
+        UINFO(4, "NFA converted assertion at " << flp);
+
+        if (dumpGraphLevel() >= 6) graph.dumpDotFilePrefixed("assert-nfa");
     }
 
     // VISITORS
