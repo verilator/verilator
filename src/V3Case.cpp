@@ -147,7 +147,6 @@ class CaseVisitor final : public VNVisitor {
     bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
-    bool m_needToClearCache = false;  // Whether cache needs to be cleared
 
     // METHODS
     //! Determine whether we should check case items are complete
@@ -398,14 +397,6 @@ class CaseVisitor final : public VNVisitor {
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNodeExpr* cexprp;
-        AstExprStmt* cexprStmtp = nullptr;
-        if (nodep->exprp()->isPure()) {
-            cexprp = nodep->exprp()->unlinkFrBack();
-        } else {
-            cexprStmtp = VN_AS(nodep->exprp()->unlinkFrBack(), ExprStmt);
-            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
-        }
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
@@ -419,14 +410,7 @@ class CaseVisitor final : public VNVisitor {
         replaceCaseParallel(nodep, m_caseNoOverlapsAllCovered);
 
         AstNode::user3ClearTree();
-        AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
-        if (cexprStmtp) {
-            cexprStmtp->resultp()->unlinkFrBack()->deleteTree();
-            AstIf* const ifp = VN_AS(ifrootp, If);
-            cexprStmtp->resultp(ifp->condp()->unlinkFrBack());
-            ifp->condp(cexprStmtp);
-            m_needToClearCache = true;
-        }
+        AstNode* ifrootp = replaceCaseFastRecurse(nodep->exprp(), m_caseWidth - 1, 0UL);
 
         // Case expressions can't be linked twice, so clone them
         if (ifrootp && !ifrootp->user3()) ifrootp = ifrootp->cloneTree(true);
@@ -437,7 +421,6 @@ class CaseVisitor final : public VNVisitor {
             nodep->unlinkFrBack();
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
         UINFOTREE(9, ifrootp, "", "_simp");
     }
 
@@ -446,14 +429,7 @@ class CaseVisitor final : public VNVisitor {
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNodeExpr* cexprp;
-        AstExprStmt* cexprStmtp = nullptr;
-        if (nodep->exprp()->isPure()) {
-            cexprp = nodep->exprp()->unlinkFrBack();
-        } else {
-            cexprStmtp = VN_AS(nodep->exprp(), ExprStmt)->unlinkFrBack();
-            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
-        }
+        AstNodeExpr* const cexprp = nodep->exprp();
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
         UINFOTREE(9, nodep, "", "_comp_IN::");
@@ -518,7 +494,6 @@ class CaseVisitor final : public VNVisitor {
                 itemp->addCondsp(ifexprp);
             }
         }
-        VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
         if (!hadDefault) {
             // If there was no default, add a empty one, this greatly simplifies below code
             // and constant propagation will just eliminate it for us later.
@@ -582,12 +557,6 @@ class CaseVisitor final : public VNVisitor {
         if (grouprootp) {
             UINFOTREE(9, grouprootp, "", "_new");
             nodep->replaceWith(grouprootp);
-            if (cexprStmtp) {
-                pushDeletep(cexprStmtp->resultp()->unlinkFrBack());
-                cexprStmtp->resultp(grouprootp->condp()->unlinkFrBack());
-                grouprootp->condp(cexprStmtp);
-                m_needToClearCache = true;
-            }
         } else {
             nodep->unlinkFrBack();
         }
@@ -622,6 +591,8 @@ class CaseVisitor final : public VNVisitor {
         { CaseLintVisitor{nodep}; }
         iterateChildren(nodep);
         UINFOTREE(9, nodep, "", "case_old");
+        UASSERT_OBJ(nodep->exprp()->isPure(), nodep,
+                    "Impure case expression should have been removed by V3LiftExpr");
         if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
             // It's a simple priority encoder or complete statement
             // we can make a tree of statements to avoid extra comparisons
@@ -648,7 +619,6 @@ public:
     explicit CaseVisitor(AstNetlist* nodep) {
         for (auto& itr : m_valueItem) itr = nullptr;
         iterate(nodep);
-        if (m_needToClearCache) VIsCached::clearCacheTree();
     }
     ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
