@@ -290,9 +290,9 @@ class CaseVisitor final : public VNVisitor {
                 const uint32_t mask = nummask.toUInt();
                 const uint32_t val = numval.toUInt();
 
-                uint32_t firstOverlap = 0;
-                const AstConst* overlappedCondp = nullptr;
-                bool foundHit = false;
+                bool foundNewCase = false;
+                const AstConst* firstOverlapConstp = nullptr;
+                uint32_t firstOverlapValue = 0;
                 for (uint32_t i = 0; i < numCases; ++i) {
                     if ((i & mask) != val) continue;
 
@@ -303,50 +303,52 @@ class CaseVisitor final : public VNVisitor {
                         caseRecord.itemp = itemp;
                         caseRecord.constp = iconstp;
                         caseRecord.stmtsp = itemp->stmtsp();
-                        foundHit = true;
+                        foundNewCase = true;
                         continue;
                     }
 
-                    // Otherwise record the first overlapping case,
-                    // but overlap within the same CaseItem is legal
-                    if (!overlappedCondp && caseRecord.itemp != itemp) {
-                        firstOverlap = i;
-                        overlappedCondp = caseRecord.constp;
+                    // There is an overlap. If it's within the same CaseItem, it is legal
+                    if (caseRecord.itemp == itemp) continue;
+
+                    // Otherwise record the first overlapping case
+                    if (!firstOverlapConstp) {
+                        firstOverlapConstp = caseRecord.constp;
+                        firstOverlapValue = i;
                         m_caseNoOverlaps = false;
                     }
                 }
-                if (!nodep->priorityPragma()) {
-                    // If this case statement doesn't have the priority
-                    // keyword, we want to warn on any overlap.
-                    if (!reportedOverlap && overlappedCondp) {
+                if (nodep->priorityPragma()) {
+                    // If this is a priority case, we only want to complain if every possible value
+                    // for this item is already hit by some other item. This is true if
+                    // 'foundNewCase' is false. 'firstOverlapConstp' is null when the only covering
+                    // item is this item itself, which is legal overlap within one item.
+                    if (!reportedSubcase && !foundNewCase && firstOverlapConstp) {
+                        iconstp->v3warn(CASEOVERLAP,
+                                        "Case item ignored: every matching value is covered "
+                                        "by an earlier condition\n"
+                                            << iconstp->warnContextPrimary() << '\n'
+                                            << firstOverlapConstp->warnOther()
+                                            << "... Location of previous condition\n"
+                                            << firstOverlapConstp->warnContextPrimary());
+                        reportedSubcase = true;
+                    }
+                } else {
+                    // If this case statement doesn't have the priority keyword,
+                    // we want to warn on any overlap.
+                    if (!reportedOverlap && firstOverlapConstp) {
                         std::ostringstream examplePattern;
                         if (iconstp->num().isAnyXZ()) {
-                            examplePattern << " (example pattern 0x" << std::hex << firstOverlap
-                                           << ")";
+                            examplePattern << " (example pattern 0x" << std::hex
+                                           << firstOverlapValue << ")";
                         }
                         iconstp->v3warn(CASEOVERLAP,
                                         "Case conditions overlap"
                                             << examplePattern.str() << "\n"
                                             << iconstp->warnContextPrimary() << '\n'
-                                            << overlappedCondp->warnOther()
+                                            << firstOverlapConstp->warnOther()
                                             << "... Location of overlapping condition\n"
-                                            << overlappedCondp->warnContextSecondary());
+                                            << firstOverlapConstp->warnContextSecondary());
                         reportedOverlap = true;
-                    }
-                } else {
-                    // If this is a priority case, we only want to complain
-                    // if every possible value for this item is already hit
-                    // by some other item. This is true if foundHit is
-                    // false.
-                    if (!reportedSubcase && !foundHit) {
-                        iconstp->v3warn(CASEOVERLAP,
-                                        "Case item ignored: every matching value is covered "
-                                        "by an earlier condition\n"
-                                            << iconstp->warnContextPrimary() << '\n'
-                                            << overlappedCondp->warnOther()
-                                            << "... Location of previous condition\n"
-                                            << overlappedCondp->warnContextPrimary());
-                        reportedSubcase = true;
                     }
                 }
             }
