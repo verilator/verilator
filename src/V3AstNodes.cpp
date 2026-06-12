@@ -1259,6 +1259,47 @@ uint32_t AstNodeDType::arrayUnpackedElements() const {
     return entries;
 }
 
+bool AstNodeDType::isStreamableFixedAggregate() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->isStreamableFixedAggregate();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (sdtypep->packed()) return true;
+        if (!VN_IS(sdtypep, StructDType)) return false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->dtypep()->isStreamableFixedAggregate()) return false;
+        }
+        return true;
+    }
+    return dtypep->isIntegralOrPacked() || dtypep->isDouble();
+}
+
+bool AstNodeDType::containsUnpackedStruct() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->containsUnpackedStruct();
+    }
+    const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType);
+    return sdtypep && !sdtypep->packed();
+}
+
+int AstNodeDType::widthStream() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->widthStream() * adtypep->elementsConst();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (!VN_IS(sdtypep, StructDType) || sdtypep->packed()) return width();
+        int width = 0;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            width += itemp->dtypep()->widthStream();
+        }
+        return width;
+    }
+    return dtypep->width();
+}
+
 std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;

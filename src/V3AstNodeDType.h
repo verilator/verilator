@@ -170,6 +170,10 @@ public:
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic) const;
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
+    // Fixed aggregate streaming properties
+    bool isStreamableFixedAggregate() const;
+    bool containsUnpackedStruct() const;
+    int widthStream() const;
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
