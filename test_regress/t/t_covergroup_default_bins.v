@@ -157,17 +157,17 @@ module t;
     // Sample cg3: verify ignore/illegal bins do not contribute to coverage
     data = 2;
     cg3_inst.sample();  // hits normal bin
-    `checkr(cg3_inst.get_inst_coverage(), 50.0);  // 1/2 bins hit (normal)
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // 1/1: only 'normal' counts (default/ignore/illegal excluded, LRM 19.5)
     data = 7;
     cg3_inst.sample();  // hits normal bin again
-    `checkr(cg3_inst.get_inst_coverage(), 50.0);  // no new bins
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // no new normal bins
     data = 255;
-    cg3_inst.sample();  // ignore_bins value; Verilator counts it toward default bin
-    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // 2/2: Verilator hits 'other' (default) even for ignore_bins
+    cg3_inst.sample();  // ignore_bins value; recorded but excluded from coverage
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);
     // note: do not sample 254 (illegal_bins would cause runtime assertion)
     data = 100;
-    cg3_inst.sample();  // hits default (other) bin
-    `checkr(cg3_inst.get_inst_coverage(), 100.0);  // 2/2 bins hit
+    cg3_inst.sample();  // hits default (other) bin; recorded but excluded from coverage
+    `checkr(cg3_inst.get_inst_coverage(), 100.0);
 
     // Sample cg4: auto-bins with one excluded value
     // idx=2 is in ignore_bins, so auto-bins cover 0, 1, 3 only (3 bins total)

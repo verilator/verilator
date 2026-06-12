@@ -1191,6 +1191,19 @@ public:
             = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
         return names[m_e];
     }
+    // VlCovBinKind enumerator naming the bin's set
+    const char* binSetEnum() const {
+        switch (m_e) {
+        case BINS_IGNORE: return "VlCovBinKind::KIND_IGNORE";
+        case BINS_ILLEGAL: return "VlCovBinKind::KIND_ILLEGAL";
+        case BINS_DEFAULT: return "VlCovBinKind::KIND_DEFAULT";
+        default: return "VlCovBinKind::KIND_NORMAL";
+        }
+    }
+    // Normal bins (feed coverage) are anything but ignore/illegal/default
+    bool binIsNormal() const {
+        return m_e != BINS_IGNORE && m_e != BINS_ILLEGAL && m_e != BINS_DEFAULT;
+    }
 };
 constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
     return lhs.m_e == rhs;

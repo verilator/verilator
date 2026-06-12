@@ -1,4 +1,12 @@
 cg.data.grouped: 2
-cg.data.values: 3
-cg2.cp.range_arr: 3
-cg3.cp.range_sized: 3
+cg.data.values[0]: 1
+cg.data.values[1]: 1
+cg.data.values[2]: 1
+cg2.cp.range_arr[0]: 1
+cg2.cp.range_arr[1]: 1
+cg2.cp.range_arr[2]: 1
+cg2.cp.range_arr[3]: 0
+cg3.cp.range_sized[0]: 1
+cg3.cp.range_sized[1]: 1
+cg3.cp.range_sized[2]: 1
+cg3.cp.range_sized[3]: 0
