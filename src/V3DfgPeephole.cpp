@@ -1885,10 +1885,24 @@ class V3DfgPeephole final : public DfgVisitor {
         if (!idxp) return;
         DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
-        if (varp->vscp()->varp()->isForced()) return;
-        if (varp->vscp()->varp()->isSigUserRWPublic()) return;
+        AstVar* const astVarp = varp->vscp()->varp();
+        if (astVarp->isForced()) return;
+        if (astVarp->isSigUserRWPublic()) return;
         DfgVertex* const srcp = varp->srcp();
-        if (!srcp) return;
+        if (!srcp) {
+            if (vtxp->isPacked()) {
+                if (AstInitArray* const iap = VN_CAST(astVarp->valuep(), InitArray)) {
+                    if (AstConst* const valp
+                        = VN_CAST(iap->getIndexDefaultedValuep(idxp->toSizeT()), Const)) {
+                        APPLYING(FOLD_ARRAYSEL_TABLE) {
+                            replace(new DfgConst{m_dfg, valp->fileline(), valp->num()});
+                            return;
+                        }
+                    }
+                }
+            }
+            return;
+        }
 
         if (DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
             DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());

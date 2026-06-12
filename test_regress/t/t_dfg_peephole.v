@@ -50,6 +50,9 @@ module t (
   assign unitArrayParts[0][1] = rand_a[1];
   assign unitArrayParts[0][9] = rand_a[9];
 
+  // Complicated way to write constant 0 that only Dfg can decipher
+  wire [63:0] convoluted_zero = (({64{rand_a[0]}} & ~{64{rand_a[0]}}));
+
   `signal(FOLD_UNARY_LogNot,      !const_a[0]);
   `signal(FOLD_UNARY_Negate,      -const_a);
   `signal(FOLD_UNARY_Not,         ~const_a);
@@ -132,6 +135,13 @@ module t (
   `signal(FOLD_ASSOC_BINARY_RHS_OF_LHS_Concat, {{rand_a, const_b}, const_a});
 
   `signal(FOLD_SEL,              const_a[3:1]);
+
+  int fold_arraysel_table_one;
+  ffs ffs_a(convoluted_zero[0] ? 8'hff: 8'd2, fold_arraysel_table_one);
+  int fold_arraysel_table_two;
+  ffs ffs_b(convoluted_zero[1] ? 8'hff: 8'd7, fold_arraysel_table_two);
+  `signal(FOLD_ARRAYSEL_TABLE_ONE, fold_arraysel_table_one);
+  `signal(FOLD_ARRAYSEL_TABLE_TWO, fold_arraysel_table_two);
 
   `signal(SWAP_CONST_IN_COMMUTATIVE_BINARY, rand_a + const_a);
   `signal(SWAP_NOT_IN_COMMUTATIVE_BINARY, rand_a + ~rand_a);
@@ -426,4 +436,26 @@ module t (
   assign sconst_b = 64'hba0123456789cdef;
   assign zero = '0;
   assign ones = '1;
+endmodule
+
+module ffs(
+  input logic [7:0] i,
+  output int o
+);
+  // V3Table will convert this
+  always_comb begin
+    // verilator lint_off CASEOVERLAP
+    casez (i)
+      8'b1???????: o = 7;
+      8'b?1??????: o = 6;
+      8'b??1?????: o = 5;
+      8'b???1????: o = 4;
+      8'b????1???: o = 3;
+      8'b?????1??: o = 2;
+      8'b??????1?: o = 1;
+      8'b???????1: o = 0;
+      8'b00000000: o = -1;
+    endcase
+    // verilator lint_on CASEOVERLAP
+  end
 endmodule
