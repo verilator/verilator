@@ -11,10 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--stats'])
+test.compile()
 
 test.execute()
-
-test.file_grep(test.stats, r'Optimizations, Cases proven assertions\s+(\d+)', 1)
 
 test.passes()

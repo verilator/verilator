@@ -9,12 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
-test.compile(verilator_flags2=['--stats'])
-
-test.execute()
-
-test.file_grep(test.stats, r'Optimizations, Cases proven assertions\s+(\d+)', 1)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()
