@@ -19,24 +19,24 @@ interface ifc
 endinterface
 
 module t;
-   // width is overridden, dtype keeps its default logic[width-1:0], and the
-   // class type parameter is overridden.  dtype must follow width (1 bit).
-   ifc #(.width(1), .cparam(cls#(1))) inst1();
-   // Same interface left at its default width (8 bits) must still work.
-   ifc inst8();
+  // width is overridden, dtype keeps its default logic[width-1:0], and the
+  // class type parameter is overridden.  dtype must follow width (1 bit).
+  ifc #(.width(1), .cparam(cls#(1))) inst1();
+  // Same interface left at its default width (8 bits) must still work.
+  ifc inst8();
 
-   always_comb inst1.data = 1'b0;
+  always_comb inst1.data = 1'b0;
 
-   initial begin
-      if ($bits(inst1.data) != 1) begin
-         $write("%%Error: $bits(inst1.data)=%0d exp=1\n", $bits(inst1.data));
-         $stop;
-      end
-      if ($bits(inst8.data) != 8) begin
-         $write("%%Error: $bits(inst8.data)=%0d exp=8\n", $bits(inst8.data));
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if ($bits(inst1.data) != 1) begin
+      $write("%%Error: $bits(inst1.data)=%0d exp=1\n", $bits(inst1.data));
+      $stop;
+    end
+    if ($bits(inst8.data) != 8) begin
+      $write("%%Error: $bits(inst8.data)=%0d exp=8\n", $bits(inst8.data));
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
