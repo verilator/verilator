@@ -253,7 +253,7 @@ private:
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
-    bool m_flatten = false;         // main switch: --flatten
+    bool m_flatten = true;          // main switch: --flatten
     bool m_fourstate = false;       // main switch: --fourstate
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
