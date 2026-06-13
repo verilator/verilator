@@ -341,6 +341,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;isolate_assignments*/
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.050:
+
    Used after a signal declaration to indicate the assignments to this
    signal in any blocks should be isolated into new blocks. When large
    combinatorial block results in a :option:`UNOPTFLAT` warning, attaching

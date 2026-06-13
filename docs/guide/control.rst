@@ -187,6 +187,10 @@ The grammar of control commands is as follows:
 
 .. option:: isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.050:
+
    Used to indicate that the assignments to this signal in any blocks
    should be isolated into new blocks. Same as
    :option:`/*verilator&32;isolate_assignments*/` metacomment.

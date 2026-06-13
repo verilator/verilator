@@ -2366,11 +2366,6 @@ List Of Warnings
    the conflict. If you run with :vlopt:`--report-unoptflat`, Verilator will
    suggest possible candidates for :option:`/*verilator&32;split_var*/`.
 
-   The UNOPTFLAT warning may also occur where outputs from a block of logic
-   are independent, but occur in the same always block. To fix this, use
-   the :option:`/*verilator&32;isolate_assignments*/` metacomment described
-   above.
-
    Before version 5.000, the UNOPTFLAT warning may also have been due to
    clock enables, identified from the reported path going through a clock
    gating instance. To fix these, the clock_enable meta comment was used.
