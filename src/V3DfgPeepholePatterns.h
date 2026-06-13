@@ -27,6 +27,7 @@
 // Enumeration of each peephole optimization. Must be kept in sorted order (enforced by tests).
 // clang-format off
 #define FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(macro)   \
+    _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, FOLD_ARRAYSEL_TABLE) \
     _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, FOLD_ASSOC_BINARY_LHS_OF_RHS) \
     _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, FOLD_ASSOC_BINARY_RHS_OF_LHS) \
     _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, FOLD_BINARY) \
