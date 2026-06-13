@@ -3205,7 +3205,6 @@ void AstVar::dump(std::ostream& str) const {
     if (noReset()) str << " [!RST]";
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
-    if (attrIsolateAssign()) str << " [aISO]";
     if (attrFsmState()) str << " [aFSMSTATE]";
     if (attrFsmResetArc()) str << " [aFSMRESETARC]";
     if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
@@ -3240,7 +3239,6 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, noReset);
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
-    dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFsmState);
     dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);

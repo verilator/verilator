@@ -98,7 +98,6 @@
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
-#include "V3SplitAs.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
@@ -421,7 +420,6 @@ static void process() {
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
-            V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
             if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());

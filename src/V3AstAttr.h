@@ -342,7 +342,6 @@ public:
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RD,             // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RW,             // V3LinkParse moves to AstVar::sigPublic
-        VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
         VAR_SC_BIGUINT,                 // V3LinkParse moves to AstVar::attrScBigUint
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
@@ -364,7 +363,7 @@ public:
             "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
             "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
-            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW", "VAR_ISOLATE_ASSIGNMENTS",
+            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
         // clang-format on

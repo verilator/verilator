@@ -3121,7 +3121,7 @@ sigAttr<nodep>:
         |       yVL_PUBLIC_FLAT                         { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RD                      { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RD}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RW attr_event_controlE  { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RW}; v3Global.dpi(true); DEL($2); }
-        |       yVL_ISOLATE_ASSIGNMENTS                 { $$ = new AstAttrOf{$1, VAttrType::VAR_ISOLATE_ASSIGNMENTS}; }
+        |       yVL_ISOLATE_ASSIGNMENTS                 { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_SC_BIGUINT                          { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BIGUINT}; }
         |       yVL_SC_BV                               { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BV}; }
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
@@ -4657,12 +4657,12 @@ task_prototype<nodeFTaskp>:             // ==IEEE: task_prototype
 
 function_declaration<nodeFTaskp>:       // IEEE: function_declaration + function_body_declaration
                 yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                        { $$ = $4; $$->addStmtsp($6);
                           $$->baseOverride($2);
                           $$->lifetime($3);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                        { $$ = $4; $$->addStmtsp($6);
                           $$->baseOverride($2);
                           $$->lifetime($3);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
@@ -8553,8 +8553,7 @@ vltVarAttrSpecE<strp>:
         ;
 
 vltVarAttrFront<attrtypeen>:
-                yVLT_ISOLATE_ASSIGNMENTS    { $$ = VAttrType::VAR_ISOLATE_ASSIGNMENTS; }
-        |       yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
+                yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
         |       yVLT_PUBLIC                 { $$ = VAttrType::VAR_PUBLIC; v3Global.dpi(true); }
         |       yVLT_PUBLIC_FLAT            { $$ = VAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }
         |       yVLT_PUBLIC_FLAT_RD         { $$ = VAttrType::VAR_PUBLIC_FLAT_RD; v3Global.dpi(true); }
@@ -8568,6 +8567,7 @@ vltVarAttrFront<attrtypeen>:
 vltVarAttrFrontDeprecated:
                 yVLT_CLOCK_ENABLE           { }
         |       yVLT_CLOCKER                { }
+        |       yVLT_ISOLATE_ASSIGNMENTS    { }
         |       yVLT_NO_CLOCKER             { }
         ;
 

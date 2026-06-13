@@ -333,7 +333,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Scoreboard.o \
   V3Slice.o \
   V3Split.o \
-  V3SplitAs.o \
   V3SplitVar.o \
   V3StackCount.o \
   V3Subst.o \
