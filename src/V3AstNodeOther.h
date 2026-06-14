@@ -2458,12 +2458,6 @@ public:
     bool isWor() const { return varType().isWor(); }
     bool isWiredNet() const { return varType().isWiredNet(); }
     bool isTemp() const { return varType().isTemp(); }
-    bool isToggleCoverable() const {
-        return ((isIO() || isSignal())
-                && (isIO() || isBitLogic())
-                // Wrapper would otherwise duplicate wrapped module's coverage
-                && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
-    }
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
     bool isVirtIface() const {
         if (AstIfaceRefDType* const dtp = VN_CAST(dtypep(), IfaceRefDType)) {
