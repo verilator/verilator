@@ -548,7 +548,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
             // Only for top level ports, assume outputs don't change externally
             if (!vscp->varp()->isPrimaryInish()) continue;
             // Don't do if written by the design - wouldn't update the change detect 'prev' value
-            if (vscp->varp()->maybeWritten()) continue;
+            if (vscp->varp()->icoMaybeWritten()) continue;
             // Don't do if forceable, as we can't see the actual value - this is belt and braces
             if (vscp->varp()->isForced()) continue;
             // Can't handle unpacked arrays (they have special types when primary input)

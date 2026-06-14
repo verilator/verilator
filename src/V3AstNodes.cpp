@@ -630,6 +630,7 @@ void AstVar::combineType(const AstVar* otherp) {
         varType(otherp->varType());
         direction(otherp->direction());
     }
+    if (otherp->icoMaybeWritten()) icoMaybeWritten(true);
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
@@ -3215,6 +3216,7 @@ void AstVar::dump(std::ostream& str) const {
         str << " [FUNC]";
     }
     if (hasUserInit()) str << " [UINIT]";
+    if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -3243,6 +3245,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
     dumpJsonBoolFuncIf(str, attrFileDescr);
+    dumpJsonBoolFuncIf(str, icoMaybeWritten);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);

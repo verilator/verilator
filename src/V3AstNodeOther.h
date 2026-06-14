@@ -2138,6 +2138,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
+    bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2151,7 +2152,6 @@ class AstVar final : public AstNode {
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
-    bool m_maybeWritten : 1;  // Design might write to this signal (not very accurate)
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
@@ -2201,6 +2201,7 @@ class AstVar final : public AstNode {
         m_attrFsmArcInclCond = false;
         m_fileDescr = false;
         m_gotNansiType = false;
+        m_icoMaybeWritten = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2214,7 +2215,6 @@ class AstVar final : public AstNode {
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
-        m_maybeWritten = false;
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
@@ -2381,14 +2381,14 @@ public:
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasUserInit() const { return m_hasUserInit; }
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
+    void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
+    bool icoMaybeWritten() const { return m_icoMaybeWritten; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
-    void maybeWritten(bool flag) { m_maybeWritten = flag; }
-    bool maybeWritten() const { return m_maybeWritten; }
     bool noCReset() const { return m_noCReset; }
     void noCReset(bool flag) { m_noCReset = flag; }
     bool noReset() const { return m_noReset; }

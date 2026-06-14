@@ -749,8 +749,8 @@ Summary:
    externally between evaluations. The optimization is automatically disabled
    for top level input signals that are written within the design. Accesses via
    the VPI cannot be analyzed at compile time, therefore :vlopt:`--vpi`
-   disables this optimization. It can be turned back on by explicitly passing
-   :vlopt:`-fico-change-detect`.
+   disables this optimization for all inputs; it may be turned back on by
+   explicitly passing :vlopt:`-fico-change-detect`.
 
 .. option:: -fno-inline
 
