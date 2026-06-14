@@ -59,6 +59,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeAssign;
     // Clone single node, just get same type back.
+    void dump(std::ostream& str) const override;
     virtual AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) = 0;
     bool hasDType() const override VL_MT_SAFE { return true; }
     virtual bool cleanRhs() const { return true; }

@@ -2771,6 +2771,10 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
+void AstNodeAssign::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (timingControlp()) str << " [TIMING=" << nodeAddr(timingControlp()) << "]";
+}
 string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     if (const auto subp = subDTypep()) os << subp->prettyDTypeName(full);
