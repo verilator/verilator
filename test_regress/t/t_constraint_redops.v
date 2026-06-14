@@ -83,13 +83,13 @@ class test_redops_bitfields #(RANDVAL_BITWIDTH=8);
 endclass
 
 module t;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(1))   redops_1bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(8))   redops_8bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(16))  redops_16bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(32))  redops_32bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(47))  redops_47bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(63))  redops_63bit;
-  test_redops_bitfields #(.RANDVAL_BITWIDTH(64))  redops_64bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(1)) redops_1bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(8)) redops_8bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(16)) redops_16bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(32)) redops_32bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(47)) redops_47bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(63)) redops_63bit;
+  test_redops_bitfields #(.RANDVAL_BITWIDTH(64)) redops_64bit;
   test_redops_bitfields #(.RANDVAL_BITWIDTH(128)) redops_128bit;
 
   initial begin

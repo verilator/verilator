@@ -6,19 +6,16 @@
         // SPDX-License-Identifier: CC0-1.0
         
         package P;
-          typedef struct packed{
-            logic [7:0] vs;
-          } C;
-          typedef struct packed{
-            C a; int b;
+          typedef struct packed {logic [7:0] vs;} C;
+          typedef struct packed {
+            C a;
+            int b;
           } B;
-          typedef struct packed{
-            B a;
-          } A;
+          typedef struct packed {B a;} A;
         endpackage
         
         module t (
-%000009   input clk
+%000009     input clk
         );
           typedef enum logic [1:0] {
             S_IDLE = 2'd0,
@@ -84,9 +81,10 @@
 %000003           a.a.a.vs <= a.a.a.vs + 1;
 %000003           done <= (a.a.a.vs == 8'h1);
 %000002           if (done) begin
-%000001               state <= S_DONE;
-%000002           end else begin
-%000002               state <= S_RUN;
+%000001             state <= S_DONE;
+                  end
+%000002           else begin
+%000002             state <= S_RUN;
                   end
                 end
 %000002         S_DONE: state <= S_DONE;

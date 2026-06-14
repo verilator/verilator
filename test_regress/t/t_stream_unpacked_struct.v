@@ -177,7 +177,8 @@ module t;
 
     if ($test$plusargs("t_stream_unpacked_struct_alt")) begin
       narrow_bits = 12'h123;
-    end else begin
+    end
+    else begin
       narrow_bits = 12'habd;
     end
     /* verilator lint_off WIDTHEXPAND */

@@ -18,12 +18,24 @@ module top;
   always @(posedge clk) begin
     // verilator lint_off CASEWITHX
     case (cyc) inside
-      3'b000: begin $display("case inside 000"); ++count; end
-      3'b001: begin $display("case inside 001"); ++count; end
+      3'b000: begin
+        $display("case inside 000");
+        ++count;
+      end
+      3'b001: begin
+        $display("case inside 001");
+        ++count;
+      end
       // Should match z
-      3'b01?: begin $display("case inside 01?"); ++count; end
+      3'b01?: begin
+        $display("case inside 01?");
+        ++count;
+      end
       // Should match x
-      3'b1xx: begin $display("case inside 1xx"); ++count; end
+      3'b1xx: begin
+        $display("case inside 1xx");
+        ++count;
+      end
     endcase
     // verilator lint_on CASEWITHX
     cyc <= cyc + 3'd1;

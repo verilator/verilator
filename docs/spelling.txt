@@ -924,6 +924,7 @@ localparams
 localtime
 logicals
 longint
+lookups
 lossy
 lsb
 lubc

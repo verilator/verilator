@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t #(
-  parameter int unsigned W = 16,
-  parameter int unsigned D = 4,
-  parameter int unsigned BW = 2
+    parameter int unsigned W = 16,
+    parameter int unsigned D = 4,
+    parameter int unsigned BW = 2
 ) (
-  input clk
+    input clk
 );
   typedef enum logic [1:0] {
     S_IDLE = 2'd0,
@@ -29,8 +29,7 @@ module t #(
   begin
     logic [D-1:0][W-1:0] s;
     begin
-      always_ff @(posedge clk)
-      s[b] <= a;
+      always_ff @(posedge clk) s[b] <= a;
     end
   end
 
@@ -61,12 +60,14 @@ module t #(
         S_IDLE:
         if (start) state <= S_RUN;
         else state <= S_IDLE;
-        S_RUN: begin;
+        S_RUN: begin
+          ;
           done_arr[0] <= (a[0] == 1'b1);
           if (done_arr[0]) begin
-              state <= S_DONE;
-          end else begin
-              state <= S_RUN;
+            state <= S_DONE;
+          end
+          else begin
+            state <= S_RUN;
           end
         end
         S_DONE: state <= S_DONE;

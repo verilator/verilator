@@ -4,15 +4,14 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module rr
-#(
+module rr #(
 ) (
     input logic clk,
     input logic rst,
-    input  logic [7:0] data,
-    input  logic data_q
+    input logic [7:0] data,
+    input logic data_q
 );
-  logic        a;
+  logic a;
   logic [15:0] dcnt;
   typedef enum logic [7:0] {
     S0,
@@ -21,23 +20,21 @@ module rr
     S3
   } state_t;
   state_t state_d, state_q;
-  always_ff @(posedge clk or negedge rst)
-    if (!rst) state_q <= S0;
+  always_ff @(posedge clk or negedge rst) if (!rst) state_q <= S0;
   always_ff @(posedge clk)
     unique case (state_q)
-      S1:  if (a) dcnt[7:0] <= data;
-      S2:  if (a) dcnt[15:8] <= data;
-      S3:  if (data_q) dcnt <= dcnt - 1;
+      S1: if (a) dcnt[7:0] <= data;
+      S2: if (a) dcnt[15:8] <= data;
+      S3: if (data_q) dcnt <= dcnt - 1;
       default: dcnt <= dcnt;
     endcase
 endmodule
-module re
-#(
+module re #(
 ) (
     input logic clk,
     input logic rst,
     output logic o,
-    input unused0, /* block optimizations */
+    input unused0,  /* block optimizations */
     input unused1,
     input unused2,
     input unused3,
@@ -85,20 +82,18 @@ module re
     S1
   } state_t;
   state_t state_d, state_q;
-  always_ff @(posedge clk or negedge rst)
-  if (!rst) state_q <= S0;
+  always_ff @(posedge clk or negedge rst) if (!rst) state_q <= S0;
   always_ff @(posedge clk)
     unique case (state_q)
       S1: o <= dcnt[0];
-      default:     o <= '0;
+      default: o <= '0;
     endcase
   initial begin
     $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule
-module rh
-#(
+module rh #(
 ) (
     input logic clk
 );
@@ -110,24 +105,21 @@ module rh
   rr xrr (
       .clk,
       .rst(rst),
-      .data (a),
-      .data_q  (b & c)
+      .data(a),
+      .data_q(b & c)
   );
   re xre (
       .clk,
       .rst(rst),
-      .o (d)
+      .o(d)
   );
 endmodule
-module U
-#(
+module U #(
 ) (
     input clk,
     input rst
 );
-  rh xrh (
-      .clk (clk)
-  );
+  rh xrh (.clk(clk));
 endmodule
 module C #(
 ) (
@@ -139,9 +131,7 @@ module C #(
       .rst
   );
 endmodule
-module A #(
-) (
-);
+module A #() ();
   logic clk;
   logic rst;
   C c0 (
@@ -153,9 +143,7 @@ module A #(
       .rst
   );
 endmodule
-module B #(
-) (
-);
+module B #() ();
   logic clk;
   logic rst;
   C xC (
@@ -163,11 +151,7 @@ module B #(
       .rst
   );
 endmodule
-module t #(
-) (
-);
-  B b (
-  );
-  A a (
-  );
+module t #() ();
+  B b ();
+  A a ();
 endmodule

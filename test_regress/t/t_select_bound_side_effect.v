@@ -32,10 +32,10 @@ module t;
     if (i < 5) `checkh(arr[i], expected);
   endtask
 
-   task automatic add_z(inout int a);
-      a += z;
-      z++;
-   endtask
+  task automatic add_z(inout int a);
+    a += z;
+    z++;
+  endtask
 
   task automatic assign_side_effect_inout(input int i, input int expected);
     if (i < 5) arr[i] = 1;
@@ -63,8 +63,8 @@ module t;
       arr[get_y()] = i;
       if (y < 5) `checkh(arr[y], i);
       `checkh(y, 2 * i + 1);
-      arr[get_y() % (i + 1)] = i;
-      if (y % (i + 1) < 5) `checkh(arr[y % (i + 1)], i);
+      arr[get_y()%(i+1)] = i;
+      if (y % (i + 1) < 5) `checkh(arr[y%(i+1)], i);
       `checkh(y, 2 * (i + 1));
     end
 

@@ -26,8 +26,9 @@ module t;
 
   always_comb begin
     priority casez (in)
-      2'b1?, // fully subsumes 2'b11 below on the same case clause
-      2'b11: out = 2'b10;
+      2'b1?,  // fully subsumes 2'b11 below on the same case clause
+      2'b11:
+      out = 2'b10;
       2'b0?: out = 2'b01;
     endcase
   end

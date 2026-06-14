@@ -1,11 +1,11 @@
-%Warning-COVERIGN: t/t_cover_fsm_sel_togglevar_unsup.v:20:14: Coverage ignored for type ASSOCARRAYDTYPE
+%Warning-COVERIGN: t/t_cover_fsm_sel_togglevar_unsup.v:19:16: Coverage ignored for type ASSOCARRAYDTYPE
                                                             : ... note: In instance 't'
-   20 |   input P::A a,
-      |              ^
+   19 |     input P::A a,
+      |                ^
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_cover_fsm_sel_togglevar_unsup.v:20:14: Coverage ignored for type WILDCARDARRAYDTYPE
+%Warning-COVERIGN: t/t_cover_fsm_sel_togglevar_unsup.v:19:16: Coverage ignored for type WILDCARDARRAYDTYPE
                                                             : ... note: In instance 't'
-   20 |   input P::A a,
-      |              ^
+   19 |     input P::A a,
+      |                ^
 %Error: Exiting due to
