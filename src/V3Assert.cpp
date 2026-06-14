@@ -680,7 +680,7 @@ class AssertVisitor final : public VNVisitor {
                     && checkp->condp()->sameTree(nodep->condp())) {
                     ++m_statAssertOnCombined;
                     nodep->addThensp(checkp->thensp()->unlinkFrBackWithNext());
-                    VL_DO_DANGLING(checkp->unlinkFrBack(), checkp);
+                    VL_DO_DANGLING(pushDeletep(checkp->unlinkFrBack()), checkp);
                     return;
                 }
             }
