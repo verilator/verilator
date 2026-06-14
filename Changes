@@ -161,7 +161,7 @@ Verilator 5.049 devel
 * Fix FSM detect unchecked casts and variable redeclaration (#7758). [Adam Kostrzewski, Antmicro Ltd.]
 * Fix no-scope internal error on virtual interface method calls (#7759). [Yilou Wang]
 * Fix 'case (_) inside' with x wildcards (#7766). [Geza Lore, Testorrent USA, Inc.]
-
+* Fix $fflush and autoflush with --threads (#7782).
 
 
 Verilator 5.048 2026-04-26
