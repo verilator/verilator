@@ -659,6 +659,34 @@ class AssertVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
 
+        if (nodep->user2()) {
+            // Combine consecutive assertOn checks if possible
+            if (AstIf* const backp = VN_CAST(nodep->backp(), If)) {
+                if (backp->nextp() == nodep  //
+                    && backp->user2()  //
+                    && backp->condp()->sameTree(nodep->condp())) {
+                    ++m_statAssertOnCombined;
+                    backp->addThensp(nodep->thensp()->unlinkFrBackWithNext());
+                    nodep->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+            // Combine nested assertOn checks if possible
+            if (nodep->thensp() && !nodep->thensp()->nextp() && isEmptyStmt(nodep->elsesp())) {
+                AstIf* const checkp = VN_CAST(nodep->thensp(), If);
+                if (checkp  //
+                    && checkp->user2()  //
+                    && checkp->condp()->sameTree(nodep->condp())) {
+                    ++m_statAssertOnCombined;
+                    nodep->addThensp(checkp->thensp()->unlinkFrBackWithNext());
+                    VL_DO_DANGLING(checkp->unlinkFrBack(), checkp);
+                    return;
+                }
+            }
+            return;
+        }
+
         // Swap assertOn check with single statement 'if' statement to bubble up for combining
         // Note we can't just swap the conditions as they two Ifs have different flags,
         // so swapping the Ifs themeselves then swapping back the bodies.
@@ -681,20 +709,6 @@ class AssertVisitor final : public VNVisitor {
                     nodep->addElsesp(checkp->thensp()->unlinkFrBackWithNext());
                     checkp->addThensp(nodep);
                     return;
-                }
-            }
-        }
-
-        // Combine consecutive assertOn checks if possible
-        if (nodep->user2()) {
-            if (AstIf* const backp = VN_CAST(nodep->backp(), If)) {
-                if (backp->nextp() == nodep  //
-                    && backp->user2()  //
-                    && backp->condp()->sameTree(nodep->condp())) {
-                    ++m_statAssertOnCombined;
-                    backp->addThensp(nodep->thensp()->unlinkFrBackWithNext());
-                    nodep->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             }
         }
