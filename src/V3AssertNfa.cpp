@@ -110,6 +110,9 @@ public:
     // Reject when source is active and condp is false; set only on
     // outermost required-step Link
     bool m_rejectOnFail = false;
+    // Optional dynamic condition vertex for m_rejectOnFail. Used when the
+    // success condition is another NFA state rather than a static expression.
+    SvaStateVertex* m_condVtxp = nullptr;
 
     // CONSTRUCTORS
     SvaTransEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, AstNodeExpr* condp,
@@ -207,6 +210,12 @@ class SvaNfaBuilder final {
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
     bool m_isCoverSeq = false;
+
+    struct RangeDelayRejectInfo final {
+        SvaStateVertex* startp = nullptr;
+        int range = 0;
+        int rhsLen = 0;
+    };
 
     AstNodeExpr* throughoutCond(AstNodeExpr* baseCondp, FileLine* flp) {
         if (m_throughoutStack.empty()) return baseCondp;
@@ -374,7 +383,7 @@ class SvaNfaBuilder final {
     // failure, sets outErrorEmitted per semantic-error policy and returns false.
     bool applyRangeDelay(AstDelay* delayp, AstNodeExpr* rhsExprp, SvaStateVertex*& currentp,
                          std::vector<SvaStateVertex*>& midSources, FileLine* flp,
-                         bool& outErrorEmitted) {
+                         bool& outErrorEmitted, RangeDelayRejectInfo* rangeRejectInfop = nullptr) {
         const int minDelay = getConstInt(delayp->lhsp());
         if (minDelay < 0) {
             delayp->v3error("Range delay minimum is not a non-negative elaboration-time constant"
@@ -433,8 +442,14 @@ class SvaNfaBuilder final {
             guardedEdge(currentp, counterVtxp, flp);
             currentp = counterVtxp;
         } else if (VN_IS(rhsExprp, SExpr)) {
-            // Nested-SExpr RHS: merge all [M,N] positions; continuation is per-attempt.
+            // Nested-SExpr RHS: merge all [M,N] positions. Candidate-local misses
+            // are not assertion rejects while a later position can still match.
+            if (rangeRejectInfop) {
+                const int rhsLen = fixedLength(rhsExprp);
+                if (rhsLen >= 0) *rangeRejectInfop = {currentp, range, rhsLen};
+            }
             SvaStateVertex* const mergeVtxp = scopedCreateVertex();
+            mergeVtxp->m_isUnbounded = true;
             guardedLink(currentp, mergeVtxp, flp);
             for (int i = 0; i < range; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
@@ -443,6 +458,7 @@ class SvaNfaBuilder final {
                 currentp = nextVtxp;
             }
             currentp = mergeVtxp;
+            m_inUnboundedScope = true;
         } else {
             // Pure boolean RHS: register chain. Each mid-position links to
             // match (match-only); last position is the reject source.
@@ -468,12 +484,44 @@ class SvaNfaBuilder final {
         return true;
     }
 
+    void addFiniteRangeReject(const RangeDelayRejectInfo& info, const BuildResult& result,
+                              FileLine* flp) {
+        if (!info.startp) return;
+
+        SvaStateVertex* const expiryVtxp
+            = addDelayChain(info.startp, info.range + info.rhsLen, flp);
+        SvaStateVertex* const expiryMatchp = scopedCreateVertex();
+        std::vector<SvaStateVertex*> sources = result.midSources;
+        sources.push_back(result.termVertexp);
+        for (SvaStateVertex* const srcp : sources) {
+            AstNodeExpr* const condp
+                = result.finalCondp ? sampled(result.finalCondp->cloneTreePure(false)) : nullptr;
+            SvaStateVertex* const successNowp = scopedCreateVertex();
+            guardedLink(srcp, successNowp, condp, flp);
+            SvaStateVertex* stagep = successNowp;
+            guardedLink(stagep, expiryMatchp, flp);
+            for (int i = 0; i < info.range; ++i) {
+                SvaStateVertex* const nextp = scopedCreateVertex();
+                guardedEdge(stagep, nextp, flp);
+                stagep = nextp;
+                guardedLink(stagep, expiryMatchp, flp);
+            }
+        }
+
+        SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+        sinkVtxp->m_isRejectSink = true;
+        SvaTransEdge* const rejectp = m_graph.addLink(expiryVtxp, sinkVtxp);
+        rejectp->m_rejectOnFail = true;
+        rejectp->m_condVtxp = expiryMatchp;
+    }
+
     BuildResult buildSExpr(AstSExpr* sexprp, SvaStateVertex* entryVtxp,
                            bool isTopLevelStep = false) {
         AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
         if (!delayp || !delayp->isCycleDelay()) return BuildResult::fail();
 
         FileLine* const flp = sexprp->fileline();
+        AstNodeExpr* const exprp = sexprp->exprp();
 
         // Handle LHS (preExpr)
         SvaStateVertex* currentp = entryVtxp;
@@ -496,10 +544,12 @@ class SvaNfaBuilder final {
 
         // Handle delay
         std::vector<SvaStateVertex*> rangeMidSources;
+        RangeDelayRejectInfo rangeRejectInfo;
+        const bool addRangeReject = isTopLevelStep && !m_inUnboundedScope;
         if (delayp->isRangeDelay()) {
             bool errorEmitted = false;
             if (!applyRangeDelay(delayp, sexprp->exprp(), currentp, rangeMidSources, flp,
-                                 errorEmitted)) {
+                                 errorEmitted, addRangeReject ? &rangeRejectInfo : nullptr)) {
                 return BuildResult::fail(errorEmitted);
             }
         } else {
@@ -514,8 +564,11 @@ class SvaNfaBuilder final {
         }
 
         // Multi-cycle RHS: recurse (only plain boolean is returned as finalCondp).
-        AstNodeExpr* const exprp = sexprp->exprp();
-        if (exprp->isMultiCycleSva()) return buildExpr(exprp, currentp, isTopLevelStep);
+        if (exprp->isMultiCycleSva()) {
+            const BuildResult result = buildExpr(exprp, currentp, isTopLevelStep);
+            if (result.valid()) addFiniteRangeReject(rangeRejectInfo, result, flp);
+            return result;
+        }
         return {currentp, exprp, std::move(rangeMidSources)};
     }
 
@@ -1505,15 +1558,25 @@ class SvaNfaLowering final {
         computeTerminalMatchAndReject(c, snapshotOkp, sigs, outPerMidSrcsp);
 
         // Phase 3a: required-step rejection.
-        // Builder only sets m_rejectOnFail on non-clocked Links with m_condp,
-        // and the source always has a resolved stateSig.
+        // Builder only sets m_rejectOnFail on non-clocked Links with m_condp
+        // or m_condVtxp, and the source always has a resolved stateSig.
         for (const SvaTransEdge* const tep : c.edges) {
             if (!tep->m_rejectOnFail) continue;
             const int fi = tep->fromVtxp()->color();
-            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp && tep->m_condp, tep->fromVtxp(),
-                        "rejectOnFail Link must have condp and source stateSig");
+            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp && (tep->m_condp || tep->m_condVtxp),
+                        tep->fromVtxp(),
+                        "rejectOnFail Link must have condp/condVtxp and source stateSig");
             AstNodeExpr* const srcSigp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
-            AstNodeExpr* const notCondp = new AstLogNot{c.flp, tep->m_condp->cloneTreePure(false)};
+            AstNodeExpr* condp = nullptr;
+            if (tep->m_condVtxp) {
+                const int ci = tep->m_condVtxp->color();
+                UASSERT_OBJ(c.vtx[ci]->datap()->stateSigp, tep->m_condVtxp,
+                            "rejectOnFail condVtxp missing stateSig");
+                condp = c.vtx[ci]->datap()->stateSigp->cloneTreePure(false);
+            } else {
+                condp = tep->m_condp->cloneTreePure(false);
+            }
+            AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
             AstNodeExpr* const failp = new AstLogAnd{c.flp, srcSigp, notCondp};
             if (outRequiredStepSrcsp) {
                 outRequiredStepSrcsp->push_back(failp->cloneTreePure(false));
