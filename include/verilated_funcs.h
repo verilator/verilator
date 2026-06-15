@@ -269,6 +269,21 @@ static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_
     return ret;
 }
 
+IData VL_DECODER_II(IData index, WDataInP matchp, WDataInP valuep) VL_PURE;
+QData VL_DECODER_QI(IData index, WDataInP matchp, WDataInP valuep) VL_PURE;
+WDataOutP VL_DECODER_WI(int owords, WDataOutP owp, IData index, WDataInP matchp,
+                        WDataInP valuep) VL_MT_SAFE;
+
+IData VL_DECODER_IQ(QData index, WDataInP matchp, WDataInP valuep) VL_PURE;
+QData VL_DECODER_QQ(QData index, WDataInP matchp, WDataInP valuep) VL_PURE;
+WDataOutP VL_DECODER_WQ(int owords, WDataOutP owp, QData index, WDataInP matchp,
+                        WDataInP valuep) VL_MT_SAFE;
+
+IData VL_DECODER_IW(int iwords, WDataInP indexp, WDataInP matchp, WDataInP valuep) VL_PURE;
+QData VL_DECODER_QW(int iwords, WDataInP indexp, WDataInP matchp, WDataInP valuep) VL_PURE;
+WDataOutP VL_DECODER_WW(int owords, WDataOutP owp, int iwords, WDataInP indexp, WDataInP matchp,
+                        WDataInP valuep) VL_MT_SAFE;
+
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
 static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {

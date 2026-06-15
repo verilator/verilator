@@ -362,6 +362,24 @@ public:
     ASTGEN_MEMBERS_DfgVertexTernary;
 };
 
+class DfgDecoder final : public DfgVertexTernary {
+public:
+    DfgDecoder(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexTernary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgDecoder;
+
+    DfgVertex* indexp() const { return inputp(0); }
+    void indexp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    DfgVertex* matchp() const { return inputp(1); }
+    void matchp(DfgVertex* vtxp) { inputp(1, vtxp); }
+    DfgVertex* valuep() const { return inputp(2); }
+    void valuep(DfgVertex* vtxp) { inputp(2, vtxp); }
+
+    std::string srcName(size_t idx) const override {
+        return idx == 0 ? "indexp" : idx == 1 ? "matchp" : "valuep";
+    }
+};
+
 //------------------------------------------------------------------------------
 // Variadic vertices - variable number of inputs
 

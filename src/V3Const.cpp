@@ -3019,6 +3019,13 @@ class ConstVisitor final : public VNVisitor {
         }
     }
     void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
+
+    void visit(AstDecoder* nodep) override {
+        // Do not iterate the tables, they must be constant pool entries
+        iterate(nodep->indexp());
+        // TODO: constant fold
+    }
+
     void visit(AstPin* nodep) override { iterateChildren(nodep); }
 
     void replaceLogEq(AstLogEq* nodep) {

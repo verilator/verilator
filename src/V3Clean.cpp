@@ -232,6 +232,11 @@ class CleanVisitor final : public VNVisitor {
         ensureClean(nodep->rhsp());
         setClean(nodep, true);
     }
+    void visit(AstDecoder* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->indexp());
+        setClean(nodep, true);
+    }
     void visit(AstSel* nodep) override {
         operandBiop(nodep);
         setClean(nodep, nodep->cleanOut());

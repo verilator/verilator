@@ -347,6 +347,10 @@ class PremitVisitor final : public VNVisitor {
         }
         checkNode(nodep);
     }
+    void visit(AstDecoder* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstCond* nodep) override {
         // Convert AstCond to AstIf in order to avoid evaluating
         // sub-expressions in both branches unconditionally.

@@ -1590,6 +1590,28 @@ public:
             puts(")");
         }
     }
+    void visit(AstDecoder* nodep) override {
+        putns(nodep, "VL_DECODER_");
+        emitIQW(nodep);
+        emitIQW(nodep->indexp());
+        puts("(");
+        if (nodep->isWide()) {
+            puts(std::to_string(nodep->widthWords()));
+            puts(", ");
+            iterateConst(m_wideTempRefp);
+            puts(", ");
+        }
+        if (nodep->indexp()->isWide()) {
+            puts(std::to_string(nodep->indexp()->widthWords()));
+            puts(", ");
+        }
+        iterateConst(nodep->indexp());
+        puts(", ");
+        iterateConst(nodep->matchp());
+        puts(", ");
+        iterateConst(nodep->valuep());
+        puts(")");
+    }
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");

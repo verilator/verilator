@@ -163,6 +163,14 @@ bool AstVar::sameNode(const AstNode* samep) const {
     return m_name == asamep->m_name && varType() == asamep->varType();
 }
 
+AstDecoder::AstDecoder(FileLine* fl, AstNodeExpr* indexp, AstVarScope* matchp,
+                       AstVarScope* valuep)
+    : ASTGEN_SUPER_Decoder(fl) {
+    this->indexp(indexp);
+    this->matchp(new AstVarRef{fl, matchp, VAccess::READ});
+    this->valuep(new AstVarRef{fl, valuep, VAccess::READ});
+}
+
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
     : ASTGEN_SUPER_VarRef(fl, varp, access) {
     if (v3Global.assertDTypesResolved()) {
