@@ -4,6 +4,14 @@
 
 # Verilator Guidelines for AI Coding Agents
 
+These files are the general layer an agent loads first -- nearest file wins, so
+you read this repository-root file plus the one for the directory you are
+editing. They stay deliberately high-level: where to start, how the tree is laid
+out, and the conventions reviewers otherwise enforce by hand. They are an index,
+not the architecture reference -- for depth (how a pass works internally, the
+algorithms, node lifetime) they point you to `docs/internals.rst`. When the
+guidance here is not enough, that is where to look next.
+
 This file has two parts. **Orientation** gets you productive in the codebase from
 a cold start. **Before you open a PR** is the checklist of conventions reviewers
 otherwise have to enforce by hand -- read it before submitting any change.
@@ -41,8 +49,7 @@ tree). In source order:
 | Emit | Lower the final AST to generated C++ | `V3EmitC*` |
 | Runtime | Library the generated model links against | `include/verilated*` |
 
-`docs/internals.rst` is the authoritative architecture and pass reference. Read
-it before any non-trivial change.
+This table is the map; `docs/internals.rst` has the detail behind each stage.
 
 ## Where to make a change
 
@@ -65,7 +72,8 @@ top-of-file comment.
 - Build in the source tree: `autoconf && ./configure && make -j8`. Configure with
   `--enable-ccwarn` so a new compiler warning stops the build.
 - Run one test from the repository root: `test_regress/t/t_<name>.py`.
-- Run the full regression: `make test`.
+- Run the full regression with `make test`. The complete suite requires
+  configuring with `--enable-longtests` (works on every OS, including macOS).
 
 ---
 
@@ -82,8 +90,12 @@ top-of-file comment.
       own reproducer when possible.
 - [ ] New code aims for 100% line coverage; branch coverage far below line coverage
       signals guards callers never violate -- justify or remove them.
-- [ ] Ran `make format` (clang-format) and `make cppcheck`; self-reviewed the diff
-      for leftover debug code, stale comments, and copy-paste errors.
+- [ ] Ran `make format` (clang-format), `make cppcheck`, and `make lint-py`;
+      self-reviewed the diff for leftover debug code, stale comments, and
+      copy-paste errors.
+- [ ] Ran the full regression on at least one OS before submitting. Partial runs
+      are fine during development, but the submitted PR is expected to pass every
+      test.
 - [ ] Did not edit `docs/CONTRIBUTORS` (humans only) or `Changes` (maintainer
       updates it near release).
 
@@ -109,8 +121,9 @@ The API you choose determines which test must accompany the change.
 
 ## Cross-cutting code rules
 
-- [ ] No non-ASCII characters in C++ sources or headers -- `--` not em dashes,
-      plain `'` not smart quotes. At write time, not when CI complains.
+- [ ] No non-ASCII characters in C++ sources or headers: write `--` (two ASCII
+      hyphens) rather than a Unicode em-dash, and a plain `'` rather than a smart
+      quote. At write time, not when CI complains.
 - [ ] Lists stay sorted: lexer/parser tokens, option declarations, enum values,
       configure feature lists, documented option lists.
 - [ ] `bin/` scripts are Python (distributed cross-platform); `nodist/` may use

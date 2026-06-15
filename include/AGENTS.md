@@ -34,7 +34,7 @@ ships to users, runs every simulation cycle, and must stay portable and fast.
 - **No exceptions in runtime code** -- use error returns or assertions; exceptions
   add overhead on every path.
 - **Use fixed-width model types** (`CData`/`SData`/`IData`/`QData`/`VlWide`), never
-  `size_t`, for model data. Process wide data word-by-word (`VL_MEMSET_W`,
+  `size_t`, for model data. Process wide data word-by-word (`VL_ZERO_W`,
   `VL_MEMCPY_W`), never bit-by-bit or byte-by-byte.
 - **Do all string parsing at verilation time** -- never parse strings during
   simulation; emit structured data or compile-time hints instead.

@@ -44,14 +44,14 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 
 ## Code style
 
-- Mark every variable, parameter, and pointer `const` where possible.
+- Mark every variable, parameter, pointer, and member function `const` where possible.
 - Pointer variables take a `p` suffix and pointer locals are doubly const where
   possible: `AstVar* const varp`; non-pointers never use the `p` suffix.
 - Do not use `auto` except for iterators or genuinely unwieldy types.
-- Use pre-increment (`++i`), never post-increment.
+- Use pre-increment (`++i`) unless you specifically need post-increment's old value.
 - Brace-initialize node and struct construction: `new AstIf{fl, condp, thenp, elsep}`.
-- No C-style casts -- `static_cast<T>` for non-AST types, `VN_AS`/`VN_CAST` for
-  AST downcasts.
+- Never use C-style casts; instead use `static_cast<T>` for non-AST types and
+  `VN_AS`/`VN_CAST` for AST downcasts.
 - `static constexpr` for compile-time constants, not `#define` or file-scope const.
 - Mark every `class`/`struct` `final` or `VL_NOT_FINAL` -- a distribution test
   scans all definitions.
@@ -62,7 +62,6 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 - Start every new `.cpp` with a top-of-file comment explaining the algorithm.
 - Comments are capitalized sentences written for an unknown future reader, without
   "I"/"we"/"our"; remove commented-out code -- version control preserves history.
-- Start continuation lines with the operator (`&&` at line start).
 - No `using namespace`; prefix non-namespaced symbols with `VL`/`Vl`.
 - Prefer semantic predicates over enum comparisons: `varp->isClassMember()`, not
   `varp->varType() == VVarType::MEMBER`.
@@ -99,8 +98,10 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 - Pointers to nodes outside op1p-op4p require a `broken()` override and
   `cloneRelink()` support -- avoid storing out-of-tree node pointers when possible.
 - Never allocate AstNode objects on the stack or by value -- always pointers.
-- Prefer `nodep->foreach(...)` and named accessors over `op1p()`..`op4p()`, but
-  verify traversal order is preserved when converting manual iteration.
+- Prefer a new `visit()` in an existing visitor over `nodep->foreach(...)` --
+  better for runtime, and handles diverse node types better. Prefer named
+  accessors over `op1p()`..`op4p()`, and verify traversal order is preserved
+  when converting manual iteration.
 - Prefer `AstForeach` over generating unrolled loop bodies -- constant-size code
   instead of O(N); wrap the body in `AstBegin` for scope isolation.
 - Always `skipRefp()` when comparing or resolving dtypes -- missing it breaks
@@ -177,7 +178,7 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
   future parallelism.
 - Use Verilator's fixed-width data types for model data (`CData`/`SData`/`IData`/
   `QData`/`VlWide`), not `size_t`. Process wide data word-by-word
-  (`VL_MEMSET_W`, `VL_MEMCPY_W`), never bit-by-bit.
+  (`VL_ZERO_W`, `VL_MEMCPY_W`), never bit-by-bit.
 - No exceptions in verilated runtime code; do string parsing at verilation time,
   never during simulation.
 - Wrap unlikely hot-path branches in `VL_UNLIKELY`/`VL_LIKELY`.
@@ -215,9 +216,9 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 
 | File | Rule |
 |---|---|
-| `src/V3Options.cpp` | Chain `.notNeededForRerun()` onto `DECL_OPTION()` for options that do not affect semantic output |
+| `src/V3Options.cpp` | Chain `.notForRerun()` onto `DECL_OPTION()` for options that do not affect semantic output |
 | `src/V3Ast.cpp` | For composite types (queues, dynamic arrays) use `computeCastableImp()` on subtypes -- shallow `width()`/`similarDType()` checks miss nested incompatibility |
-| `src/V3AstNode*.h` | Every node class gets a what-construct comment and every member a semantic-purpose comment; put enum type definitions in `V3NodeAttr.h` |
+| `src/V3AstNode*.h` | Every node class gets a what-construct comment and every member a semantic-purpose comment; put enum type definitions in `V3AstAttr.h` |
 | `src/V3AstNodeExpr.h` | `CCast` is only for basic C types (char/short/int/QData) -- never 4-state logic or structs |
 | `src/V3AstNodeOther.h` | `cloneRelink` must propagate all stateful flags (e.g. `maybePointedTo`) and update internal references |
 | `src/V3Const.cpp` | Check `keepIfEmpty` before removing empty functions -- flagged functions must survive for codegen/side effects |
