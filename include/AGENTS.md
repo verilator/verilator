@@ -9,7 +9,7 @@ that every generated model links against. Read the repository-root
 [AGENTS.md](../AGENTS.md) first. The rules here differ from `src/`: this code
 ships to users, runs every simulation cycle, and must stay portable and fast.
 
----
+______________________________________________________________________
 
 # Orientation
 
@@ -22,7 +22,7 @@ ships to users, runs every simulation cycle, and must stay portable and fast.
   (`--timing` runtime), `verilated_vcd_c.*`/`verilated_fst_c.*` (tracing).
 - A runtime-only fix lives entirely here and does not rebuild `verilator_bin`.
 
----
+______________________________________________________________________
 
 # Before you open a PR
 

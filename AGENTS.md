@@ -23,7 +23,7 @@ Then read the directory guide for the area you are editing:
 - [test_regress/AGENTS.md](test_regress/AGENTS.md) -- regression tests: harness, drivers, golden files
 - [docs/AGENTS.md](docs/AGENTS.md) -- documentation (`*.rst`)
 
----
+______________________________________________________________________
 
 # Orientation
 
@@ -75,7 +75,7 @@ top-of-file comment.
 - Run the full regression with `make test`. The complete suite requires
   configuring with `--enable-longtests` (works on every OS, including macOS).
 
----
+______________________________________________________________________
 
 # Before you open a PR
 
@@ -83,21 +83,21 @@ top-of-file comment.
 
 - [ ] Searched open PRs and issues -- duplicating in-flight work wastes review time.
 - [ ] Fixed the general root cause, not just the reported case -- if it also
-      affects other modules/classes/interfaces, cover them or expect rejection.
+  affects other modules/classes/interfaces, cover them or expect rejection.
 - [ ] PR is single-purpose. Refactors, drive-by fixes found along the way, and new
-      features each go in separate PRs; land standalone cleanups first.
+  features each go in separate PRs; land standalone cleanups first.
 - [ ] Every bug fix has a test that fails *without* the fix; include the issue's
-      own reproducer when possible.
+  own reproducer when possible.
 - [ ] New code aims for 100% line coverage; branch coverage far below line coverage
-      signals guards callers never violate -- justify or remove them.
+  signals guards callers never violate -- justify or remove them.
 - [ ] Ran `make format` (clang-format), `make cppcheck`, and `make lint-py`;
-      self-reviewed the diff for leftover debug code, stale comments, and
-      copy-paste errors.
+  self-reviewed the diff for leftover debug code, stale comments, and
+  copy-paste errors.
 - [ ] Ran the full regression on at least one OS before submitting. Partial runs
-      are fine during development, but the submitted PR is expected to pass every
-      test.
+  are fine during development, but the submitted PR is expected to pass every
+  test.
 - [ ] Did not edit `docs/CONTRIBUTORS` (humans only) or `Changes` (maintainer
-      updates it near release).
+  updates it near release).
 
 ## Pick the right diagnostic (and its required test)
 
@@ -122,18 +122,18 @@ The API you choose determines which test must accompany the change.
 ## Cross-cutting code rules
 
 - [ ] No non-ASCII characters in C++ sources or headers: write `--` (two ASCII
-      hyphens) rather than a Unicode em-dash, and a plain `'` rather than a smart
-      quote. At write time, not when CI complains.
+  hyphens) rather than a Unicode em-dash, and a plain `'` rather than a smart
+  quote. At write time, not when CI complains.
 - [ ] Lists stay sorted: lexer/parser tokens, option declarations, enum values,
-      configure feature lists, documented option lists.
+  configure feature lists, documented option lists.
 - [ ] `bin/` scripts are Python (distributed cross-platform); `nodist/` may use
-      bash and platform-specific code (developer-only, not packaged).
+  bash and platform-specific code (developer-only, not packaged).
 - [ ] Runtime code in `include/` targets C++14 (`--no-timing` builds must work);
-      C++20 only in timing code paths.
+  C++20 only in timing code paths.
 - [ ] In `include/` public headers, prefix public classes with `Verilated`/`Vl`
-      and document the API with `///` comments.
+  and document the API with `///` comments.
 - [ ] A new code pattern is applied globally or not at all -- no one-off
-      convention in a single file.
+  convention in a single file.
 
 ## Commits
 

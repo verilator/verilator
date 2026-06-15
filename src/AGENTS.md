@@ -9,7 +9,7 @@ Covers all C++ under `src/`, including astgen inputs and the parser/lexer
 first. This file has two parts: **Orientation** explains the AST and pass model;
 **Before you open a PR** is the style and correctness checklist.
 
----
+______________________________________________________________________
 
 # Orientation: the AST and the visitor model
 
@@ -38,7 +38,7 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 - `docs/internals.rst` is the authoritative reference for the AST, the pass list,
   and node lifetime.
 
----
+______________________________________________________________________
 
 # Before you open a PR
 
@@ -77,6 +77,7 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 
 - Build logic as AST nodes, never as raw C text in `AstCStmt` -- later passes
   (V3Name, `--protect`) rename AST identifiers but cannot see into raw strings.
+
 - Know the cast forms (above) and never pair `VN_IS` with `VN_AS` on the same
   node -- use a single `VN_CAST`:
 
@@ -89,34 +90,47 @@ first. This file has two parts: **Orientation** explains the AST and pass model;
 
 - Use `UASSERT_OBJ(cond, nodep, "...")` over `UASSERT` when a node is in scope;
   use `v3fatalSrc("...")` for unreachable paths, never a silent `if (!ptr) return;`.
+
 - Use `VL_DO_DANGLING(pushDeletep(nodep), nodep)` instead of `deleteTree()` in
   visitors -- deferred deletion is safe against re-entry and unlinking order.
   `deleteTree()` is only for fresh nodes that never entered the tree.
+
 - Every new AST member needs both `dump()` and `dumpJson()` support -- never wrap
   these in `LCOV_EXCL`; cover them by adding a construct to `t_debug_emitv.v`.
   Override `isSame()` to include any new semantically meaningful field.
+
 - Pointers to nodes outside op1p-op4p require a `broken()` override and
   `cloneRelink()` support -- avoid storing out-of-tree node pointers when possible.
+
 - Never allocate AstNode objects on the stack or by value -- always pointers.
+
 - Prefer a new `visit()` in an existing visitor over `nodep->foreach(...)` --
   better for runtime, and handles diverse node types better. Prefer named
   accessors over `op1p()`..`op4p()`, and verify traversal order is preserved
   when converting manual iteration.
+
 - Prefer `AstForeach` over generating unrolled loop bodies -- constant-size code
   instead of O(N); wrap the body in `AstBegin` for scope isolation.
+
 - Always `skipRefp()` when comparing or resolving dtypes -- missing it breaks
   typedef support; prove the paths with typedef tests.
+
 - Use `num().isOpaque()` rather than `isDouble() || isString()` when guarding
   V3Number comparisons against non-integer types.
+
 - Use `FileLine::operatorCompare` for source-position ordering -- never hand-roll
   filename/lineno comparisons.
+
 - Identify compiler-generated constructs by an attribute flag on the node (with
   dump support), never by name-pattern matching -- magic names break with escaped
   identifiers.
+
 - Use `V3Number` arithmetic for `AstConst` values wider than 32 bits -- `1 << i`
   silently overflows at `i >= 32`.
+
 - Use `VMemberMap`/`findMember()` for name lookups in structs, classes, modules,
   and packages -- O(1) versus quadratic linear scans.
+
 - Never emit raw source filenames or identifiers in generated code -- pass them
   through `protect()`/`putsQuoted` so `--protect` does not leak source.
 

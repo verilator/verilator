@@ -2,7 +2,7 @@
      SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
      SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0 -->
 
-# docs/ Guidelines -- Verilator documentation (*.rst)
+# docs/ Guidelines -- Verilator documentation (\*.rst)
 
 When to check: before editing anything under `docs/`.
 Read the repository-root [AGENTS.md](../AGENTS.md) first for process and cross-cutting rules.

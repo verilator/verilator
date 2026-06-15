@@ -9,7 +9,7 @@ Covers `.v`/`.sv` sources, `.py` drivers, and `.out` golden files under
 file has two parts: **Orientation** explains how the harness runs a test;
 **Before you open a PR** is the test-authoring checklist.
 
----
+______________________________________________________________________
 
 # Orientation: how the harness works
 
@@ -30,7 +30,7 @@ file has two parts: **Orientation** explains how the harness runs a test;
   lists, warning documentation, ASCII-only) -- run the relevant ones before
   submitting.
 
----
+______________________________________________________________________
 
 # Before you open a PR
 
@@ -78,6 +78,7 @@ file has two parts: **Orientation** explains how the harness runs a test;
 ## Verilog style
 
 - 2-space indentation, no tabs.
+
 - Declarations are flush-left with a single space between type and name; never
   column-align:
 
@@ -92,12 +93,17 @@ file has two parts: **Orientation** explains how the harness runs a test;
 
 - Run `nodist/verilog_format` on new `.v` files; wrap macro definitions in
   `// verilog_format: off`/`on` so the formatter does not split them.
+
 - Use `$display("%0d", ...)` not `%d` -- avoids leading-space padding.
+
 - Wrap Verilator-specific test code (e.g. `$c`) in `` `ifdef VERILATOR ``.
+
 - Use inline `// verilator lint_off WARNCODE` only when that warning is itself
   under test -- fix root causes otherwise.
+
 - Use only IEEE 1800-compliant constructs other simulators also accept -- tests
   validate standard behavior, not Verilator's parser leniency.
+
 - Omit optional end labels on `endmodule`/`endclass`/`endtask`/`endfunction`.
 
 ## Self-checking
