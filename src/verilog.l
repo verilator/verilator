@@ -825,6 +825,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
   "/*verilator coverage_off*/"          { FL_FWD; PARSEP->lexFileline()->coverageOn(false); FL_BRK; }
   "/*verilator coverage_on*/"           { FL_FWD; PARSEP->lexFileline()->coverageOn(true); FL_BRK; }
+  "/*verilator dpi_c_decl*/"            { FL; return yVL_DPI_C_DECL; }  // The "foo(bar)" is converted by the preproc
   "/*verilator forceable*/"             { FL; return yVL_FORCEABLE; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator hier_block*/"            { FL; return yVL_HIER_BLOCK; }
