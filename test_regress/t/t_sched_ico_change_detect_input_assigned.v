@@ -10,20 +10,23 @@
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t(
-  clk, i, o, cyc
+module t (
+    clk,
+    i,
+    o,
+    cyc
 );
 
   input clk, i;
   output o, cyc;
 
-  logic   clk;
-  int     i; // Primary input that the design also drives
-  int     o;
-  int     cyc = 0;
+  logic clk;
+  int i;  // Primary input that the design also drives
+  int o;
+  int cyc = 0;
 
   // Logic dependent on primary input 'i'
-  always_comb  o = i + 10;
+  always_comb o = i + 10;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

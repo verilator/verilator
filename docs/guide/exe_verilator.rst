@@ -750,7 +750,7 @@ Summary:
    for top level input signals that are written within the design. Accesses via
    the VPI cannot be analyzed at compile time, therefore :vlopt:`--vpi`
    disables this optimization for all inputs; it may be turned back on by
-   explicitly passing :vlopt:`-fico-change-detect`.
+   explicitly passing :vlopt:`-fico-change-detect <-fno-ico-change-detect>`.
 
 .. option:: -fno-inline
 

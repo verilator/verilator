@@ -66,6 +66,8 @@ Verilator 5.049 devel
 * Support `s_until` and `s_until_with`(#7722). [Artur Bieniek, Antmicro Ltd.]
 * Support covergroup runtime model Phase A1 (#7728). [Matthew Ballance]
 * Support reduction XOR/AND operations in constraints (#7753). [Kornel Uriasz, Antmicro Ltd.]
+* Support assertion control system tasks in classes and interfaces (#7761). [Yilou Wang]
+* Support cover sequence statement (#7764). [Yilou Wang]
 * Support unpacked struct stream (#7767). [Nick Brereton]
 * Optimize emitting to_string() for compiler speedup (#7468). [Jakub Michalski, Antmicro Ltd.]
 * Optimize additional DFG peephole cases (#7553). [Varun Koyyalagunta, Testorrent USA, Inc.]
@@ -86,6 +88,7 @@ Verilator 5.049 devel
 * Optimize bit select removal earlier in DFG (#7762). [Geza Lore, Testorrent USA, Inc.]
 * Optimize away proven redundant case statement assertions (#7771). [Geza Lore, Testorrent USA, Inc.]
 * Optimize table lookups in DFG (#7772). [Geza Lore, Testorrent USA, Inc.]
+* Optimize input combinational logic by change detection (#7784). [Geza Lore, Testorrent USA, Inc.]
 * Fix TSP variable ordering for mtasks (#5342) (#7610). [Muzaffer Kal]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
 * Fix timed nested fork block with disable (#6720) (#7743). [Marco Bartoli]
@@ -161,6 +164,7 @@ Verilator 5.049 devel
 * Fix FSM detect unchecked casts and variable redeclaration (#7758). [Adam Kostrzewski, Antmicro Ltd.]
 * Fix no-scope internal error on virtual interface method calls (#7759). [Yilou Wang]
 * Fix 'case (_) inside' with x wildcards (#7766). [Geza Lore, Testorrent USA, Inc.]
+* Fix not failing assertion when RHS of a range window rejects once (#7773). [Artur Bieniek, Antmicro Ltd.]
 * Fix $fflush and autoflush with --threads (#7782).
 
 
