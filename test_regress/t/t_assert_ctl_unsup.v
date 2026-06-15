@@ -8,25 +8,18 @@ module t (
     input logic clk
 );
   unsupported_ctl_type unsupported_ctl_type (clk ? 1 : 2);
-  unsupported_ctl_type_expr unsupported_ctl_type_expr ();
 endmodule
 
 module unsupported_ctl_type (
     input int a
 );
   initial begin
-    let Lock = 1;
-    let Unlock = 2;
     let PassOn = 6;
     let PassOff = 7;
     let FailOn = 8;
     let FailOff = 9;
     let NonvacuousOn = 10;
     let VacuousOff = 11;
-    $assertcontrol(Lock, a);
-
-    $assertcontrol(Unlock);
-
     $assertcontrol(PassOn);
     $assertpasson;
     $assertpasson(a);
@@ -56,12 +49,5 @@ module unsupported_ctl_type (
     $assertvacuousoff;
     $assertvacuousoff(a);
     $assertvacuousoff(a, t);
-  end
-endmodule
-
-module unsupported_ctl_type_expr;
-  int ctl_type = 1;
-  initial begin
-    $assertcontrol(ctl_type);
   end
 endmodule

@@ -280,36 +280,12 @@ class AssertVisitor final : public VNVisitor {
                 + cvtToStr(nodep->fileline()->lineno()) + ": %m" + ((message != "") ? ": " : "")
                 + message + "\n");
     }
-    static bool resolveAssertType(AstAssertCtl* nodep) {
-        if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(VAssertType{ALL_ASSERT_TYPES});
-            return true;
-        }
-        if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
-            nodep->ctlAssertTypes(VAssertType{assertTypesp->toSInt()});
-            return true;
-        }
-        return false;
-    }
-    static bool resolveControlType(AstAssertCtl* nodep) {
-        if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const)) {
-            nodep->ctlType(constp->toSInt());
-            return true;
-        }
-        return false;
-    }
-    static bool resolveDirectiveType(AstAssertCtl* nodep) {
-        if (!nodep->directiveTypesp()) {
-            nodep->ctlDirectiveTypes(VAssertDirectiveType::ASSERT | VAssertDirectiveType::ASSUME
-                                     | VAssertDirectiveType::COVER);
-            return true;
-        }
-        if (const AstConst* const directiveTypesp = VN_CAST(nodep->directiveTypesp(), Const)) {
-            nodep->ctlDirectiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
-            return true;
-        }
-        return false;
-    }
+    // Default assertion_type and directive_type when the argument is omitted
+    // (IEEE 1800-2023 20.11): assertion_type defaults to all types, directive_type
+    // to Assert|Cover|Assume.
+    static constexpr uint8_t DEFAULT_DIRECTIVE_TYPES = VAssertDirectiveType::ASSERT
+                                                       | VAssertDirectiveType::COVER
+                                                       | VAssertDirectiveType::ASSUME;
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
         nodep->fmtp()->text(
             assertDisplayMessage(nodep, prefix, nodep->fmtp()->text(), nodep->displayType()));
@@ -1002,71 +978,50 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstAssertCtl* nodep) override {
         iterateChildren(nodep);
-
-        if (!resolveAssertType(nodep)) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: non-constant assert assertion-type expression");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-        if (nodep->ctlAssertTypes() != ALL_ASSERT_TYPES
-            && nodep->ctlAssertTypes().containsAny(VAssertType::EXPECT | VAssertType::UNIQUE
-                                                   | VAssertType::UNIQUE0
-                                                   | VAssertType::PRIORITY)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-        if (!resolveControlType(nodep)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: non-const assert control type expression");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-        if (!resolveDirectiveType(nodep)) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: non-const assert directive type expression");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-
         FileLine* const fl = nodep->fileline();
-        switch (nodep->ctlType()) {
-        case VAssertCtlType::ON:
-            UINFO(9, "Generating assertctl for a module: " << m_modp);
-            nodep->replaceWith(
-                new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertOnSet("s
-                                     + std::to_string(nodep->ctlAssertTypes()) + ", "s
-                                     + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s});
-            break;
-        case VAssertCtlType::OFF:
-        case VAssertCtlType::KILL: {
-            UINFO(9, "Generating assertctl for a module: " << m_modp);
-            nodep->replaceWith(
-                new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertOnClear("s
-                                     + std::to_string(nodep->ctlAssertTypes()) + " ,"s
-                                     + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s});
-            break;
+
+        // control_type, assertion_type and directive_type are integer expressions
+        // (IEEE 1800-2023 20.11) and may be non-constant; they are evaluated at runtime
+        // by VerilatedContext::assertCtl. The levels and scope/assertion-list arguments
+        // are not modeled -- control applies to the whole context.
+        // When control_type is a compile-time constant, reject the not-yet-modeled
+        // action-control codes (Table 20-5 values 6..11) and out-of-range values with a
+        // clear error rather than emitting a runtime no-op.
+        if (const AstConst* const controlp = VN_CAST(nodep->controlTypep(), Const)) {
+            const int32_t control = controlp->toSInt();
+            if (control < VAssertCtlType::LOCK || control > VAssertCtlType::VACUOUS_OFF) {
+                nodep->unlinkFrBack();
+                nodep->v3warn(EC_ERROR, "Bad $assertcontrol control_type '"
+                                            << control << "' (IEEE 1800-2023 Table 20-5)");
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            if (control >= VAssertCtlType::PASS_ON) {
+                nodep->unlinkFrBack();
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: $assertcontrol control_type '" << control << "'");
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
-        case VAssertCtlType::LOCK:
-        case VAssertCtlType::UNLOCK:
-        case VAssertCtlType::PASS_ON:
-        case VAssertCtlType::PASS_OFF:
-        case VAssertCtlType::FAIL_ON:
-        case VAssertCtlType::FAIL_OFF:
-        case VAssertCtlType::NONVACUOUS_ON:
-        case VAssertCtlType::VACUOUS_OFF: {
-            nodep->unlinkFrBack();
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: $assertcontrol control_type '" << cvtToStr(
-                                             static_cast<int>(nodep->ctlType())) << "'");
-            break;
+
+        UINFO(9, "Generating assertctl in module: " << m_modp);
+        AstCStmt* const callp = new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertCtl("};
+        callp->add(nodep->controlTypep()->unlinkFrBack());
+        callp->add(", ");
+        if (AstNodeExpr* const typesp = nodep->assertTypesp()) {
+            callp->add(typesp->unlinkFrBack());
+        } else {
+            callp->add(std::to_string(ALL_ASSERT_TYPES));
         }
-        default: {
-            nodep->unlinkFrBack();
-            nodep->v3warn(EC_ERROR, "Bad $assertcontrol control_type '"
-                                        << cvtToStr(static_cast<int>(nodep->ctlType()))
-                                        << "' (IEEE 1800-2023 Table 20-5)");
+        callp->add(", ");
+        if (AstNodeExpr* const directivesp = nodep->directiveTypesp()) {
+            callp->add(directivesp->unlinkFrBack());
+        } else {
+            callp->add(std::to_string(DEFAULT_DIRECTIVE_TYPES));
         }
-        }
+        callp->add(");\n");
+        nodep->replaceWith(callp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssertIntrinsic* nodep) override {  //
