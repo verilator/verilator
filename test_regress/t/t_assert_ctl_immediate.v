@@ -79,6 +79,8 @@ endmodule
 //   - assert inside an interface function
 //   - virtual interface dispatch to an assertion-control function
 //   - interface class (AstClass with isInterfaceClass) via a concrete impl
+//   - multiple instances of each thing: OFF via one instance, ON via another
+//     (assertion control is global per-context, IEEE 1800-2023 20.11)
 
 interface AssertCtlIf;
   function void suppress();
@@ -120,6 +122,12 @@ module module_with_method_ctl;
     function void kill_all();
       $assertkill;
     endfunction
+    function void inst_off();
+      $assertoff;
+    endfunction
+    function void inst_on();
+      $asserton;
+    endfunction
     function void check_positive(int v);
       assert (v > 0);
     endfunction
@@ -132,12 +140,17 @@ module module_with_method_ctl;
   endclass
 
   Ctl c;
+  Ctl c2;
   AssertCtlIf iface ();
+  AssertCtlIf iface2 ();
   IAssertCtlImpl impl;
+  IAssertCtlImpl impl2;
 
   initial begin
     c = new;
+    c2 = new;
     impl = new;
+    impl2 = new;
 
     // --- class method coverage ---
     Ctl::off_all();
@@ -170,6 +183,23 @@ module module_with_method_ctl;
     impl.suppress();
     assert (0);  // gated via interface-class impl -> no fire
     impl.enable();
+    assert (0);  // fires
+
+    // --- multiple instances: OFF via one instance, ON via another ---
+    // Assertion control is global per-context (IEEE 1800-2023 20.11, no scope
+    // list), so OFF issued via one instance gates every assertion and ON issued
+    // via a different instance re-enables them.
+    c.inst_off();  // class: OFF via c
+    assert (0);  // gated -> no fire
+    c2.inst_on();  // class: ON via c2
+    assert (0);  // fires
+    iface.suppress();  // interface: OFF via iface
+    assert (0);  // gated -> no fire
+    iface2.enable();  // interface: ON via iface2
+    assert (0);  // fires
+    impl.suppress();  // interface class: OFF via impl
+    assert (0);  // gated -> no fire
+    impl2.enable();  // interface class: ON via impl2
     assert (0);  // fires
 
     // --- $assertkill (last: terminal per IEEE 1800-2023 Table 20-5) ---
