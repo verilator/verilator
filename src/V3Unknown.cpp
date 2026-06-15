@@ -546,7 +546,11 @@ class UnknownVisitor final : public VNVisitor {
                 } else if (nodeDtp->isString()) {
                     xnum = V3Number{nodep, V3Number::String{}, ""};
                 } else {
-                    xnum.setAllBitsX();
+                    if (nodeDtp->isFourstate()) {
+                        xnum.setAllBitsX();
+                    } else {
+                        xnum.setAllBits0();
+                    }
                 }
                 AstNode* const newp = new AstCond{nodep->fileline(), condp, nodep,
                                                   new AstConst{nodep->fileline(), xnum}};
