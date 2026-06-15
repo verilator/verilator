@@ -2138,6 +2138,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
+    bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2200,6 +2201,7 @@ class AstVar final : public AstNode {
         m_attrFsmArcInclCond = false;
         m_fileDescr = false;
         m_gotNansiType = false;
+        m_icoMaybeWritten = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2379,6 +2381,8 @@ public:
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasUserInit() const { return m_hasUserInit; }
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
+    void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
+    bool icoMaybeWritten() const { return m_icoMaybeWritten; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
