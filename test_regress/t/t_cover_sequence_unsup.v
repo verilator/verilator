@@ -15,7 +15,7 @@ module t (
 
   // cover sequence (IEEE 1800-2023 16.14.3) counts every end-of-match. The
   // following forms put a sub-sequence where only its final end is forwarded,
-  // so they are rejected rather than under-counted.
+  // so they are ignored (COVERIGN) rather than under-counted.
 
   // Sequence operand of 'or' (ranged cycle delay).
   cover sequence ((a ##[1:3] b) or 1'b0);

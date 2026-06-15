@@ -418,7 +418,8 @@ class SvaNfaBuilder final {
         // overlapping ends and the nested-sequence merge collapses them, so
         // reject those for a cover sequence rather than under-count.
         if (m_isCoverSeq && (range > kChainLimit || VN_IS(rhsExprp, SExpr))) {
-            flp->v3warn(E_UNSUPPORTED, "Unsupported: cover sequence with this ranged cycle delay");
+            flp->v3warn(COVERIGN,
+                        "Ignoring unsupported: cover sequence with this ranged cycle delay");
             outErrorEmitted = true;
             return false;
         }
@@ -653,8 +654,8 @@ class SvaNfaBuilder final {
         // terminal, so a cover sequence would under-count. Reject the ranged form
         // (the single-count b[->N] has one end and is enumerated correctly).
         if (m_isCoverSeq && hasMax && maxN > minN) {
-            flp->v3warn(E_UNSUPPORTED,
-                        "Unsupported: cover sequence with a ranged goto repetition");
+            flp->v3warn(COVERIGN,
+                        "Ignoring unsupported: cover sequence with a ranged goto repetition");
             return BuildResult::failWithError();
         }
 
@@ -718,8 +719,8 @@ class SvaNfaBuilder final {
         // than under-count. Plain boolean disjunction has one end per cycle and
         // is handled by the OR-fold.
         if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
-            flp->v3warn(E_UNSUPPORTED,
-                        "Unsupported: cover sequence with a sequence operand of 'or'");
+            flp->v3warn(COVERIGN,
+                        "Ignoring unsupported: cover sequence with a sequence operand of 'or'");
             return BuildResult::failWithError();
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
