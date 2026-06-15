@@ -2181,6 +2181,14 @@ void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, immediate);
     dumpJsonBoolFuncIf(str, senFromAlways);
 }
+void AstCover::dump(std::ostream& str) const {
+    this->AstNodeCoverOrAssert::dump(str);
+    if (isCoverSeq()) str << " [COVERSEQ]";
+}
+void AstCover::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isCoverSeq);
+    this->AstNodeCoverOrAssert::dumpJson(str);
+}
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isDefault()) str << " [DEFAULT]";
