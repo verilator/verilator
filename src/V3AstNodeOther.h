@@ -1000,6 +1000,8 @@ public:
     // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
     // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
     AstVarScope* findConst(AstConst* initp, bool mergeDType);
+    // Rebuild hashes after potential removals
+    void reCache();
 };
 class AstConstraint final : public AstNode {
     // Constraint
@@ -2136,6 +2138,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmRegisterWrapper : 1;  // connected to an fsm_register_wrapper instance
     bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
+    bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
@@ -2199,6 +2202,7 @@ class AstVar final : public AstNode {
         m_attrFsmRegisterWrapper = false;
         m_attrFsmResetArc = false;
         m_attrFsmArcInclCond = false;
+        m_constPoolEntry = false;
         m_fileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
@@ -2348,6 +2352,8 @@ public:
     void attrFsmRegisterWrapper(bool flag) { m_attrFsmRegisterWrapper = flag; }
     void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
+    bool constPoolEntry() const { return m_constPoolEntry; }
+    void setConstPoolEntry() { m_constPoolEntry = true; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }

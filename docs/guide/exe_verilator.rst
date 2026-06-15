@@ -659,6 +659,18 @@ Summary:
 
 .. option:: -fno-case
 
+   Rarely needed. Disable all case statement optimizations.
+
+   Alias for all other `-fno-case-*` options.
+
+.. option:: -fno-case-table
+
+   Rarely needed. Disable converting case statements into table lookups.
+
+.. option:: -fno-case-tree
+
+   Rarely needed. Disable converting case statements into bitwise branch trees.
+
 .. option:: -fno-combine
 
 .. option:: -fno-const

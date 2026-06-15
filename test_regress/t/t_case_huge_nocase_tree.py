@@ -12,12 +12,12 @@ import vltest_bootstrap
 test.scenarios('simulator_st')
 test.top_filename = 't/t_case_huge.v'
 
-test.compile(verilator_flags2=["--stats -fno-case"])
+test.compile(verilator_flags2=["--stats -fno-case-tree"])
 
 test.execute()
 
+test.file_grep(test.stats, r'Optimizations, Cases table normal\s+(\d+)', 8)
 test.file_grep(test.stats, r'Optimizations, Cases table tiny\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Cases table normal\s+(\d+)', 0)
 test.file_grep(test.stats, r'Optimizations, Cases parallelized\s+(\d+)', 0)
 
 test.passes()

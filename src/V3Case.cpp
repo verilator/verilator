@@ -133,6 +133,12 @@ class CaseVisitor final : public VNVisitor {
     constexpr static int CASE_DETAILS_MAX_WIDTH = 16;
     // Levels of priority to be ORed together in top IF tree
     constexpr static int CASE_ENCODER_GROUP_DEPTH = 8;
+    // Maximum size for tiny lookup tables - materialized in code
+    constexpr static size_t CASE_TABLE_TINY_BITS = 32;  // Up to 2 instructions to materialize
+    // Maximum size for normal lookup tables - stored in constant pool
+    constexpr static size_t CASE_TABLE_MAX_BITS = 1ULL << 16;  // 64Kbits / 8KBytes
+    // Minimum number of the branches a table must replace to be worth a load
+    constexpr static size_t CASE_TABLE_MIN_BRANCHES = 3;
 
     // TYPES
     // Record for each case value
@@ -142,21 +148,49 @@ class CaseVisitor final : public VNVisitor {
         AstNode* stmtsp;  // Statements of 'itemp' (might be nullptr if case is empty)
     };
 
+    // Record for each LHS of a decoder pattern
+    struct LhsRecord final {
+        AstNodeExpr* lhsp = nullptr;  // LHS of the assignment
+        AstNodeAssign* preDefaultp = nullptr;  // Default assignment *before the case statement*
+        size_t nCaseAssigns = 0;  // Number of AstAssigns to this LHS in case clauses
+        size_t nCaseAssignDlys = 0;  // Number of AstAssignDlys to this LHS in case clauses
+        size_t offset = 0;  // Offset in the table for this LHS
+
+        static size_t s_nextId;  // Static unique Id counter
+        size_t id = ++s_nextId;  // Unique Id for sorting
+    };
+
+    // NODE STATE:
+    // AstVarScope::user1() -> bool: true if written to, only in parts of analysis phase
+
     // STATE
     // Statistics tracking, as a struct so can be passed to 'const' methods
     struct Stats final {
+        VDouble0 caseTableNormal;  // Cases using table method with normal table
+        VDouble0 caseTableTiny;  // Cases using table method with tiny table
         VDouble0 caseFast;  // Cases using fast bit tree method
         VDouble0 caseGeneric;  // Cases using generic if/else tree method
         VDouble0 provenAssertions;  // Assertions proven to hold
     } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
+    size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    AstScope* m_scopep = nullptr;  // Current scope
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
     bool m_caseOpaque = false;  // Case statement is opaque (non-packed, or non-const conditions)
+    bool m_caseHasDefault = false;  // Indicates the case statement has a default case
+    size_t m_caseNCaseItems = 0;  // Number of AstCaseItems in the case statement
     size_t m_caseNConditions = 0;  // Number of conditions in the case statement
+    // Map from LHSs of decoder pattern to corresponding LhsRecord.
+    std::unordered_map<VNRef<AstNodeExpr>, LhsRecord> m_caseLhsRecords;
+    // Values of 'm_caseLhsRecords' in sorted order, if case statement is a decoder pattern
+    std::vector<LhsRecord> m_caseDecoderRecords;
+    size_t m_caseDecoderEntryWidth = 0;  // Width of each entry in the decoder table
+    size_t m_caseTableWidth = 0;  // Total width of the case table - 0 means can't optimize
     bool m_caseDetailsValid = false;  // Indicates m_caseDetails is valid
     struct final {
         bool exhaustive = false;  // Proven exhaustive
+        bool exhaustiveOverEnumOnly = false;  // Exhaustive over enum values only
         bool noOverlaps = false;  // Proven no overlaps between cases
         // Map from value (index) to the CaseRecord that covers this value
         std::array<CaseRecord, 1U << CASE_DETAILS_MAX_WIDTH> records;
@@ -187,6 +221,50 @@ class CaseVisitor final : public VNVisitor {
         pairMaskBits.first.opBitsNonXZ(condp->num());
         pairMaskBits.second.opBitsOne(condp->num());
         return pairMaskBits;
+    }
+
+    // If the given statement is an assignment that fits the decoder pattern,
+    // return it, otherwise return nullptr
+    static AstNodeAssign* checkDecoderAssign(AstNode* stmtp) {
+        // Only Assign and AssignDly are supported
+        if (!VN_IS(stmtp, Assign) && !VN_IS(stmtp, AssignDly)) return nullptr;
+        AstNodeAssign* const assp = VN_AS(stmtp, NodeAssign);
+        // Only if no timing control
+        if (assp->timingControlp()) return nullptr;
+        // Only if assigning a constant
+        if (!VN_IS(assp->rhsp(), Const)) return nullptr;
+        // Only if it's a packed value
+        AstNodeDType* const dtypep = assp->rhsp()->dtypep();
+        if (dtypep->isString() || dtypep->isDouble()) return nullptr;
+        // Only if the LHS has no reads (can be relaxed, but need to prove there is no r/w hazard)
+        if (assp->lhsp()->exists([](AstVarRef* refp) { return refp->access().isReadOrRW(); })) {
+            return nullptr;
+        }
+        // This is an assignment that fits the decoder pattern
+        return assp;
+    }
+
+    // Analyze if the given case item fits the decoder pattern, return true iff so.
+    // Updates 'm_caseLhsRecords'.
+    bool analyzeDecoderCaseItem(AstCaseItem* cip) {
+        // AstVarScope::user1() -> bool: true if written to
+        const VNUser1InUse user1InUse;
+        for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            // Must be an assignment that fits the decoder pattern
+            AstNodeAssign* const assp = checkDecoderAssign(stmtp);
+            if (!assp) return false;
+            // Must assign each LHS exactly once - RHS is Const
+            const bool multipleAssignments = assp->lhsp()->exists([](AstVarRef* refp) {  //
+                return refp->varScopep()->user1SetOnce();
+            });
+            if (multipleAssignments) return false;
+            // Update LhsRecord
+            LhsRecord& lhsRecord = m_caseLhsRecords[*assp->lhsp()];
+            if (!lhsRecord.lhsp) lhsRecord.lhsp = assp->lhsp();
+            lhsRecord.nCaseAssigns += VN_IS(assp, Assign);
+            lhsRecord.nCaseAssignDlys += VN_IS(assp, AssignDly);
+        }
+        return true;
     }
 
     // Determine whether we should check case items are complete
@@ -243,13 +321,6 @@ class CaseVisitor final : public VNVisitor {
 
         // It's an exhaustive case statement
         return true;
-    }
-
-    bool checkExhaustive(AstCase* nodep) {
-        if (const AstEnumDType* const enump = getEnumCompletionCheckDType(nodep)) {
-            return checkExhaustiveEnum(nodep, enump);
-        }
-        return checkExhaustivePacked(nodep);
     }
 
     // Analyze each value in the case statement. Updates 'm_caseDetails' and issues warnings.
@@ -361,16 +432,136 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // If there was no default, check exhaustiveness
-        m_caseDetails.exhaustive = hasDefault || checkExhaustive(nodep);
+        m_caseDetails.exhaustiveOverEnumOnly = false;
+        m_caseDetails.exhaustive = hasDefault;
+        if (!hasDefault) {
+            if (const AstEnumDType* const enump = getEnumCompletionCheckDType(nodep)) {
+                // Only checks enum values are covered, not all bit patterns of the case expression
+                const bool exhaustiveOverEnum = checkExhaustiveEnum(nodep, enump);
+                m_caseDetails.exhaustiveOverEnumOnly = exhaustiveOverEnum;
+                m_caseDetails.exhaustive = exhaustiveOverEnum;
+            } else {
+                m_caseDetails.exhaustive = checkExhaustivePacked(nodep);
+            }
+        }
+
         // Records now valid
         m_caseDetailsValid = true;
+    }
+
+    void analyzeDecoderPattern(AstCase* nodep) {
+        // Check each LHS record
+        for (auto it = m_caseLhsRecords.cbegin(); it != m_caseLhsRecords.cend();) {
+            const LhsRecord& lhsRecord = it->second;
+
+            // Delete records that have no assignments in any case item (only pre-defaults)
+            if (!lhsRecord.nCaseAssigns && !lhsRecord.nCaseAssignDlys) {
+                it = m_caseLhsRecords.erase(it);
+                continue;
+            }
+            ++it;
+
+            // If mixed assignments, it's not a decoder pattern
+            if (lhsRecord.nCaseAssigns && lhsRecord.nCaseAssignDlys) return;
+
+            // If assigned in all branches, it's good - but only if every table entry will be
+            // covered, i.e. the case has a default, or is exhaustive over all bit patterns.
+            // Enum-only exhaustiveness is not enough: out-of-enum values leave entries
+            // uncovered.
+            if (m_caseHasDefault
+                || (m_caseDetailsValid && m_caseDetails.exhaustive
+                    && !m_caseDetails.exhaustiveOverEnumOnly)) {
+                if (lhsRecord.nCaseAssigns == m_caseNCaseItems) continue;
+                if (lhsRecord.nCaseAssignDlys == m_caseNCaseItems) continue;
+            }
+
+            // Otherwise it needs to have a pre-default assignment
+            AstNode* const preDefaultp = lhsRecord.preDefaultp;
+            if (!preDefaultp) return;
+            // And the pre-default needs to be the same type
+            if (lhsRecord.nCaseAssigns && !VN_IS(preDefaultp, Assign)) return;
+            if (lhsRecord.nCaseAssignDlys && !VN_IS(preDefaultp, AssignDly)) return;
+        }
+        // All cases check out, can optimize if there are some entries left
+        if (m_caseLhsRecords.empty()) return;
+
+        // Gather all the LhsRecords and sort them - there is a copy here, it's ok, won't be many
+        m_caseDecoderRecords.reserve(m_caseLhsRecords.size());
+        for (const auto& item : m_caseLhsRecords) m_caseDecoderRecords.emplace_back(item.second);
+        std::sort(m_caseDecoderRecords.begin(), m_caseDecoderRecords.end(),
+                  [](const LhsRecord& a, const LhsRecord& b) {
+                      // Sort by width, then id
+                      const int aWidth = a.lhsp->width();
+                      const int bWidth = b.lhsp->width();
+                      if (aWidth != bWidth) return aWidth < bWidth;
+                      return a.id < b.id;
+                  });
+
+        // We can either create a single lookup table for all LHSs, or one for each LHS.
+        // With a single table, we need to select out of the lookup via a temporary variable.
+        // With one table per LHS, we need to do multiple loads. The table is likely to incur a
+        // D-cache miss on large designs, so we choose single table.
+
+        const int caseWidth = nodep->exprp()->width();
+
+        // Safely check if table with 'entryWidth' entries would fit within 'maxWidth' bits
+        const auto fitsLimit = [&](size_t entryWidth, size_t maxWidth) -> bool {
+            size_t totalWidth = entryWidth;
+            // Multiply cases - iterative to avoid overflow
+            for (int i = 0; i < caseWidth; ++i) {
+                totalWidth <<= 1;
+                if (totalWidth > maxWidth) return false;
+            }
+            return true;
+        };
+
+        // Check if the whole table would fit in a tiny table packed tightly
+        m_caseDecoderEntryWidth = 0;
+        for (LhsRecord& lhsRecord : m_caseDecoderRecords) {
+            lhsRecord.offset = m_caseDecoderEntryWidth;
+            m_caseDecoderEntryWidth += lhsRecord.lhsp->width();
+        }
+        // If it fits, we will pack it tightly
+        if (fitsLimit(m_caseDecoderEntryWidth, CASE_TABLE_TINY_BITS)) {
+            m_caseTableWidth = m_caseDecoderEntryWidth << caseWidth;  // Can optimize
+            return;
+        }
+
+        // Tabel will be bigish. To avoid expensive bit swizzling, align each entry to a
+        // word boundary if it would cross a word boundary.
+        m_caseDecoderEntryWidth = 0;
+        for (LhsRecord& lhsRecord : m_caseDecoderRecords) {
+            const size_t width = lhsRecord.lhsp->width();
+            const size_t lsbWord = VL_BITWORD_E(m_caseDecoderEntryWidth);
+            const size_t msbWord = VL_BITWORD_E(m_caseDecoderEntryWidth + width - 1);
+            if (lsbWord != msbWord) {
+                m_caseDecoderEntryWidth = VL_WORDS_I(m_caseDecoderEntryWidth) * VL_EDATASIZE;
+            }
+            lhsRecord.offset = m_caseDecoderEntryWidth;
+            m_caseDecoderEntryWidth += width;
+        }
+        // Also align the whole entry width to a word boundary
+        m_caseDecoderEntryWidth = VL_WORDS_I(m_caseDecoderEntryWidth) * VL_EDATASIZE;
+        // Check the table fits max size
+        if (fitsLimit(m_caseDecoderEntryWidth, CASE_TABLE_MAX_BITS)) {
+            m_caseTableWidth = m_caseDecoderEntryWidth << caseWidth;  // Can optimize
+            return;
+        }
+
+        // Can't optimize - yet ...
     }
 
     // Analyze case statement. Updates 'm_case*' members. Reports warnings.
     void analyzeCase(AstCase* nodep) {
         // Reset all analysis results
         m_caseOpaque = false;
+        m_caseHasDefault = false;
+        m_caseNCaseItems = 0;
         m_caseNConditions = 0;
+        m_caseDecoderRecords.clear();
+        m_caseDecoderEntryWidth = 0;
+        m_caseTableWidth = 0;
+        m_caseLhsRecords.clear();
         m_caseDetailsValid = false;
 
         AstNode* const caseExprp = nodep->exprp();
@@ -378,14 +569,44 @@ class CaseVisitor final : public VNVisitor {
         // Mark opaque if not a packed value - TODO: can this be a class?
         if (caseExprp->isDouble() || caseExprp->isString()) m_caseOpaque = true;
 
-        // Check each condition expression
+        // Gather pre-default assignments of decoder pattern
+        {
+            // AstVarScope::user1() -> bool: true if written to
+            const VNUser1InUse user1InUse;
+            for (AstNode* prevp = nodep->prevp(); prevp; prevp = prevp->prevp()) {
+                AstNodeAssign* const assp = checkDecoderAssign(prevp);
+                if (!assp) break;  // Stop if not a decoder assignment
+                // Stop if multiple assignments
+                const bool multipleAssignments = assp->lhsp()->exists([&](AstVarRef* refp) {  //
+                    return refp->varScopep()->user1SetOnce();
+                });
+                if (multipleAssignments) break;
+                // Store pre-default assignment
+                LhsRecord& lhsRecord = m_caseLhsRecords[*assp->lhsp()];
+                lhsRecord.lhsp = assp->lhsp();
+                lhsRecord.preDefaultp = assp;
+            }
+        }
+
+        // Check each case item
+        bool canBeDecoder = true;
         for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+            // Check conditions
             for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
                 // Count conditions
                 ++m_caseNConditions;
                 // Mark opaque if non-constant condition
-                if (!VN_IS(condp, Const)) m_caseOpaque = true;
+                if (!VN_IS(condp, Const)) {
+                    m_caseOpaque = true;
+                    canBeDecoder = false;  // Can't be a decoder if opaque
+                }
             }
+            // Check if it has a default case
+            if (cip->isDefault()) m_caseHasDefault = true;
+            // Count case items
+            ++m_caseNCaseItems;
+            // Check if it fits the decoder pattern, if still possible
+            if (canBeDecoder) canBeDecoder = analyzeDecoderCaseItem(cip);
         }
 
         // Nothing else to do if not a packed type, or non-const conditions
@@ -393,6 +614,135 @@ class CaseVisitor final : public VNVisitor {
 
         // If small enough, analyse details
         if (caseExprp->width() <= CASE_DETAILS_MAX_WIDTH) analyzeCaseDetails(nodep);
+
+        // Check if it actually fits a full decoder pattern
+        if (canBeDecoder) analyzeDecoderPattern(nodep);
+    }
+
+    AstNodeStmt* convertCaseTable(AstCase* nodep) {
+        // Create the table constant
+        FileLine* const flp = nodep->fileline();
+        AstConst* const tablep
+            = new AstConst{flp, AstConst::WidthedValue{}, static_cast<int>(m_caseTableWidth), 0};
+        const uint32_t tableEntries = 1U << nodep->exprp()->width();
+
+        // Populate the table
+        for (const LhsRecord& lhsRecord : m_caseDecoderRecords) {
+            const int lhsWidth = lhsRecord.lhsp->width();
+            const int lhsOffset = lhsRecord.offset;
+
+            // Broadcast the pre-default assignment
+            if (lhsRecord.preDefaultp) {
+                AstConst* const rhsp = VN_AS(lhsRecord.preDefaultp->rhsp(), Const);
+                for (uint32_t index = 0; index < tableEntries; ++index) {
+                    const uint32_t tableOffset = index * m_caseDecoderEntryWidth + lhsOffset;
+                    tablep->num().opSelInto(rhsp->num(), tableOffset, lhsWidth);
+                }
+            }
+
+            // Populate table based on each case item. In reverse order so earlier items win
+            for (AstCaseItem* cip = VN_AS(nodep->itemsp()->lastp(), CaseItem); cip;
+                 cip = VN_AS(cip->prevp(), CaseItem)) {
+                // Find the RHS in this case
+                AstConst* const rhsp = [&]() -> AstConst* {
+                    for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                        AstNodeAssign* const ap = VN_AS(stmtp, NodeAssign);
+                        if (lhsRecord.lhsp->sameTree(ap->lhsp())) return VN_AS(ap->rhsp(), Const);
+                    }
+                    // Not assigned in this case, use the pre-assigned default
+                    return VN_AS(lhsRecord.preDefaultp->rhsp(), Const);
+                }();
+
+                // If default, broadcast it
+                if (cip->isDefault()) {
+                    for (uint32_t index = 0; index < tableEntries; ++index) {
+                        const uint32_t tableOffset = index * m_caseDecoderEntryWidth + lhsOffset;
+                        tablep->num().opSelInto(rhsp->num(), tableOffset, lhsWidth);
+                    }
+                    continue;
+                }
+
+                // Iterate case conditions in reverse order
+                for (AstConst* condp = VN_AS(cip->condsp()->lastp(), Const); condp;
+                     condp = VN_AS(condp->prevp(), Const)) {
+                    if (neverItem(nodep, condp)) continue;  // If item never matches, ignore it
+                    const auto& match = matchPattern(nodep, condp);
+                    const uint32_t matchMask = match.first.toUInt();
+                    const uint32_t matchBits = match.second.toUInt();
+                    const uint32_t inverseMask = ~matchMask & ((1U << condp->width()) - 1);
+                    // This iterates through all integers that are a subset of the inverse mask,
+                    // i.e.: all don't care values masked out
+                    for (uint32_t i = inverseMask; true; i = (i - 1) & inverseMask) {
+                        const uint32_t index = i | matchBits;
+                        const uint32_t tableOffset = index * m_caseDecoderEntryWidth + lhsOffset;
+                        tablep->num().opSelInto(rhsp->num(), tableOffset, lhsWidth);
+                        if (!i) break;
+                    }
+                }
+            }
+        }
+
+        // Create the table in the constant pool, unless using an inline table
+        AstVarScope* const tableVscp = [&]() -> AstVarScope* {
+            if (m_caseTableWidth <= CASE_TABLE_TINY_BITS) {
+                ++m_stats.caseTableTiny;
+                return nullptr;
+            }
+            ++m_stats.caseTableNormal;
+            AstVarScope* vscp = v3Global.rootp()->constPoolp()->findConst(tablep, true);
+            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
+            return vscp;
+        }();
+
+        // Create the lookup table reference and index
+        AstNodeExpr* const tableRefp
+            = tableVscp ? static_cast<AstNodeExpr*>(new AstVarRef{flp, tableVscp, VAccess::READ})
+                        : static_cast<AstNodeExpr*>(tablep);
+        AstNodeExpr* const caseExprp
+            = new AstExtend{flp, nodep->exprp()->cloneTreePure(false), 32};
+        AstNodeExpr* const scalep
+            = new AstConst{flp, static_cast<uint32_t>(m_caseDecoderEntryWidth)};
+        AstNodeExpr* const tableLsbp = new AstMul{flp, scalep, caseExprp};
+
+        // If there is only one LHS, just use the result
+        if (m_caseDecoderRecords.size() == 1) {
+            const LhsRecord& lhsRecord = m_caseDecoderRecords[0];
+            const int width = lhsRecord.lhsp->width();
+            AstNodeExpr* const rhsp = new AstSel{flp, tableRefp, tableLsbp, width};
+            AstNodeExpr* const lhsp = lhsRecord.lhsp->cloneTreePure(false);
+            if (lhsRecord.nCaseAssigns) {
+                return new AstAssign{flp, lhsp, rhsp};
+            } else if (lhsRecord.nCaseAssignDlys) {
+                return new AstAssignDly{flp, lhsp, rhsp};
+            } else {
+                nodep->v3fatalSrc("Unknown assignment type");
+            }
+        }
+
+        // There are multiple LHSs, store the lookup result in a temporary
+        const std::string name = "__VcaseTableOut" + std::to_string(m_nTmps++);
+        AstVarScope* const tempVscp = m_scopep->createTemp(name, m_caseDecoderEntryWidth);
+        AstNodeExpr* const tempWritep = new AstVarRef{flp, tempVscp, VAccess::WRITE};
+        AstNodeExpr* const tableSelp
+            = new AstSel{flp, tableRefp, tableLsbp, static_cast<int>(m_caseDecoderEntryWidth)};
+        AstNodeStmt* const resultp = new AstAssign{flp, tempWritep, tableSelp};
+
+        // For each LHS, select out the result
+        for (const LhsRecord& lhsRecord : m_caseDecoderRecords) {
+            const int width = lhsRecord.lhsp->width();
+            const int lsb = lhsRecord.offset;
+            AstNodeExpr* const tempReadp = new AstVarRef{flp, tempVscp, VAccess::READ};
+            AstNodeExpr* const rhsp = new AstSel{flp, tempReadp, lsb, width};
+            AstNodeExpr* const lhsp = lhsRecord.lhsp->cloneTreePure(false);
+            if (lhsRecord.nCaseAssigns) {
+                resultp->addNext(new AstAssign{flp, lhsp, rhsp});
+            } else if (lhsRecord.nCaseAssignDlys) {
+                resultp->addNext(new AstAssignDly{flp, lhsp, rhsp});
+            } else {
+                nodep->v3fatalSrc("Unknown assignment type");
+            }
+        }
+        return resultp;
     }
 
     // TODO: should return AstNodeStmt after #6280
@@ -443,7 +793,8 @@ class CaseVisitor final : public VNVisitor {
     // ->  tree of IF(msb,  IF(msb-1, 11, 10)
     //                      IF(msb-1, 01, 00))
     // TODO: should return AstNodeStmt after #6280
-    AstNode* convertCaseFast(AstCase* nodep) const {
+    AstNode* convertCaseFast(AstCase* nodep) {
+        ++m_stats.caseFast;
         const int caseWidth = nodep->exprp()->width();
         AstNode* const ifrootp = convertCaseFastRecurse(nodep->exprp(), caseWidth - 1, 0UL);
         return ifrootp && ifrootp->backp() ? ifrootp->cloneTree(true) : ifrootp;
@@ -455,7 +806,8 @@ class CaseVisitor final : public VNVisitor {
     //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
     //                              ,istmts2, istmts3
     // TODO: should return AstNodeStmt after #6280
-    AstNode* convertCaseGeneric(AstCase* nodep) const {
+    AstNode* convertCaseGeneric(AstCase* nodep) {
+        ++m_stats.caseGeneric;
         // We'll do this in two stages.
         // First stage, convert the conditions to the appropriate IF AND terms.
         bool hasDefault = false;
@@ -522,7 +874,8 @@ class CaseVisitor final : public VNVisitor {
                 // 'Or' new term with previous terms
                 newCondp = newCondp ? new AstLogOr{flp, newCondp, termp} : termp;
             }
-            // Replace expression in tree. Needs to be non-null, so add a constant false if needed
+            // Replace expression in tree. Needs to be non-null, so add a constant false if
+            // needed
             if (!newCondp) newCondp = new AstConst{flp, AstConst::BitFalse{}};
             itemp->addCondsp(newCondp);
         }
@@ -591,11 +944,31 @@ class CaseVisitor final : public VNVisitor {
 
     // Convert the given case statement to a representation not using AstCase
     // TODO: should return AstNodeStmt after #6280
-    AstNode* convertCase(AstCase* nodep, Stats& stats) const {
+    AstNode* convertCase(AstCase* nodep) {
+        // Determine if we should use the lookup table method
+        const bool useTable = [&]() {
+            // Not if disabled
+            if (!v3Global.opt.fCaseTable()) return false;
+            // Not if analysis tells us we can't
+            if (!m_caseTableWidth) return false;
+            // Always if tiny - it is materialized inline, so there is no load to amortize
+            if (m_caseTableWidth <= CASE_TABLE_TINY_BITS) return true;
+            // For a normal (constant-pool) table, weigh the indexed load against the branch
+            // lowering it would replace. That lowering's depth is bounded by the selector
+            // width (a balanced bit tree tests ~one bit per level) and by the number of
+            // distinct values (a generic if/else does ~one compare per value). A few compares
+            // are cheaper than a load that is likely to be a cache miss, so only table once that
+            // depth is exceeded.
+            const size_t branches = std::min<size_t>(nodep->exprp()->width(), m_caseNConditions);
+            if (branches < CASE_TABLE_MIN_BRANCHES) return false;
+            return true;
+        }();
+        if (useTable) return convertCaseTable(nodep);
+
         // Determine if we should use the fast bitwise branching tree method
         const bool useFastBitTree = [&]() {
             // Not if disabled
-            if (!v3Global.opt.fCase()) return false;
+            if (!v3Global.opt.fCaseTree()) return false;
             // Can't do it without the detailed analysis
             if (!m_caseDetailsValid) return false;
             // Can't do it if not exhaustive
@@ -608,13 +981,9 @@ class CaseVisitor final : public VNVisitor {
             // Otherwise use the bit tree
             return true;
         }();
-        if (useFastBitTree) {
-            ++stats.caseFast;
-            return convertCaseFast(nodep);
-        }
+        if (useFastBitTree) return convertCaseFast(nodep);
 
         // Convert using the generic if/else tree method
-        ++stats.caseGeneric;
         // If a case statement is exhaustive, presume signals involved aren't forming a latch
         // TODO: this is broken, but it is as was before
         if (m_alwaysp && (!m_caseDetailsValid || m_caseDetails.exhaustive)) {
@@ -650,14 +1019,20 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // Convert the case statement and replace the original
-        if (AstNode* const replacementp = convertCase(nodep, m_stats)) {
+        if (AstNode* const replacementp = convertCase(nodep)) {
             nodep->replaceWith(replacementp);
         } else {
             nodep->unlinkFrBack();
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    //--------------------
+
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildren(nodep);
+    }
+
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysp);
         m_alwaysp = nodep;
@@ -669,11 +1044,15 @@ public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~CaseVisitor() override {
+        V3Stats::addStat("Optimizations, Cases table normal", m_stats.caseTableNormal);
+        V3Stats::addStat("Optimizations, Cases table tiny", m_stats.caseTableTiny);
         V3Stats::addStat("Optimizations, Cases parallelized", m_stats.caseFast);
         V3Stats::addStat("Optimizations, Cases complex", m_stats.caseGeneric);
         V3Stats::addStat("Optimizations, Cases proven assertions", m_stats.provenAssertions);
     }
 };
+
+size_t CaseVisitor::LhsRecord::s_nextId = 0;
 
 //######################################################################
 // Case class functions

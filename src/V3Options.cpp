@@ -1448,7 +1448,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
-    DECL_OPTION("-fcase", FOnOff, &m_fCase);
+    DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
+        m_fCaseTable = flag;
+        m_fCaseTree = flag;
+    });
+    DECL_OPTION("-fcase-table", FOnOff, &m_fCaseTable);
+    DECL_OPTION("-fcase-tree", FOnOff, &m_fCaseTree);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
@@ -2351,7 +2356,8 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
-    m_fCase = flag;
+    m_fCaseTable = flag;
+    m_fCaseTree = flag;
     m_fCombine = flag;
     m_fConst = flag;
     m_fConstBitOpTree = flag;
