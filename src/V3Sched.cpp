@@ -608,7 +608,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
             auto it = inp2changedp.find(vscp);
             if (it != inp2changedp.end()) {
                 out.push_back(it->second);
-            } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
+            } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
                 if (!firstIterTriggerp) {
                     firstIterTriggerp
                         = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);

@@ -51,8 +51,6 @@ class SampledVisitor final : public VNVisitor {
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         m_scopep->modp()->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{flp, m_scopep, newvarp};
-        newvarp->direction(VDirection::INPUT);  // Inform V3Sched that it will be driven later
-        newvarp->primaryIO(true);
         newvarp->sampled(true);
         vscp->user1p(newvscp);
         m_scopep->addVarsp(newvscp);
