@@ -4569,6 +4569,16 @@ class RandomizeVisitor final : public VNVisitor {
         }
     }
 
+    static bool isDynArrOfClassTypeRecurse(const AstNodeDType* const dtypep) {
+        const AstNodeDType* const refp = dtypep->skipRefp();
+        if (VN_IS(refp, DynArrayDType) || VN_IS(refp, QueueDType)) {
+            return isDynArrOfClassTypeRecurse(refp->subDTypep());
+        } else if (VN_IS(refp, ClassRefDType)) {
+            return true;
+        }
+        return false;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -4801,6 +4811,18 @@ class RandomizeVisitor final : public VNVisitor {
 
                 // Refresh array element tables after resize
                 for (AstVar* const arrVarp : sizeArraysIt->second) {
+                    // Array elements of class data type are passed to the solver as separate
+                    // variables, so passing the original array variable is redundant, because it
+                    // won't be referenced
+                    if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
+                        const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
+                        if (unpackedDims > 1) {
+                            arrVarp->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Nested array element access in global constraint");
+                        }
+                        continue;
+                    }
                     AstCMethodHard* const methodp = new AstCMethodHard{
                         fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_WRITE_VAR};
