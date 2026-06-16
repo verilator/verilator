@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_assert_ctl_arg_unsup.v:15:5: Unsupported: assert control assertion_type
+   15 |     $assertcontrol(OFF, EXPECT);
+      |     ^~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_ctl_arg_unsup.v:16:5: Unsupported: assert control assertion_type
+   16 |     $assertcontrol(OFF, UNIQUE);
+      |     ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_arg_unsup.v:17:5: Unsupported: assert control assertion_type
+   17 |     $assertcontrol(OFF, UNIQUE0);
+      |     ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_arg_unsup.v:18:5: Unsupported: assert control assertion_type
+   18 |     $assertcontrol(OFF, PRIORITY);
+      |     ^~~~~~~~~~~~~~
+%Error: Exiting due to

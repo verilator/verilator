@@ -1005,6 +1005,22 @@ class AssertVisitor final : public VNVisitor {
             }
         }
 
+        // When assertion_type is a compile-time constant, reject values that cannot be
+        // filtered at runtime because unique/priority violations use bare assertOn() rather
+        // than a per-type assertOnGet() call (IEEE 1800-2023 Table 20-6).
+        if (nodep->assertTypesp()) {
+            if (const AstConst* const typecp = VN_CAST(nodep->assertTypesp(), Const)) {
+                if (typecp->toUInt()
+                    & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
+                       | VAssertType::PRIORITY)) {
+                    nodep->unlinkFrBack();
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+        }
+
         UINFO(9, "Generating assertctl in module: " << m_modp);
         AstCStmt* const callp = new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertCtl("};
         callp->add(nodep->controlTypep()->unlinkFrBack());
