@@ -99,6 +99,23 @@ module t;
     cross cp_a, cp_c;  // no label: reported under the default cross name
   endgroup
 
+  // Cross plus an un-crossed coverpoint: get_inst_coverage must combine the converted
+  // (VlCoverpoint) coverpoint cp_solo with the legacy cross/crossed-coverpoint bins.
+  covergroup cg_mixed;
+    cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
+    cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
+    cp_solo: coverpoint mode {bins normal = {0}; bins debug = {1};}  // not crossed
+    ab: cross cp_addr, cp_cmd;
+  endgroup
+
+  // Crossed (hence non-convertible) coverpoint that also has a default bin: exercises the
+  // legacy default-bin codegen path that converted coverpoints bypass.
+  covergroup cg_def_cross;
+    cp_a: coverpoint addr iff (mode) {bins a0 = {0}; bins a1 = {1}; bins ad = default;}
+    cp_c: coverpoint cmd {bins read = {0}; bins write = {1};}
+    axc: cross cp_a, cp_c;
+  endgroup
+
   cg2 cg2_inst = new;
   cg_ignore cg_ignore_inst = new;
   cg_range cg_range_inst = new;
@@ -109,6 +126,8 @@ module t;
   cg_goal cg_goal_inst = new;
   cg_unsup_cross_opt cg_unsup_cross_opt_inst = new;
   cg_unnamed_cross cg_unnamed_cross_inst = new;
+  cg_mixed cg_mixed_inst = new;
+  cg_def_cross cg_def_cross_inst = new;
 
   initial begin
     // Sample 2-way: hit all 4 combinations
@@ -274,6 +293,23 @@ module t;
     cmd = 1;
     cg_unnamed_cross_inst.sample();  // a1 x write
     `checkr(cg_unnamed_cross_inst.get_inst_coverage(), 75.0);
+
+    // Sample cg_mixed: 10 bins total (cp_addr 2 + cp_cmd 2 + cp_solo 2 + cross ab 4)
+    addr = 0; cmd = 0; mode = 0;
+    cg_mixed_inst.sample();  // addr0, read, solo normal, ab(addr0_x_read)
+    `checkr(cg_mixed_inst.get_inst_coverage(), 40.0);  // 4/10
+    addr = 0; cmd = 1; mode = 1;
+    cg_mixed_inst.sample();  // addr0, write, solo debug, ab(addr0_x_write)
+    addr = 1; cmd = 0; mode = 0;
+    cg_mixed_inst.sample();  // addr1, read, ab(addr1_x_read)
+    addr = 1; cmd = 1; mode = 1;
+    cg_mixed_inst.sample();  // addr1, write, ab(addr1_x_write)
+    `checkr(cg_mixed_inst.get_inst_coverage(), 100.0);  // 10/10
+
+    // Sample cg_def_cross (default bin in a crossed coverpoint, gated by iff)
+    mode = 1;
+    addr = 0; cmd = 0; cg_def_cross_inst.sample();  // a0, read
+    addr = 2; cmd = 1; cg_def_cross_inst.sample();  // ad (default), write
 
     $write("*-* All Finished *-*\n");
     $finish;

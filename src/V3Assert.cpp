@@ -23,6 +23,79 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace {
+
+class DefaultDisableLocalVisitor final : public VNVisitor {
+    // STATE
+    AstNode* m_scopep = nullptr;
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        nodep->defaultDisablep(nullptr);
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        nodep->defaultDisablep(nullptr);
+        iterateChildren(nodep);
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        UASSERT_OBJ(nodep, m_scopep,
+                    "default disable iff must be inside a module or generate block");
+        AstDefaultDisable* defaultp = nullptr;
+        if (const AstNodeModule* const modp = VN_CAST(m_scopep, NodeModule)) {
+            defaultp = modp->defaultDisablep();
+        } else {
+            defaultp = VN_AS(m_scopep, GenBlock)->defaultDisablep();
+        }
+        if (VL_UNLIKELY(defaultp)) {
+            nodep->v3error("Only one 'default disable iff' allowed per "
+                           << (VN_IS(m_scopep, NodeModule) ? "module" : "generate block")
+                           << " (IEEE 1800-2023 16.15)");
+        } else if (AstNodeModule* const modp = VN_CAST(m_scopep, NodeModule)) {
+            modp->defaultDisablep(nodep);
+        } else {
+            VN_AS(m_scopep, GenBlock)->defaultDisablep(nodep);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit DefaultDisableLocalVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
+class DefaultDisablePropagateVisitor final : public VNVisitor {
+    // STATE
+    AstDefaultDisable* m_defaultDisablep = nullptr;
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        if (!nodep->defaultDisablep()) nodep->defaultDisablep(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit DefaultDisablePropagateVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
+}  // namespace
+
+void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
+    { DefaultDisableLocalVisitor{nodep}; }
+    { DefaultDisablePropagateVisitor{nodep}; }
+}
+
 //######################################################################
 // AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,
@@ -586,6 +659,34 @@ class AssertVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
 
+        if (nodep->user2()) {
+            // Combine consecutive assertOn checks if possible
+            if (AstIf* const backp = VN_CAST(nodep->backp(), If)) {
+                if (backp->nextp() == nodep  //
+                    && backp->user2()  //
+                    && backp->condp()->sameTree(nodep->condp())) {
+                    ++m_statAssertOnCombined;
+                    backp->addThensp(nodep->thensp()->unlinkFrBackWithNext());
+                    nodep->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+            // Combine nested assertOn checks if possible
+            if (nodep->thensp() && !nodep->thensp()->nextp() && isEmptyStmt(nodep->elsesp())) {
+                AstIf* const checkp = VN_CAST(nodep->thensp(), If);
+                if (checkp  //
+                    && checkp->user2()  //
+                    && checkp->condp()->sameTree(nodep->condp())) {
+                    ++m_statAssertOnCombined;
+                    nodep->addThensp(checkp->thensp()->unlinkFrBackWithNext());
+                    VL_DO_DANGLING(pushDeletep(checkp->unlinkFrBack()), checkp);
+                    return;
+                }
+            }
+            return;
+        }
+
         // Swap assertOn check with single statement 'if' statement to bubble up for combining
         // Note we can't just swap the conditions as they two Ifs have different flags,
         // so swapping the Ifs themeselves then swapping back the bodies.
@@ -608,20 +709,6 @@ class AssertVisitor final : public VNVisitor {
                     nodep->addElsesp(checkp->thensp()->unlinkFrBackWithNext());
                     checkp->addThensp(nodep);
                     return;
-                }
-            }
-        }
-
-        // Combine consecutive assertOn checks if possible
-        if (nodep->user2()) {
-            if (AstIf* const backp = VN_CAST(nodep->backp(), If)) {
-                if (backp->nextp() == nodep  //
-                    && backp->user2()  //
-                    && backp->condp()->sameTree(nodep->condp())) {
-                    ++m_statAssertOnCombined;
-                    backp->addThensp(nodep->thensp()->unlinkFrBackWithNext());
-                    nodep->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             }
         }
@@ -914,12 +1001,6 @@ class AssertVisitor final : public VNVisitor {
         visitAssertionIterate(nodep, nodep->failsp());
     }
     void visit(AstAssertCtl* nodep) override {
-        if (VN_IS(m_modp, Class) || VN_IS(m_modp, Iface)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes or interfaces");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-
         iterateChildren(nodep);
 
         if (!resolveAssertType(nodep)) {
@@ -1007,10 +1088,12 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
         VL_RESTORER(m_modExpr2Sen2DelayedAlwaysp);
+        VL_RESTORER(m_finalp);
         m_modp = nodep;
         m_modPastNum = 0;
         m_modStrobeNum = 0;
         m_modExpr2Sen2DelayedAlwaysp.clear();
+        m_finalp = nullptr;
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {

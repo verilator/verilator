@@ -175,7 +175,6 @@ set(HEADERS
     V3Simulate.h
     V3Slice.h
     V3Split.h
-    V3SplitAs.h
     V3SplitVar.h
     V3StackCount.h
     V3Stats.h
@@ -183,7 +182,6 @@ set(HEADERS
     V3String.h
     V3Subst.h
     V3SymTable.h
-    V3TSP.h
     V3Table.h
     V3Task.h
     V3ThreadPool.h
@@ -351,14 +349,12 @@ set(COMMON_SOURCES
     V3Scoreboard.cpp
     V3Slice.cpp
     V3Split.cpp
-    V3SplitAs.cpp
     V3SplitVar.cpp
     V3StackCount.cpp
     V3Stats.cpp
     V3StatsReport.cpp
     V3String.cpp
     V3Subst.cpp
-    V3TSP.cpp
     V3Table.cpp
     V3Task.cpp
     V3ThreadPool.cpp

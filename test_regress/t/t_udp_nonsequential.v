@@ -23,22 +23,22 @@ module t (
       sel = 0;
     end
     else if (cycle == 1) begin
+      if (z != 0) $stop;
       a = 1;
       b = 1;
       sel = 0;
-      if (z != 0) $stop;
     end
     else if (cycle == 2) begin
+      if (z != 1) $stop;
       a = 0;
       b = 1;
       sel = 0;
-      if (z != 1) $stop;
     end
     else if (cycle == 3) begin
+      if (z != 0) $stop;
       a = 1;
       b = 0;
       sel = 0;
-      if (z != 0) $stop;
     end
     else if (cycle == 4) begin
       if (z != 1) $stop;

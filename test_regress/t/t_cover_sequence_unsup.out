@@ -1,0 +1,18 @@
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:21:33: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   21 |   cover sequence ((a ##[1:3] b) or 1'b0);
+      |                                 ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:24:32: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   24 |   cover sequence ((a [* 1: 3]) or 1'b0);
+      |                                ^~
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:27:21: Ignoring unsupported: cover sequence with this ranged cycle delay
+   27 |   cover sequence (a ##[1:2] (b ##1 c));
+      |                     ^~
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:30:21: Ignoring unsupported: cover sequence with this ranged cycle delay
+   30 |   cover sequence (a ##[1:300] b);
+      |                     ^~
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:33:21: Ignoring unsupported: cover sequence with a ranged goto repetition
+   33 |   cover sequence (a [-> 2: 3]);
+      |                     ^~~
+%Error: Exiting due to

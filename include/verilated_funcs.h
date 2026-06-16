@@ -74,16 +74,17 @@ extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
 extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
                        const char* msg) VL_MT_SAFE;
 
-// clang-format off
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
 extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
-// clang-format on
 
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
 /// Print a debug message from string via VL_DBG_MSGF
 inline void VL_DBG_MSGS(const std::string& str) VL_MT_SAFE { VL_DBG_MSGF("%s", str.c_str()); }
+
+/// Flush stdout
+extern void VL_FFLUSH_MT() VL_MT_SAFE;
 
 // EMIT_RULE: VL_RANDOM:  oclean=dirty
 inline IData VL_RANDOM_I() VL_MT_SAFE { return vl_rand64(); }

@@ -318,6 +318,13 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     }});
 }
 
+void VL_FFLUSH_MT() VL_MT_SAFE {
+    va_list ap;
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        Verilated::runFlushCallbacks();
+    }});
+}
+
 template <typename... snprintf_args_ts>
 static size_t _vl_snprintf_string(std::string& str, const char* format,
                                   snprintf_args_ts... args) VL_MT_SAFE {

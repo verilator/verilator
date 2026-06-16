@@ -139,6 +139,13 @@ class DataflowOptimize final {
         dfg.mergeGraphs(std::move(madeAcyclicComponents));
         endOfStage("breakCycles", dfg, cyclicComps);
 
+        // Remove redundant selects
+        V3DfgPasses::removeSelects(dfg, m_ctx.m_removeSelectsContext);
+        for (std::unique_ptr<DfgGraph>& compp : cyclicComps) {
+            V3DfgPasses::removeSelects(*compp, m_ctx.m_removeSelectsContext);
+        }
+        endOfStage("removeSelects", dfg, cyclicComps);
+
         // Split the acyclic DFG into [weakly] connected components
         std::vector<std::unique_ptr<DfgGraph>> acyclicComps = dfg.splitIntoComponents("acyclic");
         UASSERT(dfg.size() == 0, "DfgGraph should have become empty");

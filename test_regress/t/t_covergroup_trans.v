@@ -39,7 +39,17 @@ module t;
     }
   endgroup
 
+  // Non-convertible coverpoint (it has a transition bin) that also carries a value-array bin,
+  // so the legacy array codegen path (which converted coverpoints bypass) is still exercised.
+  covergroup cg_legacy;
+    cp_mix: coverpoint state {
+      bins tr = (0 => 1);
+      bins vals[] = {2, [4:5]};  // discrete + range elements (both legacy array paths)
+    }
+  endgroup
+
   cg cg_inst = new;
+  cg_legacy cg_legacy_inst = new;
 
   initial begin
     // Drive sequence 0->1->2->3->4 which hits all bins
@@ -55,6 +65,12 @@ module t;
     state = 4;
     cg_inst.sample();  // 3=>4: seq_b done
     `checkr(cg_inst.get_inst_coverage(), 100.0);
+
+    // cg_legacy: exercise legacy array codegen (non-convertible coverpoint)
+    state = 0; cg_legacy_inst.sample();
+    state = 1; cg_legacy_inst.sample();  // 0=>1: tr
+    state = 2; cg_legacy_inst.sample();  // vals
+    state = 3; cg_legacy_inst.sample();  // vals
 
     $write("*-* All Finished *-*\n");
     $finish;

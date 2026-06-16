@@ -861,6 +861,7 @@ hx
 hyperthreading
 hyperthreads
 icecream
+ico
 idmap
 ifdef
 ifdefed
@@ -924,6 +925,7 @@ localparams
 localtime
 logicals
 longint
+lookups
 lossy
 lsb
 lubc

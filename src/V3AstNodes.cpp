@@ -630,6 +630,7 @@ void AstVar::combineType(const AstVar* otherp) {
         varType(otherp->varType());
         direction(otherp->direction());
     }
+    if (otherp->icoMaybeWritten()) icoMaybeWritten(true);
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
@@ -1259,6 +1260,47 @@ uint32_t AstNodeDType::arrayUnpackedElements() const {
     return entries;
 }
 
+bool AstNodeDType::isStreamableFixedAggregate() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->isStreamableFixedAggregate();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (sdtypep->packed()) return true;
+        if (!VN_IS(sdtypep, StructDType)) return false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->dtypep()->isStreamableFixedAggregate()) return false;
+        }
+        return true;
+    }
+    return dtypep->isIntegralOrPacked() || dtypep->isDouble();
+}
+
+bool AstNodeDType::containsUnpackedStruct() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->containsUnpackedStruct();
+    }
+    const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType);
+    return sdtypep && !sdtypep->packed();
+}
+
+int AstNodeDType::widthStream() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->widthStream() * adtypep->elementsConst();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (!VN_IS(sdtypep, StructDType) || sdtypep->packed()) return width();
+        int width = 0;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            width += itemp->dtypep()->widthStream();
+        }
+        return width;
+    }
+    return dtypep->width();
+}
+
 std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
@@ -1321,6 +1363,12 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_AS(nodep, Sel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, AssocSel)) {
+            nodep = VN_AS(nodep, AssocSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, WildcardSel)) {
+            nodep = VN_AS(nodep, WildcardSel)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
@@ -2133,6 +2181,14 @@ void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, immediate);
     dumpJsonBoolFuncIf(str, senFromAlways);
 }
+void AstCover::dump(std::ostream& str) const {
+    this->AstNodeCoverOrAssert::dump(str);
+    if (isCoverSeq()) str << " [COVERSEQ]";
+}
+void AstCover::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isCoverSeq);
+    this->AstNodeCoverOrAssert::dumpJson(str);
+}
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isDefault()) str << " [DEFAULT]";
@@ -2724,6 +2780,10 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
+void AstNodeAssign::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (timingControlp()) str << " [TIMING=" << nodeAddr(timingControlp()) << "]";
+}
 string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     if (const auto subp = subDTypep()) os << subp->prettyDTypeName(full);
@@ -3158,7 +3218,6 @@ void AstVar::dump(std::ostream& str) const {
     if (noReset()) str << " [!RST]";
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
-    if (attrIsolateAssign()) str << " [aISO]";
     if (attrFsmState()) str << " [aFSMSTATE]";
     if (attrFsmResetArc()) str << " [aFSMRESETARC]";
     if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
@@ -3169,6 +3228,7 @@ void AstVar::dump(std::ostream& str) const {
         str << " [FUNC]";
     }
     if (hasUserInit()) str << " [UINIT]";
+    if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -3193,11 +3253,11 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, noReset);
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
-    dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFsmState);
     dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
     dumpJsonBoolFuncIf(str, attrFileDescr);
+    dumpJsonBoolFuncIf(str, icoMaybeWritten);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);

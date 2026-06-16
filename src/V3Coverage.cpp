@@ -166,10 +166,13 @@ class CoverageVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Return non-nullptr reason if this variable shouldn't have toggle coverage
     const char* varIgnoreToggle(const AstVar* nodep) {
-        // Return true if this shouldn't be traced
-        // See also similar rule in V3TraceDecl::varIgnoreTrace
-        if (!nodep->isToggleCoverable()) return "Not relevant signal type";
+        const bool cover = nodep->isIO() || (nodep->isSignal() && nodep->isBitLogic());
+        if (!cover) return "Not relevant signal";
+        if (nodep->isConst()) return "Signal is constant";
+        if (nodep->isDouble()) return "Signal is double";
+        if (nodep->isString()) return "Signal is string";
         if (!v3Global.opt.coverageUnderscore()) {
             const string prettyName = nodep->prettyName();
             if (prettyName[0] == '_') return "Leading underscore";
@@ -530,8 +533,10 @@ class CoverageVisitor final : public VNVisitor {
                     newent.cleanup();
                 }
             }
-        } else if (VN_IS(dtypep, QueueDType)) {
+        } else if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, AssocArrayDType)
+                   || VN_IS(dtypep, WildcardArrayDType)) {
             // Not covered
+            varp->v3warn(COVERIGN, "Coverage ignored for type " << dtypep->prettyTypeName());
         } else {
             dtypep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "
                                << dtypep->prettyTypeName());

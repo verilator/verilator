@@ -23,6 +23,7 @@
 
 #include "V3AssertPre.h"
 
+#include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
@@ -1438,12 +1439,6 @@ private:
     }
 
     void visit(AstDefaultDisable* nodep) override {
-        if (m_defaultDisablep) {
-            nodep->v3error("Only one 'default disable iff' allowed per module"
-                           " (IEEE 1800-2023 16.15)");
-        } else {
-            m_defaultDisablep = nodep;
-        }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstInferredDisable* nodep) override {
@@ -1565,8 +1560,13 @@ private:
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
         m_defaultClkEvtVarp = nullptr;
-        m_defaultDisablep = nullptr;
+        m_defaultDisablep = nodep->defaultDisablep();
         m_modp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_defaultDisablep);
+        m_defaultDisablep = nodep->defaultDisablep();
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {

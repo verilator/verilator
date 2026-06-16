@@ -51,25 +51,15 @@ class CfgLiveVariables final : VNVisitorConst {
 
     // METHODS
 
-    // This is to match DFG, but can be extended independently - eventually should handle all
-    static bool isSupportedPackedDType(const AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
+    static bool isPacked(const AstVarScope* vscp) {
+        AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         if (const AstBasicDType* const typep = VN_CAST(dtypep, BasicDType)) {
             return typep->keyword().isIntNumeric();
         }
-        if (const AstPackArrayDType* const typep = VN_CAST(dtypep, PackArrayDType)) {
-            return isSupportedPackedDType(typep->subDTypep());
-        }
+        if (VN_IS(dtypep, PackArrayDType)) return true;
         if (const AstNodeUOrStructDType* const typep = VN_CAST(dtypep, NodeUOrStructDType)) {
             return typep->packed();
         }
-        return false;
-    }
-
-    // Check and return if variable is incompatible
-    bool incompatible(AstVarScope* vscp) {
-        if (!isSupportedPackedDType(vscp->dtypep())) return true;
-        if (vscp->varp()->ignoreSchedWrite()) return true;
         return false;
     }
 
@@ -80,8 +70,6 @@ class CfgLiveVariables final : VNVisitorConst {
             if (refp->access().isWriteOnly()) return false;
             // Grab referenced variable
             AstVarScope* const vscp = refp->varScopep();
-            // Bail if not a compatible type
-            if (incompatible(vscp)) return true;
             // Add to gen set, if not killed - assume whole variable read
             if (m_currp->m_kill.count(vscp)) return false;
             m_currp->m_gen.emplace(vscp);
@@ -96,11 +84,13 @@ class CfgLiveVariables final : VNVisitorConst {
             if (refp->access().isReadOnly()) return false;
             // Grab referenced variable
             AstVarScope* const vscp = refp->varScopep();
-            // Bail if not a compatible type
-            if (incompatible(vscp)) return true;
-            // If whole written, add to kill set
-            if (refp->nextp()) return false;
-            if (VN_IS(refp->abovep(), Sel)) return false;
+            // Safety case: bail on variables with unusual semantics
+            if (vscp->varp()->ignoreSchedWrite()) return true;
+            // If not a packed variable, assume it's not a whole update, don't add to kill set
+            if (!isPacked(vscp)) return false;
+            // If packed, and updated partially, don't add to kill set
+            if (refp->backp()->nextp() != refp && VN_IS(refp->abovep(), Sel)) return false;
+            // Whole variable is writen, add to kill set
             m_currp->m_kill.emplace(vscp);
             return false;
         });
@@ -198,7 +188,7 @@ public:
         CfgLiveVariables analysis{cfg};
         // If failed, return nullptr
         if (analysis.m_abort) return nullptr;
-        // Gather variables live in to the entry blockstd::unique_ptr<std::vector<AstVarScope*>>
+        // Gather variables live in to the entry block
         const std::unordered_set<AstVarScope*>& lin = analysis.m_blockState[cfg.enter()].m_liveIn;
         std::vector<AstVarScope*>* const resultp
             = new std::vector<AstVarScope*>{lin.begin(), lin.end()};

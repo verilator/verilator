@@ -1,0 +1,30 @@
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:54:12: Unsupported: Stream operation on a variable of a type 'struct{}t.queue_struct_t'
+                                                          : ... note: In instance 't'
+   54 |     out = {>>{queue_struct}};
+      |            ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:55:12: Unsupported: Stream operation on a variable of a type 'struct{}t.dynamic_struct_t'
+                                                          : ... note: In instance 't'
+   55 |     out = {>>{dynamic_struct}};
+      |            ^~
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:56:12: Unsupported: Stream operation on a variable of a type 'struct{}t.associative_struct_t'
+                                                          : ... note: In instance 't'
+   56 |     out = {>>{associative_struct}};
+      |            ^~
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:57:12: Unsupported: Stream operation on a variable of a type 'struct{}t.union_struct_t'
+                                                          : ... note: In instance 't'
+   57 |     out = {>>{union_struct}};
+      |            ^~
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:58:12: Unsupported: Stream operation on a variable of a type 'struct{}t.string_struct_t'
+                                                          : ... note: In instance 't'
+   58 |     out = {>>{string_struct}};
+      |            ^~
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:59:12: Unsupported: Stream operation on a variable of a type 'struct{}t.chandle_struct_t'
+                                                          : ... note: In instance 't'
+   59 |     out = {>>{chandle_struct}};
+      |            ^~
+%Error-UNSUPPORTED: t/t_stream_unpacked_struct_bad.v:60:12: Unsupported: Stream operation on a variable of a type 'struct{}t.event_struct_t'
+                                                          : ... note: In instance 't'
+   60 |     out = {>>{event_struct}};
+      |            ^~
+%Error: Exiting due to
