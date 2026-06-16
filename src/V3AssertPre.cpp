@@ -60,6 +60,7 @@ private:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     AstPExpr* m_pexprp = nullptr;  // Last AstPExpr
+    bool m_underCover = false;  // True if the enclosing assertion is a cover
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_consRepNames{"__VconsRep"};  // Consecutive repetition counter name generator
@@ -1281,7 +1282,10 @@ private:
             // Don't iterate pexprp here -- it was already iterated when created
             // (in visit(AstSExpr*)), so delays and disable iff are already processed.
         } else if (nodep->isOverlapped()) {
-            nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
+            AstNodeExpr* const exprp
+                = m_underCover ? static_cast<AstNodeExpr*>(new AstLogAnd{flp, lhsp, rhsp})
+                               : new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp};
+            nodep->replaceWith(exprp);
         } else {
             if (m_disablep) {
                 lhsp = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
@@ -1290,7 +1294,9 @@ private:
             AstPast* const pastp = new AstPast{flp, lhsp};
             pastp->dtypeFrom(lhsp);
             pastp->sentreep(newSenTree(nodep));
-            AstNodeExpr* const exprp = new AstOr{flp, new AstNot{flp, pastp}, rhsp};
+            AstNodeExpr* const exprp
+                = m_underCover ? static_cast<AstNodeExpr*>(new AstAnd{flp, pastp, rhsp})
+                               : new AstOr{flp, new AstNot{flp, pastp}, rhsp};
             exprp->dtypeSetBit();
             nodep->replaceWith(exprp);
         }
@@ -1474,6 +1480,10 @@ private:
             nodep->propp(new AstSampled{nodep->fileline(), nodep->propp()->unlinkFrBack(),
                                         propDtp->dtypep()});
         }
+        // cover counts non-vacuous matches only (IEEE 1800-2023 16.15.2), so an
+        // implication antecedent must hold; assert passes vacuously instead.
+        VL_RESTORER(m_underCover);
+        m_underCover = VN_IS(nodep->backp(), Cover);
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
