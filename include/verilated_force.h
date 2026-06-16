@@ -108,10 +108,6 @@ private:
         int m_bitLsb = 0;
         int m_bitMsb = 0;
         int m_elemWidth = 0;
-
-        bool operator<(const Entry& other) const {
-            return m_msb != other.m_msb ? m_msb < other.m_msb : m_bitLsb < other.m_bitLsb;
-        }
     };
 
     std::vector<Entry> m_entries;  // Sorted by msb, non-overlapping
@@ -147,7 +143,7 @@ private:
                 ++it;
                 continue;
             }
-            if (it->m_bitLsb < bitLsb && it->m_bitMsb < bitMsb) {
+            if (it->m_bitLsb < bitLsb && it->m_bitMsb > bitMsb) {
                 Entry high = *it;
                 high.m_bitLsb = bitMsb + 1;
                 it->m_bitMsb = bitLsb - 1;
@@ -159,7 +155,7 @@ private:
                 ++it;
                 continue;
             }
-            if (it->m_bitMsb < bitMsb) {
+            if (it->m_bitMsb > bitMsb) {
                 it->m_bitLsb = bitMsb + 1;
                 break;
             }
@@ -238,7 +234,6 @@ private:
     template <typename Elem>
     static typename std::enable_if<!VlIsVlWide<Elem>::value, Elem>::type
     blendElem(Elem cur, const Entry& e) {
-        if (e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
         const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
         return applyEntry(cur, bitEntry);
     }
@@ -246,7 +241,6 @@ private:
     template <typename Elem>
     static typename std::enable_if<VlIsVlWide<Elem>::value, Elem>::type blendElem(Elem cur,
                                                                                   const Entry& e) {
-        if (e.m_elemWidth == 0) return *static_cast<const Elem*>(e.m_rhsDatap);
         Elem res = cur;
         const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
         applyEntry(res, bitEntry, e.m_bitLsb, e.m_bitMsb, 0);
