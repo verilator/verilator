@@ -12,12 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--assert'])
-
-# a is always 1 so there is no per-cycle safety failure: the ONLY failure source
-# is the strong end-of-simulation liveness obligation of s_always[1:1] (its window
-# is cut off by $finish), so the simulation must exit non-zero. If the in-window
-# marking regresses (e.g. the offset-hi vertex stops being flagged), s_always[1:1]
-# goes silent, the run succeeds, and this test fails -- catching the regression.
 test.execute(fails=True)
 
 test.passes()
