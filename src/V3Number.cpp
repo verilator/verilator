@@ -1310,7 +1310,7 @@ uint32_t V3Number::mostSetBitP1() const {
 }
 //======================================================================
 
-V3Number& V3Number::opBitsNonX(const V3Number& lhs) {  // 0/1->1, X/Z->0
+V3Number& V3Number::opBitsNonXZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     // Correct number of zero bits/width matters
     // op i, L(lhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);

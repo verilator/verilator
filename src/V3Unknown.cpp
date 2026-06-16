@@ -264,7 +264,7 @@ class UnknownVisitor final : public VNVisitor {
             } else {
                 // X or Z's become mask, ala case statements.
                 V3Number nummask{rhsp, rhsp->width()};
-                nummask.opBitsNonX(VN_AS(rhsp, Const)->num());
+                nummask.opBitsNonXZ(VN_AS(rhsp, Const)->num());
                 V3Number numval{rhsp, rhsp->width()};
                 numval.opBitsOne(VN_AS(rhsp, Const)->num());
                 AstNodeExpr* const and1p = new AstAnd{nodep->fileline(), lhsp,

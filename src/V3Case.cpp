@@ -174,6 +174,21 @@ class CaseVisitor final : public VNVisitor {
         return constp->num().isFourState();
     }
 
+    // Returns the matching mask and bits for a case item constant condition
+    // TODO: with 'neverItem' checked, this is alway the same for all types of cases
+    //       4-state will have to fix this up
+    static std::pair<V3Number, V3Number> matchPattern(const AstCase* /*casep*/,
+                                                      const AstConst* condp) {
+        // As one to encourage NRVO/move
+        std::pair<V3Number, V3Number> pairMaskBits{
+            std::piecewise_construct,  //
+            std::forward_as_tuple(condp->fileline(), condp->width(), 0),
+            std::forward_as_tuple(condp->fileline(), condp->width(), 0)};
+        pairMaskBits.first.opBitsNonXZ(condp->num());
+        pairMaskBits.second.opBitsOne(condp->num());
+        return pairMaskBits;
+    }
+
     // Determine whether we should check case items are complete
     // Returns enum's dtype if should check, nullptr if shouldn't
     static const AstEnumDType* getEnumCompletionCheckDType(const AstCase* const nodep) {
@@ -191,18 +206,13 @@ class CaseVisitor final : public VNVisitor {
     bool checkExhaustiveEnum(const AstCase* const nodep, const AstEnumDType* const enump) {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
         for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
-            AstConst* const econstp = VN_AS(eip->valuep(), Const);
-            V3Number nummask{eip, econstp->width()};
-            nummask.opBitsNonX(econstp->num());
-            V3Number numval{eip, econstp->width()};
-            numval.opBitsOne(econstp->num());
-
-            const uint32_t mask = nummask.toUInt();
-            const uint32_t val = numval.toUInt();
+            const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
+            const uint32_t mask = match.first.toUInt();
+            const uint32_t bits = match.second.toUInt();
 
             // Check all cases to see if they cover this enum value/pattern
             for (uint32_t i = 0; i < numCases; ++i) {
-                if ((i & mask) != val) continue;  // This case is not for this enum value
+                if ((i & mask) != bits) continue;  // This case is not for this enum value
                 if (m_caseDetails.records[i].itemp) continue;  // Covered case
                 // Warn unless unique0 case which allows no-match
                 if (!nodep->unique0Pragma()) {
@@ -278,19 +288,15 @@ class CaseVisitor final : public VNVisitor {
                 // Some items can never match due to 2-state simulation
                 if (neverItem(nodep, iconstp)) continue;
 
-                V3Number nummask{itemp, iconstp->width()};
-                nummask.opBitsNonX(iconstp->num());
-                V3Number numval{itemp, iconstp->width()};
-                numval.opBitsOne(iconstp->num());
-
-                const uint32_t mask = nummask.toUInt();
-                const uint32_t val = numval.toUInt();
+                const auto& match = matchPattern(nodep, iconstp);
+                const uint32_t mask = match.first.toUInt();
+                const uint32_t bits = match.second.toUInt();
 
                 bool foundNewCase = false;
                 const AstConst* firstOverlapConstp = nullptr;
                 uint32_t firstOverlapValue = 0;
                 for (uint32_t i = 0; i < numValues; ++i) {
-                    if ((i & mask) != val) continue;
+                    if ((i & mask) != bits) continue;
 
                     CaseRecord& caseRecord = m_caseDetails.records[i];
 
@@ -498,17 +504,14 @@ class CaseVisitor final : public VNVisitor {
                         if (itemConstp->num().isFourState()
                             && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                             // Wildcard match, make 'caseExpr' & 'mask' == 'itemExpr' & 'mask'
-                            V3Number numMask{itemp, itemConstp->width()};
-                            numMask.opBitsNonX(itemConstp->num());
-                            V3Number numOne{itemp, itemConstp->width()};
-                            numOne.opBitsOne(itemConstp->num());
-                            V3Number numRhs{itemp, itemConstp->width()};
-                            numRhs.opAnd(numOne, numMask);
+                            const auto& match = matchPattern(nodep, itemConstp);
+                            const V3Number& matchMask = match.first;
+                            const V3Number& matchBits = match.second;
                             VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemConstp);
                             return AstEq::newTyped(
                                 flp,  //
-                                new AstConst{flp, numRhs},
-                                new AstAnd{flp, caseExprp, new AstConst{flp, numMask}});
+                                new AstConst{flp, matchBits},
+                                new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
                         }
                     }
 

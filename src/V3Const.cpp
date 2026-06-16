@@ -286,7 +286,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
             // Get the mask that selects the bits that are relevant in this term
             V3Number maskNum{srcp, m_width, 0};
-            maskNum.opBitsNonX(m_bitPolarity);  // 'x' -> 0, 0->1, 1->1
+            maskNum.opBitsNonXZ(m_bitPolarity);  // 'x' -> 0, 0->1, 1->1
             const uint64_t maskVal = maskNum.toUQuad();
             UASSERT_OBJ(maskVal != 0, m_refp,
                         "Should have been recognized as having const 0 result");
