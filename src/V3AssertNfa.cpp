@@ -2014,6 +2014,45 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
     }
 
+    // Hoist a leading clocking event (IEEE 1800-2023 16.7:
+    // sequence_expr ::= clocking_event sequence_expr) from the sequence body onto
+    // the enclosing assertion clock. Returns true if E_UNSUPPORTED was emitted.
+    bool hoistClockedSeq(AstPropSpec* specp) {
+        while (AstSClocked* const clockedp = VN_CAST(specp->propp(), SClocked)) {
+            if (specp->sensesp()) {
+                clockedp->v3warn(E_UNSUPPORTED, "Unsupported: multiclocked sequence or property");
+                replaceBodyOnBuildError(specp->fileline(), specp, true);
+                return true;
+            }
+            for (const AstSenItem* sp = clockedp->sensesp(); sp;
+                 sp = VN_CAST(sp->nextp(), SenItem)) {
+                if (!sp->edgeType().anEdge()) {
+                    clockedp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: non-edge clocking event on a sequence; "
+                                     "use an edge such as @(posedge clk)");
+                    replaceBodyOnBuildError(specp->fileline(), specp, true);
+                    return true;
+                }
+            }
+            specp->sensesp(clockedp->sensesp()->unlinkFrBackWithNext());
+            AstNodeExpr* const bodyp = clockedp->exprp()->unlinkFrBack();
+            clockedp->replaceWith(bodyp);
+            VL_DO_DANGLING(pushDeletep(clockedp), clockedp);
+        }
+        // A clocking event anywhere else in the sequence is not supported.
+        const AstSClocked* nestedp = nullptr;
+        specp->propp()->foreach([&](const AstSClocked* p) {
+            if (!nestedp) nestedp = p;
+        });
+        if (nestedp) {
+            nestedp->v3warn(E_UNSUPPORTED,
+                            "Unsupported: clocking event inside sequence expression");
+            replaceBodyOnBuildError(specp->fileline(), specp, true);
+            return true;
+        }
+        return false;
+    }
+
     // Build the NFA graph for a property body, handling both the antecedent
     // |-> consequent and simple sequence cases. Returns the consequent/body
     // BuildResult (invalid on parse/build failure).
@@ -2188,6 +2227,10 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         inlineAllSequenceRefs(assertp->propp());
+
+        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
+            if (hoistClockedSeq(specp)) return;
+        }
 
         AstNode* const propp = assertp->propp();
         if (!hasMultiCycleExpr(propp)) return;
