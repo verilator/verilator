@@ -1786,19 +1786,16 @@ public:
                 pendingp = svp;
             } else {
                 pendingp = new AstLogOr{flp, pendingp, svp};
-                pendingp->dtypeSetBit();
             }
         }
         if (pendingp) {
             AstCExpr* const assertOnp
                 = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
-            assertOnp->dtypeSetBit();
             AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
-            condp->dtypeSetBit();
             AstDisplay* const dispp
                 = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
             dispp->fmtp()->timeunit(m_modp->timeunit());
-            AstNodeStmt* firep = dispp;
+            AstNodeStmt* const firep = dispp;
             if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
             m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
         }

@@ -13,4 +13,8 @@ module t (input clk);
   assert property (@(posedge clk) s_always a);
   assert property (@(posedge clk) s_always [2:$] a);
 
+  // A weak always range may only place $ on the high bound; an unbounded low
+  // bound is not a legal cycle_delay_const_range_expression.
+  assert property (@(posedge clk) always [$:5] a);
+
 endmodule
