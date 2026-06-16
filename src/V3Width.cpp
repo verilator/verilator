@@ -1564,13 +1564,18 @@ class WidthVisitor final : public VNVisitor {
             }
             const bool loUnbounded = VN_IS(nodep->loBoundp(), Unbounded);
             const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
-            if (loUnbounded || hiUnbounded) {
-                if (nodep->isStrong()) {
-                    nodep->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
-                } else {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: unbounded always range (always [m:$])");
-                }
+            // Strong always must be bounded (IEEE 1800-2023 16.12.11: "the range
+            // for a strong always shall be bounded"). Weak always [m:$] is legal:
+            // an unbounded upper bound imposes no end-of-trace obligation.
+            if (nodep->isStrong() && (loUnbounded || hiUnbounded)) {
+                nodep->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
+                nodep->dtypeSetBit();
+                return;
+            }
+            if (loUnbounded) {
+                // Only the high bound may be $ (cycle_delay_const_range_expression).
+                nodep->v3error("always range low bound must be a constant expression"
+                               " (IEEE 1800-2023 16.12.11)");
                 nodep->dtypeSetBit();
                 return;
             }
@@ -1580,7 +1585,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("always range low bound must be a constant expression"
                                " (IEEE 1800-2023 16.12.11)");
             }
-            if (!hiConstp) {
+            if (!hiUnbounded && !hiConstp) {
                 nodep->v3error("always range high bound must be a constant expression"
                                " (IEEE 1800-2023 16.12.11)");
             }
@@ -1588,7 +1593,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("always range low bound must be non-negative"
                                " (IEEE 1800-2023 16.12.11)");
             }
-            if (loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
+            if (!hiUnbounded && loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
                 nodep->v3error("always range high bound must be >= low bound"
                                " (IEEE 1800-2023 16.12.11)");
             }
