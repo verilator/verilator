@@ -15,7 +15,7 @@ module t (
 
   // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence s_single;
-    @(posedge clk) a;
+    @(posedge clk) a
   endsequence
 
   sequence s_multi;

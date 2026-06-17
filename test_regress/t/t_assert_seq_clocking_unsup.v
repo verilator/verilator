@@ -22,10 +22,15 @@ module t (
   sequence s_level;
     @clk a;
   endsequence
+
+  sequence s_level2;
+    @clk a
+  endsequence
   // verilog_format: on
 
   assert property (@(posedge clk2) s_multi);
   assert property (s_nest ##1 a);
   assert property (s_level);
+  assert property (s_level2);
 
 endmodule
