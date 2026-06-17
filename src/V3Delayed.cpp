@@ -152,6 +152,9 @@ class DelayedVisitor final : public VNVisitor {
         const AstActive* m_fistActivep = nullptr;
         bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
+        bool m_multiNbasSameProc = false;  // Same process has >1 NBA to this variable
+        AstNodeProcedure* m_lastSuspNbaProcp = nullptr;  // Last process with susp NBA to this var
+        bool m_hasBlockingWrite = false;  // Also has blocking write (not just NBAs)
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
         Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
@@ -282,6 +285,17 @@ class DelayedVisitor final : public VNVisitor {
     std::vector<AstVarScope*> m_vscps;  // Target variables on LHSs of NBAs
     AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
     AstVarScope* m_prevVscp = nullptr;  // The target of the previous AstAssignDly
+
+    // STATE - for inline commit insertion in suspendable processes
+    std::set<AstVarScope*> m_suspBlockingWriteVscps;  // Arrays with blocking writes in susp
+    std::map<AstNodeProcedure*, std::vector<AstCAwait*>>
+        m_suspCawaits;  // CAwait nodes per suspendable process
+    struct CommitQueuePair final {
+        AstVarScope* queueVscp;  // The commit queue variable
+        AstVarScope* targetVscp;  // The target variable
+    };
+    std::vector<CommitQueuePair> m_suspCommitQueues;  // Commit queues for inline commits
+    std::set<AstNodeProcedure*> m_suspValueQueueProcs;  // Processes with ValueQueuePartial NBAs
 
     // STATE - Statistic tracking
     VDouble0 m_nSchemeShadowVar;  // Number of variables using Scheme::ShadowVar
@@ -415,8 +429,11 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // If whole array is target of NBA, use ShadowVar
-            if (vscpInfo.m_whole) return Scheme::ShadowVar;
+            // If whole array is target of NBA, use ShadowVar. In a suspendable or fork,
+            // fall through to the value-queue handling below, which preserves NBA execution
+            // order across suspend points (whole-array assigns are split into per-element
+            // enqueues in convertSchemeValueQueue).
+            if (vscpInfo.m_whole && !vscpInfo.m_inSuspOrFork) return Scheme::ShadowVar;
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -431,8 +448,17 @@ class DelayedVisitor final : public VNVisitor {
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
-            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
-            if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
+            // In a suspendable or fork, use value queue for same-process multi-NBA
+            // variables to preserve execution order across suspend points.
+            // Variables with blocking writes fall back to FlagUnique to avoid
+            // circular dependencies in the ordering graph.
+            if (vscpInfo.m_inSuspOrFork) {
+                if (vscpInfo.m_multiNbasSameProc && basicp && basicp->isIntegralOrPacked()
+                    && !vscpInfo.m_hasBlockingWrite) {
+                    return Scheme::ValueQueuePartial;
+                }
+                return Scheme::FlagUnique;
+            }
             // Otherwise if an array of packed/basic elements, use the shared flag scheme
             if (basicp) return Scheme::FlagShared;
             // Finally fall back on the shadow variable scheme, e.g. for
@@ -441,10 +467,17 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
-        if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
-
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
+
+        // In a suspendable or fork, use value queue for same-process multi-NBA
+        // packed variables ("last NBA wins" with correct execution order).
+        // Otherwise use the unique flag scheme.
+        if (vscpInfo.m_inSuspOrFork) {
+            if (vscpInfo.m_multiNbasSameProc && isIntegralOrPacked) {
+                return Scheme::ValueQueuePartial;
+            }
+            return Scheme::FlagUnique;
+        }
         // Check for mixed usage (this also warns if not OK)
         if (checkMixedUsage(vscp, isIntegralOrPacked)) {
             // If it's a variable updated by both blocking and non-blocking
@@ -853,9 +886,12 @@ class DelayedVisitor final : public VNVisitor {
         queueVscp->varp()->noReset(true);
         queueVscp->varp()->setIgnorePostWrite();
         vscpInfo.valueQueueKit().vscp = queueVscp;
+        // Record for inline commits if in a suspendable process
+        if (vscpInfo.m_inSuspOrFork) m_suspCommitQueues.push_back({queueVscp, vscp});
         // Create the AstActive for the Post logic
         AstActive* const activep
-            = new AstActive{flp, "nba-value-queue-whole", vscpInfo.senTreep()};
+            = new AstActive{flp, N_Partial ? "nba-value-queue-partial" : "nba-value-queue-whole",
+                            vscpInfo.senTreep()};
         activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit
@@ -869,6 +905,44 @@ class DelayedVisitor final : public VNVisitor {
         postp->addStmtsp(callp->makeStmt());
     }
 
+    // Create a properly-sized 32-bit unsigned constant (post-WidthCommit, width==widthMin).
+    AstConst* makeU32Const(FileLine* flp, const AstNode* contextp, uint32_t value) {
+        AstConst* const cp = new AstConst{flp, AstConst::DTyped{},
+                                          contextp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cp->num().setLong(value);
+        return cp;
+    }
+
+    // Split a whole-(sub-)array NBA ('arr <= rhs_arr') into per-element NBAs and convert each.
+    // The partial commit queue's enqueue() takes a scalar element, so we recurse through
+    // convertSchemeValueQueue - each per-element NBA then hits the normal ArraySel path.
+    void splitAndConvertWholeArrayNba(AstAssignDly* nodep, AstVarScope* vscp,
+                                      VarScopeInfo& vscpInfo,
+                                      const AstUnpackArrayDType* uaDTypep) {
+        FileLine* const flp = nodep->fileline();
+        AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
+        AstNodeExpr* const origLhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const origRhsp = nodep->rhsp()->unlinkFrBack();
+        const int loIdx = uaDTypep->rangep()->loConst();
+        const int hiIdx = loIdx + uaDTypep->elementsConst();
+        std::vector<AstAssignDly*> perElementNbas;
+        perElementNbas.reserve(hiIdx - loIdx);
+        for (int i = loIdx; i < hiIdx; ++i) {
+            AstAssignDly* const elemNbap = new AstAssignDly{
+                flp, new AstArraySel{flp, origLhsp->cloneTree(false), makeU32Const(flp, vscp, i)},
+                new AstArraySel{flp, origRhsp->cloneTree(false), makeU32Const(flp, vscp, i)}};
+            elemNbap->user2p(scopep);
+            nodep->addHereThisAsNext(elemNbap);
+            perElementNbas.push_back(elemNbap);
+        }
+        VL_DO_DANGLING(pushDeletep(origLhsp), origLhsp);
+        VL_DO_DANGLING(pushDeletep(origRhsp), origRhsp);
+        pushDeletep(nodep->unlinkFrBack());
+        for (AstAssignDly* const elemNbap : perElementNbas) {
+            convertSchemeValueQueue(elemNbap, vscp, vscpInfo, /* partial: */ true);
+        }
+    }
+
     void convertSchemeValueQueue(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo,
                                  bool partial) {
         UASSERT_OBJ(partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
@@ -876,6 +950,16 @@ class DelayedVisitor final : public VNVisitor {
                     vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
+
+        // A whole-(sub-)array NBA under the partial scheme needs splitting into per-element NBAs,
+        // as enqueue() takes a scalar element, not a whole VlUnpacked array.
+        if (partial) {
+            if (const AstUnpackArrayDType* const uaDTypep
+                = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                splitAndConvertWholeArrayNba(nodep, vscp, vscpInfo, uaDTypep);
+                return;
+            }
+        }
 
         // Base name suffix for signals constructed below
         const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
@@ -914,39 +998,9 @@ class DelayedVisitor final : public VNVisitor {
                 AstNodeExpr* const sLsbp = lSelp->lsbp();
                 const int sWidth = lSelp->widthConst();
 
-                // Create mask value
-                maskp = [&]() -> AstNodeExpr* {
-                    // Constant mask we can compute here
-                    if (const AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
-                        AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                        cp->num().setMask(sWidth, cLsbp->toSInt());
-                        return cp;
-                    }
-
-                    // A non-constant mask we must compute at run-time.
-                    AstConst* const onesp = new AstConst{flp, AstConst::WidthedValue{}, sWidth, 0};
-                    onesp->num().setAllBits1();
-                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,
-                                         "__VdlyMask" + baseName, onesp, nodep);
-                }();
-
-                // Adjust value to element size
-                valuep = [&]() -> AstNodeExpr* {
-                    // Constant value with constant select we can compute here
-                    if (AstConst* const cValuep = VN_CAST(valuep, Const)) {
-                        if (const AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
-                            AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                            cp->num().setAllBits0();
-                            cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), sWidth);
-                            VL_DO_DANGLING(valuep->deleteTree(), valuep);
-                            return cp;
-                        }
-                    }
-
-                    // A non-constant value we must adjust.
-                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,  //
-                                         "__VdlyElem" + baseName, valuep, nodep);
-                }();
+                // Use helper to create mask and widened value
+                std::tie(maskp, valuep) = createPartialUpdateMaskAndValue(
+                    flp, scopep, eDTypep, sLsbp, sWidth, baseName, valuep, nodep);
             } else {
                 // If this assignment is not partial, set mask to ones and we are done
                 AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
@@ -955,17 +1009,16 @@ class DelayedVisitor final : public VNVisitor {
             }
         }
 
-        // Extract array indices
+        // Extract array indices (if any - scalars have none)
         std::vector<AstNodeExpr*> idxps;
-        {
-            UASSERT_OBJ(VN_IS(lhsNodep, ArraySel), lhsNodep, "Unexpected LHS form");
+        if (VN_IS(lhsNodep, ArraySel)) {
             while (AstArraySel* const aSelp = VN_CAST(lhsNodep, ArraySel)) {
                 idxps.emplace_back(aSelp->bitp()->unlinkFrBack());
                 lhsNodep = aSelp->fromp();
             }
-            UASSERT_OBJ(VN_IS(lhsNodep, VarRef), lhsNodep, "Unexpected LHS form");
             std::reverse(idxps.begin(), idxps.end());
         }
+        UASSERT_OBJ(VN_IS(lhsNodep, VarRef), lhsNodep, "Unexpected LHS form");
 
         // Done with the LHS at this point
         VL_DO_DANGLING(pushDeletep(capturedLhsp), capturedLhsp);
@@ -982,6 +1035,51 @@ class DelayedVisitor final : public VNVisitor {
 
         // Delete original NBA
         pushDeletep(nodep->unlinkFrBack());
+    }
+
+    // Create mask and widened value for a partial bit-select update
+    std::pair<AstNodeExpr*, AstNodeExpr*>
+    createPartialUpdateMaskAndValue(FileLine* flp, AstScope* scopep, AstNodeDType* eDTypep,
+                                    AstNodeExpr* lsbExpr, int width, const std::string& baseName,
+                                    AstNodeExpr* value, AstNode* insertBefore) {
+        AstNodeExpr* maskp = nullptr;
+        AstNodeExpr* valuep = value;
+
+        // Create mask value
+        maskp = [&]() -> AstNodeExpr* {
+            // Constant mask we can compute here
+            if (const AstConst* const cLsbp = VN_CAST(lsbExpr, Const)) {
+                AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                cp->num().setMask(width, cLsbp->toSInt());
+                return cp;
+            }
+
+            // A non-constant mask we must compute at run-time.
+            AstConst* const onesp = new AstConst{flp, AstConst::WidthedValue{}, width, 0};
+            onesp->num().setAllBits1();
+            return createWidened(flp, scopep, eDTypep, lsbExpr, width, "__VdlyMask" + baseName,
+                                 onesp, insertBefore);
+        }();
+
+        // Adjust value to element size
+        valuep = [&]() -> AstNodeExpr* {
+            // Constant value with constant select we can compute here
+            if (AstConst* const cValuep = VN_CAST(valuep, Const)) {
+                if (const AstConst* const cLsbp = VN_CAST(lsbExpr, Const)) {
+                    AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                    cp->num().setAllBits0();
+                    cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), width);
+                    VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                    return cp;
+                }
+            }
+
+            // A non-constant value we must adjust.
+            return createWidened(flp, scopep, eDTypep, lsbExpr, width, "__VdlyElem" + baseName,
+                                 valuep, insertBefore);
+        }();
+
+        return {maskp, valuep};
     }
 
     // Record where a variable is assigned
@@ -1005,6 +1103,7 @@ class DelayedVisitor final : public VNVisitor {
         // Decide which scheme to use for each variable and do the 'prepare' step
         for (AstVarScope* const vscp : m_vscps) {
             VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+            vscpInfo.m_hasBlockingWrite = m_suspBlockingWriteVscps.count(vscp) > 0;
             vscpInfo.m_scheme = chooseScheme(vscp, vscpInfo);
             // Run 'prepare' step
             switch (vscpInfo.m_scheme) {
@@ -1043,6 +1142,9 @@ class DelayedVisitor final : public VNVisitor {
             case Scheme::ValueQueuePartial: {
                 ++m_nSchemeValueQueuesPartial;
                 prepareSchemeValueQueue</* Partial: */ true>(vscp, vscpInfo);
+                if (vscpInfo.m_lastSuspNbaProcp) {
+                    m_suspValueQueueProcs.insert(vscpInfo.m_lastSuspNbaProcp);
+                }
                 break;
             }
             }
@@ -1087,6 +1189,33 @@ class DelayedVisitor final : public VNVisitor {
             case Scheme::ValueQueuePartial:
                 convertSchemeValueQueue(nbap, vscp, vscpInfo, /* partial: */ true);
                 break;
+            }
+        }
+
+        // Insert inline commit calls before each CAwait in processes that have
+        // ValueQueuePartial NBAs. Only target those processes, not other suspendable
+        // processes (e.g., timed continuous assigns) which would create ordering cycles.
+        if (!m_suspCommitQueues.empty()) {
+            for (AstNodeProcedure* const procp : m_suspValueQueueProcs) {
+                const auto it = m_suspCawaits.find(procp);
+                if (it == m_suspCawaits.end()) continue;
+                for (AstCAwait* const awaitp : it->second) {
+                    // Find the enclosing statement
+                    AstNodeStmt* stmtp = nullptr;
+                    for (AstNode* np = awaitp; np; np = np->backp()) {
+                        if ((stmtp = VN_CAST(np, NodeStmt))) break;
+                    }
+                    if (!stmtp) continue;
+                    for (const auto& cq : m_suspCommitQueues) {
+                        FileLine* const flp = stmtp->fileline();
+                        AstCMethodHard* const callp = new AstCMethodHard{
+                            flp, new AstVarRef{flp, cq.queueVscp, VAccess::READWRITE},
+                            VCMethod::SCHED_COMMIT};
+                        callp->dtypeSetVoid();
+                        callp->addPinsp(new AstVarRef{flp, cq.targetVscp, VAccess::WRITE});
+                        stmtp->addHereThisAsNext(callp->makeStmt());
+                    }
+                }
             }
         }
     }
@@ -1154,6 +1283,7 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstCAwait* nodep) override {
         if (nodep->sentreep()) m_timingDomains.insert(nodep->sentreep());
+        if (m_inSuspendableOrFork) m_suspCawaits[m_procp].push_back(nodep);
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
@@ -1262,6 +1392,11 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
+        // Track same-process multi-NBA for ValueQueuePartial scheme selection
+        if (m_inSuspendableOrFork) {
+            if (vscpInfo.m_lastSuspNbaProcp == m_procp) vscpInfo.m_multiNbasSameProc = true;
+            vscpInfo.m_lastSuspNbaProcp = m_procp;
+        }
         // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
         if (m_activep->sentreep()->hasClocked()) {
             if (vscpInfo.m_fistActivep != m_activep) {
@@ -1299,6 +1434,11 @@ class DelayedVisitor final : public VNVisitor {
         if (nodep == m_currNbaLhsRefp) return;
         // Only care about write refs
         if (!nodep->access().isWriteOrRW()) return;
+        // Track blocking writes to arrays in suspendable processes
+        if (m_inSuspendableOrFork
+            && VN_IS(nodep->varScopep()->dtypep()->skipRefp(), UnpackArrayDType)) {
+            m_suspBlockingWriteVscps.insert(nodep->varScopep());
+        }
         // Record write reference
         recordWriteRef(nodep, false);
     }
