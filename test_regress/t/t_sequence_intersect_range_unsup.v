@@ -4,11 +4,21 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-module t (input clk);
-  logic a, b, c, d;
+module t (
+    input clk
+);
+  logic a, b, c, d, e;
 
-  // Range delay in intersect operand is unsupported
-  assert property (@(posedge clk)
-      (a ##[1:5] b) intersect (c ##2 d));
+  default clocking @(posedge clk);
+  endclocking
+
+  // Two ranged cycle delays in one intersect operand is unsupported
+  assert property ((a ##[1:3] b ##[1:2] c) intersect (d ##2 e));
+
+  // Single common length, but an operand is not a plain boolean sequence
+  assert property ((a throughout (b ##1 c)) intersect (d ##[0:2] e));
+
+  // Both operands vary over a range and carry internal structure
+  assert property ((a ##[1:3] (b ##1 c)) intersect (d ##[2:4] e));
 
 endmodule

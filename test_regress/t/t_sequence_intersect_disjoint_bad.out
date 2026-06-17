@@ -1,0 +1,6 @@
+%Error: t/t_sequence_intersect_disjoint_bad.v:16:34: Intersect sequence lengths share no common value: left 1..2 cycles, right 4..5 cycles (IEEE 1800-2023 16.9.6)
+                                                   : ... note: In instance 't'
+   16 |   assert property ((a ##[1:2] b) intersect (c ##[4:5] d));
+      |                                  ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
