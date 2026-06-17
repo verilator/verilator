@@ -1996,8 +1996,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstNodeUOrStructDType* nodep) override {  // FindVisitor::
         UASSERT_OBJ(m_curSymp, nodep, "Struct/union dtype not under module/package/$unit");
         VL_RESTORER(m_curSymp);
-        m_curSymp = m_statep->insertBlock(
-            m_curSymp, "__Vdtype" + cvtToStr(nodep->uniqueNum()), nodep, m_classOrPackagep);
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__Vdtype" + cvtToStr(nodep->uniqueNum()),
+                                          nodep, m_classOrPackagep);
         iterateChildren(nodep);
     }
     void visit(AstMemberDType* nodep) override {  // FindVisitor::
@@ -3528,8 +3528,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(1, "Related node " << nodep->fileline()->tokenNum() << " " << nodep);
             UINFO(1, "Related decl " << declTokenNum << " " << declp);
             nodep->v3error("Reference to "
-                           << nodep->prettyNameQ()
-                           << " before declaration (IEEE 1800-2023 6.18)\n"
+                           << nodep->prettyNameQ() << " before declaration (IEEE 1800-2023 6.18)\n"
                            << nodep->warnMore()
                            << "... Suggest move the declaration before the reference\n"
                            << nodep->warnContextPrimary() << '\n'
