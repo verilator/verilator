@@ -122,6 +122,7 @@ module t;
   logic [15:0] packed_union_bits;
   logic [11:0] narrow_bits;
   logic [19:0] simple_streaml_src;
+  logic [$bits(simple_t)-1:0] simple_bits_from_bits;
   byte byte_array_out[2];
 
   assign {>>{simple_cont_out}} = 20'habcde;
@@ -138,6 +139,13 @@ module t;
     `checkh(simple_bits, 20'h54321);
 
     simple = '{8'h12, 4'ha, '{4'hb, 4'hc}};
+    `checkh($bits(simple_t), 20);
+    `checkh($bits(array_t), 32);
+    `checkh($bits(nested_t), 36);
+    `checkh($bits(struct_array_t), 56);
+    `checkh($bits(simple_array), 40);
+    simple_bits_from_bits = {>>{simple}};
+    `checkh(simple_bits_from_bits, 20'h12abc);
     simple_bits = {>>{simple}};
     `checkh(simple_bits, 20'h12abc);
     /* verilator lint_off WIDTHEXPAND */

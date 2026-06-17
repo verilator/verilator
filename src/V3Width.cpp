@@ -9661,7 +9661,8 @@ class WidthVisitor final : public VNVisitor {
                     continue;
                 } else if (const AstNodeUOrStructDType* const adtypep
                            = VN_CAST(dtypep, NodeUOrStructDType)) {
-                    bits *= adtypep->width();
+                    bits *= adtypep->isStreamableFixedAggregate() ? adtypep->widthStream()
+                                                                  : adtypep->width();
                     break;
                 } else if (const AstBasicDType* const adtypep = VN_CAST(dtypep, BasicDType)) {
                     bits *= adtypep->width();
