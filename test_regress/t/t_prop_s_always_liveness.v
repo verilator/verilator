@@ -20,19 +20,11 @@ module t (
   int low_s_fail_q[$];
   int low_w_fail_q[$];
 
-  // A new attempt starts every tick, so the last hi attempts still have an open
-  // [2:5] window when the trace ends. Even though a_high is constantly true,
-  // those unfinished attempts report a liveness failure; Verilator OR-reduces
-  // them into one end-of-simulation error. (Questa 2022.3: 6 earlier attempts
-  // complete, the 5 youngest fire the strong else at $finish.)
+  // The youngest [2:5] windows are still open at $finish, so strong s_always
+  // reports a liveness failure even with a_high always 1; weak always does not.
   assert property (@(posedge clk) s_always [2:5] a_high);
-  // Weak always makes no end-of-trace obligation: silent.
   assert property (@(posedge clk) always [2:5] a_high);
 
-  // Constant-false fails at the first window tick: a safety violation reported
-  // identically by weak and strong (the strong-only liveness affects just the
-  // still-open tail). Verilator counts 9 each at cyc 10. (Questa reads 8 -- a
-  // same-timestep else-vs-read ordering difference, not a semantic one.)
   assert property (@(posedge clk) s_always [2:5] a_low)
     else low_s_fail_q.push_back(cyc);
   assert property (@(posedge clk) always [2:5] a_low)

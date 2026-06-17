@@ -22,9 +22,6 @@ module t (
   assert property (@(posedge clk) always[1: 33] (a_high && b_high && c_high))
     wide_pass_q.push_back(cyc);
 
-  // Strong wide s_always (and its end-of-simulation liveness) is covered by
-  // t_prop_s_always_liveness.
-
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 49) begin

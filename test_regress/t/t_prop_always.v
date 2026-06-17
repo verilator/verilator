@@ -38,9 +38,6 @@ module t (
   // Bounded weak always over constant-true input.
   assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
 
-  // Strong s_always[m:n] (including its end-of-simulation liveness) is covered
-  // by t_prop_s_always_liveness; this file stays a pure pass/fail suite.
-
   // Degenerate [0:0]: equivalent to immediate sample.
   assert property (@(posedge clk) always [0:0] a_high) high_degenerate_pass_q.push_back(cyc);
 
