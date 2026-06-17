@@ -83,6 +83,17 @@ module t;
     byte tail;
   } packed_union_struct_t;
 
+  localparam int WORD_WIDTH = 16;
+
+  typedef union packed {
+    struct packed {
+      logic [15:0] temp_1;
+      logic [15:0] temp_2;
+      logic [15:0] temp_3;
+    } regs;
+    logic [($bits(regs) / WORD_WIDTH)-1:0][WORD_WIDTH-1:0] words;
+  } issue_4521_union_t;
+
   simple_t simple;
   simple_t simple_out;
   simple_t simple_cont_out;
@@ -106,6 +117,7 @@ module t;
   real_struct_t real_struct_out;
   packed_union_struct_t packed_union_struct;
   packed_union_struct_t packed_union_struct_out;
+  issue_4521_union_t issue_4521_union;
 
   logic [19:0] simple_bits;
   logic [31:0] wide_simple_bits;
@@ -122,6 +134,7 @@ module t;
   logic [15:0] packed_union_bits;
   logic [11:0] narrow_bits;
   logic [19:0] simple_streaml_src;
+  logic [$bits(simple_t)-1:0] simple_bits_from_bits;
   byte byte_array_out[2];
 
   assign {>>{simple_cont_out}} = 20'habcde;
@@ -138,6 +151,13 @@ module t;
     `checkh(simple_bits, 20'h54321);
 
     simple = '{8'h12, 4'ha, '{4'hb, 4'hc}};
+    `checkh($bits(simple_t), 20);
+    `checkh($bits(array_t), 32);
+    `checkh($bits(nested_t), 36);
+    `checkh($bits(struct_array_t), 56);
+    `checkh($bits(simple_array), 40);
+    simple_bits_from_bits = {>>{simple}};
+    `checkh(simple_bits_from_bits, 20'h12abc);
     simple_bits = {>>{simple}};
     `checkh(simple_bits, 20'h12abc);
     /* verilator lint_off WIDTHEXPAND */
@@ -340,6 +360,16 @@ module t;
     {>>{packed_union_struct_out}} = 16'hcafe;
     `checkh(packed_union_struct_out.u.byte_data, 8'hca);
     `checkh(packed_union_struct_out.tail, 8'hfe);
+
+    `checkh($bits(issue_4521_union_t), 48);
+    `checkh($bits(issue_4521_union.regs), 48);
+    `checkh($bits(issue_4521_union.words), 48);
+    issue_4521_union.regs.temp_1 = 16'h1234;
+    issue_4521_union.regs.temp_2 = 16'h5678;
+    issue_4521_union.regs.temp_3 = 16'h9abc;
+    `checkh(issue_4521_union.words[2], 16'h1234);
+    `checkh(issue_4521_union.words[1], 16'h5678);
+    `checkh(issue_4521_union.words[0], 16'h9abc);
 
     $write("*-* All Finished *-*\n");
     $finish;
