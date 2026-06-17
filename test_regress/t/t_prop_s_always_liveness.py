@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--assert'])
-test.execute(fails=True)
+test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

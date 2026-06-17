@@ -1,0 +1,4 @@
+*-* All Finished *-*
+[115] %Error: t_prop_s_always_liveness.v:28: Assertion failed in top.t
+%Error: t/t_prop_s_always_liveness.v:28: Verilog $stop
+Aborting...
