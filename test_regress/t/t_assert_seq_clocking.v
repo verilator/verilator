@@ -4,9 +4,8 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// verilog_format: off
 module t (
-    input clk
+  input clk
 );
   int unsigned crc = 32'h1;
   bit a, b;
@@ -14,20 +13,19 @@ module t (
   int fails_single = 0;
   int fails_multi = 0;
 
-  // Single-cycle clocked sequence body (IEEE 1800-2023 16.7).
+  // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence s_single;
     @(posedge clk) a;
   endsequence
 
-  // Multi-cycle clocked sequence body.
   sequence s_multi;
     @(posedge clk) (a ##1 b);
   endsequence
 
-  // Declared but never referenced; must not reach codegen.
   sequence s_unused;
     @(posedge clk) b;
   endsequence
+  // verilog_format: on
 
   ap_single: assert property (s_single) else fails_single = fails_single + 1;
   ap_multi: assert property (s_multi) else fails_multi = fails_multi + 1;
