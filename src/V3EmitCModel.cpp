@@ -70,6 +70,7 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
+        if (v3Global.opt.coverage()) puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
 
         // Declare foreign instances up front to make C++ happy

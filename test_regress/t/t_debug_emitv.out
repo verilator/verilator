@@ -651,6 +651,11 @@ module Vt_debug_emitv_t;
             $display("pass");
         end
     end
+    begin : cover_sequence_concurrent
+        cover property (@(posedge clk) in##1 in
+        ) begin
+        end
+    end
     begin : assert_prop_always
         assert property (@(posedge clk) always ['sh0:
                          'sh3] in

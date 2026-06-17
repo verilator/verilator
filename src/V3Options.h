@@ -410,6 +410,8 @@ private:
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
+    // main switch: -fno-ico-change-detect: input change detection optimization
+    VOptionBool m_fIcoChangeDetect{VOptionBool::OPT_DEFAULT_TRUE};
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
@@ -745,6 +747,7 @@ public:
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
     bool fFunc() const { return fFuncSplitCat() || fFuncBalanceCat(); }
     bool fGate() const { return m_fGate; }
+    VOptionBool fIcoChangeDetect() const { return m_fIcoChangeDetect; }
     bool fInline() const { return m_fInline; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }

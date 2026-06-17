@@ -42,10 +42,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-#define CASE_OVERLAP_WIDTH 16  // Maximum width we can check for overlaps in
-#define CASE_BARF 999999  // Magic width when non-constant
-#define CASE_ENCODER_GROUP_DEPTH 8  // Levels of priority to be ORed together in top IF tree
-
 //######################################################################
 
 class CaseLintVisitor final : public VNVisitorConst {
@@ -119,252 +115,308 @@ class CaseLintVisitor final : public VNVisitorConst {
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
-public:
     // CONSTRUCTORS
     explicit CaseLintVisitor(AstCase* nodep) { iterateConst(nodep); }
     explicit CaseLintVisitor(AstGenCase* nodep) { iterateConst(nodep); }
     ~CaseLintVisitor() override = default;
+
+public:
+    static void apply(AstCase* nodep) { CaseLintVisitor{nodep}; }
+    static void apply(AstGenCase* nodep) { CaseLintVisitor{nodep}; }
 };
 
 //######################################################################
 // Case state, as a visitor of each AstNode
 
 class CaseVisitor final : public VNVisitor {
-    // NODE STATE
-    // Cleared each Case
-    //  AstIf::user3()          -> bool.  Set true to indicate clone not needed
-    const VNUser3InUse m_inuser3;
+    // Maximum width for detailed analysis
+    constexpr static int CASE_DETAILS_MAX_WIDTH = 16;
+    // Levels of priority to be ORed together in top IF tree
+    constexpr static int CASE_ENCODER_GROUP_DEPTH = 8;
+
+    // TYPES
+    // Record for each case value
+    struct CaseRecord final {
+        AstCaseItem* itemp;  // Case item that covers value
+        AstConst* constp;  // Expression within 'itemp' that covers value (nullptr for default)
+        AstNode* stmtsp;  // Statements of 'itemp' (might be nullptr if case is empty)
+    };
 
     // STATE
-    VDouble0 m_statCaseFast;  // Statistic tracking
-    VDouble0 m_statCaseSlow;  // Statistic tracking
+    // Statistics tracking, as a struct so can be passed to 'const' methods
+    struct Stats final {
+        VDouble0 caseFast;  // Cases using fast bit tree method
+        VDouble0 caseGeneric;  // Cases using generic if/else tree method
+        VDouble0 provenAssertions;  // Assertions proven to hold
+    } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
 
-    // Per-CASE
-    int m_caseWidth = 0;  // Width of valueItems
-    int m_caseItems = 0;  // Number of caseItem unique values
-    bool m_caseIncomplete = false;  // Proven incomplete
-    bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
-    // For each possible value, the case branch we need
-    std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
-    bool m_needToClearCache = false;  // Whether cache needs to be cleared
+    // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
+    bool m_caseOpaque = false;  // Case statement is opaque (non-packed, or non-const conditions)
+    size_t m_caseNConditions = 0;  // Number of conditions in the case statement
+    bool m_caseDetailsValid = false;  // Indicates m_caseDetails is valid
+    struct final {
+        bool exhaustive = false;  // Proven exhaustive
+        bool noOverlaps = false;  // Proven no overlaps between cases
+        // Map from value (index) to the CaseRecord that covers this value
+        std::array<CaseRecord, 1U << CASE_DETAILS_MAX_WIDTH> records;
+    } m_caseDetails;
 
     // METHODS
-    //! Determine whether we should check case items are complete
-    //! @return  Enum's dtype if should check, nullptr if shouldn't
-    const AstEnumDType* getEnumCompletionCheckDType(const AstCase* const nodep) {
+
+    // Xs in case or casez are impossible due to two state simulations.
+    // Returns true if the item is never possible
+    static bool neverItem(const AstCase* casep, const AstNodeExpr* itemExprp) {
+        const AstConst* const constp = VN_CAST(itemExprp, Const);
+        if (!constp) return false;
+        if (casep->casex() || casep->caseInside()) return false;
+        if (casep->casez()) return constp->num().isAnyX();
+        return constp->num().isFourState();
+    }
+
+    // Returns the matching mask and bits for a case item constant condition
+    // TODO: with 'neverItem' checked, this is alway the same for all types of cases
+    //       4-state will have to fix this up
+    static std::pair<V3Number, V3Number> matchPattern(const AstCase* /*casep*/,
+                                                      const AstConst* condp) {
+        // As one to encourage NRVO/move
+        std::pair<V3Number, V3Number> pairMaskBits{
+            std::piecewise_construct,  //
+            std::forward_as_tuple(condp->fileline(), condp->width(), 0),
+            std::forward_as_tuple(condp->fileline(), condp->width(), 0)};
+        pairMaskBits.first.opBitsNonXZ(condp->num());
+        pairMaskBits.second.opBitsOne(condp->num());
+        return pairMaskBits;
+    }
+
+    // Determine whether we should check case items are complete
+    // Returns enum's dtype if should check, nullptr if shouldn't
+    static const AstEnumDType* getEnumCompletionCheckDType(const AstCase* const nodep) {
         if (!nodep->uniquePragma() && !nodep->unique0Pragma()) return nullptr;
         const AstEnumDType* const enumDtp
             = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType);
         if (!enumDtp) return nullptr;  // Case isn't enum
         const AstBasicDType* const basicp = enumDtp->subDTypep()->basicp();
         if (!basicp) return nullptr;  // Not simple type (perhaps IEEE illegal)
-        if (basicp->width() > 32) return nullptr;
         return enumDtp;
     }
-    //! @return  True if case items are complete, false if there are uncovered enums
-    bool checkCaseEnumComplete(const AstCase* const nodep, const AstEnumDType* const dtype) {
-        const uint32_t numCases = 1UL << m_caseWidth;
-        for (AstEnumItem* itemp = dtype->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), EnumItem)) {
-            AstConst* const econstp = VN_AS(itemp->valuep(), Const);
-            V3Number nummask{itemp, econstp->width()};
-            nummask.opBitsNonX(econstp->num());
-            const uint32_t mask = nummask.toUInt();
-            V3Number numval{itemp, econstp->width()};
-            numval.opBitsOne(econstp->num());
-            const uint32_t val = numval.toUInt();
 
+    // Check and warn if case items are not complete over the given enum type.
+    // Returns true iff the case items cover all enum values/patterns.
+    bool checkExhaustiveEnum(const AstCase* const nodep, const AstEnumDType* const enump) {
+        const uint32_t numCases = 1UL << nodep->exprp()->width();
+        for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
+            const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
+            const uint32_t mask = match.first.toUInt();
+            const uint32_t bits = match.second.toUInt();
+
+            // Check all cases to see if they cover this enum value/pattern
             for (uint32_t i = 0; i < numCases; ++i) {
-                if ((i & mask) == val) {
-                    if (!m_valueItem[i]) {
-                        if (!nodep->unique0Pragma())
-                            nodep->v3warn(CASEINCOMPLETE, "Enum item "
-                                                              << itemp->prettyNameQ()
-                                                              << " not covered by case\n");
-                        m_caseIncomplete = true;
-                        return false;  // enum has uncovered value by case items
-                    }
+                if ((i & mask) != bits) continue;  // This case is not for this enum value
+                if (m_caseDetails.records[i].itemp) continue;  // Covered case
+                // Warn unless unique0 case which allows no-match
+                if (!nodep->unique0Pragma()) {
+                    nodep->v3warn(CASEINCOMPLETE,
+                                  "Enum item " << eip->prettyNameQ() << " not covered by case");
                 }
+                // TODO: warn for all uncovered enum values, not just the first
+                return false;  // enum has uncovered value by case items
             }
         }
         return true;  // enum is fully covered
     }
-    bool isCaseTreeFast(AstCase* nodep) {
-        int width = 0;
-        bool opaque = false;
-        m_caseItems = 0;
-        m_caseNoOverlapsAllCovered = true;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
-                if (icondp->width() > width) width = icondp->width();
-                if (icondp->isDouble()) opaque = true;
-                if (!VN_IS(icondp, Const)) width = CASE_BARF;  // Can't parse; not a constant
-                m_caseItems++;
+
+    // Check and warn if case items are not complete over all possible values.
+    // Returns true iff the case items cover all values of the case expression.
+    bool checkExhaustivePacked(AstCase* nodep) {
+        const uint32_t numCases = 1UL << nodep->exprp()->width();
+        for (uint32_t i = 0; i < numCases; ++i) {
+            if (m_caseDetails.records[i].itemp) continue;  // Covered case
+            if (!nodep->unique0Pragma()) {
+                nodep->v3warn(CASEINCOMPLETE,
+                              "Case values incompletely covered (example pattern 0x" << std::hex
+                                                                                     << i << ")");
             }
+            // TODO: warn for more than one uncovered case, not just the first
+            return false;
         }
-        m_caseWidth = width;
-        if (width == 0 || width > CASE_OVERLAP_WIDTH || opaque) {
-            m_caseNoOverlapsAllCovered = false;
-            return false;  // Too wide for analysis
+
+        // It's an exhaustive case statement
+        return true;
+    }
+
+    bool checkExhaustive(AstCase* nodep) {
+        if (const AstEnumDType* const enump = getEnumCompletionCheckDType(nodep)) {
+            return checkExhaustiveEnum(nodep, enump);
         }
-        UINFO(8, "Simple case statement: " << nodep);
-        const uint32_t numCases = 1UL << m_caseWidth;
-        // Zero list of items for each value
-        for (uint32_t i = 0; i < numCases; ++i) m_valueItem[i] = nullptr;
+        return checkExhaustivePacked(nodep);
+    }
+
+    // Analyze each value in the case statement. Updates 'm_caseDetails' and issues warnings.
+    void analyzeCaseDetails(AstCase* nodep) {
+        const uint32_t numValues = 1UL << nodep->exprp()->width();
+        // Clear case records
+        for (uint32_t i = 0; i < numValues; ++i) {
+            m_caseDetails.records[i].itemp = nullptr;
+            m_caseDetails.records[i].constp = nullptr;
+            m_caseDetails.records[i].stmtsp = nullptr;
+        }
         // Now pick up the values for each assignment
         // We can cheat and use uint32_t's because we only support narrow case's
         bool reportedOverlap = false;
-        bool reportedSubcase = false;
-        bool hasDefaultCase = false;
-        std::map<AstNode*, AstCaseItem*> caseItemMap;  // case condition -> case item
+        bool hasDefault = false;
+        m_caseDetails.noOverlaps = true;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
-                // UINFOTREE(9, icondp, "", "caseitem");
-                AstConst* const iconstp = VN_AS(icondp, Const);
-                UASSERT_OBJ(iconstp, nodep, "above 'can't parse' should have caught this");
-                if (neverItem(nodep, iconstp)) {
-                    // X in casez can't ever be executed
+
+            // Default case
+            if (itemp->isDefault()) {
+                // Default was moved to be the last item by V3LinkDot. Fill remaining cases
+                for (uint32_t i = 0; i < numValues; ++i) {
+                    CaseRecord& caseRecord = m_caseDetails.records[i];
+                    if (!caseRecord.itemp) {
+                        caseRecord.itemp = itemp;
+                        caseRecord.stmtsp = itemp->stmtsp();
+                    }
+                }
+                hasDefault = true;
+                continue;
+            }
+
+            for (AstConst* iconstp = VN_AS(itemp->condsp(), Const); iconstp;
+                 iconstp = VN_AS(iconstp->nextp(), Const)) {
+                // Some items can never match due to 2-state simulation
+                if (neverItem(nodep, iconstp)) continue;
+
+                const auto& match = matchPattern(nodep, iconstp);
+                const uint32_t mask = match.first.toUInt();
+                const uint32_t bits = match.second.toUInt();
+
+                bool foundNewCase = false;
+                const AstConst* firstOverlapConstp = nullptr;
+                uint32_t firstOverlapValue = 0;
+                for (uint32_t i = 0; i < numValues; ++i) {
+                    if ((i & mask) != bits) continue;
+
+                    CaseRecord& caseRecord = m_caseDetails.records[i];
+
+                    // If this is the first case that covers this value, record it
+                    if (!caseRecord.itemp) {
+                        caseRecord.itemp = itemp;
+                        caseRecord.constp = iconstp;
+                        caseRecord.stmtsp = itemp->stmtsp();
+                        foundNewCase = true;
+                        continue;
+                    }
+
+                    // There is an overlap. If it's within the same CaseItem, it is legal
+                    if (caseRecord.itemp == itemp) continue;
+
+                    // Otherwise record the first overlapping case
+                    if (!firstOverlapConstp) {
+                        firstOverlapConstp = caseRecord.constp;
+                        firstOverlapValue = i;
+                        m_caseDetails.noOverlaps = false;
+                    }
+                }
+
+                // Only report first overlap
+                if (reportedOverlap || !firstOverlapConstp) continue;
+
+                // Report first overlap
+                if (nodep->priorityPragma()) {
+                    // If this is a priority case, we only want to complain if every possible
+                    // value for this item is already hit by some other item. This is true if
+                    // 'foundNewCase' is false. 'firstOverlapConstp' is null when the only
+                    // covering item is this item itself, which is legal overlap within one
+                    // item.
+                    if (!foundNewCase) {
+                        iconstp->v3warn(CASEOVERLAP,
+                                        "Case item ignored: every matching value is covered "
+                                        "by an earlier condition\n"
+                                            << iconstp->warnContextPrimary() << '\n'
+                                            << firstOverlapConstp->warnOther()
+                                            << "... Location of previous condition\n"
+                                            << firstOverlapConstp->warnContextPrimary());
+                        reportedOverlap = true;
+                    }
                 } else {
-                    const bool isCondWildcard = iconstp->num().isAnyXZ();
-                    V3Number nummask{itemp, iconstp->width()};
-                    nummask.opBitsNonX(iconstp->num());
-                    const uint32_t mask = nummask.toUInt();
-                    V3Number numval{itemp, iconstp->width()};
-                    numval.opBitsOne(iconstp->num());
-                    const uint32_t val = numval.toUInt();
-
-                    uint32_t firstOverlap = 0;
-                    const AstNode* overlappedCondp = nullptr;
-                    bool foundHit = false;
-                    for (uint32_t i = 0; i < numCases; ++i) {
-                        if ((i & mask) == val) {
-                            if (!m_valueItem[i]) {
-                                m_valueItem[i] = icondp;
-                                caseItemMap[icondp] = itemp;
-                                foundHit = true;
-                            } else if (!overlappedCondp) {
-                                // Overlapping case item expressions in the
-                                // same case item are legal
-                                if (caseItemMap[m_valueItem[i]] != itemp) {
-                                    firstOverlap = i;
-                                    overlappedCondp = m_valueItem[i];
-                                    m_caseNoOverlapsAllCovered = false;
-                                }
-                            }
-                        }
+                    // If this case statement doesn't have the priority keyword,
+                    // we want to warn on any overlap.
+                    std::ostringstream examplePattern;
+                    if (iconstp->num().isAnyXZ()) {
+                        examplePattern << " (example pattern 0x" << std::hex << firstOverlapValue
+                                       << ")";
                     }
-                    if (!nodep->priorityPragma()) {
-                        // If this case statement doesn't have the priority
-                        // keyword, we want to warn on any overlap.
-                        if (!reportedOverlap && overlappedCondp) {
-                            std::ostringstream examplePattern;
-                            if (isCondWildcard) {
-                                examplePattern << " (example pattern 0x" << std::hex
-                                               << firstOverlap << ")";
-                            }
-                            icondp->v3warn(CASEOVERLAP,
-                                           "Case conditions overlap"
-                                               << examplePattern.str() << "\n"
-                                               << icondp->warnContextPrimary() << '\n'
-                                               << overlappedCondp->warnOther()
-                                               << "... Location of overlapping condition\n"
-                                               << overlappedCondp->warnContextSecondary());
-                            reportedOverlap = true;
-                        }
-                    } else {
-                        // If this is a priority case, we only want to complain
-                        // if every possible value for this item is already hit
-                        // by some other item. This is true if foundHit is
-                        // false.
-                        if (!reportedSubcase && !foundHit) {
-                            icondp->v3warn(CASEOVERLAP,
-                                           "Case item ignored: every matching value is covered "
-                                           "by an earlier condition\n"
-                                               << icondp->warnContextPrimary() << '\n'
-                                               << overlappedCondp->warnOther()
-                                               << "... Location of previous condition\n"
-                                               << overlappedCondp->warnContextPrimary());
-                            reportedSubcase = true;
-                        }
-                    }
-                }
-            }
-            // Defaults were moved to last in the caseitem list by V3LinkDot
-            if (itemp->isDefault()) {  // Case statement's default... Fill the table
-                for (uint32_t i = 0; i < numCases; ++i) {
-                    if (!m_valueItem[i]) m_valueItem[i] = itemp;
-                }
-                caseItemMap[itemp] = itemp;
-                hasDefaultCase = true;
-            }
-        }
-        if (!hasDefaultCase) {
-            const AstEnumDType* const dtype = getEnumCompletionCheckDType(nodep);
-            if (dtype) {
-                if (!checkCaseEnumComplete(nodep, dtype)) {
-                    // checkCaseEnumComplete has already warned of incompletion
-                    m_caseNoOverlapsAllCovered = false;
-                    return false;
-                }
-            } else {
-                for (uint32_t i = 0; i < numCases; ++i) {
-                    if (!m_valueItem[i]) {  // has uncovered case
-                        if (!nodep->unique0Pragma())
-                            nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
-                                                          "(example pattern 0x"
-                                                              << std::hex << i << ")");
-                        m_caseIncomplete = true;
-                        m_caseNoOverlapsAllCovered = false;
-                        return false;
-                    }
+                    iconstp->v3warn(CASEOVERLAP,
+                                    "Case conditions overlap"
+                                        << examplePattern.str() << "\n"
+                                        << iconstp->warnContextPrimary() << '\n'
+                                        << firstOverlapConstp->warnOther()
+                                        << "... Location of overlapping condition\n"
+                                        << firstOverlapConstp->warnContextSecondary());
+                    reportedOverlap = true;
                 }
             }
         }
 
-        if (m_caseItems <= 3
-            // Avoid e.g. priority expanders from going crazy in expansion
-            || (m_caseWidth >= 8 && (m_caseItems <= (m_caseWidth + 1)))) {
-            return false;  // Not worth simplifying
-        }
-
-        // Convert valueItem from AstCaseItem* to the expression
-        // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
-        for (uint32_t i = 0; i < numCases; ++i) {
-            if (AstNode* const condp = m_valueItem[i]) {
-                const AstCaseItem* const caseItemp = caseItemMap[condp];
-                UASSERT_OBJ(caseItemp, condp, "caseItemp should exist");
-                m_valueItem[i] = caseItemp->stmtsp();
-            }
-        }
-        return true;  // All is fine
+        // If there was no default, check exhaustiveness
+        m_caseDetails.exhaustive = hasDefault || checkExhaustive(nodep);
+        // Records now valid
+        m_caseDetailsValid = true;
     }
 
-    AstNode* replaceCaseFastRecurse(AstNodeExpr* cexprp, int msb, uint32_t upperValue) {
-        if (msb < 0) {
-            // There's no space for a IF.  We know upperValue is thus down to a specific
-            // exact value, so just return the tree value
-            // Note can't clone here, as we're going to check for equivalence above
-            AstNode* const foundp = m_valueItem[upperValue];
-            return foundp;
-        } else {
-            // Make left and right subtrees
-            // cexpr[msb:lsb] == 1
-            AstNode* tree0p = replaceCaseFastRecurse(cexprp, msb - 1, upperValue);
-            AstNode* tree1p = replaceCaseFastRecurse(
-                cexprp, msb - 1, upperValue | (1UL << static_cast<uint32_t>(msb)));
+    // Analyze case statement. Updates 'm_case*' members. Reports warnings.
+    void analyzeCase(AstCase* nodep) {
+        // Reset all analysis results
+        m_caseOpaque = false;
+        m_caseNConditions = 0;
+        m_caseDetailsValid = false;
 
-            if (tree0p == tree1p) {
-                // Same logic on both sides, so we can just return one of 'em
-                return tree0p;
+        AstNode* const caseExprp = nodep->exprp();
+
+        // Mark opaque if not a packed value - TODO: can this be a class?
+        if (caseExprp->isDouble() || caseExprp->isString()) m_caseOpaque = true;
+
+        // Check each condition expression
+        for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+            for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
+                // Count conditions
+                ++m_caseNConditions;
+                // Mark opaque if non-constant condition
+                if (!VN_IS(condp, Const)) m_caseOpaque = true;
             }
-            // We could have a "checkerboard" with A B A B, we can use the same IF on both edges
+        }
+
+        // Nothing else to do if not a packed type, or non-const conditions
+        if (m_caseOpaque) return;
+
+        // If small enough, analyse details
+        if (caseExprp->width() <= CASE_DETAILS_MAX_WIDTH) analyzeCaseDetails(nodep);
+    }
+
+    // TODO: should return AstNodeStmt after #6280
+    AstNode* convertCaseFastRecurse(AstNodeExpr* cexprp, int msb, uint32_t upperValue) const {
+        // Base case: If reached the last bit, upperValue equals an exact value, just return
+        // the statements from that CaseItem. Note: Not cloning here as the caller will do
+        // an identity check.
+        if (msb < 0) return m_caseDetails.records[upperValue].stmtsp;
+
+        // Recursive case:
+        // Make left and right subtrees assuming cexpr[msb] is 0 and 1 respectively
+        const uint32_t upperValue0 = upperValue;
+        const uint32_t upperValue1 = upperValue | (1UL << msb);
+        AstNode* tree0p = convertCaseFastRecurse(cexprp, msb - 1, upperValue0);
+        AstNode* tree1p = convertCaseFastRecurse(cexprp, msb - 1, upperValue1);
+
+        // If same logic on both sides, we can just return one of them
+        if (tree0p == tree1p) return tree0p;
+
+        // We could have a "checkerboard" with A B A B, we can use the same IF on both edges
+        {
             bool same = true;
-            for (uint32_t a = upperValue, b = (upperValue | (1UL << msb));
-                 a < (upperValue | (1UL << msb)); a++, b++) {
-                if (m_valueItem[a] != m_valueItem[b]) {
+            for (uint32_t a = upperValue0, b = upperValue1; a < upperValue1; ++a, ++b) {
+                if (m_caseDetails.records[a].stmtsp != m_caseDetails.records[b].stmtsp) {
                     same = false;
                     break;
                 }
@@ -373,161 +425,117 @@ class CaseVisitor final : public VNVisitor {
                 VL_DO_DANGLING(tree1p->deleteTree(), tree1p);
                 return tree0p;
             }
-
-            // Must have differing logic, so make a selection
-
-            // Case expressions can't be linked twice, so clone them
-            if (tree0p && !tree0p->user3()) tree0p = tree0p->cloneTree(true);
-            if (tree1p && !tree1p->user3()) tree1p = tree1p->cloneTree(true);
-
-            // Alternate scheme if we ever do multiple bits at a time:
-            // V3Number nummask (cexprp, cexprp->width(), (1UL<<msb));
-            // AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTreePure(false),
-            //                            new AstConst(cexprp->fileline(), nummask));
-            AstNodeExpr* const and1p
-                = new AstSel{cexprp->fileline(), cexprp->cloneTreePure(false), msb, 1};
-            AstNodeExpr* const eqp
-                = new AstNeq{cexprp->fileline(), new AstConst{cexprp->fileline(), 0}, and1p};
-            AstIf* const ifp = new AstIf{cexprp->fileline(), eqp, tree1p, tree0p};
-            ifp->user3(1);  // So we don't bother to clone it
-            return ifp;
         }
+
+        // Must have differing logic. Test the bit and convert to an If.
+
+        // Clone if needed
+        if (tree0p && tree0p->backp()) tree0p = tree0p->cloneTree(true);
+        if (tree1p && tree1p->backp()) tree1p = tree1p->cloneTree(true);
+        // Create the If statement
+        FileLine* const flp = cexprp->fileline();
+        AstNodeExpr* const condp = new AstSel{flp, cexprp->cloneTreePure(false), msb, 1};
+        AstIf* const ifp = new AstIf{flp, condp, tree1p, tree0p};
+        return ifp;
     }
 
-    void replaceCaseFast(AstCase* nodep) {
-        // CASEx(cexpr,....
-        // ->  tree of IF(msb,  IF(msb-1, 11, 10)
-        //                      IF(msb-1, 01, 00))
-        AstNodeExpr* cexprp;
-        AstExprStmt* cexprStmtp = nullptr;
-        if (nodep->exprp()->isPure()) {
-            cexprp = nodep->exprp()->unlinkFrBack();
-        } else {
-            cexprStmtp = VN_AS(nodep->exprp()->unlinkFrBack(), ExprStmt);
-            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
-        }
-
-        if (debug() >= 9) {  // LCOV_EXCL_START
-            for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
-                if (const AstNode* const itemp = m_valueItem[i]) {
-                    UINFO(9, "Value " << std::hex << i << " " << itemp);
-                }
-            }
-        }  // LCOV_EXCL_STOP
-
-        // Handle any assertions
-        replaceCaseParallel(nodep, m_caseNoOverlapsAllCovered);
-
-        AstNode::user3ClearTree();
-        AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
-        if (cexprStmtp) {
-            cexprStmtp->resultp()->unlinkFrBack()->deleteTree();
-            AstIf* const ifp = VN_AS(ifrootp, If);
-            cexprStmtp->resultp(ifp->condp()->unlinkFrBack());
-            ifp->condp(cexprStmtp);
-            m_needToClearCache = true;
-        }
-
-        // Case expressions can't be linked twice, so clone them
-        if (ifrootp && !ifrootp->user3()) ifrootp = ifrootp->cloneTree(true);
-
-        if (ifrootp) {
-            nodep->replaceWith(ifrootp);
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
-        UINFOTREE(9, ifrootp, "", "_simp");
+    // CASEx(cexpr,....
+    // ->  tree of IF(msb,  IF(msb-1, 11, 10)
+    //                      IF(msb-1, 01, 00))
+    // TODO: should return AstNodeStmt after #6280
+    AstNode* convertCaseFast(AstCase* nodep) const {
+        const int caseWidth = nodep->exprp()->width();
+        AstNode* const ifrootp = convertCaseFastRecurse(nodep->exprp(), caseWidth - 1, 0UL);
+        return ifrootp && ifrootp->backp() ? ifrootp->cloneTree(true) : ifrootp;
     }
 
-    void replaceCaseComplicated(AstCase* nodep) {
-        // CASEx(cexpr,ITEM(icond1,istmts1),ITEM(icond2,istmts2),ITEM(default,istmts3))
-        // ->  IF((cexpr==icond1),istmts1,
-        //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
-        //                              ,istmts2, istmts3
-        AstNodeExpr* cexprp;
-        AstExprStmt* cexprStmtp = nullptr;
-        if (nodep->exprp()->isPure()) {
-            cexprp = nodep->exprp()->unlinkFrBack();
-        } else {
-            cexprStmtp = VN_AS(nodep->exprp(), ExprStmt)->unlinkFrBack();
-            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
-        }
-        // We'll do this in two stages.  First stage, convert the conditions to
-        // the appropriate IF AND terms.
-        UINFOTREE(9, nodep, "", "_comp_IN::");
-        bool hadDefault = false;
+    // Convet case statement using generic if/else tree
+    // CASEx(cexpr,ITEM(icond1,istmts1),ITEM(icond2,istmts2),ITEM(default,istmts3))
+    // ->  IF((cexpr==icond1),istmts1,
+    //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
+    //                              ,istmts2, istmts3
+    // TODO: should return AstNodeStmt after #6280
+    AstNode* convertCaseGeneric(AstCase* nodep) const {
+        // We'll do this in two stages.
+        // First stage, convert the conditions to the appropriate IF AND terms.
+        bool hasDefault = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            if (!itemp->condsp()) {
-                // Default clause.  Just make true, we'll optimize it away later
-                itemp->addCondsp(new AstConst{itemp->fileline(), AstConst::BitTrue{}});
-                hadDefault = true;
-            } else {
-                // Expressioned clause
-                AstNodeExpr* icondNextp = nullptr;
-                AstNodeExpr* ifexprp = nullptr;  // If expression to test
-                for (AstNodeExpr* icondp = itemp->condsp(); icondp; icondp = icondNextp) {
-                    icondNextp = VN_AS(icondp->nextp(), NodeExpr);
-                    icondp->unlinkFrBack();
 
-                    AstNodeExpr* condp = nullptr;  // Default is to use and1p/and2p
-                    AstConst* const iconstp = VN_CAST(icondp, Const);
-                    if (iconstp && neverItem(nodep, iconstp)) {
-                        // X in casez can't ever be executed
-                        VL_DO_DANGLING(icondp->deleteTree(), icondp);
-                        VL_DANGLING(iconstp);
-                        // For simplicity, make expression that is not equal, and let later
-                        // optimizations remove it
-                        condp = new AstConst{itemp->fileline(), AstConst::BitFalse{}};
-                    } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
-                        // Similar logic in V3Width::visit(AstInside)
-                        condp = irangep->newAndFromInside(cexprp->cloneTreePure(true),
-                                                          irangep->lhsp()->unlinkFrBack(),
-                                                          irangep->rhsp()->unlinkFrBack());
-                        VL_DO_DANGLING2(icondp->deleteTree(), icondp, irangep);
-                    } else if (iconstp && iconstp->num().isFourState()
-                               && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
-                        V3Number nummask{itemp, iconstp->width()};
-                        nummask.opBitsNonX(iconstp->num());
-                        V3Number numval{itemp, iconstp->width()};
-                        numval.opBitsOne(iconstp->num());
-                        AstNodeExpr* const and1p
-                            = new AstAnd{itemp->fileline(), cexprp->cloneTreePure(false),
-                                         new AstConst{itemp->fileline(), nummask}};
-                        AstNodeExpr* const and2p = new AstAnd{
-                            itemp->fileline(), new AstConst{itemp->fileline(), numval},
-                            new AstConst{itemp->fileline(), nummask}};
-                        VL_DO_DANGLING(icondp->deleteTree(), icondp);
-                        VL_DANGLING(iconstp);
-                        condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
-                    } else {
-                        // Not a caseX mask, we can build CASEEQ(cexpr icond)
-                        AstNodeExpr* const and1p = cexprp->cloneTreePure(false);
-                        AstNodeExpr* const and2p = icondp;
-                        condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
-                    }
-                    if (!ifexprp) {
-                        ifexprp = condp;
-                    } else {
-                        ifexprp = new AstLogOr{itemp->fileline(), ifexprp, condp};
-                    }
-                }
-                // Replace expression in tree
-                itemp->addCondsp(ifexprp);
+            FileLine* const flp = itemp->fileline();
+
+            // Default clause. Just make true, we'll optimize it away later
+            if (itemp->isDefault()) {
+                itemp->addCondsp(new AstConst{flp, AstConst::BitTrue{}});
+                hasDefault = true;
+                continue;
             }
+
+            // Regular clause. Construct the condition expression.
+            AstNodeExpr* newCondp = nullptr;
+            for (AstNodeExpr *itemExprp = itemp->condsp(), *nextp; itemExprp; itemExprp = nextp) {
+                nextp = VN_AS(itemExprp->nextp(), NodeExpr);
+                itemExprp->unlinkFrBack();
+
+                // If case never matches, ignore it
+                if (neverItem(nodep, itemExprp)) {
+                    VL_DO_DANGLING(itemExprp->deleteTree(), itemExprp);
+                    continue;
+                }
+
+                // Compute the term to add to the condition expression
+                AstNodeExpr* const termp = [&]() -> AstNodeExpr* {
+                    // Will need a copy of the caseExpr regardless
+                    AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
+
+                    // InsideRange: Similar logic in V3Width::visit(AstInside)
+                    if (AstInsideRange* const itemRangep = VN_CAST(itemExprp, InsideRange)) {
+                        AstNodeExpr* const resultp = itemRangep->newAndFromInside(  //
+                            caseExprp,  //
+                            itemRangep->lhsp()->unlinkFrBack(),
+                            itemRangep->rhsp()->unlinkFrBack());
+                        VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemRangep);
+                        return resultp;
+                    }
+
+                    // Check if we need to perform a wildcard match, this needs masking
+                    if (AstConst* const itemConstp = VN_CAST(itemExprp, Const)) {
+                        // TODO: 4-state will need to fix this
+                        if (itemConstp->num().isFourState()
+                            && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
+                            // Wildcard match, make 'caseExpr' & 'mask' == 'itemExpr' & 'mask'
+                            const auto& match = matchPattern(nodep, itemConstp);
+                            const V3Number& matchMask = match.first;
+                            const V3Number& matchBits = match.second;
+                            VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemConstp);
+                            return AstEq::newTyped(
+                                flp,  //
+                                new AstConst{flp, matchBits},
+                                new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
+                        }
+                    }
+
+                    // Regular case, use simple equality comparison
+                    return AstEq::newTyped(flp, caseExprp, itemExprp);
+                }();
+
+                // 'Or' new term with previous terms
+                newCondp = newCondp ? new AstLogOr{flp, newCondp, termp} : termp;
+            }
+            // Replace expression in tree. Needs to be non-null, so add a constant false if needed
+            if (!newCondp) newCondp = new AstConst{flp, AstConst::BitFalse{}};
+            itemp->addCondsp(newCondp);
         }
-        VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
-        if (!hadDefault) {
-            // If there was no default, add a empty one, this greatly simplifies below code
-            // and constant propagation will just eliminate it for us later.
+
+        // If there was no default, add a empty one, this greatly simplifies below code
+        // and constant propagation will just eliminate it for us later.
+        if (!hasDefault) {
             nodep->addItemsp(new AstCaseItem{
                 nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
         }
-        UINFOTREE(9, nodep, "", "_comp_COND");
+
         // Now build the IF statement tree
-        // The tree can be quite huge.  Pull ever group of 8 out, and make a OR tree.
+        // The tree can be quite huge.  Pull every group of 8 out, and make a OR tree.
         // This reduces the depth for the bottom elements, at the cost of
         // some of the top elements.  If we ever have profiling data, we
         // should pull out the most common item from here and instead make
@@ -538,8 +546,11 @@ class CaseVisitor final : public VNVisitor {
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            AstNode* const istmtsp = itemp->stmtsp();  // Maybe null -- no action.
+
+            // Grab the statements from this item. May be empty.
+            AstNode* const istmtsp = itemp->stmtsp();
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
+
             // Expressioned clause
             AstNodeExpr* const ifexprp = itemp->condsp()->unlinkFrBack();
             {  // Prepare for next group
@@ -575,65 +586,76 @@ class CaseVisitor final : public VNVisitor {
                 itemnextp = newp;
             }
         }
-        UINFOTREE(9, nodep, "", "_comp_TREE");
-        // Handle any assertions
-        replaceCaseParallel(nodep, false);
-        // Replace the CASE... with IF...
-        if (grouprootp) {
-            UINFOTREE(9, grouprootp, "", "_new");
-            nodep->replaceWith(grouprootp);
-            if (cexprStmtp) {
-                pushDeletep(cexprStmtp->resultp()->unlinkFrBack());
-                cexprStmtp->resultp(grouprootp->condp()->unlinkFrBack());
-                grouprootp->condp(cexprStmtp);
-                m_needToClearCache = true;
-            }
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return grouprootp;
     }
 
-    void replaceCaseParallel(AstCase* nodep, bool noOverlapsAllCovered) {
-        // Take the notParallelp tree under the case statement created by V3Assert
-        // If the statement was proven to have no overlaps and all cases
-        // covered, we're done with it.
-        // Else, convert to a normal statement parallel with the case statement.
-        if (nodep->notParallelp() && !noOverlapsAllCovered) {
-            AstNode* const parp = nodep->notParallelp()->unlinkFrBackWithNext();
-            nodep->addNextHere(parp);
+    // Convert the given case statement to a representation not using AstCase
+    // TODO: should return AstNodeStmt after #6280
+    AstNode* convertCase(AstCase* nodep, Stats& stats) const {
+        // Determine if we should use the fast bitwise branching tree method
+        const bool useFastBitTree = [&]() {
+            // Not if disabled
+            if (!v3Global.opt.fCase()) return false;
+            // Can't do it without the detailed analysis
+            if (!m_caseDetailsValid) return false;
+            // Can't do it if not exhaustive
+            if (!m_caseDetails.exhaustive) return false;
+            // Not worth doing if there are few conditions
+            if (m_caseNConditions <= 3) return false;
+            // Avoid e.g. priority expanders from going crazy in expansion
+            const size_t caseWidth = nodep->exprp()->width();
+            if (caseWidth >= 8 && m_caseNConditions <= (caseWidth + 1)) return false;
+            // Otherwise use the bit tree
+            return true;
+        }();
+        if (useFastBitTree) {
+            ++stats.caseFast;
+            return convertCaseFast(nodep);
         }
-    }
 
-    bool neverItem(const AstCase* casep, const AstConst* itemp) {
-        // Xs in case or casez are impossible due to two state simulations
-        if (casep->casex()) {
-        } else if (casep->casez() || casep->caseInside()) {
-            if (itemp->num().isAnyX()) return true;
-        } else {
-            if (itemp->num().isFourState()) return true;
+        // Convert using the generic if/else tree method
+        ++stats.caseGeneric;
+        // If a case statement is exhaustive, presume signals involved aren't forming a latch
+        // TODO: this is broken, but it is as was before
+        if (m_alwaysp && (!m_caseDetailsValid || m_caseDetails.exhaustive)) {
+            m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
         }
-        return false;
+        return convertCaseGeneric(nodep);
     }
 
     // VISITORS
     void visit(AstCase* nodep) override {
-        VL_RESTORER(m_caseIncomplete);
-        { CaseLintVisitor{nodep}; }
+        UASSERT_OBJ(nodep->exprp()->isPure(), nodep,
+                    "Impure case expression should have been removed by V3LiftExpr");
+
+        CaseLintVisitor::apply(nodep);
+
+        // Convert any children first
         iterateChildren(nodep);
-        UINFOTREE(9, nodep, "", "case_old");
-        if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
-            // It's a simple priority encoder or complete statement
-            // we can make a tree of statements to avoid extra comparisons
-            ++m_statCaseFast;
-            VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
-        } else {
-            // If a case statement is whole, presume signals involved aren't forming a latch
-            if (m_alwaysp && !m_caseIncomplete)
-                m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
-            ++m_statCaseSlow;
-            VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
+
+        // Analyze this case statement
+        analyzeCase(nodep);
+
+        // Take the 'notParallelp' statements under the case statement created by V3Assert.
+        // If the statement was proven to have no overlaps and all cases covered,
+        // it can be removed. Otherwise insert the assertion after the case statement.
+        if (AstNode* const stmtp = nodep->notParallelp()) {
+            stmtp->unlinkFrBackWithNext();
+            if (m_caseDetailsValid && m_caseDetails.exhaustive && m_caseDetails.noOverlaps) {
+                ++m_stats.provenAssertions;
+                VL_DO_DANGLING(stmtp->deleteTree(), stmtp);
+            } else {
+                nodep->addNextHere(stmtp);
+            }
         }
+
+        // Convert the case statement and replace the original
+        if (AstNode* const replacementp = convertCase(nodep, m_stats)) {
+            nodep->replaceWith(replacementp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     //--------------------
     void visit(AstAlways* nodep) override {
@@ -645,14 +667,11 @@ class CaseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit CaseVisitor(AstNetlist* nodep) {
-        for (auto& itr : m_valueItem) itr = nullptr;
-        iterate(nodep);
-        if (m_needToClearCache) VIsCached::clearCacheTree();
-    }
+    explicit CaseVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~CaseVisitor() override {
-        V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
-        V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
+        V3Stats::addStat("Optimizations, Cases parallelized", m_stats.caseFast);
+        V3Stats::addStat("Optimizations, Cases complex", m_stats.caseGeneric);
+        V3Stats::addStat("Optimizations, Cases proven assertions", m_stats.provenAssertions);
     }
 };
 
@@ -666,5 +685,5 @@ void V3Case::caseAll(AstNetlist* nodep) {
 }
 void V3Case::caseLint(AstGenCase* nodep) {
     UINFO(4, __FUNCTION__ << ": ");
-    { CaseLintVisitor{nodep}; }
+    CaseLintVisitor::apply(nodep);
 }

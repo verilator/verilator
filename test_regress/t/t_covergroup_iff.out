@@ -2,9 +2,11 @@ cg_and.cp_concat.b00: 0
 cg_and.cp_concat.b01: 1
 cg_and.cp_concat.b10: 0
 cg_and.cp_concat.b11: 0
-cg_array_iff.cp.arr: 1
+cg_array_iff.cp.arr[0]: 1
+cg_array_iff.cp.arr[1]: 0
+cg_array_iff.cp.arr[2]: 0
 cg_bitw.cp.seven: 1
-cg_default_iff.cp.def: 1
+cg_default_iff.cp.def [default]: 1
 cg_default_iff.cp.known: 1
 cg_iff.cp_value.disabled_hi: 0
 cg_iff.cp_value.disabled_lo: 0

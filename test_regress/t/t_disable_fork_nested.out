@@ -1,0 +1,3 @@
+Fast clock (200ns half-period): o_counter=7
+Slow clock (5400ns half-period): o_counter=3
+*-* All Finished *-*

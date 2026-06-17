@@ -1727,7 +1727,6 @@ class LinkDotFindVisitor final : public VNVisitor {
             newvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             newvarp->funcReturn(true);
             newvarp->trace(false);  // Not user visible
-            newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
             nodep->fvarp(newvarp);
             // Explicit insert required, as the var name shadows the upper level's task name
             m_statep->insertSym(m_curSymp, newvarp->name(), newvarp, nullptr /*classOrPackagep*/);

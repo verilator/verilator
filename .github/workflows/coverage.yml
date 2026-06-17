@@ -90,7 +90,7 @@ jobs:
           find obj_coverage -type f | paste -sd, | sed "s/^/files=/" >> "$GITHUB_OUTPUT"
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           disable_file_fixes: true
           disable_search: true
@@ -197,7 +197,7 @@ jobs:
         id: generate-token
         uses: actions/create-github-app-token@v3.2.0
         with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
+          client-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
           owner: verilator
           repositories: verilator

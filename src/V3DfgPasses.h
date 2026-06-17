@@ -41,6 +41,8 @@ void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Synthesize DfgLogic vertices into primitive operations.
 // Removes all DfgLogic (even those that were not synthesized).
 void synthesize(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Remove redundant selects
+void removeSelects(DfgGraph& dfg, V3DfgRemoveSelectsContext& ctx) VL_MT_DISABLED;
 // Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
 // equivalent. If the returned pointer is null, then no improvement was
 // possible on the input graph. Otherwise the returned graph is an improvement

@@ -1,5 +1,7 @@
-cg.data.arr [ignore]: 0
-cg.data.bad [illegal]: 0
+cg.data.arr[0] [ignore]: 0
+cg.data.arr[1] [ignore]: 0
+cg.data.bad[0] [illegal]: 0
+cg.data.bad[1] [illegal]: 0
 cg.data.catch_all [ignore]: 0
 cg.data.high: 1
 cg.data.low: 1

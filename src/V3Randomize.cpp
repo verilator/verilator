@@ -1509,6 +1509,41 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
     }
+    void visit(AstRedXor* nodep) override {
+        if (editFormat(nodep)) return;
+
+        // Build popcount expansion: (extract x 1 1) ^ (extract x 2 2) ^ ...
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+
+        AstNodeExpr* redxorp = new AstSel{fl, argp, 0, 1};
+        redxorp->user1(true);
+        for (int i = 1; i < argp->width(); i++) {
+            AstSel* const selp = new AstSel{fl, argp->cloneTreePure(false), i, 1};
+            selp->user1(true);
+
+            redxorp = new AstXor{fl, redxorp, selp};
+            redxorp->user1(true);
+        }
+
+        nodep->replaceWith(redxorp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(redxorp);
+    }
+    void visit(AstRedAnd* nodep) override {
+        if (editFormat(nodep)) return;
+        // Convert to (~x == 0)
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        const V3Number numZero{fl, argp->width(), 0};
+        AstNodeExpr* const negp = new AstNot{fl, argp};
+        negp->user1(true);
+        AstNodeExpr* const eqp = new AstEq{fl, negp, new AstConst{fl, numZero}};
+        eqp->user1(true);
+        nodep->replaceWith(eqp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(eqp);
+    }
     void visit(AstRedOr* nodep) override {
         if (editFormat(nodep)) return;
         // Convert to (x != 0)
@@ -4534,6 +4569,16 @@ class RandomizeVisitor final : public VNVisitor {
         }
     }
 
+    static bool isDynArrOfClassTypeRecurse(const AstNodeDType* const dtypep) {
+        const AstNodeDType* const refp = dtypep->skipRefp();
+        if (VN_IS(refp, DynArrayDType) || VN_IS(refp, QueueDType)) {
+            return isDynArrOfClassTypeRecurse(refp->subDTypep());
+        } else if (VN_IS(refp, ClassRefDType)) {
+            return true;
+        }
+        return false;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -4766,6 +4811,18 @@ class RandomizeVisitor final : public VNVisitor {
 
                 // Refresh array element tables after resize
                 for (AstVar* const arrVarp : sizeArraysIt->second) {
+                    // Array elements of class data type are passed to the solver as separate
+                    // variables, so passing the original array variable is redundant, because it
+                    // won't be referenced
+                    if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
+                        const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
+                        if (unpackedDims > 1) {
+                            arrVarp->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Nested array element access in global constraint");
+                        }
+                        continue;
+                    }
                     AstCMethodHard* const methodp = new AstCMethodHard{
                         fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_WRITE_VAR};

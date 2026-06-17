@@ -356,6 +356,9 @@ private:
     static constexpr size_t ASSERT_ON_WIDTH
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
+    // Build the m_assertOn/m_assertLock bit mask for the given assertion x directive types.
+    static uint32_t assertOnMask(VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_PURE;
 
 protected:
     // TYPES
@@ -375,6 +378,9 @@ protected:
                                                     // for each VerilatedAssertType we store
                                                     // 3-bits, one for each directive type. Last
                                                     // bit guards internal directive types.
+        std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
+                                                // Lock/Unlock); same layout as m_assertOn. While
+                                                // a bit is locked, On/Off/Kill leave it unchanged.
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -484,6 +490,11 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Apply a $assertcontrol control_type (IEEE 1800-2023 Table 20-5) to the given
+    /// assertion and directive types: 1=Lock, 2=Unlock, 3=On, 4=Off, 5=Kill. Locked
+    /// bits are left unchanged by On/Off/Kill. Other control_type values are ignored.
+    void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)

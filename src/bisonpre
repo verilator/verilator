@@ -145,6 +145,26 @@ def clean_output(filename: str, outname: str, is_output: bool, is_c: bool) -> No
             out.append(line)
         lines = out
         out = []
+        # Code updates for the .c
+        if outname.endswith(".c"):
+            for line in lines:
+                modify = "YYSTACK_FREE (yyss);" in line and "if (yyss != yyssa)" in out[-1]
+                ifdefined = "#if defined __GNUC__ && ! defined __ICC\n"
+                endif = "#endif\n"
+                if modify:
+                    out.insert(-1, ifdefined)
+                    out.insert(-1, "  _Pragma (\"GCC diagnostic push\")\n")
+                    out.insert(
+                        -1,
+                        "  _Pragma (\"GCC diagnostic ignored \\\"-Wfree-nonheap-object\\\"\")\n")
+                    out.insert(-1, endif)
+                out.append(line)
+                if modify:
+                    out.append(ifdefined)
+                    out.append("  _Pragma (\"GCC diagnostic pop\")\n")
+                    out.append(endif)
+            lines = out
+            out = []
 
     with open(outname, "w", encoding="utf-8") as fh:
         tmpy = re.escape(tmp_prefix() + ".y")

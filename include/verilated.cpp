@@ -318,6 +318,13 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     }});
 }
 
+void VL_FFLUSH_MT() VL_MT_SAFE {
+    va_list ap;
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        Verilated::runFlushCallbacks();
+    }});
+}
+
 template <typename... snprintf_args_ts>
 static size_t _vl_snprintf_string(std::string& str, const char* format,
                                   snprintf_args_ts... args) VL_MT_SAFE {
@@ -3043,24 +3050,44 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
     // Check if directive type bit is enabled in corresponding assertion type bits.
     return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
 }
+uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
+    // Place the directive bits at each selected assertion type's 3-bit group.
+    uint32_t mask = 0;
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
+    }
+    return mask;
+}
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // For each assertion type, set directive bits.
-
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // set directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
-    }
+    m_s.m_assertOn |= assertOnMask(types, directives);
 }
 void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
                                      VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // clear directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn &= ~(directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    m_s.m_assertOn &= ~assertOnMask(types, directives);
+}
+void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
+    // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
+    const uint32_t mask = assertOnMask(types, directives);
+    switch (controlType) {
+    case 1:  // Lock
+        m_s.m_assertLock |= mask;
+        break;
+    case 2:  // Unlock
+        m_s.m_assertLock &= ~mask;
+        break;
+    case 3:  // On
+        m_s.m_assertOn |= mask & ~m_s.m_assertLock;
+        break;
+    case 4:  // Off
+    case 5:  // Kill
+        m_s.m_assertOn &= ~(mask & ~m_s.m_assertLock);
+        break;
+    default:  // 6..11 (Pass/Fail/Vacuous action control) are not modeled; ignore
+        break;
     }
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {

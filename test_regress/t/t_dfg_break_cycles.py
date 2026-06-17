@@ -17,6 +17,8 @@ test.sim_time = 2000000
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
+test.top_filename = "t/t_dfg_break_cycles.v"
+
 # Read expected source lines hit
 expectedLines = set()
 
@@ -65,7 +67,8 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
-    "-fno-dfg-break-cycles",
+    "-fno-dfg" if test.name == "t_dfg_break_cycles" else "-fno-dfg-break-cycles",
+    "-fno-gate",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
     "--prefix", "Vref",
@@ -73,8 +76,9 @@ test.compile(verilator_flags2=[
 ])  # yapf:disable
 
 # Check we got the expected number of circular logic warnings
-test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
-               r'Warnings, Suppressed UNOPTFLAT\s+(\d+)', nExpectedCycles)
+if test.name == "t_dfg_break_cycles":
+    test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
+                   r'Warnings, Suppressed UNOPTFLAT\s+(\d+)', nExpectedCycles)
 
 # Compile optimized - also builds executable
 test.compile(verilator_flags2=[
@@ -82,6 +86,7 @@ test.compile(verilator_flags2=[
     "--build",
     "--exe",
     "-fno-const-before-dfg",
+    "-fno-gate",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
@@ -90,7 +95,7 @@ test.compile(verilator_flags2=[
     "--debug", "--debugi", "0", "--dumpi-tree", "0",
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
-    "../../t/" + test.name + ".cpp"
+    "../../t/t_dfg_break_cycles.cpp"
 ])  # yapf:disable
 
 # Execute test to check equivalence

@@ -98,12 +98,10 @@
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
-#include "V3SplitAs.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
-#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
@@ -261,6 +259,7 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertCommon::collectDefaultDisable(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.
@@ -421,7 +420,6 @@ static void process() {
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
-            V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
             if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
@@ -734,7 +732,6 @@ static bool verilate(const string& argString) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
