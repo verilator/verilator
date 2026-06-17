@@ -2240,7 +2240,7 @@ public:
     ASTGEN_MEMBERS_AstSClocked;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
 };
 class AstSConsRep final : public AstNodeExpr {
     // Consecutive repetition [*N], [*N:M], [+], [*] (IEEE 1800-2023 16.9.2)

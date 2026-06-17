@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 module t (
   input clk
 );
@@ -39,15 +44,10 @@ module t (
   end
 
   // Counts read in final (Postponed) to avoid same-timestep races.
-  // Concrete Verilator counts; cross-checked equal in Questa 2022.3
-  // on the self-clocked equivalent (same CRC stimulus).
-  // Questa: fails_single=17 fails_multi=17
+  // Concrete Verilator counts; Questa: fails_single=17 fails_multi=17
   final begin
-    if (fails_single == 17 && fails_multi == 17) begin
-      $write("*-* All Finished *-*\n");
-    end else begin
-      $write("FAILED fails_single=%0d fails_multi=%0d\n", fails_single, fails_multi);
-      $stop;
-    end
+    `checkd(fails_single, 17);
+    `checkd(fails_multi, 17);
+    $write("*-* All Finished *-*\n");
   end
 endmodule

@@ -2014,9 +2014,7 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
     }
 
-    // Hoist a leading clocking event (IEEE 1800-2023 16.7:
-    // sequence_expr ::= clocking_event sequence_expr) from the sequence body onto
-    // the enclosing assertion clock. Returns true if E_UNSUPPORTED was emitted.
+    // Hoist a leading clocking event (IEEE 1800-2023 16.7):
     bool hoistClockedSeq(AstPropSpec* specp) {
         while (AstSClocked* const clockedp = VN_CAST(specp->propp(), SClocked)) {
             if (specp->sensesp()) {
