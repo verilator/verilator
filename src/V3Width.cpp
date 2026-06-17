@@ -1837,6 +1837,22 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstSClocked* nodep) override {
+        VL_RESTORER(m_underSExpr);
+        m_underSExpr = true;
+        m_hasSExpr = true;
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            // Width each clock expression directly; the senitem chain is hoisted to
+            // the assertion clock by V3AssertNfa, where it is fully processed.
+            for (AstSenItem* senp = nodep->sensesp(); senp;
+                 senp = VN_CAST(senp->nextp(), SenItem)) {
+                userIterateAndNext(senp->sensp(), WidthVP{SELF, BOTH}.p());
+            }
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstURandomRange* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

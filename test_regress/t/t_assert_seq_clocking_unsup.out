@@ -1,0 +1,30 @@
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:15:5: Unsupported: multiclocked sequence or property
+                                                        : ... note: In instance 't'
+   15 |     @(posedge clk) a;
+      |     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:19:5: Unsupported: clocking event inside sequence expression
+                                                        : ... note: In instance 't'
+   19 |     @(posedge clk) b;
+      |     ^
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:23:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
+                                                        : ... note: In instance 't'
+   23 |     @clk a;
+      |     ^
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:27:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
+                                                        : ... note: In instance 't'
+   27 |     @clk a
+      |     ^
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:32:3: Unsupported: Unclocked assertion
+                                                        : ... note: In instance 't'
+   32 |   assert property (s_nest ##1 a);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:33:3: Unsupported: Unclocked assertion
+                                                        : ... note: In instance 't'
+   33 |   assert property (s_level);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:34:3: Unsupported: Unclocked assertion
+                                                        : ... note: In instance 't'
+   34 |   assert property (s_level2);
+      |   ^~~~~~
+%Error: Exiting due to

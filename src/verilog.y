@@ -6673,6 +6673,12 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
         |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
         |       sexpr                                   { $$ = $1; }
         |       sexpr ';'                               { $$ = $1; }
+        //                      // IEEE: clocking_event sequence_expr (16.7)
+        //                      // A leading clocking event on a named sequence body.
+        |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
+        |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
+        |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
+        |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec

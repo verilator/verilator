@@ -286,6 +286,14 @@ module t (/*AUTOARG*/
     release sum;
   end
 
+  // verilog_format: off  // verible does not support clocking events inside sequence declarations
+  sequence s_clocked;
+    @(posedge clk) in
+  endsequence
+  // verilog_format: on
+
+  assert_seq_clocked: assert property (s_clocked);
+
   property p;
     @(posedge clk) ##1 sum[0]
   endproperty
