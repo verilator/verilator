@@ -3070,6 +3070,8 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<AstClass*, AstVar*>
         m_staticConstraintModeVars;  // Static constraint mode vars per class
     std::map<AstClass*, AstVar*> m_staticRandModeVars;  // Static rand mode vars per class
+    std::map<AstClass*, std::pair<bool, bool>>
+        m_prePostWrap;  // Per-handle-type pre/post virtual wrapper presence
 
     // METHODS
     // Check if two nodes are semantically equivalent (not pointer equality):
@@ -3762,11 +3764,79 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    void addPrePostCall(AstClass* const classp, AstFunc* const funcp, const string& name) {
+    void addPrePostCall(AstClass* const classp, AstNodeFTask* const funcp, const string& name) {
         if (AstTask* const userFuncp = findPrePostTask(classp, name)) {
             AstTaskRef* const callp = new AstTaskRef{userFuncp->fileline(), userFuncp};
             funcp->addStmtsp(callp->makeStmt());
         }
+    }
+    static bool isSubclassOf(AstClass* classp, const AstClass* const basep) {
+        for (AstClass* cp = classp; cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
+            if (cp == basep) return true;
+        }
+        return false;
+    }
+    // Per-class virtual wrapper that invokes the class's effective
+    // pre_randomize/post_randomize. IEEE 1800-2023 18.6.2: pre_randomize and
+    // post_randomize "appear to behave as virtual methods" because randomize()
+    // is virtual. The inline `randomize() with` path builds a non-virtual
+    // function on the static handle type, so it dispatches pre/post through
+    // this wrapper to reach the dynamic type's override.
+    AstTask* getCreatePrePostCallback(AstClass* const classp, const string& which) {
+        const string name = "__V" + which;
+        if (AstTask* const existingp = VN_CAST(m_memberMap.findMember(classp, name), Task)) {
+            return existingp;
+        }
+        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
+        taskp->classMethod(true);
+        taskp->isVirtual(classp->isExtended());
+        classp->addMembersp(taskp);
+        m_memberMap.insert(classp, taskp);
+        addPrePostCall(classp, taskp, which);
+        return taskp;
+    }
+    // Build the virtual pre/post wrappers across classp's whole hierarchy so a
+    // `randomize() with` through a base handle dispatches to a derived
+    // override. Returns whether a pre/post wrapper exists anywhere in the
+    // hierarchy (cached per static handle type).
+    std::pair<bool, bool> buildPrePostVirtualWrappers(AstClass* const classp) {
+        const auto cachedIt = m_prePostWrap.find(classp);
+        if (cachedIt != m_prePostWrap.end()) return cachedIt->second;
+        std::vector<AstClass*> hierp{classp};
+        v3Global.rootp()->foreach([&](AstClass* subp) {
+            if (subp != classp && isSubclassOf(subp, classp)) hierp.push_back(subp);
+        });
+        bool hasPre = false;
+        bool hasPost = false;
+        for (AstClass* const cp : hierp) {
+            if (findPrePostTask(cp, "pre_randomize")) {
+                getCreatePrePostCallback(cp, "pre_randomize");
+                hasPre = true;
+            }
+            if (findPrePostTask(cp, "post_randomize")) {
+                getCreatePrePostCallback(cp, "post_randomize");
+                hasPost = true;
+            }
+        }
+        // Ensure the static handle type owns the slot whenever a subclass
+        // overrides, so the virtual call resolves on a base handle.
+        if (hasPre) getCreatePrePostCallback(classp, "pre_randomize");
+        if (hasPost) getCreatePrePostCallback(classp, "post_randomize");
+        const std::pair<bool, bool> result{hasPre, hasPost};
+        m_prePostWrap.emplace(classp, result);
+        return result;
+    }
+    void addVirtualPrePostCall(AstFunc* const randomizeFuncp, AstClass* const classp,
+                               const string& which) {
+        FileLine* const fl = classp->fileline();
+        AstTask* const wrapperp = getCreatePrePostCallback(classp, which);
+        AstClassRefDType* const refDTypep = new AstClassRefDType{fl, classp, nullptr};
+        v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
+        AstMethodCall* const callp
+            = new AstMethodCall{fl, new AstThisRef{fl, refDTypep}, wrapperp->name(), nullptr};
+        callp->taskp(wrapperp);
+        callp->dtypeSetVoid();
+        randomizeFuncp->addStmtsp(callp->makeStmt());
     }
     // Check if a class (including inherited members) has any rand class-type members
     bool classHasRandClassMembers(AstClass* classp) {
@@ -5171,7 +5241,17 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const randomizeFuncp = V3Randomize::newRandomizeFunc(
             m_memberMap, classp, m_inlineUniqueNames.get(nodep), false);
 
-        addPrePostCall(classp, randomizeFuncp, "pre_randomize");
+        // A base-handle `randomize() with` must still reach a derived
+        // pre/post_randomize. Route them through per-class virtual wrappers
+        // when the static handle type participates in inheritance.
+        const std::pair<bool, bool> prePostWrap = classp->isExtended()
+                                                      ? buildPrePostVirtualWrappers(classp)
+                                                      : std::pair<bool, bool>{false, false};
+        if (prePostWrap.first) {
+            addVirtualPrePostCall(randomizeFuncp, classp, "pre_randomize");
+        } else {
+            addPrePostCall(classp, randomizeFuncp, "pre_randomize");
+        }
 
         // Call nested pre_randomize on rand class-type members (IEEE 18.4.1)
         if (classHasRandClassMembers(classp)) {
@@ -5333,7 +5413,11 @@ class RandomizeVisitor final : public VNVisitor {
             randomizeFuncp->addStmtsp((new AstTaskRef{nodep->fileline(), postTaskp})->makeStmt());
         }
 
-        addPrePostCall(classp, randomizeFuncp, "post_randomize");
+        if (prePostWrap.second) {
+            addVirtualPrePostCall(randomizeFuncp, classp, "post_randomize");
+        } else {
+            addPrePostCall(classp, randomizeFuncp, "post_randomize");
+        }
 
         // Replace the node with a call to that function
         nodep->name(randomizeFuncp->name());
