@@ -1,22 +1,22 @@
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_bad.v:15:5: Unsupported: multiclocked sequence or property
-                                                      : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:15:5: Unsupported: multiclocked sequence or property
+                                                        : ... note: In instance 't'
    15 |     @(posedge clk) a;
       |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_bad.v:19:5: Unsupported: clocking event inside sequence expression
-                                                      : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:19:5: Unsupported: clocking event inside sequence expression
+                                                        : ... note: In instance 't'
    19 |     @(posedge clk) b;
       |     ^
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_bad.v:23:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
-                                                      : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:23:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
+                                                        : ... note: In instance 't'
    23 |     @clk a;
       |     ^
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_bad.v:30:3: Unsupported: Unclocked assertion
-                                                      : ... note: In instance 't'
-   30 |   assert property (s_nest ##1 a);
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:28:3: Unsupported: Unclocked assertion
+                                                        : ... note: In instance 't'
+   28 |   assert property (s_nest ##1 a);
       |   ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_bad.v:33:3: Unsupported: Unclocked assertion
-                                                      : ... note: In instance 't'
-   33 |   assert property (s_level);
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:29:3: Unsupported: Unclocked assertion
+                                                        : ... note: In instance 't'
+   29 |   assert property (s_level);
       |   ^~~~~~
 %Error: Exiting due to
