@@ -83,6 +83,17 @@ module t;
     byte tail;
   } packed_union_struct_t;
 
+  localparam int WORD_WIDTH = 16;
+
+  typedef union packed {
+    struct packed {
+      logic [15:0] temp_1;
+      logic [15:0] temp_2;
+      logic [15:0] temp_3;
+    } regs;
+    logic [($bits(regs) / WORD_WIDTH)-1:0][WORD_WIDTH-1:0] words;
+  } issue_4521_union_t;
+
   simple_t simple;
   simple_t simple_out;
   simple_t simple_cont_out;
@@ -106,6 +117,7 @@ module t;
   real_struct_t real_struct_out;
   packed_union_struct_t packed_union_struct;
   packed_union_struct_t packed_union_struct_out;
+  issue_4521_union_t issue_4521_union;
 
   logic [19:0] simple_bits;
   logic [31:0] wide_simple_bits;
@@ -348,6 +360,16 @@ module t;
     {>>{packed_union_struct_out}} = 16'hcafe;
     `checkh(packed_union_struct_out.u.byte_data, 8'hca);
     `checkh(packed_union_struct_out.tail, 8'hfe);
+
+    `checkh($bits(issue_4521_union_t), 48);
+    `checkh($bits(issue_4521_union.regs), 48);
+    `checkh($bits(issue_4521_union.words), 48);
+    issue_4521_union.regs.temp_1 = 16'h1234;
+    issue_4521_union.regs.temp_2 = 16'h5678;
+    issue_4521_union.regs.temp_3 = 16'h9abc;
+    `checkh(issue_4521_union.words[2], 16'h1234);
+    `checkh(issue_4521_union.words[1], 16'h5678);
+    `checkh(issue_4521_union.words[0], 16'h9abc);
 
     $write("*-* All Finished *-*\n");
     $finish;
