@@ -4,6 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
+
 module t (  /*AUTOARG*/);
   logic clk = 0;
   int imm_fails = 0, conc_fails = 0;
@@ -37,12 +43,14 @@ module t (  /*AUTOARG*/);
     $assertcontrol(2);  // Unlock
     $assertcontrol(4, 2);  // Off, assertion_type = SIMPLE_IMMEDIATE only
     #20;  // t=50: edges @35,@45 -> imm off, conc still on
-    // Phase D: non-constant control_type re-enables the immediate assertion.
-    ctl = 3;  // On
-    $assertcontrol(ctl, 2);  // non-const On, SIMPLE_IMMEDIATE
+    // Phase D: non-constant control_type and assertion_type re-enable the immediate.
+    ctl = `no_optimize(3);  // On
+    $assertcontrol(ctl, `no_optimize(2));  // non-const On, SIMPLE_IMMEDIATE
     #20;  // t=70: edges @55,@65 -> both on
-    // Phase E: off everything.
+    // Phase E: off everything, then a non-const action-control code (no runtime effect).
     $assertcontrol(4);  // Off all
+    ctl = `no_optimize(7);  // Pass_Off (IEEE 1800-2023 Table 20-5 action control)
+    $assertcontrol(ctl);  // non-const action-control: evaluated at runtime, ignored
     #30;  // t=100: edges @75,@85,@95 -> none
     $finish;
   end
