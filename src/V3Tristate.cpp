@@ -352,7 +352,9 @@ class TristatePinVisitor final : public TristateBaseVisitor {
     TristateGraph& m_tgraph;
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
-    void visit(AstVarRef* nodep) override {
+    // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an
+    // interface (.pin(iface.net)) is an AstVarXRef and needs the same access flip.
+    void visit(AstNodeVarRef* nodep) override {
         UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access flip");
         if (m_lvalue && !nodep->access().isWriteOrRW()) {
             UINFO(9, "  Flip-to-LValue " << nodep);
@@ -405,6 +407,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     struct AuxAstVar final {
         AstPull* pullp = nullptr;  // pullup/pulldown direction (whole variable)
         AstVar* outVarp = nullptr;  // output __out var
+        bool ifaceTristate = false;  // Interface var known to be tristate (set when the
+                                     // interface module is processed). Lets a module that
+                                     // drives this var across hierarchy with a plain (non-Z)
+                                     // assign be recognised as a tristate contributor even
+                                     // though that module's own graph has no Z on the net.
         std::unordered_map<int, int>
             bitPulls;  // Per-bit pull: bit_index -> direction (1=up, 0=down)
     };
@@ -780,7 +787,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                 } else if (VN_IS(nodep, Iface) && !invarp->isIO()) {
                     // Local driver in an interface module - use contribution mechanism
-                    // so it can be combined with any external drivers later
+                    // so it can be combined with any external drivers later. Record that
+                    // this interface net is tristate, so a module that drives it across
+                    // hierarchy with a plain (non-Z) assign is also routed through the
+                    // contribution mechanism (its own graph has no Z to mark it tristate).
+                    m_varAux(invarp).ifaceTristate = true;
                     insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);
                 } else {
                     insertTristatesSignal(nodep, invarp, refsp, false, "", "", nullptr);
@@ -2080,6 +2091,14 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
+            // A plain (non-Z) cross-hierarchy driver of an interface net that is tristate
+            // must be treated as tristate here too, so it is collected as a contribution
+            // and combined with the interface's own drivers (otherwise it is silently
+            // dropped and the net resolves using only the interface-internal Z driver).
+            if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
+                && m_varAux(nodep->varp()).ifaceTristate) {
+                m_tgraph.setTristate(nodep->varp());
+            }
         } else {
             if (nodep->user2() & U2_NONGRAPH) return;  // Processed
             nodep->user2Or(U2_NONGRAPH);
@@ -2296,7 +2315,24 @@ public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clearAndCheck();
-        iterateChildrenBackwardsConst(netlistp);
+        // Process interface modules before any other module, so that interface tristate
+        // nets are recorded (AuxAstVar::ifaceTristate) before the modules that drive them
+        // across hierarchy are processed. A module driving an interface tristate net with a
+        // plain (non-Z) assign has no Z in its own graph to mark the net tristate, so without
+        // this ordering its driver would be silently dropped. Only modulesp() carries tristate
+        // logic (filesp/miscsp do not), so restricting the walk to it drops nothing versus the
+        // historical iterateChildrenBackwardsConst(); iterate each group in reverse declaration
+        // order to match that order.
+        std::vector<AstNodeModule*> modps;
+        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+            modps.push_back(VN_AS(modp, NodeModule));
+        }
+        for (auto it = modps.rbegin(); it != modps.rend(); ++it) {
+            if (VN_IS(*it, Iface)) iterate(*it);
+        }
+        for (auto it = modps.rbegin(); it != modps.rend(); ++it) {
+            if (!VN_IS(*it, Iface)) iterate(*it);
+        }
 
         // Combine interface tristate contributions after all modules processed
         combineIfaceContribs();
