@@ -1629,6 +1629,7 @@ AstConstPool::AstConstPool(FileLine* fl)
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
     AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
+    varp->setConstPoolEntry();
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
@@ -1746,6 +1747,17 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     AstVarScope* const varScopep = createNewEntry(name, initp);
     m_consts.emplace(hash.value(), varScopep);
     return varScopep;
+}
+
+void AstConstPool::reCache() {
+    m_tables.clear();
+    m_consts.clear();
+    for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
+        AstNode* const valuep = vscp->varp()->valuep();
+        const V3Hash hash = V3Hasher::uncachedHash(valuep);
+        if (VN_IS(valuep, InitArray)) m_tables.emplace(hash.value(), vscp);
+        if (VN_IS(valuep, Const)) m_consts.emplace(hash.value(), vscp);
+    }
 }
 
 //======================================================================
@@ -3198,6 +3210,7 @@ int AstVarRef::instrCount() const {
 }
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (constPoolEntry()) str << " [CONSTPOOL]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3239,6 +3252,7 @@ void AstVar::dump(std::ostream& str) const {
 void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, constPoolEntry);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);
