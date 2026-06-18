@@ -32,7 +32,7 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 5) 1 ##1 0)
     else post_temporal_fail++;
 
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     cyc <= cyc + 1;
     rst <= cyc < 4;
     x <= cyc < 4;
