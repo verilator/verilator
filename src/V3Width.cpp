@@ -4782,6 +4782,15 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallIfaceRef(AstMethodCall* nodep, AstIfaceRefDType* adtypep) {
         AstIface* const ifacep = adtypep->ifacep();
+        if (!ifacep) {
+            // A sub-interface reached through a virtual interface handle has a
+            // ref dtype with cellp set but ifacep null; the per-instance binding
+            // is not modelled, so the call cannot be resolved to one instance.
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: method call on a sub-interface "
+                                         "accessed through a virtual interface");
+            nodep->dtypeSetVoid();
+            return;
+        }
         UINFO(5, __FUNCTION__ << ":" << nodep);
         if (AstNodeFTask* const ftaskp
             = VN_CAST(m_memberMap.findMember(ifacep, nodep->name()), NodeFTask)) {
