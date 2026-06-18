@@ -3770,12 +3770,6 @@ class RandomizeVisitor final : public VNVisitor {
             funcp->addStmtsp(callp->makeStmt());
         }
     }
-    static bool isSubclassOf(AstClass* classp, const AstClass* const basep) {
-        for (AstClass* cp = classp; cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            if (cp == basep) return true;
-        }
-        return false;
-    }
     // Per-class virtual wrapper that invokes the class's effective
     // pre_randomize/post_randomize. IEEE 1800-2023 18.6.2: pre_randomize and
     // post_randomize "appear to behave as virtual methods" because randomize()
@@ -3804,7 +3798,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (cachedIt != m_prePostWrap.end()) return cachedIt->second;
         std::vector<AstClass*> hierp{classp};
         v3Global.rootp()->foreach([&](AstClass* subp) {
-            if (subp != classp && isSubclassOf(subp, classp)) hierp.push_back(subp);
+            if (subp != classp && AstClass::isClassExtendedFrom(subp, classp)) hierp.push_back(subp);
         });
         bool hasPre = false;
         bool hasPost = false;

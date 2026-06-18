@@ -72,7 +72,7 @@ module t;
     b = d;
     ok = b.randomize() with {a == 8'h3c;};
     `checkd(ok, 1);
-    `checkd(d.a, 8'h3c);
+    `checkd(b.a, 8'h3c);
     `checkd(d.m_pre, 8'd10);
     `checkd(d.m_post, 8'h3d);
 
