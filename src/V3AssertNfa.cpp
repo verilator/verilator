@@ -78,6 +78,10 @@ public:
     AstNodeExpr* m_andRhsCondp = nullptr;  // OWNED; RHS final condition (may be nullptr)
     // Reject sink for SAnd rejectOnFail wiring; not a state-signal source
     bool m_isRejectSink = false;
+    // In-window vertex of a strong s_always[m:n]: if its state is still set at
+    // end-of-simulation the universal-quantifier window never completed, which is
+    // a liveness failure (IEEE 1800-2023 16.12.11 strong semantics).
+    bool m_strongPending = false;
 
     // CONSTRUCTORS
     explicit SvaStateVertex(V3Graph* graphp)
@@ -206,6 +210,7 @@ class SvaNfaBuilder final {
     // (IEEE 1800-2023 16.12.14 outer-wraps-inner).
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
+    bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
@@ -348,6 +353,7 @@ class SvaNfaBuilder final {
             vtxp->m_throughoutConds.push_back(cp->cloneTreePure(false));
         }
         if (m_inUnboundedScope) vtxp->m_isUnbounded = true;
+        if (m_markStrongPending) vtxp->m_strongPending = true;
         return vtxp;
     }
 
@@ -673,10 +679,37 @@ class SvaNfaBuilder final {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const propp = nodep->propp();
         const int lo = getConstInt(nodep->loBoundp());
+        if (VN_IS(nodep->hiBoundp(), Unbounded)) {
+            // Weak always [lo:$]: unbounded upper bound (IEEE 1800-2023 16.12.11).
+            // p must hold at every clock tick at least lo cycles after the attempt
+            // start; those ticks are not required to exist, so there is no
+            // end-of-trace obligation (weak). The self-loop keeps the attempt live
+            // every cycle; each observed cycle is a safety obligation, so a false p
+            // rejects immediately.
+            UASSERT_OBJ(!nodep->isStrong() && lo >= 0, nodep,
+                        "Unbounded always must be weak with non-negative lo (V3Width)");
+            SvaStateVertex* const livep = addDelayChain(entryVtxp, lo, flp);
+            livep->m_isUnbounded = true;
+            guardedEdge(livep, livep, flp);  // stay active every subsequent cycle
+            SvaStateVertex* const sinkp = m_graph.createStateVertex();
+            sinkp->m_isRejectSink = true;
+            SvaTransEdge* const rejEdgep
+                = guardedLink(livep, sinkp, sampled(propp->cloneTreePure(false)), flp);
+            if (isTopLevelStep) rejEdgep->m_rejectOnFail = true;
+            return {livep, nullptr, {}};
+        }
         const int hi = getConstInt(nodep->hiBoundp());
         UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
         if (exceedsAssertUnrollLimit(nodep, hi - lo + 1)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(propp, flp, hi - lo + 1);
+        // Strong s_always[m:n]: mark every in-window registered vertex so an
+        // attempt still mid-window at end-of-simulation is reported as a liveness
+        // failure (IEEE strong: the n+1 ticks must exist). An attempt that has
+        // completed earlier in the trace has already cleared its state, so it is
+        // not flagged; an attempt whose final tick coincides with $finish is still
+        // flagged, matching the strong reference. Weak always[m:n] is not marked.
+        VL_RESTORER(m_markStrongPending);
+        m_markStrongPending = nodep->isStrong();
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
         for (int k = 0; k <= hi - lo; ++k) {
             if (k > 0) {
@@ -1884,6 +1917,33 @@ public:
         AstNodeExpr* const resultp = assembleResult(
             flp, isCover, negated, matchCondp, sigs.terminalActivep, sigs.rejectBasep,
             sigs.throughoutRejectp, sigs.requiredStepRejectp, outMatchpp);
+
+        // Strong s_always[m:n] end-of-simulation liveness: if any in-window state
+        // is still set at $finish, the universal-quantifier window never completed
+        // (IEEE 1800-2023 16.12.11 strong semantics). Fire the assertion failure
+        // from a final block; V3Assert turns the DT_ERROR display into the standard
+        // "Assertion failed in %m" message.
+        AstNodeExpr* pendingp = nullptr;
+        for (int i = 0; i < N; ++i) {
+            if (!vtx[i]->m_strongPending || !vtx[i]->datap()->stateVarp) continue;
+            AstNodeExpr* const svp = new AstVarRef{flp, vtx[i]->datap()->stateVarp, VAccess::READ};
+            if (!pendingp) {
+                pendingp = svp;
+            } else {
+                pendingp = new AstLogOr{flp, pendingp, svp};
+            }
+        }
+        if (pendingp) {
+            AstCExpr* const assertOnp
+                = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
+            AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
+            AstDisplay* const dispp
+                = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
+            dispp->fmtp()->timeunit(m_modp->timeunit());
+            AstNodeStmt* const firep = dispp;
+            if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+            m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
+        }
 
         // Clear userp on every vertex before vertexData unique_ptrs are destroyed.
         for (int i = 0; i < N; ++i) vtx[i]->userp(nullptr);

@@ -1563,33 +1563,39 @@ class WidthVisitor final : public VNVisitor {
             }
             const bool loUnbounded = VN_IS(nodep->loBoundp(), Unbounded);
             const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
-            if (loUnbounded || hiUnbounded) {
-                if (nodep->isStrong()) {
-                    nodep->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
-                } else {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: unbounded always range (always [m:$])");
-                }
+            // Strong always must be bounded (IEEE 1800-2023 16.12.11: "the range
+            // for a strong always shall be bounded"). Weak always [m:$] is legal:
+            // an unbounded upper bound imposes no end-of-trace obligation.
+            if (nodep->isStrong() && (loUnbounded || hiUnbounded)) {
+                AstNode* const boundp = loUnbounded ? nodep->loBoundp() : nodep->hiBoundp();
+                boundp->v3error("s_always range must be bounded (IEEE 1800-2023 16.12.11)");
+                nodep->dtypeSetBit();
+                return;
+            }
+            if (loUnbounded) {
+                // Only the high bound may be $ (cycle_delay_const_range_expression).
+                nodep->loBoundp()->v3error("always range low bound must be a constant expression"
+                                           " (IEEE 1800-2023 16.12.11)");
                 nodep->dtypeSetBit();
                 return;
             }
             const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
             const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
             if (!loConstp) {
-                nodep->v3error("always range low bound must be a constant expression"
-                               " (IEEE 1800-2023 16.12.11)");
+                nodep->loBoundp()->v3error("always range low bound must be a constant expression"
+                                           " (IEEE 1800-2023 16.12.11)");
             }
-            if (!hiConstp) {
-                nodep->v3error("always range high bound must be a constant expression"
-                               " (IEEE 1800-2023 16.12.11)");
+            if (!hiUnbounded && !hiConstp) {
+                nodep->hiBoundp()->v3error("always range high bound must be a constant expression"
+                                           " (IEEE 1800-2023 16.12.11)");
             }
             if (loConstp && loConstp->toSInt() < 0) {
-                nodep->v3error("always range low bound must be non-negative"
-                               " (IEEE 1800-2023 16.12.11)");
+                nodep->loBoundp()->v3error("always range low bound must be non-negative"
+                                           " (IEEE 1800-2023 16.12.11)");
             }
-            if (loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
-                nodep->v3error("always range high bound must be >= low bound"
-                               " (IEEE 1800-2023 16.12.11)");
+            if (!hiUnbounded && loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
+                nodep->hiBoundp()->v3error("always range high bound must be >= low bound"
+                                           " (IEEE 1800-2023 16.12.11)");
             }
             bool hasPropertyOp = propp->isMultiCycleSva();
             if (!hasPropertyOp) {
