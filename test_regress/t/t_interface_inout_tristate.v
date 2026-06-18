@@ -7,6 +7,11 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
 // verilog_format: on
 
 // verilator lint_off MULTIDRIVEN
@@ -42,20 +47,23 @@ module t;
 
   initial begin
     // dut drives the interface net through the inout port.
-    oe = 1;
-    val = 8'hA5;
-    top_oe = 0;
-    topval = 8'h00;
-    #1 `checkh(ifc0.data, 8'hA5);
+    oe = `no_optimize(1'b1);
+    val = `no_optimize(8'hA5);
+    top_oe = `no_optimize(1'b0);
+    topval = `no_optimize(8'h00);
+    #1;
+    `checkh(ifc0.data, 8'hA5);
     // top drives, dut releases.
-    oe = 0;
-    top_oe = 1;
-    topval = 8'h3C;
-    #1 `checkh(ifc0.data, 8'h3C);
+    oe = `no_optimize(1'b0);
+    top_oe = `no_optimize(1'b1);
+    topval = `no_optimize(8'h3C);
+    #1;
+    `checkh(ifc0.data, 8'h3C);
     // Neither drives: net floats to Z.
-    oe = 0;
-    top_oe = 0;
-    #1 `checkh(ifc0.data, 8'hzz);
+    oe = `no_optimize(1'b0);
+    top_oe = `no_optimize(1'b0);
+    #1;
+    `checkh(ifc0.data, 8'hzz);
     $write("*-* All Finished *-*\n");
     $finish;
   end

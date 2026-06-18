@@ -446,6 +446,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
     bool m_inAlias = false;  // Inside alias statement
+    bool m_processedIfaces = false;  // Interface modules already processed (interfaces-first pass)
     VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
                                                       // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
@@ -2094,10 +2095,11 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
-            // A plain (non-Z) cross-hierarchy driver of an interface net that is tristate
-            // must be treated as tristate here too, so it is collected as a contribution
-            // and combined with the interface's own drivers (otherwise it is silently
-            // dropped and the net resolves using only the interface-internal Z driver).
+            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
+            // driver has no Z in its own module's graph, so mark the net tristate here to
+            // collect the driver as a contribution. The ifaceTristate flag is only set for
+            // interface nets; a non-interface cross-module tri driver does nothing here and
+            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
             if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
                 && m_varAux(nodep->varp()).ifaceTristate) {
                 m_tgraph.setTristate(nodep->varp());
@@ -2182,6 +2184,9 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstNodeModule* nodep) override {
+        // Interfaces are processed first in the constructor; skip the duplicate visit
+        // during the later iterateChildrenBackwardsConst() pass over all modules.
+        if (m_processedIfaces && VN_IS(nodep, Iface)) return;
         UINFO(8, dbgState() << nodep);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_graphing);
@@ -2318,24 +2323,19 @@ public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clearAndCheck();
-        // Process interface modules before any other module, so that interface tristate
-        // nets are recorded (AuxAstVar::ifaceTristate) before the modules that drive them
-        // across hierarchy are processed. A module driving an interface tristate net with a
-        // plain (non-Z) assign has no Z in its own graph to mark the net tristate, so without
-        // this ordering its driver would be silently dropped. Only modulesp() carries tristate
-        // logic (filesp/miscsp do not), so restricting the walk to it drops nothing versus the
-        // historical iterateChildrenBackwardsConst(); iterate each group in reverse declaration
-        // order to match that order.
-        std::vector<AstNodeModule*> modps;
+        // Process interface modules first, so an interface tristate net is recorded
+        // (AuxAstVar::ifaceTristate) before any module that drives it across hierarchy is
+        // graphed. A module driving such a net with a plain (non-Z) assign has no Z in its
+        // own graph to mark the net tristate, so without this its driver would be dropped.
+        // Collect only the interfaces (reverse declaration order to match the pass below).
+        std::vector<AstNodeModule*> ifacesp;
         for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
-            modps.push_back(VN_AS(modp, NodeModule));
+            if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
         }
-        for (auto it = modps.rbegin(); it != modps.rend(); ++it) {
-            if (VN_IS(*it, Iface)) iterate(*it);
-        }
-        for (auto it = modps.rbegin(); it != modps.rend(); ++it) {
-            if (!VN_IS(*it, Iface)) iterate(*it);
-        }
+        for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);
+        m_processedIfaces = true;
+        // Then the rest in the historical order; interfaces are skipped (already done).
+        iterateChildrenBackwardsConst(netlistp);
 
         // Combine interface tristate contributions after all modules processed
         combineIfaceContribs();

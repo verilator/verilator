@@ -7,6 +7,11 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
 // verilog_format: on
 
 // verilator lint_off MULTIDRIVEN
@@ -14,10 +19,12 @@
 interface ifc;
   wire [1:0] w;
   // Self-contained interface-internal tristate driver: 'z while en==0, so any
-  // external driver must win the net resolution.
-  bit en = 0;
+  // external driver must win the net resolution. no_optimize keeps the driver
+  // values from being constant-folded, so the resolution runs at run time.
+  logic en;
   logic [1:0] wint;
-  assign wint = 2'b11;
+  assign en = `no_optimize(1'b0);
+  assign wint = `no_optimize(2'b11);
   assign w = en ? wint : 2'bzz;
   // Read the resolved net from inside the interface (a consumer's view), so the
   // check sees the true resolution, not the driving module's own local copy.
@@ -66,10 +73,10 @@ module t;
   ifc_tri u_e ();
 
   logic [1:0] va, vb, vc, ve;
-  assign va = 2'b01;
-  assign vb = 2'b10;
-  assign vc = 2'b11;
-  assign ve = 2'b01;
+  assign va = `no_optimize(2'b01);
+  assign vb = `no_optimize(2'b10);
+  assign vc = `no_optimize(2'b11);
+  assign ve = `no_optimize(2'b01);
 
   assign u_a.w = va;  // plain top-level driver
   assign u_b.w = vb;  // plain top-level driver
