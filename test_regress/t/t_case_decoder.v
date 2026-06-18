@@ -444,6 +444,22 @@ module t;
   assign accept_j_ref = cyc[4:0] == 5'd1 ? 6'd1 : cyc[4:0] == 5'd2 ? 6'd2
                       : cyc[4:0] == 5'd3 ? 6'd3 : ~6'd0;
 
+  // Accept K: Will constant fold after converting to decoder
+  wire [23:0] accept_k_in;
+  logic [5:0] accept_k_out, accept_k_ref;
+  always_ff @(posedge clk) begin
+    accept_k_out <= '1;
+    casez (accept_k_in)
+      24'b????????_????????_???????1 : accept_k_out <= 6'd0;
+      24'b????????_????????_??????1? : accept_k_out <= 6'd1;
+      24'b????????_????????_?????1?? : accept_k_out <= 6'd2;
+      24'b????????_????????_????1??? : accept_k_out <= 6'd3;
+    endcase
+  end
+  always_ff @(posedge clk)
+    accept_k_ref <= 6'd2;
+  assign accept_k_in = 24'b100;
+
   // The cases below are intentionally NOT converted to a decoder.
 
   // Reject A: too few conditions to be worth the indexed load.
@@ -495,6 +511,7 @@ module t;
     `checkh(accept_i_out_0, accept_i_ref_0);
     `checkh(accept_i_out_1, accept_i_ref_1);
     `checkh(accept_j_out, accept_j_ref);
+    `checkh(accept_k_out, accept_k_ref);
     `checkh(reject_a_out, reject_a_ref);
     `checkh(reject_b_out, reject_b_ref);
 

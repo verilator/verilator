@@ -232,9 +232,9 @@ class CleanVisitor final : public VNVisitor {
         ensureClean(nodep->rhsp());
         setClean(nodep, true);
     }
-    void visit(AstDecoder* nodep) override {
+    void visit(AstMatchMasked* nodep) override {
         iterateChildren(nodep);
-        ensureClean(nodep->indexp());
+        ensureClean(nodep->lhsp());
         setClean(nodep, true);
     }
     void visit(AstSel* nodep) override {

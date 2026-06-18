@@ -546,6 +546,26 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
 
 string AstConstraintRef::name() const { return constrp()->name(); }
 
+uint32_t AstMatchMasked::fold(const V3Number& lhs, AstVar* matchVarp) {
+    const V3Number& numTable = VN_AS(matchVarp->valuep(), Const)->num();
+    V3Number numMask{matchVarp, lhs.width(), 0};
+    V3Number numBits{matchVarp, lhs.width(), 0};
+    V3Number numAnd{matchVarp, lhs.width(), 0};
+    const int width = lhs.width();
+    const int entryWidth = VL_WORDS_I(width) * VL_EDATASIZE;
+    uint32_t i = 0;
+    while (true) {
+        const int lsb = 2 * i * entryWidth;
+        const int msb = lsb + width - 1;
+        numMask.opSel(numTable, msb, lsb);
+        numBits.opSel(numTable, msb + entryWidth, lsb + entryWidth);
+        numAnd.opAnd(numMask, lhs);
+        if (numAnd.isCaseEq(numBits)) break;
+        ++i;
+    }
+    return i;
+}
+
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}

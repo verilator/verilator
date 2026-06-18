@@ -15,6 +15,6 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute()
 
-test.file_grep(test.stats, r'Optimizations, Cases decoder\s+(\d+)', 16)
+test.file_grep(test.stats, r'Optimizations, Cases decoder\s+(\d+)', 17)
 
 test.passes()

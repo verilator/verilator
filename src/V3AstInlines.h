@@ -163,11 +163,11 @@ bool AstVar::sameNode(const AstNode* samep) const {
     return m_name == asamep->m_name && varType() == asamep->varType();
 }
 
-AstDecoder::AstDecoder(FileLine* fl, AstNodeExpr* indexp, AstVarScope* matchp, AstVarScope* valuep)
-    : ASTGEN_SUPER_Decoder(fl) {
-    this->indexp(indexp);
+AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)
+    : ASTGEN_SUPER_MatchMasked(fl) {
+    this->lhsp(lhsp);
     this->matchp(new AstVarRef{fl, matchp, VAccess::READ});
-    this->valuep(new AstVarRef{fl, valuep, VAccess::READ});
+    dtypeSetUInt32();
 }
 
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)

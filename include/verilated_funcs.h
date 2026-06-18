@@ -269,20 +269,40 @@ static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_
     return ret;
 }
 
-IData VL_DECODER_II(IData index, WDataInP matchp, WDataInP valuep) VL_PURE;
-QData VL_DECODER_QI(IData index, WDataInP matchp, WDataInP valuep) VL_PURE;
-WDataOutP VL_DECODER_WI(int owords, WDataOutP owp, IData index, WDataInP matchp,
-                        WDataInP valuep) VL_MT_SAFE;
-
-IData VL_DECODER_IQ(QData index, WDataInP matchp, WDataInP valuep) VL_PURE;
-QData VL_DECODER_QQ(QData index, WDataInP matchp, WDataInP valuep) VL_PURE;
-WDataOutP VL_DECODER_WQ(int owords, WDataOutP owp, QData index, WDataInP matchp,
-                        WDataInP valuep) VL_MT_SAFE;
-
-IData VL_DECODER_IW(int iwords, WDataInP indexp, WDataInP matchp, WDataInP valuep) VL_PURE;
-QData VL_DECODER_QW(int iwords, WDataInP indexp, WDataInP matchp, WDataInP valuep) VL_PURE;
-WDataOutP VL_DECODER_WW(int owords, WDataOutP owp, int iwords, WDataInP indexp, WDataInP matchp,
-                        WDataInP valuep) VL_MT_SAFE;
+// Masked match functions
+static inline IData VL_MATCHMASKED_I(int , IData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const IData mask = matchp[i * 2];
+        const IData bits = matchp[i * 2 + 1];
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_Q(int, QData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const QData mask = VL_SET_QW(matchp + i * 4);
+        const QData bits = VL_SET_QW(matchp + i * 4 + 2);
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_W(int lbits, WDataInP lhsp, WDataInP matchp) VL_MT_SAFE {
+    const int iwords = VL_WORDS_I(lbits);
+    size_t i = 0;
+    while (true) {
+        const WDataInP maskp = matchp + (i * iwords * 2);
+        const WDataInP bitsp = matchp + (i * iwords * 2 + iwords);
+        EData diff = 0;
+        for (int j = 0; j < iwords; ++j) diff |= (maskp[j] & lhsp[j]) ^ bitsp[j];
+        if (!diff) break;
+        ++i;
+    }
+    return i;
+}
 
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;

@@ -3020,10 +3020,12 @@ class ConstVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
 
-    void visit(AstDecoder* nodep) override {
+    void visit(AstMatchMasked* nodep) override {
         // Do not iterate the tables, they must be constant pool entries
-        iterate(nodep->indexp());
-        // TODO: constant fold
+        iterate(nodep->lhsp());
+        if (AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
+            replaceNum(nodep, AstMatchMasked::fold(constp->num(), nodep->matchp()->varp()));
+        }
     }
 
     void visit(AstPin* nodep) override { iterateChildren(nodep); }
@@ -3288,7 +3290,8 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
         bool did = false;
-        if (m_doV && !nodep->varp()->constPoolEntry() && nodep->varp()->valuep() && !m_attrp) {
+        if (m_doV && (!nodep->varp()->constPoolEntry() || m_selp) && nodep->varp()->valuep()
+            && !m_attrp) {
             // UINFOTREE(1, valuep, "", "visitvaref");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();

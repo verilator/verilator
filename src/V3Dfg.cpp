@@ -96,8 +96,8 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }  // LCOV_EXCL_STOP
-        case VDfgType::Decoder: {
-            DfgDecoder* const cp = new DfgDecoder{*clonep, vtx.fileline(), vtx.dtype()};
+        case VDfgType::MatchMasked: {
+            DfgMatchMasked* const cp = new DfgMatchMasked{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
@@ -671,20 +671,19 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(v.srcp()->dtype() == v.dtype().elemDtype(), "Input should be the element type");
         return;
     }
-    case VDfgType::Decoder: {
-        const DfgDecoder& v = *as<DfgDecoder>();
-        CHECK(v.isPacked(), "Should be Packed type");
-        CHECK(v.indexp()->isPacked(), "Index should be Packed type");
-        CHECK(v.matchp()->isPacked(), "Match should be Packed type");
-        CHECK(v.valuep()->isPacked(), "Value should be Packed type");
-        CHECK(v.matchp()->is<DfgVertexVar>(), "Match should be a variable");
-        CHECK(v.matchp()->is<DfgVertexVar>(), "Value should be a variable");
-        return;
-    }
     case VDfgType::Sel: {
         const DfgSel& v = *as<DfgSel>();
         CHECK(v.isPacked(), "Should be Packed type");
         CHECK(v.dtype() == DfgDataType::select(v.srcp()->dtype(), v.lsb(), v.size()), "sel");
+        return;
+    }
+    case VDfgType::MatchMasked: {
+        const DfgMatchMasked& v = *as<DfgMatchMasked>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.size() == 32U, "Should yield a 32-bit result");
+        CHECK(v.lhsp()->isPacked(), "Lhs should be packed");
+        CHECK(v.matchp()->isPacked(), "Match should be Packed type");
+        CHECK(v.matchp()->is<DfgVertexVar>(), "Match should be a variable");
         return;
     }
     case VDfgType::Mux: {

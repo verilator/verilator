@@ -548,7 +548,7 @@ class CaseVisitor final : public VNVisitor {
             return;
         }
 
-        // Can optimize as AstDecoder, no other info needed
+        // Can optimize as AstMatchMasked, no other info needed
     }
 
     // Analyze case statement. Updates 'm_case*' members. Reports warnings.
@@ -816,6 +816,14 @@ class CaseVisitor final : public VNVisitor {
             matchp->num().opSelInto(numZero, entryLsb + matchWidth / 2, condWidth);
         }
 
+        // Create the table initializer
+        AstRange* const rangep = new AstRange{flp, decoderEnries - 1, 0};
+        AstNodeDType* const entryDtypep = nodep->findBitDType(
+            m_caseDecoderEntryWidth, m_caseDecoderEntryWidth, VSigning::UNSIGNED);
+        AstNodeDType* const tableDtypep = new AstUnpackArrayDType{flp, entryDtypep, rangep};
+        v3Global.rootp()->typeTablep()->addTypesp(tableDtypep);
+        AstInitArray* const tablep = new AstInitArray{flp, tableDtypep, nullptr};
+
         // Build a single value table for all LHSs: one entry per clause, packing each LHS's value
         // at its offset. The entry width is the table packing computed by 'analyzeDecoderPattern'
         // Rounded up to a whole EDATA word boundary to avoid bit swizzling at runtime.
@@ -824,6 +832,8 @@ class CaseVisitor final : public VNVisitor {
             = new AstConst{flp, AstConst::WidthedValue{}, decoderEnries * valueWidth, 0};
         for (int i = 0; i < decoderEnries; ++i) {
             AstNode* const stmtsp = clauses[i].second;
+            AstConst* const entryp = new AstConst{flp, AstConst::WidthedValue{},
+                                                  static_cast<int>(m_caseDecoderEntryWidth), 0};
             for (const LhsRecord& lhsRecord : m_caseDecoderRecords) {
                 AstNodeExpr* const lhsp = lhsRecord.lhsp;
                 // Find the value assigned to this LHS in the clause's statements
@@ -840,23 +850,24 @@ class CaseVisitor final : public VNVisitor {
                                 "Decoder LHS unassigned in case item without a pre-default");
                     valConstp = VN_AS(lhsRecord.preDefaultp->rhsp(), Const);
                 }
-                valuep->num().opSelInto(valConstp->num(), i * valueWidth + lhsRecord.offset,
-                                        lhsp->width());
+                entryp->num().opSelInto(valConstp->num(), lhsRecord.offset, lhsp->width());
             }
+            tablep->addIndexValuep(i, entryp);
         }
 
         // Create the tables
         AstVarScope* const matchVscp = v3Global.rootp()->constPoolp()->findConst(matchp, true);
-        AstVarScope* const valueVscp = v3Global.rootp()->constPoolp()->findConst(valuep, true);
+        AstVarScope* const tableVscp = v3Global.rootp()->constPoolp()->findTable(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
-        VL_DO_DANGLING(valuep->deleteTree(), valuep);
+        VL_DO_DANGLING(tablep->deleteTree(), valuep);
 
-        // The decoder produces one packed entry holding every LHS's value
-        AstNodeExpr* const indexp = nodep->exprp()->cloneTreePure(false);
-        AstDecoder* const decoderp = new AstDecoder{flp, indexp, matchVscp, valueVscp};
-        decoderp->dtypeSetLogicSized(m_caseDecoderEntryWidth, VSigning::UNSIGNED);
+        // AstMatchMasked produces the index of the matching entry
+        AstNodeExpr* const tableRefp = new AstVarRef{flp, tableVscp, VAccess::READ};
+        AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
+        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchVscp};
+        AstNodeExpr* const entryp = new AstArraySel{flp, tableRefp, indexp};
 
-        return connectDecoderOutputs(nodep, decoderp, "__VcaseDecoderOut");
+        return connectDecoderOutputs(nodep, entryp, "__VcaseDecoderOut");
     }
 
     // TODO: should return AstNodeStmt after #6280

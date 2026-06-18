@@ -72,7 +72,7 @@ class V3DfgCse final {
         }
 
         // Vertices with no internal information
-        case VDfgType::Decoder:
+        case VDfgType::MatchMasked:
         case VDfgType::Mux:
         case VDfgType::UnitArray: return V3Hash{};
 
@@ -198,7 +198,7 @@ class V3DfgCse final {
         }
 
         // Vertices with no internal information
-        case VDfgType::Decoder:
+        case VDfgType::MatchMasked:
         case VDfgType::Mux:
         case VDfgType::UnitArray: return true;
 

@@ -1328,22 +1328,6 @@ public:
     string emitC() override { return "VL_CVT_UNPACK_TO_Q(%P, %li)"; }
     bool cleanOut() const override { return true; }
 };
-class AstDecoder final : public AstNodeExpr {
-    // This is a non-source construct, created internally to represent
-    // some case statements. It is a '(mask & _) == bits' matching loop
-    // where {mask, bits} pairs are packed into a single array 'matchp',
-    // and the result is the corresponding value from 'valuep' for the
-    // first matching pair. See VL_DECODER_* runtime functions.
-    // @astgen op1 := indexp : AstNodeExpr
-    // @astgen op2 := matchp : AstVarRef
-    // @astgen op3 := valuep : AstVarRef
-public:
-    inline AstDecoder(FileLine* fl, AstNodeExpr* indexp, AstVarScope* matchp, AstVarScope* valuep);
-    ASTGEN_MEMBERS_AstDecoder;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-};
 class AstDist final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := itemsp : List[AstDistItem]
@@ -1870,6 +1854,22 @@ public:
     void name(const string& name) override { m_name = name; }
     bool index() const { return m_index; }
     bool isExprCoverageEligible() const override { return false; }
+};
+class AstMatchMasked final : public AstNodeExpr {
+    // This is a non-source construct, created internally to represent
+    // some case statements. It is a '(mask & _) == bits' matching loop
+    // where {mask, bits} pairs are packed into a single wide 'matchp',
+    // and the result is the index of the first matching entry.
+    // See VL_DECODER_* runtime functions.
+    // @astgen op1 := lhsp : AstNodeExpr
+    // @astgen op2 := matchp : AstVarRef
+public:
+    inline AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp);
+    ASTGEN_MEMBERS_AstMatchMasked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { return "VL_MATCHMASKED_%lq(%lw, %li, %ri)"; }
+    bool cleanOut() const override { return true; }
+    static uint32_t fold(const V3Number& lhs, AstVar* matchVarp);
 };
 class AstMatches final : public AstNodeExpr {
     // "matches" operator: "expr matches pattern"
