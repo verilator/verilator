@@ -3837,9 +3837,8 @@ class WidthVisitor final : public VNVisitor {
                             // instance pointer), not a static instance. Mark the
                             // dtype virtual so a method call on it dispatches per
                             // instance instead of inlining to one fixed scope.
-                            AstIfaceRefDType* const subRefp
-                                = VN_CAST(subDtypep->skipRefp(), IfaceRefDType);
-                            if (subRefp) {
+                            if (AstIfaceRefDType* const subRefp
+                                = VN_CAST(subDtypep->skipRefp(), IfaceRefDType)) {
                                 AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
                                     nodep->fileline(), subRefp->cellName(), subRefp->ifaceName()};
                                 newDtypep->ifacep(subRefp->ifacep());

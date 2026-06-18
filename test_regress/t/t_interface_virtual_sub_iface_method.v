@@ -62,6 +62,9 @@ module t;
     `checkd(oif.m.sub.cnt, 8'd1)
     `checkd(drv.read_a(), 8'd1)
     `checkd(oif.d.val, 8'd99)
+    // Direct (non-virtual) sub-interface method call: covers the non-virtual dtype path.
+    oif.a.bump();
+    `checkd(oif.a.cnt, 8'd2)
     $write("*-* All Finished *-*\n");
     $finish;
   end
