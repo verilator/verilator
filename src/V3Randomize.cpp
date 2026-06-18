@@ -3798,7 +3798,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (cachedIt != m_prePostWrap.end()) return cachedIt->second;
         std::vector<AstClass*> hierp{classp};
         v3Global.rootp()->foreach([&](AstClass* subp) {
-            if (subp != classp && AstClass::isClassExtendedFrom(subp, classp)) hierp.push_back(subp);
+            if (subp != classp && AstClass::isClassExtendedFrom(subp, classp))
+                hierp.push_back(subp);
         });
         bool hasPre = false;
         bool hasPost = false;
