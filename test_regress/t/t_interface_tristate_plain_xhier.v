@@ -26,6 +26,11 @@ interface ifc;
   endfunction
 endinterface
 
+// Interface net made tristate only by an external 'z driver (no internal driver).
+interface ifc_tri;
+  tri [1:0] w;
+endinterface
+
 module driver (
     ifc io,
     input logic [1:0] din
@@ -37,17 +42,34 @@ module driver (
   assign io.w = din;
 endmodule
 
+module driver_tri (
+    ifc_tri io,
+    input logic [1:0] din
+);
+  assign io.w = din;
+endmodule
+
+module zdriver (
+    ifc_tri io
+);
+  assign io.w = 2'bzz;
+endmodule
+
 module t;
   // u_a, u_b: interface nets driven plainly from the top module (depth-0 xref).
   // u_c:      interface net driven plainly from a child module (depth-1 xref).
   ifc u_a ();
   ifc u_b ();
   ifc u_c ();
+  // u_e: net is tristate only via zdriver's external 'z; the plain driver must
+  // still win (the interface itself has no internal driver).
+  ifc_tri u_e ();
 
-  logic [1:0] va, vb, vc;
+  logic [1:0] va, vb, vc, ve;
   assign va = 2'b01;
   assign vb = 2'b10;
   assign vc = 2'b11;
+  assign ve = 2'b01;
 
   assign u_a.w = va;  // plain top-level driver
   assign u_b.w = vb;  // plain top-level driver
@@ -55,6 +77,11 @@ module t;
       .io(u_c),
       .din(vc)
   );  // plain driver in a child module
+  driver_tri u_pdrv (
+      .io(u_e),
+      .din(ve)
+  );  // plain driver of an externally-tristated net
+  zdriver u_zdrv (.io(u_e));  // external 'z driver
 
   initial begin
     #1;
@@ -62,6 +89,8 @@ module t;
     `checkh(u_a.get_w(), 2'b01);
     `checkh(u_b.get_w(), 2'b10);
     `checkh(u_c.get_w(), 2'b11);
+    // The plain driver must win over an external-only 'z (no internal driver).
+    `checkh(u_e.w, 2'b01);
     $write("*-* All Finished *-*\n");
     $finish;
   end

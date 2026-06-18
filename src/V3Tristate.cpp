@@ -762,6 +762,9 @@ class TristateVisitor final : public TristateBaseVisitor {
                         }
                     }
                 } else if (isIfaceTri) {
+                    // Mark here too, so a net made tristate only by an external 'z driver
+                    // still captures a plain cross-hierarchy driver processed later.
+                    m_varAux(invarp).ifaceTristate = true;
                     // Interface tristate vars: drivers from different interface instances
                     // (different VarXRef dotted paths) must be processed separately.
                     // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
