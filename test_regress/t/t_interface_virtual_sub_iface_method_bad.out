@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_interface_virtual_sub_iface_method_bad.v:21:16: Unsupported: method call on a sub-interface accessed through a virtual interface
-                                                                      : ... note: In instance 't'
-   21 |     vif.sub_if.set_active();
-      |                ^~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
