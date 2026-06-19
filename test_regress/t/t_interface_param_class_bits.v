@@ -8,22 +8,28 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class cls #(int width);
+class cls #(
+    int width
+);
 endclass
 
-interface ifc
-  #(parameter int width = 8,
-    parameter type dtype = logic[width-1:0],
-    parameter type cparam = cls#($bits(dtype)));
-   dtype data;
+interface ifc #(
+    parameter int width = 8,
+    parameter type dtype = logic [width-1:0],
+    parameter type cparam = cls#($bits(dtype))
+);
+  dtype data;
 endinterface
 
 module t;
   // width is overridden, dtype keeps its default logic[width-1:0], and the
   // class type parameter is overridden.  dtype must follow width (1 bit).
-  ifc #(.width(1), .cparam(cls#(1))) inst1();
+  ifc #(
+      .width(1),
+      .cparam(cls #(1))
+  ) inst1 ();
   // Same interface left at its default width (8 bits) must still work.
-  ifc inst8();
+  ifc inst8 ();
 
   always_comb inst1.data = 1'b0;
 

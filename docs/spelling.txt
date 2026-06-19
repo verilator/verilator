@@ -917,6 +917,7 @@ linters
 linux
 liu
 livelock
+liveness
 lldb
 ln
 loc

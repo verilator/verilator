@@ -4,11 +4,13 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `ifdef verilator
  `define no_optimize(v) $c(v)
 `else
  `define no_optimize(v) (v)
 `endif
+// verilog_format: on
 
 module t (  /*AUTOARG*/);
   logic clk = 0;

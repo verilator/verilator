@@ -6,7 +6,7 @@
 
 class Foo;
   rand int abcd;
-   constraint c { abcd >= 2; }
+  constraint c {abcd >= 2;}
 endclass
 
 class Bar;
@@ -14,7 +14,7 @@ class Bar;
 
   function new();
     for (int i = 0; i < 3; i++) foo_arr[i] = new[5];
-    foreach(foo_arr[i, j]) foo_arr[i][j] = new;
+    foreach (foo_arr[i, j]) foo_arr[i][j] = new;
   endfunction
 
   constraint c {

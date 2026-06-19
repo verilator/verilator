@@ -62,11 +62,31 @@ module t;
   logic [11:0] accept_c_out_2, accept_c_ref_2;
   always_comb
     case (cyc[3:0])
-      4'd0: begin accept_c_out_0 = 12'h001; accept_c_out_1 = 12'h010; accept_c_out_2 = 12'h100; end
-      4'd1: begin accept_c_out_0 = 12'h002; accept_c_out_1 = 12'h020; accept_c_out_2 = 12'h200; end
-      4'd2: begin accept_c_out_0 = 12'h004; accept_c_out_1 = 12'h040; accept_c_out_2 = 12'h400; end
-      4'd3: begin accept_c_out_0 = 12'h008; accept_c_out_1 = 12'h080; accept_c_out_2 = 12'h800; end
-      default: begin accept_c_out_0 = 12'h000; accept_c_out_1 = 12'h0ff; accept_c_out_2 = 12'hfff; end
+      4'd0: begin
+        accept_c_out_0 = 12'h001;
+        accept_c_out_1 = 12'h010;
+        accept_c_out_2 = 12'h100;
+      end
+      4'd1: begin
+        accept_c_out_0 = 12'h002;
+        accept_c_out_1 = 12'h020;
+        accept_c_out_2 = 12'h200;
+      end
+      4'd2: begin
+        accept_c_out_0 = 12'h004;
+        accept_c_out_1 = 12'h040;
+        accept_c_out_2 = 12'h400;
+      end
+      4'd3: begin
+        accept_c_out_0 = 12'h008;
+        accept_c_out_1 = 12'h080;
+        accept_c_out_2 = 12'h800;
+      end
+      default: begin
+        accept_c_out_0 = 12'h000;
+        accept_c_out_1 = 12'h0ff;
+        accept_c_out_2 = 12'hfff;
+      end
     endcase
   assign accept_c_ref_0 = (cyc[3:0] == 4'd0) ? 12'h001 : (cyc[3:0] == 4'd1) ? 12'h002
                         : (cyc[3:0] == 4'd2) ? 12'h004 : (cyc[3:0] == 4'd3) ? 12'h008 : 12'h000;
@@ -83,11 +103,24 @@ module t;
     accept_d_out_0 <= 16'h0000;
     accept_d_out_1 <= 16'hffff;
     case (cyc[3:0])
-      4'd0: begin accept_d_out_0 <= 16'h0001; accept_d_out_1 <= 16'h0010; end
-      4'd1: begin accept_d_out_0 <= 16'h0002; accept_d_out_1 <= 16'h0020; end
-      4'd2: begin accept_d_out_0 <= 16'h0004; accept_d_out_1 <= 16'h0040; end
-      4'd3: begin accept_d_out_0 <= 16'h0008; accept_d_out_1 <= 16'h0080; end
-      default: begin end
+      4'd0: begin
+        accept_d_out_0 <= 16'h0001;
+        accept_d_out_1 <= 16'h0010;
+      end
+      4'd1: begin
+        accept_d_out_0 <= 16'h0002;
+        accept_d_out_1 <= 16'h0020;
+      end
+      4'd2: begin
+        accept_d_out_0 <= 16'h0004;
+        accept_d_out_1 <= 16'h0040;
+      end
+      4'd3: begin
+        accept_d_out_0 <= 16'h0008;
+        accept_d_out_1 <= 16'h0080;
+      end
+      default: begin
+      end
     endcase
   end
   always_ff @(posedge clk) begin
@@ -134,7 +167,10 @@ module t;
     case (cyc[3:0])
       4'd0: accept_g_out_0 = 16'h0001;
       4'd1: accept_g_out_1 = 16'h0002;
-      4'd2: begin accept_g_out_0 = 16'h0004; accept_g_out_1 = 16'h0008; end
+      4'd2: begin
+        accept_g_out_0 = 16'h0004;
+        accept_g_out_1 = 16'h0008;
+      end
       4'd3: accept_g_out_0 = 16'h0010;
       default: ;
     endcase
@@ -145,7 +181,13 @@ module t;
   assign accept_g_ref_2 = 16'h3333;
 
   // Accept H: unique0 enum case; the selector may hold an out-of-range value.
-  typedef enum logic [3:0] {NE0, NE1, NE2, NE3, NE4} ne_t;
+  typedef enum logic [3:0] {
+    NE0,
+    NE1,
+    NE2,
+    NE3,
+    NE4
+  } ne_t;
   ne_t accept_h_in;
   assign accept_h_in = ne_t'(cyc[3:0]);
   logic [15:0] accept_h_out, accept_h_ref;

@@ -57,9 +57,18 @@ module t;
   logic [3:0] accept_c_out_1, accept_c_ref_1;
   always_comb
     case (cyc[1:0])
-      2'b00: begin accept_c_out_0 = 3'd1; accept_c_out_1 = 4'd6; end
-      2'b01: begin accept_c_out_0 = 3'd2; accept_c_out_1 = 4'd5; end
-      default: begin accept_c_out_0 = 3'd0; accept_c_out_1 = 4'd7; end
+      2'b00: begin
+        accept_c_out_0 = 3'd1;
+        accept_c_out_1 = 4'd6;
+      end
+      2'b01: begin
+        accept_c_out_0 = 3'd2;
+        accept_c_out_1 = 4'd5;
+      end
+      default: begin
+        accept_c_out_0 = 3'd0;
+        accept_c_out_1 = 4'd7;
+      end
     endcase
   assign accept_c_ref_0 = (cyc[1:0] == 2'b00) ? 3'd1 : (cyc[1:0] == 2'b01) ? 3'd2 : 3'd0;
   assign accept_c_ref_1 = (cyc[1:0] == 2'b00) ? 4'd6 : (cyc[1:0] == 2'b01) ? 4'd5 : 4'd7;
@@ -72,9 +81,16 @@ module t;
     accept_d_out_0 <= 3'd0;
     accept_d_out_1 <= 3'd7;
     case (cyc[1:0])
-      2'b00: begin accept_d_out_0 <= 3'd1; accept_d_out_1 <= 3'd6; end
-      2'b01: begin accept_d_out_0 <= 3'd2; accept_d_out_1 <= 3'd5; end
-      default: begin end
+      2'b00: begin
+        accept_d_out_0 <= 3'd1;
+        accept_d_out_1 <= 3'd6;
+      end
+      2'b01: begin
+        accept_d_out_0 <= 3'd2;
+        accept_d_out_1 <= 3'd5;
+      end
+      default: begin
+      end
     endcase
   end
   always_ff @(posedge clk) begin
@@ -132,11 +148,14 @@ module t;
       2'b10: accept_h_out <= 4'h4;
       2'b11: accept_h_out <= 4'h8;
     endcase
-  always_ff @(posedge clk)
-    accept_h_ref <= 4'h1 << cyc[1:0];
+  always_ff @(posedge clk) accept_h_ref <= 4'h1 << cyc[1:0];
 
   // Accept I: unique0 enum case; the selector may hold an out-of-range value.
-  typedef enum logic [1:0] {E0, E1, E2} e_t;
+  typedef enum logic [1:0] {
+    E0,
+    E1,
+    E2
+  } e_t;
   e_t accept_i_in;
   assign accept_i_in = e_t'(cyc[1:0]);
   logic [3:0] accept_i_out, accept_i_ref;
@@ -223,7 +242,10 @@ module t;
   always_comb begin
     reject_c_out = 4'h0;
     case (cyc[1:0])
-      2'b00: begin reject_c_out = 4'h1; reject_c_out = 4'h2; end
+      2'b00: begin
+        reject_c_out = 4'h1;
+        reject_c_out = 4'h2;
+      end
       default: reject_c_out = 4'h3;
     endcase
   end

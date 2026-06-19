@@ -13,7 +13,7 @@ class Bar;
 
   function new();
     foo_arr = new[12];
-    foreach(foo_arr[i]) foo_arr[i] = new;
+    foreach (foo_arr[i]) foo_arr[i] = new;
   endfunction
 
   constraint c {
