@@ -332,12 +332,25 @@ class TraceDriver final : public DfgVisitor {
     }
 
     void visit(DfgArraySel* vtxp) override {
-        // Only constant select
-        const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
-        if (!idxp) return;
         // From a variable
         const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
+
+        // If index is not constant, independence was proven only if the 'fromp' is
+        // independent, so no need to trace that
+        if (!vtxp->bitp()->is<DfgConst>()) {
+            DfgArraySel* const resp = make<DfgArraySel>(vtxp, vtxp->width());
+            resp->fromp(vtxp->fromp());
+            resp->bitp(trace(vtxp->bitp(), vtxp->bitp()->width() - 1, 0));
+            DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+            selp->fromp(resp);
+            selp->lsb(m_lsb);
+            SET_RESULT(selp);
+            return;
+        }
+
+        // Trace the relevant driver based on the static index
+        const DfgConst* const idxp = vtxp->bitp()->as<DfgConst>();
         UASSERT_OBJ(!varp->isVolatile(), vtxp, "Should not trace through volatile VarArray");
         // Skip through intermediate variables
         while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
@@ -589,6 +602,16 @@ class TraceDriver final : public DfgVisitor {
         SET_RESULT(resp);
     }
 
+    void visit(DfgMatchMasked* vtxp) override {
+        DfgMatchMasked* const resp = make<DfgMatchMasked>(vtxp, vtxp->width());
+        resp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, 0));
+        resp->matchp(trace(vtxp->matchp(), vtxp->matchp()->width() - 1, 0));
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(resp);
+        selp->lsb(m_lsb);
+        SET_RESULT(resp);
+    }
+
 #undef SET_RESULT
 
 public:
@@ -721,12 +744,23 @@ class IndependentBits final : public DfgVisitor {
     }
 
     void visit(DfgArraySel* vtxp) override {
-        // Only constant select
-        const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
-        if (!idxp) return;
         // From a variable
         const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
+
+        // If index is not constant, independent only if the variable index
+        // is indenpendent and the array is independent. We don't track arrays,
+        // so we will assume an array is only independent if it has no drivers
+        // in the graph. TODO: could check all drivers.
+        if (!vtxp->bitp()->is<DfgConst>()) {
+            if (MASK(vtxp->bitp()).isEqAllOnes() && !varp->srcp() && !varp->defaultp()) {
+                MASK(vtxp).setAllBits1();
+            }
+            return;
+        }
+
+        // Trace the relevant driver based on the static index
+        const DfgConst* const idxp = vtxp->bitp()->as<DfgConst>();
         // We cannot trace through a volatile variable, so pretend all bits are dependent
         if (varp->isVolatile()) return;
         // Skip through intermediate variables
@@ -951,6 +985,12 @@ class IndependentBits final : public DfgVisitor {
     void visit(DfgCond* vtxp) override {
         if (MASK(vtxp->condp()).isEqAllOnes()) {
             MASK(vtxp).opAnd(MASK(vtxp->thenp()), MASK(vtxp->elsep()));
+        }
+    }
+
+    void visit(DfgMatchMasked* vtxp) override {
+        if (MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->matchp()).isEqAllOnes()) {  //
+            MASK(vtxp).setAllBits1();
         }
     }
 
