@@ -329,6 +329,21 @@ public:
     ASTGEN_MEMBERS_DfgVertexBinary;
 };
 
+class DfgMatchMasked final : public DfgVertexBinary {
+    // Dfg equivalent of AstMatchMasked
+public:
+    DfgMatchMasked(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgMatchMasked;
+
+    DfgVertex* lhsp() const { return inputp(0); }
+    void lhsp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    DfgVertex* matchp() const { return inputp(1); }
+    void matchp(DfgVertex* vtxp) { inputp(1, vtxp); }
+
+    std::string srcName(size_t idx) const override { return idx ? "matchp" : "lhsp"; }
+};
+
 class DfgMux final : public DfgVertexBinary {
     // AstSel is binary, but 'lsbp' is very often constant. As AstSel is fairly
     // common, we special case as a DfgSel for the constant 'lsbp', and as

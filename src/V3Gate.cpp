@@ -471,6 +471,11 @@ class GateOkVisitor final : public VNVisitorConst {
         // assign to get randomization etc
         clearSimple("CReset");
     }
+    void visit(AstMatchMasked* nodep) override {
+        if (!m_isSimple) return;
+        // This node can be expensive
+        clearSimple("MatchMasked");
+    }
     //--------------------
     void visit(AstNode* nodep) override {
         if (!m_isSimple) return;  // Fastpath

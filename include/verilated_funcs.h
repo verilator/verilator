@@ -269,6 +269,41 @@ static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_
     return ret;
 }
 
+// Masked match functions
+static inline IData VL_MATCHMASKED_I(int, IData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const IData mask = matchp[i * 2];
+        const IData bits = matchp[i * 2 + 1];
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_Q(int, QData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const QData mask = VL_SET_QW(matchp + i * 4);
+        const QData bits = VL_SET_QW(matchp + i * 4 + 2);
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_W(int lbits, WDataInP lhsp, WDataInP matchp) VL_MT_SAFE {
+    const int iwords = VL_WORDS_I(lbits);
+    size_t i = 0;
+    while (true) {
+        const WDataInP maskp = matchp + (i * iwords * 2);
+        const WDataInP bitsp = matchp + (i * iwords * 2 + iwords);
+        EData diff = 0;
+        for (int j = 0; j < iwords; ++j) diff |= (maskp[j] & lhsp[j]) ^ bitsp[j];
+        if (!diff) break;
+        ++i;
+    }
+    return i;
+}
+
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
 static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {

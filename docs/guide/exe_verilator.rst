@@ -664,6 +664,10 @@ Summary:
 
    Alias for all other `-fno-case-*` options.
 
+.. option:: -fno-case-decoder
+
+   Rarely needed. Disable converting case statements into decoder tables.
+
 .. option:: -fno-case-table
 
    Rarely needed. Disable converting case statements into table lookups.

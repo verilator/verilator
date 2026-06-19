@@ -2751,6 +2751,16 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgMatchMasked* const vtxp) override {
+        if (DfgConst* const constp = vtxp->lhsp()->cast<DfgConst>()) {
+            APPLYING(FOLD_MATCHMASKED) {
+                AstVar* const matchVarp = vtxp->matchp()->as<DfgVarPacked>()->vscp()->varp();
+                replace(makeI32(vtxp->fileline(), AstMatchMasked::fold(constp->num(), matchVarp)));
+                return;
+            }
+        }
+    }
+
     //=========================================================================
     //  DfgVertexTernary
     //=========================================================================

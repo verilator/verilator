@@ -1590,6 +1590,9 @@ public:
             puts(")");
         }
     }
+    void visit(AstMatchMasked* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
+    }
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
