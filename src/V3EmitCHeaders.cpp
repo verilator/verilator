@@ -419,20 +419,14 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return !(*this == rhs);\n}\n");
         putns(sdtypep, "\nbool operator<(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
-        puts("return ");
-        puts("std::tie(");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts(", ");
-            putns(itemp, itemp->nameProtect());
+            putns(itemp, "if (" + itemp->nameProtect() + " < rhs." + itemp->nameProtect()
+                             + ") return true;\n");
+            putns(itemp, "if (rhs." + itemp->nameProtect() + " < " + itemp->nameProtect()
+                             + ") return false;\n");
         }
-        puts(")\n    <  std::tie(");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts(", ");
-            putns(itemp, "rhs." + itemp->nameProtect());
-        }
-        puts(");\n");
+        puts("return false;\n");
         puts("}\n");
         puts("};\n");
         puts("template <>\n");

@@ -175,6 +175,15 @@ enum class VerilatedAssertDirectiveType : uint8_t {
     DIRECTIVE_TYPE_COVER = (1 << 1),
     DIRECTIVE_TYPE_ASSUME = (1 << 2),
 };
+
+/// Runtime query selector for assertion-control state
+enum class VerilatedAssertCtlQuery : uint8_t {
+    ASSERT_CTL_ON,
+    ASSERT_CTL_KILL,
+    ASSERT_CTL_PASS_ON_VACUOUS,
+    ASSERT_CTL_PASS_ON_NONVACUOUS,
+    ASSERT_CTL_FAIL_ON,
+};
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
@@ -356,9 +365,10 @@ private:
     static constexpr size_t ASSERT_ON_WIDTH
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
-    // Build the m_assertOn/m_assertLock bit mask for the given assertion x directive types.
+    // Build the assertion-control bit mask for the given assertion x directive types.
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
 
 protected:
     // TYPES
@@ -381,6 +391,13 @@ protected:
         std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
                                                 // Lock/Unlock); same layout as m_assertOn. While
                                                 // a bit is locked, On/Off/Kill leave it unchanged.
+        std::atomic<uint32_t> m_assertPassOnVacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertFailOn{
+            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -490,11 +507,13 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Apply a $assertcontrol control_type (IEEE 1800-2023 Table 20-5) to the given
-    /// assertion and directive types: 1=Lock, 2=Unlock, 3=On, 4=Off, 5=Kill. Locked
-    /// bits are left unchanged by On/Off/Kill. Other control_type values are ignored.
+    /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
+    /// the generation count.
+    uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                          VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)

@@ -226,12 +226,23 @@ class AssertVisitor final : public VNVisitor {
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
     AstNode* m_failsp = nullptr;  // Current fail statement
+    AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     AstFinal* m_finalp = nullptr;  // Current final block
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
 
     // METHODS
+    static string assertCtlGetCall(const char* query, VAssertType type,
+                                   VAssertDirectiveType directiveType) {
+        return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
+               + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
+    }
+    static const char* assertPassOnQuery(bool vacuous) {
+        static constexpr const char* queries[2]
+            = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
+        return queries[vacuous];
+    }
     static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
                                      VAssertDirectiveType directiveType) {
         // cppcheck-suppress missingReturn
@@ -251,9 +262,7 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::ASSUME: {
             if (v3Global.opt.assertOn()) {
                 return new AstCExpr{fl, AstCExpr::Pure{},
-                                    "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type)
-                                        + ", "s + std::to_string(directiveType) + ")"s,
-                                    1};
+                                    assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
             }
             return new AstConst{fl, AstConst::BitFalse{}};
         }
@@ -269,6 +278,31 @@ class AssertVisitor final : public VNVisitor {
         }
         VL_UNREACHABLE;
     }
+    static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
+        const int controlled = !!(static_cast<int>(directiveType)
+                                  & (static_cast<int>(VAssertDirectiveType::ASSERT)
+                                     | static_cast<int>(VAssertDirectiveType::COVER)
+                                     | static_cast<int>(VAssertDirectiveType::ASSUME)));
+        const int checkRuntime = controlled & static_cast<int>(v3Global.opt.assertOn());
+        return "("s + std::to_string(controlled ^ 1) + " || ("s + std::to_string(checkRuntime)
+               + " && "s;
+    }
+    static AstNodeExpr* assertPassOnCond(FileLine* fl, VAssertType type,
+                                         VAssertDirectiveType directiveType, bool vacuous) {
+        return new AstCExpr{fl, AstCExpr::Pure{},
+                            assertActionControlPrefix(directiveType)
+                                + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
+                                + "))"s,
+                            1};
+    }
+    static AstNodeExpr* assertFailOnCond(FileLine* fl, VAssertType type,
+                                         VAssertDirectiveType directiveType) {
+        return new AstCExpr{fl, AstCExpr::Pure{},
+                            assertActionControlPrefix(directiveType)
+                                + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType)
+                                + "))"s,
+                            1};
+    }
     string assertDisplayMessage(const AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
@@ -280,12 +314,6 @@ class AssertVisitor final : public VNVisitor {
                 + cvtToStr(nodep->fileline()->lineno()) + ": %m" + ((message != "") ? ": " : "")
                 + message + "\n");
     }
-    // Default assertion_type and directive_type when the argument is omitted
-    // (IEEE 1800-2023 20.11): assertion_type defaults to all types, directive_type
-    // to Assert|Cover|Assume.
-    static constexpr uint8_t DEFAULT_DIRECTIVE_TYPES = VAssertDirectiveType::ASSERT
-                                                       | VAssertDirectiveType::COVER
-                                                       | VAssertDirectiveType::ASSUME;
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
         nodep->fmtp()->text(
             assertDisplayMessage(nodep, prefix, nodep->fmtp()->text(), nodep->displayType()));
@@ -327,14 +355,36 @@ class AssertVisitor final : public VNVisitor {
     }
     static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
                                 VAssertType type = VAssertType::INTERNAL) {
-        // Add a internal if to check assertions are on.
-        // Don't make this a AND term, as it's unlikely to need to test this.
+        // Add an internal if to check assertions are on.
+        // Don't make this an AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
 
         AstNodeExpr* const condp = assertOnCond(fl, type, directiveType);
         AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user2(true);  // Mark as an assertOn() check
+        return newp;
+    }
+    static AstNodeStmt* newIfAssertPassOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                          VAssertType type, bool vacuous) {
+        // Add an internal if to check assertion passOn is enabled.
+        // Don't make this an AND term, as it's unlikely to need to test this.
+        FileLine* const fl = bodyp->fileline();
+        AstNodeExpr* const condp = assertPassOnCond(fl, type, directiveType, vacuous);
+        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        newp->isBoundsCheck(true);  // To avoid LATCH warning
+        newp->user1(true);  // Don't assert/cover this if
+        return newp;
+    }
+    static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                          VAssertType type) {
+        // Add an internal if to check assertion failOn is enabled.
+        // Don't make this an AND term, as it's unlikely to need to test this.
+        FileLine* const fl = bodyp->fileline();
+        AstNodeExpr* const condp = assertFailOnCond(fl, type, directiveType);
+        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        newp->isBoundsCheck(true);  // To avoid LATCH warning
+        newp->user1(true);  // Don't assert/cover this if
         return newp;
     }
 
@@ -493,6 +543,7 @@ class AssertVisitor final : public VNVisitor {
         if (failsp) failsp->unlinkFrBackWithNext();
 
         bool selfDestruct = false;
+        bool passspGated = false;
         if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
             ++m_statCover;
             if (!v3Global.opt.coverageUser()) {
@@ -504,6 +555,9 @@ class AssertVisitor final : public VNVisitor {
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 if (passsp) {
+                    passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
+                                               /*vacuous=*/false);
+                    passspGated = true;
                     passsp = AstNode::addNext<AstNode, AstNode>(covincp, passsp);
                 } else {
                     passsp = covincp;
@@ -524,8 +578,10 @@ class AssertVisitor final : public VNVisitor {
 
         VL_RESTORER(m_passsp);
         VL_RESTORER(m_failsp);
+        VL_RESTORER(m_assertp);
         m_passsp = passsp;
         m_failsp = failsp;
+        m_assertp = nodep;
         iterate(nodep->propp());
 
         AstNode* propExprp;
@@ -537,6 +593,15 @@ class AssertVisitor final : public VNVisitor {
             propExprp = nodep->propp()->unlinkFrBack();
         }
         FileLine* const flp = nodep->fileline();
+        bool passspAlreadyGated = false;
+        if (passsp && VN_IS(passsp, If)) passspAlreadyGated = VN_AS(passsp, If)->user1();
+        if (passsp && !passspGated && !passspAlreadyGated && !VN_IS(propExprp, PExpr)) {
+            passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
+                                       /*vacuous=*/false);
+        }
+        if (failsp && !VN_IS(propExprp, PExpr)) {
+            failsp = newIfAssertFailOn(failsp, nodep->directive(), nodep->userType());
+        }
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
@@ -870,8 +935,11 @@ class AssertVisitor final : public VNVisitor {
         if (nodep->pass() && m_passsp) {
             // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
             stmtsp = m_passsp->cloneTree(true);
+            stmtsp = newIfAssertPassOn(stmtsp, m_assertp->directive(), m_assertp->userType(),
+                                       nodep->vacuous());
         } else if (!nodep->pass() && m_failsp) {
             stmtsp = m_failsp->cloneTree(true);
+            stmtsp = newIfAssertFailOn(stmtsp, m_assertp->directive(), m_assertp->userType());
         }
         if (stmtsp) {
             stmtsp->foreachAndNext([](AstNodeVarRef* const refp) {
@@ -978,66 +1046,69 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstAssertCtl* nodep) override {
         iterateChildren(nodep);
+
+        bool assertTypeConst = true;
+        if (!nodep->assertTypesp()) {
+            nodep->ctlAssertTypes(VAssertType{ALL_ASSERT_TYPES});
+        } else if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
+            nodep->ctlAssertTypes(VAssertType{assertTypesp->toSInt()});
+        } else {
+            assertTypeConst = false;
+        }
+
+        bool controlTypeConst = false;
+        if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const)) {
+            nodep->ctlType(constp->toSInt());
+            controlTypeConst = true;
+        }
+        if (controlTypeConst
+            && (nodep->ctlType() < VAssertCtlType::LOCK
+                || nodep->ctlType() > VAssertCtlType::VACUOUS_OFF)) {
+            nodep->unlinkFrBack();
+            nodep->v3error("Bad $assertcontrol control_type '"
+                           << cvtToStr(static_cast<int>(nodep->ctlType()))
+                           << "' (IEEE 1800-2023 Table 20-5)");
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        if (assertTypeConst && nodep->ctlAssertTypes() != ALL_ASSERT_TYPES
+            && nodep->ctlAssertTypes().containsAny(VAssertType::UNIQUE | VAssertType::UNIQUE0
+                                                   | VAssertType::PRIORITY)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
+        bool directiveTypeConst = true;
+        if (!nodep->directiveTypesp()) {
+            nodep->ctlDirectiveTypes(VAssertDirectiveType::ASSERT | VAssertDirectiveType::ASSUME
+                                     | VAssertDirectiveType::COVER);
+        } else if (const AstConst* const directiveTypesp
+                   = VN_CAST(nodep->directiveTypesp(), Const)) {
+            nodep->ctlDirectiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
+        } else {
+            directiveTypeConst = false;
+        }
+        if (!directiveTypeConst) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: non-const assert directive type expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
         FileLine* const fl = nodep->fileline();
-
-        // control_type, assertion_type and directive_type are integer expressions
-        // (IEEE 1800-2023 20.11) and may be non-constant; they are evaluated at runtime
-        // by VerilatedContext::assertCtl. The levels and scope/assertion-list arguments
-        // are not modeled -- control applies to the whole context.
-        // When control_type is a compile-time constant, reject the not-yet-modeled
-        // action-control codes (Table 20-5 values 6..11) and out-of-range values with a
-        // clear error rather than emitting a runtime no-op.
-        if (const AstConst* const controlp = VN_CAST(nodep->controlTypep(), Const)) {
-            const int32_t control = controlp->toSInt();
-            if (control < VAssertCtlType::LOCK || control > VAssertCtlType::VACUOUS_OFF) {
-                nodep->unlinkFrBack();
-                nodep->v3warn(EC_ERROR, "Bad $assertcontrol control_type '"
-                                            << control << "' (IEEE 1800-2023 Table 20-5)");
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
-            }
-            if (control >= VAssertCtlType::PASS_ON) {
-                nodep->unlinkFrBack();
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: $assertcontrol control_type '" << control << "'");
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
-            }
-        }
-
-        // When assertion_type is a compile-time constant, reject values that cannot be
-        // filtered at runtime because unique/priority violations use bare assertOn() rather
-        // than a per-type assertOnGet() call (IEEE 1800-2023 Table 20-6).
+        UINFO(9, "Generating assertctl for a module: " << m_modp);
+        AstCStmt* const newp = new AstCStmt{fl};
+        newp->add("vlSymsp->_vm_contextp__->assertCtl(");
+        newp->add(nodep->controlTypep()->unlinkFrBack());
+        newp->add(", ");
         if (nodep->assertTypesp()) {
-            if (const AstConst* const typecp = VN_CAST(nodep->assertTypesp(), Const)) {
-                if (typecp->toUInt()
-                    & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
-                       | VAssertType::PRIORITY)) {
-                    nodep->unlinkFrBack();
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-            }
-        }
-
-        UINFO(9, "Generating assertctl in module: " << m_modp);
-        AstCStmt* const callp = new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertCtl("};
-        callp->add(nodep->controlTypep()->unlinkFrBack());
-        callp->add(", ");
-        if (AstNodeExpr* const typesp = nodep->assertTypesp()) {
-            callp->add(typesp->unlinkFrBack());
+            newp->add(nodep->assertTypesp()->unlinkFrBack());
         } else {
-            callp->add(std::to_string(ALL_ASSERT_TYPES));
+            newp->add(std::to_string(ALL_ASSERT_TYPES));
         }
-        callp->add(", ");
-        if (AstNodeExpr* const directivesp = nodep->directiveTypesp()) {
-            callp->add(directivesp->unlinkFrBack());
-        } else {
-            callp->add(std::to_string(DEFAULT_DIRECTIVE_TYPES));
-        }
-        callp->add(");\n");
-        nodep->replaceWith(callp);
+        newp->add(", " + std::to_string(nodep->ctlDirectiveTypes()) + ");\n");
+        nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssertIntrinsic* nodep) override {  //

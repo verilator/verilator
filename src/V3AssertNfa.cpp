@@ -194,6 +194,78 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     return sp;
 }
 
+static string assertCtlGetCall(const char* query, VAssertType type,
+                               VAssertDirectiveType directiveType) {
+    return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
+           + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
+}
+
+static const char* assertPassOnQuery(bool vacuous) {
+    static constexpr const char* queries[2]
+        = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
+    return queries[vacuous];
+}
+
+static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
+                                 VAssertDirectiveType directiveType) {
+    if (!v3Global.opt.assertOn()) { return new AstConst{flp, AstConst::BitFalse{}}; }
+    return new AstCExpr{flp, AstCExpr::Pure{},
+                        assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
+}
+
+static AstNodeExpr* assertKillGet(FileLine* flp, VAssertType type,
+                                  VAssertDirectiveType directiveType) {
+    return new AstCExpr{flp, AstCExpr::Pure{},
+                        assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType), 32};
+}
+
+static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
+    const int controlled = !!(static_cast<int>(directiveType)
+                              & (static_cast<int>(VAssertDirectiveType::ASSERT)
+                                 | static_cast<int>(VAssertDirectiveType::COVER)
+                                 | static_cast<int>(VAssertDirectiveType::ASSUME)));
+    const int checkRuntime = controlled & static_cast<int>(v3Global.opt.assertOn());
+    return "("s + std::to_string(controlled ^ 1) + " || ("s + std::to_string(checkRuntime)
+           + " && "s;
+}
+
+static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
+                                     VAssertDirectiveType directiveType, bool vacuous) {
+    return new AstCExpr{flp, AstCExpr::Pure{},
+                        assertActionControlPrefix(directiveType)
+                            + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
+                            + "))"s,
+                        1};
+}
+
+static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
+                                     VAssertDirectiveType directiveType) {
+    return new AstCExpr{flp, AstCExpr::Pure{},
+                        assertActionControlPrefix(directiveType)
+                            + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
+                        1};
+}
+
+static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAssertType type,
+                          VAssertDirectiveType directiveType, bool vacuous) {
+    AstNodeExpr* const condp
+        = new AstLogAnd{flp, firep, assertPassOnCond(flp, type, directiveType, vacuous)};
+    AstIf* const ifp = new AstIf{flp, condp, bodyp};
+    ifp->isBoundsCheck(true);
+    ifp->user1(true);
+    return ifp;
+}
+
+static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                      VAssertType type) {
+    FileLine* const flp = bodyp->fileline();
+    AstNodeExpr* const condp = assertFailOnCond(flp, type, directiveType);
+    AstIf* const ifp = new AstIf{flp, condp, bodyp};
+    ifp->isBoundsCheck(true);
+    ifp->user1(true);
+    return ifp;
+}
+
 //######################################################################
 // NFA Builder
 
@@ -1247,6 +1319,9 @@ class SvaNfaLowering final {
         AstNodeExpr* matchCondp;  // Final boolean match condition (may be nullptr)
         AstVar* disableCntVarp;  // disable counter var (may be nullptr)
         AstVar* snapshotVarp;  // disable snapshot var (may be nullptr)
+        VAssertType assertType;  // Assertion type for control tasks
+        VAssertDirectiveType directiveType;  // Directive type for control tasks
+        AstVar* killVarp;  // Last observed kill generation
         SvaGraph& graph;  // NFA graph
     };
 
@@ -1264,6 +1339,15 @@ class SvaNfaLowering final {
     static AstNodeExpr* orExprs(FileLine* flp, AstNodeExpr* ap, AstNodeExpr* bp) {
         if (!ap) return bp;
         return new AstLogOr{flp, ap, bp};
+    }
+    static AstNodeExpr* killActive(LowerCtx& c) {
+        return new AstNeq{c.flp, new AstVarRef{c.flp, c.killVarp, VAccess::READ},
+                          assertKillGet(c.flp, c.assertType, c.directiveType)};
+    }
+    static AstNodeExpr* notKillActive(LowerCtx& c) { return new AstLogNot{c.flp, killActive(c)}; }
+    static AstNodeExpr* gateNotKill(LowerCtx& c, AstNodeExpr* exprp) {
+        if (!exprp) return nullptr;
+        return new AstLogAnd{c.flp, exprp, notKillActive(c)};
     }
 
     // Phase 3 output signals
@@ -1304,6 +1388,7 @@ class SvaNfaLowering final {
 
             UASSERT_OBJ(nextStatep, c.vtx[i],
                         "Registered vertex has no clocked incoming contribution");
+            nextStatep = gateNotKill(c, nextStatep);
 
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::WRITE},
@@ -1374,7 +1459,8 @@ class SvaNfaLowering final {
                 = new AstEq{c.flp, new AstVarRef{c.flp, cntp, VAccess::READ},
                             new AstConst{c.flp, AstConst::WidthedValue{}, 32, counterMax}};
 
-            AstNodeExpr* const donep = new AstLogOr{c.flp, matchedNowp, counterAtEndp};
+            AstNodeExpr* const donep = new AstLogOr{
+                c.flp, killActive(c), new AstLogOr{c.flp, matchedNowp, counterAtEndp}};
 
             AstAssignDly* const clearActivep
                 = new AstAssignDly{c.flp, new AstVarRef{c.flp, activep, VAccess::WRITE},
@@ -1394,7 +1480,8 @@ class SvaNfaLowering final {
                 = new AstAssignDly{c.flp, new AstVarRef{c.flp, cntp, VAccess::WRITE},
                                    new AstConst{c.flp, AstConst::WidthedValue{}, 32, 0u}};
             setActivep->addNext(resetCountp);
-            AstIf* const startIfp = new AstIf{c.flp, incomingp, setActivep, nullptr};
+            AstIf* const startIfp
+                = new AstIf{c.flp, gateNotKill(c, incomingp), setActivep, nullptr};
             AstIf* const topIfp = new AstIf{c.flp, new AstVarRef{c.flp, activep, VAccess::READ},
                                             doneIfp, startIfp};
 
@@ -1453,11 +1540,20 @@ class SvaNfaLowering final {
             AstIf* const setRIfp = new AstIf{c.flp, gateRp, setRp, nullptr};
             setLIfp->addNext(setRIfp);
 
-            AstIf* const topp = new AstIf{
-                c.flp, c.vtx[ai]->datap()->stateSigp->cloneTreePure(false), clearLp, setLIfp};
+            AstNodeExpr* const clearCondp = new AstLogOr{
+                c.flp, killActive(c), c.vtx[ai]->datap()->stateSigp->cloneTreePure(false)};
+            AstIf* const topp = new AstIf{c.flp, clearCondp, clearLp, setLIfp};
             m_modp->addStmtsp(
                 new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), topp});
         }
+    }
+
+    void emitKillAckNba(LowerCtx& c) {
+        AstAssignDly* const ackp
+            = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.killVarp, VAccess::WRITE},
+                               assertKillGet(c.flp, c.assertType, c.directiveType)};
+        m_modp->addStmtsp(new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false),
+                                        new AstIf{c.flp, killActive(c), ackp, nullptr}});
     }
 
     // Phase 3/3a/3b: Compute terminal match/reject signals, required-step reject,
@@ -1577,7 +1673,7 @@ class SvaNfaLowering final {
                 condp = tep->m_condp->cloneTreePure(false);
             }
             AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
-            AstNodeExpr* const failp = new AstLogAnd{c.flp, srcSigp, notCondp};
+            AstNodeExpr* const failp = gateNotKill(c, new AstLogAnd{c.flp, srcSigp, notCondp});
             if (outRequiredStepSrcsp) {
                 outRequiredStepSrcsp->push_back(failp->cloneTreePure(false));
             }
@@ -1585,6 +1681,9 @@ class SvaNfaLowering final {
         }
 
         computeThroughoutReject(c, sigs);
+        sigs.terminalActivep = gateNotKill(c, sigs.terminalActivep);
+        sigs.rejectBasep = gateNotKill(c, sigs.rejectBasep);
+        sigs.throughoutRejectp = gateNotKill(c, sigs.throughoutRejectp);
 
         // Clean up intermediate state signals. These are orphan subtrees
         // (never linked into the enclosing AST); deleteTree() is immediate
@@ -1793,7 +1892,9 @@ public:
                        AstNodeExpr** outMatchpp = nullptr, AstVar* disableCntVarp = nullptr,
                        AstVar* snapshotVarp = nullptr,
                        std::vector<AstNodeExpr*>* outRequiredStepSrcsp = nullptr,
-                       std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
+                       std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr,
+                       VAssertType assertType = VAssertType::INTERNAL,
+                       VAssertDirectiveType directiveType = VAssertDirectiveType::INTERNAL) {
         const std::string baseName = m_names.get("");
 
         // Number vertices with sequential colors for array indexing.
@@ -1826,6 +1927,10 @@ public:
         }
 
         AstNodeDType* const u32DTypep = m_modp->findBasicDType(VBasicDTypeKwd::UINT32);
+        AstVar* const killVarp
+            = new AstVar{flp, VVarType::MODULETEMP, baseName + "__kill", u32DTypep};
+        killVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(killVarp);
         for (int i = 0; i < N; ++i) {
             if (vtx[i]->m_isAndCombiner) {
                 const std::string base = baseName + "__a" + std::to_string(i);
@@ -1866,9 +1971,9 @@ public:
         }
 
         // Build lowering context for phase sub-functions.
-        LowerCtx c{flp,          N,        vtx,          edges,      startIdx,
-                   matchIdx,     senTreep, disableExprp, matchCondp, disableCntVarp,
-                   snapshotVarp, graph};
+        LowerCtx c{flp,          N,          vtx,           edges,      startIdx,
+                   matchIdx,     senTreep,   disableExprp,  matchCondp, disableCntVarp,
+                   snapshotVarp, assertType, directiveType, killVarp,   graph};
 
         // Phase 1: Resolve combinational Links via fixed-point propagation.
         resolveLinks(c, triggerExprp);
@@ -1877,6 +1982,7 @@ public:
         emitStateRegisterNba(c);
         emitCounterFsmNba(c);
         emitAndCombinerDoneLatchNba(c);
+        emitKillAckNba(c);
 
         // Phase 3/3a/3b: Compute terminal match/reject signals (cleans up stateSig).
         const SignalSet sigs = computeSignals(c, outRequiredStepSrcsp, outPerMidSrcsp);
@@ -2116,6 +2222,38 @@ class AssertNfaVisitor final : public VNVisitor {
         return parts;
     }
 
+    static bool canSplitImplicationPassActions(const PropertyParts& parts) {
+        UASSERT(parts.hasImplication,
+                "Implication pass action split requested without implication");
+        UASSERT(parts.triggerExprp, "Implication pass action split requested without trigger");
+        // Direct vacuous/nonvacuous classification uses the antecedent value in the current
+        // assertion attempt. Leave delayed antecedents on the existing NFA pass path.
+        return !hasMultiCycleExpr(parts.triggerExprp);
+    }
+
+    static void splitImplicationPassActions(AstAssert* assertp, const PropertyParts& parts,
+                                            AstNodeExpr* nonvacuousMatchp) {
+        FileLine* const flp = assertp->fileline();
+
+        AstNode* const passsp = assertp->passsp()->unlinkFrBackWithNext();
+        AstNode* splitsp = nullptr;
+
+        if (!parts.isFollowedBy) {
+            AstNodeExpr* const vacuousp
+                = new AstLogNot{flp, sampled(parts.triggerExprp->cloneTreePure(false))};
+            AstNode* const vacuousBodyp = passsp->cloneTree(false);
+            splitsp = newPassOnIf(flp, vacuousp, vacuousBodyp, assertp->userType(),
+                                  assertp->directive(), /*vacuous=*/true);
+        }
+
+        AstIf* const nonvacuousp
+            = newPassOnIf(flp, nonvacuousMatchp, passsp, assertp->userType(), assertp->directive(),
+                          /*vacuous=*/false);
+        splitsp = splitsp ? AstNode::addNext<AstNode, AstNode>(splitsp, nonvacuousp)
+                          : static_cast<AstNode*>(nonvacuousp);
+        assertp->addPasssp(splitsp);
+    }
+
     // Allocate disable-iff counter + snapshot vars and unlink the original
     // disable expression from the PropSpec. Returns {cntp, snapp} or
     // {nullptr, nullptr} if no counter is needed.
@@ -2251,7 +2389,11 @@ class AssertNfaVisitor final : public VNVisitor {
                                                          cumulativeOrp->cloneTreePure(false)};
                 m_modp->addStmtsp(
                     new AstAlways{flp, VAlwaysKwd::ALWAYS, perSrcSenTreep->cloneTree(false),
-                                  new AstIf{flp, condp, failsp->cloneTree(true), nullptr}});
+                                  new AstIf{flp, condp,
+                                            newIfAssertFailOn(failsp->cloneTree(true),
+                                                              assertWithFailp->directive(),
+                                                              assertWithFailp->userType()),
+                                            nullptr}});
                 cumulativeOrp = new AstLogOr{flp, cumulativeOrp, srcp->cloneTreePure(false)};
             }
             VL_DO_DANGLING(pushDeletep(cumulativeOrp), cumulativeOrp);
@@ -2450,8 +2592,11 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool disableExprUnlinked = disableCntVarp && disableExprp;
 
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
-        const bool needMatch
-            = !isCover && !parts.hasImplication && assertAssertp && assertAssertp->passsp();
+        const bool splitImplicationPasssp = assertAssertp && assertAssertp->passsp()
+                                            && parts.hasImplication
+                                            && canSplitImplicationPassActions(parts);
+        const bool needMatch = assertAssertp && assertAssertp->passsp()
+                               && (!parts.hasImplication || splitImplicationPasssp);
         AstNodeExpr* matchExprp = nullptr;
 
         AstAssert* const assertWithFailp = VN_CAST(assertp, Assert);
@@ -2465,12 +2610,14 @@ class AssertNfaVisitor final : public VNVisitor {
         // coverp / isCoverSeq are computed earlier (passed to SvaNfaBuilder).
         std::vector<AstNodeExpr*> perMidSrcs;
 
-        AstNodeExpr* const alwaysTriggerp = new AstConst{flp, AstConst::BitTrue{}};
+        AstNodeExpr* const alwaysTriggerp
+            = assertOnCond(flp, assertp->userType(), assertp->directive());
         AstNodeExpr* const outputExprp = m_loweringp->lower(
             flp, graph, alwaysTriggerp, senTreep, result.finalCondp, isCover,
             disableExprp ? disableExprp->cloneTreePure(false) : nullptr, negated,
             needMatch ? &matchExprp : nullptr, disableCntVarp, snapshotVarp,
-            needPerSrcFail ? &requiredStepSrcs : nullptr, isCoverSeq ? &perMidSrcs : nullptr);
+            needPerSrcFail ? &requiredStepSrcs : nullptr, isCoverSeq ? &perMidSrcs : nullptr,
+            assertp->userType(), assertp->directive());
 
         AstSenTree* const perSrcSenTreep
             = (requiredStepSrcs.size() >= 2) ? senTreep->cloneTree(false) : nullptr;
@@ -2480,8 +2627,15 @@ class AssertNfaVisitor final : public VNVisitor {
         if (disableExprUnlinked) VL_DO_DANGLING(pushDeletep(disableExprp), disableExprp);
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
 
-        attachMatchHandlers(flp, assertAssertp, assertWithFailp, needMatch ? matchExprp : nullptr,
-                            perSrcSenTreep, requiredStepSrcs);
+        if (splitImplicationPasssp) {
+            splitImplicationPassActions(assertAssertp, parts, matchExprp);
+            matchExprp = nullptr;
+        } else {
+            attachMatchHandlers(flp, assertAssertp, assertWithFailp,
+                                needMatch ? matchExprp : nullptr, perSrcSenTreep,
+                                requiredStepSrcs);
+            matchExprp = nullptr;
+        }
 
         if (isCoverSeq && perMidSrcs.size() > 1) {
             // Clone AstCover (N-1) times, each gated by its own per-mid signal.

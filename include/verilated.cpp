@@ -3035,20 +3035,7 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
 }
 bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    // Check if selected directive type bit in the assertOn is enabled for assertion type.
-    // Note: it is assumed that this is checked only for one type at the time.
-
-    // Flag unspecified assertion types as disabled.
-    if (type == 0) return false;
-
-    // Get index of 3-bit group guarding assertion type status.
-    // Since the assertOnGet is generated __always__ for a single assert type, we assume that only
-    // a single bit will be set. Thus, ceil log2 will work fine.
-    VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
-    const IData typeMaskPosition = VL_CLOG2_I(type);
-
-    // Check if directive type bit is enabled in corresponding assertion type bits.
-    return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
 }
 uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
                                         VerilatedAssertDirectiveType_t directives) VL_PURE {
@@ -3072,6 +3059,7 @@ void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t typ
     // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
     // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
     const uint32_t mask = assertOnMask(types, directives);
+    const uint32_t lockedMask = mask & ~m_s.m_assertLock;
     switch (controlType) {
     case 1:  // Lock
         m_s.m_assertLock |= mask;
@@ -3080,15 +3068,64 @@ void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t typ
         m_s.m_assertLock &= ~mask;
         break;
     case 3:  // On
-        m_s.m_assertOn |= mask & ~m_s.m_assertLock;
+        m_s.m_assertOn |= lockedMask;
         break;
     case 4:  // Off
-    case 5:  // Kill
-        m_s.m_assertOn &= ~(mask & ~m_s.m_assertLock);
+        m_s.m_assertOn &= ~lockedMask;
         break;
-    default:  // 6..11 (Pass/Fail/Vacuous action control) are not modeled; ignore
+    case 5: {  // Kill
+        m_s.m_assertOn &= ~lockedMask;
+        for (int slot = 0; slot < static_cast<int>(ASSERT_CONTROL_SLOT_COUNT); ++slot) {
+            if (VL_BITISSET_I(lockedMask, slot)) { m_s.m_assertKill[slot]++; }
+        }
         break;
     }
+    case 6:  // PassOn
+        m_s.m_assertPassOnVacuous |= lockedMask;
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 7:  // PassOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        m_s.m_assertPassOnNonvacuous &= ~lockedMask;
+        break;
+    case 8:  // FailOn
+        m_s.m_assertFailOn |= lockedMask;
+        break;
+    case 9:  // FailOff
+        m_s.m_assertFailOn &= ~lockedMask;
+        break;
+    case 10:  // NonvacuousOn
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 11:  // VacuousOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        break;
+    default:
+        VL_WARN_MT("", 0, "",
+                   ("Bad $assertcontrol control_type '" + std::to_string(controlType)
+                    + "' (IEEE 1800-2023 Table 20-5)")
+                       .c_str());
+    }
+}
+uint32_t
+VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
+    const uint32_t mask = assertOnMask(type, directive);
+    if (!mask) return 0;
+    switch (query) {  // LCOV_EXCL_BR_LINE
+    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
+        assert(mask && (mask & (mask - 1)) == 0);
+        return m_s.m_assertKill[VL_CLOG2_I(mask)];
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
+        return (m_s.m_assertPassOnVacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
+        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
+    default:  // LCOV_EXCL_START
+        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
+        VL_UNREACHABLE;
+    }  // LCOV_EXCL_STOP
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

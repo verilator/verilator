@@ -942,13 +942,16 @@ public:
 class AstPExprClause final : public AstNodeStmt {
     const bool m_pass;  // True if will be replaced by passing assertion clause, false for
                         // assertion failure clause
+    const bool m_vacuous;  // True if pass is vacuous
 
 public:
     ASTGEN_MEMBERS_AstPExprClause;
-    explicit AstPExprClause(FileLine* fl, bool pass = true)
+    explicit AstPExprClause(FileLine* fl, bool pass = true, bool vacuous = false)
         : ASTGEN_SUPER_PExprClause(fl)
-        , m_pass{pass} {}
+        , m_pass{pass}
+        , m_vacuous{vacuous} {}
     bool pass() const { return m_pass; }
+    bool vacuous() const { return m_vacuous; }
 };
 class AstPrintTimeScale final : public AstNodeStmt {
     // Parents: stmtlist
