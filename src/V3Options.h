@@ -415,6 +415,7 @@ private:
     // main switch: -fno-ico-change-detect: input change detection optimization
     VOptionBool m_fIcoChangeDetect{VOptionBool::OPT_DEFAULT_TRUE};
     bool m_fInline;      // main switch: -fno-inline: module inlining
+    bool m_fInlineCFuncs;  // main switch: -fno-inline-cfuncs: inline small C functions
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
@@ -753,6 +754,7 @@ public:
     bool fGate() const { return m_fGate; }
     VOptionBool fIcoChangeDetect() const { return m_fIcoChangeDetect; }
     bool fInline() const { return m_fInline; }
+    bool fInlineCFuncs() const { return m_fInlineCFuncs; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }

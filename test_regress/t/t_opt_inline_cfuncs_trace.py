@@ -4,22 +4,21 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.top_filename = "t/t_opt_inline_cfuncs.v"
 
-test.compile(verilator_flags2=[
-    "--stats", "--binary", "--inline-cfuncs-product", "200", "--dumpi-V3InlineCFuncs", "9"
-])
-
-test.execute()
+test.compile(verilator_flags2=["--stats", "--binary", "--trace", "--inline-cfuncs-product", "200"])
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 7)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 8)
     test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', 7)
-    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 7)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 9)
+
+test.execute()
 
 test.passes()
