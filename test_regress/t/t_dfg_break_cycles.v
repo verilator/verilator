@@ -124,6 +124,9 @@ module t (
   assign SHIFTRS_VARIABLE_4_B = signed'({4'b1111, SHIFTRS_VARIABLE_4_A[1]}) >>> rand_b[0];
   assign SHIFTRS_VARIABLE_4_A = rand_a[3:0] ^ SHIFTRS_VARIABLE_4_B[4:1];
 
+  `signal(SHIFTRS_VARIABLE_5, 2); // UNOPTFLAT
+  assign SHIFTRS_VARIABLE_5 = signed'({rand_a[0], SHIFTRS_VARIABLE_5[1]}) >>> rand_b[0];
+
   `signal(SHIFTR, 14); // UNOPTFLAT
   assign SHIFTR = {
     SHIFTR[6:5],         // 13:12
@@ -200,6 +203,16 @@ module t (
   wire logic [3:0] REPLICATE_4_B;
   assign REPLICATE_4_B = {2{REPLICATE_4_A[1:0]}};
   assign REPLICATE_4_A = {REPLICATE_4_B[2:1], rand_a[1:0]};
+
+  function automatic logic [1:0] span_repl(input logic [1:0] x);
+    logic [3:0] r;
+    r = {2{x}};
+    return r[2:1];
+  endfunction
+  wire logic [3:0] replicate_5_int;  // UNOPTFLAT
+  assign replicate_5_int = {span_repl(replicate_5_int[1:0]), rand_a[1:0]};
+  `signal(REPLICATE_5, 4);
+  assign REPLICATE_5 = replicate_5_int;
 
   `signal(PARTIAL, 4); // UNOPTFLAT
   assign PARTIAL[0] = rand_a[0];
