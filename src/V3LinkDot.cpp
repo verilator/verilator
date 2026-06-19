@@ -1013,18 +1013,23 @@ public:
             if (checkUnresolvedRef(VN_CAST(dtypep, RefDType))) return true;
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
-            // ParamTypeDType child may be wrapped in RequireDType or unwrapped
+            // Before V3Param the declared default is in childDTypep (possibly
+            // wrapped in a RequireDType); after V3Param it is consumed and the
+            // bound type is the resolved data type, e.g. a type parameter
+            // inherited from a specialized base class (REQ #(Item) -> class Item).
             AstNode* childp = paramTypep->childDTypep();
             if (const AstRequireDType* const reqp = VN_CAST(childp, RequireDType)) {
                 childp = reqp->lhsp();
             }
-            if (isValidTypeNode(childp)) return true;
-            if (checkUnresolvedRef(VN_CAST(childp, RefDType))) return true;
+            const AstNode* const checkp = childp ? childp : paramTypep->skipRefp();
+            if (isValidTypeNode(checkp)) return true;
+            if (checkUnresolvedRef(VN_CAST(checkp, RefDType))) return true;
         }
         return false;
     }
     VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool fallback,
-                                   bool classOnly, const string& forWhat) {
+                                   bool classOnly, const string& forWhat,
+                                   bool deferIfUnresolved = false) {
         if (nodep->classOrPackageSkipp()) return getNodeSym(nodep->classOrPackageSkipp());
         VSymEnt* foundp;
         VSymEnt* searchSymp = lookSymp;
@@ -1049,6 +1054,14 @@ public:
         if (foundp) {
             nodep->classOrPackageNodep(foundp->nodep());
             return foundp;
+        }
+        if (deferIfUnresolved) {
+            // Inside a class that extends a parameterized base, the name may be a
+            // type parameter (or other member) inherited from that base, which is
+            // only resolvable once the base is deparameterized by V3Param. Leave the
+            // reference unresolved so the caller defers it; a genuine bad name will
+            // still error in the post-V3Param link pass.
+            return nullptr;
         }
         const string suggest
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
@@ -4752,8 +4765,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_RESTORER(m_pinSymp);
 
             if (!nodep->classOrPackageSkipp() && nodep->name() != "local::") {
+                // When inside a class that extends a parameterized base, an
+                // unresolved name may be a base-class type parameter that only
+                // becomes available after V3Param; defer rather than error.
+                const bool deferIfUnresolved = m_statep->forPrimary() && m_insideClassExtParam;
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
-                                                false, ":: reference");
+                                                false, ":: reference", deferIfUnresolved);
             }
 
             // ClassRef's have pins, so track
