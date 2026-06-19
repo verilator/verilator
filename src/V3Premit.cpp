@@ -169,7 +169,8 @@ class PremitVisitor final : public VNVisitor {
             // Shift amount not known at compile time. Convert to *Ovr version. Don't need to do
             // if it would use a wide operation which works correctly at runtime, of if the max
             // value of the shift amount is less than the with of the shifted value.
-            if (nodep->widthMin() <= VL_QUADSIZE && (nodep->width() < (1LL << nodep->rhsp()->widthMin()))) {
+            if (nodep->widthMin() <= VL_QUADSIZE
+                && (nodep->width() < (1LL << nodep->rhsp()->widthMin()))) {
                 AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* newp = nullptr;
