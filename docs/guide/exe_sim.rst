@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _simulation runtime arguments:
 
@@ -50,8 +51,8 @@ Options:
 
 .. option:: +verilator+log+file+<filename>
 
-    Log all stdout and stderr to the specified output filename. If not specified
-    the normal stdout/stderr streams are used.
+   Log all stdout and stderr to the specified output filename. If not specified
+   the normal stdout/stderr streams are used.
 
 .. option:: +verilator+noassert
 

@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *****
 Files
@@ -163,9 +164,11 @@ The Verilated executable may produce the following:
 .. list-table::
 
    * - coverage.dat
-     - Code coverage output, and default input filename for :command:`verilator_coverage`
+     - Code coverage output, and default input filename for
+       :command:`verilator_coverage`
    * - gmon.out
-     - GCC/clang code profiler output, often fed into :command:`verilator_profcfunc`
+     - GCC/clang code profiler output, often fed into
+       :command:`verilator_profcfunc`
    * - profile.vlt
      - --prof-pgo data file for :ref:`Thread PGO`
    * - profile_exec.dat

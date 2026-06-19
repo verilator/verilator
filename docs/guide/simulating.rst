@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _simulating:
 
@@ -218,8 +219,8 @@ Covergroup Coverage
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
 translate covergroup coverage points the user has inserted manually in
-SystemVerilog code into the Verilated model. Verilator supports
-coverpoints with value and transition bins, and cross points.
+SystemVerilog code into the Verilated model. Verilator supports coverpoints
+with value and transition bins, and cross points.
 
 
 .. _fsm coverage:
@@ -244,15 +245,15 @@ encodings in these common forms:
 - Single-process FSMs, whose state dispatch is written as ``case (state)``
   or as a top-level ``if`` / ``else if`` chain comparing the same state
   variable against known state values
-- Two-process and three-block FSMs, where a clocked state register is paired
-  with a combinational next-state block using the same supported
+- Two-process and three-block FSMs, where a clocked state register is
+  paired with a combinational next-state block using the same supported
   ``case`` or top-level ``if`` / ``else if`` dispatch forms
 
-Scalar state encodings may be wider than 32 bits. This allows sparse
-state encodings, such as high-Hamming-distance enum or localparam values,
-to be preserved in the detected FSM model. Verilator uses the declared
-enum item name, parameter name, or localparam name as the reported state
-label where possible.
+Scalar state encodings may be wider than 32 bits. This allows sparse state
+encodings, such as high-Hamming-distance enum or localparam values, to be
+preserved in the detected FSM model. Verilator uses the declared enum item
+name, parameter name, or localparam name as the reported state label where
+possible.
 
 Simple input guards are supported when they appear inside a recognized
 state branch, or as a top-level conjunction containing exactly one state
@@ -275,10 +276,10 @@ the extracted coverage model:
 - ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
   arcs that would otherwise be skipped by the conservative extractor.
 
-State registers may also be wrapped by a transparent instance, for
-example a project flop wrapper or primitive. Such wrappers must be
-described explicitly with a VLT command file action before Verilator will
-use their data, state, clock, or reset connections for FSM extraction:
+State registers may also be wrapped by a transparent instance, for example
+a project flop wrapper or primitive. Such wrappers must be described
+explicitly with a VLT command file action before Verilator will use their
+data, state, clock, or reset connections for FSM extraction:
 
 .. code-block:: sv
 
@@ -298,11 +299,10 @@ Optional reset metadata may also be supplied:
    fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" \
       -reset "rst_ni" -reset_value "ResetValue"
 
-Reset arcs are emitted only when the configured reset port has an
-inferable edge in the wrapper and the configured reset value parameter is
-statically resolvable. If reset metadata is incomplete, Verilator warns
-and may still emit FSM state and transition coverage, but reset arcs are
-omitted.
+Reset arcs are emitted only when the configured reset port has an inferable
+edge in the wrapper and the configured reset value parameter is statically
+resolvable. If reset metadata is incomplete, Verilator warns and may still
+emit FSM state and transition coverage, but reset arcs are omitted.
 
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather

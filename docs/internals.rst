@@ -732,8 +732,8 @@ event `a` was called first - which is necessary to know.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
-* ``_timing_ready()``, which commits all coroutines whose triggers were
-  not set in the current iteration,
+* ``_timing_ready()``, which commits all coroutines whose triggers were not
+  set in the current iteration,
 * ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
 
@@ -937,14 +937,15 @@ macro-task's dataset fits in one core's local caches.
 
 To achieve spatial locality, we tag each variable with the set of
 macro-tasks that access it. Let's call this set the "footprint" of that
-variable. The variables in a given module have a set of footprints. We group
-variables with identical non-empty footprints, emit those groups in deterministic
-footprint-key order, then emit variables with no footprint information last.
+variable. The variables in a given module have a set of footprints. We
+group variables with identical non-empty footprints, emit those groups in
+deterministic footprint-key order, then emit variables with no footprint
+information last.
 
-The first emitted variable in each footprint group is aligned to a cache-line
-boundary. This avoids false sharing between different macro-task footprints
-without building a complete pairwise-distance graph over all footprints, which
-would use excessive memory on very large models.
+The first emitted variable in each footprint group is aligned to a
+cache-line boundary. This avoids false sharing between different macro-task
+footprints without building a complete pairwise-distance graph over all
+footprints, which would use excessive memory on very large models.
 
 This is an old idea. Simulators designed at DEC in the early 1990s used
 similar techniques to optimize both single-thread and multithread modes.
