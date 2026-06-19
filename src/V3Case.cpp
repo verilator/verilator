@@ -827,9 +827,6 @@ class CaseVisitor final : public VNVisitor {
         // Build a single value table for all LHSs: one entry per clause, packing each LHS's value
         // at its offset. The entry width is the table packing computed by 'analyzeDecoderPattern'
         // Rounded up to a whole EDATA word boundary to avoid bit swizzling at runtime.
-        const int valueWidth = VL_WORDS_I(m_caseDecoderEntryWidth) * VL_EDATASIZE;
-        AstConst* const valuep
-            = new AstConst{flp, AstConst::WidthedValue{}, decoderEnries * valueWidth, 0};
         for (int i = 0; i < decoderEnries; ++i) {
             AstNode* const stmtsp = clauses[i].second;
             AstConst* const entryp = new AstConst{flp, AstConst::WidthedValue{},
@@ -859,7 +856,7 @@ class CaseVisitor final : public VNVisitor {
         AstVarScope* const matchVscp = v3Global.rootp()->constPoolp()->findConst(matchp, true);
         AstVarScope* const tableVscp = v3Global.rootp()->constPoolp()->findTable(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
-        VL_DO_DANGLING(tablep->deleteTree(), valuep);
+        VL_DO_DANGLING(tablep->deleteTree(), tablep);
 
         // AstMatchMasked produces the index of the matching entry
         AstNodeExpr* const tableRefp = new AstVarRef{flp, tableVscp, VAccess::READ};
