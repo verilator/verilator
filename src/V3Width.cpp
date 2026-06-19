@@ -3811,7 +3811,7 @@ class WidthVisitor final : public VNVisitor {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
-                    AstIface* const ifacep = adtypep->ifacep();
+                    AstIface* const ifacep = adtypep->ifaceViaCellp();
                     varp->sensIfacep(ifacep);
                     nodep->didWidth(true);
                     return;
@@ -3852,7 +3852,25 @@ class WidthVisitor final : public VNVisitor {
                         UASSERT_OBJ(viftopVarp, nodep,
                                     "No __Viftop variable for sub-interface cell");
                         if (!viftopVarp->didWidth()) userIterate(viftopVarp, nullptr);
-                        nodep->dtypep(viftopVarp->dtypep());
+                        AstNodeDType* subDtypep = viftopVarp->dtypep();
+                        if (adtypep->isVirtual()) {
+                            // A sub-interface selected through a virtual interface
+                            // handle is itself a virtual reference (a runtime
+                            // instance pointer), not a static instance. Mark the
+                            // dtype virtual so a method call on it dispatches per
+                            // instance instead of inlining to one fixed scope.
+                            if (AstIfaceRefDType* const subRefp
+                                = VN_CAST(subDtypep->skipRefp(), IfaceRefDType)) {
+                                AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
+                                    nodep->fileline(), subRefp->cellName(), subRefp->ifaceName()};
+                                newDtypep->ifacep(subRefp->ifacep());
+                                newDtypep->cellp(subRefp->cellp());
+                                newDtypep->isVirtual(true);
+                                v3Global.rootp()->typeTablep()->addTypesp(newDtypep);
+                                subDtypep = newDtypep;
+                            }
+                        }
+                        nodep->dtypep(subDtypep);
                         nodep->varp(viftopVarp);
                         viftopVarp->sensIfacep(VN_AS(cellp->modp(), Iface));
                         nodep->didWidth(true);
@@ -4803,7 +4821,9 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void methodCallIfaceRef(AstMethodCall* nodep, AstIfaceRefDType* adtypep) {
-        AstIface* const ifacep = adtypep->ifacep();
+        // ifaceViaCellp() resolves the interface via cellp when ifacep is null,
+        // as for a sub-interface selected through a virtual interface handle.
+        AstIface* const ifacep = adtypep->ifaceViaCellp();
         UINFO(5, __FUNCTION__ << ":" << nodep);
         if (AstNodeFTask* const ftaskp
             = VN_CAST(m_memberMap.findMember(ifacep, nodep->name()), NodeFTask)) {
