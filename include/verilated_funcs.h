@@ -270,7 +270,7 @@ static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_
 }
 
 // Masked match functions
-static inline IData VL_MATCHMASKED_I(int , IData lhs, WDataInP matchp) VL_PURE {
+static inline IData VL_MATCHMASKED_I(int, IData lhs, WDataInP matchp) VL_PURE {
     size_t i = 0;
     while (true) {
         const IData mask = matchp[i * 2];

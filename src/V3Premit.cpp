@@ -352,7 +352,7 @@ class PremitVisitor final : public VNVisitor {
         if (!nodep->user1SetOnce()) {
             // Don't want this replicated by V3Expand
             AstVar* const varp = createTemp(nodep);
-            varp->noSubst(true); // Do not re-inline in V3Subst
+            varp->noSubst(true);  // Do not re-inline in V3Subst
         }
     }
     void visit(AstCond* nodep) override {
