@@ -275,6 +275,7 @@ class DelayedVisitor final : public VNVisitor {
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
     bool m_inNonCombLogic = false;  // We are in non-combinational logic
+    bool m_needsInitialTrigger = false;  // Whether a NodeProcedure needs a initial trigger
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
     // STATE - during NBA conversion (after visit)
@@ -291,6 +292,7 @@ class DelayedVisitor final : public VNVisitor {
     VDouble0 m_nSchemeValueQueuesWhole;  //  Number of variables using Scheme::ValueQueueWhole
     VDouble0 m_nSchemeValueQueuesPartial;  //  Number of variables using Scheme::ValueQueuePartial
     VDouble0 m_nSharedSetFlags;  // "Set" flags actually shared by Scheme::FlagShared variables
+    VDouble0 m_nInitialNBA;  // Number of procedural blocks with initial NBA
 
     // METHODS
 
@@ -999,6 +1001,12 @@ class DelayedVisitor final : public VNVisitor {
         m_writeRefs(nodep->varScopep()).emplace_back(nodep, nonBlocking, m_inNonCombLogic);
     }
 
+    template <typename Procedure_T>
+    static bool isProcedureWithSentreep(const AstNodeProcedure* const nodep) {
+        const Procedure_T* const procedurep = AstNode::cast<Procedure_T>(nodep);
+        return procedurep && procedurep->sentreep();
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
@@ -1112,21 +1120,36 @@ class DelayedVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_needsInitialTrigger);
         const size_t firstNBAAddedIndex = m_nbas.size();
         {
             VL_RESTORER(m_inSuspendableOrFork);
             VL_RESTORER(m_procp);
             VL_RESTORER(m_ignoreBlkAndNBlk);
             VL_RESTORER(m_inNonCombLogic);
-            m_inSuspendableOrFork = nodep->isSuspendable();
+            // When we are dealing with initial block we need to
+            // treat it as suspendable when we meet a NBA
+            m_inSuspendableOrFork = nodep->isSuspendable() || VN_IS(nodep, Initial);
             m_procp = nodep;
-            if (m_inSuspendableOrFork) {
+            if (nodep->isSuspendable()) {
                 m_ignoreBlkAndNBlk = false;
                 m_inNonCombLogic = true;
             }
             iterateChildren(nodep);
         }
-        if (m_timingDomains.empty()) return;
+        auto containsClocled = [](const AstSenItem* itemp) {
+            while (itemp) {
+                if (itemp->edgeType().clockedStmt()) return true;
+                itemp = VN_AS(itemp->nextp(), SenItem);
+            }
+            return false;
+        };
+        const bool addInitialTrigger = m_needsInitialTrigger
+                                       && !(isProcedureWithSentreep<AstAlways>(nodep)
+                                            || isProcedureWithSentreep<AstAlwaysObserved>(nodep)
+                                            || isProcedureWithSentreep<AstAlwaysReactive>(nodep))
+                                       && !containsClocled(m_activep->sentreep()->sensesp());
+        if (m_timingDomains.empty() && !addInitialTrigger) return;
 
         // There were some timing domains involved in the process. Add all of them as sensitivities
         // of all NBA targets in this process. Note this is a bit of a sledgehammer, we should only
@@ -1135,6 +1158,11 @@ class DelayedVisitor final : public VNVisitor {
 
         // First gather all senItems
         AstSenItem* senItemp = nullptr;
+        if (addInitialTrigger) {
+            senItemp = new AstSenItem{nodep->fileline(), AstSenItem::InitialNBA{}};
+            ++m_nInitialNBA;
+        }
+
         for (const AstSenTree* const domainp : m_timingDomains) {
             if (domainp->sensesp())
                 senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
@@ -1217,6 +1245,8 @@ class DelayedVisitor final : public VNVisitor {
         UASSERT_OBJ(m_scopep, nodep, "<= not under scope");
         UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
                     "<= assignment in non-clocked block, should have been converted in V3Active");
+
+        m_needsInitialTrigger |= m_timingDomains.empty();
 
         // Record scope of this NBA
         nodep->user2p(m_scopep);
@@ -1327,6 +1357,7 @@ public:
         V3Stats::addStat("NBA, variables using ValueQueuePartial scheme",
                          m_nSchemeValueQueuesPartial);
         V3Stats::addStat("Optimizations, NBA flags shared", m_nSharedSetFlags);
+        V3Stats::addStat("Procedures needing initial NBA trigger", m_nInitialNBA);
     }
 };
 

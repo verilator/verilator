@@ -78,7 +78,7 @@ private:
     // Check if expression contains a class member access that could be null
     // (e.g., accessing an event through a class reference that may not be initialized)
     static bool hasClassMemberAccess(const AstNode* const exprp) {
-        return exprp->exists([](const AstNode* const nodep) {
+        return exprp && exprp->exists([](const AstNode* const nodep) {
             if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
                 // Check if the base expression is a class reference
                 return mselp->fromp()->dtypep()
@@ -294,6 +294,8 @@ private:
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};
+        case VEdgeType::ET_INITIAL_NBA:  //
+            return {new AstConst{flp, AstConst::BitFalse{}}, true};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};
