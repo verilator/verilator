@@ -1456,6 +1456,20 @@ V3Number& V3Number::opCLog2(const V3Number& lhs) {
     setZero();
     return *this;
 }
+V3Number& V3Number::opMostSetBitP1(const V3Number& lhs) {
+    // Most-significant set bit plus one (bit-width / find-last-set); 0 if value is zero
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_LOGIC_ARGS1(lhs);
+    if (lhs.isFourState()) return setAllBitsX();
+    for (int bit = lhs.width() - 1; bit >= 0; bit--) {
+        if (lhs.bitIs1(bit)) {
+            setLong(bit + 1);
+            return *this;
+        }
+    }
+    setZero();
+    return *this;
+}
 
 V3Number& V3Number::opLogNot(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
