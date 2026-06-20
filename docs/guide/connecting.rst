@@ -179,7 +179,7 @@ DPI Example
 In the SYSTEMC example above, if you wanted to import C++ functions into
 Verilog, put in our.v:
 
-.. code-block::
+.. code-block:: sv
 
    import "DPI-C" function int add (input int a, input int b);
 
@@ -213,7 +213,7 @@ function name for the import, but note it must be escaped.
 
 .. code-block:: sv
 
-   export "DPI-C" function integer \$myRand;
+   import "DPI-C" function integer \$myRand;
 
    initial $display("myRand=%d", $myRand());
 
