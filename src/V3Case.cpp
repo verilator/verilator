@@ -284,6 +284,7 @@ class CaseVisitor final : public VNVisitor {
     // Returns true iff the case items cover all enum values/patterns.
     bool checkExhaustiveEnum(const AstCase* const nodep, const AstEnumDType* const enump) {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
+        bool fullyCovered = true;
         for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
             const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
             const uint32_t mask = match.first.toUInt();
@@ -298,11 +299,11 @@ class CaseVisitor final : public VNVisitor {
                     nodep->v3warn(CASEINCOMPLETE,
                                   "Enum item " << eip->prettyNameQ() << " not covered by case");
                 }
-                // TODO: warn for all uncovered enum values, not just the first
-                return false;  // enum has uncovered value by case items
+                fullyCovered = false;
+                break;
             }
         }
-        return true;  // enum is fully covered
+        return fullyCovered;  // enum is fully covered
     }
 
     // Check and warn if case items are not complete over all possible values.
