@@ -748,8 +748,8 @@ Thanks to this separation a coroutine:
 * cannot be resumed before it is suspended -
   ``test_regress/t/t_event_control_double_excessive.v``;
 * firing cannot cannot be lost
-  (``test_regress/t/t_event_control_double_lost.v``) - which is possible when
-  triggers are not evaluated right before awaiting.
+  (``test_regress/t/t_event_control_double_lost.v``) - which is possible
+  when triggers are not evaluated right before awaiting.
 
 All coroutines are committed and resumed in the 'act' eval loop. With
 timing features enabled, the ``_eval()`` function takes this form:
