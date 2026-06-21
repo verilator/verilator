@@ -1,3 +1,0 @@
-%Warning-CASEINCOMPLETE: t/t_case_incomplete_enum_warn.v:17:16: Enum item 'STATE_WRITE' not covered by case
-%Warning-CASEINCOMPLETE: t/t_case_incomplete_enum_warn.v:17:16: Enum item 'STATE_ERROR' not covered by case
-%Error: Exiting due to 2 warning(s)
