@@ -811,7 +811,7 @@ static bool verilate(const string& argString) {
     V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
     if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteAll");
-    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast");
+    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast", true);
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
