@@ -22,6 +22,7 @@
 #include "V3AssertNfa.h"
 #include "V3AssertPre.h"
 #include "V3Ast.h"
+#include "V3AstPatterns.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
@@ -541,6 +542,8 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());
 
+            if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "prec");
+
             // Here down, widthMin() is the Verilog width, and width() is the C++ width
             // Bits between widthMin() and width() are irrelevant, but may be non-zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
@@ -634,6 +637,8 @@ static void process() {
                 v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
             }
         }
+
+        if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "emit");
 
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()

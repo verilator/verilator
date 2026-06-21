@@ -959,6 +959,9 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     delete this;
 }
 
+//######################################################################
+// Renders the canonical pattern S-expression for a single DfgVertex
+
 class DfgPatternString final {
     std::ostream& m_os;
 

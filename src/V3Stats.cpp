@@ -35,15 +35,12 @@ class StatsVisitor final : public VNVisitorConst {
     struct Counters final {
         // Nodes of given type
         std::array<uint64_t, VNType::NUM_TYPES()> m_statTypeCount{};
-        // Nodes of given type with given type immediate child
-        std::array<std::array<uint64_t, VNType::NUM_TYPES()>, VNType::NUM_TYPES()> m_statAbove{};
         // Prediction of given type
         std::array<uint64_t, VBranchPred::_ENUM_END> m_statPred{};
     };
 
     // STATE
     const bool m_fastOnly;  // When true, consider only fast functions
-    const AstNodeExpr* m_parentExprp = nullptr;  // Parent expression
     Counters m_counters;  // The actual counts we will display
     Counters m_dumpster;  // Alternate buffer to make discarding parts of the tree easier
     Counters* m_accump;  // The currently active accumulator
@@ -72,14 +69,6 @@ class StatsVisitor final : public VNVisitorConst {
             }
         }
 
-        countThenIterateChildren(nodep);
-    }
-
-    void visit(AstNodeExpr* nodep) override {
-        // Count expression combinations
-        if (m_parentExprp) ++m_accump->m_statAbove[m_parentExprp->type()][nodep->type()];
-        VL_RESTORER(m_parentExprp);
-        m_parentExprp = nodep;
         countThenIterateChildren(nodep);
     }
 
@@ -145,15 +134,6 @@ public:
             if (const uint64_t count = m_counters.m_statTypeCount[t]) {
                 const double share = 100.0 * count * typeSize(t) / totalNodeMemoryUsage;
                 addStat("Node memory share (%), " + typeName(t), share, 2);
-            }
-        }
-
-        // Expression combinations
-        for (size_t t1 = 0; t1 < VNType::NUM_TYPES(); ++t1) {
-            for (size_t t2 = 0; t2 < VNType::NUM_TYPES(); ++t2) {
-                if (const uint64_t c = m_counters.m_statAbove[t1][t2]) {
-                    addStat("Expr combination, " + typeName(t1) + " over " + typeName(t2), c);
-                }
             }
         }
 

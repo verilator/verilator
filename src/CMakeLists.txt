@@ -51,6 +51,7 @@ set(HEADERS
     V3AstNodeExpr.h
     V3AstNodeOther.h
     V3AstNodeStmt.h
+    V3AstPatterns.h
     V3AstUserAllocator.h
     V3Begin.h
     V3Branch.h
@@ -250,7 +251,6 @@ set(COMMON_SOURCES
     V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
-    V3DfgDumpPatterns.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
@@ -327,6 +327,7 @@ set(COMMON_SOURCES
     V3ParseGrammar.cpp
     V3ParseImp.cpp
     V3ParseLex.cpp
+    V3PatternStats.cpp
     V3PreProc.cpp
     V3PreShell.cpp
     V3Premit.cpp

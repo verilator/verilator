@@ -73,6 +73,9 @@ public:
     // Returns an error message if widthMin() is not correct otherwise returns nullptr like
     // broken()
     virtual const char* widthMismatch() const VL_MT_STABLE { return nullptr; }
+
+    // S-expression inspired dump of node and operands for debugging
+    std::string patternString(uint32_t depth = 0) const;
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
