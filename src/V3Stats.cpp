@@ -41,6 +41,7 @@ class StatsVisitor final : public VNVisitorConst {
 
     // STATE
     const bool m_fastOnly;  // When true, consider only fast functions
+    bool m_empty = true;  // Netlist is empty
     Counters m_counters;  // The actual counts we will display
     Counters m_dumpster;  // Alternate buffer to make discarding parts of the tree easier
     Counters* m_accump;  // The currently active accumulator
@@ -51,6 +52,7 @@ class StatsVisitor final : public VNVisitorConst {
     // METHODS
     void countThenIterateChildren(AstNode* nodep) {
         ++m_accump->m_statTypeCount[nodep->type()];
+        if (nodep->type() != VNType::Netlist) m_empty = false;
         iterateChildrenConst(nodep);
     }
 
@@ -93,6 +95,7 @@ public:
         , m_accump{fastOnly ? &m_dumpster : &m_counters} {
         UINFO(9, "Starting stats, fastOnly=" << fastOnly);
         iterateConst(nodep);
+        if (m_empty) return;
 
         // Shorthand
         const auto addStat = [&](const std::string& name, double count, unsigned precision = 0) {
@@ -127,13 +130,13 @@ public:
                 addStat("Node count, " + typeName(t), count);
             }
         }
-        addStat("Node memory TOTAL (MiB)", totalNodeMemoryUsage >> 20);
+        addStat("Node mem TOTAL (MiB)", totalNodeMemoryUsage >> 20);
 
         // Node Memory usage
         for (size_t t = 0; t < VNType::NUM_TYPES(); ++t) {
             if (const uint64_t count = m_counters.m_statTypeCount[t]) {
                 const double share = 100.0 * count * typeSize(t) / totalNodeMemoryUsage;
-                addStat("Node memory share (%), " + typeName(t), share, 2);
+                addStat("Node mem %, " + typeName(t), share, 2);
             }
         }
 
