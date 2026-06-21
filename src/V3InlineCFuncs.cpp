@@ -41,40 +41,38 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Bipartite call graph containing function and call site vertices
 
-namespace InlineCFuncsCallGraph {
+class InlineCFuncsFunctionVertex;
+class InlineCFuncsCallSiteVertex;
 
-class FunctionVertex;
-class CallSiteVertex;
-
-class CallGraph final : public V3Graph {
+class InlineCFuncsCallGraph final : public V3Graph {
 public:
-    CallGraph()
+    InlineCFuncsCallGraph()
         : V3Graph{} {}
-    ~CallGraph() override = default;
+    ~InlineCFuncsCallGraph() override = default;
 
-    void addEdge(FunctionVertex& from, CallSiteVertex& top);
-    void addEdge(CallSiteVertex& from, FunctionVertex& top);
+    void addEdge(InlineCFuncsFunctionVertex& from, InlineCFuncsCallSiteVertex& top);
+    void addEdge(InlineCFuncsCallSiteVertex& from, InlineCFuncsFunctionVertex& top);
 };
 
 class EitherVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(EitherVertex, V3GraphVertex)
 protected:
-    explicit EitherVertex(CallGraph& graph)
+    explicit EitherVertex(InlineCFuncsCallGraph& graph)
         : V3GraphVertex{&graph} {}
 };
 
-class FunctionVertex final : public EitherVertex {
-    VL_RTTI_IMPL(FunctionVertex, EitherVertex)
+class InlineCFuncsFunctionVertex final : public EitherVertex {
+    VL_RTTI_IMPL(InlineCFuncsFunctionVertex, EitherVertex)
     AstCFunc* const m_cfuncp;  // The function
     const char* m_noInlineWyp = nullptr;  // First reason the function should not be inlined
     const char* m_keepWyp = nullptr;  // Why the function should not be removed
     size_t m_size = 0;  // The size of the function
 
 public:
-    FunctionVertex(CallGraph& graph, AstCFunc* cfuncp)
+    InlineCFuncsFunctionVertex(InlineCFuncsCallGraph& graph, AstCFunc* cfuncp)
         : EitherVertex{graph}
         , m_cfuncp{cfuncp} {}
-    ~FunctionVertex() override = default;
+    ~InlineCFuncsFunctionVertex() override = default;
 
     // ACCESSORS
     AstCFunc* cfuncp() const { return m_cfuncp; }
@@ -96,7 +94,8 @@ public:
     FileLine* fileline() const override { return m_cfuncp->fileline(); }
     std::string dotShape() const override { return "box"; }
     std::string name() const override VL_MT_STABLE {
-        std::string str = m_cfuncp->name();
+        std::string str = cvtToHex(m_cfuncp);
+        str += "\n" + m_cfuncp->name();
         str += "\nsize: " + std::to_string(m_size);
         if (m_noInlineWyp) str += "\nNoInline: "s + m_noInlineWyp;
         if (m_keepWyp) str += "\nKeep: "s + m_keepWyp;
@@ -104,16 +103,16 @@ public:
     }
 };
 
-class CallSiteVertex final : public EitherVertex {
-    VL_RTTI_IMPL(CallSiteVertex, EitherVertex)
+class InlineCFuncsCallSiteVertex final : public EitherVertex {
+    VL_RTTI_IMPL(InlineCFuncsCallSiteVertex, EitherVertex)
     AstCCall* const m_callp;  // The call site
     const char* m_noInlineWyp = nullptr;  // First reason the function should not be inlined
 
 public:
-    CallSiteVertex(CallGraph& graph, AstCCall* callp)
+    InlineCFuncsCallSiteVertex(InlineCFuncsCallGraph& graph, AstCCall* callp)
         : EitherVertex{graph}
         , m_callp{callp} {}
-    ~CallSiteVertex() override = default;
+    ~InlineCFuncsCallSiteVertex() override = default;
 
     // ACCESSORS
     AstCCall* callp() const { return m_callp; }
@@ -133,30 +132,28 @@ public:
     }
 };
 
-void CallGraph::addEdge(FunctionVertex& caller, CallSiteVertex& callsite) {
+void InlineCFuncsCallGraph::addEdge(InlineCFuncsFunctionVertex& caller,
+                                    InlineCFuncsCallSiteVertex& callsite) {
     UASSERT_OBJ(callsite.inEmpty(), &callsite, "Call site should have at most one incoming edge");
     new V3GraphEdge{this, &caller, &callsite, 1, true};  // Can cut caller -> callsite
 }
-void CallGraph::addEdge(CallSiteVertex& callsite, FunctionVertex& callee) {
+void InlineCFuncsCallGraph::addEdge(InlineCFuncsCallSiteVertex& callsite,
+                                    InlineCFuncsFunctionVertex& callee) {
     UASSERT_OBJ(callsite.outEmpty(), &callsite, "Call site should have at most one outgoing edge");
     new V3GraphEdge{this, &callsite, &callee, 1, false};
 }
-
-}  //namespace InlineCFuncsCallGraph
-
-using namespace InlineCFuncsCallGraph;
 
 //######################################################################
 
 class InlineCFuncsVisitor final : public VNVisitor {
     // NODE STATE
-    // AstCFunc::user1p() ->  FunctionVertex*, the function vertex
-    // AstCCall::user1p() ->  CallSiteVertex*, the call site vertex
+    // AstCFunc::user1p() ->  InlineCFuncsFunctionVertex*, the function vertex
+    // AstCCall::user1p() ->  InlineCFuncsCallSiteVertex*, the call site vertex
     // AstVar::user2p()   ->  AstVar*, the cloned inlined local variable
     const VNUser1InUse m_user1InUse;
 
     // STATE
-    CallGraph m_graph;  // The call graph
+    InlineCFuncsCallGraph m_graph;  // The call graph
     VDouble0 m_statCallsInlined;  // Number of calls inlined
     VDouble0 m_statFuncsInlined;  // Number of functions inlined at least once
     VDouble0 m_statFuncsRemoved;  // Number of fully-inlined functions removed
@@ -165,27 +162,32 @@ class InlineCFuncsVisitor final : public VNVisitor {
     // Product threshold: inline if size * calls <= this
     const size_t m_prodThreshold = v3Global.opt.inlineCFuncsProduct();
     // Maximum size of caller to consider inlining into
-    const size_t m_maxCallerSize = []() -> size_t {
+    const size_t m_maxSizeCFunc = []() -> size_t {
         int maxCFunc = v3Global.opt.outputSplitCFuncs();
-        int maxTrace = v3Global.opt.outputSplitCTrace();
         int maxFile = v3Global.opt.outputSplit();
         if (maxCFunc <= 0) maxCFunc = std::numeric_limits<int>::max();
+        if (maxFile <= 0) maxFile = std::numeric_limits<int>::max();
+        return std::min(maxCFunc, maxFile);
+    }();
+    const size_t m_maxSizeTrace = []() -> size_t {
+        int maxTrace = v3Global.opt.outputSplitCTrace();
+        int maxFile = v3Global.opt.outputSplit();
         if (maxTrace <= 0) maxTrace = std::numeric_limits<int>::max();
         if (maxFile <= 0) maxFile = std::numeric_limits<int>::max();
-        return std::min(maxCFunc, std::min(maxTrace, maxFile));
+        return std::min(maxTrace, maxFile);
     }();
-    FunctionVertex* m_cfuncVtxp = nullptr;  // Vertex of currently iterated function
+    InlineCFuncsFunctionVertex* m_cfuncVtxp = nullptr;  // Vertex of currently iterated function
     bool m_inExecGraph = false;  // True while inside an AstExecGraph subtree
 
     // METHODS
-    FunctionVertex* getFunctionVertexp(AstCFunc* cfuncp) {
-        if (!cfuncp->user1p()) cfuncp->user1p(new FunctionVertex{m_graph, cfuncp});
-        return cfuncp->user1u().to<FunctionVertex*>();
+    InlineCFuncsFunctionVertex* getInlineCFuncsFunctionVertexp(AstCFunc* cfuncp) {
+        if (!cfuncp->user1p()) cfuncp->user1p(new InlineCFuncsFunctionVertex{m_graph, cfuncp});
+        return cfuncp->user1u().to<InlineCFuncsFunctionVertex*>();
     }
 
-    CallSiteVertex* getCallSiteVertexp(AstCCall* callp) {
-        if (!callp->user1p()) callp->user1p(new CallSiteVertex{m_graph, callp});
-        return callp->user1u().to<CallSiteVertex*>();
+    InlineCFuncsCallSiteVertex* getInlineCFuncsCallSiteVertexp(AstCCall* callp) {
+        if (!callp->user1p()) callp->user1p(new InlineCFuncsCallSiteVertex{m_graph, callp});
+        return callp->user1u().to<InlineCFuncsCallSiteVertex*>();
     }
 
     AstCLocalScope* inlineCall(AstCFunc* const callerp,  //
@@ -249,15 +251,15 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
     void doInlining() {
         // Need to gather vertices as we are changing the graph
-        std::vector<FunctionVertex*> m_fVtxps;
+        std::vector<InlineCFuncsFunctionVertex*> m_fVtxps;
         for (V3GraphVertex& vtx : m_graph.vertices()) {
-            if (FunctionVertex* const fVtxp = vtx.cast<FunctionVertex>()) {
+            if (InlineCFuncsFunctionVertex* const fVtxp = vtx.cast<InlineCFuncsFunctionVertex>()) {
                 m_fVtxps.emplace_back(fVtxp);
             }
         }
 
         // Iterate functions leaf to root
-        for (FunctionVertex* const calleeVtxp : vlstd::reverse_view(m_fVtxps)) {
+        for (InlineCFuncsFunctionVertex* const calleeVtxp : vlstd::reverse_view(m_fVtxps)) {
             // Should we inline this function?
             if (calleeVtxp->noInline()) continue;  // Told not to
 
@@ -276,7 +278,8 @@ class InlineCFuncsVisitor final : public VNVisitor {
             // Ok, attempt to inline call sites
             size_t nInlined = 0;
             for (const V3GraphEdge* const edgep : calleeVtxp->inEdges().unlinkable()) {
-                CallSiteVertex* const callVtxp = edgep->fromp()->as<CallSiteVertex>();
+                InlineCFuncsCallSiteVertex* const callVtxp
+                    = edgep->fromp()->as<InlineCFuncsCallSiteVertex>();
 
                 AstCFunc* const calleep = calleeVtxp->cfuncp();
                 AstCCall* const callp = callVtxp->callp();
@@ -288,12 +291,13 @@ class InlineCFuncsVisitor final : public VNVisitor {
                 // Pick up the caller
                 UASSERT_OBJ(callVtxp->inSize1(), callVtxp->callp(),
                             "Expected exactly one input edge for call site");
-                FunctionVertex* const callerVtxp
-                    = callVtxp->inEdges().frontp()->fromp()->as<FunctionVertex>();
+                InlineCFuncsFunctionVertex* const callerVtxp
+                    = callVtxp->inEdges().frontp()->fromp()->as<InlineCFuncsFunctionVertex>();
                 AstCFunc* const callerp = callerVtxp->cfuncp();
 
                 // Don't make a function bigger than the limit
-                if (callerVtxp->size() + calleeVtxp->size() > m_maxCallerSize) continue;
+                const size_t limit = callerp->isTrace() ? m_maxSizeTrace : m_maxSizeCFunc;
+                if (callerVtxp->size() + calleeVtxp->size() > limit) continue;
 
                 // Can't do it if it's in a different scope, self pointers differ
                 if (callerp->scopep() != calleep->scopep()) continue;
@@ -316,7 +320,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
     void removeUnusedFuncs() {
         // Iterate root to leaves
         for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
-            FunctionVertex* const fVtxp = vtxp->cast<FunctionVertex>();
+            InlineCFuncsFunctionVertex* const fVtxp = vtxp->cast<InlineCFuncsFunctionVertex>();
             if (!fVtxp) continue;
             // Keep if still called
             if (!fVtxp->inEmpty()) continue;
@@ -339,7 +343,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
         // Delete inlined/deleted call site vertices (for debugging only)
         for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
-            CallSiteVertex* const cVtxp = vtxp->cast<CallSiteVertex>();
+            InlineCFuncsCallSiteVertex* const cVtxp = vtxp->cast<InlineCFuncsCallSiteVertex>();
             if (!cVtxp) continue;
             if (!cVtxp->inEmpty()) continue;
             if (!cVtxp->outEmpty()) continue;
@@ -350,7 +354,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstCFunc* nodep) override {
         // Create the function vertex
-        FunctionVertex* const vtxp = getFunctionVertexp(nodep);
+        InlineCFuncsFunctionVertex* const vtxp = getInlineCFuncsFunctionVertexp(nodep);
 
         // Check if the function itself is not inlineable
         if (nodep->rtnTypeVoid() != "void") vtxp->setNoInline("Not void");
@@ -377,7 +381,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         AstCFunc* const calleep = nodep->funcp();
 
         // Create the call site vertex
-        CallSiteVertex* const vtxp = getCallSiteVertexp(nodep);
+        InlineCFuncsCallSiteVertex* const vtxp = getInlineCFuncsCallSiteVertexp(nodep);
 
         // Check if the call site is not inlineable
         if (!VN_IS(nodep->backp(), StmtExpr)) vtxp->setNoInline("Not in statement position");
@@ -386,7 +390,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
         // Add caller/callee edges
         if (m_cfuncVtxp) m_graph.addEdge(*m_cfuncVtxp, *vtxp);
-        m_graph.addEdge(*vtxp, *getFunctionVertexp(calleep));
+        m_graph.addEdge(*vtxp, *getInlineCFuncsFunctionVertexp(calleep));
 
         // Iterate children
         iterateChildrenConst(nodep);
@@ -401,13 +405,13 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
     void visit(AstNodeCCall* nodep) override {
         if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
-        getFunctionVertexp(nodep->funcp())->setKeep("Called elsewhere");
+        getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Called elsewhere");
         iterateChildrenConst(nodep);
     }
 
     void visit(AstAddrOfCFunc* nodep) override {
         if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
-        getFunctionVertexp(nodep->funcp())->setKeep("Referenced by AddressOfCFunc");
+        getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by AddressOfCFunc");
         iterateChildrenConst(nodep);
     }
 
@@ -417,7 +421,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (m_cfuncVtxp) m_cfuncVtxp->setNoInline("Contains TraceDecl");
 
         if (AstCCall* const callp = nodep->dtypeCallp()) {
-            getCallSiteVertexp(callp)->setNoInline("Referenced by TraceDecl");
+            getInlineCFuncsCallSiteVertexp(callp)->setNoInline("Referenced by TraceDecl");
         }
         iterateChildrenConst(nodep);
     }
@@ -426,7 +430,8 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (m_cfuncVtxp) m_cfuncVtxp->setNoInline("Contains ExecGraph");
         // Also mark functions referenced in the dependency graph
         for (const V3GraphVertex& vtx : nodep->depGraphp()->vertices()) {
-            getFunctionVertexp(vtx.as<ExecMTask>()->funcp())->setKeep("MTask function");
+            getInlineCFuncsFunctionVertexp(vtx.as<ExecMTask>()->funcp())
+                ->setKeep("MTask function");
         }
         VL_RESTORER(m_inExecGraph);
         m_inExecGraph = true;

@@ -4,11 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+  input wire clk
 );
-  input clk;
 
   integer cyc = 0;
   reg [31:0] acc;
