@@ -103,11 +103,11 @@ Time
 
 With :vlopt:`--timing`, all timing controls are supported:
 
-* delay statements,
-* event control statements not only at the top of a process,
-* intra-assignment timing controls,
-* net delays,
-* ``wait`` statements,
+- delay statements,
+- event control statements not only at the top of a process,
+- intra-assignment timing controls,
+- net delays,
+- ``wait`` statements,
 
 as well as all flavors of ``fork``.
 
@@ -129,26 +129,26 @@ simulation (perhaps using :vlopt:`--build`) and run it.
 With :vlopt:`--no-timing`, all timing controls cause the :option:`NOTIMING`
 error, except:
 
-* delay statements - they are ignored (as they are in synthesis), though they
-  do issue a :option:`STMTDLY` warning,
-* intra-assignment timing controls - they are ignored, though they do issue
+- delay statements - they are ignored (as they are in synthesis), though
+  they do issue a :option:`STMTDLY` warning,
+- intra-assignment timing controls - they are ignored, though they do issue
   an :option:`ASSIGNDLY` warning,
-* net delays - they are ignored,
-* event controls at the top of the procedure,
+- net delays - they are ignored,
+- event controls at the top of the procedure,
 
 Forks cause this error as well, except:
 
-* forks with no statements,
-* ``fork..join`` or ``fork..join_any`` with one statement,
-* forks with :vlopt:`--bbox-unsup`.
+- forks with no statements,
+- ``fork..join`` or ``fork..join_any`` with one statement,
+- forks with :vlopt:`--bbox-unsup`.
 
 If neither :vlopt:`--timing` nor :vlopt:`--no-timing` is specified, all
 timing controls cause the :option:`NEEDTIMINGOPT` error, except event
 controls at the top of the process. Forks cause this error as well, except:
 
-* forks with no statements,
-* ``fork..join`` or ``fork..join_any`` with one statement,
-* forks with :vlopt:`--bbox-unsup`.
+- forks with no statements,
+- ``fork..join`` or ``fork..join_any`` with one statement,
+- forks with :vlopt:`--bbox-unsup`.
 
 Timing controls and forks can also be ignored in specific files or parts of
 files. The :option:`/*verilator&32;timing_off*/` and

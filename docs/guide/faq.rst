@@ -83,17 +83,17 @@ the licenses for details.
 
 Some examples:
 
-* Any SystemVerilog or other input fed into Verilator remains your own.
+- Any SystemVerilog or other input fed into Verilator remains your own.
 
-* Any of your VPI/DPI C++ routines that Verilator calls remain your own.
+- Any of your VPI/DPI C++ routines that Verilator calls remain your own.
 
-* Any of your main() C++ code that calls into Verilator remains your own.
+- Any of your main() C++ code that calls into Verilator remains your own.
 
-* If you change Verilator itself, for example, changing or adding a file
+- If you change Verilator itself, for example, changing or adding a file
   under the src/ directory in the repository, you must make the source code
   available under the GNU Lesser Public License.
 
-* If you change a header Verilator provides, for example, under include/ in
+- If you change a header Verilator provides, for example, under include/ in
   the repository, you must make the source code available under the GNU
   Lesser Public License.
 
@@ -385,33 +385,33 @@ example of how to do this.
 How do I get faster build times?
 """"""""""""""""""""""""""""""""
 
-* When running make, pass the make variable VM_PARALLEL_BUILDS=1, so that
+- When running make, pass the make variable VM_PARALLEL_BUILDS=1, so that
   builds occur in parallel. Note this is now set by default if an output
   file is large enough to be split due to the :vlopt:`--output-split`
   option.
 
-* Verilator emits any infrequently executed "cold" routines into separate
+- Verilator emits any infrequently executed "cold" routines into separate
   __Slow.cpp files. This can accelerate compilation as optimization can be
   disabled on these routines. See the OPT_FAST and OPT_SLOW make variables
   and :ref:`Benchmarking & Optimization`.
 
-* Use a recent compiler. Newer compilers tend to be faster.
+- Use a recent compiler. Newer compilers tend to be faster.
 
-* Compile in parallel on many machines and use caching; see the web for the
+- Compile in parallel on many machines and use caching; see the web for the
   ccache, sccache, distcc, or icecream packages. ccache will skip GCC runs
   between identical source builds, even across different users. If ccache
   was installed when Verilator was built, it is used, or see OBJCACHE
   environment variable to override this. Also see the
   :vlopt:`--output-split` option and :ref: `Profiling ccache efficiency`.
 
-* To reduce the compile time of classes that use a Verilated module (e.g.,
+- To reduce the compile time of classes that use a Verilated module (e.g.,
   a top CPP file) you may wish to add a
   :option:`/*verilator&32;no_inline_module*/` metacomment to your top-level
   module. This will decrease the amount of code in the model's Verilated
   class, improving compile times of any instantiating top-level C++ code,
   at a relatively small cost of execution performance.
 
-* Use :ref:`hierarchical verilation`.
+- Use :ref:`hierarchical verilation`.
 
 
 Why do so many files need to recompile when I add a signal?
@@ -499,12 +499,12 @@ equal, the best performance is when Verilator sees all of the design. So,
 look at the hierarchy of your design, labeling instances as to if they are
 SystemC or Verilog. Then:
 
-* A module with only SystemC instances below must be SystemC.
+- A module with only SystemC instances below must be SystemC.
 
-* A module with a mix of Verilog and SystemC instances below must be
+- A module with a mix of Verilog and SystemC instances below must be
   SystemC. (As Verilator cannot connect to lower-level SystemC instances.)
 
-* A module with only Verilog instances below can be either, but for best
+- A module with only Verilog instances below can be either, but for best
   performance should be Verilog. (The exception is if you have a design
   that is instantiated many times; in this case, Verilating one of the
   lower modules and instantiating that Verilated instances multiple times

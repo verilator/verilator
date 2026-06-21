@@ -8,21 +8,21 @@ Verilating
 
 Verilator may be used in five major ways:
 
-* With the :vlopt:`--binary` option, Verilator will translate the design
+- With the :vlopt:`--binary` option, Verilator will translate the design
   into an executable, via generating C++ and compiling it. See
   :ref:`Binary, C++ and SystemC Generation`.
 
-* With the :vlopt:`--cc` or :vlopt:`--sc` options, Verilator will translate
+- With the :vlopt:`--cc` or :vlopt:`--sc` options, Verilator will translate
   the design into C++ or SystemC code, respectively. See :ref:`Binary, C++
   and SystemC Generation`.
 
-* With the :vlopt:`--lint-only` option, Verilator will lint the design to
+- With the :vlopt:`--lint-only` option, Verilator will lint the design to
   check for warnings but will not typically create any output files.
 
-* With the :vlopt:`--json-only` option, Verilator will create JSON output
+- With the :vlopt:`--json-only` option, Verilator will create JSON output
   that may be used to feed into other user-designed tools.
 
-* With the :vlopt:`-E` option, Verilator will preprocess the code according
+- With the :vlopt:`-E` option, Verilator will preprocess the code according
   to IEEE preprocessing rules and write the output to standard out. This is
   useful to feed other tools and to debug how "\`define" statements are
   expanded.
@@ -128,9 +128,9 @@ Usage
 Users need to mark one or more moderate-size modules as hierarchy block(s).
 There are two ways to mark a module:
 
-* Write :option:`/*verilator&32;hier_block*/` metacomment in HDL code.
+- Write :option:`/*verilator&32;hier_block*/` metacomment in HDL code.
 
-* Add a :option:`hier_block` line in the :ref:`Verilator Control Files`.
+- Add a :option:`hier_block` line in the :ref:`Verilator Control Files`.
 
 Then pass the :vlopt:`--hierarchical` option to Verilator.
 
@@ -146,28 +146,28 @@ Limitations
 
 Hierarchy blocks have some limitations, including:
 
-* Internals of the hierarchy block cannot be accessed using dot (.) from
+- Internals of the hierarchy block cannot be accessed using dot (.) from
   the upper module(s) or other hierarchy blocks, except that ports of a
   hierarchy block instance can be accessed from the directly enclosing
   nested hierarchy block, or from the top level non-hierarchical portions
   of the design if not a nested hierarchy block.
 
-* Modport cannot be used at the hierarchical block boundary.
+- Modport cannot be used at the hierarchical block boundary.
 
-* The simulation speed is likely not as fast as flat Verilation, in which
+- The simulation speed is likely not as fast as flat Verilation, in which
   all modules are globally scheduled.
 
-* Generated clocks may not work correctly if generated in the hierarchical
+- Generated clocks may not work correctly if generated in the hierarchical
   model and passed into another hierarchical model or the top module.
 
-* Delays are not allowed in hierarchy blocks.
+- Delays are not allowed in hierarchy blocks.
 
 But, the following usage is supported:
 
-* Nested hierarchy blocks. A hierarchy block may instantiate other
+- Nested hierarchy blocks. A hierarchy block may instantiate other
   hierarchy blocks.
 
-* Parameterized hierarchy block. Parameters of a hierarchy block can be
+- Parameterized hierarchy block. Parameters of a hierarchy block can be
   overridden using ``#(.param_name(value))`` construct.
 
 

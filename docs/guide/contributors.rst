@@ -30,10 +30,10 @@ Alliance <https://chipsalliance.org>`_, and `Antmicro Ltd
 Previous major corporate sponsors of Verilator, by providing significant
 contributions of time or funds include: Antmicro Ltd., Atmel Corporation,
 Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd., Fractile
-Ltd., Hicamp Systems, Intel Corporation, Marvell Inc., Mindspeed Technologies
-Inc., MicroTune Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus
-Networks Inc., SiCortex Inc, Shunyao CAD, Tenstorrent USA, Inc. and Western
-Digital Inc.
+Ltd., Hicamp Systems, Intel Corporation, Marvell Inc., Mindspeed
+Technologies Inc., MicroTune Inc., picoChip Designs Ltd., Sun Microsystems
+Inc., Nauticus Networks Inc., SiCortex Inc, Shunyao CAD, Tenstorrent USA,
+Inc. and Western Digital Inc.
 
 The contributors of major functionality are: Jeremy Bennett, Krzysztof
 Bieganski, Byron Bradley, Lane Brooks, John Coiner, Duane Galbi, Arkadiusz
@@ -143,18 +143,18 @@ Krzysztof Obłonczek, Danny Oler, Andreas Olofsson, Baltazar Ortiz,
 Aleksander Osman, Don Owen, Tim Paine, Deepa Palaniappan, James Pallister,
 Vassilis Papaefstathiou, Sanggyu Park, Brad Parker, Risto Pejašinović, Seth
 Pellegrino, Joel Peltonen, Morten Borup Petersen, Dan Petrisko, Thanh Tung
-Pham, Wesley Piard, Maciej Piechotka, David Pierce, Cody Piersall,
-T. Platz, Michael Platzer, Dominic Plunkett, Nolan Poe, Tuomas Poikela,
-George Polack, David Poole, Michael Popoloski, Roman Popov, Aylon Chaim
-Porat, Oron Port, Rich Porter, Rick Porter, Stefan Post, Niranjan Prabhu,
-Damien Pretet, Harald Pretl, Bill Pringlemeir, Usha Priyadharshini, Mark
-Jackson Pulver, Prateek Puri, Nikolay Puzanov, Han Qi, Jiacheng Qian,
-Marshal Qiao, Raynard Qiao, Yujia Qiao, Jasen Qin, Frank Qiu, Nandu Raj,
-Kamil Rakoczy, Danilo Ramos, Drew Ranck, Chris Randall, Anton Rapp, Josh
-Redford, Odd Magne Reitan, Frédéric Requin, Wajahat Riaz, Dustin Richmond,
-Samuel Riedel, Alberto Del Rio, Eric Rippey, Narcis Rodas, Oleg Rodionov,
-Ludwig Rogiers, Paul Rolfe, Michail Rontionov, Arjen Roodselaar, Arthur
-Rosa, Tobias Rosenkranz, Yernagula Roshit, Diego Roux, Ryszard Rozak, Dan
+Pham, Wesley Piard, Maciej Piechotka, David Pierce, Cody Piersall, T.
+Platz, Michael Platzer, Dominic Plunkett, Nolan Poe, Tuomas Poikela, George
+Polack, David Poole, Michael Popoloski, Roman Popov, Aylon Chaim Porat,
+Oron Port, Rich Porter, Rick Porter, Stefan Post, Niranjan Prabhu, Damien
+Pretet, Harald Pretl, Bill Pringlemeir, Usha Priyadharshini, Mark Jackson
+Pulver, Prateek Puri, Nikolay Puzanov, Han Qi, Jiacheng Qian, Marshal Qiao,
+Raynard Qiao, Yujia Qiao, Jasen Qin, Frank Qiu, Nandu Raj, Kamil Rakoczy,
+Danilo Ramos, Drew Ranck, Chris Randall, Anton Rapp, Josh Redford, Odd
+Magne Reitan, Frédéric Requin, Wajahat Riaz, Dustin Richmond, Samuel
+Riedel, Alberto Del Rio, Eric Rippey, Narcis Rodas, Oleg Rodionov, Ludwig
+Rogiers, Paul Rolfe, Michail Rontionov, Arjen Roodselaar, Arthur Rosa,
+Tobias Rosenkranz, Yernagula Roshit, Diego Roux, Ryszard Rozak, Dan
 Ruelas-Petrisko, Luca Rufer, Huang Rui, Graham Rushton, Jan Egil Ruud,
 Denis Rystsov, Pawel Sagan, Robert Sammelson, Adrian Sampson, John
 Sanguinetti, Josep Sans, Dave Sargeant, Luca Sasselli, Philippe Sauter,

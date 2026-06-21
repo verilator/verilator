@@ -10,10 +10,10 @@ Examples
 
 This section covers the following examples:
 
-* :ref:`Example Create-Binary Execution`
-* :ref:`Example C++ Execution`
-* :ref:`Example SystemC Execution`
-* :ref:`Examples in the Distribution`
+- :ref:`Example Create-Binary Execution`
+- :ref:`Example C++ Execution`
+- :ref:`Example SystemC Execution`
+- :ref:`Examples in the Distribution`
 
 .. toctree::
    :maxdepth: 1

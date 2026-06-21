@@ -385,11 +385,9 @@ the files:
 
    make install
 
-
 .. Docker Build Environment
 
 .. include:: ../../ci/docker/buildenv/README.rst
-
 
 .. Docker Run Environment
 

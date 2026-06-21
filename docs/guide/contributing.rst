@@ -87,7 +87,8 @@ Please refer to `sv-bugpoint README
 <https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ for more
 information on how to use `sv-bugpoint`.
 
-.. Contributing
-.. ============
+..
+   Contributing
+   ============
 
 .. include:: ../CONTRIBUTING.rst

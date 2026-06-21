@@ -113,9 +113,9 @@ pointer to the ``AstNode`` currently being processed.
 
 There are notable sub-hierarchies of the ``AstNode`` sub-types, namely:
 
-1. All AST nodes representing data types derive from ``AstNodeDType``.
+#. All AST nodes representing data types derive from ``AstNodeDType``.
 
-2. All AST nodes representing expressions (i.e.: anything that stands for,
+#. All AST nodes representing expressions (i.e.: anything that stands for,
    or evaluates to a value) derive from ``AstNodeExpr``.
 
 
@@ -666,23 +666,23 @@ The second visitor in ``V3Timing.cpp``, ``TimingControlVisitor``, uses the
 information provided by ``TimingSuspendableVisitor`` and transforms each
 timing control into a ``co_await``.
 
-* event controls are turned into ``co_await`` on a trigger scheduler's
+- event controls are turned into ``co_await`` on a trigger scheduler's
   ``trigger`` method. The awaited trigger scheduler is the one
   corresponding to the sentree referenced by the event control. This
   sentree is also referenced by the ``AstCAwait`` node, to be used later by
   the static scheduling code.
 
-* if an event control waits on a local variable or class member, it uses a
+- if an event control waits on a local variable or class member, it uses a
   local trigger which it evaluates inline. It awaits a dynamic trigger
   scheduler multiple times: for trigger evaluation, updates, and
   resumption. The dynamic trigger scheduler is responsible for resuming the
   coroutine at the correct point of evaluation.
 
-* delays are turned into ``co_await`` on a delay scheduler's ``delay``
+- delays are turned into ``co_await`` on a delay scheduler's ``delay``
   method. The created ``AstCAwait`` nodes also reference a special sentree
   related to delays, to be used later by the static scheduling code.
 
-* ``join`` and ``join_any`` are turned into ``co_await`` on a
+- ``join`` and ``join_any`` are turned into ``co_await`` on a
   ``VlForkSync``'s ``join`` method. Each forked process gets a
   ``VlForkSync::done`` call at the end.
 
@@ -732,22 +732,22 @@ event `a` was called first - which is necessary to know.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
-* ``_timing_ready()``, which commits all coroutines whose triggers were not
+- ``_timing_ready()``, which commits all coroutines whose triggers were not
   set in the current iteration,
-* ``_timing_resume()``, which calls `resume()` on all trigger and delay
+- ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
 
 Thanks to this separation a coroutine:
 
-* awaiting a trigger cannot be suspended and resumed in the same iteration
+- awaiting a trigger cannot be suspended and resumed in the same iteration
   (``test_regress/t/t_timing_eval_act.v``) - which is necessary to make
   Verilator more predictable; this is the reason for introduction of 3rd
   stage in `VlTriggerScheduler` and thanks to this it is guaranteed that
   downstream logic will be evaluated before resumption (assuming that the
   coroutine wasn't already triggered in previous iteration);
-* cannot be resumed before it is suspended -
+- cannot be resumed before it is suspended -
   ``test_regress/t/t_event_control_double_excessive.v``;
-* firing cannot cannot be lost
+- firing cannot cannot be lost
   (``test_regress/t/t_event_control_double_lost.v``) - which is possible
   when triggers are not evaluated right before awaiting.
 
@@ -1300,15 +1300,15 @@ the ``<description>`` field is ``<identifier> : <type>``, where
 ``<identifier>`` will be used as the base name of the generated operand
 accessors, and ``<type>`` is one of:
 
-1. An ``AstNode`` sub-class, defining the operand to be of that type,
+#. An ``AstNode`` sub-class, defining the operand to be of that type,
    always no-null, and with an always null ``nextp()``. That is, the child
    node is always present, and is a single ``AstNode`` (as opposed to a
    list).
 
-2. ``Optional[<AstNode sub-class>]``. This is just like in point 1 above,
+#. ``Optional[<AstNode sub-class>]``. This is just like in point 1 above,
    but defines the child node to be optional, meaning it may be null.
 
-3. ``List[AstNode sub-class]`` describes a list operand, which means the
+#. ``List[AstNode sub-class]`` describes a list operand, which means the
    child node may have a non-null ``nextp()`` and in addition the child
    itself may be null, representing an empty list.
 
@@ -1395,7 +1395,7 @@ calling ``accept`` on ``AstIf`` will look in turn for:
 
 There are three ways data is passed between visitor functions.
 
-1. A visitor-class member variable. This is generally for passing "parent"
+#. A visitor-class member variable. This is generally for passing "parent"
    information down to children. ``m_modp`` is a common example. It's set
    to NULL in the constructor, where that node (``AstModule`` visitor) sets
    it, then the children are iterated, then it's cleared. Children under an
@@ -1405,7 +1405,7 @@ There are three ways data is passed between visitor functions.
    visitor; otherwise exiting the lower for will lose the upper for's
    setting.
 
-2. User attributes. Each ``AstNode`` (**Note.** The AST node, not the
+#. User attributes. Each ``AstNode`` (**Note.** The AST node, not the
    visitor) has five user attributes, which may be accessed as an integer
    using the ``user1()`` through ``user4()`` methods, or as a pointer (of
    type ``AstNUser``) using the ``user1p()`` through ``user4p()`` methods
@@ -1436,7 +1436,7 @@ There are three ways data is passed between visitor functions.
    so it's ok to call fairly often. For example, it's commonly called on
    every module.
 
-3. Parameters can be passed between the visitors in close to the "normal"
+#. Parameters can be passed between the visitors in close to the "normal"
    function caller to callee way. This is the second ``vup`` parameter of
    type ``AstNUser`` that is ignored on most of the visitor functions.
    V3Width does this, but it proved messier than the above and is
@@ -2126,19 +2126,19 @@ To print a node:
 ``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working
 with JSON AST dumps. For example:
 
-* ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value
+- ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value
   history (e.g. ``$1``)
 
-* ``jtree nodep`` - Perform a JSON AST dump and pretty print it using
+- ``jtree nodep`` - Perform a JSON AST dump and pretty print it using
   ``astsee_verilator``.
-* ``jtree $1`` - Pretty print a dump that was previously saved by
+- ``jtree $1`` - Pretty print a dump that was previously saved by
   ``jstash``.
-* ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter
+- ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter
   out some fields and pretty print it.
 
-* ``jtree 0x55555613dca0`` - Pretty print using address literal (rather
+- ``jtree 0x55555613dca0`` - Pretty print using address literal (rather
   than actual pointer).
-* ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
+- ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
 
 A detailed description of ``jstash`` and ``jtree`` can be displayed using
 ``gdb``'s ``help`` command.
@@ -2244,25 +2244,25 @@ Adding a New Feature
 
 Generally, what would you do to add a new feature?
 
-1. File an issue (if there isn't already) so others know what you're
+#. File an issue (if there isn't already) so others know what you're
    working on.
 
-2. Make a testcase in the test_regress/t/t_EXAMPLE format, see `Testing`.
+#. Make a testcase in the test_regress/t/t_EXAMPLE format, see `Testing`.
 
-3. If grammar changes are needed, look at the IEEE 1800-2023 Appendix A, as
+#. If grammar changes are needed, look at the IEEE 1800-2023 Appendix A, as
    src/verilog.y generally follows the same rule layout.
 
-4. If a new Ast type is needed, add it to the appropriate V3AstNode*.h.
+#. If a new Ast type is needed, add it to the appropriate V3AstNode*.h.
    Follow the convention described above about the AstNode type hierarchy.
    Ordering of definitions is enforced by ``astgen``.
 
-5. Now you can run ``test_regress/t/t_<newtestcase>.py --debug`` and it'll
+#. Now you can run ``test_regress/t/t_<newtestcase>.py --debug`` and it'll
    probably fail, but you'll see a
    ``test_regress/obj_dir/t_<newtestcase>/*.tree`` file which you can
    examine to see if the parsing worked. See also the sections above on
    debugging.
 
-6. Modify the later visitor functions to process the new feature as needed.
+#. Modify the later visitor functions to process the new feature as needed.
 
 
 Adding a New Pass
