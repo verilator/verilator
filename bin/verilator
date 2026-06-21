@@ -438,6 +438,7 @@ detailed descriptions of these arguments.
     --diagnostics-sarif-output <filename>  Set SARIF diagnostics output file
     --dpi-hdr-only              Only produce the DPI header file
     --dump-<srcfile>            Enable dumping everything in source file
+    --dump-ast-patterns         Enable dumping Ast pattern statistics
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
     --dump-dfg-patterns         Enable dumping Dfg pattern statistics

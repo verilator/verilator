@@ -67,7 +67,7 @@ void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 // Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
 void dfgToAst(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Dump the patterns in the given graphs
-void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&) VL_MT_DISABLED;
+void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&, const std::string& suffix = "") VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations

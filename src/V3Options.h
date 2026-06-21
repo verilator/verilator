@@ -552,6 +552,9 @@ public:
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
+    bool dumpAstPatterns() const {
+        return m_dumpLevel.count("ast-patterns") && m_dumpLevel.at("ast-patterns");
+    }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool dumpDfgPatterns() const {
         return m_dumpLevel.count("dfg-patterns") && m_dumpLevel.at("dfg-patterns");

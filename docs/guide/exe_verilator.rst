@@ -491,6 +491,10 @@ Summary:
    Rarely needed - for developer use. Enable all dumping in the given
    source file at level 3.
 
+.. option:: --dump-ast-patterns
+
+   Rarely needed. Enable dumping AstNodeExpr pattern statistics.
+
 .. option:: --dump-defines
 
    With :vlopt:`-E`, suppress normal output, and instead print a list of
