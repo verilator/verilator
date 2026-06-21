@@ -582,8 +582,14 @@ static void process() {
                 // Must be after all Sel/array index based optimizations
                 V3Reloop::reloopAll(v3Global.rootp());
             }
+        }
 
-            if (v3Global.opt.inlineCFuncs()) {
+        // These are no longer needed, remove references before CFunc inlining
+        v3Global.rootp()->evalp(nullptr);
+        v3Global.rootp()->evalNbap(nullptr);
+
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
+            if (v3Global.opt.fInlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
                 V3InlineCFuncs::inlineAll(v3Global.rootp());
             }

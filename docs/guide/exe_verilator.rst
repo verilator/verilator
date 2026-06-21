@@ -771,9 +771,23 @@ Summary:
 
 .. option:: -fno-inline
 
+   Rarely needed. Disable module inlining.
+
+.. option:: -fno-inline-cfuncs
+
+   Rarely needed. Disable inlining of small generated C++ functions into their
+   callers.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs` is
+   used.
+
 .. option:: -fno-inline-funcs
 
+   Rarely needed. Disable inlining of SystemVerilog functions and tasks.
+
 .. option:: -fno-inline-funcs-eager
+
+   Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
 .. option:: -fno-life
 
@@ -976,27 +990,21 @@ Summary:
 
 .. option:: --inline-cfuncs <value>
 
-   Inline small C++ function (internal AstCFunc) calls directly into their
-   callers when the function has at most <value> nodes. This reduces
-   function call overhead when :vlopt:`--output-split-cfuncs` places
-   functions in separate compilation units that the C++ compiler cannot
-   inline.
+   Tune the inlining of small generated C++ function. Functions no bigger than
+   <value> nodes will be inlined if possible. The default is 20.
 
-   Set to 0 to disable this optimization. The default is 20.
-
-   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
-   or :vlopt:`--trace` is used.
+   See also :vlopt:`--inline-cfuncs-product` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-cfuncs-product <value>
 
-   Tune the inlining of C++ function (internal AstCFunc) calls for larger
-   functions. When a function is too large to always inline (exceeds
-   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
-   function size multiplied by the number of call sites is at most <value>.
+   Tune the inlining of small generated C++ function. If a function's node
+   count multiplied by the number of calls is not bigger than <value>, the
+   function will be inlined if possible.
 
-   This allows functions that are called only once or twice to be inlined
-   even if they exceed the small function threshold. Set to 0 to only inline
-   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+   This allows functions that are called only once or twice to be inlined even
+   if they exceed the small function threshold. The default is 200.
+
+   See also :vlopt:`--inline-cfuncs` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-mult <value>
 

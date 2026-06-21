@@ -1497,6 +1497,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_fIcoChangeDetect.setTrueOrFalse(flag);
     });
     DECL_OPTION("-finline", FOnOff, &m_fInline);
+    DECL_OPTION("-finline-cfuncs", FOnOff, &m_fInlineCFuncs);
     DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
@@ -2371,6 +2372,7 @@ void V3Options::optimize(int level) {
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;
+    m_fInlineCFuncs = flag;
     m_fLife = flag;
     m_fLifePost = flag;
     m_fLocalize = flag;

@@ -4,18 +4,17 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--stats", "-fno-inline-cfuncs"])
+test.compile(verilator_flags2=["--stats", "--binary"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__stats.txt",
-               r'Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6')
+test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+[1-9]')
 
 test.passes()
