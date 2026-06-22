@@ -14,6 +14,7 @@
 module t;
   bit [7:0] data;
   bit [1:0] sel;
+  bit [63:0] wide;
 
   covergroup cg;
     coverpoint data {
@@ -54,18 +55,64 @@ module t;
     }
   endgroup
 
+  // cg6: upper-open range {[$:hi]} == {[0:hi]} -> bins for 0 and 1
+  covergroup cg6;
+    cp: coverpoint sel {
+      bins lo_open[] = {[$ : 1]};
+    }
+  endgroup
+
+  // cg7: a reversed range {[hi:lo]} (hi<lo) contributes no bins; the plain
+  // values 5 and 7 each create one bin -> 2 bins total.
+  covergroup cg7;
+    cp: coverpoint data {
+      bins rev[] = {[3 : 1], 5, 7};
+    }
+  endgroup
+
+  // cg8: wide (>= 64-bit) coverpoint, exercising the 64-bit domain-max path
+  covergroup cg8;
+    cp: coverpoint wide {
+      bins w[] = {[0 : 1]};
+    }
+  endgroup
+
+  // cg9: two ranges that are each under COVER_BINS_LIMIT (1000) but whose
+  // cumulative size exceeds it.  The first range populates the value list, the
+  // second trips the running-total guard -> COVERIGN, the whole bin is ignored.
+  // cpA is crossed, so it is non-convertible and routes through the legacy
+  // per-bin generateArrayBins() path (exercising its unsupported-bin guard).
+  covergroup cg9;
+    cpA: coverpoint wide {
+      bins cumulative[] = {[0 : 500], [0 : 500]};
+      bins ok = {5};
+    }
+    cpB: coverpoint sel {
+      bins lo = {1};
+    }
+    cross cpA, cpB;
+  endgroup
+
   initial begin
     cg cg_inst;
     cg2 cg2_inst;
     cg3 cg3_inst;
     cg4 cg4_inst;
     cg5 cg5_inst;
+    cg6 cg6_inst;
+    cg7 cg7_inst;
+    cg8 cg8_inst;
+    cg9 cg9_inst;
 
     cg_inst = new();
     cg2_inst = new();
     cg3_inst = new();
     cg4_inst = new();
     cg5_inst = new();
+    cg6_inst = new();
+    cg7_inst = new();
+    cg8_inst = new();
+    cg9_inst = new();
 
     // Hit first array bin value (1)
     data = 1;
@@ -129,6 +176,26 @@ module t;
     sel = 2;
     cg5_inst.sample();
     `checkr(cg5_inst.get_inst_coverage(), 50.0);
+
+    // Hit cg6 upper-open bins ([$:1] == [0:1], 2 bins): cover 1 of 2
+    sel = 0;
+    cg6_inst.sample();
+    `checkr(cg6_inst.get_inst_coverage(), 50.0);
+
+    // Hit cg7 bins (reversed [3:1] -> no bins; 5 and 7 -> 2 bins): cover 1 of 2
+    data = 5;
+    cg7_inst.sample();
+    `checkr(cg7_inst.get_inst_coverage(), 50.0);
+
+    // Hit cg8 wide bins ([0:1], 2 bins): cover 1 of 2
+    wide = 1;
+    cg8_inst.sample();
+    `checkr(cg8_inst.get_inst_coverage(), 50.0);
+
+    // Exercise cg9 (crossed cpA with an ignored cumulative array bin, legacy path)
+    wide = 5;
+    sel = 1;
+    cg9_inst.sample();
 
     $write("*-* All Finished *-*\n");
     $finish;
