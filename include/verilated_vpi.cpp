@@ -69,7 +69,7 @@ constexpr unsigned VL_VPI_LINE_SIZE_ = 8192;
 //======================================================================
 // Implementation
 
-static const char* vl_vpi_find_unescaped_dot(const char* posp) {
+static const char* _vl_vpi_find_unescaped_dot(const char* posp) {
     for (; *posp; ++posp) {
         if (*posp == '\\') {
             while (*posp && *posp != ' ') ++posp;
@@ -81,10 +81,10 @@ static const char* vl_vpi_find_unescaped_dot(const char* posp) {
     return nullptr;
 }
 
-static std::string vl_vpi_member_local_name(const char* const namep) {
+static std::string _vl_vpi_member_local_name(const char* const namep) {
     const char* localp = namep;
     const char* posp = namep;
-    while ((posp = vl_vpi_find_unescaped_dot(posp))) localp = ++posp;
+    while ((posp = _vl_vpi_find_unescaped_dot(posp))) localp = ++posp;
     return localp;
 }
 
@@ -398,8 +398,9 @@ public:
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
-        if (vl_vpi_find_unescaped_dot(varp->name()))
-            m_name = vl_vpi_member_local_name(varp->name());
+        if (_vl_vpi_find_unescaped_dot(varp->name())) {
+            m_name = _vl_vpi_member_local_name(varp->name());
+        }
     }
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep, void* datap,
                      const std::string& name, const std::string& fullname)
@@ -514,7 +515,7 @@ public:
         const auto offset
             = static_cast<uint8_t*>(memberDatap) - static_cast<uint8_t*>(parentDatap);
 
-        const std::string localName = vl_vpi_member_local_name(memberVarp->name());
+        const std::string localName = _vl_vpi_member_local_name(memberVarp->name());
 
         return new VerilatedVpioVar{memberVarp, scopep(),
                                     static_cast<uint8_t*>(varDatap()) + offset, localName,
@@ -699,7 +700,7 @@ public:
             const char* const name = m_it->second.name();
             if (std::strncmp(name, m_namePrefix.c_str(), m_namePrefix.length()) != 0) continue;
             // Only direct members, not grandchildren
-            if (vl_vpi_find_unescaped_dot(name + m_namePrefix.length())) continue;
+            if (_vl_vpi_find_unescaped_dot(name + m_namePrefix.length())) continue;
             VerilatedVpioVar* const memberp = m_varp->withMember(&(m_it->second));
             if (VL_UNLIKELY(!memberp)) continue;
             return memberp->castVpiHandle();
@@ -714,7 +715,7 @@ public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
         // Look for '.' not inside escaped identifier
-        if (VL_UNLIKELY(!vl_vpi_find_unescaped_dot(m_fullname))) m_toplevel = true;
+        if (VL_UNLIKELY(!_vl_vpi_find_unescaped_dot(m_fullname))) m_toplevel = true;
     }
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioModule* castp(vpiHandle h) {
@@ -2517,7 +2518,7 @@ static const VerilatedScope* vl_vpi_top_port_scopep(const VerilatedScope* const 
     if (VL_UNLIKELY(!scopep)) return nullptr;
     if (scopep->type() != VerilatedScope::SCOPE_MODULE) return nullptr;
     if (std::strcmp(scopep->name(), "TOP") == 0) return nullptr;
-    if (vl_vpi_find_unescaped_dot(scopep->name())) return nullptr;
+    if (_vl_vpi_find_unescaped_dot(scopep->name())) return nullptr;
     return Verilated::threadContextp()->scopeFind("TOP");
 }
 
@@ -2591,7 +2592,7 @@ static std::vector<std::string> vl_vpi_split_dotted_name(const std::string& name
     const char* const namep = name.c_str();
     const char* beginp = namep;
     const char* posp = beginp;
-    while ((posp = vl_vpi_find_unescaped_dot(posp))) {
+    while ((posp = _vl_vpi_find_unescaped_dot(posp))) {
         parts.emplace_back(beginp, posp - beginp);
         beginp = ++posp;
     }
@@ -2626,7 +2627,8 @@ vl_vpi_handle_indexed_member_from_scope(const VerilatedScope* const scopep,
         = fullnameOverride.empty()
               ? new VerilatedVpioVar{baseVarp, varScopep}
               : new VerilatedVpioVar{baseVarp, varScopep, baseVarp->datap(),
-                                     vl_vpi_member_local_name(baseVarp->name()), fullnameOverride};
+                                     _vl_vpi_member_local_name(baseVarp->name()),
+                                     fullnameOverride};
     VerilatedVpioVar* vop = vl_vpi_handle_apply_indices(baseVop, indices);
     if (!vop) return nullptr;
 
@@ -2785,7 +2787,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     } else if (!fullnameOverride.empty()) {
         resultHandle
             = (new VerilatedVpioVar{varp, scopep, varp->datap(),
-                                    vl_vpi_member_local_name(varp->name()), fullnameOverride})
+                                    _vl_vpi_member_local_name(varp->name()), fullnameOverride})
                   ->castVpiHandle();
     } else {
         resultHandle = (new VerilatedVpioVar{varp, scopep})->castVpiHandle();

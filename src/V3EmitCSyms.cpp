@@ -220,7 +220,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             dtypep = dtypep->skipRefp();
             const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
             if (!adtypep) break;
-            elements *= std::abs(adtypep->left() - adtypep->right()) + 1;
+            elements *= adtypep->elementsConst();
             dtypep = adtypep->subDTypep();
         }
         return elements;

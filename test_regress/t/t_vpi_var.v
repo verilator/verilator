@@ -103,9 +103,9 @@ extern "C" int mon_check();
 
   typedef struct {
     logic [15:0] scalar;
-    child_struct_t children [1:0];
-    logic [7:0] tail_array [3:0];
-    child_struct_t trailing_children [1:0];
+    child_struct_t children [3:2];
+    logic [7:0] tail_array [2:5];
+    child_struct_t trailing_children [3:2];
   } parent_struct_t;
 
   parent_struct_t parent_struct_array [1:0] /*verilator public_flat_rw*/;

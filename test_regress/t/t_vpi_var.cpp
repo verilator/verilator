@@ -691,7 +691,7 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(vpi_get(vpiType, vh173), vpiRegArray);
         CHECK_RESULT(vpi_get(vpiSize, vh173), 4);
 
-        TestVpiHandle vh174 = vpi_handle_by_index(vh173, 2);
+        TestVpiHandle vh174 = vpi_handle_by_index(vh173, 3);
         CHECK_RESULT_NZ(vh174);
         CHECK_RESULT(vpi_get(vpiType, vh174), vpiReg);
         CHECK_RESULT(vpi_get(vpiSize, vh174), 8);
@@ -706,7 +706,7 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(vpi_get(vpiType, vh17a), vpiRegArray);
         CHECK_RESULT(vpi_get(vpiSize, vh17a), 2);
 
-        TestVpiHandle vh17b = vpi_handle_by_index(vh17a, 0);
+        TestVpiHandle vh17b = vpi_handle_by_index(vh17a, 2);
         CHECK_RESULT_NZ(vh17b);
         CHECK_RESULT(vpi_get(vpiType, vh17b), vpiStructVar);
 
@@ -736,7 +736,7 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(vpi_get(vpiType, vh176), vpiRegArray);
         CHECK_RESULT(vpi_get(vpiSize, vh176), 2);
 
-        TestVpiHandle vh177 = vpi_handle_by_index(vh176, 1);
+        TestVpiHandle vh177 = vpi_handle_by_index(vh176, 3);
         CHECK_RESULT_NZ(vh177);
         CHECK_RESULT(vpi_get(vpiType, vh177), vpiStructVar);
 
@@ -751,7 +751,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh179
             = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(
-                                     "parent_struct_array[1].children[1].child_leaf")),
+                                     "parent_struct_array[1].children[3].child_leaf")),
                                  nullptr);
         CHECK_RESULT_NZ(vh179);
         vpi_get_value(vh179, &tmpValue);
@@ -759,7 +759,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh17d = vpi_handle_by_name((PLI_BYTE8*)"trailing_children", vh172);
         CHECK_RESULT_NZ(vh17d);
-        TestVpiHandle vh17e = vpi_handle_by_index(vh17d, 1);
+        TestVpiHandle vh17e = vpi_handle_by_index(vh17d, 2);
         CHECK_RESULT_NZ(vh17e);
         TestVpiHandle vh17f = vpi_handle_by_name((PLI_BYTE8*)"child_leaf", vh17e);
         CHECK_RESULT_NZ(vh17f);
@@ -770,14 +770,14 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh17g
             = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(
-                                     "parent_struct_array[1].trailing_children[1].child_leaf")),
+                                     "parent_struct_array[1].trailing_children[2].child_leaf")),
                                  nullptr);
         CHECK_RESULT_NZ(vh17g);
         vpi_get_value(vh17g, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 0x6b);
 
         CHECK_RESULT_Z(vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(
-                                              "parent_struct_array[1].children[1:0].child_leaf")),
+                                              "parent_struct_array[1].children[3:2].child_leaf")),
                                           nullptr));
     }
 
