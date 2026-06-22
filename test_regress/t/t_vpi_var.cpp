@@ -2232,6 +2232,7 @@ int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
+    VerilatedVpi::selfTest();
 
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out

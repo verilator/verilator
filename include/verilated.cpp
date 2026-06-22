@@ -3929,8 +3929,6 @@ uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
     case VLVT_UINT32: size = sizeof(IData); break;
     case VLVT_UINT64: size = sizeof(QData); break;
     case VLVT_WDATA: size = VL_WORDS_I(entBits()) * sizeof(IData); break;
-    case VLVT_STRUCT: size = 0; break;
-    case VLVT_UNION: size = 0; break;
     default: size = 0; break;  // LCOV_EXCL_LINE
     }
     return size;
@@ -4041,9 +4039,9 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
 
 VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
                                              VerilatedVarType vltype, int vlflags, int udims,
-                                             int pdims, uint32_t entSize...) VL_MT_UNSAFE {
+                                             uint32_t entSize...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
-    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, 0,
                      isParam, entSize);
 
     va_list ap;
@@ -4053,12 +4051,6 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
         const int lsb = va_arg(ap, int);
         var.m_unpacked[i].m_left = msb;
         var.m_unpacked[i].m_right = lsb;
-    }
-    for (int i = 0; i < pdims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        var.m_packed[i].m_left = msb;
-        var.m_packed[i].m_right = lsb;
     }
     va_end(ap);
 

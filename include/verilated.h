@@ -766,8 +766,8 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
-                                 VerilatedVarType vltype, int vlflags, int udims, int pdims,
-                                 uint32_t entSize, ...) VL_MT_UNSAFE;
+                                 VerilatedVarType vltype, int vlflags, int udims, uint32_t entSize,
+                                 ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,

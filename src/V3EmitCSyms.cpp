@@ -253,11 +253,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += vlEnumDir;  // VLVD_IN etc
         stmt += ", ";
         stmt += std::to_string(udim);
-        stmt += ", ";
-        stmt += std::to_string(pdim);
         if (!entSize.empty()) {
             stmt += ", ";
             stmt += entSize;
+        } else {
+            stmt += ", ";
+            stmt += std::to_string(pdim);
         }
         stmt += bounds;
         stmt += ")";
