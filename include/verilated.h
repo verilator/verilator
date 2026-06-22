@@ -137,7 +137,9 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT64,  // AKA QData
     VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
-    VLVT_REAL  // AKA double
+    VLVT_REAL,  // AKA double
+    VLVT_STRUCT,  // SystemVerilog unpacked struct
+    VLVT_UNION  // SystemVerilog unpacked union
 };
 
 enum VerilatedVarFlags : uint32_t {
@@ -154,7 +156,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_CONTINUOUSLY = (1 << 11),  // Is continously assigned
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
-    VLVF_BITVAR = (1 << 14)  // Four state bit (vs two state logic)
+    VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
+    VLVF_NET = (1 << 15)  // Net object
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -762,6 +765,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
+                                 VerilatedVarType vltype, int vlflags, int udims, int pdims,
+                                 uint32_t entSize, ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,

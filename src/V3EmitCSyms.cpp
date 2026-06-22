@@ -176,26 +176,26 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return pos != std::string::npos ? scpname.substr(pos + 1) : scpname;
     }
 
-    static std::tuple<int, int, std::string> getDimensions(const AstVar* const varp) {
+    static std::tuple<int, int, std::string> getDimensions(const AstNodeDType* const rootDtypep) {
         int pdim = 0;
         int udim = 0;
         std::string bounds;
-        if (const AstBasicDType* const basicp = varp->basicp()) {
-            // Range is always first, it's not in "C" order
-            for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
-                // Skip AstRefDType/AstTypedef, or return same node
-                dtypep = dtypep->skipRefp();
-                if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
-                    bounds += " ,";
-                    bounds += std::to_string(adtypep->left());
-                    bounds += ",";
-                    bounds += std::to_string(adtypep->right());
-                    if (VN_IS(dtypep, PackArrayDType))
-                        pdim++;
-                    else
-                        udim++;
-                    dtypep = adtypep->subDTypep();
-                } else {
+        // Range is always first, it's not in "C" order
+        for (const AstNodeDType* dtypep = rootDtypep; dtypep;) {
+            // Skip AstRefDType/AstTypedef, or return same node
+            dtypep = dtypep->skipRefp();
+            if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+                bounds += " ,";
+                bounds += std::to_string(adtypep->left());
+                bounds += ",";
+                bounds += std::to_string(adtypep->right());
+                if (VN_IS(dtypep, PackArrayDType))
+                    pdim++;
+                else
+                    udim++;
+                dtypep = adtypep->subDTypep();
+            } else {
+                if (const AstBasicDType* const basicp = dtypep->basicp()) {
                     if (basicp->isRanged()) {
                         bounds += " ,";
                         bounds += std::to_string(basicp->left());
@@ -203,11 +203,31 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                         bounds += std::to_string(basicp->right());
                         pdim++;
                     }
-                    break;  // AstBasicDType - nothing below, 1
                 }
+                break;  // Non-array leaf
             }
         }
         return {pdim, udim, bounds};
+    }
+
+    static std::tuple<int, int, std::string> getDimensions(const AstVar* const varp) {
+        return getDimensions(varp->dtypep());
+    }
+
+    static int getUnpackedElements(const AstNodeDType* rootDtypep) {
+        int elements = 1;
+        for (const AstNodeDType* dtypep = rootDtypep; dtypep;) {
+            dtypep = dtypep->skipRefp();
+            const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
+            if (!adtypep) break;
+            elements *= std::abs(adtypep->left() - adtypep->right()) + 1;
+            dtypep = adtypep->subDTypep();
+        }
+        return elements;
+    }
+
+    static bool needsEmittedEntSize(const std::string& vlEnumType) {
+        return vlEnumType == "VLVT_STRUCT" || vlEnumType == "VLVT_UNION";
     }
 
     static std::pair<bool, std::string> isForceControlSignal(const AstVar* const signalVarp) {
@@ -225,15 +245,47 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return std::pair<bool, std::string>{false, ""};
     }
 
+    static void appendVarProperties(std::string& stmt, const std::string& vlEnumType,
+                                    const std::string& vlEnumDir, const int udim, const int pdim,
+                                    const std::string& bounds,
+                                    const std::string& entSize = "") {
+        stmt += vlEnumType;  // VLVT_UINT32 etc
+        stmt += ", ";
+        stmt += vlEnumDir;  // VLVD_IN etc
+        stmt += ", ";
+        stmt += std::to_string(udim);
+        stmt += ", ";
+        stmt += std::to_string(pdim);
+        if (!entSize.empty()) {
+            stmt += ", ";
+            stmt += entSize;
+        }
+        stmt += bounds;
+        stmt += ")";
+    }
+    static std::string memberVlEnumDir(const AstVar* const varp,
+                                       const AstNodeDType* const dtypep) {
+        std::string out = "((" + varp->vlEnumDir() + ") & ~(VLVF_SIGNED|VLVF_BITVAR))";
+        const AstNodeDType* const skipDTypep = dtypep->skipRefp();
+        if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
+        if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
+            if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        }
+        return out;
+    }
+
     static std::string insertVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
                                           const AstVar* const varp, const int udim, const int pdim,
                                           const std::string& bounds) {
-        std::string stmt;
-        stmt += protect("__Vscopep_" + svd.m_scopeName) + "->varInsert(\"";
-        stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
-
         const std::string varName = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect())
                                     + "." + protect(varp->name());
+        const std::string vlEnumType = varp->vlEnumType();
+        const bool needsEntSize = needsEmittedEntSize(vlEnumType);
+
+        std::string stmt;
+        stmt += protect("__Vscopep_" + svd.m_scopeName);
+        stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
+        stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
 
         if (!varp->isParam()) {
             stmt += ", &(";
@@ -250,16 +302,84 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             stmt += "))), true, ";
         }
 
-        stmt += varp->vlEnumType();  // VLVT_UINT32 etc
-        stmt += ", ";
-        stmt += varp->vlEnumDir();  // VLVD_IN etc
-        stmt += ", ";
-        stmt += std::to_string(udim);
-        stmt += ", ";
-        stmt += std::to_string(pdim);
-        stmt += bounds;
-        stmt += ")";
+        const std::string entSize = needsEntSize ? "sizeof(" + varName + ") / "
+                                                       + std::to_string(getUnpackedElements(
+                                                           varp->dtypep()))
+                                                 : "";
+        appendVarProperties(stmt, vlEnumType, varp->vlEnumDir(), udim, pdim, bounds, entSize);
         return stmt;
+    }
+
+    static std::string insertDTypeVarStatement(const ScopeVarData& svd,
+                                               const AstScope* const scopep,
+                                               const std::string& prettyName,
+                                               const std::string& cName,
+                                               const AstNodeDType* const dtypep, const int udim,
+                                               const int pdim, const std::string& bounds) {
+        const std::string vlEnumType = dtypep->vlEnumType();
+        const bool needsEntSize = needsEmittedEntSize(vlEnumType);
+        std::string stmt;
+        stmt += protect("__Vscopep_" + svd.m_scopeName);
+        stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
+        stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
+        stmt += ", &(";
+        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
+        stmt += ".";
+        stmt += cName;
+        stmt += "), false, ";
+        const std::string varName = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect())
+                                    + "." + cName;
+        const std::string entSize = needsEntSize ? "sizeof(" + varName + ") / "
+                                                       + std::to_string(getUnpackedElements(dtypep))
+                                                 : "";
+        appendVarProperties(stmt, vlEnumType, memberVlEnumDir(svd.m_varp, dtypep), udim, pdim,
+                            bounds, entSize);
+        return stmt;
+    }
+
+    static void addUOrStructMemberVars(std::vector<std::string>& stmts, const ScopeVarData& svd,
+                                       const AstScope* const scopep,
+                                       const std::string& prettyPrefix, const std::string& cPrefix,
+                                       const AstNodeUOrStructDType* const sdtypep) {
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            const AstNodeDType* const itemDTypep = itemp->dtypep();
+            const std::string prettyName
+                = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
+            const std::string cName = cPrefix + "." + itemp->nameProtect();
+            const std::tuple<int, int, std::string> dimensions = getDimensions(itemDTypep);
+            const int pdim = std::get<0>(dimensions);
+            const int udim = std::get<1>(dimensions);
+            const std::string bounds = std::get<2>(dimensions);
+            stmts.emplace_back(insertDTypeVarStatement(svd, scopep, prettyName, cName, itemDTypep,
+                                                       udim, pdim, bounds)
+                               + ";");
+            if (const AstNodeUOrStructDType* const subp
+                = VN_CAST(itemDTypep->skipRefp(), NodeUOrStructDType)) {
+                if (!subp->packed())
+                    addUOrStructMemberVars(stmts, svd, scopep, prettyName, cName, subp);
+            } else if (VN_IS(itemDTypep->skipRefp(), UnpackArrayDType)) {
+                addUnpackedArrayUOrStructMemberVars(stmts, svd, scopep, prettyName, cName,
+                                                    itemDTypep);
+            }
+        }
+    }
+
+    static void addUnpackedArrayUOrStructMemberVars(std::vector<std::string>& stmts,
+                                                    const ScopeVarData& svd,
+                                                    const AstScope* const scopep,
+                                                    const std::string& prettyPrefix,
+                                                    const std::string& cPrefix,
+                                                    const AstNodeDType* const dtypep) {
+        const AstNodeDType* const skipDTypep = dtypep->skipRefp();
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(skipDTypep, UnpackArrayDType)) {
+            addUnpackedArrayUOrStructMemberVars(stmts, svd, scopep, prettyPrefix, cPrefix + "[0]",
+                                                adtypep->subDTypep());
+        } else if (const AstNodeUOrStructDType* const sdtypep
+                   = VN_CAST(skipDTypep, NodeUOrStructDType)) {
+            if (!sdtypep->packed())
+                addUOrStructMemberVars(stmts, svd, scopep, prettyPrefix, cPrefix, sdtypep);
+        }
     }
 
     std::string insertForceableVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -1061,6 +1181,16 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                 const std::string stmt
                     = insertVarStatement(svd, scopep, varp, udim, pdim, bounds) + ";";
                 add(stmt);
+                if (const AstNodeUOrStructDType* const sdtypep
+                    = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
+                    if (!sdtypep->packed()) {
+                        addUOrStructMemberVars(stmts, svd, scopep, svd.m_varBasePretty,
+                                               protect(varp->name()), sdtypep);
+                    }
+                } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                    addUnpackedArrayUOrStructMemberVars(stmts, svd, scopep, svd.m_varBasePretty,
+                                                        protect(varp->name()), varp->dtypep());
+                }
             }
         }
     }

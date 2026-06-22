@@ -703,9 +703,14 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
 
-string AstVar::vlEnumType() const {
+string AstNodeDType::vlEnumType() const {
     string arg;
-    const AstBasicDType* const bdtypep = basicp();
+    const AstNodeDType* dtypep = skipRefp();
+    while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    const AstBasicDType* const bdtypep = dtypep->basicp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
     const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
@@ -715,6 +720,8 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_STRING";
     } else if (isDouble()) {
         arg += "VLVT_REAL";
+    } else if (sdtypep && !sdtypep->packed()) {
+        arg += VN_IS(sdtypep, StructDType) ? "VLVT_STRUCT" : "VLVT_UNION";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
@@ -729,6 +736,8 @@ string AstVar::vlEnumType() const {
     // else return "VLVT_UNKNOWN"
     return arg;
 }
+
+string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }
 
 string AstVar::vlEnumDir() const {
     string out;
@@ -759,6 +768,7 @@ string AstVar::vlEnumDir() const {
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
+    if (isNet()) out += "|VLVF_NET";
     return out;
 }
 

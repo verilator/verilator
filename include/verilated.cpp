@@ -3920,6 +3920,7 @@ std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { retu
 
 // cppcheck-suppress unusedFunction  // Used by applications
 uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
+    if (m_entSize) return m_entSize;
     uint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR: size = sizeof(void*); break;
@@ -3928,6 +3929,8 @@ uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
     case VLVT_UINT32: size = sizeof(IData); break;
     case VLVT_UINT64: size = sizeof(QData); break;
     case VLVT_WDATA: size = VL_WORDS_I(entBits()) * sizeof(IData); break;
+    case VLVT_STRUCT: size = 0; break;
+    case VLVT_UNION: size = 0; break;
     default: size = 0; break;  // LCOV_EXCL_LINE
     }
     return size;
@@ -4018,6 +4021,33 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
 
     va_list ap;
     va_start(ap, pdims);
+    for (int i = 0; i < udims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_unpacked[i].m_left = msb;
+        var.m_unpacked[i].m_right = lsb;
+    }
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_packed[i].m_left = msb;
+        var.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
+VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
+                                             VerilatedVarType vltype, int vlflags, int udims,
+                                             int pdims, uint32_t entSize...) VL_MT_UNSAFE {
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
+                     isParam, entSize);
+
+    va_list ap;
+    va_start(ap, entSize);
     for (int i = 0; i < udims; ++i) {
         const int msb = va_arg(ap, int);
         const int lsb = va_arg(ap, int);
