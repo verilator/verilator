@@ -284,6 +284,8 @@ class CaseVisitor final : public VNVisitor {
     // Returns true iff the case items cover all enum values/patterns.
     bool checkExhaustiveEnum(const AstCase* const nodep, const AstEnumDType* const enump) {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
+        bool fullyCovered = true;
+        string missingItems;
         for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
             const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
             const uint32_t mask = match.first.toUInt();
@@ -293,16 +295,17 @@ class CaseVisitor final : public VNVisitor {
             for (uint32_t i = 0; i < numCases; ++i) {
                 if ((i & mask) != bits) continue;  // This case is not for this enum value
                 if (m_caseDetails.records[i].itemp) continue;  // Covered case
-                // Warn unless unique0 case which allows no-match
-                if (!nodep->unique0Pragma()) {
-                    nodep->v3warn(CASEINCOMPLETE,
-                                  "Enum item " << eip->prettyNameQ() << " not covered by case");
-                }
-                // TODO: warn for all uncovered enum values, not just the first
-                return false;  // enum has uncovered value by case items
+                if (!missingItems.empty()) missingItems += ", ";
+                missingItems += eip->prettyNameQ();
+                fullyCovered = false;
+                break;
             }
         }
-        return true;  // enum is fully covered
+        if (!missingItems.empty() && !nodep->unique0Pragma()) {
+            nodep->v3warn(CASEINCOMPLETE,
+                          "Enum item(s) not covered by case: " << missingItems);
+        }
+        return fullyCovered;  // enum is fully covered
     }
 
     // Check and warn if case items are not complete over all possible values.
