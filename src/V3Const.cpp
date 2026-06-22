@@ -1419,7 +1419,6 @@ class ConstVisitor final : public VNVisitor {
 
     bool matchMaskedZero(const AstAnd* nodep) {
         // Turn masking of known zero bits into constant zero. Commonly appears after V3Expand.
-        // Mask at this point should be non-zero otherwise earlier pattern should have matched.
         const AstConst* const maskp = VN_AS(nodep->lhsp(), Const);
         const AstNodeExpr* const rhsp = nodep->rhsp();
         const uint32_t msbP1 = maskp->num().mostSetBitP1();
