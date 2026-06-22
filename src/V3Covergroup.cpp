@@ -655,22 +655,54 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return refp;
     }
 
-    // Individual equality targets of an array bin (bins b[N] = {values/ranges}), in order.
-    std::vector<AstNodeExpr*> extractArrayValues(AstCoverBin* arrayBinp, AstNodeExpr* exprp) {
+    // Individual equality targets of an array bin (bins b[] = {values/ranges}), in order.
+    // An open-ended bound ('$', AstUnbounded) resolves to the coverpoint domain: '[lo:$]'
+    // covers [lo:maxVal] and '[$:hi]' covers [0:hi].  One target is produced per value; a
+    // range whose resolved size would exceed COVER_BINS_LIMIT (e.g. an open '[lo:$]' over a
+    // wide coverpoint) is unsupported -- emits COVERIGN, sets unsupportedOut, yields nothing.
+    std::vector<AstNodeExpr*> extractArrayValues(AstCoverBin* arrayBinp, AstNodeExpr* exprp,
+                                                 bool& unsupportedOut) {
+        unsupportedOut = false;
+        const int width = exprp->width();
+        const uint64_t maxVal = (width >= 64) ? UINT64_MAX : ((1ULL << width) - 1);
         std::vector<AstNodeExpr*> values;
         for (AstNode* rangep = arrayBinp->rangesp(); rangep; rangep = rangep->nextp()) {
             if (AstInsideRange* const irp = VN_CAST(rangep, InsideRange)) {
-                AstConst* const minp = VN_CAST(V3Const::constifyEdit(irp->lhsp()), Const);
-                AstConst* const maxp = VN_CAST(V3Const::constifyEdit(irp->rhsp()), Const);
-                if (!minp || !maxp) {
+                AstNodeExpr* const lhsp = V3Const::constifyEdit(irp->lhsp());
+                AstNodeExpr* const rhsp = V3Const::constifyEdit(irp->rhsp());
+                const bool loUnb = VN_IS(lhsp, Unbounded);
+                const bool hiUnb = VN_IS(rhsp, Unbounded);
+                AstConst* const minp = VN_CAST(lhsp, Const);
+                AstConst* const maxp = VN_CAST(rhsp, Const);
+                if ((!minp && !loUnb) || (!maxp && !hiUnb)) {
                     arrayBinp->v3error("Non-constant expression in array bins range; "
                                        "range bounds must be constants");
                     return values;
                 }
-                for (int val = minp->toSInt(); val <= maxp->toSInt(); ++val)
-                    values.push_back(new AstConst{irp->fileline(), AstConst::WidthedValue{},
-                                                  static_cast<int>(exprp->width()),
-                                                  static_cast<uint32_t>(val)});
+                if ((minp && minp->num().isFourState()) || (maxp && maxp->num().isFourState())) {
+                    arrayBinp->v3error("Four-state (x/z) value in array bins range bound; "
+                                       "range bounds must be two-state constants");
+                    return values;
+                }
+                const uint64_t lo = loUnb ? 0 : minp->toUQuad();
+                const uint64_t hi = hiUnb ? maxVal : maxp->toUQuad();
+                if (hi < lo) continue;  // empty range contributes no bins
+                // Guard against a '$'-bounded or otherwise huge range exploding the bin count.
+                const uint64_t span = hi - lo;  // == valueCount - 1 (no overflow: hi >= lo)
+                if (span >= static_cast<uint64_t>(COVER_BINS_LIMIT)
+                    || values.size() + span + 1 > static_cast<uint64_t>(COVER_BINS_LIMIT)) {
+                    arrayBinp->v3warn(COVERIGN, "Unsupported: array 'bins' covering more than "
+                                                    << COVER_BINS_LIMIT
+                                                    << " values (e.g. an open '[lo:$]' range over "
+                                                       "a wide coverpoint); bin ignored");
+                    unsupportedOut = true;
+                    for (AstNodeExpr* const vp : values) VL_DO_DANGLING(pushDeletep(vp), vp);
+                    values.clear();
+                    return values;
+                }
+                for (uint64_t v = lo; v <= hi; ++v)
+                    values.push_back(new AstConst{irp->fileline(), AstConst::WidthedValue{}, width,
+                                                  static_cast<uint32_t>(v)});
             } else {
                 values.push_back(VN_AS(rangep->cloneTree(false), NodeExpr));
             }
@@ -744,7 +776,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 continue;
             }
             if (cbinp->isArray()) {  // value array: bins b[N] = {...} -> b[0]..b[N-1]
-                std::vector<AstNodeExpr*> values = extractArrayValues(cbinp, exprp);
+                bool unsupported = false;
+                std::vector<AstNodeExpr*> values = extractArrayValues(cbinp, exprp, unsupported);
+                if (unsupported) continue;  // bin ignored (COVERIGN emitted); reserve no slot
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, static_cast<int>(values.size())));
                 for (AstNodeExpr* valuep : values) {
                     emitConvHitIf(coverpointp, cbinp, cpVarp, idx++,
@@ -1056,34 +1090,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                            int atLeastValue) {
         UINFO(4, "    Generating array bins for: " << arrayBinp->name());
 
-        // Extract all values from the range list
-        std::vector<AstNodeExpr*> values;
-        for (AstNode* rangep = arrayBinp->rangesp(); rangep; rangep = rangep->nextp()) {
-            if (AstInsideRange* const insideRangep = VN_CAST(rangep, InsideRange)) {
-                // For InsideRange [min:max], create bins for each value
-                AstNodeExpr* const minp = V3Const::constifyEdit(insideRangep->lhsp());
-                AstNodeExpr* const maxp = V3Const::constifyEdit(insideRangep->rhsp());
-                AstConst* const minConstp = VN_CAST(minp, Const);
-                AstConst* const maxConstp = VN_CAST(maxp, Const);
-                if (minConstp && maxConstp) {
-                    const int minVal = minConstp->toSInt();
-                    const int maxVal = maxConstp->toSInt();
-                    UINFO(6, "      Expanding InsideRange [" << minVal << ":" << maxVal << "]");
-                    for (int val = minVal; val <= maxVal; ++val) {
-                        values.push_back(new AstConst{insideRangep->fileline(),
-                                                      AstConst::WidthedValue{},
-                                                      (int)exprp->width(), (uint32_t)val});
-                    }
-                } else {
-                    arrayBinp->v3error("Non-constant expression in array bins range; "
-                                       "range bounds must be constants");
-                    return;
-                }
-            } else {
-                // Single value - should be an expression
-                values.push_back(VN_AS(rangep->cloneTree(false), NodeExpr));
-            }
-        }
+        // Extract all values from the range list (resolves '$', caps/ignores huge ranges)
+        bool unsupported = false;
+        std::vector<AstNodeExpr*> values = extractArrayValues(arrayBinp, exprp, unsupported);
+        if (unsupported) return;  // bin ignored (COVERIGN emitted)
 
         // Create a separate bin for each value
         int index = 0;

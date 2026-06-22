@@ -10,3 +10,9 @@ cg3.cp.range_sized[0]: 1
 cg3.cp.range_sized[1]: 1
 cg3.cp.range_sized[2]: 1
 cg3.cp.range_sized[3]: 0
+cg4.cp.all_vals[0]: 1
+cg4.cp.all_vals[1]: 1
+cg4.cp.all_vals[2]: 1
+cg4.cp.all_vals[3]: 0
+cg5.cp.hi_vals[0]: 1
+cg5.cp.hi_vals[1]: 0

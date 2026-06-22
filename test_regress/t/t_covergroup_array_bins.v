@@ -13,6 +13,7 @@
 
 module t;
   bit [7:0] data;
+  bit [1:0] sel;
 
   covergroup cg;
     coverpoint data {
@@ -38,14 +39,33 @@ module t;
     }
   endgroup
 
+  // cg4: array bins with '$' (open range) - '$' resolves to the coverpoint domain max.
+  // For 2-bit sel, {[0:$]} == {[0:3]}: one bin per value -> 4 bins (issue #7750).
+  covergroup cg4;
+    cp: coverpoint sel {
+      bins all_vals[] = {[0 : $]};
+    }
+  endgroup
+
+  // cg5: lower-open range {[lo:$]} == {[lo:maxVal]} -> bins for 2 and 3
+  covergroup cg5;
+    cp: coverpoint sel {
+      bins hi_vals[] = {[2 : $]};
+    }
+  endgroup
+
   initial begin
     cg cg_inst;
     cg2 cg2_inst;
     cg3 cg3_inst;
+    cg4 cg4_inst;
+    cg5 cg5_inst;
 
     cg_inst = new();
     cg2_inst = new();
     cg3_inst = new();
+    cg4_inst = new();
+    cg5_inst = new();
 
     // Hit first array bin value (1)
     data = 1;
@@ -93,6 +113,22 @@ module t;
     data = 6;
     cg3_inst.sample();
     `checkr(cg3_inst.get_inst_coverage(), 75.0);
+
+    // Hit cg4 '$' bins ([0:$] == [0:3], 4 bins): cover 3 of 4
+    sel = 0;
+    cg4_inst.sample();
+    `checkr(cg4_inst.get_inst_coverage(), 25.0);
+    sel = 1;
+    cg4_inst.sample();
+    `checkr(cg4_inst.get_inst_coverage(), 50.0);
+    sel = 2;
+    cg4_inst.sample();
+    `checkr(cg4_inst.get_inst_coverage(), 75.0);
+
+    // Hit cg5 lower-open bins ([2:$] == [2:3], 2 bins): cover 1 of 2
+    sel = 2;
+    cg5_inst.sample();
+    `checkr(cg5_inst.get_inst_coverage(), 50.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
