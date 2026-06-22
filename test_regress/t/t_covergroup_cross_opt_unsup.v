@@ -13,7 +13,12 @@ module t;
       option.per_instance = 1;  // unsupported for cross; triggers COVERIGN
     }
     cross_implicit: cross cp_a, var_x;
+    // Hierarchical/dotted cross item: can only be a data reference (implicit
+    // coverpoint), never a coverpoint; treated as unsupported (COVERIGN)
+    cross_hier: cross cp_a, s_cfg.m_p;
   endgroup
+  typedef struct packed {logic m_p; logic h_mode;} cfg_t;
+  cfg_t s_cfg = '0;
   logic var_x = 1'b0;
   cg cg_i = new;
   initial begin

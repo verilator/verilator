@@ -7341,6 +7341,21 @@ cross_itemList<nodep>:  // IEEE: part of list_of_cross_items
 cross_item<nodep>:  // ==IEEE: cross_item
                 id/*cover_point_identifier*/
                         { $$ = new AstCoverpointRef{$<fl>1, *$1}; }
+        //                      // Verilator extension beyond strict IEEE (cross_item is a simple
+        //                      // identifier): some tools accept a hierarchical/dotted reference
+        //                      // here.  A dotted reference can never name a coverpoint (coverpoint
+        //                      // identifiers are flat, local names), so it is necessarily a plain
+        //                      // data reference, i.e. an implicit coverpoint over a variable.
+        //                      // Verilator does not support implicit coverpoints, so V3Covergroup
+        //                      // drops the whole cross with a COVERIGN warning; accept it here so
+        //                      // the file parses instead of erroring on the '.'.
+        |       id/*variable*/ crossItemHier
+                        { $$ = new AstCoverpointRef{$<fl>1, *$1 + *$2}; }
+        ;
+
+crossItemHier<strp>:  // Verilator extension: dotted suffix of a hierarchical cross_item
+                '.' idAny                               { $$ = PARSEP->newString("." + *$2); }
+        |       crossItemHier '.' idAny                 { $$ = PARSEP->newString(*$1 + "." + *$3); }
         ;
 
 cross_body<nodep>:  // ==IEEE: cross_body
