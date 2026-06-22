@@ -27,7 +27,7 @@ jobs:
     name: Sub-lint | Python
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: repo
 

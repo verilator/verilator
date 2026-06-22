@@ -38,7 +38,7 @@ jobs:
       pr-run-ids: ${{ steps.build.outputs.pr-run-ids }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Build pages
         id: build
         env:
@@ -70,7 +70,7 @@ jobs:
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
