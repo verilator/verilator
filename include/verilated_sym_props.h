@@ -274,8 +274,7 @@ protected:
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
-                 uint32_t entSize);
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
                  std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);

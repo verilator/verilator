@@ -567,8 +567,8 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT_CSTR(p, "member_c");
         p = vpi_get_str(vpiFullName, vh153);
         {
-            const std::string expectedFullName = std::string{vpi_get_str(vpiFullName, vh152)}
-                                                 + ".member_c";
+            const std::string expectedFullName
+                = std::string{vpi_get_str(vpiFullName, vh152)} + ".member_c";
             CHECK_RESULT_CSTR(p, expectedFullName.c_str());
         }
 

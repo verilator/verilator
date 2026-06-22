@@ -247,8 +247,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     static void appendVarProperties(std::string& stmt, const std::string& vlEnumType,
                                     const std::string& vlEnumDir, const int udim, const int pdim,
-                                    const std::string& bounds,
-                                    const std::string& entSize = "") {
+                                    const std::string& bounds, const std::string& entSize = "") {
         stmt += vlEnumType;  // VLVT_UINT32 etc
         stmt += ", ";
         stmt += vlEnumDir;  // VLVD_IN etc
@@ -302,10 +301,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             stmt += "))), true, ";
         }
 
-        const std::string entSize = needsEntSize ? "sizeof(" + varName + ") / "
-                                                       + std::to_string(getUnpackedElements(
-                                                           varp->dtypep()))
-                                                 : "";
+        const std::string entSize = needsEntSize
+                                        ? "sizeof(" + varName + ") / "
+                                              + std::to_string(getUnpackedElements(varp->dtypep()))
+                                        : "";
         appendVarProperties(stmt, vlEnumType, varp->vlEnumDir(), udim, pdim, bounds, entSize);
         return stmt;
     }
@@ -327,11 +326,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += ".";
         stmt += cName;
         stmt += "), false, ";
-        const std::string varName = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect())
-                                    + "." + cName;
-        const std::string entSize = needsEntSize ? "sizeof(" + varName + ") / "
-                                                       + std::to_string(getUnpackedElements(dtypep))
-                                                 : "";
+        const std::string varName
+            = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        const std::string entSize
+            = needsEntSize
+                  ? "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep))
+                  : "";
         appendVarProperties(stmt, vlEnumType, memberVlEnumDir(svd.m_varp, dtypep), udim, pdim,
                             bounds, entSize);
         return stmt;

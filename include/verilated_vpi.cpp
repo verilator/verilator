@@ -398,7 +398,8 @@ public:
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
-        if (vl_vpi_find_unescaped_dot(varp->name())) m_name = vl_vpi_member_local_name(varp->name());
+        if (vl_vpi_find_unescaped_dot(varp->name()))
+            m_name = vl_vpi_member_local_name(varp->name());
     }
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep, void* datap,
                      const std::string& name, const std::string& fullname)
@@ -516,8 +517,7 @@ public:
         const std::string localName = vl_vpi_member_local_name(memberVarp->name());
 
         return new VerilatedVpioVar{memberVarp, scopep(),
-                                    static_cast<uint8_t*>(varDatap()) + offset,
-                                    localName,
+                                    static_cast<uint8_t*>(varDatap()) + offset, localName,
                                     std::string{fullname()} + memberName.substr(parentLen)};
     }
     uint32_t type() const override {
@@ -535,8 +535,9 @@ public:
         return type;
     }
     const char* fullname() const override {
-        m_fullname = m_fullNameOverride.empty() ? std::string{scopep()->name()} + "." + varp()->name()
-                                                : m_fullNameOverride;
+        m_fullname = m_fullNameOverride.empty()
+                         ? std::string{scopep()->name()} + "." + varp()->name()
+                         : m_fullNameOverride;
         for (auto idx : index()) m_fullname += "[" + std::to_string(idx) + "]";
         return m_fullname.c_str();
     }
@@ -2621,12 +2622,11 @@ vl_vpi_handle_indexed_member_from_scope(const VerilatedScope* const scopep,
     if (!baseVarp) baseVarp = scopep->varFind(baseName.c_str());
     if (!baseVarp) return nullptr;
 
-    VerilatedVpioVar* baseVop = fullnameOverride.empty()
-                                    ? new VerilatedVpioVar{baseVarp, varScopep}
-                                    : new VerilatedVpioVar{
-                                        baseVarp, varScopep, baseVarp->datap(),
-                                        vl_vpi_member_local_name(baseVarp->name()),
-                                        fullnameOverride};
+    VerilatedVpioVar* baseVop
+        = fullnameOverride.empty()
+              ? new VerilatedVpioVar{baseVarp, varScopep}
+              : new VerilatedVpioVar{baseVarp, varScopep, baseVarp->datap(),
+                                     vl_vpi_member_local_name(baseVarp->name()), fullnameOverride};
     VerilatedVpioVar* vop = vl_vpi_handle_apply_indices(baseVop, indices);
     if (!vop) return nullptr;
 
@@ -2783,10 +2783,10 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     if (varp->isParam()) {
         resultHandle = (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
     } else if (!fullnameOverride.empty()) {
-        resultHandle = (new VerilatedVpioVar{varp, scopep, varp->datap(),
-                                             vl_vpi_member_local_name(varp->name()),
-                                             fullnameOverride})
-                           ->castVpiHandle();
+        resultHandle
+            = (new VerilatedVpioVar{varp, scopep, varp->datap(),
+                                    vl_vpi_member_local_name(varp->name()), fullnameOverride})
+                  ->castVpiHandle();
     } else {
         resultHandle = (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
     }
@@ -3030,8 +3030,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         if (VL_LIKELY(vop && vop->isStructOrUnion())) return 0;
         break;
     }
-    default:
-        break;
+    default: break;
     }
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",
                   __func__, VerilatedVpiError::strFromVpiProp(property));
