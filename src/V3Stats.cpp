@@ -46,6 +46,9 @@ class StatsVisitor final : public VNVisitorConst {
     Counters m_dumpster;  // Alternate buffer to make discarding parts of the tree easier
     Counters* m_accump;  // The currently active accumulator
     std::vector<uint64_t> m_statVarWidths;  // Variables of given width
+    std::vector<uint64_t> m_constPoolConsts;  // Constant pool constants of given width
+    // Constant pool tables of given width and depth
+    std::map<std::pair<int, int>, uint64_t> m_constPoolTables;
     std::vector<std::map<const std::string, uint32_t>>
         m_statVarWidthNames;  // Var names of given width
 
@@ -59,15 +62,30 @@ class StatsVisitor final : public VNVisitorConst {
     // VISITORS
     void visit(AstVar* nodep) override {
         if (nodep->dtypep()) {
-            if (m_statVarWidths.size() <= static_cast<size_t>(nodep->width())) {
-                m_statVarWidths.resize(nodep->width() + 5);
-                if (v3Global.opt.statsVars()) {  //
-                    m_statVarWidthNames.resize(nodep->width() + 5);
+            if (nodep->constPoolEntry()) {
+                // Count constant pool entries
+                if (AstUnpackArrayDType* const uatp = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                    const int width = uatp->subDTypep()->width();
+                    const int depth = uatp->elementsConst();
+                    ++m_constPoolTables[{width, depth}];
+                } else {
+                    if (m_constPoolConsts.size() <= static_cast<size_t>(nodep->width())) {
+                        m_constPoolConsts.resize(nodep->width() + 5);
+                    }
+                    ++m_constPoolConsts.at(nodep->width());
                 }
-            }
-            ++m_statVarWidths.at(nodep->width());
-            if (v3Global.opt.statsVars()) {
-                ++m_statVarWidthNames.at(nodep->width())[nodep->prettyName()];
+            } else {
+                // Count proper variables
+                if (m_statVarWidths.size() <= static_cast<size_t>(nodep->width())) {
+                    m_statVarWidths.resize(nodep->width() + 5);
+                    if (v3Global.opt.statsVars()) {  //
+                        m_statVarWidthNames.resize(nodep->width() + 5);
+                    }
+                }
+                ++m_statVarWidths.at(nodep->width());
+                if (v3Global.opt.statsVars()) {
+                    ++m_statVarWidthNames.at(nodep->width())[nodep->prettyName()];
+                }
             }
         }
 
@@ -116,6 +134,26 @@ public:
                     addStat(prefix, count);
                 }
             }
+        }
+
+        // Constant pool constants
+        for (size_t i = 0; i < m_constPoolConsts.size(); ++i) {
+            const uint64_t count = m_constPoolConsts.at(i);
+            if (!count) continue;
+            std::stringstream ss;
+            ss << "Vars Const, width " << std::setw(5) << std::dec << i;
+            addStat(ss.str(), count);
+        }
+
+        // Constant pool tables
+        for (const auto& it : m_constPoolTables) {
+            const int depth = it.first.second;
+            const int width = it.first.first;
+            const int count = it.second;
+            std::ostringstream ss;
+            ss << "Vars Table, width " << std::setw(5) << std::dec << width  //
+               << " x " << std::setw(5) << std::dec << depth;
+            addStat(ss.str(), count);
         }
 
         // Node types (also total memory usage)
