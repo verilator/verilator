@@ -302,8 +302,7 @@ class CaseVisitor final : public VNVisitor {
             }
         }
         if (!missingItems.empty() && !nodep->unique0Pragma()) {
-            nodep->v3warn(CASEINCOMPLETE,
-                          "Enum item(s) not covered by case: " << missingItems);
+            nodep->v3warn(CASEINCOMPLETE, "Enum item(s) not covered by case: " << missingItems);
         }
         return fullyCovered;  // enum is fully covered
     }
