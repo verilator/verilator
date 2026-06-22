@@ -60,7 +60,7 @@ jobs:
             rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: repo
           ref: ${{ inputs.sha }}

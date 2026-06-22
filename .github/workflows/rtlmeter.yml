@@ -45,7 +45,7 @@ jobs:
       cases: ${{ steps.cases.outputs.cases }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Startup
         id: start
@@ -208,7 +208,7 @@ jobs:
         run: echo "tags=$(jq -r 'keys | map(sub("^run-"; "")) | join(" ")' <<< '${{ toJSON(needs) }}')" >> "$GITHUB_OUTPUT"
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -298,7 +298,7 @@ jobs:
           repositories: verilator-rtlmeter-results
           permission-contents: write
       - name: Checkout verilator-rtlmeter-results
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
@@ -331,7 +331,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout RTLMeter
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -341,7 +341,7 @@ jobs:
         run: make venv
 
       - name: Checkout Verilator
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: verilator
 
