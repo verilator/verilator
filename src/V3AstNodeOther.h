@@ -1185,12 +1185,22 @@ public:
 };
 class AstCoverpointRef final : public AstNode {
     // Reference to a coverpoint used in a cross
-    const string m_name;  // coverpoint name
+    // @astgen op1 := exprp : Optional[AstNodeExpr]  // Non-standard: hierarchical/dotted
+    //                                               // reference (implicit coverpoint), e.g.
+    //                                               // 'cross a.b'; nullptr for a plain coverpoint
+    //                                               // name.  Resolved by the time V3Covergroup
+    //                                               // runs (AstDot is eliminated at link).
+    const string m_name;  // coverpoint name (or flattened dotted path, for diagnostics)
 
 public:
     AstCoverpointRef(FileLine* fl, const string& name)
         : ASTGEN_SUPER_CoverpointRef(fl)
         , m_name{name} {}
+    AstCoverpointRef(FileLine* fl, const string& name, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_CoverpointRef(fl)
+        , m_name{name} {
+        this->exprp(exprp);
+    }
     ASTGEN_MEMBERS_AstCoverpointRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;

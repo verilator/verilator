@@ -1,3 +1,8 @@
+%Warning-NONSTD: t/t_covergroup_cross_opt_unsup.v:19:34: Non-standard hierarchical reference as a coverage cross item (an implicit coverpoint)
+   19 |     cross_hier: cross cp_a, s_cfg.m_p;
+      |                                  ^
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
 %Warning-COVERIGN: t/t_covergroup_cross_opt_unsup.v:13:7: Ignoring unsupported coverage cross option: 'per_instance'
    13 |       option.per_instance = 1;   
       |       ^~~~~~
@@ -7,8 +12,8 @@
                                                          : ... note: In instance 't'
    15 |     cross_implicit: cross cp_a, var_x;
       |                                 ^~~~~
-%Warning-COVERIGN: t/t_covergroup_cross_opt_unsup.v:18:29: Unsupported: cross of 's_cfg.m_p' which is not a coverpoint (implicit coverpoint)
+%Warning-COVERIGN: t/t_covergroup_cross_opt_unsup.v:19:34: Unsupported: cross of hierarchical reference 's_cfg.m_p' (implicit coverpoint)
                                                          : ... note: In instance 't'
-   18 |     cross_hier: cross cp_a, s_cfg.m_p;
-      |                             ^~~~~
+   19 |     cross_hier: cross cp_a, s_cfg.m_p;
+      |                                  ^
 %Error: Exiting due to

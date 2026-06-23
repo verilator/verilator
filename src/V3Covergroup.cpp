@@ -1295,6 +1295,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         while (itemp) {
             AstNode* const nextp = itemp->nextp();
             AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
+            if (refp->exprp()) {
+                // Non-standard hierarchical/dotted cross item (e.g. 'cross a.b'): an implicit
+                // coverpoint over the referenced expression.  The grammar already warned NONSTD;
+                // implicit coverpoints are not yet implemented, so drop the whole cross.  This is
+                // the place to generate the implicit coverpoint when support is added (the resolved
+                // expression is in refp->exprp()).
+                refp->v3warn(COVERIGN, "Unsupported: cross of hierarchical reference '"
+                                           << refp->prettyName()
+                                           << "' (implicit coverpoint)");
+                return;
+            }
             // Find the referenced coverpoint via name map (O(log n) vs O(n) linear scan)
             const auto it = m_coverpointMap.find(refp->name());
             AstCoverpoint* const foundCpp = (it != m_coverpointMap.end()) ? it->second : nullptr;

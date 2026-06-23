@@ -66,6 +66,15 @@ static void STRENGTH_LIST(AstNode* listp, AstStrengthSpec* specp) {
         assignp->strengthSpecp(specp->backp() ? specp->cloneTree(false) : specp);
     }
 }
+// Flatten a parse-time idDotted reference tree (id, a.b, a.b.c) to a dotted name
+// string.  Used for diagnostics on non-standard hierarchical cross items.
+static string CROSS_ITEM_NAME(const AstNode* nodep) {
+    if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
+        return CROSS_ITEM_NAME(dotp->lhsp()) + (dotp->colon() ? "::" : ".")
+               + CROSS_ITEM_NAME(dotp->rhsp());
+    }
+    return nodep->name();  // AstParseRef (incl. "$root")
+}
 //======================================================================
 // Statics (for here only)
 
@@ -7339,23 +7348,26 @@ cross_itemList<nodep>:  // IEEE: part of list_of_cross_items
         ;
 
 cross_item<nodep>:  // ==IEEE: cross_item
-                id/*cover_point_identifier*/
-                        { $$ = new AstCoverpointRef{$<fl>1, *$1}; }
-        //                      // Verilator extension beyond strict IEEE (cross_item is a simple
-        //                      // identifier): some tools accept a hierarchical/dotted reference
-        //                      // here.  A dotted reference can never name a coverpoint (coverpoint
-        //                      // identifiers are flat, local names), so it is necessarily a plain
-        //                      // data reference, i.e. an implicit coverpoint over a variable.
-        //                      // Verilator does not support implicit coverpoints, so V3Covergroup
-        //                      // drops the whole cross with a COVERIGN warning; accept it here so
-        //                      // the file parses instead of erroring on the '.'.
-        |       id/*variable*/ crossItemHier
-                        { $$ = new AstCoverpointRef{$<fl>1, *$1 + *$2}; }
-        ;
-
-crossItemHier<strp>:  // Verilator extension: dotted suffix of a hierarchical cross_item
-                '.' idAny                               { $$ = PARSEP->newString("." + *$2); }
-        |       crossItemHier '.' idAny                 { $$ = PARSEP->newString(*$1 + "." + *$3); }
+        //                      // IEEE: cover_point_identifier | variable_identifier - both are a
+        //                      // simple identifier.  We parse idDotted (a plain hierarchical
+        //                      // reference a.b.c, with no bit/array selects) to also accept the
+        //                      // non-standard dotted form (e.g. 'cross a.b') that several
+        //                      // simulators support; the common simple-identifier case is detected
+        //                      // and handled exactly as before.
+                idDotted
+                        {
+                          if (AstParseRef* const refp = VN_CAST($1, ParseRef)) {
+                              // Standard: simple cover_point_identifier / variable_identifier
+                              $$ = new AstCoverpointRef{refp->fileline(), refp->name()};
+                              VL_DO_DANGLING(refp->deleteTree(), refp);
+                          } else {
+                              // Verilator extension beyond strict IEEE (cross_item is a simple
+                              // identifier): some tools accept a hierarchical/dotted reference
+                              $1->v3warn(NONSTD, "Non-standard hierarchical reference as a coverage "
+                                                 "cross item (an implicit coverpoint)");
+                              $$ = new AstCoverpointRef{$1->fileline(), CROSS_ITEM_NAME($1), $1};
+                          }
+                        }
         ;
 
 cross_body<nodep>:  // ==IEEE: cross_body
