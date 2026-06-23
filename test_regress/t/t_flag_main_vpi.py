@@ -7,7 +7,6 @@
 # SPDX-FileCopyrightText: 2025 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import platform
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -15,19 +14,6 @@ test.scenarios('vlt')
 # Compile with --binary --vpi to exercise the VPI-aware generated main.
 # Also compile a VPI shared library to be loaded at runtime via +verilator+vpi+.
 test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"])
-
-# With --vpi and an executable (--binary implies --exe), the Makefile must export the
-# executable's symbols so the generated loader's dlopen'd library can resolve them.
-# The flags are gated on $(UNAME_S): -rdynamic/-ldl on Linux, -Wl,-export_dynamic on
-# macOS (Windows is unaffected, runtime loading is unsupported there).
-mk = test.obj_dir + "/V" + test.name + ".mk"
-if platform.system() == 'Darwin':
-    test.file_grep(mk, r'ifeq \(\$\(UNAME_S\),Darwin\)')
-    test.file_grep(mk, r'LDFLAGS \+= -Wl,-export_dynamic')
-else:
-    test.file_grep(mk, r'ifeq \(\$\(UNAME_S\),Linux\)')
-    test.file_grep(mk, r'LDFLAGS \+= -rdynamic')
-    test.file_grep(mk, r'LDLIBS \+= -ldl')
 
 # Run the generated binary; load the VPI library via the +verilator+vpi+ plusarg.
 # The VPI library's output (observed 'count' reaching MAX_TICKS, then end-of-sim) is

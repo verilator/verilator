@@ -104,8 +104,8 @@ private:
         puts("\n");
 
         if (v3Global.opt.vpi()) {
-            puts("// Load VPI shared libraries requested via +verilator+vpi+<lib>\n");
-            puts("vl_load_vpi_libs(argc, argv);\n");
+            // VPI shared libraries requested via +verilator+vpi+<lib> are loaded by
+            // contextp->commandArgs() above, before the statically-linked startup routines.
             puts("// Hook VPI startup routines and invoke callback\n");
             puts("if (vlog_startup_routines) {\n");
             puts(/**/ "for (auto routinep = &vlog_startup_routines[0]; *routinep; routinep++)"

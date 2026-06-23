@@ -571,8 +571,8 @@ public:
         of.puts("VM_VPI = ");
         of.puts(v3Global.opt.vpi() ? "1" : "0");
         of.puts("\n");
-        // Link flags for runtime VPI library loading are platform-specific and emitted by
-        // emitOverallMake() after verilated.mk is included (so $(UNAME_S) is defined).
+        // Link flags for runtime VPI library loading are emitted by emitOverallMake() after
+        // verilated.mk is included (so $(CFG_LDFLAGS_DYNAMIC)/$(CFG_LDLIBS_DYNAMIC) are defined).
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
@@ -737,20 +737,13 @@ public:
             of.puts("\n");
 
             if (v3Global.opt.vpi()) {
-                // Runtime VPI library loading (+verilator+vpi+<lib>) needs platform-specific
-                // link flags so the dlopen'd library can resolve the executable's VPI symbols.
-                // Resolve them with $(UNAME_S).
+                // Runtime VPI library loading (+verilator+vpi+<lib>) needs the executable to
+                // export its VPI symbols so the dlopen'd library can resolve them, plus the
+                // dl library for dlopen/dlsym.  The exact flags are probed at configure time
+                // (CFG_LDFLAGS_DYNAMIC / CFG_LDLIBS_DYNAMIC in verilated.mk).
                 of.puts("# Runtime VPI library loading (+verilator+vpi+) link requirements\n");
-                // -rdynamic exports the executable's VPI symbols to the dlopen'd library;
-                // -ldl provides dlopen/dlsym.
-                of.puts("ifeq ($(UNAME_S),Linux)\n");
-                of.puts(/**/ "LDFLAGS += -rdynamic\n");
-                of.puts(/**/ "LDLIBS += -ldl\n");
-                of.puts("endif\n");
-                // macOS analog of -rdynamic; dlopen/dlsym live in libSystem so no -ldl needed.
-                of.puts("ifeq ($(UNAME_S),Darwin)\n");
-                of.puts(/**/ "LDFLAGS += -Wl,-export_dynamic\n");
-                of.puts("endif\n");
+                of.puts("LDFLAGS += $(CFG_LDFLAGS_DYNAMIC)\n");
+                of.puts("LDLIBS += $(CFG_LDLIBS_DYNAMIC)\n");
                 of.puts("\n");
             }
         }

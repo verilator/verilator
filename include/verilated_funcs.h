@@ -74,11 +74,6 @@ extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
 extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
                        const char* msg) VL_MT_SAFE;
 
-#if VM_VPI
-/// Load VPI shared libraries requested via +verilator+vpi+<lib>[:<bootstrap>].
-extern void vl_load_vpi_libs(int argc, char** argv) VL_MT_UNSAFE;
-#endif
-
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
 extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
