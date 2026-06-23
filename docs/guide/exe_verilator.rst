@@ -660,8 +660,7 @@ Summary:
 
 .. option:: -fno-bit-scan-loops
 
-   Rarely needed. Disable converting leading-one and count-ones loops into
-   bit-reduction operations.
+   Rarely needed. Disable converting bit counting loops into built-in operations.
 
 .. option:: -fno-case
 

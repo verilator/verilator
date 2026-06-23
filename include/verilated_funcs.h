@@ -925,7 +925,6 @@ static inline IData VL_MOSTSETBITP1_Q(QData lhs) VL_PURE {
 #endif
 }
 static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
-    // MSB set bit plus one; similar to FLS.  0=value is zero
     for (int i = words - 1; i >= 0; --i) {
         // Shorter worst case if predict not taken
         if (VL_UNLIKELY(lwp[i])) return i * VL_EDATASIZE + VL_MOSTSETBITP1_I(lwp[i]);

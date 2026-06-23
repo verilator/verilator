@@ -5745,11 +5745,10 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opMostSetBitP1(lhs); }
     string emitVerilog() override { return "%f$mostsetbitp1(%l)"; }
     string emitC() override { return "VL_MOSTSETBITP1_%lq(%lW, %P, %li)"; }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
-    bool isSystemFunc() const override { return true; }
 };
 class AstNToI final : public AstNodeUniop {
     // String to any-size integral
