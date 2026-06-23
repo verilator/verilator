@@ -1299,11 +1299,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 // Non-standard hierarchical/dotted cross item (e.g. 'cross a.b'): an implicit
                 // coverpoint over the referenced expression.  The grammar already warned NONSTD;
                 // implicit coverpoints are not yet implemented, so drop the whole cross.  This is
-                // the place to generate the implicit coverpoint when support is added (the resolved
-                // expression is in refp->exprp()).
+                // the place to generate the implicit coverpoint when support is added (the
+                // resolved expression is in refp->exprp()).
                 refp->v3warn(COVERIGN, "Unsupported: cross of hierarchical reference '"
-                                           << refp->prettyName()
-                                           << "' (implicit coverpoint)");
+                                           << refp->prettyName() << "' (implicit coverpoint)");
                 return;
             }
             // Find the referenced coverpoint via name map (O(log n) vs O(n) linear scan)
