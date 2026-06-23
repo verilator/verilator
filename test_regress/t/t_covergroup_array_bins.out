@@ -10,3 +10,19 @@ cg3.cp.range_sized[0]: 1
 cg3.cp.range_sized[1]: 1
 cg3.cp.range_sized[2]: 1
 cg3.cp.range_sized[3]: 0
+cg4.cp.all_vals[0]: 1
+cg4.cp.all_vals[1]: 1
+cg4.cp.all_vals[2]: 1
+cg4.cp.all_vals[3]: 0
+cg5.cp.hi_vals[0]: 1
+cg5.cp.hi_vals[1]: 0
+cg6.cp.lo_open[0]: 1
+cg6.cp.lo_open[1]: 0
+cg7.cp.rev[0]: 1
+cg7.cp.rev[1]: 0
+cg8.cp.w[0]: 0
+cg8.cp.w[1]: 1
+cg9.__cross7.cumulative_x_lo [cross]: 1
+cg9.__cross7.ok_x_lo [cross]: 1
+cg9.cpA.ok: 1
+cg9.cpB.lo: 1
