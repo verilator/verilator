@@ -174,6 +174,7 @@ public:
     bool isStreamableFixedAggregate() const;
     bool containsUnpackedStruct() const;
     int widthStream() const;
+    string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
