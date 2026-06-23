@@ -2269,7 +2269,7 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgLogAnd* const vtxp) override {
-        if (binary(vtxp)) return;
+        if (binary(vtxp) || vtxp->rhsp()->unsafe()) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -2287,11 +2287,11 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgLogIf* const vtxp) override {
-        if (binary(vtxp)) return;
+        if (binary(vtxp) || vtxp->rhsp()->unsafe()) return;
     }
 
     void visit(DfgLogOr* const vtxp) override {
-        if (binary(vtxp)) return;
+        if (binary(vtxp) || vtxp->rhsp()->unsafe()) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -2890,13 +2890,13 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (vtxp->dtype() == m_bitDType) {
-            if (isSame(condp, thenp)) {  // a ? a : b becomes a | b
+            if (isSame(condp, thenp) && !elsep->unsafe()) {  // a ? a : b becomes a | b
                 APPLYING(REPLACE_COND_WITH_THEN_BRANCH_COND) {
                     replace(make<DfgOr>(vtxp, condp, elsep));
                     return;
                 }
             }
-            if (isSame(condp, elsep)) {  // a ? b : a becomes a & b
+            if (isSame(condp, elsep) && !thenp->unsafe()) {  // a ? b : a becomes a & b
                 APPLYING(REPLACE_COND_WITH_ELSE_BRANCH_COND) {
                     replace(make<DfgAnd>(vtxp, condp, thenp));
                     return;
@@ -2905,28 +2905,28 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (vtxp->width() <= VL_QUADSIZE) {
-            if (isZero(thenp)) {  // a ? 0 : b becomes ~a & b
+            if (isZero(thenp) && !elsep->unsafe()) {  // a ? 0 : b becomes ~a & b
                 APPLYING(REPLACE_COND_WITH_THEN_BRANCH_ZERO) {
                     DfgVertex* const maskp = replicate(vtxp, make<DfgNot>(condp, condp));
                     replace(make<DfgAnd>(vtxp, maskp, elsep));
                     return;
                 }
             }
-            if (isOnes(thenp)) {  // a ? 1 : b becomes a | b
+            if (isOnes(thenp) && !elsep->unsafe()) {  // a ? 1 : b becomes a | b
                 APPLYING(REPLACE_COND_WITH_THEN_BRANCH_ONES) {
                     DfgVertex* const maskp = replicate(vtxp, condp);
                     replace(make<DfgOr>(vtxp, maskp, elsep));
                     return;
                 }
             }
-            if (isZero(elsep)) {  // a ? b : 0 becomes a & b
+            if (isZero(elsep) && !thenp->unsafe()) {  // a ? b : 0 becomes a & b
                 APPLYING(REPLACE_COND_WITH_ELSE_BRANCH_ZERO) {
                     DfgVertex* const maskp = replicate(vtxp, condp);
                     replace(make<DfgAnd>(vtxp, maskp, thenp));
                     return;
                 }
             }
-            if (isOnes(elsep)) {  // a ? b : 1 becomes ~a | b
+            if (isOnes(elsep) && !thenp->unsafe()) {  // a ? b : 1 becomes ~a | b
                 APPLYING(REPLACE_COND_WITH_ELSE_BRANCH_ONES) {
                     DfgVertex* const maskp = replicate(vtxp, make<DfgNot>(condp, condp));
                     replace(make<DfgOr>(vtxp, maskp, thenp));
@@ -2935,7 +2935,8 @@ class V3DfgPeephole final : public DfgVisitor {
             }
 
             if (DfgOr* const tOrp = thenp->cast<DfgOr>()) {
-                if (isSame(tOrp->lhsp(), elsep)) {  // a ? b | c : b becomes b | (a & c)
+                if (isSame(tOrp->lhsp(), elsep)
+                    && !tOrp->rhsp()->unsafe()) {  // a ? b | c : b becomes b | (a & c)
                     APPLYING(REPLACE_COND_THEN_OR_LHS) {
                         DfgVertex* const maskp = replicate(vtxp, condp);
                         DfgAnd* const andp = make<DfgAnd>(vtxp, maskp, tOrp->rhsp());
@@ -2943,7 +2944,8 @@ class V3DfgPeephole final : public DfgVisitor {
                         return;
                     }
                 }
-                if (isSame(tOrp->rhsp(), elsep)) {  // a ? b | c : c becomes c | (a & b)
+                if (isSame(tOrp->rhsp(), elsep)
+                    && !tOrp->lhsp()->unsafe()) {  // a ? b | c : c becomes c | (a & b)
                     APPLYING(REPLACE_COND_THEN_OR_RHS) {
                         DfgVertex* const maskp = replicate(vtxp, condp);
                         DfgAnd* const andp = make<DfgAnd>(vtxp, maskp, tOrp->lhsp());
