@@ -1296,6 +1296,7 @@ class TaskVisitor final : public VNVisitor {
             rtnvarp->noCReset(true);  // As made for port in V3LinkResolve
             rtnvarp->name(rtnvarp->name()
                           + "__Vfuncrtn");  // Avoid conflict with DPI function name
+            rtnvarp->setIgnoreSchedWrite();
             if (nodep->dpiImport() || nodep->dpiExport()) rtnvarp->protect(false);
         }
 
@@ -1742,25 +1743,6 @@ class TaskVisitor final : public VNVisitor {
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
             const bool needsNonInlineCFunc = m_statep->ftaskNeedsNonInlineCFunc(nodep);
-            // Warn if not inlining an impure ftask (unless method, recursive,
-            // or interface-local member access, which is not truly external).
-            // Will likely not schedule correctly.
-            // TODO: Why not if recursive? It will not work ...
-            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
-                if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    if (!isIfaceLocalImpure(nodep, impurep)) {
-                        nodep->v3warn(IMPURE, "Unsupported: External variable referenced by "
-                                              "non-inlined function/task: "
-                                                  << nodep->prettyNameQ() << '\n'
-                                                  << nodep->warnContextPrimary() << '\n'
-                                                  << impurep->warnOther()
-                                                  << "... Location of the external reference: "
-                                                  << impurep->prettyNameQ() << '\n'
-                                                  << impurep->warnContextSecondary());
-                    }
-                }
-            }
-
             if (noInline || needsNonInlineCFunc || nodep->dpiImport() || nodep->dpiExport()
                 || nodep->taskPublic()) {
                 // Clone it first, because we may have later FTaskRef's that still need

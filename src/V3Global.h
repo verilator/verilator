@@ -35,6 +35,7 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 class AstNetlist;
 class V3HierGraph;
@@ -48,7 +49,7 @@ class V3ThreadPool;
 // Object must be named, or it will not persist until end-of-scope.
 // Constructor needs () or GCC 4.8 false warning.
 #define VL_RESTORER(var) const VRestorer<typename std::decay_t<decltype(var)>> restorer_##var(var);
-/// Get the copy of the variable previously saved by VL_RESTORER()
+/// Get the const reference to the value previously saved by VL_RESTORER()
 #define VL_RESTORER_PREV(var) restorer_##var.saved()
 
 // Object used by VL_RESTORER.  This object must be an auto variable, not
@@ -56,15 +57,47 @@ class V3ThreadPool;
 template <typename T>
 class VRestorer final {
     T& m_ref;  // Reference to object we're saving and restoring
-    const T m_saved;  // Value saved, for later restore
+    // Not a const so, std::move is effective
+    T m_saved;  // Value saved, for later restore
 
 public:
     explicit VRestorer(T& permr)
         : m_ref{permr}
         , m_saved{permr} {}
-    ~VRestorer() { m_ref = m_saved; }
+    ~VRestorer() { m_ref = std::move(m_saved); }
     const T& saved() const { return m_saved; }
     VL_UNCOPYABLE(VRestorer);
+};
+
+/// Save a given variable's value on the stack, restoring it at end-of-scope.
+// Object must be named, or it will not persist until end-of-scope.
+// Unlike `VL_RESTORER` the value is not copied - it is swapped instead
+// After calling `VL_RESTORER_SWAP(var)` the var has value of a newly constructed object with a
+// zero argument constructor
+// Constructor needs () or GCC 4.8 false warning.
+#define VL_RESTORER_SWAP(var) \
+    const VRestorerSwap<typename std::decay_t<decltype(var)>> restorerSwap_##var(var);
+/// Get the const reference to the value previously saved by VL_RESTORER_SWAP()
+#define VL_RESTORER_SWAP_PREV(var) restorerSwap_##var.saved()
+
+// Object used by VL_RESTORER_SWAP.  This object must be an auto variable, not
+// allocated on the heap or otherwise.
+template <typename T>
+class VRestorerSwap final {
+    T& m_ref;  // Reference to object we're saving and restoring
+    // Not a const so, std::move is effective
+    T m_saved;  // Value saved, for later restore
+
+public:
+    template <typename... Args_T>
+    explicit VRestorerSwap(T& permr, Args_T&&... args)
+        : m_ref{permr}
+        , m_saved{std::forward<Args_T>(args)...} {
+        std::swap(m_saved, permr);
+    }
+    ~VRestorerSwap() { m_ref = std::move(m_saved); }
+    const T& saved() const { return m_saved; }
+    VL_UNCOPYABLE(VRestorerSwap);
 };
 
 //######################################################################
