@@ -3562,12 +3562,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     static VSymEnt* findIdFallbackSkipMemberDType(VSymEnt* lookp, const string& name) {
+        VSymEnt* shadowEntp = nullptr;  // Shadowing variable: not a type, kept for error report
         while (lookp) {
             VSymEnt* const foundp = lookp->findIdFlat(name);
-            if (foundp && !VN_IS(foundp->nodep(), MemberDType)) return foundp;
+            if (foundp && !VN_IS(foundp->nodep(), MemberDType)) {
+                // A variable is not a type candidate (IEEE 1800-2023 6.18); skip it so an
+                // enclosing type is found, but keep it to preserve the "found: VAR" error.
+                if (!VN_IS(foundp->nodep(), Var)) return foundp;
+                if (!shadowEntp) shadowEntp = foundp;
+            }
             lookp = lookp->fallbackp();
         }
-        return nullptr;
+        return shadowEntp;
     }
 
     void symIterateChildren(AstNode* nodep, VSymEnt* symp) {
