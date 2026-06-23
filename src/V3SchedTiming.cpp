@@ -26,6 +26,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3Sched.h"
 
@@ -179,7 +180,8 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
 
 class AwaitVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
+    //  AstSenTree::user1()  -> bool.               Set true if the sentree has been visited.
+    //  AstCFunc::user1()    -> AstUser1Allocator.  See alocator below
     const VNUser1InUse m_inuser1;
 
     // STATE
@@ -193,6 +195,34 @@ class AwaitVisitor final : public VNVisitor {
     std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
     // Variables written by suspendable processes
     std::vector<AstVarScope*> m_writtenBySuspendable;
+    struct CFuncCache final {
+        std::set<AstSenTree*> m_processDomains;  // What shall be added to m_processDomains
+        std::vector<AstVarScope*>
+            m_writtenBySuspendable;  // What shall be added to m_writtenBySuspendable
+        enum State : uint8_t {
+            UNINITIALIZED = 0,  // Not initialized members are empty
+            VISITING,  // Visiting - needed for breaking recursion
+            INITIALIZED,  // Members contains correct values
+        } m_state  // Current state of Cache
+            = UNINITIALIZED;
+    };
+    // Caches how visiting the function with given value of m_gatherVars changes
+    // m_processDomains and m_writtenBySuspendable - only accessed from visit(AstCFunc* nodep)
+    AstUser1Allocator<AstCFunc, std::array<CFuncCache, 2>> m_cfuncsCache;
+    // Count uses of not inlined writes to signals in suspendables
+    VDouble0 m_notInlinedWritesInSuspendableUsage;
+    // Set containing information whether an AstCFunc was hit (called) recursively
+    // This is needed to know whether cache is complete. E.g.:
+    // A->B->C->B
+    // Callstack:
+    //      visit(A) -> Ok go to successors
+    //      visit(B) -> Ok go to successors
+    //      visit(C) -> Ok go to successors
+    //      visit(B) -> Already visiting B
+    //      visit(C) -> Cache must not be created since it is not complete - A was not visited
+    //      visit(B) -> Cache may be created since all successors have been transitionally visited
+    //      visit(A) -> Cache may be created since all successors have been transitionally visited
+    std::array<std::unordered_set<const AstCFunc*>, 2> m_hitVisiting;
 
     // METHODS
     // Add arguments to a resume() call based on arguments in the suspending call
@@ -267,11 +297,65 @@ class AwaitVisitor final : public VNVisitor {
             if (!sentreep->user1SetOnce()) createResumeActive(nodep);
             if (m_inProcess) m_processDomains.insert(sentreep);
         }
+        iterateChildren(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()
             && !nodep->varScopep()->user2SetOnce()) {
             m_writtenBySuspendable.push_back(nodep->varScopep());
+        }
+    }
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        // We need to visit bodies of non-inlined functions
+        iterate(nodep->funcp());
+    }
+    void visit(AstCFunc* nodep) override {
+        UASSERT_OBJ(!m_gatherVars || m_inProcess, nodep,
+                    "Variables shall be gathered only inside processes");
+        // Cache key does not depends on a m_inProcess variable since it is forced to be true
+        const size_t cacheKey = static_cast<size_t>(m_gatherVars);
+        CFuncCache& value = m_cfuncsCache(nodep)[cacheKey];
+        {
+            VL_RESTORER(m_inProcess);
+            // Force m_inProcess since visiting a tree with !m_inProcess does not change the
+            // m_writtenBySuspendable and m_processDomains (so it would be a bit of a dry run).
+            // However, we must visit children since there might be an AstCAwait which is modified
+            // in its visit() but since the function does not depend on a state of m_inProcess (nor
+            // anything that may be affected by changing the state of m_inProcess) we may force the
+            // variable, visit children and gather cache for m_inProcess && !m_gatherVars
+            m_inProcess = true;
+            switch (value.m_state) {
+            case CFuncCache::UNINITIALIZED: {
+                // Save current state
+                VL_RESTORER_CLEAR(m_processDomains);
+                VL_RESTORER_CLEAR(m_writtenBySuspendable);
+
+                // Visit
+                value.m_state = CFuncCache::VISITING;
+                iterateChildren(nodep);
+                m_hitVisiting[cacheKey].erase(nodep);
+                value.m_state = m_hitVisiting[cacheKey].empty() ? CFuncCache::INITIALIZED
+                                                                : CFuncCache::UNINITIALIZED;
+
+                // Save a cache
+                std::swap(m_processDomains, value.m_processDomains);
+                std::swap(m_writtenBySuspendable, value.m_writtenBySuspendable);
+            } break;
+            case CFuncCache::VISITING:
+                m_hitVisiting[cacheKey].insert(nodep);
+                return;  // Break recursion
+            case CFuncCache::INITIALIZED: break;
+            }
+        }
+        if (m_inProcess) {
+            // Add cached values to the visitor state if the m_inProcess was initially true - when
+            // it is false none of these variable shall be modified
+            m_writtenBySuspendable.insert(m_writtenBySuspendable.end(),
+                                          value.m_writtenBySuspendable.begin(),
+                                          value.m_writtenBySuspendable.end());
+            m_notInlinedWritesInSuspendableUsage += value.m_writtenBySuspendable.size();
+            m_processDomains.insert(value.m_processDomains.begin(), value.m_processDomains.end());
         }
     }
     void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
@@ -289,7 +373,10 @@ public:
         , m_externalDomains{externalDomains} {
         iterate(nodep);
     }
-    ~AwaitVisitor() override = default;
+    ~AwaitVisitor() override {
+        V3Stats::addStat("Scheduling, count of non-inlined signal writes in suspendables",
+                         m_notInlinedWritesInSuspendableUsage);
+    }
 };
 
 TimingKit prepareTiming(AstNetlist* const netlistp) {
