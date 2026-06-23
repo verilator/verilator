@@ -1417,6 +1417,45 @@ class ConstVisitor final : public VNVisitor {
         return false;
     }
 
+    bool matchMaskedZero(const AstAnd* nodep) {
+        // Turn masking of known zero bits into constant zero. Commonly appears after V3Expand.
+        const AstConst* const maskp = VN_AS(nodep->lhsp(), Const);
+        const AstNodeExpr* const rhsp = nodep->rhsp();
+        const uint32_t msbP1 = maskp->num().mostSetBitP1();
+        if (!msbP1) return false;  // Don't rewrite, separate rule matches for this
+        const uint32_t msb = msbP1 - 1;
+        const uint32_t lsb = maskp->num().leastSetBitP1() - 1;
+
+        if (const AstShiftL* const shiftp = VN_CAST(rhsp, ShiftL)) {
+            // 'a << S' forces the low S bits to zero
+            if (AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
+                return scp->num().fitsInUInt()  //
+                       && (scp->num().toUInt() > msb);
+            }
+        }
+        if (const AstShiftR* const shiftp = VN_CAST(rhsp, ShiftR)) {
+            // 'a >> S' forces the high S bits to zero. Check against the width of the shifted
+            // operand, V3Expand can create shifts wider than their inputs
+            if (AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
+                return scp->num().fitsInUInt()
+                       && (lsb + scp->num().toUInt()
+                           >= static_cast<uint32_t>(shiftp->lhsp()->widthMin()));
+            }
+        }
+        if (const AstMul* const mulp = VN_CAST(rhsp, Mul)) {
+            // 'C * a' forces the low N bits to zero where 'C' has low zero bits
+            if (AstConst* const cp = VN_CAST(mulp->lhsp(), Const)) {
+                return cp->num().leastSetBitP1() > msb + 1;
+            }
+        }
+        if (const AstExtend* const extendp = VN_CAST(rhsp, Extend)) {
+            // Zero-extension forces the bits above the source width to zero
+            return lsb >= static_cast<uint32_t>(extendp->lhsp()->width());
+        }
+
+        return false;
+    }
+
     bool matchBitOpTree(AstNodeExpr* nodep) {
         if (nodep->widthMin() != 1) return false;
         if (!v3Global.opt.fConstBitOpTree()) return false;
@@ -1564,16 +1603,46 @@ class ConstVisitor final : public VNVisitor {
                 && static_cast<int>(nodep->widthConst()) == nodep->fromp()->width());
     }
     bool operandSelExtend(AstSel* nodep) {
-        // A pattern created by []'s after offsets have been removed
-        // SEL(EXTEND(any,width,...),(width-1),0) -> ...
-        // Since select's return unsigned, this is always an extend
-        // cppcheck-suppress constVariablePointer // children unlinked below
+        if (!m_doV) return false;
         AstExtend* const extendp = VN_CAST(nodep->fromp(), Extend);
-        if (!(m_doV && extendp && VN_IS(nodep->lsbp(), Const) && nodep->lsbConst() == 0
-              && static_cast<int>(nodep->widthConst()) == extendp->lhsp()->width()))
-            return false;
-        VL_DO_DANGLING(replaceWChild(nodep, extendp->lhsp()), nodep);
-        return true;
+        if (!extendp) return false;
+        AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
+        if (!lsbp) return false;
+        const int width = nodep->widthConst();
+        const int lsb = lsbp->toSInt();
+        const int msb = lsb + width - 1;
+        AstNodeExpr* const lhsp = extendp->lhsp();
+        if (!lhsp->isPure()) return false;
+
+        // Selecting the entire extended expression, replace with that
+        if (lsb == 0 && msb == lhsp->width() - 1) {
+            lhsp->unlinkFrBack();
+            nodep->replaceWithKeepDType(lhsp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
+        }
+        // Select entirely in the extended part - replace with zero
+        if (lsb >= lhsp->width()) {
+            replaceZero(nodep);
+            return true;
+        }
+        // Select entirely in the extended expression - replace with select from that
+        if (msb < lhsp->width()) {
+            lhsp->unlinkFrBack();
+            lsbp->unlinkFrBack();
+            nodep->replaceWithKeepDType(new AstSel{nodep->fileline(), lhsp, lsbp, width});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
+        }
+        // Select straddles both sides, but is just a shorter extend
+        if (lsb == 0) {
+            lhsp->unlinkFrBack();
+            nodep->replaceWithKeepDType(new AstExtend{nodep->fileline(), lhsp});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
+        }
+
+        return false;
     }
     bool operandSelBiLower(AstSel* nodep) {
         // SEL(ADD(a,b),(width-1),0) -> ADD(SEL(a),SEL(b))
@@ -4223,6 +4292,8 @@ class ConstVisitor final : public VNVisitor {
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, $rhsp.isPure}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
+    // Masking that always yields zero
+    TREEOP ("AstAnd   {$lhsp.castConst, matchMaskedZero(nodep)}", "replaceZeroChkPure(nodep, $rhsp)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogAnd   {$lhsp.isZero}",       "replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",   "replaceZero(nodep)");
