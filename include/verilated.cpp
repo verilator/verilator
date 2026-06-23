@@ -275,11 +275,11 @@ void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char*
 void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
 #if VM_VPI
     if (arg.empty()) return;
-# ifdef _WIN32
+#ifdef _WIN32
     VL_FATAL_MT("", 0, "",
                 "+verilator+vpi+: runtime VPI library loading is not supported on"
                 " Windows; link the VPI code into the model instead");
-# else
+#else
     using vlog_startup_t = void (*)();
     // Split <lib>:<bootstrap> on the last ':'
     const std::string::size_type colon_pos = arg.rfind(':');
@@ -306,12 +306,12 @@ void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
         vlog_startup_t* routinesp
             = reinterpret_cast<vlog_startup_t*>(dlsym(handle, "vlog_startup_routines"));
         if (!routinesp)
-            VL_FATAL_MT("", 0, "",
-                        (std::string{"Cannot find 'vlog_startup_routines' in: "} + libpath)
-                            .c_str());
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find 'vlog_startup_routines' in: "} + libpath).c_str());
         for (int j = 0; routinesp[j]; ++j) routinesp[j]();
     }
-# endif
+#endif
 #else
     // Never reached: the command-line handler only calls this when compiled with --vpi.
     (void)arg;
