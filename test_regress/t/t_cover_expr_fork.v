@@ -13,6 +13,9 @@ module t;
         if (!x) begin
           cnt++;
         end
+        if (!$onehot(x)) begin
+          cnt++;
+        end
       end
     join_none
   endtask
@@ -20,7 +23,7 @@ module t;
   initial begin
     myTask();
     #1;
-    if (cnt != 1) $stop;
+    if (cnt != 2) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;
