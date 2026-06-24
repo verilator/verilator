@@ -145,7 +145,7 @@ Options:
    model was Verilated with :vlopt:`--vpi` and :vlopt:`--main` (or
    :vlopt:`--binary`). ``<library>`` is the path to the shared library. If
    ``:<bootstrap>`` is given, that named no-argument function is called;
-   otherwise the library's ``vlog_startup_routines`` array (IEEE 1800 Section 37) is
+   otherwise the library's ``vlog_startup_routines`` array (IEEE 1800 38.37.2) is
    invoked. May be repeated to load multiple libraries.
 
    Runtime loading is supported on POSIX platforms only (it relies on the

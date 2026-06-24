@@ -92,7 +92,7 @@
 #if VM_VPI
 # include <cstring>
 # ifndef _WIN32
-#  include <dlfcn.h>  // Used by Verilated::loadVpiLib
+#  include <dlfcn.h>  // dlopen
 # endif
 #endif
 
