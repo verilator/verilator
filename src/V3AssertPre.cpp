@@ -93,7 +93,10 @@ private:
             fromAlways = true;
         }
         if (!senip) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
+            nodep->v3error("Concurrent assertion has no clock (IEEE 1800-2023 16.16)\n"
+                           << nodep->warnMore()
+                           << "... Suggest provide a clocking event, a default"
+                              " clocking, or a clocked procedural context");
             newp = new AstSenTree{nodep->fileline(), nullptr};
         } else {
             if (cassertp && fromAlways) cassertp->senFromAlways(true);
