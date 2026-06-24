@@ -824,6 +824,7 @@ class CoverageVisitor final : public VNVisitor {
                     if (pair.second) {
                         varp = new AstVar{fl, VVarType::MODULETEMP, m_exprTempNames.get(frefp),
                                           dtypep};
+                        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
