@@ -15,17 +15,20 @@
                                                         : ... note: In instance 't'
    27 |     @clk a
       |     ^
-%Error: t/t_assert_seq_clocking_unsup.v:32:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_seq_clocking_unsup.v:32:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                             : ... note: In instance 't'
+                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    32 |   assert property (s_nest ##1 a);
       |   ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_seq_clocking_unsup.v:33:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_seq_clocking_unsup.v:33:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                             : ... note: In instance 't'
+                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    33 |   assert property (s_level);
       |   ^~~~~~
-%Error: t/t_assert_seq_clocking_unsup.v:34:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_seq_clocking_unsup.v:34:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                             : ... note: In instance 't'
+                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    34 |   assert property (s_level2);
       |   ^~~~~~
 %Error: Exiting due to

@@ -1,18 +1,22 @@
-%Error: t/t_assert_unclocked_bad.v:9:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_unclocked_bad.v:9:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                       : ... note: In instance 't'
+                                      : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
     9 |   assert property (a);
       |   ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_unclocked_bad.v:10:22: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_unclocked_bad.v:10:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                         : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    10 |   assert property (a |=> b);
       |                      ^~~
-%Error: t/t_assert_unclocked_bad.v:10:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_unclocked_bad.v:10:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                        : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    10 |   assert property (a |=> b);
       |   ^~~~~~
-%Error: t/t_assert_unclocked_bad.v:11:3: Concurrent assertion has no clock; provide a clocking event, a default clocking, or a clocked procedural context (IEEE 1800-2023 16.16)
+%Error: t/t_assert_unclocked_bad.v:11:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                        : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    11 |   cover property (a);
       |   ^~~~~
 %Error: Exiting due to
