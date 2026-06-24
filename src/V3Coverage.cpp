@@ -375,6 +375,8 @@ class CoverageVisitor final : public VNVisitor {
             } else {
                 itemp->addElsesp(stmtp);
             }
+        } else if (AstBegin* const itemp = VN_CAST(nodep, Begin)) {
+            itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
         }
@@ -776,6 +778,8 @@ class CoverageVisitor final : public VNVisitor {
         // covers the code in that line.)
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
+        VL_RESTORER(m_exprStmtsp);
+        m_exprStmtsp = nodep;
         m_inToggleOff = true;
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
