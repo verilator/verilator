@@ -62,6 +62,8 @@ struct UnrollStats final {
     Stat m_nPragmaDisabled{"Pragma unroll_disable"};
     Stat m_nUnrolledLoops{"Unrolled loops"};
     Stat m_nUnrolledIters{"Unrolled iterations"};
+    Stat m_bitScanLowered{"Lowered priority-encoder to mostsetbitp1"};
+    Stat m_countOnesLowered{"Lowered count-set-bits to countones"};
 };
 
 //######################################################################
@@ -422,6 +424,157 @@ class UnrollAllVisitor final : VNVisitor {
     UnrollStats m_stats;  // Statistic tracking
     UnrolllBindings m_bindings;  // Variable bindings
 
+    // METHODS
+    // Peel value-preserving width casts (Extend/ExtendS, or a low-bits Sel with lsb 0) to the
+    // underlying VarRef.  A Sel kept narrower than 'minWidth' is a lossy narrowing (idx[1:0])
+    // and is rejected.
+    static AstVarRef* unwrapToVarRef(AstNodeExpr* nodep, int minWidth) {
+        while (true) {
+            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp;
+            if (AstExtend* const ep = VN_CAST(nodep, Extend)) {
+                nodep = ep->lhsp();
+            } else if (AstExtendS* const ep = VN_CAST(nodep, ExtendS)) {
+                nodep = ep->lhsp();
+            } else if (AstSel* const sp = VN_CAST(nodep, Sel)) {
+                const AstConst* const lsbp = VN_CAST(sp->lsbp(), Const);
+                if (!lsbp || lsbp->toUInt() != 0 || sp->width() < minWidth) return nullptr;
+                nodep = sp->fromp();
+            } else {
+                return nullptr;
+            }
+        }
+    }
+    // True if 'nodep' is exactly '1 + var' for 'vscp' (V3Const puts the constant on the LHS).
+    // Passing the add's width as minWidth rejects a lossy increment like 32'(i[1:0]) + 1.
+    bool isVarPlus1(AstNode* nodep, const AstVarScope* vscp) {
+        AstAdd* const addp = VN_CAST(nodep, Add);
+        if (!addp || !addp->lhsp()->isOne()) return false;
+        const AstVarRef* const r = unwrapToVarRef(addp->rhsp(), addp->width());
+        return r && r->varScopep() == vscp;
+    }
+    // Resize the 32-bit reduction to the accumulator width; truncating the low bits matches
+    // the original counted loop's wrap-around.
+    static AstNodeExpr* resizeToWidth(AstNodeExpr* exprp, const AstVarRef* targetRefp) {
+        const int width = targetRefp->width();
+        if (width == 32) return exprp;
+        FileLine* const flp = exprp->fileline();
+        if (width < 32) return new AstSel{flp, exprp, 0, width};
+        AstExtend* const extp = new AstExtend{flp, exprp};
+        extp->dtypeFrom(targetRefp);
+        return extp;
+    }
+    // Match a strict ascending loop bound 'idx < W'.  V3Const canonicalizes this to the
+    // 'W > idx' form (Gt unsigned, GtS signed), so only that form is matched.
+    static bool ascendingBound(AstNodeExpr* condp, AstConst*& wp, AstVarRef*& idxRefp) {
+        if (!VN_IS(condp, Gt) && !VN_IS(condp, GtS)) return false;
+        AstNodeBiop* const bp = VN_AS(condp, NodeBiop);
+        wp = VN_CAST(bp->lhsp(), Const);
+        idxRefp = VN_CAST(bp->rhsp(), VarRef);
+        return wp && idxRefp && !wp->num().isFourState();
+    }
+    // Recognize the redundant in-range guard Verilator auto-inserts for a select into a
+    // non-power-of-two vector.  V3Const canonicalizes 'idx <= C' to '(C >= idx)' (Gte/GteS,
+    // const on the LHS), so only that form occurs; with C >= W-1 it is always true for idx
+    // in 0..W-1.
+    static bool isInRangeGuard(AstNodeExpr* condp, const AstVarScope* idxVscp, uint32_t width,
+                               int addrBits) {
+        if (!VN_IS(condp, Gte) && !VN_IS(condp, GteS)) return false;
+        AstNodeBiop* const bp = VN_AS(condp, NodeBiop);
+        const AstConst* const cp = VN_CAST(bp->lhsp(), Const);
+        if (!cp || cp->num().isFourState() || cp->toUInt() < width - 1) return false;
+        const AstVarRef* const r = unwrapToVarRef(bp->rhsp(), addrBits);
+        return r && r->varScopep() == idxVscp;
+    }
+    // Recognize a single-bit scan loop over all W bits of 'vec' (idx 0..W-1, target
+    // pre-zeroed) and lower it to a bit-reduction primitive.  Two idioms are matched:
+    //   target = 0; idx = 0;
+    //   loop { looptest(W > idx); if (...vec[idx]...) target = <e>; idx = idx + 1; }
+    // where, when W == width(vec):
+    //   <e> = idx + 1     => target = $mostsetbitp1(vec)  (leading-one / bit-width)
+    //   <e> = target + 1  => target = $countones(vec)     (population count)
+    bool tryLowerBitScanLoop(AstLoop* loopp) {
+        AstLoopTest* const testp = VN_CAST(loopp->stmtsp(), LoopTest);
+        if (!testp) return false;
+        AstIf* const ifp = VN_CAST(testp->nextp(), If);
+        if (!ifp) return false;
+        AstAssign* const incp = VN_CAST(ifp->nextp(), Assign);
+        if (!incp || incp->nextp()) return false;
+        AstConst* wp = nullptr;
+        AstVarRef* idxRefp = nullptr;
+        if (!ascendingBound(testp->condp(), wp, idxRefp)) return false;
+        AstVarScope* const idxVscp = idxRefp->varScopep();
+        const uint32_t width = wp->toUInt();
+        // Bits needed to address all W bits of 'vec' (clog2(W)); a narrower index is lossy.
+        const int addrBits = width <= 1 ? 1 : V3Number::log2b(width - 1) + 1;
+        const AstConst* const idxInitp = m_bindings.get(idxVscp);
+        if (!idxInitp || !idxInitp->isZero()) return false;
+        AstVarRef* const incLhsp = VN_CAST(incp->lhsp(), VarRef);
+        if (!incLhsp || incLhsp->varScopep() != idxVscp) return false;
+        if (!isVarPlus1(incp->rhsp(), idxVscp)) return false;
+        if (ifp->elsesp()) return false;
+        AstAssign* const thenp = VN_CAST(ifp->thensp(), Assign);
+        if (!thenp || thenp->nextp()) return false;
+        AstVarRef* const targetRefp = VN_CAST(thenp->lhsp(), VarRef);
+        if (!targetRefp) return false;
+        AstVarScope* const targetVscp = targetRefp->varScopep();
+        if (targetVscp == idxVscp) return false;
+        const bool isLeadingOne = isVarPlus1(thenp->rhsp(), idxVscp);
+        const bool isCountOnes = !isLeadingOne && isVarPlus1(thenp->rhsp(), targetVscp);
+        if (!isLeadingOne && !isCountOnes) return false;
+        // If-cond is the 1-bit select 'vec[idx]', possibly wrapped in the redundant in-range
+        // guard Verilator auto-inserts (as 'guard && sel') for a non-power-of-two vector:
+        //   '(idx <= W-1) && vec[idx]'        (default / --x-assign 0; a LogAnd), or
+        //   '(idx <= W-1) ? vec[idx] : <x>'   (--x-assign unique; a Cond).
+        // The guard is always true for idx in 0..W-1, so peel it to reach the select.  Any
+        // other compound condition (e.g. 'vec[idx] && en') leaves a non-select, rejected below.
+        AstNodeExpr* condp = ifp->condp();
+        if (AstLogAnd* const andp = VN_CAST(condp, LogAnd)) {
+            if (isInRangeGuard(andp->lhsp(), idxVscp, width, addrBits)) condp = andp->rhsp();
+        } else if (AstCond* const ternp = VN_CAST(condp, Cond)) {
+            if (isInRangeGuard(ternp->condp(), idxVscp, width, addrBits)) condp = ternp->thenp();
+        }
+        AstSel* const selp = VN_CAST(condp, Sel);
+        if (!selp || selp->width() != 1) return false;
+        const AstVarRef* const fromp = VN_CAST(selp->fromp(), VarRef);
+        if (!fromp) return false;
+        const AstVarScope* const fromVscp = fromp->varScopep();
+        if (fromVscp == idxVscp || fromVscp == targetVscp) return false;
+        AstNodeExpr* const vecExprp = selp->fromp();
+        // Must scan all W bits of 'vec', indexed by exactly 'idx' (address kept >= clog2(W),
+        // so a lossy narrowing like vec[idx[2:0]] is rejected).
+        if (static_cast<int>(width) != vecExprp->width()) return false;
+        const AstVarRef* const idxInSel = unwrapToVarRef(selp->lsbp(), addrBits);
+        if (!idxInSel || idxInSel->varScopep() != idxVscp) return false;
+        // 'target' must be const-0 immediately before the loop (collected in m_bindings),
+        // so that an all-zero 'vec' yields 0, matching $mostsetbitp1's definition.
+        const AstConst* const targetInitp = m_bindings.get(targetVscp);
+        if (!targetInitp || !targetInitp->isZero()) return false;
+        // Rewrite to 'target = <reduction>(vec); idx = W'.  The 'idx = W' store preserves the
+        // loop's exit value, so this is sound even if idx is read afterwards (else DCE drops it).
+        FileLine* const flp = loopp->fileline();
+        AstNodeExpr* reducep;
+        if (isLeadingOne) {
+            reducep = new AstMostSetBitP1{flp, vecExprp->cloneTree(false)};
+        } else {
+            AstCountOnes* const conep = new AstCountOnes{flp, vecExprp->cloneTree(false)};
+            conep->dtypeSetInteger2State();
+            reducep = conep;
+        }
+        reducep = resizeToWidth(reducep, targetRefp);
+        AstAssign* const newp = new AstAssign{flp, targetRefp->cloneTree(false), reducep};
+        newp->addNext(new AstAssign{flp, incLhsp->cloneTree(false), wp->cloneTree(false)});
+        loopp->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(loopp), loopp);
+        if (isLeadingOne) {
+            UINFO(4, "Lowered priority-encoder loop to $mostsetbitp1: " << newp);
+            ++m_stats.m_bitScanLowered;
+        } else {
+            UINFO(4, "Lowered count-set-bits loop to $countones: " << newp);
+            ++m_stats.m_countOnesLowered;
+        }
+        return true;
+    }
+
     // VISIT
     void visit(AstLoop* nodep) override {
         // Gather variable bindings from the preceding statements
@@ -449,6 +602,9 @@ class UnrollAllVisitor final : VNVisitor {
             // Set up the binding
             m_bindings.set(lhsp->varScopep(), valp);
         }
+
+        // Recognize a bit counting loop and lower it to a builtin
+        if (v3Global.opt.fBitScanLoops() && tryLowerBitScanLoop(nodep)) return;
 
         // Attempt to unroll this loop
         const std::pair<AstNode*, bool> pair = UnrollOneVisitor::apply(m_stats, m_bindings, nodep);

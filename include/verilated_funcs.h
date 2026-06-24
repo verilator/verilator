@@ -903,15 +903,31 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
     return 0;
 }
 
+static inline IData VL_MOSTSETBITP1_I(IData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;  // __builtin_clz is undefined for 0
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return VL_EDATASIZE - __builtin_clz(lhs);
+#else
+    for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
+        if (VL_BITISSET_E(lhs, bit)) return bit + 1;
+    }
+    return 0;  // LCOV_EXCL_LINE  // Can't get here - one bit must be set
+#endif
+}
+static inline IData VL_MOSTSETBITP1_Q(QData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return 64 - __builtin_clzll(static_cast<unsigned long long>(lhs));
+#else
+    const IData hi = static_cast<IData>(lhs >> 32ULL);
+    return hi ? (VL_EDATASIZE + VL_MOSTSETBITP1_I(hi))
+              : VL_MOSTSETBITP1_I(static_cast<IData>(lhs));
+#endif
+}
 static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
-    // MSB set bit plus one; similar to FLS.  0=value is zero
     for (int i = words - 1; i >= 0; --i) {
-        if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
-            for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
-                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) return i * VL_EDATASIZE + bit + 1;
-            }
-            // Can't get here - one bit must be set
-        }
+        // Shorter worst case if predict not taken
+        if (VL_UNLIKELY(lwp[i])) return i * VL_EDATASIZE + VL_MOSTSETBITP1_I(lwp[i]);
     }
     return 0;
 }
