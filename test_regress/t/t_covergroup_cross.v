@@ -17,6 +17,9 @@ module t;
   logic mode;
   logic parity;
 
+  typedef struct packed {logic m_p; logic h_mode;} cfg_t;
+  cfg_t s_cfg = '0;
+
   // 2-way cross
   covergroup cg2;
     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
@@ -90,6 +93,12 @@ module t;
     addr_cmd_unsup: cross cp_addr, cp_cmd{
       option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
     }
+    // Non-standard hierarchical reference as a cross item (an implicit coverpoint):
+    // accepted with NONSTD, but implicit coverpoints are unsupported so the whole
+    // cross is dropped (COVERIGN, suppressed here) - it contributes no bins.
+    /* verilator lint_off NONSTD */
+    cross_hier: cross cp_addr, s_cfg.m_p;
+    /* verilator lint_on NONSTD */
   endgroup
 
   // Covergroup with an unnamed cross - the cross is reported under the default name "cross"
