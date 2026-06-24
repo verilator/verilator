@@ -96,6 +96,11 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }  // LCOV_EXCL_STOP
+        case VDfgType::MatchMasked: {
+            DfgMatchMasked* const cp = new DfgMatchMasked{*clonep, vtx.fileline(), vtx.dtype()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
         case VDfgType::Sel: {
             DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtype()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
@@ -672,6 +677,15 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(v.dtype() == DfgDataType::select(v.srcp()->dtype(), v.lsb(), v.size()), "sel");
         return;
     }
+    case VDfgType::MatchMasked: {
+        const DfgMatchMasked& v = *as<DfgMatchMasked>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.size() == 32U, "Should yield a 32-bit result");
+        CHECK(v.lhsp()->isPacked(), "Lhs should be packed");
+        CHECK(v.matchp()->isPacked(), "Match should be Packed type");
+        CHECK(v.matchp()->is<DfgVertexVar>(), "Match should be a variable");
+        return;
+    }
     case VDfgType::Mux: {
         const DfgMux& v = *as<DfgMux>();
         CHECK(v.isPacked(), "Should be Packed type");
@@ -944,6 +958,9 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     // Delete - this will unlink sources
     delete this;
 }
+
+//######################################################################
+// Renders the canonical pattern S-expression for a single DfgVertex
 
 class DfgPatternString final {
     std::ostream& m_os;

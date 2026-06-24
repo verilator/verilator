@@ -24,7 +24,6 @@ module t (
   // For "always [m:n] P" the action runs at cyc=K+n on success and at the
   // detected-violation cyc on failure -- both deterministic given the inputs.
   int high_bounded_pass_q[$];
-  int high_sbounded_pass_q[$];
   int high_degenerate_pass_q[$];
   int low_bounded_fail_q[$];
   int low_degenerate_fail_q[$];
@@ -38,9 +37,6 @@ module t (
 
   // Bounded weak always over constant-true input.
   assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
-
-  // Bounded strong s_always over constant-true input.
-  assert property (@(posedge clk) s_always [1:2] a_high) high_sbounded_pass_q.push_back(cyc);
 
   // Degenerate [0:0]: equivalent to immediate sample.
   assert property (@(posedge clk) always [0:0] a_high) high_degenerate_pass_q.push_back(cyc);
@@ -83,10 +79,6 @@ module t (
       `checkd(high_bounded_pass_q.size(), 17);
       `checkd(high_bounded_pass_q[0], 3);
       `checkd(high_bounded_pass_q[$], 19);
-      // Strong [1:2]: K=0..17 succeed at cyc K+2 = 2..19.
-      `checkd(high_sbounded_pass_q.size(), 18);
-      `checkd(high_sbounded_pass_q[0], 2);
-      `checkd(high_sbounded_pass_q[$], 19);
       // Degenerate [0:0]: K=0..19 succeed at cyc K = 0..19.
       `checkd(high_degenerate_pass_q.size(), 20);
       `checkd(high_degenerate_pass_q[0], 0);

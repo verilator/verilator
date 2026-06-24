@@ -2,4 +2,11 @@
    13 |     i badi;   
       |     ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_struct_type_bad.v:18:19: Reference to 'later' before declaration (IEEE 1800-2023 6.18)
+                                   : ... Suggest move the declaration before the reference
+   18 |     logic [($bits(later) / 8)-1:0][7:0] bad_forward;
+      |                   ^~~~~
+        t/t_struct_type_bad.v:19:18: ... Location of original declaration
+   19 |     logic [15:0] later;
+      |                  ^~~~~
 %Error: Exiting due to

@@ -728,6 +728,7 @@ public:
     uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;  // Highest bit set + 1, e.g. for 16 return 5, for 0 return 0
+    uint32_t leastSetBitP1() const;  // Lowest bit set + 1, e.g. for 14 return 2, for 0 return 0
 
     // Operators
     bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
@@ -741,7 +742,7 @@ public:
 
     // MATH
     // "this" is the output, as we need the output width before some computations
-    V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
+    V3Number& opBitsNonXZ(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0

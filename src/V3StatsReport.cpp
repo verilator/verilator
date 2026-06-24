@@ -119,11 +119,11 @@ class StatsReport final {
 
         // Header
         os << "  Stat     " << std::left << std::setw(maxWidth - 5 - 2) << "";
-        for (const string& i : stages) os << "  " << std::left << std::setw(9) << i;
+        for (const string& i : stages) os << " " << std::left << std::setw(9) << i;
         os << '\n';
         os << "  -------- " << std::left << std::setw(maxWidth - 5 - 2) << "";
         for (auto it = stages.begin(); it != stages.end(); ++it) {
-            os << "  " << std::left << std::setw(9) << "-------";
+            os << " " << std::left << std::setw(9) << "-------";
         }
         // os<<endl;
 
@@ -149,7 +149,7 @@ class StatsReport final {
                 os << "  " << std::left << std::setw(maxWidth) << repp->name();
             }
             while (col < stages.size() && stages.at(col) != repp->stage()) {
-                os << std::setw(11) << "";
+                os << std::setw(10) << "";
                 col++;
             }
             repp->dump(os);
@@ -191,7 +191,7 @@ StatsReport::StatColl StatsReport::s_allStats;
 // V3Statstic class
 
 void V3Statistic::dump(std::ofstream& os) const {
-    os << "  " << std::right << std::fixed << std::setprecision(precision()) << std::setw(9)
+    os << " " << std::right << std::fixed << std::setprecision(precision()) << std::setw(9)
        << value();
 }
 

@@ -7,32 +7,49 @@
 module t;
 
   bit clock = 1'b0;
-  bit reset = 1'b0;
+  bit start = 1'b0;
+  bit done = 1'b0;
+  int concurrent_fails = 0;
 
   initial begin
+    $asserton;
+
+    @(negedge clock);
+    start = 1'b1;
+    done = 1'b0;
+
+    @(negedge clock);
+    start = 1'b0;
     $assertkill;
+    $asserton;
 
-    #10 reset = 1'b1;
-    $display("%t: deassert reset %d", $time, reset);
+    @(posedge clock);
+    #1;
+    if (concurrent_fails != 0) $stop;
 
-    #40 $asserton;
+    @(negedge clock);
+    start = 1'b1;
+    done = 1'b0;
 
-    reset = 1'b0;
-    $display("%t: deassert reset %d", $time, reset);
+    @(negedge clock);
+    start = 1'b0;
 
-    #200 $display("%t: finish", $time);
+    @(posedge clock);
+    #1;
+    if (concurrent_fails != 1) $stop;
+
+    $assertcontrol(5, 1, 1);
+    $asserton;
+
+    $display("%t: finish", $time);
     $write("*-* All Finished *-*\n");
     $finish;
-
   end
 
-  always #10 clock = ~clock;
-  reg r = 1'b0;
-
-  always @(posedge clock) if (reset) r <= 1'b1;
+  always #5 clock = ~clock;
 
   assert_test :
-  assert property (@(posedge clock) (reset | r))
-  else $error("%t: assertion triggered", $time);
+  assert property (@(posedge clock) start |-> ##1 done)
+  else concurrent_fails++;
 
 endmodule

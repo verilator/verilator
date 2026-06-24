@@ -129,7 +129,7 @@ module t;
     enable = 1;
     value = 10;
     cg2.sample();  // hits 'known'
-    `checkr(cg2.get_inst_coverage(), 50.0);
+    `checkr(cg2.get_inst_coverage(), 100.0);  // 1/1: only 'known' counts (default excluded, LRM 19.5)
     value = 99;
     cg2.sample();  // hits 'def' (default)
     `checkr(cg2.get_inst_coverage(), 100.0);

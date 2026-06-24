@@ -91,6 +91,8 @@ module t (
       (a ##3 b) intersect ((c ##1 d) within (a ##3 b)))
     count_p10 <= count_p10 + 1;
 
+  initial $assertvacuousoff;
+
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -103,11 +105,11 @@ module t (
       // p1/p2/p5 use |->; the NFA currently fires the pass action on
       // vacuous passes too, so counts are inflated vs. Questa. Pre-existing
       // engine-wide behavior, not within-specific.
-      `checkd(count_p1, 89);  // Questa: 23
-      `checkd(count_p2, 89);  // Questa: 44
+      `checkd(count_p1, 23);  // Questa: 23
+      `checkd(count_p2, 44);  // Questa: 44
       `checkd(count_p3, 26);  // Questa: 20
       `checkd(count_p4, 24);  // Questa: 22
-      `checkd(count_p5, 89);  // Questa: 26
+      `checkd(count_p5, 26);  // Questa: 26
       `checkd(count_p6, 21);  // Questa: 16
       `checkd(count_p7, 15);  // Questa: 9
       `checkd(count_p8, 15);  // Questa: 4

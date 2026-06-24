@@ -1,0 +1,6 @@
+%Error: t/t_default_disable_iff_gen_multi_bad.v:15:7: Only one 'default disable iff' allowed per generate block (IEEE 1800-2023 16.15)
+                                                    : ... note: In instance 't'
+   15 |       default disable iff (cyc < 7);
+      |       ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

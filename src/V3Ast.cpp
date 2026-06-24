@@ -1746,6 +1746,156 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
 }
 
 //######################################################################
+// Renders the canonical pattern S-expression for a single AstNode
+
+class VNPatternString final {
+    std::ostream& m_os;
+
+    std::map<std::string, std::string> m_internedConsts;  // Interned constants
+    std::map<int, std::string> m_internedWordWidths;  // Interned widths
+    std::map<int, std::string> m_internedWideWidths;  // Interned widths
+
+    // Whether to dump the widhtMin as well
+    const bool m_dumpWidthMin = v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH;
+
+    static std::string toLetters(size_t value, bool lowerCase = false) {
+        const char base = lowerCase ? 'a' : 'A';
+        std::string s;
+        do { s += static_cast<char>(base + value % 26); } while (value /= 26);
+        return s;
+    }
+
+    const std::string& internConst(const AstConst& nodep) {
+        const auto pair = m_internedConsts.emplace(nodep.num().ascii(false), "");
+        if (pair.second) pair.first->second += toLetters(m_internedConsts.size() - 1);
+        return pair.first->second;
+    }
+
+    const std::string& internWordWidth(int value) {
+        const auto pair = m_internedWordWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWordWidths.size() - 1, true);
+        return pair.first->second;
+    }
+
+    const std::string& internWideWidth(int value) {
+        const auto pair = m_internedWideWidths.emplace(value, "");
+        if (pair.second) pair.first->second += toLetters(m_internedWideWidths.size() - 1);
+        return pair.first->second;
+    }
+
+    // True if the node has no operands (e.g. a VarRef or Const)
+    static bool isLeaf(const AstNode* nodep) {
+        const VNTypeInfo& typeInfo = VNType::typeInfo(nodep->type());
+        for (const VNTypeInfo::OpEn& opType : typeInfo.m_opType) {
+            if (opType != VNTypeInfo::OP_UNUSED) return false;
+        }
+        return true;
+    }
+
+    // Render operand, return true if not unused
+    void renderOperand(VNTypeInfo::OpEn opType, const AstNode* const opp, uint32_t depth) {
+        switch (opType) {
+        case VNTypeInfo::OP_UNUSED:  //
+            break;
+        case VNTypeInfo::OP_USED:  //
+            m_os << ' ';
+            render(opp, depth);
+            break;
+        case VNTypeInfo::OP_LIST:
+            m_os << " [";
+            for (const AstNode* nodep = opp; nodep; nodep = nodep->nextp()) {
+                if (nodep != opp) m_os << ", ";
+                render(opp, depth);
+            }
+            m_os << ']';
+            break;
+        case VNTypeInfo::OP_OPTIONAL:
+            if (opp) {
+                m_os << " ";
+                render(opp, depth);
+            } else {
+                m_os << " nil";
+            }
+            break;
+        }
+    }
+
+    // Render the node into the stream.
+    void render(const AstNode* nodep, uint32_t depth) {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
+            // Base case 1: constant
+            if (constp->isZero()) {
+                m_os << "(CONST ZERO)";
+            } else if (constp->isEqAllOnes()) {
+                m_os << "(CONST ONES)";
+            } else {
+                m_os << "(CONST #" << internConst(*constp) << ')';
+            }
+        } else if (isLeaf(nodep)) {
+            // Base case 2: expression with no operands (e.g. a variable reference)
+            m_os << '(' << nodep->typeName() << ')';
+        } else if (depth == 0) {
+            // Base case 3: deep expression
+            m_os << '_';
+        } else {
+            // Recursively print an S-expression for the expression
+            m_os << '(';
+            // Name
+            m_os << nodep->typeName();
+            // Operands
+            const VNTypeInfo& typeInfo = VNType::typeInfo(nodep->type());
+            renderOperand(typeInfo.m_opType[0], nodep->op1p(), depth - 1);
+            renderOperand(typeInfo.m_opType[1], nodep->op2p(), depth - 1);
+            renderOperand(typeInfo.m_opType[2], nodep->op3p(), depth - 1);
+            renderOperand(typeInfo.m_opType[3], nodep->op4p(), depth - 1);
+            // S-expression end
+            m_os << ')';
+        }
+
+        // Annotate type
+        m_os << ':';
+        const AstNodeDType* const dtypep = nodep->dtypep() ? nodep->dtypep()->skipRefp() : nullptr;
+        if (!dtypep) {
+            m_os << '?';
+        } else if (dtypep->isCompound() || VN_IS(dtypep, UnpackArrayDType)) {
+            dtypep->dumpSmall(m_os);
+        } else {
+            const int width = nodep->width();
+            if (width == 1) {
+                m_os << '1';
+            } else if (width <= VL_QUADSIZE) {
+                m_os << internWordWidth(width);
+            } else {
+                m_os << internWideWidth(width);
+            }
+            if (m_dumpWidthMin) {
+                m_os << '/';
+                const int widthMin = nodep->widthMin();
+                if (widthMin == 1) {
+                    m_os << '1';
+                } else if (widthMin <= VL_QUADSIZE) {
+                    m_os << internWordWidth(widthMin);
+                } else {
+                    m_os << internWideWidth(widthMin);
+                }
+            }
+        }
+    }
+
+public:
+    VNPatternString(std::ostream& os, const AstNode* nodep, uint32_t depth)
+        : m_os{os} {
+        render(nodep, depth);
+    }
+};
+
+std::string AstNodeExpr::patternString(uint32_t depth) const {
+    std::ostringstream oss;
+    VNPatternString{oss, this, depth};
+    return oss.str();
+}
+
+//######################################################################
 // VNDeleter
 
 void VNDeleter::doDeletes() {

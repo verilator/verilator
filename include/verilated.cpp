@@ -318,6 +318,13 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     }});
 }
 
+void VL_FFLUSH_MT() VL_MT_SAFE {
+    va_list ap;
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        Verilated::runFlushCallbacks();
+    }});
+}
+
 template <typename... snprintf_args_ts>
 static size_t _vl_snprintf_string(std::string& str, const char* format,
                                   snprintf_args_ts... args) VL_MT_SAFE {
@@ -3028,40 +3035,97 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
 }
 bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    // Check if selected directive type bit in the assertOn is enabled for assertion type.
-    // Note: it is assumed that this is checked only for one type at the time.
-
-    // Flag unspecified assertion types as disabled.
-    if (type == 0) return false;
-
-    // Get index of 3-bit group guarding assertion type status.
-    // Since the assertOnGet is generated __always__ for a single assert type, we assume that only
-    // a single bit will be set. Thus, ceil log2 will work fine.
-    VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
-    const IData typeMaskPosition = VL_CLOG2_I(type);
-
-    // Check if directive type bit is enabled in corresponding assertion type bits.
-    return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
+}
+uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
+    // Place the directive bits at each selected assertion type's 3-bit group.
+    uint32_t mask = 0;
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
+    }
+    return mask;
 }
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // For each assertion type, set directive bits.
-
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // set directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
-    }
+    m_s.m_assertOn |= assertOnMask(types, directives);
 }
 void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
                                      VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // clear directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn &= ~(directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    m_s.m_assertOn &= ~assertOnMask(types, directives);
+}
+void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
+    // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
+    const uint32_t mask = assertOnMask(types, directives);
+    const uint32_t lockedMask = mask & ~m_s.m_assertLock;
+    switch (controlType) {
+    case 1:  // Lock
+        m_s.m_assertLock |= mask;
+        break;
+    case 2:  // Unlock
+        m_s.m_assertLock &= ~mask;
+        break;
+    case 3:  // On
+        m_s.m_assertOn |= lockedMask;
+        break;
+    case 4:  // Off
+        m_s.m_assertOn &= ~lockedMask;
+        break;
+    case 5: {  // Kill
+        m_s.m_assertOn &= ~lockedMask;
+        for (int slot = 0; slot < static_cast<int>(ASSERT_CONTROL_SLOT_COUNT); ++slot) {
+            if (VL_BITISSET_I(lockedMask, slot)) { m_s.m_assertKill[slot]++; }
+        }
+        break;
     }
+    case 6:  // PassOn
+        m_s.m_assertPassOnVacuous |= lockedMask;
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 7:  // PassOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        m_s.m_assertPassOnNonvacuous &= ~lockedMask;
+        break;
+    case 8:  // FailOn
+        m_s.m_assertFailOn |= lockedMask;
+        break;
+    case 9:  // FailOff
+        m_s.m_assertFailOn &= ~lockedMask;
+        break;
+    case 10:  // NonvacuousOn
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 11:  // VacuousOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        break;
+    default:
+        VL_WARN_MT("", 0, "",
+                   ("Bad $assertcontrol control_type '" + std::to_string(controlType)
+                    + "' (IEEE 1800-2023 Table 20-5)")
+                       .c_str());
+    }
+}
+uint32_t
+VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
+    const uint32_t mask = assertOnMask(type, directive);
+    if (!mask) return 0;
+    switch (query) {  // LCOV_EXCL_BR_LINE
+    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
+        assert(mask && (mask & (mask - 1)) == 0);
+        return m_s.m_assertKill[VL_CLOG2_I(mask)];
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
+        return (m_s.m_assertPassOnVacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
+        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
+    default:  // LCOV_EXCL_START
+        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
+        VL_UNREACHABLE;
+    }  // LCOV_EXCL_STOP
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -3893,6 +3957,7 @@ std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { retu
 
 // cppcheck-suppress unusedFunction  // Used by applications
 uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
+    if (m_entSize) return m_entSize;
     uint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR: size = sizeof(void*); break;
@@ -4002,6 +4067,27 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
         const int lsb = va_arg(ap, int);
         var.m_packed[i].m_left = msb;
         var.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
+VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
+                                             VerilatedVarType vltype, int vlflags, int udims,
+                                             uint32_t entSize...) VL_MT_UNSAFE {
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, 0,
+                     isParam, entSize);
+
+    va_list ap;
+    va_start(ap, entSize);
+    for (int i = 0; i < udims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_unpacked[i].m_left = msb;
+        var.m_unpacked[i].m_right = lsb;
     }
     va_end(ap);
 

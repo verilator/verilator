@@ -980,6 +980,7 @@ public:
         AstCFunc* rootFuncp = nullptr;
         if (!v3Global.opt.libCreate().empty()) {
             rootFuncp = newCFunc(flp, "trace_init_root");
+            rootFuncp->entryPoint(true);
             for (size_t i = 0; i < m_topScopeRootFuncCount; ++i) {
                 AstCCall* const callp = new AstCCall{flp, topScopeFuncps.at(i)};
                 callp->dtypeSetVoid();
@@ -1017,6 +1018,7 @@ public:
         // Set name of top level function
         AstCFunc* const topFuncp = m_topFuncps.front();
         topFuncp->name("trace_init_top");
+        topFuncp->entryPoint(true);
 
         if (rootFuncp && v3Global.opt.debugCheck()) checkCallsRecurse(rootFuncp);
         checkCalls(topFuncp);

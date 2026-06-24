@@ -375,10 +375,12 @@ class UnrollOneVisitor final : VNVisitor {
         process(nodep);
     }
     void visit(AstJumpGo* nodep) override {
+        if (!m_ok) return;
         // Remove trailing dead code
         if (nodep->nextp()) pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
     }
     void visit(AstLoop* nodep) override {
+        if (!m_ok) return;
         m_bindings.checkpoint();
         std::pair<AstNode*, bool> pair = UnrollOneVisitor::apply(m_stats, m_bindings, nodep);
 
