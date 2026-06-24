@@ -980,6 +980,19 @@ class SvaNfaBuilder final {
         return result;
     }
 
+    // Empty common-length intersection -- unequal fixed lengths, or disjoint
+    // ranged lengths. IEEE 1800-2023 16.9.6 requires both operands to match
+    // over a window of the same length, so with no common length the intersect
+    // simply never matches. This is legal (matching nothing), not an error, so
+    // lower to a constant false rather than rejecting legal code. Mirrors
+    // commercial simulators: compiles clean, the assertion never matches and a
+    // cover yields zero hits.
+    BuildResult buildNeverMatchIntersect(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
+                                         bool isTopLevelStep) {
+        AstNodeExpr* const falsep = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        return buildFromLoweringTree(falsep, entryVtxp, isTopLevelStep);
+    }
+
     // Lower `seq1 intersect seq2` when an operand's match length varies
     // (IEEE 1800-2023 16.9.6: both match over one window, equal start and end).
     // The common length range is [lo,hi] = intersection of the two operands'
@@ -1005,12 +1018,8 @@ class SvaNfaBuilder final {
         const int lo = std::max(lhsRange.first, rhsRange.first);
         const int hi = std::min(lhsRange.second, rhsRange.second);
         if (lo > hi) {
-            nodep->v3error("Intersect sequence lengths share no common value: left "
-                           + std::to_string(lhsRange.first) + ".."
-                           + std::to_string(lhsRange.second) + " cycles, right "
-                           + std::to_string(rhsRange.first) + ".."
-                           + std::to_string(rhsRange.second) + " cycles (IEEE 1800-2023 16.9.6)");
-            return BuildResult::failWithError();
+            // Disjoint length ranges share no common length -> never matches.
+            return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep);
         }
         FileLine* const flp = nodep->fileline();
         if (lo == hi) {
@@ -1261,10 +1270,8 @@ public:
             const int rhsLen = fixedLength(intp->rhsp());
             if (lhsLen >= 0 && rhsLen >= 0) {
                 if (lhsLen != rhsLen) {
-                    intp->v3error("Intersect sequence length mismatch: left "
-                                  + std::to_string(lhsLen) + " cycles, right "
-                                  + std::to_string(rhsLen) + " cycles (IEEE 1800-2023 16.9.6)");
-                    return BuildResult::failWithError();
+                    // Unequal fixed lengths share no common length -> never matches.
+                    return buildNeverMatchIntersect(intp, entryVtxp, isTopLevelStep);
                 }
                 return buildAndCombiner(intp->lhsp(), intp->rhsp(), entryVtxp, intp->fileline());
             }
