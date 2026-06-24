@@ -299,30 +299,3 @@ jobs:
   lint-py:
     name: Lint Python
     uses: ./.github/workflows/reusable-lint-py.yml
-
-  passed:
-    name: Test suite passed
-    if: always()
-    needs:
-      - build-2604-gcc
-      - build-2604-clang
-      - build-2404-gcc
-      - build-2404-clang
-      - build-2204-gcc
-      - build-osx-gcc
-      - build-osx-clang
-      - build-windows
-      - build-2404-gcc
-      - build-2404-clang
-      - test-2404-gcc
-      - test-2404-clang
-      - test-2204-gcc
-      - lint-py
-
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
-        with:
-          jobs: ${{ toJSON(needs) }}
