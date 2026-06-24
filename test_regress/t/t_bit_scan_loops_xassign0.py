@@ -24,8 +24,7 @@ test.file_grep(test.stats,
                r'Optimizations, Loop unrolling, Lowered priority-encoder to mostsetbitp1\s+(\d+)',
                8)
 test.file_grep(test.stats,
-               r'Optimizations, Loop unrolling, Lowered count-set-bits to countones\s+(\d+)',
-               1)
+               r'Optimizations, Loop unrolling, Lowered count-set-bits to countones\s+(\d+)', 1)
 
 test.execute()
 
