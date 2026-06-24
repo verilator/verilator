@@ -12,7 +12,7 @@
                                                          : ... note: In instance 't'
    15 |     cross_implicit: cross cp_a, var_x;
       |                                 ^~~~~
-%Warning-COVERIGN: t/t_covergroup_cross_opt_unsup.v:19:34: Unsupported: cross of hierarchical reference 's_cfg.m_p' (implicit coverpoint)
+%Warning-COVERIGN: t/t_covergroup_cross_opt_unsup.v:19:34: Unsupported: cross of hierarchical reference (implicit coverpoint)
                                                          : ... note: In instance 't'
    19 |     cross_hier: cross cp_a, s_cfg.m_p;
       |                                  ^

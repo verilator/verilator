@@ -66,15 +66,6 @@ static void STRENGTH_LIST(AstNode* listp, AstStrengthSpec* specp) {
         assignp->strengthSpecp(specp->backp() ? specp->cloneTree(false) : specp);
     }
 }
-// Flatten a parse-time idDotted reference tree (id, a.b, a.b.c) to a dotted name
-// string.  Used for diagnostics on non-standard hierarchical cross items.
-static string CROSS_ITEM_NAME(const AstNode* nodep) {
-    if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
-        return CROSS_ITEM_NAME(dotp->lhsp()) + (dotp->colon() ? "::" : ".")
-               + CROSS_ITEM_NAME(dotp->rhsp());
-    }
-    return nodep->name();  // AstParseRef (incl. "$root")
-}
 //======================================================================
 // Statics (for here only)
 
@@ -7362,10 +7353,13 @@ cross_item<nodep>:  // ==IEEE: cross_item
                               VL_DO_DANGLING(refp->deleteTree(), refp);
                           } else {
                               // Verilator extension beyond strict IEEE (cross_item is a simple
-                              // identifier): some tools accept a hierarchical/dotted reference
+                              // identifier): some tools accept a hierarchical/dotted reference.
+                              // Carry the reference expression (still an AstDot here) out of the
+                              // parser unchanged; later stages resolve and, eventually, implement
+                              // it as an implicit coverpoint.
                               $1->v3warn(NONSTD, "Non-standard hierarchical reference as a coverage "
                                                  "cross item (an implicit coverpoint)");
-                              $$ = new AstCoverpointRef{$1->fileline(), CROSS_ITEM_NAME($1), $1};
+                              $$ = new AstCoverpointRef{$1->fileline(), $1};
                           }
                         }
         ;

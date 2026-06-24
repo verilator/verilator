@@ -98,7 +98,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstCoverCross* crossp : m_coverCrosses) {
             for (AstNode* itemp = crossp->itemsp(); itemp; itemp = itemp->nextp()) {
                 if (const AstCoverpointRef* const refp = VN_CAST(itemp, CoverpointRef))
-                    m_crossedCpNames.insert(refp->name());
+                    if (!refp->exprp()) m_crossedCpNames.insert(refp->name());
             }
         }
 
@@ -1297,12 +1297,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
             if (refp->exprp()) {
                 // Non-standard hierarchical/dotted cross item (e.g. 'cross a.b'): an implicit
-                // coverpoint over the referenced expression.  The grammar already warned NONSTD;
-                // implicit coverpoints are not yet implemented, so drop the whole cross.  This is
-                // the place to generate the implicit coverpoint when support is added (the
-                // resolved expression is in refp->exprp()).
-                refp->v3warn(COVERIGN, "Unsupported: cross of hierarchical reference '"
-                                           << refp->prettyName() << "' (implicit coverpoint)");
+                // coverpoint over the referenced expression (carried in refp->exprp()).  The
+                // grammar already warned NONSTD; implicit coverpoints are not yet implemented, so
+                // generate no sampling code for this cross.  When support is added the implicit
+                // coverpoint should be synthesized upstream (V3LinkParse) as a real AstCoverpoint
+                // so it flows through the normal coverpoint path - by here coverpoint lowering has
+                // already run.
+                refp->v3warn(COVERIGN,
+                             "Unsupported: cross of hierarchical reference (implicit coverpoint)");
                 return;
             }
             // Find the referenced coverpoint via name map (O(log n) vs O(n) linear scan)
