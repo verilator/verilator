@@ -10,12 +10,12 @@
       |       ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Error: t/t_dpi_2exparg_bad.v:21:8: Duplicate declaration of DPI function with different signature: 'dpix_twice'
-   21 |   task dpix_twice(input int i, output [63:0] o);
-      |        ^~~~~~~~~~
-                                  : ... New signature:      void dpix_twice (int, svLogicVecVal* /* logic[63:0] */ )
-        t/t_dpi_2exparg_bad.v:12:8: ... Original signature: void dpix_twice (int, svLogicVecVal* /* logic[2:0] */ )
+%Error: t/t_dpi_2exparg_bad.v:12:8: Duplicate declaration of DPI function with different signature: 'dpix_twice'
    12 |   task dpix_twice(input int i, output [2:0] o);
+      |        ^~~~~~~~~~
+                                  : ... New signature:      void dpix_twice (int, svLogicVecVal* /* logic[2:0] */ )
+        t/t_dpi_2exparg_bad.v:21:8: ... Original signature: void dpix_twice (int, svLogicVecVal* /* logic[63:0] */ )
+   21 |   task dpix_twice(input int i, output [63:0] o);
       |        ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
