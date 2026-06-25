@@ -384,6 +384,74 @@ class SvaNfaBuilder final {
         return 0;
     }
 
+    // Contiguous match-length range [lo,hi] for an operand whose length varies
+    // from AT MOST ONE ranged cycle delay; {-1,-1} otherwise. Drives the
+    // variable-length `intersect` lowering (IEEE 1800-2023 16.9.6): more than
+    // one ranged delay would make the per-length realization ambiguous, so it
+    // is reported unsupported rather than mis-paired.
+    static std::pair<int, int> lengthRange(AstNodeExpr* nodep) {
+        if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
+            AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
+            if (!delayp || !delayp->isCycleDelay()) return {-1, -1};
+            std::pair<int, int> delayRange;
+            if (delayp->isRangeDelay()) {
+                if (delayp->isUnbounded()) return {-1, -1};
+                const int minD = getConstInt(delayp->lhsp());
+                const int maxD = getConstInt(delayp->rhsp());
+                if (minD < 0 || maxD < 0 || maxD < minD) return {-1, -1};
+                delayRange = {minD, maxD};
+            } else {
+                const int d = getConstInt(delayp->lhsp());
+                if (d < 0) return {-1, -1};
+                delayRange = {d, d};
+            }
+            std::pair<int, int> preRange{0, 0};
+            if (AstNodeExpr* const prep = sexprp->preExprp()) {
+                preRange = lengthRange(prep);
+                if (preRange.first < 0) return {-1, -1};
+            }
+            const std::pair<int, int> bodyRange = lengthRange(sexprp->exprp());
+            if (bodyRange.first < 0) return {-1, -1};
+            const int variableParts = (preRange.first != preRange.second)
+                                      + (delayRange.first != delayRange.second)
+                                      + (bodyRange.first != bodyRange.second);
+            if (variableParts > 1) return {-1, -1};
+            return {preRange.first + delayRange.first + bodyRange.first,
+                    preRange.second + delayRange.second + bodyRange.second};
+        }
+        if (AstSThroughout* const throughp = VN_CAST(nodep, SThroughout)) {
+            return lengthRange(throughp->rhsp());
+        }
+        if (nodep->isMultiCycleSva()) return {-1, -1};
+        return {0, 0};  // plain boolean -- 0 cycles
+    }
+
+    // Clone `operand` with its sole variable ranged cycle delay pinned so the
+    // total match length is exactly `len`. `lo` is the operand's minimum length
+    // (lengthRange().first). A fixed operand has no such delay and is returned
+    // as a plain clone (callers only request its single achievable length).
+    static AstNodeExpr* realizeAtLength(AstNodeExpr* operand, int len, int lo) {
+        AstNodeExpr* const clonep = operand->cloneTreePure(false);
+        AstDelay* rangeDelayp = nullptr;
+        clonep->foreach([&](AstDelay* dp) {
+            if (!rangeDelayp && dp->isRangeDelay() && !dp->isUnbounded()
+                && getConstInt(dp->lhsp()) != getConstInt(dp->rhsp())) {
+                rangeDelayp = dp;
+            }
+        });
+        if (rangeDelayp) {
+            FileLine* const flp = rangeDelayp->fileline();
+            const int pinned = getConstInt(rangeDelayp->lhsp()) + (len - lo);
+            AstNodeExpr* const oldMinp = rangeDelayp->lhsp();
+            oldMinp->replaceWith(new AstConst{flp, static_cast<uint32_t>(pinned)});
+            VL_DO_DANGLING(oldMinp->deleteTree(), oldMinp);
+            // Drop the max bound so it lowers as a fixed `##d`, not `##[d:d]`.
+            AstNode* const oldMaxp = rangeDelayp->rhsp()->unlinkFrBack();
+            VL_DO_DANGLING(oldMaxp->deleteTree(), oldMaxp);
+        }
+        return clonep;
+    }
+
     // Cuts AST size from O(N * sizeof(exprp)) to O(N) + O(sizeof(exprp)) by
     // sharing a single `VarRef` across N check edges. Hoist also matches the
     // IEEE 1800-2023 16.9.9 "single preponed-region snapshot" semantic for
@@ -1028,6 +1096,188 @@ class SvaNfaBuilder final {
         return result;
     }
 
+    // Collect the boolean leaf checks of a fixed-length sequence keyed by their
+    // clock offset from the start. Returns false for anything other than nested
+    // AstSExpr with fixed cycle delays over boolean leaves (e.g. throughout).
+    static bool flattenFixedSeq(AstNodeExpr* nodep, int baseOffset,
+                                std::map<int, std::vector<AstNodeExpr*>>& out) {
+        if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
+            AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
+            if (!delayp || !delayp->isCycleDelay() || delayp->isUnbounded()) return false;
+            const int delayCycles = getConstInt(delayp->lhsp());
+            if (delayCycles < 0) return false;
+            if (delayp->isRangeDelay() && getConstInt(delayp->rhsp()) != delayCycles) return false;
+            int preLen = 0;
+            if (AstNodeExpr* const prep = sexprp->preExprp()) {
+                if (!flattenFixedSeq(prep, baseOffset, out)) return false;
+                preLen = fixedLength(prep);
+                if (preLen < 0) return false;
+            }
+            return flattenFixedSeq(sexprp->exprp(), baseOffset + preLen + delayCycles, out);
+        }
+        if (nodep->isMultiCycleSva()) return false;
+        out[baseOffset].push_back(nodep);
+        return true;
+    }
+
+    // Conjoin two equal-length fixed sequences into one: at each clock offset
+    // AND the boolean checks of both operands (IEEE 1800-2023 16.9.6 -- both
+    // operands match the same window). Returns null if either operand is not a
+    // plain fixed sequence of boolean leaves.
+    static AstNodeExpr* conjoinFixedSeqs(AstNodeExpr* lhsp, AstNodeExpr* rhsp, FileLine* flp) {
+        std::map<int, std::vector<AstNodeExpr*>> checks;
+        if (!flattenFixedSeq(lhsp, 0, checks) || !flattenFixedSeq(rhsp, 0, checks)) return nullptr;
+        if (checks.empty()) return nullptr;
+        AstNodeExpr* resultp = nullptr;
+        int prevOffset = 0;
+        for (const auto& offsetChecks : checks) {
+            const int offset = offsetChecks.first;
+            AstNodeExpr* condp = nullptr;
+            for (AstNodeExpr* const leafp : offsetChecks.second) {
+                AstNodeExpr* const clonep = leafp->cloneTreePure(false);
+                if (!condp) {
+                    condp = clonep;
+                } else {
+                    condp = new AstLogAnd{flp, condp, clonep};
+                    condp->dtypeSetBit();
+                }
+            }
+            if (!resultp) {
+                if (offset > 0) {
+                    AstDelay* const delayp = new AstDelay{
+                        flp, new AstConst{flp, static_cast<uint32_t>(offset)}, /*isCycle=*/true};
+                    resultp
+                        = new AstSExpr{flp, new AstConst{flp, AstConst::BitTrue{}}, delayp, condp};
+                    resultp->dtypeSetBit();
+                } else {
+                    resultp = condp;
+                }
+            } else {
+                AstDelay* const delayp = new AstDelay{
+                    flp, new AstConst{flp, static_cast<uint32_t>(offset - prevOffset)},
+                    /*isCycle=*/true};
+                resultp = new AstSExpr{flp, resultp, delayp, condp};
+                resultp->dtypeSetBit();
+            }
+            prevOffset = offset;
+        }
+        return resultp;
+    }
+
+    // `seq` is a simple ranged sequence `start ##[m:n] end` (start/end boolean,
+    // start may be absent). Used to collapse a both-variable intersect to one
+    // ranged delay.
+    struct SimpleRanged final {
+        bool ok = false;
+        AstNodeExpr* startp = nullptr;  // may be null (absent start)
+        AstNodeExpr* endp = nullptr;
+    };
+    static SimpleRanged asSimpleRanged(AstNodeExpr* nodep) {
+        AstSExpr* const sexprp = VN_CAST(nodep, SExpr);
+        if (!sexprp) return {};
+        AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
+        if (!delayp || !delayp->isCycleDelay() || !delayp->isRangeDelay() || delayp->isUnbounded())
+            return {};
+        if (getConstInt(delayp->lhsp()) == getConstInt(delayp->rhsp())) return {};
+        AstNodeExpr* const prep = sexprp->preExprp();
+        if (prep && fixedLength(prep) != 0) return {};
+        if (fixedLength(sexprp->exprp()) != 0) return {};
+        return {true, prep, sexprp->exprp()};
+    }
+
+    // Build the NFA for a synthesized intersect lowering tree, then free it.
+    // buildExpr returns the terminal condition (finalCondp) by reference into the
+    // tree; detach a clone so the tree can be freed here. The graph already holds
+    // clones/hoists of every edge condition, so nothing else dangles.
+    BuildResult buildFromLoweringTree(AstNodeExpr* treep, SvaStateVertex* entryVtxp,
+                                      bool isTopLevelStep) {
+        BuildResult result = buildExpr(treep, entryVtxp, isTopLevelStep);
+        if (result.valid() && result.finalCondp) {
+            result.finalCondp = result.finalCondp->cloneTreePure(false);
+        }
+        VL_DO_DANGLING(treep->deleteTree(), treep);
+        return result;
+    }
+
+    // Empty common-length intersection -- unequal fixed lengths, or disjoint
+    // ranged lengths. IEEE 1800-2023 16.9.6 requires both operands to match
+    // over a window of the same length, so with no common length the intersect
+    // simply never matches. This is legal (matching nothing), not an error, so
+    // lower to a constant false rather than rejecting legal code.
+    BuildResult buildNeverMatchIntersect(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
+                                         bool isTopLevelStep) {
+        AstNodeExpr* const falsep = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        return buildFromLoweringTree(falsep, entryVtxp, isTopLevelStep);
+    }
+
+    // Lower `seq1 intersect seq2` when an operand's match length varies
+    // (IEEE 1800-2023 16.9.6: both match over one window, equal start and end).
+    // The common length range is [lo,hi] = intersection of the two operands'
+    // achievable lengths. The equal-length combiner is avoided -- it mis-handles
+    // operands with an internal boolean check -- by lowering to plain sequences:
+    //  - lo == hi (one shared length, e.g. one fixed + one ranged operand):
+    //    pin each operand to that length and conjoin them cycle-by-cycle into a
+    //    single fixed sequence.
+    //  - lo < hi with simple `bool ##[m:n] bool` operands: collapse to one
+    //    ranged delay `(start1 & start2) ##[lo:hi] (end1 & end2)`. (An OR of
+    //    per-length branches cannot reject correctly -- a single missed length
+    //    would fail the whole intersect, cf. Lesson 48.)
+    //  - otherwise unsupported (clean error, not the legacy fall-through crash).
+    BuildResult buildVarLenIntersect(AstSIntersect* nodep, SvaStateVertex* entryVtxp,
+                                     bool isTopLevelStep) {
+        const std::pair<int, int> lhsRange = lengthRange(nodep->lhsp());
+        const std::pair<int, int> rhsRange = lengthRange(nodep->rhsp());
+        if (lhsRange.first < 0 || rhsRange.first < 0) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: intersect with this variable-length operand");
+            return BuildResult::failWithError();
+        }
+        const int lo = std::max(lhsRange.first, rhsRange.first);
+        const int hi = std::min(lhsRange.second, rhsRange.second);
+        if (lo > hi) {
+            // Disjoint length ranges share no common length -> never matches.
+            return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep);
+        }
+        FileLine* const flp = nodep->fileline();
+        if (lo == hi) {
+            AstNodeExpr* const lp = realizeAtLength(nodep->lhsp(), lo, lhsRange.first);
+            AstNodeExpr* const rp = realizeAtLength(nodep->rhsp(), lo, rhsRange.first);
+            AstNodeExpr* const conjp = conjoinFixedSeqs(lp, rp, flp);
+            VL_DO_DANGLING(lp->deleteTree(), lp);
+            VL_DO_DANGLING(rp->deleteTree(), rp);
+            if (!conjp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: intersect operand is not a plain boolean sequence");
+                return BuildResult::failWithError();
+            }
+            return buildFromLoweringTree(conjp, entryVtxp, isTopLevelStep);
+        }
+        const SimpleRanged sl = asSimpleRanged(nodep->lhsp());
+        const SimpleRanged sr = asSimpleRanged(nodep->rhsp());
+        if (!sl.ok || !sr.ok) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: intersect of two sequences that each vary in length over a"
+                          " range with internal structure");
+            return BuildResult::failWithError();
+        }
+        const auto andBool = [&](AstNodeExpr* ap, AstNodeExpr* bp) -> AstNodeExpr* {
+            AstNodeExpr* const aClonep
+                = ap ? ap->cloneTreePure(false) : new AstConst{flp, AstConst::BitTrue{}};
+            AstNodeExpr* const bClonep
+                = bp ? bp->cloneTreePure(false) : new AstConst{flp, AstConst::BitTrue{}};
+            AstLogAnd* const andp = new AstLogAnd{flp, aClonep, bClonep};
+            andp->dtypeSetBit();
+            return andp;
+        };
+        AstDelay* const delayp = new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(lo)},
+                                              /*isCycle=*/true};
+        delayp->rhsp(new AstConst{flp, static_cast<uint32_t>(hi)});
+        AstSExpr* const reducedp
+            = new AstSExpr{flp, andBool(sl.startp, sr.startp), delayp, andBool(sl.endp, sr.endp)};
+        reducedp->dtypeSetBit();
+        return buildFromLoweringTree(reducedp, entryVtxp, isTopLevelStep);
+    }
+
     BuildResult buildThroughout(AstSThroughout* nodep, SvaStateVertex* entryVtxp,
                                 bool isTopLevelStep = false) {
         // Mark entryVtxp so "cond false at tick 0" is detected as throughout-drop.
@@ -1232,18 +1482,26 @@ public:
             return buildAndCombiner(andp->lhsp(), andp->rhsp(), entryVtxp, andp->fileline());
         }
         if (AstSIntersect* const intp = VN_CAST(nodep, SIntersect)) {
-            // IEEE 1800-2023 16.9.6: SAnd with equal-length constraint.
-            // Variable-length intersect deferred to follow-up.
+            // IEEE 1800-2023 16.9.6: both operands match over one window with
+            // equal start and end (equal length). Lower to a single sequence
+            // that conjoins both operands' per-cycle checks -- correct under
+            // concurrent attempts, where the done-latch combiner conflates the
+            // two operands' start times and over-accepts. The combiner remains
+            // only as a fallback for operands that do not flatten.
             const int lhsLen = fixedLength(intp->lhsp());
             const int rhsLen = fixedLength(intp->rhsp());
-            if (lhsLen < 0 || rhsLen < 0) return BuildResult::fail();
-            if (lhsLen != rhsLen) {
-                intp->v3error("Intersect sequence length mismatch: left " + std::to_string(lhsLen)
-                              + " cycles, right " + std::to_string(rhsLen)
-                              + " cycles (IEEE 1800-2023 16.9.6)");
-                return BuildResult::failWithError();
+            if (lhsLen >= 0 && rhsLen >= 0) {
+                if (lhsLen != rhsLen) {
+                    // Unequal fixed lengths share no common length -> never matches.
+                    return buildNeverMatchIntersect(intp, entryVtxp, isTopLevelStep);
+                }
+                if (AstNodeExpr* const conjp
+                    = conjoinFixedSeqs(intp->lhsp(), intp->rhsp(), intp->fileline())) {
+                    return buildFromLoweringTree(conjp, entryVtxp, isTopLevelStep);
+                }
+                return buildAndCombiner(intp->lhsp(), intp->rhsp(), entryVtxp, intp->fileline());
             }
-            return buildAndCombiner(intp->lhsp(), intp->rhsp(), entryVtxp, intp->fileline());
+            return buildVarLenIntersect(intp, entryVtxp, isTopLevelStep);
         }
         if (AstSWithin* const withinp = VN_CAST(nodep, SWithin)) {
             return buildSWithin(withinp, entryVtxp, isTopLevelStep);

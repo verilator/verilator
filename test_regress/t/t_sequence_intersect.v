@@ -79,6 +79,10 @@ module t (
   assert property (@(posedge clk)
       (1'b1 ##1 1'b1) intersect (1'b1 ##1 1'b1));
 
+  // Leading-delay operands (no offset-0 check): conjoin first offset > 0.
+  assert property (@(posedge clk)
+      (##2 1'b1) intersect (##2 1'b1));
+
   // Intersect with `throughout` on one side: exercises fixedLength's
   // SThroughout branch (recurses into rhs to compute the length).
   cover property (@(posedge clk)
