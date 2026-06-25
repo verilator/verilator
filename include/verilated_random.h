@@ -570,7 +570,8 @@ public:
                 idxWidths.push_back(idx_width);
                 indices.insert(indices.end(), integral_index.begin(), integral_index.end());
 
-                record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
+                record_arr_table(var.atWrite(key), indexed_name, dimension - 1, indices,
+                                 idxWidths);
 
                 // Cleanup indices and widths
                 idxWidths.pop_back();
@@ -644,7 +645,7 @@ public:
 
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
-                record_struct_arr(var.at(key), name + "." + result, dimension - 1, indices,
+                record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
                                   idxWidths);
             }
         }
@@ -772,7 +773,7 @@ public:
     bool basicStdRandomization(VlAssocArray<T_Key, T_Value>& value, size_t width) {
         T_Key key;
         for (int exists = value.first(key); exists; exists = value.next(key)) {
-            basicStdRandomization(value.at(key), width);
+            basicStdRandomization(value.atWrite(key), width);
         }
         return true;
     }

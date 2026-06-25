@@ -2053,6 +2053,8 @@ bool AstNodeExpr::isLValue() const {
         return varrefp->access().isWriteOrRW();
     } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
         return memberselp->access().isWriteOrRW();
+    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
+        return structselp->fromp()->isLValue();
     } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
         return selp->fromp()->isLValue();
     } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
