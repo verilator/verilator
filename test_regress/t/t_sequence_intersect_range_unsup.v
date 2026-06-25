@@ -21,4 +21,7 @@ module t (
   // Both operands vary over a range and carry internal structure
   assert property ((a ##[1:3] (b ##1 c)) intersect (d ##[2:4] e));
 
+  // Operand top-level delay fixed but length varies via a nested range
+  assert property ((a ##2 (b ##[1:3] c)) intersect (d ##[3:5] e));
+
 endmodule

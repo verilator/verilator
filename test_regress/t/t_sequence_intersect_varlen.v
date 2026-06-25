@@ -23,6 +23,7 @@ module t (
   int f_var = 0;
   int f_ieee = 0;
   int f_collapse = 0;
+  int f_over = 0;
 
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;
@@ -54,9 +55,17 @@ module t (
   assert property (disable iff (cyc < 2) (a & b & c) |-> ((a ##[0:3] b) intersect c))
   else f_collapse <= f_collapse + 1;
 
+  // Equal fixed length, one operand carrying an internal check: lowered through
+  // the per-cycle conjoin, not the done-latch combiner (which conflates
+  // concurrent attempts and over-accepts).
+  ap_over :
+  assert property (disable iff (cyc < 2) (a ##4 b) intersect (c ##2 d ##2 e))
+  else f_over <= f_over + 1;
+
   final begin
     `checkd(f_var, 7);  // Questa: 7
     `checkd(f_ieee, 41);  // Questa: 41
     `checkd(f_collapse, 0);  // Questa: 0
+    `checkd(f_over, 84);  // Questa: 84
   end
 endmodule

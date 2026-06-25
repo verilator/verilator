@@ -903,7 +903,7 @@ class SvaNfaBuilder final {
     // Conjoin two equal-length fixed sequences into one: at each clock offset
     // AND the boolean checks of both operands (IEEE 1800-2023 16.9.6 -- both
     // operands match the same window). Returns null if either operand is not a
-    // plain fixed sequence of boolean leaves. Caller owns the returned tree.
+    // plain fixed sequence of boolean leaves.
     static AstNodeExpr* conjoinFixedSeqs(AstNodeExpr* lhsp, AstNodeExpr* rhsp, FileLine* flp) {
         std::map<int, std::vector<AstNodeExpr*>> checks;
         if (!flattenFixedSeq(lhsp, 0, checks) || !flattenFixedSeq(rhsp, 0, checks)) return nullptr;
@@ -968,8 +968,7 @@ class SvaNfaBuilder final {
     // Build the NFA for a synthesized intersect lowering tree, then free it.
     // buildExpr returns the terminal condition (finalCondp) by reference into the
     // tree; detach a clone so the tree can be freed here. The graph already holds
-    // clones/hoists of every edge condition, so nothing else dangles. (A shared
-    // tree freed later would double-free at the parent-less-finalCondp sites.)
+    // clones/hoists of every edge condition, so nothing else dangles.
     BuildResult buildFromLoweringTree(AstNodeExpr* treep, SvaStateVertex* entryVtxp,
                                       bool isTopLevelStep) {
         BuildResult result = buildExpr(treep, entryVtxp, isTopLevelStep);
@@ -984,9 +983,7 @@ class SvaNfaBuilder final {
     // ranged lengths. IEEE 1800-2023 16.9.6 requires both operands to match
     // over a window of the same length, so with no common length the intersect
     // simply never matches. This is legal (matching nothing), not an error, so
-    // lower to a constant false rather than rejecting legal code. Mirrors
-    // commercial simulators: compiles clean, the assertion never matches and a
-    // cover yields zero hits.
+    // lower to a constant false rather than rejecting legal code.
     BuildResult buildNeverMatchIntersect(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                                          bool isTopLevelStep) {
         AstNodeExpr* const falsep = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
@@ -1264,14 +1261,21 @@ public:
         }
         if (AstSIntersect* const intp = VN_CAST(nodep, SIntersect)) {
             // IEEE 1800-2023 16.9.6: both operands match over one window with
-            // equal length. Equal fixed length is a single AND-combiner; a
-            // varying length (ranged cycle delay) pairs each common length.
+            // equal start and end (equal length). Lower to a single sequence
+            // that conjoins both operands' per-cycle checks -- correct under
+            // concurrent attempts, where the done-latch combiner conflates the
+            // two operands' start times and over-accepts. The combiner remains
+            // only as a fallback for operands that do not flatten.
             const int lhsLen = fixedLength(intp->lhsp());
             const int rhsLen = fixedLength(intp->rhsp());
             if (lhsLen >= 0 && rhsLen >= 0) {
                 if (lhsLen != rhsLen) {
                     // Unequal fixed lengths share no common length -> never matches.
                     return buildNeverMatchIntersect(intp, entryVtxp, isTopLevelStep);
+                }
+                if (AstNodeExpr* const conjp
+                    = conjoinFixedSeqs(intp->lhsp(), intp->rhsp(), intp->fileline())) {
+                    return buildFromLoweringTree(conjp, entryVtxp, isTopLevelStep);
                 }
                 return buildAndCombiner(intp->lhsp(), intp->rhsp(), entryVtxp, intp->fileline());
             }
