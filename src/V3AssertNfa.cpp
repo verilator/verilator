@@ -1449,8 +1449,22 @@ class SvaNfaLowering final {
             AstNodeExpr*& sigp = c.vtx[i]->datap()->stateSigp;
             if (sigp) VL_DO_DANGLING(sigp->deleteTree(), sigp);
         }
-        // Disable iff gating on throughout/required-step rejects (IEEE 16.12).
+        // Disable iff gating on every terminal/reject signal (IEEE 1800-2023
+        // 16.12). The disable counter only tracks edges of the disable
+        // expression, so a condition held continuously true produces no edge
+        // and the snapshot comparison alone never suppresses; gate on the
+        // current (level) disable value too, matching throughout/required-step.
         if (c.disableExprp) {
+            // terminalActivep is always set (computeTerminalMatchAndReject
+            // asserts it), so gate it unconditionally.
+            AstNodeExpr* const notTermp
+                = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
+            sigs.terminalActivep = new AstLogAnd{c.flp, sigs.terminalActivep, notTermp};
+            if (sigs.rejectBasep) {
+                AstNodeExpr* const notDisp
+                    = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
+                sigs.rejectBasep = new AstLogAnd{c.flp, sigs.rejectBasep, notDisp};
+            }
             if (sigs.throughoutRejectp) {
                 AstNodeExpr* const notDisp
                     = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};

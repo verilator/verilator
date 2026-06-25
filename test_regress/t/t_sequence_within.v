@@ -105,14 +105,14 @@ module t (
       // engine-wide behavior, not within-specific.
       `checkd(count_p1, 89);  // Questa: 23
       `checkd(count_p2, 89);  // Questa: 44
-      `checkd(count_p3, 26);  // Questa: 20
-      `checkd(count_p4, 24);  // Questa: 22
+      `checkd(count_p3, 25);  // Questa: 20
+      `checkd(count_p4, 23);  // Questa: 22
       `checkd(count_p5, 89);  // Questa: 26
       `checkd(count_p6, 21);  // Questa: 16
       `checkd(count_p7, 15);  // Questa: 9
       `checkd(count_p8, 15);  // Questa: 4
-      `checkd(count_p9, 17);  // Questa: 10
-      `checkd(count_p10, 24);  // Questa: 15
+      `checkd(count_p9, 15);  // Questa: 10
+      `checkd(count_p10, 23);  // Questa: 15
       $write("*-* All Finished *-*\n");
       $finish;
     end
