@@ -15,7 +15,7 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute(check_finished=True)
 
-test.file_grep(test.stats, r'Assertions, assertOn checks combined\s+(\d+)', 3)
-test.file_grep(test.stats, r'Assertions, assertOn checks hoisted\s+(\d+)', 16)
+test.file_grep(test.stats, r'Assertions, assertOn checks combined\s+(\d+)', 4)
+test.file_grep(test.stats, r'Assertions, assertOn checks hoisted\s+(\d+)', 42)
 
 test.passes()

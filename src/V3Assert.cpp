@@ -278,30 +278,26 @@ class AssertVisitor final : public VNVisitor {
         }
         VL_UNREACHABLE;
     }
-    static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
-        const int controlled = !!(static_cast<int>(directiveType)
-                                  & (static_cast<int>(VAssertDirectiveType::ASSERT)
-                                     | static_cast<int>(VAssertDirectiveType::COVER)
-                                     | static_cast<int>(VAssertDirectiveType::ASSUME)));
-        const int checkRuntime = controlled & static_cast<int>(v3Global.opt.assertOn());
-        return "("s + std::to_string(controlled ^ 1) + " || ("s + std::to_string(checkRuntime)
-               + " && "s;
+
+    static bool isControlled(VAssertDirectiveType directiveType) {
+        return (static_cast<int>(directiveType)
+                & (static_cast<int>(VAssertDirectiveType::ASSERT)
+                   | static_cast<int>(VAssertDirectiveType::COVER)
+                   | static_cast<int>(VAssertDirectiveType::ASSUME)));
     }
     static AstNodeExpr* assertPassOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType, bool vacuous) {
+        if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertActionControlPrefix(directiveType)
-                                + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
-                                + "))"s,
-                            1};
+                            assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType), 1};
     }
     static AstNodeExpr* assertFailOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType) {
+        if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertActionControlPrefix(directiveType)
-                                + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType)
-                                + "))"s,
-                            1};
+                            assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType), 1};
     }
     string assertDisplayMessage(const AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
@@ -374,6 +370,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
+        newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
     static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
@@ -385,6 +382,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
+        newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
 
@@ -696,9 +694,9 @@ class AssertVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
-
-            iterateChildren(nodep);
         }
+
+        iterateChildren(nodep);
 
         if (nodep->user2()) {
             // Combine consecutive assertOn checks if possible
