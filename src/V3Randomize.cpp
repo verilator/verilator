@@ -1171,13 +1171,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
 
-        // For global constraints: check shared path-level set
-        // For inline constraints: check per-instance set (each __Vrandwith has own randomizer)
-        // For a class-level member-select (path) reference: key on the full path too,
-        //   so two sub-objects of the same type (c1.x, c2.x) do not collide on the
-        //   shared variable -- otherwise the second write_var is wrongly de-duplicated
-        //   away and the solver constrains an unwritten variable.
-        // For a plain class-level variable: check varp->user3()
+        // Global / inline / class-level member-select refs key on the full path
+        // (so same-type sub-objects c1.x, c2.x stay distinct); a plain class-level
+        // variable keys on user3().
         const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
                                     : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
                                     : membersel         ? m_writtenVars.count(smtName) > 0
@@ -3782,11 +3778,8 @@ class RandomizeVisitor final : public VNVisitor {
             return VN_IS(dtypep, ClassRefDType);
         });
     }
-    // True if this class has a constraint reaching into a sub-object (a global
-    // constraint): a member-select chain rooted at a rand class-typed handle.
-    // Such a class basic-randomizes first and lets the solver override the
-    // constrained leaves afterwards, so a leaf shared with a standalone
-    // randomize() of the sub-object's type is still basic-randomized there.
+    // True if this class owns a global constraint: a member-select chain rooted
+    // at a rand class-typed handle reaching into a sub-object.
     bool classOwnsGlobalConstraint(const AstClass* classp) const {
         return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
@@ -4889,13 +4882,9 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
         addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-        // A class that owns a global constraint (basicFirst, detected above)
-        // basic-randomizes FIRST and lets the solver override the constrained
-        // leaves afterwards.  This way a leaf that is only globally constrained
-        // (not user3) is still basic-randomized when its type is randomized
-        // standalone, while the owner's solver result wins.  The size-only resize
-        // fallback below is emitted after the solver call for such owners so an
-        // owner that also size-constrains its own array still resizes correctly.
+        // A basicFirst owner basic-randomizes first, then the solver overrides the
+        // constrained leaves, so a globally-constrained leaf (not user3) is still
+        // basic-randomized when its type is randomized standalone.
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
         randomizep->addStmtsp(new AstAssign{
             fl, fvarRefp, basicFirst ? new AstFuncRef{fl, basicRandomizep} : beginValp});
@@ -4903,12 +4892,9 @@ class RandomizeVisitor final : public VNVisitor {
         const auto sizeArraysIt = m_sizeConstrainedArrays.find(nodep);
         const bool needsSizePhase
             = sizeArraysIt != m_sizeConstrainedArrays.end() && !sizeArraysIt->second.empty();
-        // Resize fallback for an array whose size is only solver-determined (size
-        // constraint but no element constraint, so no two-pass size phase). It must
-        // run AFTER the solver .next() that computes the size variable, otherwise it
-        // resizes with a stale value. A basicFirst owner runs the solver LAST (after
-        // basic randomization), so emit the resize after the second assignment;
-        // otherwise the solver runs first and the resize belongs right after it.
+        // Size-only resize fallback (no element constraint, so no two-pass phase).
+        // Must run after the solver .next() that sets the size variable; emit it
+        // after whichever assignment below holds the solver call.
         const auto emitResizeFallback = [&]() {
             if (needsSizePhase) return;
             if (AstTask* const resizeAllTaskp
@@ -5453,30 +5439,19 @@ public:
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
-        // Mark variables solved by a global constraint so the owning class's
-        // __VBasicRand does not also randomize them.  This must run before any
-        // class is lowered, otherwise a constrained variable whose class is
-        // lowered before its constraint's owner would be basic-randomized too.
-        // Only constraints whose enclosing class is actually randomized count: a
-        // constraint living in a class that is never randomized through this
-        // object must not flag a shared rand variable, or a standalone
-        // randomize() of the sub-object's type stops randomizing it (issue
-        // #7833).  And only the leaf data field is solved -- an intermediate
-        // class-typed sub-object must still be basic-randomized so its own
-        // unconstrained members are randomized.
+        // Flag local constraint leaves as solver-owned so __VBasicRand skips them.
+        // Runs before any class is lowered. Only a randomized class counts, and
+        // only a leaf owned by the constraint's own class: a leaf reached through
+        // a global constraint stays basic-randomized so a standalone randomize()
+        // of its type still randomizes it (issue #7833); a class-typed sub-object
+        // is skipped so its own members are still basic-randomized.
         nodep->foreach([&](AstClass* const classp) {
             if (!classp->user1()) return;
             classp->foreachMember([&](AstClass* const ownerClassp, AstConstraint* const constrp) {
                 constrp->foreach([&](AstMemberSel* const memberSelp) {
                     AstVar* const varp = memberSelp->varp();
                     if (VN_IS(varp->dtypep()->skipRefp(), ClassRefDType)) return;
-                    // A leaf reached through a global constraint (owned by a class
-                    // other than the constraint's own) is left to basic
-                    // randomization, NOT flagged user3, so a standalone randomize()
-                    // of its type still randomizes it; the owner overrides it via the
-                    // solver (basicFirst path above) instead.
                     if (VN_AS(varp->user2p(), NodeModule) != ownerClassp) return;
-                    // Only a LOCAL constraint flags its leaf as solver-owned/skipped.
                     if (!varp->user3()) varp->user3(true);
                 });
             });
