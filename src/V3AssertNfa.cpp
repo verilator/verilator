@@ -2071,6 +2071,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
+    V3UniqueNames m_seqEventNames{"__VseqEvent"};  // Synthesized `@seq` end-point events
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     // Wire match vertex and mid-window sources for a successful NFA build.
@@ -2733,6 +2734,85 @@ class AssertNfaVisitor final : public VNVisitor {
         UINFO(4, "NFA converted assertion at " << flp << endl);
     }
 
+    // IEEE 1800-2023 9.4.2.4: a sequence instance used as an event control
+    // (`@seq`) triggers when the sequence reaches its end point. Lower it to a
+    // named-event wait: synthesize an `event`, re-point the sensitivity at it,
+    // and add a clocked monitor `always @(clk) if (end-of-match) -> event`. The
+    // match signal is the sequence's NFA terminal-active (the same per-cycle
+    // match a `cover sequence` fires on), so the event fires on every end point,
+    // including overlapping/consecutive attempts -- unlike a bare-sequence assert
+    // whose pass action is suppressed on cycles where a parallel attempt rejects.
+    void buildSeqEventMonitor(AstNodeModule* modp, AstSenItem* senitemp) {
+        FileLine* const flp = senitemp->fileline();
+        AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_seqEventNames.get(senitemp),
+                                          modp->findBasicDType(VBasicDTypeKwd::EVENT)};
+        eventp->lifetime(VLifetime::STATIC_EXPLICIT);
+        modp->addStmtsp(eventp);
+        v3Global.setHasEvents();
+
+        // Detach the sequence reference and re-point the wait at the new event.
+        AstFuncRef* const funcrefp = VN_AS(senitemp->sensp()->unlinkFrBack(), FuncRef);
+        senitemp->sensp(new AstVarRef{flp, eventp, VAccess::READ});
+
+        // Reuse the assertion machinery to inline the sequence body and hoist
+        // its clocking event; this also clears the sequence's isReferenced flag.
+        AstPropSpec* const specp = new AstPropSpec{flp, nullptr, nullptr, funcrefp};
+        inlineAllSequenceRefs(specp);
+        if (hoistClockedSeq(specp)) {  // Unsupported clocking form, already reported
+            VL_DO_DANGLING(pushDeletep(specp), specp);
+            return;
+        }
+        // A sequence used as an event must carry its own clocking event; a
+        // clockless sequence is illegal here even under a module default clocking
+        // (confirmed against Questa), unlike one embedded in an assert property.
+        if (!specp->sensesp()) {
+            specp->v3warn(E_UNSUPPORTED,
+                          "Unsupported: '@' event control on a sequence without a clocking event");
+            VL_DO_DANGLING(pushDeletep(specp), specp);
+            return;
+        }
+        AstNodeExpr* const bodyp = VN_CAST(specp->propp(), NodeExpr);
+        UASSERT_OBJ(bodyp, specp, "Sequence body must be an expression");
+        AstSenTree* const senTreep = new AstSenTree{flp, specp->sensesp()->cloneTree(true)};
+
+        // End-of-match signal: a single-cycle sequence matches on the sampled
+        // boolean at the clock; a multi-cycle sequence matches on the NFA
+        // terminal-active (the per-cycle end point a `cover sequence` fires on).
+        AstNodeExpr* matchp = nullptr;
+        if (!hasMultiCycleExpr(bodyp)) {
+            matchp = sampled(bodyp->cloneTreePure(false));
+        } else {
+            const PropertyParts parts = decomposeProperty(bodyp);
+            UASSERT_OBJ(parts.seqExprp, bodyp, "Sequence body must be an expression");
+            SvaGraph graph;
+            SvaNfaBuilder builder{graph, modp, m_propTempNames, /*isCoverSeq=*/false};
+            const BuildResult result
+                = buildAssertionGraph(builder, graph, parts.seqExprp, parts, flp);
+            if (!result.valid()) {
+                if (!result.errorEmitted) {
+                    specp->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: this sequence form referenced by an '@' event control");
+                }
+                VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
+                VL_DO_DANGLING(pushDeletep(specp), specp);
+                return;
+            }
+            wireMatchAndMidSources(graph, result, flp);
+            AstNodeExpr* const triggerp = new AstConst{flp, AstConst::BitTrue{}};
+            matchp = m_loweringp->lower(flp, graph, triggerp, senTreep, result.finalCondp,
+                                        /*isCover=*/true);
+            VL_DO_DANGLING(pushDeletep(triggerp), triggerp);
+            if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
+        }
+
+        AstFireEvent* const firep
+            = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
+        modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, senTreep,
+                                      new AstIf{flp, matchp, firep, nullptr}});
+        VL_DO_DANGLING(pushDeletep(specp), specp);
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -2748,6 +2828,15 @@ class AssertNfaVisitor final : public VNVisitor {
     }
     void visit(AstClocking* nodep) override {
         if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstSenItem* nodep) override {
+        if (const AstFuncRef* const funcrefp = VN_CAST(nodep->sensp(), FuncRef)) {
+            if (VN_IS(funcrefp->taskp(), Sequence)) {
+                buildSeqEventMonitor(m_modp, nodep);
+                return;
+            }
+        }
         iterateChildren(nodep);
     }
     void visit(AstGenBlock* nodep) override {
