@@ -9,8 +9,8 @@
 
 import vltest_bootstrap
 
+import coverage_covergroup_common
+
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, fails=True)
-
-test.passes()
+coverage_covergroup_common.run(test)

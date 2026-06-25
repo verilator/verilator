@@ -2086,15 +2086,16 @@ private:
 
     // MEMBERS
     T_Class* m_objp = nullptr;  // Object pointed to
+    bool m_weak = false;  // Non-owning reference
 
     // METHODS
     // Increase reference counter with null check
     void refCountInc() const VL_MT_SAFE {
-        if (m_objp) m_objp->refCountInc();
+        if (m_objp && !m_weak) m_objp->refCountInc();
     }
     // Decrease reference counter with null check
     void refCountDec() const VL_MT_SAFE {
-        if (m_objp) m_objp->refCountDec();
+        if (m_objp && !m_weak) m_objp->refCountDec();
     }
 
 public:
@@ -2134,58 +2135,73 @@ public:
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(const VlClassRef& copied)
-        : m_objp{copied.m_objp} {
+        : m_objp{copied.m_objp}
+        , m_weak{copied.m_weak} {
         refCountInc();
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
-        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)}
+        , m_weak{std::exchange(moved.m_weak, false)} {}
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(const VlClassRef<T_OtherClass>& copied)
-        : m_objp{copied.m_objp} {
+        : m_objp{copied.m_objp}
+        , m_weak{copied.m_weak} {
         refCountInc();
     }
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(VlClassRef<T_OtherClass>&& moved)
-        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)}
+        , m_weak{std::exchange(moved.m_weak, false)} {}
     ~VlClassRef() { refCountDec(); }
 
     // METHODS
+    static VlClassRef weak(T_Class* objp) {
+        VlClassRef ref;
+        ref.m_objp = objp;
+        ref.m_weak = true;
+        return ref;
+    }
     // Copy and move assignments
     VlClassRef& operator=(const VlClassRef& copied) {
-        if (m_objp == copied.m_objp) return *this;
+        if (m_objp == copied.m_objp && m_weak == copied.m_weak) return *this;
         refCountDec();
         m_objp = copied.m_objp;
+        m_weak = copied.m_weak;
         refCountInc();
         return *this;
     }
     VlClassRef& operator=(VlClassRef&& moved) {
-        if (m_objp == moved.m_objp) return *this;
+        if (m_objp == moved.m_objp && m_weak == moved.m_weak) return *this;
         refCountDec();
         m_objp = std::exchange(moved.m_objp, nullptr);
+        m_weak = std::exchange(moved.m_weak, false);
         return *this;
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(const VlClassRef<T_OtherClass>& copied) {
-        if (m_objp == copied.m_objp) return *this;
+        if (m_objp == copied.m_objp && m_weak == copied.m_weak) return *this;
         refCountDec();
         m_objp = copied.m_objp;
+        m_weak = copied.m_weak;
         refCountInc();
         return *this;
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(VlClassRef<T_OtherClass>&& moved) {
-        if (m_objp == moved.m_objp) return *this;
+        if (m_objp == moved.m_objp && m_weak == moved.m_weak) return *this;
         refCountDec();
         m_objp = std::exchange(moved.m_objp, nullptr);
+        m_weak = std::exchange(moved.m_weak, false);
         return *this;
     }
     // Assign with nullptr
     VlClassRef& operator=(VlNull) {
         refCountDec();
         m_objp = nullptr;
+        m_weak = false;
         return *this;
     }
     // Dynamic caster
