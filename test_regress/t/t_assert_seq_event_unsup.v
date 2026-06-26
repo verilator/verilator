@@ -10,8 +10,8 @@ module t (
   bit a, b;
   logic g = 0;
 
-  // A module default clocking does NOT make a clockless sequence legal as an
-  // event (confirmed against Questa); s_unclocked below stays E_UNSUPPORTED.
+  // Clockless `@seq` stays E_UNSUPPORTED even under a default clocking, matching
+  // Questa; whether 9.4.2.4 should inherit it here is an open PR question.
   default clocking @(posedge clk);
   endclocking
 
