@@ -300,7 +300,7 @@
                                                 : ... note: In instance 't'
   177 |     cross a, b {
       |           ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:209:5: Unsupported: 'covergroup' clocking event on member variable
-                                               : ... note: In instance 't'
-  209 |     covergroup cov1 @m_z;
-      |     ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:210:24: Unsupported: 'covergroup' coverage construct referencing enclosing class member; ignoring covergroup '__vlAnonCG_cov1'
+                                                : ... note: In instance 't'
+  210 |       cp_x: coverpoint m_x;
+      |                        ^~~

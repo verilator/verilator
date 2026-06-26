@@ -2103,7 +2103,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
@@ -2158,6 +2158,12 @@ public:
     ~VlClassRef() { refCountDec(); }
 
     // METHODS
+    /// Create a non-owning ("weak") reference: it does not change the reference count, so the
+    /// pointed-to object must be kept alive by some other (strong) reference for as long as
+    /// this one is used.  Dereferencing a weak reference after the object has been freed is
+    /// undefined.  Used only for an embedded covergroup's back-pointer to its enclosing
+    /// object, which the enclosing object transitively owns, so the back-pointer is always
+    /// outlived by a strong reference (IEEE 1800-2023 19.4).
     static VlClassRef weak(T_Class* objp) {
         VlClassRef ref;
         ref.m_objp = objp;
@@ -2250,6 +2256,14 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
         return true;
     }
     return false;
+}
+
+// Create a non-owning ("weak") reference to an existing object, deducing the class type from
+// the pointer.  See VlClassRef::weak; used for an embedded covergroup's back-pointer to its
+// enclosing object so the back-pointer does not keep the enclosing object alive.
+template <typename T_Class>
+static inline VlClassRef<T_Class> VL_WEAK_REF(T_Class* objp) {
+    return VlClassRef<T_Class>::weak(objp);
 }
 
 template <typename T_Lhs>
