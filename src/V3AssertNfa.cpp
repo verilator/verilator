@@ -2756,8 +2756,13 @@ class AssertNfaVisitor final : public VNVisitor {
 
         // Reuse the assertion machinery to inline the sequence body and hoist
         // its clocking event; this also clears the sequence's isReferenced flag.
+        // Inline the referenced sequence first, then any nested sequence refs in
+        // its body -- foreaching over specp->propp() (a member access) rather than
+        // the freshly allocated specp keeps gcc -Warray-bounds from a false match.
+        AstSequence* const seqp = VN_AS(funcrefp->taskp(), Sequence);
         AstPropSpec* const specp = new AstPropSpec{flp, nullptr, nullptr, funcrefp};
-        inlineAllSequenceRefs(specp);
+        inlineSequenceRef(funcrefp, seqp);
+        inlineAllSequenceRefs(specp->propp());
         if (hoistClockedSeq(specp)) {  // Unsupported clocking form, already reported
             VL_DO_DANGLING(pushDeletep(specp), specp);
             return;
