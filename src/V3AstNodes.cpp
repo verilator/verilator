@@ -31,6 +31,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
@@ -1782,11 +1783,25 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
 void AstConstPool::reCache() {
     m_tables.clear();
     m_consts.clear();
+    std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
     for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
-        AstNode* const valuep = vscp->varp()->valuep();
-        const V3Hash hash = V3Hasher::uncachedHash(valuep);
-        if (VN_IS(valuep, InitArray)) m_tables.emplace(hash.value(), vscp);
-        if (VN_IS(valuep, Const)) m_consts.emplace(hash.value(), vscp);
+        varScopeps.emplace(vscp->varp(), vscp);
+    }
+    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        AstVar* const varp = VN_CAST(nodep, Var);
+        if (!varp) continue;
+        AstNode* const valuep = varp->valuep();
+        if (!valuep) continue;
+        const bool isTable = VN_IS(valuep, InitArray);
+        const AstConst* const constp = VN_CAST(valuep, Const);
+        if (!isTable && !constp) continue;
+        AstVarScope*& vscp = varScopeps[varp];
+        if (!vscp) {
+            vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
+            m_scopep->addVarsp(vscp);
+        }
+        if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
+        if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
     }
 }
 
