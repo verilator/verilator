@@ -18,7 +18,7 @@ module t;
   assign idx = cyc[3:0];
 
   // V3Case lowers this to a 512-bit constant-pool lookup table before V3Dead
-  // calls AstConstPool::reCache().
+  // calls AstConstPool::rebuildVarScopesAndCache().
   logic [31:0] case_word;
   always_comb
     case (idx)

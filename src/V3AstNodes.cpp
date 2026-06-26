@@ -1780,7 +1780,7 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     return varScopep;
 }
 
-void AstConstPool::reCache() {
+void AstConstPool::rebuildVarScopesAndCache() {
     m_tables.clear();
     m_consts.clear();
     std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
