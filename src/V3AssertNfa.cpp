@@ -2734,14 +2734,12 @@ class AssertNfaVisitor final : public VNVisitor {
         UINFO(4, "NFA converted assertion at " << flp << endl);
     }
 
-    // IEEE 1800-2023 9.4.2.4: a sequence instance used as an event control
-    // (`@seq`) triggers when the sequence reaches its end point. Lower it to a
+    // IEEE 1800-2023 9.4.2.4: a sequence used as an event control (`@seq`)
+    // triggers each time the sequence reaches an end point. Lower it to a
     // named-event wait: synthesize an `event`, re-point the sensitivity at it,
     // and add a clocked monitor `always @(clk) if (end-of-match) -> event`. The
-    // match signal is the sequence's NFA terminal-active (the same per-cycle
-    // match a `cover sequence` fires on), so the event fires on every end point,
-    // including overlapping/consecutive attempts -- unlike a bare-sequence assert
-    // whose pass action is suppressed on cycles where a parallel attempt rejects.
+    // match is the NFA terminal-active a `cover sequence` fires on, so the event
+    // fires on every end point, including overlapping ones.
     void buildSeqEventMonitor(AstNodeModule* modp, AstSenItem* senitemp) {
         FileLine* const flp = senitemp->fileline();
         AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_seqEventNames.get(senitemp),
@@ -2750,15 +2748,12 @@ class AssertNfaVisitor final : public VNVisitor {
         modp->addStmtsp(eventp);
         v3Global.setHasEvents();
 
-        // Detach the sequence reference and re-point the wait at the new event.
         AstFuncRef* const funcrefp = VN_AS(senitemp->sensp()->unlinkFrBack(), FuncRef);
         senitemp->sensp(new AstVarRef{flp, eventp, VAccess::READ});
 
-        // Reuse the assertion machinery to inline the sequence body and hoist
-        // its clocking event; this also clears the sequence's isReferenced flag.
-        // Inline the referenced sequence first, then any nested sequence refs in
-        // its body -- foreaching over specp->propp() (a member access) rather than
-        // the freshly allocated specp keeps gcc -Warray-bounds from a false match.
+        // Inline the referenced sequence, then any nested refs. Iterate the member
+        // specp->propp(), not the freshly-new'd specp, to dodge a gcc -Warray-bounds
+        // false positive.
         AstSequence* const seqp = VN_AS(funcrefp->taskp(), Sequence);
         AstPropSpec* const specp = new AstPropSpec{flp, nullptr, nullptr, funcrefp};
         inlineSequenceRef(funcrefp, seqp);
@@ -2767,9 +2762,7 @@ class AssertNfaVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(specp), specp);
             return;
         }
-        // A sequence used as an event must carry its own clocking event; a
-        // clockless sequence is illegal here even under a module default clocking
-        // (confirmed against Questa), unlike one embedded in an assert property.
+        // A clockless sequence has no sampling edge; require an explicit clock.
         if (!specp->sensesp()) {
             specp->v3warn(E_UNSUPPORTED,
                           "Unsupported: '@' event control on a sequence without a clocking event");
@@ -2780,9 +2773,8 @@ class AssertNfaVisitor final : public VNVisitor {
         UASSERT_OBJ(bodyp, specp, "Sequence body must be an expression");
         AstSenTree* const senTreep = new AstSenTree{flp, specp->sensesp()->cloneTree(true)};
 
-        // End-of-match signal: a single-cycle sequence matches on the sampled
-        // boolean at the clock; a multi-cycle sequence matches on the NFA
-        // terminal-active (the per-cycle end point a `cover sequence` fires on).
+        // End-of-match: sampled boolean for a single-cycle sequence, NFA
+        // terminal-active for a multi-cycle one.
         AstNodeExpr* matchp = nullptr;
         if (!hasMultiCycleExpr(bodyp)) {
             matchp = sampled(bodyp->cloneTreePure(false));

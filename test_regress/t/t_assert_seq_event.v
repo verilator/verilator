@@ -28,27 +28,23 @@ module t (
   endsequence
   // verilog_format: on
 
-  // Feature under test: a sequence referenced outside an assertion via the `@`
-  // event control resumes once per sequence end point (IEEE 1800-2023 9.4.2.4).
+  // A sequence used as an `@` event control resumes once per sequence end point
+  // (IEEE 1800-2023 9.4.2.4). seq_hits/seq_hits2 are two waiters on the same
+  // multi-cycle sequence; ref_hits is an independent shift-register oracle (end
+  // point at posedge N when a@N-2, b@N-1, c@N); one_hits is the single-cycle case.
   initial forever begin
     @seq;
     seq_hits = seq_hits + 1;
   end
-
-  // A second waiter on the SAME sequence must see exactly the same end points.
   initial forever begin
     @seq;
     seq_hits2 = seq_hits2 + 1;
   end
-
-  // Single-cycle sequence end point: resumes whenever `a` is sampled true.
   initial forever begin
     @seq_one;
     one_hits = one_hits + 1;
   end
 
-  // Independent oracle: an end point lands at posedge N when the sampled values
-  // give a at N-2, b at N-1, c at N.
   always @(posedge clk) begin
     if (a2 && b1 && c) ref_hits = ref_hits + 1;
     a2 <= a1;
@@ -56,9 +52,9 @@ module t (
     b1 <= b;
   end
 
-  // Bits a/b/c are spaced past the ##2 window (crc[0]/crc[4]/crc[8]) so the
-  // left-shift LFSR does not correlate a@T, b@T+1, c@T+2 into one bit; the
-  // multi-cycle end-point machinery is then genuinely exercised.
+  // a/b/c are spaced to crc[0]/crc[4]/crc[8] -- past the ##2 window -- so the
+  // left-shift LFSR cannot correlate a@T, b@T+1, c@T+2 into one bit; otherwise
+  // the multi-cycle end-point machinery would collapse into a triviality.
   always @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[30:0], crc[31] ^ crc[21] ^ crc[1] ^ crc[0]};
@@ -69,12 +65,11 @@ module t (
   end
 
   // Counts read in final (Postponed) to avoid same-timestep races.
-  // Concrete Verilator counts; Questa: seq_hits=14 ref_hits=14 one_hits=30
   final begin
-    `checkd(seq_hits, ref_hits);
-    `checkd(seq_hits2, seq_hits);
-    `checkd(seq_hits, 14);
-    `checkd(one_hits, 30);
+    `checkd(seq_hits, 14);  // Questa: 14
+    `checkd(seq_hits2, 14);  // Questa: 14
+    `checkd(ref_hits, 14);  // Questa: 14
+    `checkd(one_hits, 30);  // Questa: 30
     $write("*-* All Finished *-*\n");
   end
 endmodule
