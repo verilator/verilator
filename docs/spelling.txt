@@ -861,6 +861,7 @@ hx
 hyperthreading
 hyperthreads
 icecream
+ico
 idmap
 ifdef
 ifdefed
@@ -916,6 +917,7 @@ linters
 linux
 liu
 livelock
+liveness
 lldb
 ln
 loc
@@ -924,6 +926,7 @@ localparams
 localtime
 logicals
 longint
+lookups
 lossy
 lsb
 lubc

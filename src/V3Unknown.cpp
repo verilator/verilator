@@ -51,15 +51,14 @@ class UnknownVisitor final : public VNVisitor {
     static const std::string s_xrandPrefix;
 
     // STATE - across all visitors
-    VDouble0 m_statUnkVars;  // Statistic tracking
+    VDouble0 m_statUnkVars;  // Statistic of xrand variable created
+    VDouble0 m_statElses;  // Statistic of else branches created for array selects
     V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
     std::unique_ptr<V3UniqueNames> m_xrandNames;  // For generating unique temporary variable names
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
-    AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
 
@@ -69,38 +68,21 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            if (m_ftaskp->stmtsp())
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            else
+                m_ftaskp->addStmtsp(varp);
         } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
+            if (m_modp->stmtsp())
+                m_modp->stmtsp()->addHereThisAsNext(varp);
+            else
+                m_modp->addStmtsp(varp);
         }
     }
 
     void replaceBoundLvalue(AstNodeExpr* nodep, AstNodeExpr* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
-        // This is a PITA.  We could:
-        //  1. IF(...) around an ASSIGN,
-        //     but that would break a "foo[TOO_BIG]=$fopen(...)".
-        //  2. Hack to extend the size of the output structure
-        //     by one bit, and write to that temporary, but never read it.
-        //     That makes there be two widths() and is likely a bug farm.
-        //  3. Make a special SEL to choose between the real lvalue
-        //     and a temporary NOP register.
-        //  4. Assign to a temp, then IF that assignment.
-        //     This is suspected to be nicest to later optimizations.
-        // 4 seems best but breaks later optimizations.  3 was tried,
-        // but makes a mess in the emitter as lvalue switching is needed.  So 4.
-        // SEL(...) -> temp
-        //             if (COND(LTE(bit<=maxlsb))) ASSIGN(SEL(...)),temp)
-        const bool needDly = (m_assigndlyp != nullptr);
-        if (m_assigndlyp) {
-            // Delayed assignments become normal assignments,
-            // then the temp created becomes the delayed assignment
-            AstNode* const newp = new AstAssign{m_assigndlyp->fileline(),
-                                                m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
-                                                m_assigndlyp->rhsp()->unlinkFrBackWithNext()};
-            m_assigndlyp->replaceWith(newp);
-            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
-        }
+        // We wrap the expression into IF
         AstNodeExpr* prep = nodep;
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
@@ -121,32 +103,35 @@ class UnknownVisitor final : public VNVisitor {
         // Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
         if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
-            UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
             VNRelinker replaceHandle;
             AstNodeExpr* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
             AstNodeExpr* const newp = new AstLogAnd{condp->fileline(), condp, earliercondp};
             UINFO(4, "Edit BOUNDLVALUE " << newp);
             replaceHandle.relink(newp);
         } else {
-            AstVar* const varp
-                = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
-            addVar(varp);
             AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
             while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
-
-            prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
-            if (m_timingControlp) m_timingControlp->unlinkFrBack();
-            AstIf* const newp = new AstIf{
-                fl, condp,
-                (needDly
-                     ? static_cast<AstNode*>(new AstAssignDly{
-                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
-                     : static_cast<AstNode*>(new AstAssign{
-                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
+            VNRelinker replaceHandle;
+            AstNode* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
+            AstNode* elseStmtp = nullptr;
+            const bool hasSideEffects = origStmtp->exists(
+                [](AstNode* const np) { return !np->isPure() || np->isTimingControl(); });
+            if (hasSideEffects) {
+                // Copy original statement and replace `prep` with reference to tmp var to make
+                // sure that side effect will take place
+                m_statElses++;
+                elseStmtp = origStmtp->cloneTree(false);
+                AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep),
+                                                prep->dtypep()};
+                addVar(varp);
+                AstNode* const prepCopyp = prep->clonep();
+                prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
+                pushDeletep(prepCopyp);
+            }
+            AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
+            replaceHandle.relink(newp);
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
-            UINFOTREE(9, newp, "", "_new");
-            stmtp->addNextHere(newp);
             prep->user2p(newp);  // Save so we may LogAnd it next time
         }
     }
@@ -206,23 +191,6 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
-        iterateChildren(nodep);
-    }
-    void visit(AstAssignDly* nodep) override {
-        VL_RESTORER(m_assigndlyp);
-        VL_RESTORER(m_timingControlp);
-        m_assigndlyp = nodep;
-        m_timingControlp = nodep->timingControlp();
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-    }
-    void visit(AstAssignW* nodep) override {
-        VL_RESTORER(m_timingControlp);
-        m_timingControlp = nodep->timingControlp();
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-    }
-    void visit(AstNodeAssign* nodep) override {
-        VL_RESTORER(m_timingControlp);
-        m_timingControlp = nodep->timingControlp();
         iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
@@ -296,7 +264,7 @@ class UnknownVisitor final : public VNVisitor {
             } else {
                 // X or Z's become mask, ala case statements.
                 V3Number nummask{rhsp, rhsp->width()};
-                nummask.opBitsNonX(VN_AS(rhsp, Const)->num());
+                nummask.opBitsNonXZ(VN_AS(rhsp, Const)->num());
                 V3Number numval{rhsp, rhsp->width()};
                 numval.opBitsOne(VN_AS(rhsp, Const)->num());
                 AstNodeExpr* const and1p = new AstAnd{nodep->fileline(), lhsp,
@@ -546,7 +514,11 @@ class UnknownVisitor final : public VNVisitor {
                 } else if (nodeDtp->isString()) {
                     xnum = V3Number{nodep, V3Number::String{}, ""};
                 } else {
-                    xnum.setAllBitsX();
+                    if (nodeDtp->isFourstate()) {
+                        xnum.setAllBitsX();
+                    } else {
+                        xnum.setAllBits0();
+                    }
                 }
                 AstNode* const newp = new AstCond{nodep->fileline(), condp, nodep,
                                                   new AstConst{nodep->fileline(), xnum}};
@@ -584,6 +556,7 @@ public:
     }
     ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
+        V3Stats::addStat("Unknowns, else branches created", m_statElses);
     }
 };
 

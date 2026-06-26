@@ -870,30 +870,8 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         ForceState::ForceRangeInfo rangeInfo
             = m_state.getForceRangeInfo(nodep->lhsp(), forcedVarp, true);
 
-        // Start from a cloned RHS expression; adjust below for partial bit selects.
-        const AstSel* const selLhsp = VN_CAST(nodep->lhsp(), Sel);
-        AstNodeExpr* rhsExprp = nodep->rhsp()->cloneTreePure(false);
-
-        // For bitwise selects inside arrays, merge updated bits with preserved base bits.
-        if (rangeInfo.m_hasArraySel && rangeInfo.m_arrayInfo.m_hasBitSel && selLhsp
-            && ForceState::isBitwiseDType(selLhsp->fromp())) {
-            AstNodeExpr* const baseExprp = selLhsp->fromp()->cloneTreePure(false);
-            baseExprp->foreach(
-                [](AstVarRef* const refp) { ForceState::markNonReplaceable(refp); });
-
-            // Pad the selected value back to full base width before masking/or-ing.
-            rhsExprp = ForceState::zeroPadToBaseWidth(rhsExprp, selLhsp->fromp()->width(),
-                                                      rangeInfo.m_padLsb, rangeInfo.m_padMsb);
-
-            // Keep untouched base bits and insert the newly forced bit range.
-            // rhsExpr = (baseExpr & ~mask(range)) | (zeroPad(force_rhs) & mask(range));
-            AstConst* const maskConstp = ForceState::makeRangeMaskConst(
-                nodep->lhsp(), selLhsp->fromp()->width(), rangeInfo.m_padLsb, rangeInfo.m_padMsb);
-            AstNodeExpr* const maskedOldp
-                = new AstAnd{nodep->lhsp()->fileline(), baseExprp,
-                             new AstNot{nodep->lhsp()->fileline(), maskConstp}};
-            rhsExprp = new AstOr{nodep->lhsp()->fileline(), maskedOldp, rhsExprp};
-        }
+        // Keep narrow rhs, VlForceVec blends unpacked-array bit-select forces at read time
+        AstNodeExpr* const rhsExprp = nodep->rhsp()->cloneTreePure(false);
 
         m_state.addForceAssignment(forcedVarp, lhsVarRefp->varScopep(), rhsExprp, nodep,
                                    rangeInfo.m_rangeLsb, rangeInfo.m_rangeMsb, rangeInfo.m_padLsb,
@@ -1114,6 +1092,11 @@ class ForceConvertVisitor final : public VNVisitor {
 
         // Verilog pseudocode:
         //   forceVec.addForce(range_lsb, range_msb, &forceRHS[id], rhs_lsb);
+        const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
+        const bool arrayBitSel
+            = info.m_hasArraySel && selLhsp && ForceState::getArraySelInfo(lhsp).m_hasBitSel
+              && ForceState::isBitwiseDType(selLhsp->fromp())
+              && (info.m_padMsb - info.m_padLsb + 1) < selLhsp->fromp()->width();
         AstNodeExpr* const rhsDatap = ForceState::buildRhsDataExpr(flp, info);
         AstCExpr* const rhsAddrp = new AstCExpr{flp};
         rhsAddrp->add("&(");
@@ -1124,7 +1107,13 @@ class ForceConvertVisitor final : public VNVisitor {
             ForceState::makeConst32(flp, info.m_rangeLsb)};
         addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_rangeMsb));
         addForceCallp->addPinsp(rhsAddrp);
-        addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_rangeLsb));
+        addForceCallp->addPinsp(
+            ForceState::makeConst32(flp, arrayBitSel ? info.m_padLsb : info.m_rangeLsb));
+        if (arrayBitSel) {
+            addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_padLsb));
+            addForceCallp->addPinsp(ForceState::makeConst32(flp, info.m_padMsb));
+            addForceCallp->addPinsp(ForceState::makeConst32(flp, selLhsp->fromp()->width()));
+        }
         addForceCallp->dtypeSetVoid();
         AstNodeStmt* const stmtp = addForceCallp->makeStmt();
 
@@ -1164,12 +1153,21 @@ class ForceConvertVisitor final : public VNVisitor {
         const ForceState::ForceRangeInfo rangeInfo
             = m_state.getForceRangeInfo(lhsp, releasedVarp, false);
 
+        const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
+        const bool arrayBitSel
+            = rangeInfo.m_hasArraySel && selLhsp && rangeInfo.m_arrayInfo.m_hasBitSel
+              && ForceState::isBitwiseDType(selLhsp->fromp())
+              && (rangeInfo.m_padMsb - rangeInfo.m_padLsb + 1) < selLhsp->fromp()->width();
         AstCMethodHard* const releaseCallp = new AstCMethodHard{
             flp, new AstVarRef{flp, varInfo->m_forceVecVscp, VAccess::WRITE},
             VCMethod::FORCE_RELEASE, ForceState::makeConst32(flp, rangeInfo.m_rangeLsb)};
         releaseCallp->addPinsp(ForceState::makeConst32(flp, rangeInfo.m_rangeMsb));
+        if (arrayBitSel) {
+            releaseCallp->addPinsp(ForceState::makeConst32(flp, rangeInfo.m_padLsb));
+            releaseCallp->addPinsp(ForceState::makeConst32(flp, rangeInfo.m_padMsb));
+        }
         releaseCallp->dtypeSetVoid();
-        // forceVec.release(range_lsb, range_msb);
+        // forceVec.release(range_lsb, range_msb [, bit_lsb, bit_msb]);
         AstNodeStmt* const releasep = releaseCallp->makeStmt();
 
         AstAssign* clearEnp = nullptr;

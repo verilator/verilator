@@ -234,6 +234,26 @@ private:
         addStat("temporaries introduced", m_temporariesIntroduced);
     }
 };
+class V3DfgRemoveSelectsContext final : public V3DfgSubContext {
+    // Only V3DfgContext can create an instance
+    friend class V3DfgContext;
+
+public:
+    // STATE
+    VDouble0 m_removedFullWidth;  // Number of full width selects removed
+    VDouble0 m_replacedWithSelFromFull;  // Number of selects replaced with sel from full driver
+    VDouble0 m_replacedWithSelFromPart;  // Number of selects replaced with sel from partial driver
+    VDouble0 m_replacedWithPart;  // Number of selects replaced with part of driver
+private:
+    V3DfgRemoveSelectsContext()
+        : V3DfgSubContext{"RemoveSelects"} {}
+    ~V3DfgRemoveSelectsContext() {
+        addStat("full width selects removed", m_removedFullWidth);
+        addStat("replaced with sel from full driver", m_replacedWithSelFromFull);
+        addStat("replaced with sel from partial driver", m_replacedWithSelFromPart);
+        addStat("replaced with partial driver", m_replacedWithPart);
+    }
+};
 class V3DfgRemoveUnobservableContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
     friend class V3DfgContext;
@@ -399,6 +419,7 @@ public:
     V3DfgPeepholeContext m_peepholeContext;
     V3DfgPushDownSelsContext m_pushDownSelsContext;
     V3DfgRegularizeContext m_regularizeContext;
+    V3DfgRemoveSelectsContext m_removeSelectsContext;
     V3DfgRemoveUnobservableContext m_removeUnobservableContext;
     V3DfgSynthesisContext m_synthContext;
 

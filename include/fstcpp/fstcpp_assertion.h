@@ -81,6 +81,12 @@
 		std::abort();                                \
 	}
 
+#define FST_FAIL_STRING(s)              \
+	do {                                \
+		std::cerr << (s) << std::endl;  \
+		std::abort();                   \
+	} while (0)
+
 // We turn on all DCHECKs to CHECKs temporarily for better safety.
 #if 1
 #	define FST_DCHECK(a) FST_CHECK(a)

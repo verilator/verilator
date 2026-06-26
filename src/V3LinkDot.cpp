@@ -1727,7 +1727,6 @@ class LinkDotFindVisitor final : public VNVisitor {
             newvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             newvarp->funcReturn(true);
             newvarp->trace(false);  // Not user visible
-            newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
             nodep->fvarp(newvarp);
             // Explicit insert required, as the var name shadows the upper level's task name
             m_statep->insertSym(m_curSymp, newvarp->name(), newvarp, nullptr /*classOrPackagep*/);
@@ -1993,6 +1992,17 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // No need to insert, only the real typedef matters, but need to track for errors
         nodep->user1p(m_curSymp);
+    }
+    void visit(AstNodeUOrStructDType* nodep) override {  // FindVisitor::
+        UASSERT_OBJ(m_curSymp, nodep, "Struct/union dtype not under module/package/$unit");
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__Vdtype" + cvtToStr(nodep->uniqueNum()),
+                                          nodep, m_classOrPackagep);
+        iterateChildren(nodep);
+    }
+    void visit(AstMemberDType* nodep) override {  // FindVisitor::
+        iterateChildren(nodep);
+        m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
     }
     void visit(AstParamTypeDType* nodep) override {  // FindVisitor::
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
@@ -3512,6 +3522,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            << declp->warnContextSecondary());
         }
     }
+    void checkMemberDeclOrder(AstNode* nodep, AstMemberDType* declp) {
+        const uint32_t declTokenNum = declp->fileline()->tokenNum();
+        if (nodep->fileline()->tokenNum() < declTokenNum) {
+            UINFO(1, "Related node " << nodep->fileline()->tokenNum() << " " << nodep);
+            UINFO(1, "Related decl " << declTokenNum << " " << declp);
+            nodep->v3error("Reference to "
+                           << nodep->prettyNameQ() << " before declaration (IEEE 1800-2023 6.18)\n"
+                           << nodep->warnMore()
+                           << "... Suggest move the declaration before the reference\n"
+                           << nodep->warnContextPrimary() << '\n'
+                           << declp->warnOther() << "... Location of original declaration\n"
+                           << declp->warnContextSecondary());
+        }
+    }
 
     void replaceWithCheckBreak(AstNode* oldp, AstNodeDType* newp) {
         // Flag now to avoid V3Broken throwing an internal error
@@ -3535,6 +3559,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Avoid dotted.PARAM false positive when in a parameter block
         // that is if ()'ed off by same dotted name as another block
         if (nodep && nodep->isParam()) nodep->usedParam(true);
+    }
+
+    static VSymEnt* findIdFallbackSkipMemberDType(VSymEnt* lookp, const string& name) {
+        VSymEnt* shadowEntp = nullptr;  // Shadowing variable: not a type, kept for error report
+        while (lookp) {
+            VSymEnt* const foundp = lookp->findIdFlat(name);
+            if (foundp && !VN_IS(foundp->nodep(), MemberDType)) {
+                // A variable is not a type candidate (IEEE 1800-2023 6.18); skip it so an
+                // enclosing type is found, but keep it to preserve the "found: VAR" error.
+                if (!VN_IS(foundp->nodep(), Var)) return foundp;
+                if (!shadowEntp) shadowEntp = foundp;
+            }
+            lookp = lookp->fallbackp();
+        }
+        return shadowEntp;
     }
 
     void symIterateChildren(AstNode* nodep, VSymEnt* symp) {
@@ -4533,6 +4572,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     (void)defp;  // Prevent unused variable warning
                 }
+            } else if (AstMemberDType* const defp = VN_CAST(foundp->nodep(), MemberDType)) {
+                if (allowVar) {
+                    checkMemberDeclOrder(nodep, defp);
+                    AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
+                    refp->refDTypep(defp);
+                    replaceWithCheckBreak(nodep, refp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    ok = true;
+                    m_ds.m_dotText = "";
+                }
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* const newp
@@ -4967,6 +5016,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (refdtypep && (nodep == refdtypep->subDTypep())) {
             refdtypep->v3error("Self-referential enumerated type definition");
         }
+    }
+    void visit(AstNodeUOrStructDType* nodep) override {
+        LINKDOT_VISIT_START();
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
     }
     void visit(AstEnumItemRef* nodep) override {
         // Resolve its reference
@@ -5985,7 +6038,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (nodep->classOrPackagep()) {
                 foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
             } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
-                foundp = m_curSymp->findIdFallback(nodep->name());
+                foundp = findIdFallbackSkipMemberDType(m_curSymp, nodep->name());
             } else {
                 // Defensive: dotPos should be DP_FIRST/DP_NONE or classOrPackagep set.
                 v3fatalSrc("Unexpected dotPos="

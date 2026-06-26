@@ -606,10 +606,6 @@ class LinkParseVisitor final : public VNVisitor {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrIsolateAssign(true);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_SFORMAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);

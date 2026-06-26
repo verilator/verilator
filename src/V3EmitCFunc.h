@@ -1134,7 +1134,7 @@ public:
     }
     void visit(AstFFlush* nodep) override {
         if (!nodep->filep()) {
-            putns(nodep, "Verilated::runFlushCallbacks();\n");
+            putns(nodep, "VL_FFLUSH_MT();");
         } else {
             putns(nodep, "VL_FFLUSH_I(");
             iterateAndNextConstNull(nodep->filep());
@@ -1589,6 +1589,9 @@ public:
             iterateAndNextConstNull(nodep->elsep());
             puts(")");
         }
+    }
+    void visit(AstMatchMasked* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
     }
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());

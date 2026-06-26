@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary", "--runtime-debug"])
+test.compile(verilator_flags2=["--binary", "--runtime-debug", "-fno-inline-cfuncs"])
 
 test.file_grep(
     test.obj_dir + "/" + test.vm_prefix + "___024root__0.cpp", r'void\s+' + test.vm_prefix +

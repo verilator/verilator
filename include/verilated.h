@@ -137,7 +137,9 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT64,  // AKA QData
     VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
-    VLVT_REAL  // AKA double
+    VLVT_REAL,  // AKA double
+    VLVT_STRUCT,  // SystemVerilog unpacked struct
+    VLVT_UNION  // SystemVerilog unpacked union
 };
 
 enum VerilatedVarFlags : uint32_t {
@@ -154,7 +156,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_CONTINUOUSLY = (1 << 11),  // Is continously assigned
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
-    VLVF_BITVAR = (1 << 14)  // Four state bit (vs two state logic)
+    VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
+    VLVF_NET = (1 << 15)  // Net object
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -174,6 +177,15 @@ enum class VerilatedAssertDirectiveType : uint8_t {
     DIRECTIVE_TYPE_ASSERT = (1 << 0),
     DIRECTIVE_TYPE_COVER = (1 << 1),
     DIRECTIVE_TYPE_ASSUME = (1 << 2),
+};
+
+/// Runtime query selector for assertion-control state
+enum class VerilatedAssertCtlQuery : uint8_t {
+    ASSERT_CTL_ON,
+    ASSERT_CTL_KILL,
+    ASSERT_CTL_PASS_ON_VACUOUS,
+    ASSERT_CTL_PASS_ON_NONVACUOUS,
+    ASSERT_CTL_FAIL_ON,
 };
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
@@ -356,6 +368,10 @@ private:
     static constexpr size_t ASSERT_ON_WIDTH
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
+    // Build the assertion-control bit mask for the given assertion x directive types.
+    static uint32_t assertOnMask(VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
 
 protected:
     // TYPES
@@ -375,6 +391,16 @@ protected:
                                                     // for each VerilatedAssertType we store
                                                     // 3-bits, one for each directive type. Last
                                                     // bit guards internal directive types.
+        std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
+                                                // Lock/Unlock); same layout as m_assertOn. While
+                                                // a bit is locked, On/Off/Kill leave it unchanged.
+        std::atomic<uint32_t> m_assertPassOnVacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertFailOn{
+            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -484,6 +510,13 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Apply assertion control for given control, assertion, and directive types
+    void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
+    /// the generation count.
+    uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                          VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -751,6 +784,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
+                                 VerilatedVarType vltype, int vlflags, int udims, uint32_t entSize,
+                                 ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,

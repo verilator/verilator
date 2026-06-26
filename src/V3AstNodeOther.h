@@ -97,7 +97,6 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     string m_ifacePortName;  // Interface port name for out-of-block definition (IEEE 25.8)
     uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
     bool m_taskPublic : 1;  // Public task
-    bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
     bool m_didProto : 1;  // Did prototype processing
     bool m_prototype : 1;  // Just a prototype
@@ -130,7 +129,6 @@ protected:
         : AstNode{t, fl}
         , m_name{name}
         , m_taskPublic{false}
-        , m_attrIsolateAssign{false}
         , m_classMethod{false}
         , m_didProto{false}
         , m_prototype{false}
@@ -179,8 +177,6 @@ public:
     uint64_t dpiOpenParent() const { return m_dpiOpenParent; }
     bool taskPublic() const { return m_taskPublic; }
     void taskPublic(bool flag) { m_taskPublic = flag; }
-    bool attrIsolateAssign() const { return m_attrIsolateAssign; }
-    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool classMethod() const { return m_classMethod; }
     void classMethod(bool flag) { m_classMethod = flag; }
     bool didProto() const { return m_didProto; }
@@ -301,6 +297,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
@@ -351,6 +348,8 @@ public:
     string origName() const override { return m_origName; }
     string someInstanceName() const VL_MT_SAFE { return m_someInstanceName; }
     void someInstanceName(const string& name) { m_someInstanceName = name; }
+    AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
+    void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void depth(int value) { m_depth = value; }
@@ -1001,6 +1000,8 @@ public:
     // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
     // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
     AstVarScope* findConst(AstConst* initp, bool mergeDType);
+    // Rebuild hashes after potential removals
+    void reCache();
 };
 class AstConstraint final : public AstNode {
     // Constraint
@@ -1184,12 +1185,21 @@ public:
 };
 class AstCoverpointRef final : public AstNode {
     // Reference to a coverpoint used in a cross
-    const string m_name;  // coverpoint name
+    // @astgen op1 := exprp : Optional[AstNodeExpr]  // Non-standard: hierarchical/dotted
+    //                                               // reference (implicit coverpoint), e.g.
+    //                                               // 'cross a.b'; nullptr for a plain coverpoint
+    //                                               // name.  An AstDot at parse time, resolved
+    //                                               // by the time V3Covergroup runs.
+    const string m_name;  // coverpoint name; empty when exprp() carries a hierarchical reference
 
 public:
     AstCoverpointRef(FileLine* fl, const string& name)
         : ASTGEN_SUPER_CoverpointRef(fl)
         , m_name{name} {}
+    AstCoverpointRef(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_CoverpointRef(fl) {
+        this->exprp(exprp);
+    }
     ASTGEN_MEMBERS_AstCoverpointRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1752,6 +1762,7 @@ public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
+    class InitialNBA {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
@@ -1769,6 +1780,9 @@ public:
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
+    AstSenItem(FileLine* fl, InitialNBA)
+        : ASTGEN_SUPER_SenItem(fl)
+        , m_edgeType{VEdgeType::ET_INITIAL_NBA} {}
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}
@@ -2131,15 +2145,16 @@ class AstVar final : public AstNode {
     bool m_funcReturn : 1;  // Return variable for a function
     bool m_attrScBv : 1;  // User force bit vector attribute
     bool m_attrScBigUint : 1;  // User force sc_biguint attribute
-    bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_attrFsmState : 1;  // declared with fsm_state metacomment
     bool m_attrFsmRegisterWrapper : 1;  // connected to an fsm_register_wrapper instance
     bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
+    bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
+    bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2194,15 +2209,16 @@ class AstVar final : public AstNode {
         m_funcReturn = false;
         m_attrScBv = false;
         m_attrScBigUint = false;
-        m_attrIsolateAssign = false;
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_attrFsmState = false;
         m_attrFsmRegisterWrapper = false;
         m_attrFsmResetArc = false;
         m_attrFsmArcInclCond = false;
+        m_constPoolEntry = false;
         m_fileDescr = false;
         m_gotNansiType = false;
+        m_icoMaybeWritten = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2343,13 +2359,14 @@ public:
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
-    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void attrFsmState(bool flag) { m_attrFsmState = flag; }
     void attrFsmRegisterWrapper(bool flag) { m_attrFsmRegisterWrapper = flag; }
     void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
+    bool constPoolEntry() const { return m_constPoolEntry; }
+    void setConstPoolEntry() { m_constPoolEntry = true; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -2383,6 +2400,8 @@ public:
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasUserInit() const { return m_hasUserInit; }
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
+    void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
+    bool icoMaybeWritten() const { return m_icoMaybeWritten; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2462,12 +2481,6 @@ public:
     bool isWor() const { return varType().isWor(); }
     bool isWiredNet() const { return varType().isWiredNet(); }
     bool isTemp() const { return varType().isTemp(); }
-    bool isToggleCoverable() const {
-        return ((isIO() || isSignal())
-                && (isIO() || isBitLogic())
-                // Wrapper would otherwise duplicate wrapped module's coverage
-                && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
-    }
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
     bool isVirtIface() const {
         if (AstIfaceRefDType* const dtp = VN_CAST(dtypep(), IfaceRefDType)) {
@@ -2519,7 +2532,6 @@ public:
     bool attrFsmRegisterWrapper() const { return m_attrFsmRegisterWrapper; }
     bool attrFsmResetArc() const { return m_attrFsmResetArc; }
     bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
-    bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VRandAttr rand() const { return m_rand; }
     string verilogKwd() const override;
@@ -2531,7 +2543,6 @@ public:
         // This is getting connected to fromp; keep attributes
         // Note the method below too
         if (fromp->attrFileDescr()) attrFileDescr(true);
-        if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
         if (fromp->isContinuously()) isContinuously(true);
     }
     void propagateWrapAttrFrom(const AstVar* fromp) {
@@ -2810,6 +2821,7 @@ class AstGenBlock final : public AstNodeGen {
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
     const bool m_implied;  // Not inserted by user
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
 public:
     AstGenBlock(FileLine* fl, const string& name, AstNode* itemsp, bool implied)
@@ -2826,6 +2838,8 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool unnamed() const { return m_unnamed; }
     bool implied() const { return m_implied; }
+    AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
+    void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
 };
 class AstGenCase final : public AstNodeGen {
     // Generate 'case'

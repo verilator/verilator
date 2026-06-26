@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
 Language Extensions
@@ -340,6 +341,10 @@ or "`ifdef`"'s may break other tools.
    Same as :option:`inline` control file option.
 
 .. option:: /*verilator&32;isolate_assignments*/
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.050:
 
    Used after a signal declaration to indicate the assignments to this
    signal in any blocks should be isolated into new blocks. When large

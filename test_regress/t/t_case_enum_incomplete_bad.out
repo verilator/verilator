@@ -1,4 +1,4 @@
-%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_bad.v:18:12: Enum item 'S1' not covered by case
+%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_bad.v:18:12: Enum item(s) not covered by case: 'S1', 'S2'
    18 |     unique case (state)
       |            ^~~~
                          ... For warning description see https://verilator.org/warn/CASEINCOMPLETE?v=latest

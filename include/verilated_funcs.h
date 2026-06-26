@@ -74,16 +74,17 @@ extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
 extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
                        const char* msg) VL_MT_SAFE;
 
-// clang-format off
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
 extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
-// clang-format on
 
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
 /// Print a debug message from string via VL_DBG_MSGF
 inline void VL_DBG_MSGS(const std::string& str) VL_MT_SAFE { VL_DBG_MSGF("%s", str.c_str()); }
+
+/// Flush stdout
+extern void VL_FFLUSH_MT() VL_MT_SAFE;
 
 // EMIT_RULE: VL_RANDOM:  oclean=dirty
 inline IData VL_RANDOM_I() VL_MT_SAFE { return vl_rand64(); }
@@ -266,6 +267,41 @@ static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_
     VlQueue<T> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
     return ret;
+}
+
+// Masked match functions
+static inline IData VL_MATCHMASKED_I(int, IData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const IData mask = matchp[i * 2];
+        const IData bits = matchp[i * 2 + 1];
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_Q(int, QData lhs, WDataInP matchp) VL_PURE {
+    size_t i = 0;
+    while (true) {
+        const QData mask = VL_SET_QW(matchp + i * 4);
+        const QData bits = VL_SET_QW(matchp + i * 4 + 2);
+        if ((mask & lhs) == bits) break;
+        ++i;
+    }
+    return i;
+}
+static inline IData VL_MATCHMASKED_W(int lbits, WDataInP lhsp, WDataInP matchp) VL_MT_SAFE {
+    const int iwords = VL_WORDS_I(lbits);
+    size_t i = 0;
+    while (true) {
+        const WDataInP maskp = matchp + (i * iwords * 2);
+        const WDataInP bitsp = matchp + (i * iwords * 2 + iwords);
+        EData diff = 0;
+        for (int j = 0; j < iwords; ++j) diff |= (maskp[j] & lhsp[j]) ^ bitsp[j];
+        if (!diff) break;
+        ++i;
+    }
+    return i;
 }
 
 // Return double from lhs (numeric) unsigned
@@ -867,15 +903,31 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
     return 0;
 }
 
+static inline IData VL_MOSTSETBITP1_I(IData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;  // __builtin_clz is undefined for 0
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return VL_EDATASIZE - __builtin_clz(lhs);
+#else
+    for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
+        if (VL_BITISSET_E(lhs, bit)) return bit + 1;
+    }
+    return 0;  // LCOV_EXCL_LINE  // Can't get here - one bit must be set
+#endif
+}
+static inline IData VL_MOSTSETBITP1_Q(QData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return 64 - __builtin_clzll(static_cast<unsigned long long>(lhs));
+#else
+    const IData hi = static_cast<IData>(lhs >> 32ULL);
+    return hi ? (VL_EDATASIZE + VL_MOSTSETBITP1_I(hi))
+              : VL_MOSTSETBITP1_I(static_cast<IData>(lhs));
+#endif
+}
 static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
-    // MSB set bit plus one; similar to FLS.  0=value is zero
     for (int i = words - 1; i >= 0; --i) {
-        if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
-            for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
-                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) return i * VL_EDATASIZE + bit + 1;
-            }
-            // Can't get here - one bit must be set
-        }
+        // Shorter worst case if predict not taken
+        if (VL_UNLIKELY(lwp[i])) return i * VL_EDATASIZE + VL_MOSTSETBITP1_I(lwp[i]);
     }
     return 0;
 }

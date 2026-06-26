@@ -73,7 +73,7 @@ jobs:
           sudo apt install ccache mold libfl-dev libjemalloc-dev libsystemc-dev
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -84,7 +84,7 @@ jobs:
 
       - name: Use saved ccache
         if: ${{ env.CCACHE_DISABLE == 0 }}
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -95,7 +95,7 @@ jobs:
       ########################################################################
 
       - name: Download Verilator installation archive - new
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: ${{ inputs.verilator-archive-new }}
 
@@ -135,7 +135,7 @@ jobs:
           ./rtlmeter report --steps '*' --metrics '*' ../results-${{ steps.results.outputs.hash }}.json
 
       - name: Upload results - new
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: results-${{ steps.results.outputs.hash }}.json
           name: rtlmeter-${{ inputs.tag }}-results-${{ steps.results.outputs.hash }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Download Verilator installation archive - old
         if: ${{ inputs.verilator-archive-old != '' }}
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: ${{ inputs.verilator-archive-old }}
 
@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload results - old
         if: ${{ inputs.verilator-archive-old != '' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: reference-${{ steps.results.outputs.hash }}.json
           name: rtlmeter-${{ inputs.tag }}-reference-${{ steps.results.outputs.hash }}

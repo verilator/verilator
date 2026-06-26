@@ -193,7 +193,7 @@ Handle Writer::createVar(
 // 	(void)type;
 // 	(void)svt;
 // 	(void)sdt;
-// 	throw std::runtime_error("TODO");
+// 	FST_FAIL_STRING("TODO");
 // 	return 0;
 // }
 // LCOV_EXCL_STOP
@@ -353,11 +353,7 @@ void compressUsingZlib(
 		uncompressed_size,
 		level
 	);
-	if (z_status != Z_OK) {
-		throw std::runtime_error(
-			"Failed to compress data with zlib, error code: " + std::to_string(z_status)
-		);
-	}
+	FST_CHECK_EQ(z_status, Z_OK);
 	compressed_data.resize(compressed_bound);
 }
 

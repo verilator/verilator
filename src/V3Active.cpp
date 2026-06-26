@@ -351,7 +351,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL, CT_SUSPENDABLE };
+    enum CheckType : uint8_t { CT_COMB, CT_FINAL };
 
 private:
     // MEMBERS
@@ -359,15 +359,9 @@ private:
 
     // VISITORS
     void visit(AstAssignDly* nodep) override {
-        // Non-blocking assignments are OK in sequential processes
-        if (m_check == CT_SEQ || m_check == CT_SUSPENDABLE) return;
-
         // Issue appropriate warning
-        if (m_check == CT_INITIAL) {
-            nodep->v3warn(INITIALDLY,
-                          "Non-blocking assignment '<=' in initial/final block\n"
-                              << nodep->warnMore()
-                              << "... This will be executed as a blocking assignment '='!");
+        if (m_check == CT_FINAL) {
+            nodep->v3warn(FINALDLY, "Non-blocking assignment '<=' in final block");
         } else {
             nodep->v3warn(COMBDLY,
                           "Non-blocking assignment '<=' in combinational logic process\n"
@@ -465,11 +459,7 @@ class ActiveVisitor final : public VNVisitor {
         wantactivep->addStmtsp(nodep);
 
         // Warn and convert any delayed assignments
-        {
-            ActiveDlyVisitor{nodep, !m_clockedProcess ? ActiveDlyVisitor::CT_COMB
-                                    : oldsentreep     ? ActiveDlyVisitor::CT_SEQ
-                                                      : ActiveDlyVisitor::CT_SUSPENDABLE};
-        }
+        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
 
         // Delete sensitivity list
         if (oldsentreep) VL_DO_DANGLING(oldsentreep->deleteTree(), oldsentreep);
@@ -509,17 +499,11 @@ class ActiveVisitor final : public VNVisitor {
 
     void visit(AstInitialStatic* nodep) override { moveUnderSpecial<AstSenItem::Static>(nodep); }
     void visit(AstInitial* nodep) override {
-        const bool timedInitial
-            = v3Global.opt.timing().isSetTrue() && nodep->exists([](const AstNode* const subp) {
-                  return VN_IS(subp, Delay) || VN_IS(subp, EventControl);
-              });
-        const ActiveDlyVisitor dlyvisitor{nodep, timedInitial ? ActiveDlyVisitor::CT_SUSPENDABLE
-                                                              : ActiveDlyVisitor::CT_INITIAL};
         visitSenItems(nodep);
         moveUnderSpecial<AstSenItem::Initial>(nodep);
     }
     void visit(AstFinal* nodep) override {
-        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
     void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
