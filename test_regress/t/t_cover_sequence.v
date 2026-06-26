@@ -79,7 +79,7 @@ module t (
 `endif
     `checkd(hit_simple, 96);  // Questa: 95
     `checkd(hit_clocked, 149);  // Questa: 149
-    `checkd(hit_clocked_disable, 28);  // Questa: 27
+    `checkd(hit_clocked_disable, 27);  // Questa: 27
     `checkd(hit_default_disable, 30);  // Questa: 30
     `checkd(hit_consrep_2, 30);  // Questa: 29
     `checkd(hit_consrep_3, 14);  // Questa: 13
