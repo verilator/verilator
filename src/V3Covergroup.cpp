@@ -54,7 +54,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::vector<AstVar*> m_cpVars;  // VlCoverpoint member, one per coverpoint
     std::vector<AstVar*> m_crossVars;  // VlCoverCross member, one per cross
     std::map<std::string, AstVar*> m_cpVarMap;  // Coverpoint name -> its VlCoverpoint member
-    std::set<AstCoverCross*> m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
+    std::set<AstCoverCross*>
+        m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
     std::map<int, AstCDType*> m_vlCoverpointTypes;  // hit-list bound K -> "VlCoverpointT<K>" type
     AstCDType* m_vlCoverCrossDTypep = nullptr;  // Shared "VlCoverCross" C++ member type
 
@@ -610,7 +611,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         bool exact = true;
         for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
-            if (!cbinp->binsType().binIsNormal()) continue;  // ignore/illegal/default: not hit-listed
+            if (!cbinp->binsType().binIsNormal())
+                continue;  // ignore/illegal/default: not hit-listed
             if (!appendBinCrossSlots(cbinp, maxVal, bins, slotCount)) exact = false;
         }
         if (!exact) return std::max(1, slotCount);
@@ -729,19 +731,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         bool isNormal;  // Normal -> incrementBin (count + cross hit list); else recordHit (count)
     };
 
-    // Emit 'this->m_cp.incrementBin(idx);' (Normal) or '.recordHit(idx);' (ignore/illegal/default).
+    // Emit 'this->m_cp.incrementBin(idx);' (Normal) or '.recordHit(idx);'
+    // (ignore/illegal/default).
     AstNodeStmt* makeRuntimeBinHit(FileLine* fl, const ConvBinTarget& tgt) {
         AstCStmt* const cs = new AstCStmt{fl};
         cs->add(memberRef(fl, tgt.cpVarp));
-        cs->add((tgt.isNormal ? ".incrementBin(" : ".recordHit(") + std::to_string(tgt.idx) + ");");
+        cs->add((tgt.isNormal ? ".incrementBin(" : ".recordHit(") + std::to_string(tgt.idx)
+                + ");");
         return cs;
     }
 
     void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp, int idx,
                        AstNodeExpr* condp) {
         FileLine* const fl = binp->fileline();
-        AstNode* actionp
-            = makeRuntimeBinHit(fl, {cpVarp, idx, binp->binsType().binIsNormal()});
+        AstNode* actionp = makeRuntimeBinHit(fl, {cpVarp, idx, binp->binsType().binIsNormal()});
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()
                                                           + " hit in coverpoint "
@@ -760,9 +763,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         AstNode* actionp = makeRuntimeBinHit(fl, tgt);
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-            actionp->addNext(makeIllegalBinAction(fl, "Illegal transition bin " + binp->prettyNameQ()
-                                                          + " hit in coverpoint "
-                                                          + coverpointp->prettyNameQ()));
+            actionp->addNext(makeIllegalBinAction(
+                fl, "Illegal transition bin " + binp->prettyNameQ() + " hit in coverpoint "
+                        + coverpointp->prettyNameQ()));
         }
         AstNodeExpr* const guardedp = applyCoverpointIffCondition(coverpointp, fl, condp);
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for transition bin");
@@ -771,8 +774,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // Route a coverpoint through a VlCoverpoint member: emit the member, its sample()
     // increments, the constructor configuration (init + namers), and registration.
-    void generateCoverpoint(AstCoverpoint* coverpointp, AstNodeExpr* exprp,
-                                     int atLeastValue) {
+    void generateCoverpoint(AstCoverpoint* coverpointp, AstNodeExpr* exprp, int atLeastValue) {
         FileLine* const fl = coverpointp->fileline();
         UINFO(4, "  Generating VlCoverpoint member: " << coverpointp->name());
 
@@ -1149,7 +1151,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // Append a "{ VlCoverpoint* __Vcx_cps[] = {&cp0, &cp1, ...}; <member>.<call> }" statement.
     AstCStmt* makeCrossCpsCall(FileLine* fl, const std::vector<AstVar*>& cpVars, AstVar* cxVarp,
-                              const std::string& callText) {
+                               const std::string& callText) {
         AstCStmt* const cs = new AstCStmt{fl};
         cs->add("{ VlCoverpoint* __Vcx_cps[] = {");
         for (size_t d = 0; d < cpVars.size(); ++d) {
@@ -1177,8 +1179,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstNode* const nextp = itemp->nextp();
             AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
             const auto it = m_cpVarMap.find(refp->name());
-            UASSERT_OBJ(it != m_cpVarMap.end(), crossp,
-                        "Cross references an unknown coverpoint");
+            UASSERT_OBJ(it != m_cpVarMap.end(), crossp, "Cross references an unknown coverpoint");
             cpVars.push_back(it->second);
             VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
             itemp = nextp;
@@ -1189,8 +1190,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             m_vlCoverCrossDTypep = new AstCDType{fl, "VlCoverCross"};
             v3Global.rootp()->typeTablep()->addTypesp(m_vlCoverCrossDTypep);
         }
-        AstVar* const cxVarp = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
-                                          m_vlCoverCrossDTypep};
+        AstVar* const cxVarp
+            = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(), m_vlCoverCrossDTypep};
         cxVarp->isStatic(false);
         m_covergroupp->addMembersp(cxVarp);
         m_crossVars.push_back(cxVarp);
@@ -1235,8 +1236,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // A cross naming a bare variable (implicit coverpoint, which Verilator does not
         // synthesize) is dropped entirely with a COVERIGN warning -- it produces no coverage
-        // either way -- but only this cross is dropped; its sibling crosses are still generated and
-        // the real coverpoints it referenced remain as independent coverpoints.
+        // either way -- but only this cross is dropped; its sibling crosses are still generated
+        // and the real coverpoints it referenced remain as independent coverpoints.
         if (m_droppedCrosses.count(crossp)) {
             for (AstNode* itemp = crossp->itemsp(); itemp; itemp = itemp->nextp()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
