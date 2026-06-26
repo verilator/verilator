@@ -101,7 +101,8 @@ protected:
     int m_nextCrossIdx = 0;  // running cross-index cursor (Normal bins only)
     std::vector<uint32_t> m_counts;  // [m_total], one per bin
     std::vector<VlCovNamer> m_namers;  // appended in declaration order
-    std::vector<int> m_crossIdx;  // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise
+    std::vector<int>
+        m_crossIdx;  // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise
     int m_hitCount = 0;  // entries valid in the hit list this sample
 
 private:
