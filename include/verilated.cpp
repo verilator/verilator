@@ -377,7 +377,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 }
 
 void VL_FFLUSH_MT() VL_MT_SAFE {
-    va_list ap;
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         Verilated::runFlushCallbacks();
     }});
