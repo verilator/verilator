@@ -89,6 +89,12 @@
 # include <unistd.h>
 # define _VL_HAVE_GETRLIMIT
 #endif
+#if VM_VPI
+# include <cstring>
+# ifndef _WIN32
+#  include <dlfcn.h>  // dlopen
+# endif
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -258,6 +264,58 @@ void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char*
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_warn(filename, linenum, hier, msg);
     }});
+}
+
+//===========================================================================
+// Runtime VPI shared library loading (--vpi)
+
+// Load one VPI shared library named by a +verilator+vpi+<lib>[:<bootstrap>] argument.
+// 'arg' is the payload after the prefix: either "<lib>" (invoke the library's
+// vlog_startup_routines array) or "<lib>:<bootstrap>" (invoke the named bootstrap).
+void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
+#if VM_VPI
+    if (arg.empty()) return;
+#ifdef _WIN32
+    VL_FATAL_MT("", 0, "",
+                "+verilator+vpi+: runtime VPI library loading is not supported on"
+                " Windows; link the VPI code into the model instead");
+#else
+    using vlog_startup_t = void (*)();
+    // Split <lib>:<bootstrap> on the last ':'
+    const std::string::size_type colon_pos = arg.rfind(':');
+    const bool has_entry = (colon_pos != std::string::npos);
+    const std::string libpath = has_entry ? arg.substr(0, colon_pos) : arg;
+    const std::string entry_name = has_entry ? arg.substr(colon_pos + 1) : std::string{};
+    void* handle = dlopen(libpath.c_str(), RTLD_LAZY);
+    if (!handle)
+        // The library path is stable; the dlerror() text is platform-specific, so put it on
+        // a separate "- " line (test golden files strip "- " lines, keeping output portable).
+        VL_FATAL_MT(
+            "", 0, "",
+            (std::string{"Cannot load VPI library: "} + libpath + "\n- dlerror: " + dlerror())
+                .c_str());
+    if (has_entry) {
+        vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
+        if (!bsp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find VPI bootstrap '"} + entry_name + "' in: " + libpath)
+                    .c_str());
+        bsp();
+    } else {
+        vlog_startup_t* routinesp
+            = reinterpret_cast<vlog_startup_t*>(dlsym(handle, "vlog_startup_routines"));
+        if (!routinesp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find 'vlog_startup_routines' in: "} + libpath).c_str());
+        for (int j = 0; routinesp[j]; ++j) routinesp[j]();
+    }
+#endif
+#else
+    // Never reached: the command-line handler only calls this when compiled with --vpi.
+    (void)arg;
+#endif
 }
 
 //===========================================================================
@@ -3544,6 +3602,17 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             // and the run can be reproduced by passing +verilator+seed+<that_value>.
             if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+vpi+", str)) {
+            // With --vpi, load the requested shared library now.  Without --vpi there is
+            // no VPI runtime, so warn the argument is ignored.
+#if VM_VPI
+            Verilated::loadVpiLib(str);
+#else
+            VL_WARN_MT(
+                "COMMAND_LINE", 0, "",
+                ("+verilator+vpi+ ignored: simulation was not compiled with --vpi '" + arg + "'")
+                    .c_str());  // LCOV_EXCL_LINE  (gcov zeroes this wrapped continuation line)
+#endif
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",

@@ -1036,6 +1036,9 @@ public:
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
+    // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])
+    static void loadVpiLib(const std::string& arg) VL_MT_UNSAFE;
+
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
     static void dpiScope(const VerilatedScope* scopep) VL_MT_SAFE { t_s.t_dpiScopep = scopep; }

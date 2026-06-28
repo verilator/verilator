@@ -589,6 +589,34 @@ m4_foreach([ldflag], [
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
 
+# Find link flags for runtime VPI library loading (+verilator+vpi+<lib>).
+# The model executable must export its VPI symbols so the dlopen'd library can
+# resolve them: -rdynamic (GNU ld) or -Wl,-export_dynamic (Darwin); the first the
+# linker accepts wins.  -ldl provides dlopen/dlsym where it is a separate library.
+_MY_LDLIBS_CHECK_SET(CFG_LDFLAGS_DYNAMIC, -rdynamic)
+# -Wl,-export_dynamic contains a comma, so probe it directly rather than through
+# the _MY_LDLIBS_CHECK_* macros (which re-expand their flag argument unquoted).
+if test "$CFG_LDFLAGS_DYNAMIC" = ""; then
+  ACO_SAVE_LIBS="$LIBS"
+  LIBS="$LIBS -Wl,-export_dynamic"
+  AC_MSG_CHECKING([whether $CXX linker accepts -Wl,-export_dynamic])
+  AC_LINK_IFELSE(
+       [AC_LANG_PROGRAM([[]])],
+       [_my_result=yes
+        if test -s conftest.err; then
+          if grep -e "-export_dynamic" conftest.err >/dev/null; then
+            _my_result=no
+          fi
+        fi],
+       [_my_result=no])
+  AC_MSG_RESULT($_my_result)
+  LIBS="$ACO_SAVE_LIBS"
+  if test "$_my_result" = "yes"; then CFG_LDFLAGS_DYNAMIC="-Wl,-export_dynamic"; fi
+fi
+AC_SUBST(CFG_LDFLAGS_DYNAMIC)
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_DYNAMIC, -ldl)
+AC_SUBST(CFG_LDLIBS_DYNAMIC)
+
 # If 'mold' is installed, use it to link for faster buildtimes
 _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -fuse-ld=mold)
 _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_VERILATED, -fuse-ld=mold)
