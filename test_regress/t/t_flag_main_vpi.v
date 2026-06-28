@@ -12,8 +12,8 @@
 // (requires --public-flat-rw).
 module t;
 
-  reg clk /*verilator public_flat_rw*/;
-  reg [31:0] count /*verilator public_flat_rw*/;
+  reg clk  /*verilator public_flat_rw*/;
+  reg [31:0] count  /*verilator public_flat_rw*/;
 
   initial begin
     clk = 0;

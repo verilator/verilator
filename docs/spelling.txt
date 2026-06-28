@@ -684,6 +684,7 @@ countones
 cout
 covergroup
 covergroups
+coverpoint
 coverpoints
 cpp
 cppstyle
@@ -1207,6 +1208,7 @@ typename
 uint
 un
 unbased
+unclocked
 uncomment
 undef
 undefineall

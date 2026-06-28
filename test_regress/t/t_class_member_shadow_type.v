@@ -21,7 +21,7 @@ class C;
 endclass
 
 class D;
-  my_t a;     // second use of the type name after the shadowing variable...
+  my_t a;  // second use of the type name after the shadowing variable...
   my_t my_t;  // ... is also legal; both resolve to the $unit typedef
 endclass
 

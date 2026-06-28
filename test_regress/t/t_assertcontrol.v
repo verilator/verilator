@@ -33,13 +33,12 @@ module t;
   task automatic run_pass();
     assert (1) begin
       pass_count++;
-    end else
-      `stop;
+    end
+    else `stop;
   endtask
 
   task automatic run_fail();
-    assert (0)
-      `stop;
+    assert (0) `stop;
     else begin
       fail_count++;
     end

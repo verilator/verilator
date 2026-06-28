@@ -5,9 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package pkg;
-  typedef struct {
-    logic [7:0] value;
-  } field_t;
+  typedef struct {logic [7:0] value;} field_t;
   typedef struct {
     field_t f0;
     field_t f1;
@@ -19,11 +17,9 @@ package pkg;
   } hwif_t;
 endpackage
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   import pkg::*;
 

@@ -62,7 +62,7 @@ module t;
   // V3Premit extracts this matching wide constant after V3Dead recached the
   // const-pool contents created by V3Case.
   logic [31:0] static_word;
-  assign static_word = TABLE[{idx, 5'b0} +: 32];
+  assign static_word = TABLE[{idx, 5'b0}+:32];
 
   always @(posedge clk) begin
     `checkh(case_word, static_word);

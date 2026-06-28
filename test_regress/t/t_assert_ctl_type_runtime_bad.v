@@ -14,7 +14,7 @@
 
 module t;
   initial begin
-    $assertcontrol(100*`IMPURE_ONE);
+    $assertcontrol(100 * `IMPURE_ONE);
     $finish;
   end
 endmodule
