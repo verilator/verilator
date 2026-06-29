@@ -24,7 +24,7 @@
 #include "verilated_covergroup.h"
 
 #if VM_COVERAGE
-# include "verilated_cov.h"
+#include "verilated_cov.h"
 #endif
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, int nBins) {
