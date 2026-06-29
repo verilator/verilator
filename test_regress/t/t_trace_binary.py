@@ -9,13 +9,23 @@
 
 import vltest_bootstrap
 
+import os
+import platform
+
 test.scenarios('vlt')
+
+verilator_flags2 = ['--binary --trace']
+if platform.machine().lower() in ("amd64", "x86_64") and os.path.exists("/proc/cpuinfo"):
+    with open("/proc/cpuinfo", encoding="utf-8") as fh:
+        cpuinfo = " " + fh.read().lower() + " "
+    if " avx2 " in cpuinfo and (" lzcnt " in cpuinfo or " abm " in cpuinfo):
+        verilator_flags2 += ["-CFLAGS", "\"-mavx2 -mlzcnt\""]
 
 test.compile(
     verilator_flags=[  # Custom as don't want -cc
         "-Mdir " + test.obj_dir, "--debug-check"
     ],
-    verilator_flags2=['--binary --trace'])
+    verilator_flags2=verilator_flags2)
 
 test.execute()
 

@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
         top->clk = !top->clk;
         top->eval();
         tfp->dump((unsigned int)(main_time));
+        if (main_time == 200) tfp->flush();  // Ensure rollover with shortened VCD values
         ++main_time;
     }
     tfp->close();
