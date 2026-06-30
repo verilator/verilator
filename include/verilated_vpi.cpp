@@ -3973,6 +3973,17 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
 }
 
 template <typename T>
+void vl_put_value_array_floats(unsigned index, const unsigned num, const unsigned size,
+                               const bool leftIsLow, const T* src, T* dst) {
+    for (unsigned i = 0; i < num; ++i) {
+        dst[index] = src[i];
+        index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
+                : index == 0 ? size - 1
+                             : index - 1;
+    }
+}
+
+template <typename T>
 void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow, const T* src,
                                 p_vpi_vecval dst) {
@@ -4377,6 +4388,15 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
                                          vop->varQDatap());
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiShortRealVal) {
+        const float* shortrealsp = arrayvalue_p->value.shortreals;
+
+        if (varp->vltype() == VLVT_SHORTREAL) {
+            vl_put_value_array_floats(index, num, size, leftIsLow, shortrealsp,
+                                      vop->varShortRealDatap());
         }
 
         return;
