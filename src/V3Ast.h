@@ -767,6 +767,7 @@ public:
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
+    void dtypeSetShortReal() { dtypep(findShortRealDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
     // TODO: add a type to handle 4-state integers with 2-state domain
@@ -782,6 +783,7 @@ public:
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
+    AstNodeDType* findShortRealDType() const { return findBasicDType(VBasicDTypeKwd::SHORTREAL); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }

@@ -476,6 +476,8 @@ public:
     bool isBit() const { return keyword().isBit(); }
     bool isCHandle() const VL_MT_STABLE { return keyword().isCHandle(); }
     bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
+    bool isShortReal() const VL_MT_STABLE { return keyword().isShortReal(); }
+    bool isFloating() const VL_MT_STABLE { return keyword().isFloating(); }
     bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
     bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }
