@@ -251,6 +251,22 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
     u.d = lhs;
     return u.q;
 }
+// Return float from IData (bits, not numerically)
+static inline float VL_CVT_F_I(IData lhs) VL_PURE {
+    union { float f; IData i; } u;
+    u.i = lhs;
+    return u.f;
+}
+// Return IData from float (bits, not numerically)
+static inline IData VL_CVT_I_F(float lhs) VL_PURE {
+    union { float f; IData i; } u;
+    u.f = lhs;
+    return u.i;
+}
+// Return double from float (numeric)
+static inline double VL_CAST_D_F(float lhs) VL_PURE { return static_cast<double>(lhs); }
+// Return float from double (numeric)
+static inline float VL_CAST_F_D(double lhs) VL_PURE { return static_cast<float>(lhs); }
 // clang-format on
 // Return string from DPI char*
 static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
@@ -321,6 +337,28 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
+}
+// Return float from lhs (numeric) unsigned
+float VL_ITOR_F_W(int lbits, WDataInP const lwp) VL_PURE;
+static inline float VL_ITOR_F_I(int, IData lhs) VL_PURE {
+    return static_cast<float>(static_cast<uint32_t>(lhs));
+}
+static inline float VL_ITOR_F_Q(int, QData lhs) VL_PURE {
+    return static_cast<float>(static_cast<uint64_t>(lhs));
+}
+// Return float from lhs (numeric) signed
+float VL_ISTOR_F_W(int lbits, WDataInP const lwp) VL_MT_SAFE;
+static inline float VL_ISTOR_F_I(int lbits, IData lhs) VL_MT_SAFE {
+    if (lbits == 32) return static_cast<float>(static_cast<int32_t>(lhs));
+    VlWide<VL_WQ_WORDS_E> lwp;
+    VL_SET_WI(lwp, lhs);
+    return VL_ISTOR_F_W(lbits, lwp);
+}
+static inline float VL_ISTOR_F_Q(int lbits, QData lhs) VL_MT_SAFE {
+    if (lbits == 64) return static_cast<float>(static_cast<int64_t>(lhs));
+    VlWide<VL_WQ_WORDS_E> lwp;
+    VL_SET_WQ(lwp, lhs);
+    return VL_ISTOR_F_W(lbits, lwp);
 }
 // Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }

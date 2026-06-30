@@ -881,6 +881,28 @@ double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
+float VL_ITOR_F_W(int lbits, const WDataInP lwp) VL_PURE {
+    int ms_word = VL_WORDS_I(lbits) - 1;
+    for (; !lwp[ms_word] && ms_word > 0;) --ms_word;
+    if (ms_word == 0) return static_cast<float>(lwp[0]);
+    if (ms_word == 1) return static_cast<float>(VL_SET_QW(lwp));
+    // We need 24 bits of mantissa, which might mean looking at 2 words.
+    const EData ihi = lwp[ms_word];
+    const EData ilo = lwp[ms_word - 1];
+    const float hi = static_cast<float>(ihi) * std::exp2(static_cast<float>(VL_EDATASIZE));
+    const float lo = static_cast<float>(ilo);
+    const float f = (hi + lo) * std::exp2(static_cast<float>(VL_EDATASIZE * (ms_word - 1)));
+    return f;
+}
+float VL_ISTOR_F_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
+    if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_F_W(lbits, lwp);
+    const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
+    VlWide<VL_MULS_MAX_WORDS + 1> pos;
+    VL_NEGATE_W(words, pos, lwp);
+    _vl_clean_inplace_w(lbits, pos);
+    return -VL_ITOR_F_W(lbits, pos);
+}
 
 //===========================================================================
 // Formatting
