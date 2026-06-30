@@ -3915,6 +3915,12 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         default:;  // LCOV_EXCL_LINE
         }
         break;
+    case vpiShortRealVal:
+        switch (varp->vltype()) {
+        case VLVT_SHORTREAL: return true;
+        default:;  // LCOV_EXCL_LINE
+        }
+        break;
     default:;
     }
 
@@ -3929,6 +3935,17 @@ void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsi
                                   const T* src, K* dst) {
     static_assert(sizeof(K) >= sizeof(T), "size of type K is less than size of type T");
     for (int i = 0; i < num; ++i) {
+        dst[i] = src[index];
+        index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
+                : index == 0 ? size - 1
+                             : index - 1;
+    }
+}
+
+template <typename T>
+void vl_get_value_array_floats(unsigned index, const unsigned num, const unsigned size,
+                               const bool leftIsLow, const T* src, T* dst) {
+    for (unsigned i = 0; i < num; ++i) {
         dst[i] = src[index];
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
@@ -4154,6 +4171,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_get_value_array_integrals(index, num, size, varp->entBits(), leftIsLow,
                                          vop->varQDatap(), longintsp);
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiShortRealVal) {
+        const size_t bytes = num * sizeof(float);
+        t_out_data.resize((bytes + sizeof(EData) - 1) / sizeof(EData));
+
+        float* shortrealsp = reinterpret_cast<float*>(t_out_data.data());
+        arrayvalue_p->value.shortreals = shortrealsp;
+
+        if (varp->vltype() == VLVT_SHORTREAL) {
+            vl_get_value_array_floats(index, num, size, leftIsLow, vop->varShortRealDatap(),
+                                      shortrealsp);
         }
 
         return;

@@ -316,6 +316,37 @@ int test_vpiLongIntVal(char* name, PLI_BYTE8* test_data, int index, const unsign
     return 0;
 }
 
+int test_vpiShortRealVal(char* name, const float* test_data, int index, const unsigned low,
+                         const unsigned num, const unsigned size) {
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u\n\n", __func__, name, index, low, num,
+           size);
+#endif
+
+    int index_arr[1] = {index};
+
+    TestVpiHandle arrayhandle = vpi_handle_by_name(name, NULL);
+    CHECK_RESULT_NZ(arrayhandle);
+
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiShortRealVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.shortreals = 0;
+    vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
+
+    index -= low;
+    for (unsigned i = 0; i < num; i++) {
+        const unsigned offset = (index + i) % size;
+#ifdef TEST_VERBOSE
+        printf("array[%u] == test[%u]\n", i, offset);
+#endif
+        CHECK_RESULT(arrayvalue.value.shortreals[i], test_data[offset]);
+    }
+
+    return 0;
+}
+
 int mon_check_props() {
     // skip test if not verilator (value_array accessors unimplemented in other sims)
     if (!TestSimulator::is_verilator()) {
@@ -372,6 +403,8 @@ int mon_check_props() {
         static_cast<PLI_BYTE8>(0x14), static_cast<PLI_BYTE8>(0x13), static_cast<PLI_BYTE8>(0x12),
         static_cast<PLI_BYTE8>(0x11), static_cast<PLI_BYTE8>(0x10), static_cast<PLI_BYTE8>(0x05)};
 
+    const float read_shortreals[NUM_ELEMENTS] = {1.25f, -2.5f, 3.75f, -4.0f};
+
     char read_bytes_name[] = "test.read_bytes";
     char read_bytes_nonzero_index_name[] = "test.read_bytes_nonzero_index";
     char read_bytes_rl_name[] = "test.read_bytes_rl";
@@ -379,6 +412,8 @@ int mon_check_props() {
     char read_words_name[] = "test.read_words";
     char read_integers_name[] = "test.read_integers";
     char read_longs_name[] = "test.read_longs";
+    char read_shortreals_name[] = "test.read_shortreals";
+    char read_shortreals_rl_name[] = "test.read_shortreals_rl";
     char read_customs_name[] = "test.read_customs";
     char read_customs_nonzero_index_rl_name[] = "test.read_customs_nonzero_index_rl";
 
@@ -476,6 +511,13 @@ int mon_check_props() {
             if (test_vpiLongIntVal(read_integers_name, read_words, i, 0, j, NUM_ELEMENTS, 4))
                 return 1;
             if (test_vpiLongIntVal(read_longs_name, read_longs, i, 0, j, NUM_ELEMENTS, 8))
+                return 1;
+
+            if (test_vpiShortRealVal(read_shortreals_name, read_shortreals, i, 0, j,
+                                     NUM_ELEMENTS))
+                return 1;
+            if (test_vpiShortRealVal(read_shortreals_rl_name, read_shortreals, i, 0, j,
+                                     NUM_ELEMENTS))
                 return 1;
         }
     }
