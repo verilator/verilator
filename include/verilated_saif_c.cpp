@@ -689,3 +689,8 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitDouble(const uint32_t code, const double newval) {
     // NOP
 }
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFloat(const uint32_t code, const float newval) {
+    // NOP
+}
