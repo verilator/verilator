@@ -122,6 +122,9 @@ V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
     } else if (nodedtypep->isDouble()) {
         init(nodep, 64);
         setDouble(0.0);
+    } else if (nodedtypep->isShortReal()) {
+        init(nodep, 32);
+        setShortReal(0.0f);
     } else if (nodedtypep->isString()) {
         init(nodep);
         setString("");
@@ -474,6 +477,18 @@ V3Number& V3Number::setDouble(double value) {
     for (int i = 2; i < words(); ++i) m_data.num()[i] = {0, 0};
     m_data.num()[0].m_value = u.u[0];
     m_data.num()[1].m_value = u.u[1];
+    return *this;
+}
+V3Number& V3Number::setShortReal(float value) {
+    UASSERT(width() == 32, "Shortreal operation on wrong sized number");
+    m_data.setShortReal();
+    union {
+        float f;
+        uint32_t u;
+    } u;
+    u.f = value;
+    (void)u.f;
+    m_data.num()[0] = {u.u, 0};
     return *this;
 }
 V3Number& V3Number::setSingleBits(char value) {
@@ -1078,6 +1093,17 @@ double V3Number::toDouble() const VL_MT_SAFE {
     u.u[0] = m_data.num()[0].m_value;
     u.u[1] = m_data.num()[1].m_value;
     return u.d;
+}
+
+float V3Number::toShortReal() const VL_MT_SAFE {
+    UASSERT(isShortReal() && width() == 32,
+            "Shortreal operation on wrong sized/non-shortreal number");
+    union {
+        float f;
+        uint32_t u;
+    } u;
+    u.u = m_data.num()[0].m_value;
+    return u.f;
 }
 
 int32_t V3Number::toSInt() const VL_MT_SAFE {
