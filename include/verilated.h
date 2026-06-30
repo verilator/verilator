@@ -138,6 +138,7 @@ enum VerilatedVarType : uint8_t {
     VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
     VLVT_REAL,  // AKA double
+    VLVT_SHORTREAL,  // AKA float
     VLVT_STRUCT,  // SystemVerilog unpacked struct
     VLVT_UNION  // SystemVerilog unpacked union
 };

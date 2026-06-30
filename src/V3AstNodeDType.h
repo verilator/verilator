@@ -177,7 +177,12 @@ public:
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
-        return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
+        return (isString()      ? "N"
+                : isWide()      ? "W"
+                : isDouble()    ? "D"
+                : isShortReal() ? "F"
+                : isQuad()      ? "Q"
+                                : "I");
     }
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
