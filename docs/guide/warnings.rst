@@ -2061,26 +2061,8 @@ List Of Warnings
 
 .. option:: SHORTREAL
 
-   Warns that Verilator does not support ``shortreal``, and they will be
-   automatically promoted to ``real``.
-
-   .. code-block:: sv
-      :linenos:
-
-      shortreal sig;  //<--- Warning
-
-   The recommendation is to replace any ``shortreal`` in the code with
-   ``real``, as ``shortreal`` is not widely supported across
-   industry tools.
-
-   .. code-block:: sv
-      :linenos:
-
-      real sig;  //<--- Repaired
-
-   Ignoring this warning may make Verilator simulations differ from other
-   simulators if the increased precision of ``real`` affects the
-   modeled values, or DPI calls.
+   Historical, never issued since version 5.050. Historically warned that
+   ``shortreal`` was promoted to ``real``.
 
 
 .. option:: SIDEEFFECT
