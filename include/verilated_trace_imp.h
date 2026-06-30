@@ -618,4 +618,12 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     emitDouble(code, newval);
 }
 
+template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullFloat(uint32_t* oldp, float newval) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    std::memcpy(oldp, &newval, sizeof(newval));
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitDouble(code, static_cast<double>(newval));
+}
+
 #endif  // VL_CPPCHECK
