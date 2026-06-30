@@ -717,13 +717,19 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
                 fmt = 'd';
             }
         }
-    } else if (formatAttr.isDouble()) {
+    } else if (formatAttr.isFloating()) {
         // 'p' not converted to 'g' here as vformat string can't be easily changed
         if (!(fmt == 'e' || fmt == 'f' || fmt == 'g' || fmt == 'p'
               || VL_UNCOVERABLE(fmt == 't'))) {
             // A non-float format with a float, must convert to integer then format
             V3Number nonfloat{fl, 64, 0};
-            nonfloat.opRToIRoundS(*this);
+            if (formatAttr.isShortReal()) {
+                V3Number realnum{fl, 64, 0};
+                realnum.setDouble(toShortReal());
+                nonfloat.opRToIRoundS(realnum);
+            } else {
+                nonfloat.opRToIRoundS(*this);
+            }
             return nonfloat.displayed(fl, vformat, VFormatAttr::SIGNED);
         }
     }
@@ -740,6 +746,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
     case 'f':  // FALLTHRU
     case 'g': {
         const double n = formatAttr.isDouble()   ? toDouble()
+                         : formatAttr.isShortReal() ? toShortReal()
                          : formatAttr.isSigned() ? toSQuad()
                                                  : toUQuad();
         char tmp[MAX_SPRINTF_DOUBLE_SIZE];
@@ -770,8 +777,9 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
     }
     case 'p': {  // Pattern
         // 'p' with NUMBER was earlier converted to 'd'
-        if (formatAttr.isDouble()) {
+        if (formatAttr.isFloating()) {
             const double n = formatAttr.isDouble()   ? toDouble()
+                             : formatAttr.isShortReal() ? toShortReal()
                              : formatAttr.isSigned() ? toSQuad()
                                                      : toUQuad();
             char tmp[MAX_SPRINTF_DOUBLE_SIZE];

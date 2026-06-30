@@ -46,6 +46,7 @@ public:
         //
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
+        SHORTREAL = VL_VFORMATATTR_SHORTREAL,
         ENUM = VL_VFORMATATTR_ENUM,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
@@ -64,7 +65,9 @@ public:
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEnum() const { return m_e == ENUM; }
+    bool isFloating() const { return isDouble() || isShortReal(); }
     bool isSigned() const { return m_e == SIGNED; }
+    bool isShortReal() const { return m_e == SHORTREAL; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
 };
