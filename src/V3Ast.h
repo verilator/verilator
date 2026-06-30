@@ -649,6 +649,8 @@ public:
     bool isWide() const VL_MT_STABLE { return (width() > VL_QUADSIZE); }
     inline bool isCHandle() const VL_MT_STABLE;
     inline bool isDouble() const VL_MT_STABLE;
+    inline bool isShortReal() const VL_MT_STABLE;
+    inline bool isFloating() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
     inline bool isString() const VL_MT_STABLE;
     inline bool isEvent() const VL_MT_STABLE;

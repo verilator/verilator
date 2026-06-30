@@ -39,6 +39,12 @@ bool AstNode::isCHandle() const VL_MT_STABLE {
 bool AstNode::isDouble() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isDouble();
 }
+bool AstNode::isShortReal() const VL_MT_STABLE {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isShortReal();
+}
+bool AstNode::isFloating() const VL_MT_STABLE {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isFloating();
+}
 bool AstNode::isString() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
 }
