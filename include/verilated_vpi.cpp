@@ -278,6 +278,10 @@ public:
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
         return reinterpret_cast<double*>(varDatap());
     }
+    float* varShortRealDatap() const {
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_SHORTREAL););
+        return reinterpret_cast<float*>(varDatap());
+    }
     std::string* varStringDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
         return reinterpret_cast<std::string*>(varDatap());
@@ -523,6 +527,7 @@ public:
         // TODO have V3EmitCSyms.cpp put vpiType directly into constant table
         switch (varp()->vltype()) {
         case VLVT_REAL: type = vpiRealVar; break;
+        case VLVT_SHORTREAL: type = varp()->isNet() ? vpiShortRealNet : vpiShortRealVar; break;
         case VLVT_STRING: type = vpiStringVar; break;
         case VLVT_STRUCT: type = varp()->isNet() ? vpiStructNet : vpiStructVar; break;
         case VLVT_UNION: type = varp()->isNet() ? vpiUnionNet : vpiUnionVar; break;
@@ -1876,6 +1881,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     // vpiUnionNet is outside the otherwise contiguous SystemVerilog object type range.
     if (vpiVal == vpiUnionNet) return "vpiUnionNet";
+    if (vpiVal == vpiShortRealNet) return "vpiShortRealNet";
     if (vpiVal <= vpiAutomatics) return names[vpiVal];
     if (vpiVal >= vpiPackage && vpiVal <= vpiPropFormalDecl)
         return sv_names1[(vpiVal - vpiPackage)];
@@ -2242,6 +2248,7 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortRealNet);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassObj);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiChandleVar);
@@ -3137,6 +3144,12 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
         default:;  // LCOV_EXCL_LINE
         }
         break;
+    case vpiShortRealVal:
+        switch (varp->vltype()) {
+        case VLVT_SHORTREAL: return true;
+        default:;  // LCOV_EXCL_LINE
+        }
+        break;
     case vpiScalarVal:
         switch (varp->vltype()) {
         case VLVT_UINT8:
@@ -3168,6 +3181,7 @@ PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
                               // vpi_put_value for releasing a forceable signal, and string signals
                               // cannot be forced
     case VLVT_REAL: return vpiRealVal;
+    case VLVT_SHORTREAL: return vpiShortRealVal;
     default:  // LCOV_EXCL_START - Cannot test, because vpi_put_value would already exit due to
               // failed vl_check_format before calling this
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vlType);
@@ -3429,6 +3443,9 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         return;
     } else if (valuep->format == vpiRealVal) {
         valuep->value.real = *(vop->varRealDatap());
+        return;
+    } else if (valuep->format == vpiShortRealVal) {
+        valuep->value.real = *(vop->varShortRealDatap());
         return;
     } else if (valuep->format == vpiScalarVal) {
         valuep->value.scalar = vl_vpi_get_word(vop, 32, 0) ? vpi1 : vpi0;
@@ -3820,6 +3837,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             if (valueVop->varp()->vltype() == VLVT_REAL) {
                 *(valueVop->varRealDatap()) = valuep->value.real;
                 if (baseSignalVop->varp()->isForceable()) updateVforceRd();
+                return object;
+            }
+        } else if (valuep->format == vpiShortRealVal) {
+            if (valueVop->varp()->vltype() == VLVT_SHORTREAL) {
+                *(valueVop->varShortRealDatap()) = static_cast<float>(valuep->value.real);
                 return object;
             }
         } else if (valuep->format == vpiScalarVal) {

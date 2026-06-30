@@ -173,6 +173,7 @@ extern "C" int mon_check();
   int            int1           /*verilator public_flat_rw */;
   longint        long1          /*verilator public_flat_rw */;
   real           real1          /*verilator public_flat_rw */;
+  shortreal      shortreal1     /*verilator public_flat_rw */;
   string         str1           /*verilator public_flat_rw */;
   // specifically public and not public_flat_rw here so as to induce the C++
   // keyword collision
@@ -208,6 +209,7 @@ extern "C" int mon_check();
     int1 = 123;
     long1 = 123;
     real1 = 1.0;
+    shortreal1 = 1.25;
     str1 = "hello";
     \escaped_with_brackets[3]  = 8'h5a;
 
@@ -269,6 +271,7 @@ extern "C" int mon_check();
     if (text != "lorem ipsum") $stop;
     if (str1 != "something a lot longer than hello") $stop;
     if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
+    if ($shortrealtobits(shortreal1) != 32'h47f12065) $stop;
     if (alignment_stride_array[1].tail != 8'hc3) $stop;
   end
 
