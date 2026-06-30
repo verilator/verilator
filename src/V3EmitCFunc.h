@@ -240,6 +240,7 @@ public:
              : (nodep->isScUint() || nodep->isScUintBool()) ? "SU"
              : nodep->isScBv()                              ? "SW"
              : nodep->isDouble()                            ? "SD"
+             : nodep->isShortReal()                         ? "SF"
                                                             : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitDatap(const AstNode* nodep) {
