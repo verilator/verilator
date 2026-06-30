@@ -566,6 +566,15 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
             if (toDouble() == floor(toDouble())) out << ".0";
         }
         return out.str();
+    } else if (isShortReal()) {
+        out.precision(9);
+        if (VL_UNCOVERABLE(width() != 32)) {
+            out << "%E-bad-width-shortreal";  // LCOV_EXCL_LINE
+        } else {
+            out << toShortReal();
+            if (toShortReal() == floor(toShortReal())) out << ".0";
+        }
+        return out.str();
     } else if (isString()) {
         return '"' + toString() + '"';
     } else {
@@ -969,6 +978,21 @@ string V3Number::emitC() const VL_MT_STABLE {
                                         ? "%3.1f"  // Force decimal point
                                         : "%.17e";  // %e always yields a float literal
             (void)VL_SNPRINTF(sbuf, bufsize, fmt, dnum);
+            return sbuf;
+        }
+    } else if (isShortReal()) {
+        const float fnum = toShortReal();
+        if (std::isinf(fnum)) {
+            if (std::signbit(fnum)) result += '-';
+            result += "std::numeric_limits<float>::infinity()";
+        } else if (std::isnan(fnum)) {
+            if (std::signbit(fnum)) result += '-';
+            result += "std::numeric_limits<float>::quiet_NaN()";
+        } else {
+            const char* const fmt = (static_cast<int>(fnum) == fnum && -1000 < fnum && fnum < 1000)
+                                        ? "%3.1fF"  // Force decimal point
+                                        : "%.9eF";  // Enough to round-trip binary32
+            (void)VL_SNPRINTF(sbuf, bufsize, fmt, fnum);
             return sbuf;
         }
     } else if (isString()) {
