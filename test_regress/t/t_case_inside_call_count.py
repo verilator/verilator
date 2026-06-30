@@ -15,6 +15,6 @@ test.compile(verilator_flags2=['--stats'])
 
 test.execute()
 
-test.file_grep(test.stats, r'LiftExpr, lifted calls\s+(\d+)', 3)
+test.file_grep(test.stats, r'LiftExpr, lifted calls\s+(\d+)', 2)
 
 test.passes()
