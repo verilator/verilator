@@ -698,3 +698,12 @@ void VerilatedVcdBuffer::emitDouble(uint32_t code, double newval) {
     wp += std::strlen(wp);
     finishLine(code, wp);
 }
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFloat(uint32_t code, float newval) {
+    char* wp = m_writep;
+    // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
+    (void)VL_SNPRINTF(wp, m_maxSignalBytes, "r%.8g", static_cast<double>(newval));
+    wp += std::strlen(wp);
+    finishLine(code, wp);
+}
