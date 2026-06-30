@@ -3175,6 +3175,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL_DIV; }
     bool doubleFlavor() const override { return true; }
 };
+class AstDivF final : public AstNodeBiop {
+public:
+    AstDivF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DivF(fl, lhsp, rhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstDivF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opDivF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f/ %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "/"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL_DIV; }
+};
 class AstDivS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
@@ -3366,6 +3386,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
 };
+class AstGtF final : public AstNodeBiop {
+public:
+    AstGtF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_GtF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstGtF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opGtF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f> %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return ">"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstGtN final : public AstNodeBiop {
 public:
     AstGtN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
@@ -3450,6 +3490,26 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+};
+class AstGteF final : public AstNodeBiop {
+public:
+    AstGteF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_GteF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstGteF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opGteF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f>= %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return ">="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstGteN final : public AstNodeBiop {
 public:
@@ -3602,6 +3662,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
 };
+class AstLtF final : public AstNodeBiop {
+public:
+    AstLtF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_LtF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstLtF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLtF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f< %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "<"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstLtN final : public AstNodeBiop {
 public:
     AstLtN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
@@ -3686,6 +3766,26 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+};
+class AstLteF final : public AstNodeBiop {
+public:
+    AstLteF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_LteF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstLteF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opLteF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f<= %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "<="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstLteN final : public AstNodeBiop {
 public:
@@ -3852,6 +3952,25 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL_DIV * 5; }
     bool doubleFlavor() const override { return true; }
+};
+class AstPowF final : public AstNodeBiop {
+public:
+    AstPowF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_PowF(fl, lhsp, rhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstPowF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opPowF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f** %r)"; }
+    string emitC() override { return "powf(%li,%ri)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL_DIV * 5; }
 };
 class AstPowSS final : public AstNodeBiop {
     // @astgen makeDfgVertex
@@ -4353,6 +4472,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
 };
+class AstSubF final : public AstNodeBiop {
+public:
+    AstSubF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_SubF(fl, lhsp, rhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstSubF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opSubF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f- %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "-"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstURandomRange final : public AstNodeBiop {
     // $urandom_range
 public:
@@ -4445,6 +4584,26 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+};
+class AstEqF final : public AstNodeBiCom {
+public:
+    AstEqF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_EqF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstEqF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opEqF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f== %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "=="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstEqN final : public AstNodeBiCom {
 public:
@@ -4576,6 +4735,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
 };
+class AstNeqF final : public AstNodeBiCom {
+public:
+    AstNeqF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_NeqF(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstNeqF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opNeqF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f!= %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "!="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstNeqN final : public AstNodeBiCom {
 public:
     AstNeqN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
@@ -4660,6 +4839,26 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
 };
+class AstAddF final : public AstNodeBiComAsv {
+public:
+    AstAddF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_AddF(fl, lhsp, rhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstAddF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opAddF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f+ %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "+"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstAnd final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
@@ -4724,6 +4923,26 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+};
+class AstMulF final : public AstNodeBiComAsv {
+public:
+    AstMulF(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_MulF(fl, lhsp, rhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstMulF;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opMulF(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f* %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "*"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return true; }
+    bool sizeMattersRhs() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstMulS final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
@@ -5926,6 +6145,22 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+};
+class AstNegateF final : public AstNodeUniop {
+public:
+    AstNegateF(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_NegateF(fl, lhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstNegateF;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegateF(lhs); }
+    string emitVerilog() override { return "%f(- %l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "-"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstNot final : public AstNodeUniop {
     // @astgen makeDfgVertex
