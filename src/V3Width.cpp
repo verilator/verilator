@@ -419,8 +419,20 @@ class WidthVisitor final : public VNVisitor {
     //========
     // Widths: Output real, input integer signed
     void visit(AstBitsToRealD* nodep) override { visit_Or_Lu64(nodep); }
+    void visit(AstBitsToShortReal* nodep) override { visit_Of_Lu32(nodep); }
+    void visit(AstDToF* nodep) override { visit_Of_Lr(nodep); }
+    void visit(AstFToD* nodep) override { visit_Or_Lf(nodep); }
 
     // Widths: Output integer signed, input real
+    void visit(AstFToIS* nodep) override { visit_Os32_Lf(nodep); }
+    void visit(AstFToIRoundS* nodep) override {
+        // Only created here, size comes from upper expression
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+        }
+        UASSERT_OBJ(nodep->dtypep()->widthSized(), nodep, "FToIRoundS should be presized");
+    }
     void visit(AstRToIS* nodep) override { visit_Os32_Lr(nodep); }
     void visit(AstRToIRoundS* nodep) override {
         // Only created here, size comes from upper expression
@@ -433,6 +445,7 @@ class WidthVisitor final : public VNVisitor {
 
     // Widths: Output integer unsigned, input real
     void visit(AstRealToBits* nodep) override { visit_Ou64_Lr(nodep); }
+    void visit(AstShortRealToBits* nodep) override { visit_Ou32_Lf(nodep); }
 
     // Output integer, input string
     void visit(AstLenN* nodep) override {
@@ -7914,6 +7927,19 @@ class WidthVisitor final : public VNVisitor {
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
         }
     }
+    void visit_Of_Lu32(AstNodeUniop* nodep) {
+        // CALLER: AstBitsToShortReal
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to 32-bit unsigned bits
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            AstNodeDType* const subDTypep = nodep->findLogicDType(32, 32, VSigning::UNSIGNED);
+            // Self-determined operand
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
+        }
+    }
     void visit(AstIToRD* nodep) override {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
@@ -7929,6 +7955,21 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstIToRF* nodep) override {
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            // Self-determined operand (TODO check if numeric type)
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            if (nodep->lhsp()->isSigned()) {
+                nodep->replaceWith(
+                    new AstISToRF{nodep->fileline(), nodep->lhsp()->unlinkFrBack()});
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            }
+        }
+    }
     void visit(AstISToRD* nodep) override {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
@@ -7937,6 +7978,34 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetDouble();
             // Self-determined operand (TODO check if numeric type)
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+        }
+    }
+    void visit(AstISToRF* nodep) override {
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            // Self-determined operand (TODO check if numeric type)
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+        }
+    }
+    void visit_Or_Lf(AstNodeUniop* nodep) {
+        // CALLER: FToD
+        // Real: Output real, input shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetDouble();
+        }
+    }
+    void visit_Of_Lr(AstNodeUniop* nodep) {
+        // CALLER: DToF
+        // Shortreal: Output shortreal, input real
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetShortReal();
         }
     }
     void visit_Os32_Lr(AstNodeUniop* nodep) {
@@ -7949,6 +8018,16 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetInteger();
         }
     }
+    void visit_Os32_Lf(AstNodeUniop* nodep) {
+        // CALLER: FToI
+        // Shortreal: LHS shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetInteger();
+        }
+    }
     void visit_Ou64_Lr(AstNodeUniop* nodep) {
         // CALLER: RealToBits
         // Real: LHS real
@@ -7957,6 +8036,16 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {  // First stage evaluation
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
             nodep->dtypeSetUInt64();
+        }
+    }
+    void visit_Ou32_Lf(AstNodeUniop* nodep) {
+        // CALLER: ShortRealToBits
+        // Shortreal: LHS shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetUInt32();
         }
     }
 
@@ -8995,6 +9084,10 @@ class WidthVisitor final : public VNVisitor {
         // otherwise self-determined was correct
         iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findDoubleDType(), stage);
     }
+    void iterateCheckShortReal(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to shortreal if not already. Child is self-determined.
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findShortRealDType(), stage);
+    }
     void iterateCheckSigned8(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed8 if not already. Child is self-determined
         iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findSigned8DType(), stage);
@@ -9217,6 +9310,9 @@ class WidthVisitor final : public VNVisitor {
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
+            underp = userIterateSubtreeReturnEdits(underp,
+                                                   WidthVP{expDTypep, FINAL, childStreamUse}.p());
+        } else if (expDTypep->isShortReal() && underp->isShortReal()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
