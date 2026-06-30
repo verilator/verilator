@@ -857,18 +857,30 @@ public:
     V3Number& opBitsToRealD(const V3Number& lhs);
     V3Number& opBitsToShortReal(const V3Number& lhs);
     V3Number& opNegateD(const V3Number& lhs);
+    V3Number& opNegateF(const V3Number& lhs);
     V3Number& opAddD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opAddF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSubD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opSubF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opMulD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opMulF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opDivD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opDivF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opPowD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opPowF(const V3Number& lhs, const V3Number& rhs);
     // Comparisons
     V3Number& opEqD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opEqF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opNeqD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opNeqF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opGtD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGtF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opGteD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGteF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLtD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLtF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLteF(const V3Number& lhs, const V3Number& rhs);
 
     // "N" - string operations
     V3Number& opAtoN(const V3Number& lhs, int base);
