@@ -2804,7 +2804,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
-                } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
+                } else if (!basicp->isFloating() && !fromDtp->isFloating()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
                     if (!VN_IS(fromDtp, StreamDType)) {
                         const int width = toDtp->width();
@@ -2818,13 +2818,26 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (newp) {
                 } else if (basicp->isDouble() && !nodep->fromp()->isDouble()) {
-                    if (nodep->fromp()->isSigned()) {
+                    if (nodep->fromp()->isShortReal()) {
+                        newp = new AstFToD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else if (nodep->fromp()->isSigned()) {
                         newp = new AstISToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     } else {
                         newp = new AstIToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     }
-                } else if (!basicp->isDouble() && nodep->fromp()->isDouble()) {
+                } else if (basicp->isShortReal() && !nodep->fromp()->isShortReal()) {
+                    if (nodep->fromp()->isDouble()) {
+                        newp = new AstDToF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else if (nodep->fromp()->isSigned()) {
+                        newp = new AstISToRF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else {
+                        newp = new AstIToRF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    }
+                } else if (!basicp->isFloating() && nodep->fromp()->isDouble()) {
                     newp = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    newp->dtypep(basicp);
+                } else if (!basicp->isFloating() && nodep->fromp()->isShortReal()) {
+                    newp = new AstFToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     newp->dtypep(basicp);
                 } else if (basicp->isSigned() && !nodep->fromp()->isSigned()) {
                     newp = new AstSigned{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
@@ -9320,7 +9333,12 @@ class WidthVisitor final : public VNVisitor {
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtD(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
-        } else if (!expDTypep->isDouble() && underp->isDouble()) {
+        } else if (expDTypep->isShortReal() && !underp->isShortReal()) {
+            AstNode* const oldp
+                = underp;  // Need FINAL on children; otherwise splice would block it
+            spliceCvtF(VN_AS(underp, NodeExpr));
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+        } else if (!expDTypep->isFloating() && underp->isFloating()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
@@ -9437,16 +9455,18 @@ class WidthVisitor final : public VNVisitor {
         const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
         if (expDTypep == underp->dtypep()) {
             return;  // Same type must match
-        } else if (!expBasicp || expBasicp->isDouble() || !underBasicp
-                   || underBasicp->isDouble()) {
+        } else if (!expBasicp || expBasicp->isFloating() || !underBasicp
+                   || underBasicp->isFloating()) {
             // This is perhaps a v3fatalSrc as we should have checked the types
             // before calling widthCheck, but we may have missed a non-sized
             // check in earlier code, so might as well assume it is the users'
             // fault.
             parentp->v3error(ucfirst(parentp->prettyOperatorName())
-                             << " expected non-complex non-double " << side << " in width check");
+                             << " expected non-complex non-floating " << side
+                             << " in width check");
 #if VL_DEBUG
-            parentp->v3fatalSrc("widthCheckSized should not be called on doubles/complex types");
+            parentp->v3fatalSrc(
+                "widthCheckSized should not be called on floating/complex types");
 #endif
             return;
         } else {
@@ -9529,7 +9549,7 @@ class WidthVisitor final : public VNVisitor {
     // SIGNED/DOUBLE METHODS
 
     AstNodeExpr* checkCvtUS(AstNodeExpr* nodep, bool fatal) {
-        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
+        if (nodep && nodep->isFloating()) {
             if (fatal) {
                 nodep->v3error("Expected integral input to " << nodep->backp()->prettyTypeName());
             } else {
@@ -9550,7 +9570,9 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNodeExpr* newp;
-            if (nodep->dtypep()->skipRefp()->isSigned()) {
+            if (nodep->isShortReal()) {
+                newp = new AstFToD{nodep->fileline(), nodep};
+            } else if (nodep->dtypep()->skipRefp()->isSigned()) {
                 newp = new AstISToRD{nodep->fileline(), nodep};
             } else {
                 newp = new AstIToRD{nodep->fileline(), nodep};
@@ -9561,11 +9583,32 @@ class WidthVisitor final : public VNVisitor {
             return nodep;
         }
     }
+    AstNodeExpr* spliceCvtF(AstNodeExpr* nodep) {
+        // For integer or real used in SHORTREAL context, convert to shortreal
+        if (nodep && !nodep->isShortReal()) {
+            UINFO(6, "   spliceCvtF: " << nodep);
+            VNRelinker linker;
+            nodep->unlinkFrBack(&linker);
+            AstNodeExpr* newp;
+            if (nodep->isDouble()) {
+                newp = new AstDToF{nodep->fileline(), nodep};
+            } else if (nodep->dtypep()->skipRefp()->isSigned()) {
+                newp = new AstISToRF{nodep->fileline(), nodep};
+            } else {
+                newp = new AstIToRF{nodep->fileline(), nodep};
+            }
+            linker.relink(newp);
+            return newp;
+        } else {
+            return nodep;
+        }
+    }
     AstNodeExpr* spliceCvtS(AstNodeExpr* nodep, bool warnOn, int width) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
-        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
+        if (nodep && nodep->isFloating()) {
             UINFO(6, "   spliceCvtS: " << nodep);
+            const bool shortReal = nodep->isShortReal();
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
@@ -9573,10 +9616,18 @@ class WidthVisitor final : public VNVisitor {
                 // representable in integer's number of bits
                 if (constp->isDouble() && V3Number::epsilonIntegral(constp->num().toDouble())) {
                     warnOn = false;
+                } else if (constp->isShortReal()
+                           && V3Number::epsilonIntegral(constp->num().toShortReal())) {
+                    warnOn = false;
                 }
             }
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
-            AstNodeExpr* const newp = new AstRToIRoundS{nodep->fileline(), nodep};
+            AstNodeExpr* newp;
+            if (shortReal) {
+                newp = new AstFToIRoundS{nodep->fileline(), nodep};
+            } else {
+                newp = new AstRToIRoundS{nodep->fileline(), nodep};
+            }
             linker.relink(newp);
             newp->dtypeSetBitSized(width, VSigning::SIGNED);
             return newp;
