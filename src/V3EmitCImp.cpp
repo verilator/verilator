@@ -653,6 +653,8 @@ class EmitCTrace final : public EmitCFunc {
 
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("VL_TRACE_DECL_DOUBLE");
+        } else if (nodep->dtypep()->basicp()->isShortReal()) {
+            puts("VL_TRACE_DECL_FLOAT");
         } else if (nodep->isWide()) {
             puts("VL_TRACE_DECL_WIDE");
         } else if (nodep->isQuad()) {
@@ -717,7 +719,7 @@ class EmitCTrace final : public EmitCFunc {
         }
 
         // Bit range
-        if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
+        if (!nodep->dtypep()->basicp()->isFloating() && nodep->bitRange().ranged()) {
             puts(", " + cvtToStr(nodep->bitRange().left()) + ","
                  + cvtToStr(nodep->bitRange().right()));
         }
@@ -745,6 +747,9 @@ class EmitCTrace final : public EmitCFunc {
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
+            emitWidth = false;
+        } else if (nodep->dtypep()->basicp()->isShortReal()) {
+            stype = "Float";
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
             stype = "WData";
