@@ -439,3 +439,12 @@ void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     std::memcpy(&newval_u64, &newval, sizeof(newval_u64));
     m_fst->emitValueChange(m_symbolp[code], newval_u64);
 }
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFloat(uint32_t code, float newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););  // LCOV_EXCL_BR_LINE
+    m_owner.emitTimeChangeMaybe();
+    uint32_t newval_u32;
+    std::memcpy(&newval_u32, &newval, sizeof(newval_u32));
+    m_fst->emitValueChange(m_symbolp[code], static_cast<uint64_t>(newval_u32));
+}

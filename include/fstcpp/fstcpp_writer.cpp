@@ -130,7 +130,6 @@ Handle Writer::createVar(
 	case Hierarchy::VarType::VCD_REAL:
 	case Hierarchy::VarType::VCD_REAL_PARAMETER:
 	case Hierarchy::VarType::VCD_REALTIME:
-	case Hierarchy::VarType::SV_SHORTREAL:
 		is_real = true;
 		bitwidth = 8;  // recast to double size
 		break;
