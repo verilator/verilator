@@ -26,7 +26,6 @@
 # include "Vt_dpi_arg_input_type__Dpi.h"
 typedef long long sv_longint_t;
 typedef unsigned long long sv_longint_unsigned_t;
-# define NO_SHORTREAL
 # define CONSTARG const
 #elif defined(VCS)  // VCS
 # include "../vc_hdrs.h"
