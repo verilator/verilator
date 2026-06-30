@@ -206,6 +206,7 @@ Verilator 5.049 devel
 * Fix lifetime of expression coverage variable (#7834). [Ryszard Rozak, Antmicro Ltd.]
 * Fix disable iff ignored when its condition is held continuously true (#7841). [Yilou Wang]
 * Fix constant pool cache after dead scope removal (#7845). [Nick Brereton]
+* Fix covergroups without --coverage (#7848) (#7849). [Joshua Leahy]
 
 
 Verilator 5.048 2026-04-26
