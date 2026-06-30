@@ -381,6 +381,7 @@ public:
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
     // duck-typed void emitWData(uint32_t code, WDataInP newval, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
+    // duck-typed void emitFloat(uint32_t code, float newval) = 0;
 
     VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
