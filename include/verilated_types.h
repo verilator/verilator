@@ -24,6 +24,7 @@
 #ifndef VERILATOR_VERILATED_TYPES_H_
 #define VERILATOR_VERILATED_TYPES_H_
 
+#include "verilatedos.h"
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_types.h should only be included by verilated.h"
 #endif
@@ -2069,8 +2070,15 @@ struct VlNull final {
     operator T*() const {
         return nullptr;
     }
+    template <class T>
+    VL_CONSTEXPR_CXX17 bool operator==(T* ptr) const {
+        return !ptr;
+    }
+    template <class T>
+    VL_CONSTEXPR_CXX17 bool operator==(const T* ptr) const {
+        return !ptr;
+    }
 };
-inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
 //===================================================================
 // Verilog class reference container
