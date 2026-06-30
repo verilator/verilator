@@ -5445,6 +5445,24 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
 };
+class AstBitsToShortReal final : public AstNodeUniop {
+public:
+    AstBitsToShortReal(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_BitsToShortReal(fl, lhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstBitsToShortReal;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        out.opBitsToShortReal(lhs);
+    }
+    string emitVerilog() override { return "%f$bitstoshortreal(%l)"; }
+    string emitC() override { return "VL_CVT_F_I(%li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }  // Eliminated before matters
+    bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
+};
 class AstCCast final : public AstNodeUniop {
     // Cast to C-based data type
     int m_size;
@@ -5543,6 +5561,23 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstDToF final : public AstNodeUniop {
+public:
+    AstDToF(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_DToF(fl, lhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstDToF;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        out.setShortReal(static_cast<float>(lhs.toDouble()));
+    }
+    string emitVerilog() override { return "%fshortreal'(%l)"; }
+    string emitC() override { return "VL_CAST_F_D(%li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
 class AstExtend final : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
     // @astgen makeDfgVertex
@@ -5630,6 +5665,59 @@ public:
     AstNode* filep() const { return lhsp(); }
     bool isSystemFunc() const override { return true; }
 };
+class AstFToD final : public AstNodeUniop {
+public:
+    AstFToD(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_FToD(fl, lhsp) {
+        dtypeSetDouble();
+    }
+    ASTGEN_MEMBERS_AstFToD;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        out.setDouble(lhs.toShortReal());
+    }
+    string emitVerilog() override { return "%freal'(%l)"; }
+    string emitC() override { return "VL_CAST_D_F(%li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+};
+class AstFToIRoundS final : public AstNodeUniop {
+    // Convert shortreal to integer, with arbitrary sized output (not just "integer" format)
+public:
+    AstFToIRoundS(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_FToIRoundS(fl, lhsp) {
+        dtypeSetInteger();
+    }
+    ASTGEN_MEMBERS_AstFToIRoundS;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opFToIRoundS(lhs); }
+    string emitVerilog() override { return "%f$rtoi_rounded(%l)"; }
+    string emitC() override {
+        return isWide() ? "VL_RTOIROUND_%nq_F(%nw, %P, %li)" : "VL_RTOIROUND_%nq_F(%li)";
+    }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
+};
+class AstFToIS final : public AstNodeUniop {
+    // $rtoi(lhs) where lhs is shortreal
+public:
+    AstFToIS(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_FToIS(fl, lhsp) {
+        dtypeSetInteger2State();
+    }
+    ASTGEN_MEMBERS_AstFToIS;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opFToIS(lhs); }
+    string emitVerilog() override { return "%f$rtoi(%l)"; }
+    string emitC() override { return "VL_RTOI_I_F(%li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }  // Eliminated before matters
+    bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
+};
 class AstISToRD final : public AstNodeUniop {
     // $itor where lhs is signed
 public:
@@ -5648,6 +5736,24 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
 };
+class AstISToRF final : public AstNodeUniop {
+    // $itor where lhs is signed, producing shortreal
+public:
+    AstISToRF(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_ISToRF(fl, lhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstISToRF;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opISToRF(lhs); }
+    string emitVerilog() override { return "%f$itor($signed(%l))"; }
+    string emitC() override { return "VL_ISTOR_F_%lq(%lw, %li)"; }
+    bool emitCheckMaxWords() override { return true; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
+};
 class AstIToRD final : public AstNodeUniop {
     // $itor where lhs is unsigned
 public:
@@ -5659,6 +5765,23 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opIToRD(lhs); }
     string emitVerilog() override { return "%f$itor(%l)"; }
     string emitC() override { return "VL_ITOR_D_%lq(%lw, %li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
+};
+class AstIToRF final : public AstNodeUniop {
+    // $itor where lhs is unsigned, producing shortreal
+public:
+    AstIToRF(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_IToRF(fl, lhsp) {
+        dtypeSetShortReal();
+    }
+    ASTGEN_MEMBERS_AstIToRF;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opIToRF(lhs); }
+    string emitVerilog() override { return "%f$itor(%l)"; }
+    string emitC() override { return "VL_ITOR_F_%lq(%lw, %li)"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
@@ -6059,6 +6182,24 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return 0; }
+};
+class AstShortRealToBits final : public AstNodeUniop {
+public:
+    AstShortRealToBits(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_ShortRealToBits(fl, lhsp) {
+        dtypeSetUInt32();
+    }
+    ASTGEN_MEMBERS_AstShortRealToBits;
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        out.opShortRealToBits(lhs);
+    }
+    string emitVerilog() override { return "%f$shortrealtobits(%l)"; }
+    string emitC() override { return "VL_CVT_I_F(%li)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }  // Eliminated before matters
+    bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
+    int instrCount() const override { return INSTR_COUNT_DBL; }
+    bool isSystemFunc() const override { return true; }
 };
 class AstSigned final : public AstNodeUniop {
     // $signed(lhs)
