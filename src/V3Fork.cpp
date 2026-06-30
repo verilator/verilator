@@ -621,6 +621,13 @@ class ForkVisitor final : public VNVisitor {
             beginp->addStmtsp(delayp);
         }
     }
+    static bool forkIsDisableable(const AstFork* const nodep) {
+        for (const AstBegin* itemp = nodep->forksp(); itemp;
+             itemp = VN_AS(itemp->nextp(), Begin)) {
+            if (isDisableQueuePushSelfStmt(itemp->stmtsp())) return true;
+        }
+        return false;
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -636,17 +643,13 @@ class ForkVisitor final : public VNVisitor {
     }
 
     void visit(AstFork* nodep) override {
-        if (nodep->joinType().join()) {
-            iterateChildren(nodep);
-            return;
-        }
-
         // IEEE 1800-2023 9.3.2: In all cases, processes spawned by a fork-join block shall not
-        // start executing until the parent process is blocked or terminates.
-        // Because join and join_any block the parent process, it is only needed when join_none
-        // is used.
-        if (nodep->joinType().joinNone()) {
-            UINFO(9, "Visiting fork..join_none " << nodep);
+        // start executing until the parent process is blocked or terminates. Because join and
+        // join_any block the parent process, deferring branch start with a synthetic #0 delay is
+        // normally only needed for join_none. A fork that can be disabled by name needs the same
+        // deferral for every join type.
+        if (nodep->joinType().joinNone() || forkIsDisableable(nodep)) {
+            UINFO(9, "Adding fork branch start sentinels " << nodep);
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the
             // ACTIVE region with a delay value of 0.
@@ -660,6 +663,11 @@ class ForkVisitor final : public VNVisitor {
                 itemp->stmtsp()->addHereThisAsNext(delayp);
                 moveForkSentinelAfterDisableQueuePushes(itemp);
             }
+        }
+
+        if (nodep->joinType().join()) {
+            iterateChildren(nodep);
+            return;
         }
 
         iterateAndNextNull(nodep->declsp());
