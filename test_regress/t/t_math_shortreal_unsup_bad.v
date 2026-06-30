@@ -6,8 +6,11 @@
 
 module t;
 
+  // verilator lint_off REALCVT
+  // verilator lint_off SHORTREAL
   shortreal s;
+  logic l;
 
-  initial s = 1.2345;
+  initial l = s[0];
 
 endmodule
