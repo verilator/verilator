@@ -609,6 +609,8 @@ class WidthVisitor final : public VNVisitor {
                 }
             } else if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
                 nodep->dtypeSetDouble();
+            } else if (nodep->thenp()->isShortReal() || nodep->elsep()->isShortReal()) {
+                nodep->dtypeSetShortReal();
             } else if (nodep->thenp()->isString() || nodep->elsep()->isString()) {
                 nodep->dtypeSetString();
             } else {
@@ -6273,6 +6275,8 @@ class WidthVisitor final : public VNVisitor {
 
                 if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
                     subDTypep = casep->findDoubleDType();
+                } else if (condp->dtypep()->isShortReal() || subDTypep->isShortReal()) {
+                    subDTypep = casep->findShortRealDType();
                 } else if (condp->dtypep()->isString() || subDTypep->isString()) {
                     subDTypep = casep->findStringDType();
                 } else {
