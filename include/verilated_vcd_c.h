@@ -144,6 +144,7 @@ public:
     void declQuad(uint32_t code, const char* name, int msb, int lsb);
     void declWide(uint32_t code, const char* name, int msb, int lsb);
     void declDouble(uint32_t code, const char* name);
+    void declFloat(uint32_t code, const char* name);
 
     // versions to call when the sig is array member
     void declEventArray(uint32_t code, const char* name, int arraynum);
@@ -152,6 +153,7 @@ public:
     void declQuadArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
     void declWideArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
     void declDoubleArray(uint32_t code, const char* name, int arraynum);
+    void declFloatArray(uint32_t code, const char* name, int arraynum);
 };
 
 // We use macros to drop unused arguments at compile time. This saves code size.
@@ -170,6 +172,8 @@ public:
     tracep->declWide(code, name, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, dir, kind, type) \
     tracep->declDouble(code, name)
+#define VL_TRACE_DECL_FLOAT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
+    tracep->declFloat(code, name)
 
 #define VL_TRACE_DECL_EVENT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declEventArray(code, name, arraynum)
@@ -186,6 +190,8 @@ public:
     tracep->declWideArray(code, name, arraynum, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declDoubleArray(code, name, arraynum)
+#define VL_TRACE_DECL_FLOAT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
+    tracep->declFloatArray(code, name, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below

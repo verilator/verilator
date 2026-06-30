@@ -470,6 +470,9 @@ void VerilatedVcd::declWide(uint32_t code, const char* name, int msb, int lsb) {
 void VerilatedVcd::declDouble(uint32_t code, const char* name) {
     declare(code, name, "real", false, -1, false, 63, 0);
 }
+void VerilatedVcd::declFloat(uint32_t code, const char* name) {
+    declare(code, name, "real", false, -1, false, 31, 0);
+}
 
 // versions to call when the sig is array member
 void VerilatedVcd::declEventArray(uint32_t code, const char* name, int arraynum) {
@@ -489,6 +492,9 @@ void VerilatedVcd::declWideArray(uint32_t code, const char* name, int arraynum, 
 }
 void VerilatedVcd::declDoubleArray(uint32_t code, const char* name, int arraynum) {
     declare(code, name, "real", true, arraynum, false, 63, 0);
+}
+void VerilatedVcd::declFloatArray(uint32_t code, const char* name, int arraynum) {
+    declare(code, name, "real", true, arraynum, false, 31, 0);
 }
 
 //=============================================================================
