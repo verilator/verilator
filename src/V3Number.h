@@ -843,13 +843,19 @@ public:
     V3Number& opLte(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteS(const V3Number& lhs, const V3Number& rhs);  // Signed
 
-    // "D" - double (aka real) math
+    // "D"/"F" - floating point math
     V3Number& opIToRD(const V3Number& lhs, bool isSigned = false);
     V3Number& opISToRD(const V3Number& lhs) { return opIToRD(lhs, true); }
+    V3Number& opIToRF(const V3Number& lhs, bool isSigned = false);
+    V3Number& opISToRF(const V3Number& lhs) { return opIToRF(lhs, true); }
     V3Number& opRToIS(const V3Number& lhs);
+    V3Number& opFToIS(const V3Number& lhs);
     V3Number& opRToIRoundS(const V3Number& lhs);
+    V3Number& opFToIRoundS(const V3Number& lhs);
     V3Number& opRealToBits(const V3Number& lhs);
+    V3Number& opShortRealToBits(const V3Number& lhs);
     V3Number& opBitsToRealD(const V3Number& lhs);
+    V3Number& opBitsToShortReal(const V3Number& lhs);
     V3Number& opNegateD(const V3Number& lhs);
     V3Number& opAddD(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSubD(const V3Number& lhs, const V3Number& rhs);

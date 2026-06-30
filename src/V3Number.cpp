@@ -71,6 +71,13 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
     NUM_ASSERT_DOUBLE_ARGS1(arg1); \
     NUM_ASSERT_DOUBLE_ARGS1(arg2)
 
+#define NUM_ASSERT_SHORTREAL_ARGS1(arg1) \
+    UASSERT((arg1).isShortReal(), \
+            "Number operation called with non-shortreal argument: '" << (arg1) << '"')
+#define NUM_ASSERT_SHORTREAL_ARGS2(arg1, arg2) \
+    NUM_ASSERT_SHORTREAL_ARGS1(arg1); \
+    NUM_ASSERT_SHORTREAL_ARGS1(arg2)
+
 //======================================================================
 // Errors
 
@@ -2600,11 +2607,38 @@ V3Number& V3Number::opIToRD(const V3Number& lhs, bool isSigned) {
     if (negate) d = -d;
     return setDouble(d);
 }
+V3Number& V3Number::opIToRF(const V3Number& lhs, bool isSigned) {
+    // Correct number of zero bits/width matters
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_LOGIC_ARGS1(lhs);
+    // IEEE says we ignore x/z in real conversions
+    V3Number noxz(lhs);
+    noxz.opAssignNonXZ(lhs);
+    double d = 0;
+    const bool negate = isSigned && noxz.isNegative();
+    if (negate) {
+        const V3Number noxz_signed = noxz;
+        noxz.opNegate(noxz_signed);
+    }
+    for (int bit = noxz.width() - 1; bit >= 0; bit--) {
+        // Some precision might be lost in this add, that's what we want
+        if (noxz.bitIs1(bit)) d += exp2(bit);
+    }
+    if (negate) d = -d;
+    return setShortReal(static_cast<float>(d));
+}
 V3Number& V3Number::opRToIS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
     const double v = VL_TRUNC(lhs.toDouble());
     const int32_t i = static_cast<int32_t>(v);  // C converts from double to int32_t
+    return setLongS(i);
+}
+V3Number& V3Number::opFToIS(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_SHORTREAL_ARGS1(lhs);
+    const float v = static_cast<float>(VL_TRUNC(lhs.toShortReal()));
+    const int32_t i = static_cast<int32_t>(v);  // C converts from float to int32_t
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
@@ -2638,6 +2672,13 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     }
     return *this;
 }
+V3Number& V3Number::opFToIRoundS(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_SHORTREAL_ARGS1(lhs);
+    V3Number realnum{&lhs, 64};
+    realnum.setDouble(lhs.toShortReal());
+    return opRToIRoundS(realnum);
+}
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
@@ -2649,6 +2690,17 @@ V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     u.m_d = lhs.toDouble();
     return setQuad(u.m_v);
 }
+V3Number& V3Number::opShortRealToBits(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_SHORTREAL_ARGS1(lhs);
+    UASSERT(lhs.width() == 32 && width() == 32, "Shortreal operation on wrong sized number");
+    union {
+        float m_f;
+        uint32_t m_v;
+    } u;
+    u.m_f = lhs.toShortReal();
+    return setLong(u.m_v);
+}
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     UASSERT(lhs.width() == 64 && width() == 64, "Real operation on wrong sized number");
@@ -2658,6 +2710,16 @@ V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     } u;
     u.m_v = lhs.toUQuad();
     return setDouble(u.m_d);
+}
+V3Number& V3Number::opBitsToShortReal(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    UASSERT(lhs.width() == 32 && width() == 32, "Shortreal operation on wrong sized number");
+    union {
+        float m_f;
+        uint32_t m_v;
+    } u;
+    u.m_v = lhs.toUInt();
+    return setShortReal(u.m_f);
 }
 V3Number& V3Number::opNegateD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
