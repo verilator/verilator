@@ -259,6 +259,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
         }
     }
     // clang-format off
+    else if (type == VerilatedTraceSigType::SHORTREAL) varType = fst::Hierarchy::VarType::SV_SHORTREAL;
     else if (kind == VerilatedTraceSigKind::PARAMETER) varType = fst::Hierarchy::VarType::VCD_PARAMETER;
     else if (kind == VerilatedTraceSigKind::SUPPLY0) varType = fst::Hierarchy::VarType::VCD_SUPPLY0;
     else if (kind == VerilatedTraceSigKind::SUPPLY1) varType = fst::Hierarchy::VarType::VCD_SUPPLY1;
@@ -321,6 +322,11 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum,
                               VerilatedTraceSigType type) {
     declare(code, name, dtypenum, direction, kind, type, false, -1, false, 63, 0);
 }
+void VerilatedFst::declFloat(uint32_t code, const char* name, int dtypenum,
+                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                             VerilatedTraceSigType type) {
+    declare(code, name, dtypenum, direction, kind, type, false, -1, false, 31, 0);
+}
 
 // versions to call when the sig is array member
 void VerilatedFst::declEventArray(uint32_t code, const char* name, int dtypenum,
@@ -353,6 +359,11 @@ void VerilatedFst::declDoubleArray(uint32_t code, const char* name, int dtypenum
                                    VerilatedTraceSigKind kind, VerilatedTraceSigType type,
                                    int arraynum) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, false, 63, 0);
+}
+void VerilatedFst::declFloatArray(uint32_t code, const char* name, int dtypenum,
+                                  VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                  VerilatedTraceSigType type, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, true, arraynum, false, 31, 0);
 }
 //=============================================================================
 // Get/commit trace buffer

@@ -126,6 +126,8 @@ public:
                   VerilatedTraceSigKind, VerilatedTraceSigType, int msb, int lsb);
     void declDouble(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
                     VerilatedTraceSigKind, VerilatedTraceSigType);
+    void declFloat(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                   VerilatedTraceSigKind, VerilatedTraceSigType);
 
     // versions to call when the sig is array member
     void declEventArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
@@ -143,6 +145,8 @@ public:
                        int lsb);
     void declDoubleArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
                          VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum);
+    void declFloatArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                        VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
                        const char** itemNamesp, const char** itemValuesp);
@@ -165,6 +169,8 @@ public:
     tracep->declWide(code, name, dtypenum, dir, kind, type, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, dir, kind, type) \
     tracep->declDouble(code, name, dtypenum, dir, kind, type)
+#define VL_TRACE_DECL_FLOAT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
+    tracep->declFloat(code, name, dtypenum, dir, kind, type)
 
 #define VL_TRACE_DECL_EVENT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declEventArray(code, name, dtypenum, dir, kind, type, arraynum)
@@ -181,6 +187,8 @@ public:
     tracep->declWideArray(code, name, dtypenum, dir, kind, type, arraynum, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declDoubleArray(code, name, dtypenum, dir, kind, type, arraynum)
+#define VL_TRACE_DECL_FLOAT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
+    tracep->declFloatArray(code, name, dtypenum, dir, kind, type, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
