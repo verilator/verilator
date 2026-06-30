@@ -1176,8 +1176,10 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             if (formatAttr == VL_VFORMATATTR_COMPLEX) {  // printed as string
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p') fmt = 's';  // Override
-            } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
+            } else if (formatAttr == VL_VFORMATATTR_DOUBLE
+                       || formatAttr == VL_VFORMATATTR_SHORTREAL) {
                 real = va_arg(ap, double);
+                if (formatAttr == VL_VFORMATATTR_SHORTREAL) real = static_cast<float>(real);
                 ld = VL_RTOIROUND_Q_D(real);
                 strwide.resize(2);
                 WDataOutP strwidep = WDataOutP::external(strwide.data());
@@ -1286,8 +1288,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             }
             case 'p': {  // Pattern
                 // 'p' with NUMBER was earlier converted to 'd'
-                if (formatAttr
-                    == VL_VFORMATATTR_DOUBLE) {  // Can't just change to 'g' as need fixed format
+                const bool isRealFormat = formatAttr == VL_VFORMATATTR_DOUBLE
+                                          || formatAttr == VL_VFORMATATTR_SHORTREAL;
+                if (isRealFormat) {  // Can't just change to 'g' as need fixed format
                     _vl_snprintf_string(t_tmp, "%g", real);
                     output += t_tmp;
                 } else if (formatAttr == VL_VFORMATATTR_STRING) {
@@ -1358,7 +1361,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             }
             case 't': {  // Time
                 // Timeunit was read earlier from up-front arguments
-                if (formatAttr == VL_VFORMATATTR_DOUBLE) {  // Realtime
+                const bool isRealFormat = formatAttr == VL_VFORMATATTR_DOUBLE
+                                          || formatAttr == VL_VFORMATATTR_SHORTREAL;
+                if (isRealFormat) {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
                     output += _vl_vsformat_time(t_tmp, real, timeunit, left, width);
                 } else {
