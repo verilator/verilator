@@ -362,6 +362,8 @@ static inline float VL_ISTOR_F_Q(int lbits, QData lhs) VL_MT_SAFE {
 }
 // Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
+// Return IData truncated from float (numeric)
+static inline IData VL_RTOI_I_F(float lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -3419,6 +3421,45 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
         _vl_insert_WQ(owp, mantissa, lsb + 52, lsb);
     }
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
+    return owp;
+}
+// Return QData from float (numeric)
+// EMIT_RULE: VL_RTOIROUND_Q_F:  oclean=dirty; lclean==clean/shortreal
+static inline QData VL_RTOIROUND_Q_F(float lhs) VL_PURE {
+    // IEEE format: [31]=sign [30:23]=exp+127 [22:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = static_cast<float>(VL_ROUND(lhs));
+    if (lhs == 0.0f) return 0;
+    const IData i = VL_CVT_I_F(lhs);
+    const int lsb = static_cast<int>((i >> 23U) & VL_MASK_I(8)) - 127 - 23;
+    const uint32_t mantissa = (i & VL_MASK_I(23)) | (1U << 23);
+    uint64_t out = 0;
+    if (lsb < 0) {
+        out = mantissa >> -lsb;
+    } else if (lsb < 64) {
+        out = static_cast<uint64_t>(mantissa) << lsb;
+    }
+    if (lhs < 0.0f) out = -out;
+    return out;
+}
+static inline IData VL_RTOIROUND_I_F(float lhs) VL_PURE {
+    return static_cast<IData>(VL_RTOIROUND_Q_F(lhs));
+}
+static inline WDataOutP VL_RTOIROUND_W_F(int obits, WDataOutP owp, float lhs) VL_MT_SAFE {
+    // IEEE format: [31]=sign [30:23]=exp+127 [22:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = static_cast<float>(VL_ROUND(lhs));
+    VL_ZERO_W(obits, owp);
+    if (lhs == 0.0f) return owp;
+    const IData i = VL_CVT_I_F(lhs);
+    const int lsb = static_cast<int>((i >> 23U) & VL_MASK_I(8)) - 127 - 23;
+    const QData mantissa = (i & VL_MASK_I(23)) | (1ULL << 23);
+    if (lsb < 0) {
+        VL_SET_WQ(owp, mantissa >> -lsb);
+    } else if (lsb < obits) {
+        _vl_insert_WQ(owp, mantissa, lsb + 23, lsb);
+    }
+    if (lhs < 0.0f) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
 }
 
