@@ -150,6 +150,7 @@ typedef enum byte {
 
   // Force with vpiRealVal
   real          real1      `PUBLIC_FORCEABLE; // double
+  shortreal     shortreal1 `PUBLIC_FORCEABLE; // float
 
   // Force with vpiStringVal
   logic [ 15:0] textHalf   `PUBLIC_FORCEABLE; // SData
@@ -235,6 +236,7 @@ typedef enum byte {
   `else
   real         real1Continuously       `PUBLIC_FORCEABLE; // double
   `endif
+  shortreal    shortreal1Continuously  `PUBLIC_FORCEABLE; // float
 
   // Force with vpiStringVal
   wire [ 15:0] textHalfContinuously   `PUBLIC_FORCEABLE; // SData
@@ -305,6 +307,7 @@ typedef enum byte {
     vectorW <= 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA;
 
     real1 <= 1.0;
+    shortreal1 <= 1.25;
 
     textHalf <= "Hf";
     textLong <= "Long64b";
@@ -382,6 +385,7 @@ typedef enum byte {
   assign vectorWContinuously = 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA;
 
   assign real1Continuously = 1.0;
+  assign shortreal1Continuously = 1.25;
 
   assign textHalfContinuously = "Hf";
   assign textLongContinuously = "Long64b";
@@ -456,6 +460,7 @@ typedef enum byte {
     force vectorQ = 62'h15555555_55555555;
     force vectorW = 128'h55555555_55555555_55555555_55555555;
     force real1 = 123456.789;
+    force shortreal1 = shortreal'(123456.789);
     force textHalf = "T3";
     force textLong = "44Four44";
     force text = "lorem ipsum";
@@ -518,6 +523,7 @@ typedef enum byte {
     force vectorQContinuously = 62'h15555555_55555555;
     force vectorWContinuously = 128'h55555555_55555555_55555555_55555555;
     force real1Continuously = 123456.789;
+    force shortreal1Continuously = shortreal'(123456.789);
     force textHalfContinuously = "T3";
     force textLongContinuously = "44Four44";
     force textContinuously = "lorem ipsum";
@@ -896,6 +902,7 @@ typedef enum byte {
     release vectorQ;
     release vectorW;
     release real1;
+    release shortreal1;
     release textHalf;
     release textLong;
     release text;
@@ -936,6 +943,7 @@ typedef enum byte {
     release vectorQContinuously;
     release vectorWContinuously;
     release real1Continuously;
+    release shortreal1Continuously;
     release textHalfContinuously;
     release textLongContinuously;
     release textContinuously;
@@ -1269,6 +1277,7 @@ typedef enum byte {
     `checkh(vectorQContinuously, 62'h15555555_55555555);
     `checkh(vectorWContinuously, 128'h55555555_55555555_55555555_55555555);
     `checkr(real1Continuously, 123456.789);
+    `checkr(shortreal1Continuously, shortreal'(123456.789));
     `checks(textHalfContinuously, "T3");
     `checks(textLongContinuously, "44Four44");
     `checks(textContinuously, "lorem ipsum");
@@ -1337,6 +1346,7 @@ typedef enum byte {
     `checkh(vectorQ, 62'h15555555_55555555);
     `checkh(vectorW, 128'h55555555_55555555_55555555_55555555);
     `checkr(real1, 123456.789);
+    `checkr(shortreal1, shortreal'(123456.789));
     `checks(textHalf, "T3");
     `checks(textLong, "44Four44");
     `checks(text, "lorem ipsum");
@@ -1404,6 +1414,7 @@ typedef enum byte {
     `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
     `checkr(real1Continuously, 1.0);
+    `checkr(shortreal1Continuously, 1.25);
     `checks(textHalfContinuously, "Hf");
     `checks(textLongContinuously, "Long64b");
     `checks(textContinuously, "Verilog Test module");
@@ -1703,6 +1714,7 @@ typedef enum byte {
     `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAA);
     `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
     `checkr(real1, 1.0);
+    `checkr(shortreal1, 1.25);
     `checks(textHalf, "Hf");
     `checks(textLong, "Long64b");
     `checks(text, "Verilog Test module");

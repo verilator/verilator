@@ -1592,6 +1592,18 @@ double VerilatedVpiImp::getReadDataWord(const VerilatedVpioVar* baseSignalVop,
     return readData;
 }
 
+template <>
+float VerilatedVpiImp::getReadDataWord(const VerilatedVpioVar* baseSignalVop,
+                                       const VerilatedVpioVar* forceEnableSignalVop,
+                                       const VerilatedVpioVar* forceValueSignalVop,
+                                       size_t /*bitCount*/, size_t /*bitOffset*/) {
+    const float baseSignalData = *baseSignalVop->varShortRealDatap();
+    const bool forceEnableData = *forceEnableSignalVop->varCDatap();
+    const float forceValueData = *forceValueSignalVop->varShortRealDatap();
+    const float readData = forceEnableData ? forceValueData : baseSignalData;
+    return readData;
+}
+
 std::size_t VerilatedVpiImp::vlTypeSize(const VerilatedVarType vltype) {
     switch (vltype) {
     case VLVT_UINT8: return sizeof(CData); break;
@@ -3617,6 +3629,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                       *forceReadSignalVop->varRealDatap() = readData;
                       return;
                   }
+                  if (baseSignalVop->varp()->vltype() == VLVT_SHORTREAL) {
+                      const float readData = VerilatedVpiImp::getReadDataWord<float>(
+                          baseSignalVop, forceEnableSignalVop, forceValueSignalVop, 32, 0);
+                      *forceReadSignalVop->varShortRealDatap() = readData;
+                      return;
+                  }
 
                   const std::size_t wordSize
                       = 8ULL * VerilatedVpiImp::vlTypeSize(forceReadSignalVop->varp()->vltype());
@@ -3842,6 +3860,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiShortRealVal) {
             if (valueVop->varp()->vltype() == VLVT_SHORTREAL) {
                 *(valueVop->varShortRealDatap()) = static_cast<float>(valuep->value.real);
+                if (baseSignalVop->varp()->isForceable()) updateVforceRd();
                 return object;
             }
         } else if (valuep->format == vpiScalarVal) {
