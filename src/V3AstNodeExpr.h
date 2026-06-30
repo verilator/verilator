@@ -1063,6 +1063,8 @@ class AstConst final : public AstNodeExpr {
     void initWithNumber() {
         if (m_num.isDouble()) {
             dtypeSetDouble();
+        } else if (m_num.isShortReal()) {
+            dtypeSetShortReal();
         } else if (m_num.isString()) {
             dtypeSetString();
         } else if (m_num.isAnyXZ()) {

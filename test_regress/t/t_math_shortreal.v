@@ -12,14 +12,17 @@ module t (
     input clk
 );
 
-  // verilator lint_off SHORTREAL
   integer i;
   reg [63:0] b;
+  reg [31:0] sb;
+  real d;
   shortreal r, r2;
   integer cyc = 0;
 
   realtime uninit;
   initial if (uninit != 0.0) $stop;
+  shortreal uninit_s;
+  initial if (uninit_s != 0.0) $stop;
 
   initial begin
     if (1_00_0.0_1 != 1000.01) $stop;
@@ -41,7 +44,28 @@ module t (
     if (i != 36) $stop;
     r = 10'd38;
     if (r != 38.0) $stop;
+    r = shortreal'(16777217);
+    if ($shortrealtobits(r) != 32'h4b800000) $stop;
     // verilator lint_on REALCVT
+    //
+    if ($bits(shortreal) != 32) $stop;
+    if ($bits(r) != 32) $stop;
+    sb = $shortrealtobits(1.0);
+    if (sb != 32'h3f800000) $stop;
+    r = $bitstoshortreal(sb);
+    if (r != 1.0) $stop;
+    r = $bitstoshortreal($shortrealtobits(1.414));
+    if ($shortrealtobits(r) != 32'h3fb4fdf4) $stop;
+    r = shortreal'(1.0 / 10.0);
+    if ($shortrealtobits(r) != 32'h3dcccccd) $stop;
+    d = real'(r);
+    if (!`is_near_real(d, 0.10000000149011612)) $stop;
+    r = shortreal'(36.5);
+    if (integer'(r) != 37) $stop;
+    d = shortreal'(16777216.0) + 1.0;
+    if (d != 16777217.0) $stop;
+    d = real'(shortreal'(16777216.0) + 1);
+    if (d != 16777216.0) $stop;
     // operators
     if ((-(1.5)) != -1.5) $stop;
     if ((+(1.5)) != 1.5) $stop;
@@ -80,9 +104,6 @@ module t (
     i = 0;
     for (r = 1.0; r < 2.0; r = r + 0.1) i++;
     if (i != 10) $stop;
-    // bug
-    r = $bitstoshortreal($shortrealtobits(1.414));
-    if (r != 1.414) $stop;
   end
 
   // Test loop
