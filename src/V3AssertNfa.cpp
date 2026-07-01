@@ -54,6 +54,10 @@ struct SvaVertexData final {
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
     AstNodeExpr* stateSigp = nullptr;  // Combinational state signal (owned during lowering)
     bool needsReg = false;  // True if vertex has incoming clocked edge
+    // Pure ##N delay chains collapse to one packed vector shifted once per clock
+    // instead of one 1-bit register per position (verilator/verilator#7792).
+    AstVar* shiftVecp = nullptr;  // Shared packed shift vector, or null for a standalone reg
+    int shiftBit = -1;  // Bit index within shiftVecp (0 = chain entry)
 };
 
 // NFA state vertex -- one per NFA position in the sequence evaluation
@@ -1669,7 +1673,10 @@ class SvaNfaLowering final {
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
                 srcSigp = andCond(c.flp, srcSigp, te.m_condp);
 
-                if (c.disableExprp && !c.snapshotVarp) {
+                // Zero in-flight state on an active disable in both modes; the
+                // edge counter misses a held or mid-window disable (IEEE
+                // 1800-2023 16.12, level-based).
+                if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     srcSigp = new AstLogAnd{c.flp, srcSigp, notDisp};
@@ -1684,6 +1691,47 @@ class SvaNfaLowering final {
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::WRITE},
                 nextStatep};
+            if (!bodyp) {
+                bodyp = assignp;
+            } else {
+                bodyp->addNext(assignp);
+            }
+        }
+
+        // Pure ##N delay chains: one masked shift per vector.
+        //   vec <= ((vec << 1) | inject) & {W{!disable & !kill}}
+        // bit 0 injects the head's feeder contribution; interior bits shift up.
+        // The per-bit mask reproduces the same disable/kill gating the standalone
+        // registers get, so mid-window disable zeroing is preserved.
+        for (int i = 0; i < c.N; ++i) {
+            if (!c.vtx[i]->datap()->shiftVecp || c.vtx[i]->datap()->shiftBit != 0) continue;
+            AstVar* const vecp = c.vtx[i]->datap()->shiftVecp;
+            const int width = vecp->width();
+            AstNodeExpr* injectp = nullptr;
+            for (const V3GraphEdge& er : c.vtx[i]->inEdges()) {
+                const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
+                if (!te.m_consumesCycle) continue;
+                const int fromIdx = te.fromVtxp()->color();
+                UASSERT_OBJ(c.vtx[fromIdx]->datap()->stateSigp, te.fromVtxp(),
+                            "Shift-chain head feeder missing stateSig");
+                injectp = andCond(c.flp, c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false),
+                                  te.m_condp);
+            }
+            UASSERT_OBJ(injectp, c.vtx[i], "Shift-chain head has no clocked feeder");
+            AstNodeExpr* const shiftedp
+                = new AstShiftL{c.flp, new AstVarRef{c.flp, vecp, VAccess::READ},
+                                new AstConst{c.flp, AstConst::WidthedValue{}, 32, 1u}, width};
+            AstNodeExpr* const nextp
+                = new AstOr{c.flp, shiftedp, new AstExtend{c.flp, injectp, width}};
+            AstNodeExpr* gatep = notKillActive(c);
+            if (c.disableExprp) {
+                gatep = new AstLogAnd{
+                    c.flp, new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}, gatep};
+            }
+            AstNodeExpr* const maskedp = new AstAnd{
+                c.flp, nextp, new AstReplicate{c.flp, gatep, static_cast<uint32_t>(width)}};
+            AstAssignDly* const assignp
+                = new AstAssignDly{c.flp, new AstVarRef{c.flp, vecp, VAccess::WRITE}, maskedp};
             if (!bodyp) {
                 bodyp = assignp;
             } else {
@@ -2024,7 +2072,11 @@ class SvaNfaLowering final {
         // datap() was freshly allocated in lower() -- all stateSigp start null.
         c.vtx[c.startIdx]->datap()->stateSigp = triggerExprp->cloneTreePure(false);
         for (int i = 0; i < c.N; ++i) {
-            if (c.vtx[i]->datap()->stateVarp) {
+            if (c.vtx[i]->datap()->shiftVecp) {
+                c.vtx[i]->datap()->stateSigp = new AstSel{
+                    c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->shiftVecp, VAccess::READ},
+                    c.vtx[i]->datap()->shiftBit, 1};
+            } else if (c.vtx[i]->datap()->stateVarp) {
                 c.vtx[i]->datap()->stateSigp
                     = new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::READ};
             } else if (c.vtx[i]->datap()->counterActiveVarp) {
@@ -2227,6 +2279,67 @@ public:
             }
         }
 
+        // Pure ##N delay sub-chains: a maximal simple path of registered vertices
+        // whose state is a plain 1-cycle copy of a single predecessor. Each such
+        // chain lowers to one packed vector shifted once per clock instead of L
+        // separate 1-bit registers with L shift assignments (igorosky,
+        // verilator/verilator#7792). Uniform disable/kill gating is preserved by
+        // masking the whole vector, so the mid-window disable fix is unaffected.
+        const auto singleClockedInEdge = [](SvaStateVertex* v) -> const SvaTransEdge* {
+            const SvaTransEdge* inp = nullptr;
+            for (const V3GraphEdge& er : v->inEdges()) {
+                const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
+                if (!te.m_consumesCycle) return nullptr;  // an incoming Link disqualifies
+                if (inp) return nullptr;  // more than one clocked source -> OR-merge
+                inp = &te;
+            }
+            return inp;
+        };
+        const auto shiftable = [&](int i) -> bool {
+            SvaStateVertex* const v = vtx[i];
+            if (!v->datap()->needsReg) return false;
+            if (i == startIdx || v->m_isMatch) return false;
+            if (v->m_isCounter || v->m_isAndCombiner || v->m_isRejectSink) return false;
+            if (v->m_isUnbounded) return false;  // self-loop accumulator, not a pure shift
+            if (v->m_strongPending) return false;  // final-block liveness reads its own reg
+            if (!v->m_throughoutConds.empty()) return false;
+            return singleClockedInEdge(v) != nullptr;
+        };
+        const auto outClockedCount = [](SvaStateVertex* v) -> int {
+            int n = 0;
+            for (const V3GraphEdge& er : v->outEdges())
+                if (static_cast<const SvaTransEdge&>(er).m_consumesCycle) ++n;
+            return n;
+        };
+        std::vector<int> nextInChain(N, -1);
+        std::vector<bool> hasPrevInChain(N, false);
+        for (int i = 0; i < N; ++i) {
+            if (!shiftable(i)) continue;
+            const SvaTransEdge* const inp = singleClockedInEdge(vtx[i]);
+            // A conditional/reject in-edge keeps its own inject; such a vertex can
+            // still be a chain head, never a shifted interior bit.
+            if (inp->m_condp || inp->m_rejectOnFail || inp->m_condVtxp) continue;
+            const int p = inp->fromVtxp()->color();
+            if (!shiftable(p) || outClockedCount(vtx[p]) != 1) continue;  // p branches
+            nextInChain[p] = i;
+            hasPrevInChain[i] = true;
+        }
+        for (int i = 0; i < N; ++i) {
+            if (hasPrevInChain[i] || nextInChain[i] == -1) continue;  // head of a >=2 chain only
+            int len = 0;
+            for (int j = i; j != -1; j = nextInChain[j]) ++len;
+            AstVar* const vecp
+                = new AstVar{flp, VVarType::MODULETEMP, baseName + "__v" + std::to_string(i),
+                             m_modp->findBitDType(len, len, VSigning::UNSIGNED)};
+            vecp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(vecp);
+            int bit = 0;
+            for (int j = i; j != -1; j = nextInChain[j], ++bit) {
+                vtx[j]->datap()->shiftVecp = vecp;
+                vtx[j]->datap()->shiftBit = bit;
+            }
+        }
+
         AstNodeDType* const u32DTypep = m_modp->findBasicDType(VBasicDTypeKwd::UINT32);
         AstVar* const killVarp
             = new AstVar{flp, VVarType::MODULETEMP, baseName + "__kill", u32DTypep};
@@ -2263,6 +2376,7 @@ public:
             }
             if (!vtx[i]->datap()->needsReg) continue;
             if (i == startIdx || vtx[i]->m_isMatch) continue;
+            if (vtx[i]->datap()->shiftVecp) continue;  // lives in a packed shift vector
             const std::string varName = baseName + "__s" + std::to_string(i);
             AstVar* const varp
                 = new AstVar{flp, VVarType::MODULETEMP, varName, m_modp->findBitDType()};

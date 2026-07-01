@@ -90,7 +90,11 @@ module t (
       `checkd(rand_bounded_pass_q.size(), 0);
       `checkd(rand_bounded_fail_q.size(), 20);
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 13);
+      // Level-based disable now suppresses attempts whose [0:3] window touches
+      // rst_rand (not only the start cyc), dropping 13 -> 8 toward Questa. The
+      // residual 8 vs 6 is a disable that goes true AFTER an in-window failure
+      // already fired: a streaming NFA cannot retroactively un-fire it.
+      `checkd(disable_bounded_fail_q.size(), 8);  // Questa: 6
       $write("*-* All Finished *-*\n");
       $finish;
     end
