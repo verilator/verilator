@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_vlt_public_spec.v"
 
-test.lint(fails=True, expect_filename=test.golden_filename,
+test.lint(fails=True,
+          expect_filename=test.golden_filename,
           verilator_flags2=["--vpi", test.name + ".vlt"])
 
 test.passes()

@@ -1352,12 +1352,10 @@ static void collectScopeMatches(AstNode* firstp, const std::string& name,
     }
 }
 
-using ScopeChildrenCache
-    = std::map<std::pair<const AstNode*, std::string>, std::vector<AstNode*>>;
+using ScopeChildrenCache = std::map<std::pair<const AstNode*, std::string>, std::vector<AstNode*>>;
 
-static const std::vector<AstNode*>& findScopeChildren(AstNode* scopep,
-                                                      const V3ControlHierSegment& seg,
-                                                      ScopeChildrenCache& cache) {
+static const std::vector<AstNode*>&
+findScopeChildren(AstNode* scopep, const V3ControlHierSegment& seg, ScopeChildrenCache& cache) {
     const std::string name = segmentPrettyText(seg);
     const auto key = std::make_pair(static_cast<const AstNode*>(scopep), name);
     const auto pair = cache.emplace(key, std::vector<AstNode*>{});

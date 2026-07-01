@@ -13,8 +13,7 @@ test.scenarios('vlt')
 test.top_filename = "t/t_vlt_public_spec_hier_pub.v"
 
 test.compile(verilator_flags2=[
-    "--binary", "--vpi", "--public-ignore", "--public-params",
-    test.name + ".vlt"
+    "--binary", "--vpi", "--public-ignore", "--public-params", test.name + ".vlt"
 ])
 
 test.execute()

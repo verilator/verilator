@@ -50,8 +50,8 @@
 #include "V3Param.h"
 
 #include "V3Case.h"
-#include "V3Control.h"
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3LinkDotIfaceCapture.h"
