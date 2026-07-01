@@ -6,15 +6,15 @@
 
 
 module sub();
-   int leaf = 0;
+  int leaf = 0;
 endmodule
 
 module top();
-   sub \foo] [3:0] ();
+  sub \foo] [3:0] ();
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

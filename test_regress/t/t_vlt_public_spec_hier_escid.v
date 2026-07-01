@@ -6,16 +6,16 @@
 
 
 module sub_mod();
-   int \var.with.dot = 0;
+  int \var.with.dot = 0;
 endmodule
 
 module top();
-   sub_mod \inst.with.dot ();
-   sub_mod \foo[abc] ();
+  sub_mod \inst.with.dot ();
+  sub_mod \foo[abc] ();
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

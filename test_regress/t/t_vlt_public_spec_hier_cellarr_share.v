@@ -9,15 +9,15 @@
 // arrayed cells.
 
 module sub();
-   int leaf = 0;
+  int leaf = 0;
 endmodule
 
 module top();
-   sub i_sub [1:0] ();
+  sub i_sub [1:0] ();
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

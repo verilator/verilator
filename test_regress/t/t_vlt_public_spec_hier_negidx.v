@@ -6,21 +6,21 @@
 
 
 module sub();
-   int sub_leaf = 0;
+  int sub_leaf = 0;
 endmodule
 
 module top();
-   generate
-      for (genvar i = -2; i < 0; ++i) begin : gen_loop
-         int loop_local;
-      end
-   endgenerate
+  generate
+    for (genvar i = -2; i < 0; ++i) begin : gen_loop
+      int loop_local;
+    end
+  endgenerate
 
-   sub i_sub [0:-2] ();
+  sub i_sub [0:-2] ();
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

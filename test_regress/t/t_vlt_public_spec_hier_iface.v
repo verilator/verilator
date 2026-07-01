@@ -6,17 +6,17 @@
 
 
 interface ifc();
-   logic [7:0] data;
+  logic [7:0] data;
 endinterface
 
 module top();
-   ifc i_single ();
-   ifc i_arr [2:0] ();
-   ifc i_md [1:0][1:0] ();
+  ifc i_single ();
+  ifc i_arr [2:0] ();
+  ifc i_md [1:0][1:0] ();
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

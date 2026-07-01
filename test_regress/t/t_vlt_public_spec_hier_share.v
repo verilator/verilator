@@ -6,18 +6,18 @@
 
 
 module sub();
-   int some_var = 0;
+  int some_var = 0;
 endmodule
 
 module top();
-   sub sub_a ();   // tagged public_flat
-   sub sub_b ();   // tagged public_flat (same marking as sub_a -> shares clone)
-   sub sub_c ();   // tagged public_flat_rd (different marking -> own clone)
-   sub sub_d ();   // not tagged
+  sub sub_a ();   // tagged public_flat
+  sub sub_b ();   // tagged public_flat (same marking as sub_a -> shares clone)
+  sub sub_c ();   // tagged public_flat_rd (different marking -> own clone)
+  sub sub_d ();   // not tagged
 
-   initial begin
-      $c("Verilated::scopesDump();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("Verilated::scopesDump();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
