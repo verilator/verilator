@@ -10,13 +10,8 @@ module t (
   bit a, b;
   logic g = 0;
 
-  // Clockless `@seq` stays E_UNSUPPORTED even under a default clocking, matching
-  // Questa; whether 9.4.2.4 should inherit it here is an open PR question.
-  default clocking @(posedge clk);
-  endclocking
-
   // verilog_format: off
-  sequence s_unclocked;
+  sequence s_clockless;
     a ##1 b;
   endsequence
 
@@ -30,7 +25,7 @@ module t (
   // verilog_format: on
 
   initial begin
-    @s_unclocked;
+    @s_clockless;
     @s_nonedge;
     @s_noncons;
   end

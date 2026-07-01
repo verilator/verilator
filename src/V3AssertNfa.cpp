@@ -2762,7 +2762,12 @@ class AssertNfaVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(specp), specp);
             return;
         }
-        // A clockless sequence has no sampling edge; require an explicit clock.
+        // Inherit the module default clocking (IEEE 14.12, 16.15) when the
+        // sequence has none of its own.
+        if (!specp->sensesp() && m_defaultClockingp) {
+            specp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
+        }
+        // A clockless sequence with no default clocking has no sampling edge.
         if (!specp->sensesp()) {
             specp->v3warn(E_UNSUPPORTED,
                           "Unsupported: '@' event control on a sequence without a clocking event");

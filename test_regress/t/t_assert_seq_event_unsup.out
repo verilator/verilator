@@ -1,11 +1,11 @@
-%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:33:6: Unsupported: '@' event control on a sequence without a clocking event
-   33 |     @s_unclocked;
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:28:6: Unsupported: '@' event control on a sequence without a clocking event
+   28 |     @s_clockless;
       |      ^~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:24:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
-   24 |     @(g) a ##1 b;
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:19:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
+   19 |     @(g) a ##1 b;
       |     ^
-%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:35:6: Unsupported: this sequence form referenced by an '@' event control
-   35 |     @s_noncons;
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:30:6: Unsupported: this sequence form referenced by an '@' event control
+   30 |     @s_noncons;
       |      ^~~~~~~~~
 %Error: Exiting due to

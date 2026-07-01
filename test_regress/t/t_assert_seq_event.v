@@ -16,7 +16,7 @@ module t (
   bit a, b, c;
   bit a1, a2, b1;
   int cyc = 0;
-  int seq_hits = 0, seq_hits2 = 0, ref_hits = 0, one_hits = 0;
+  int seq_hits = 0, seq_hits2 = 0, ref_hits = 0, one_hits = 0, dc_hits = 0;
 
   // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence seq;
@@ -27,6 +27,15 @@ module t (
     @(posedge clk) a;
   endsequence
   // verilog_format: on
+
+  // seq_dc has no clocking event, so it inherits the default clocking and must
+  // behave identically to the explicitly-clocked seq above.
+  default clocking @(posedge clk);
+  endclocking
+
+  sequence seq_dc;
+    a ##1 b ##1 c;
+  endsequence
 
   // A sequence used as an `@` event control resumes once per sequence end point
   // (IEEE 1800-2023 9.4.2.4). seq_hits/seq_hits2 are two waiters on the same
@@ -43,6 +52,10 @@ module t (
   initial forever begin
     @seq_one;
     one_hits = one_hits + 1;
+  end
+  initial forever begin
+    @seq_dc;
+    dc_hits = dc_hits + 1;
   end
 
   always @(posedge clk) begin
@@ -66,10 +79,11 @@ module t (
 
   // Counts read in final (Postponed) to avoid same-timestep races.
   final begin
-    `checkd(seq_hits, 14);  // Questa: 14
-    `checkd(seq_hits2, 14);  // Questa: 14
-    `checkd(ref_hits, 14);  // Questa: 14
-    `checkd(one_hits, 30);  // Questa: 30
+    `checkd(seq_hits, 14);
+    `checkd(seq_hits2, 14);
+    `checkd(ref_hits, 14);
+    `checkd(one_hits, 30);
+    `checkd(dc_hits, 14);
     $write("*-* All Finished *-*\n");
   end
 endmodule
