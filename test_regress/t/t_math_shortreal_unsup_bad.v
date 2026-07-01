@@ -7,7 +7,6 @@
 module t;
 
   // verilator lint_off REALCVT
-  // verilator lint_off SHORTREAL
   shortreal s;
   logic l;
 

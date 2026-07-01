@@ -21,7 +21,6 @@ module t;
   // IEEE 1800-2023 7.2.1
   typedef struct packed {
     real r;  // BAD
-    // verilator lint_off SHORTREAL
     shortreal sr;  // BAD
     realtime rt;  // BAD
     chandle ch;  // BAD
