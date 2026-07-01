@@ -3795,7 +3795,7 @@ void AstDelay::dumpJson(std::ostream& str) const {
 }
 
 const char* AstDisable::broken() const {
-    BROKEN_RTN((m_targetp && targetRefp()) || ((!m_targetp && !targetRefp())));
+    BROKEN_RTN(!m_targetp && !targetRefp());
     return nullptr;
 }
 void AstDisable::dump(std::ostream& str) const {
