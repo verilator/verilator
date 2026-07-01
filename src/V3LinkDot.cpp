@@ -1055,14 +1055,7 @@ public:
             nodep->classOrPackageNodep(foundp->nodep());
             return foundp;
         }
-        if (deferIfUnresolved) {
-            // Inside a class that extends a parameterized base, the name may be a
-            // type parameter (or other member) inherited from that base, which is
-            // only resolvable once the base is deparameterized by V3Param. Leave the
-            // reference unresolved so the caller defers it; a genuine bad name will
-            // still error in the post-V3Param link pass.
-            return nullptr;
-        }
+        if (deferIfUnresolved) return nullptr;
         const string suggest
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
         nodep->v3error((classOnly ? "Class" : "Package/class")
@@ -4765,9 +4758,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_RESTORER(m_pinSymp);
 
             if (!nodep->classOrPackageSkipp() && nodep->name() != "local::") {
-                // When inside a class that extends a parameterized base, an
-                // unresolved name may be a base-class type parameter that only
-                // becomes available after V3Param; defer rather than error.
                 const bool deferIfUnresolved = m_statep->forPrimary() && m_insideClassExtParam;
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
                                                 false, ":: reference", deferIfUnresolved);
