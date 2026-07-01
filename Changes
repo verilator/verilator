@@ -207,6 +207,7 @@ Verilator 5.049 devel
 * Fix disable iff ignored when its condition is held continuously true (#7841). [Yilou Wang]
 * Fix constant pool cache after dead scope removal (#7845). [Nick Brereton]
 * Fix covergroups without --coverage (#7848) (#7849). [Joshua Leahy]
+* Fix class scope '::' reference through an inherited type parameter (#7844). [Sergey Chusov]
 
 
 Verilator 5.048 2026-04-26
