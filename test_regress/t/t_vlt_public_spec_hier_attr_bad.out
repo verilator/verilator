@@ -11,10 +11,7 @@
 %Error: t/t_vlt_public_spec_hier_attr_bad.vlt:13:1: 'VAR_SPLIT_VAR' attribute does not support -path
    13 | split_var -path "top.i_mid_0.mid_tmp_b"
       | ^~~~~~~~~
-%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:14:1: 'VAR_ISOLATE_ASSIGNMENTS' attribute does not support -path
-   14 | isolate_assignments -path "top.i_mid_0.mid_tmp_b"
-      | ^~~~~~~~~~~~~~~~~~~
-%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:15:1: 'VAR_FORCEABLE' attribute does not support -path
-   15 | forceable -path "top.i_mid_0.mid_tmp_b"
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:14:1: 'VAR_FORCEABLE' attribute does not support -path
+   14 | forceable -path "top.i_mid_0.mid_tmp_b"
       | ^~~~~~~~~
 %Error: Exiting due to
