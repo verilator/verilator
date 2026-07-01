@@ -49,6 +49,25 @@ module t;
     join
   end
 
+  // fork..join: the delayed sibling also contains an unreachable disable, which
+  // makes LinkJump wrap its registration in a JumpBlock. It must still register
+  // before the synthetic fork-start delay so the earlier disable kills it.
+  initial begin
+    fork : fork_blk_wrap
+      begin
+        `checkt($time, 0);
+        disable fork_blk_wrap;
+        $stop;
+      end
+      begin
+        `checkt($time, 0);
+        #1;
+        if ($c("false")) disable fork_blk_wrap;
+        $stop;
+      end
+    join
+  end
+
   // fork..join_any: the disabling branch comes first, the delayed sibling second.
   initial begin
     fork : fork_blk2a
@@ -74,6 +93,24 @@ module t;
       begin
         `checkt($time, 0);
         disable fork_blk3a;
+        $stop;
+      end
+    join_any
+  end
+
+  // fork..join_any: the delayed sibling's own unreachable disable again forces a
+  // JumpBlock wrapper around its registration.
+  initial begin
+    fork : fork_blk_wrap_any
+      begin
+        `checkt($time, 0);
+        disable fork_blk_wrap_any;
+        $stop;
+      end
+      begin
+        `checkt($time, 0);
+        #1;
+        if ($c("false")) disable fork_blk_wrap_any;
         $stop;
       end
     join_any

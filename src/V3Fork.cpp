@@ -594,6 +594,15 @@ class ForkVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
         return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
     }
+    static bool isDisableProcessQueueExpr(const AstNode* const nodep) {
+        const AstVar* varp = nullptr;
+        if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+            varp = selp->varp();
+        }
+        return varp && varp->processQueue();
+    }
     static bool isDisableQueuePushSelfStmt(const AstNode* const nodep) {
         // Detect LinkJump-generated registration:
         // __VprocessQueue_*.push_back(std::process::self())
@@ -601,30 +610,54 @@ class ForkVisitor final : public VNVisitor {
         if (!stmtExprp) return false;
         const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
         if (!methodp || methodp->name() != "push_back") return false;
-        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->varp()->processQueue();
+        return isDisableProcessQueueExpr(methodp->fromp());
+    }
+    static const AstNode* unwrapLeadingJumpBlocks(const AstNode* nodep) {
+        while (const AstJumpBlock* const jumpBlockp = VN_CAST(nodep, JumpBlock)) {
+            nodep = jumpBlockp->stmtsp();
+        }
+        return nodep;
+    }
+    static bool isDisableQueuePushSelfPrefix(const AstNode* const nodep) {
+        return isDisableQueuePushSelfStmt(unwrapLeadingJumpBlocks(nodep));
+    }
+    template <typename T_Owner>
+    static bool insertForkSentinelAfterDisableQueuePushes(T_Owner* const ownerp,
+                                                          AstNode* const firstStmtp,
+                                                          AstNode* const delayp) {
+        AstNode* insertBeforep = firstStmtp;
+        while (insertBeforep && isDisableQueuePushSelfStmt(insertBeforep)) {
+            insertBeforep = insertBeforep->nextp();
+        }
+        if (AstJumpBlock* const jumpBlockp = VN_CAST(insertBeforep, JumpBlock)) {
+            if (insertForkSentinelAfterDisableQueuePushes(jumpBlockp, jumpBlockp->stmtsp(),
+                                                          delayp)) {
+                return true;
+            }
+        }
+        if (insertBeforep == firstStmtp) return false;
+        if (insertBeforep) {
+            insertBeforep->addHereThisAsNext(delayp);
+        } else {
+            ownerp->addStmtsp(delayp);
+        }
+        return true;
     }
     static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
         AstNode* const firstStmtp = beginp->stmtsp();
         if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
-
-        AstNode* insertBeforep = firstStmtp->nextp();
-        while (insertBeforep && isDisableQueuePushSelfStmt(insertBeforep)) {
-            insertBeforep = insertBeforep->nextp();
-        }
-        if (insertBeforep == firstStmtp->nextp()) return;
+        AstNode* const afterSentinelp = firstStmtp->nextp();
+        if (!isDisableQueuePushSelfPrefix(afterSentinelp)) return;
 
         AstNode* const delayp = firstStmtp->unlinkFrBack();
-        if (insertBeforep) {
-            insertBeforep->addHereThisAsNext(delayp);
-        } else {
-            beginp->addStmtsp(delayp);
-        }
+        const bool moved
+            = insertForkSentinelAfterDisableQueuePushes(beginp, afterSentinelp, delayp);
+        UASSERT_OBJ(moved, beginp, "Failed to move fork sentinel after disable queue pushes");
     }
     static bool forkIsDisableable(const AstFork* const nodep) {
         for (const AstBegin* itemp = nodep->forksp(); itemp;
              itemp = VN_AS(itemp->nextp(), Begin)) {
-            if (isDisableQueuePushSelfStmt(itemp->stmtsp())) return true;
+            if (isDisableQueuePushSelfPrefix(itemp->stmtsp())) return true;
         }
         return false;
     }
@@ -665,13 +698,19 @@ class ForkVisitor final : public VNVisitor {
             }
         }
 
+        iterateAndNextNull(nodep->declsp());
+        iterateAndNextNull(nodep->stmtsp());
+
+        // A plain 'join' blocks the parent until every branch finishes, so a branch cannot
+        // outlive the variables it references and need not be extracted into a task; just
+        // recurse to process any forks nested inside the branches. join_any and join_none
+        // branches may outlive the fork, so each branch body is wrapped in a task that
+        // captures the variables it references.
         if (nodep->joinType().join()) {
-            iterateChildren(nodep);
+            iterateAndNextNull(nodep->forksp());
             return;
         }
 
-        iterateAndNextNull(nodep->declsp());
-        iterateAndNextNull(nodep->stmtsp());
         std::vector<AstBegin*> wrappedp;
         {
             VL_RESTORER(m_inFork);

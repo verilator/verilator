@@ -96,6 +96,34 @@ static string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
     }
     return "";
 }
+static AstNode* parentNodep(AstNode* nodep) {
+    while (nodep && nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
+    return nodep ? nodep->backp() : nullptr;
+}
+static string lexicalDisablePath(AstNode* const targetp) {
+    std::vector<string> names;
+    for (AstNode* curp = targetp; curp; curp = parentNodep(curp)) {
+        if (AstNodeBlock* const blockp = VN_CAST(curp, NodeBlock)) {
+            if (blockp->name() != "") names.push_back(blockp->name());
+        } else if (AstNodeFTask* const ftaskp = VN_CAST(curp, NodeFTask)) {
+            names.push_back(ftaskp->name());
+        } else if (VN_IS(curp, NodeModule)) {
+            break;
+        }
+    }
+    string path;
+    for (auto it = names.crbegin(); it != names.crend(); ++it) {
+        path = VString::dot(path, ".", *it);
+    }
+    return path;
+}
+static string targetInstancePath(AstNode* const targetp, const string& targetPath) {
+    const string lexicalPath = lexicalDisablePath(targetp);
+    if (lexicalPath == "" || targetPath == lexicalPath) return "";
+    const string suffix = "." + lexicalPath;
+    if (!VString::endsWith(targetPath, suffix)) return "";
+    return targetPath.substr(0, targetPath.size() - suffix.size());
+}
 
 // ######################################################################
 //  Matcher classes (for suggestion matching)
@@ -6162,6 +6190,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        bool hasPartSelect = false;
+        const string targetPath
+            = nodep->targetRefp() ? extractDottedPath(nodep->targetRefp(), hasPartSelect) : "";
         VL_RESTORER(m_ds);
         m_ds.init(m_curSymp);
         m_ds.m_dotPos = DP_FIRST;
@@ -6178,8 +6209,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 pushDeletep(nodep->unlinkFrBack());
             }
             if (nodep->targetp()) {
-                // If the target is already linked, there is no need to store reference as child
-                VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+                AstNodeExpr* oldRefp = nodep->targetRefp()->unlinkFrBack();
+                VL_DO_DANGLING(oldRefp->deleteTree(), oldRefp);
+                if (!hasPartSelect) {
+                    const string instancePath = targetInstancePath(nodep->targetp(), targetPath);
+                    if (instancePath != "") {
+                        // Keep only the instance prefix so V3LinkJump can reference the selected
+                        // instance's process queue without reparsing the disable target.
+                        nodep->targetRefp(
+                            new AstVarXRef{nodep->fileline(), "", instancePath, VAccess::READ});
+                    }
+                }
             }
         }
     }
