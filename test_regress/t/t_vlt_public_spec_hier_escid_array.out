@@ -1,0 +1,12 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.\foo] [0]
+       VAR 0x#: leaf
+    SCOPE 0x#: top.\foo] [1]
+       VAR 0x#: leaf
+    SCOPE 0x#: top.\foo] [2]
+       VAR 0x#: leaf
+    SCOPE 0x#: top.\foo] [3]
+       VAR 0x#: leaf
+
+*-* All Finished *-*

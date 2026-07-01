@@ -1,0 +1,50 @@
+%Error: t/t_vlt_public_spec_hier_bad.vlt:12:1: -path 'no_such_top.no_such_var': cannot find top scope 'no_such_top'
+   12 | public_flat -path "no_such_top.no_such_var"
+      | ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_public_spec_hier_bad.vlt:15:1: -path 'top.i_mid_bogus.mid_tmp_b': cannot find scope 'i_mid_bogus' in scope 'top'
+   15 | public_flat -path "top.i_mid_bogus.mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:18:1: -path 'top.i_mid_0.no_such_var': cannot find variable 'no_such_var' in scope 'mid'
+   18 | public_flat -path "top.i_mid_0.no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:21:1: -path 'top.\ .mid_tmp_b': empty escaped identifier
+   21 | public_flat -path "top.\\ .mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:24:1: -path 'top..mid_tmp_b': empty identifier in path
+   24 | public_flat -path "top..mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:27:1: -path 'top.i_mid_0.': trailing '.' with no identifier
+   27 | public_flat -path "top.i_mid_0."
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:30:1: -path 'top.\i_mid_0 mid_tmp_b': expected '.' separator between identifiers
+   30 | public_flat -path "top.\\i_mid_0 mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:33:1: -path 'top.\foo] [2.mid_tmp_b': unterminated '[' in escaped-name array index
+   33 | public_flat -path "top.\\foo] [2.mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:36:1: -path 'top': must name at least a scope and a variable
+   36 | public_flat -path "top"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:39:1: -path 'top.i_mid_0[abc].mid_tmp_b': malformed array index in segment 'i_mid_0[abc]'
+   39 | public_flat -path "top.i_mid_0[abc].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:42:1: -path 'top.i_mid_0[99999999999].mid_tmp_b': malformed array index in segment 'i_mid_0[99999999999]'
+   42 | public_flat -path "top.i_mid_0[99999999999].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:45:1: -path 'top.\foo] [abc].mid_tmp_b': malformed array index '[abc]'
+   45 | public_flat -path "top.\\foo] [abc].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:48:1: -path 'top.i_mid_0].mid_tmp_b': malformed array index in segment 'i_mid_0]'
+   48 | public_flat -path "top.i_mid_0].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:51:1: -path 'top.[0].mid_tmp_b': malformed array index in segment '[0]'
+   51 | public_flat -path "top.[0].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:54:1: -path 'top.i_mid_0[1][abc].mid_tmp_b': malformed array index in segment 'i_mid_0[1][abc]'
+   54 | public_flat -path "top.i_mid_0[1][abc].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:57:1: -path 'top.i_mid_0[1]x[0].mid_tmp_b': malformed array index in segment 'i_mid_0[1]x[0]'
+   57 | public_flat -path "top.i_mid_0[1]x[0].mid_tmp_b"
+      | ^~~~~~~~~~~
+%Error: Exiting due to
