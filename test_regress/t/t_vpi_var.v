@@ -16,7 +16,9 @@ module t (/*AUTOARG*/
   // Outputs
   x,
   // Inputs
-  clk, a
+  clk, a, unpacked_struct_port, unpacked_union_port, nested_struct_port,
+  struct_array_port, struct_matrix_port, struct_with_packed_arrays_port,
+  wire_unpacked_struct_port, wire_struct_array_port
   );
 
 `ifdef VERILATOR
@@ -53,6 +55,99 @@ extern "C" int mon_check();
   reg [8:-7] [3:-4] negative_multi_packed[0:-2]  /*verilator public_flat_rw */;
   // verilator lint_on ASCRANGE
   reg             unpacked_only[7:0];
+
+  typedef struct {
+    logic [6:0] member_a;
+    logic member_b;
+    logic [15:0] member_c;
+  } unpacked_struct_t;
+
+  input unpacked_struct_t unpacked_struct_port /*verilator public_flat_rw*/;
+  input wire unpacked_struct_t wire_unpacked_struct_port /*verilator public_flat_rw*/;
+
+  typedef union {
+    logic [7:0] union_byte0;
+    logic [7:0] union_byte1;
+  } unpacked_union_t;
+
+  input unpacked_union_t unpacked_union_port /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [3:0] inner_x;
+    logic [3:0] inner_y;
+  } inner_struct_t;
+
+  typedef struct {
+    logic [7:0] outer_a;
+    inner_struct_t outer_inner;
+  } nested_struct_t;
+
+  input nested_struct_t nested_struct_port /*verilator public_flat_rw*/;
+
+  input unpacked_struct_t struct_array_port [1:0] /*verilator public_flat_rw*/;
+  input unpacked_struct_t struct_matrix_port [1:0][2:0] /*verilator public_flat_rw*/;
+  input wire unpacked_struct_t wire_struct_array_port [1:0] /*verilator public_flat_rw*/;
+  unpacked_struct_t struct_array_signal [1:0] /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [6:0] unsigned_member;
+    logic signed [6:0] signed_member;
+    bit bit_member;
+  } member_flags_struct_t;
+
+  member_flags_struct_t member_flags_struct_signal /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [7:0] child_leaf;
+  } child_struct_t;
+
+  typedef struct {
+    logic [15:0] scalar;
+    child_struct_t children [3:2];
+    logic [7:0] tail_array [2:5];
+    child_struct_t trailing_children [3:2];
+  } parent_struct_t;
+
+  parent_struct_t parent_struct_array [1:0] /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [7:0] \a.b ;
+    logic [7:0] plain_after;
+  } escaped_member_struct_t;
+
+  escaped_member_struct_t escaped_member_struct_signal /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [31:0] word_member;
+    logic [63:0] quad_member;
+    real real_member;
+    string string_member;
+    child_struct_t nested_member;
+  } aligned_struct_t;
+
+  aligned_struct_t aligned_struct_array [1:0] /*verilator public_flat_rw*/;
+
+  typedef struct {
+    logic [63:0] quad_leaf;
+    logic [7:0] byte_tail;
+  } stride_inner_struct_t;
+
+  typedef struct {
+    logic [7:0] lead;
+    stride_inner_struct_t nested;
+    logic [7:0] tail;
+  } stride_outer_struct_t;
+
+  stride_outer_struct_t alignment_stride_array [1:0] /*verilator public_flat_rw*/;
+
+  // verilator lint_off ASCRANGE
+  typedef struct {
+    logic [0:15][0:3][7:0] packed_matrix;
+    logic [8:-7][3:-4] reverse_matrix;
+  } struct_with_packed_arrays_t;
+  // verilator lint_on ASCRANGE
+
+  input struct_with_packed_arrays_t struct_with_packed_arrays_port /*verilator public_flat_rw*/;
 
   reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
   reg [15:0]      text_half    /*verilator public_flat_rw @(posedge clk) */;
@@ -166,6 +261,7 @@ extern "C" int mon_check();
     if (text != "lorem ipsum") $stop;
     if (str1 != "something a lot longer than hello") $stop;
     if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
+    if (alignment_stride_array[1].tail != 8'hc3) $stop;
   end
 
   always @(posedge clk) begin

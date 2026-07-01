@@ -1,8 +1,8 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED","stlFirstIterationp":"UNLINKED",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","stdPackageProcessp":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED","stlFirstIterationp":"UNLINKED",
  "modulesp": [
   {"type":"MODULE","name":"test","addr":"(E)","loc":"d,21:8,21:12","origName":"test","verilogName":"test","level":1,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"N","addr":"(F)","loc":"d,22:10,22:11","dtypep":"(G)","origName":"N","verilogName":"N","direction":"NONE","isUsedLoopIdx":true,"lifetime":"VSTATICI","varType":"GENVAR","dtypeName":"integer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"N","addr":"(F)","loc":"d,22:10,22:11","dtypep":"(G)","origName":"N","verilogName":"N","direction":"NONE","isUsedLoopIdx":true,"icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"GENVAR","dtypeName":"integer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"GENBLOCK","name":"FOR_GENERATE","addr":"(H)","loc":"d,24:5,24:8","implied":true,"genforp": [],"itemsp": []},
     {"type":"GENBLOCK","name":"FOR_GENERATE[0]","addr":"(I)","loc":"d,25:14,25:24","genforp": [],
      "itemsp": [

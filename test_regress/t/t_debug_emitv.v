@@ -21,10 +21,22 @@ endpackage
 
 class Cls;
   int member = 1;
+  rand int rmember1;
+  rand int rmember2;
+  covergroup cg_in_class;
+    cp_m: coverpoint member {
+      bins one = {1};
+      bins two = {2};
+    }
+  endgroup
   function void method;
     if (this != this) $stop;
   endfunction
 endclass
+
+function int rand_restricted(Cls obj, int member);
+  return obj.randomize() with (rmember1, rmember2) { rmember1 < member; rmember2 < member; };
+endfunction
 
 interface Iface (
    input clk
@@ -87,6 +99,7 @@ module t (/*AUTOARG*/
     if (|downto_32[60-:7]) $write("");
     if (the_ifaces[2].ifsig) $write("");
     #1 $write("After #1 delay");
+    wait(clk == 1) $write("After wait(clk == 1)");
   end
 
   bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];
@@ -273,6 +286,14 @@ module t (/*AUTOARG*/
     release sum;
   end
 
+  // verilog_format: off  // verible does not support clocking events inside sequence declarations
+  sequence s_clocked;
+    @(posedge clk) in
+  endsequence
+  // verilog_format: on
+
+  assert_seq_clocked: assert property (s_clocked);
+
   property p;
     @(posedge clk) ##1 sum[0]
   endproperty
@@ -330,6 +351,19 @@ module t (/*AUTOARG*/
   cover_concurrent: cover property(prop);
   cover_concurrent_stmt: cover property(prop) $display("pass");
 
+  cover_sequence_concurrent: cover sequence (@(posedge clk) in ##1 in);
+
+  assert_prop_always: assert property (@(posedge clk) always [0:3] in);
+  assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
+  assert_prop_overlap_impl: assert property (@(posedge clk) in |-> in);
+  assert_prop_nonoverlap_impl: assert property (@(posedge clk) in |=> in);
+  assert_prop_overlap_fb: assert property (@(posedge clk) in #-# in);
+  assert_prop_nonoverlap_fb: assert property (@(posedge clk) in #=# in);
+  assert_prop_accept_on: assert property (@(posedge clk) accept_on (in) in);
+  assert_prop_reject_on: assert property (@(posedge clk) reject_on (in) in);
+  assert_prop_sync_accept_on: assert property (@(posedge clk) sync_accept_on (in) in);
+  assert_prop_sync_reject_on: assert property (@(posedge clk) sync_reject_on (in) in);
+
 
   int a;
   int ao;
@@ -340,6 +374,62 @@ module t (/*AUTOARG*/
   end
 
   restrict property (@(posedge clk) ##1 a[0]);
+
+  // Covergroup constructs - exercise AstCovergroup, AstCoverpoint, AstCoverBin, AstCoverCross
+  logic [2:0] cg_sig;
+  logic [1:0] cg_sig2;
+
+  // Basic covergroup: value bins, default bin, ignore_bins, illegal_bins, options
+  covergroup cg_basic;
+    option.per_instance = 1;
+    option.weight = 2;
+    cp_sig: coverpoint cg_sig {
+      bins low    = {[0:3]};
+      bins high   = {[4:6]};
+      bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
+      bins dflt   = default;
+      ignore_bins ign = {7};
+      illegal_bins ill = {5};
+    }
+    // Coverpoint with per-coverpoint option but no explicit bins
+    cp_options: coverpoint cg_sig2 {
+      option.at_least = 2;
+    }
+  endgroup
+
+  // Covergroup with clocking event
+  covergroup cg_clocked @(posedge clk);
+    cp_cyc: coverpoint cg_sig;
+  endgroup
+
+  // Covergroup with transition bins
+  covergroup cg_trans;
+    cp_t: coverpoint cg_sig {
+      bins t01  = (3'b000 => 3'b001);
+      bins t12  = (3'b001 => 3'b010);
+      bins talt = (3'b010 => 3'b011), (3'b100 => 3'b101);  // multiple transition sets
+      bins trep = (3'b000 => 3'b001 [->2]);  // repetition op -> non-NONE VTransRepType (exercises ascii())
+      bins tarr[] = (3'b000 => 3'b001), (3'b001 => 3'b010);  // array transition bins -> m_isArray
+    }
+  endgroup
+
+  // Covergroup with cross coverage
+  covergroup cg_cross;
+    cp_x: coverpoint cg_sig {
+      bins x0 = {0};
+      bins x1 = {1};
+    }
+    cp_y: coverpoint cg_sig2 {
+      bins y0 = {0};
+      bins y1 = {1};
+    }
+    cx: cross cp_x, cp_y;
+  endgroup
+
+  cg_basic   cg_basic_inst   = new;
+  cg_clocked cg_clocked_inst = new;
+  cg_trans   cg_trans_inst   = new;
+  cg_cross   cg_cross_inst   = new;
 endmodule
 
 module sub(input logic clk);

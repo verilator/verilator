@@ -1,0 +1,11 @@
+# SystemC::Coverage-3
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_arcpagev_fsm_arc/$rootot.forced_wide_u.state::31'h0->31'h1Fvt.forced_wide_u.stateFf31'h0Ft31'h1htop.TOP' 2
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_arcpagev_fsm_arc/$rootot.forced_wide_u.state::31'h1->31'h2Fvt.forced_wide_u.stateFf31'h1Ft31'h2htop.TOP' 2
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_arcpagev_fsm_arc/$rootot.forced_wide_u.state::ANY->31'h0[reset]Fvt.forced_wide_u.stateFfANYFt31'h0Fgresethtop.TOP' 1
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_statepagev_fsm_state/$rootot.forced_wide_u.state::31'h0Fvt.forced_wide_u.stateFt31'h0htop.TOP' 1
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_statepagev_fsm_state/$rootot.forced_wide_u.state::31'h1Fvt.forced_wide_u.stateFt31'h1htop.TOP' 2
+C 'ft/t_cover_fsm_transition_shapes_multi.vl724n7tfsm_statepagev_fsm_state/$rootot.forced_wide_u.state::31'h2Fvt.forced_wide_u.stateFt31'h2htop.TOP' 2
+C 'ft/t_cover_fsm_transition_shapes_multi.vl742n5tfsm_arcpagev_fsm_arc/$rootot.forced_if_wide_u.state::31'h0->31'h1Fvt.forced_if_wide_u.stateFf31'h0Ft31'h1htop.TOP' 4
+C 'ft/t_cover_fsm_transition_shapes_multi.vl742n5tfsm_arcpagev_fsm_arc/$rootot.forced_if_wide_u.state::31'h1->31'h0Fvt.forced_if_wide_u.stateFf31'h1Ft31'h0htop.TOP' 3
+C 'ft/t_cover_fsm_transition_shapes_multi.vl742n5tfsm_statepagev_fsm_state/$rootot.forced_if_wide_u.state::31'h0Fvt.forced_if_wide_u.stateFt31'h0htop.TOP' 3
+C 'ft/t_cover_fsm_transition_shapes_multi.vl742n5tfsm_statepagev_fsm_state/$rootot.forced_if_wide_u.state::31'h1Fvt.forced_if_wide_u.stateFt31'h1htop.TOP' 4

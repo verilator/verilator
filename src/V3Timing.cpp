@@ -343,11 +343,15 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()), getSuspendDepVtx(m_procp),
-                        P_CALL};
+        AstCFunc* const funcp = nodep->funcp();
+        UASSERT_OBJ(funcp, nodep, "AstNodeCCall must have non-null funcp post-link");
+        UASSERT_OBJ(m_procp, nodep, "AstNodeCCall must be inside a procedure/CFunc/Begin");
 
-        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
-                        getNeedsProcDepVtx(m_procp), P_CALL};
+        UINFO(9, "V3Timing: Processing CCall to " << funcp->name() << " in dependency graph\n");
+        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(funcp), getSuspendDepVtx(m_procp), P_CALL};
+
+        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(funcp), getNeedsProcDepVtx(m_procp),
+                        P_CALL};
 
         iterateChildren(nodep);
     }
@@ -639,15 +643,6 @@ class TimingControlVisitor final : public VNVisitor {
             return !nodep->isPure();
         });
     }
-    // Returns true if the given trigger expression needs a destructive post update after trigger
-    // evaluation. Currently this only applies to named events.
-    bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNode* const nodep) {
-            const AstNodeDType* const dtypep = nodep->dtypep();
-            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
-            return basicp && basicp->isEvent();
-        });
-    }
     // Creates a trigger scheduler variable
     AstVarScope* getCreateTriggerSchedulerp(AstSenTree* const sentreep) {
         if (!sentreep->user1p()) {
@@ -720,14 +715,12 @@ class TimingControlVisitor final : public VNVisitor {
         m_netlistp->typeTablep()->addTypesp(m_forkDtp);
         return m_forkDtp;
     }
-    // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
-    // a variable initialization that whould be inserted before `insertBeforep`. All
-    // access to this variable should be contained within returned `AstCLocalScope`.
-    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
-        if (!insertBeforep || !m_underJumpBlock) return nullptr;
+    // Move `nodep` into `AstCLocalScope`.
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const nodep) const {
+        if (!nodep) return nullptr;
         VNRelinker handle;
-        insertBeforep->unlinkFrBack(&handle);
-        AstCLocalScope* const cscopep = new AstCLocalScope{flp, insertBeforep};
+        nodep->unlinkFrBack(&handle);
+        AstCLocalScope* const cscopep = new AstCLocalScope{flp, nodep};
         handle.relink(cscopep);
         return cscopep;
     }
@@ -790,6 +783,8 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = forkp->fileline();
         // Insert the sync var directly before the fork
         AstNode* const insertBeforep = forkp;
+        // Make sure all references to the fork var are contained within a single scope to prevent
+        // moving statements accessing it in case of large functions splitting.
         addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
@@ -847,6 +842,30 @@ class TimingControlVisitor final : public VNVisitor {
             varp->funcLocal(true);
             firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
         }
+    }
+
+    AstNodeExpr* delayToIntegral(AstDelay* nodep, AstNodeExpr* valuep) {
+        FileLine* const flp = nodep->fileline();
+        AstConst* const constp = VN_CAST(valuep, Const);
+        const bool isForkSentinel
+            = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
+        if (!isForkSentinel && (!constp || !constp->isZero())) {
+            // Scale the delay
+            const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
+            if (valuep->dtypep()->skipRefp()->isDouble()) {
+                AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
+                valuep = new AstMulD{flp, valuep, tsfp};
+                valuep = new AstRToIRoundS{flp, valuep};
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+            } else {
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+                const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
+                AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
+                valuep = new AstMul{flp, valuep, tsfp};
+            }
+            valuep = V3Const::constifyEdit(valuep);  // Simplify
+        }
+        return valuep;
     }
 
     // VISITORS
@@ -961,8 +980,16 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (nodep->funcp()->needProcess()) m_hasProcess = true;
-        if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
+        AstCFunc* const funcp = nodep->funcp();
+
+        // Skip automatic covergroup sampling calls
+        if (funcp->isCovergroupSample()) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        if (funcp->needProcess()) m_hasProcess = true;
+        if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
             stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});
@@ -982,28 +1009,7 @@ class TimingControlVisitor final : public VNVisitor {
             valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
             valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
         } else {
-            AstConst* const constp = VN_CAST(valuep, Const);
-            const bool isForkSentinel
-                = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
-            if (!isForkSentinel && (!constp || !constp->isZero())) {
-                // Scale the delay
-                const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
-                if (valuep->dtypep()->skipRefp()->isDouble()) {
-                    AstConst* const tsfp
-                        = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
-                    valuep = new AstMulD{flp, valuep, tsfp};
-                    valuep = new AstRToIRoundS{flp, valuep};
-                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                } else {
-                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                    const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
-                    AstConst* const tsfp
-                        = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
-                    valuep = new AstMul{flp, valuep, tsfp};
-                }
-                // Simplify
-                valuep = V3Const::constifyEdit(valuep);
-            }
+            valuep = delayToIntegral(nodep, valuep);
         }
 
         // Statistics
@@ -1082,7 +1088,6 @@ class TimingControlVisitor final : public VNVisitor {
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
-            nodep->addHereThisAsNext(initp);
             // Await the eval step with the dynamic trigger scheduler. First, create the method
             // call
             auto* const evalMethodp = new AstCMethodHard{
@@ -1102,10 +1107,10 @@ class TimingControlVisitor final : public VNVisitor {
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
             localizeVars(m_procp, senResults.m_vars);
-            // Put all and inits before the trigger eval loop
-            for (AstNodeStmt* const stmtp : senResults.m_inits) {
-                nodep->addHereThisAsNext(stmtp);
-            }
+            // If post updates are destructive (e.g. clearFired on events), perform a
+            // conservative pre-clear once before entering the wait loop so stale state from a
+            // previous wait does not cause an immediate false-positive trigger.
+            const bool hasDestructivePostUpdates = !senResults.m_destructivePostUpdates.empty();
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
             AstNodeExpr* const condp
@@ -1126,7 +1131,7 @@ class TimingControlVisitor final : public VNVisitor {
             loopp->addStmtsp(anyTriggeredMethodp->makeStmt());
             // If the post update is destructive (e.g. event vars are cleared), create an await for
             // the post update step
-            if (destructivePostUpdate(sentreep)) {
+            if (hasDestructivePostUpdates) {
                 AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->method(VCMethod::SCHED_POST_UPDATE);
                 loopp->addStmtsp(awaitPostUpdatep);
@@ -1137,8 +1142,20 @@ class TimingControlVisitor final : public VNVisitor {
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
-            // Replace the event control with the loop
-            nodep->replaceWith(loopp);
+            // Replace the event control with one explicit stmt chain:
+            //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
+            AstNodeStmt* chainp = nullptr;
+            chainp = AstNode::addNextNull(chainp, initp);
+            for (AstNodeStmt* const stmtp : senResults.m_inits) {
+                chainp = AstNode::addNextNull(chainp, stmtp);
+            }
+            if (hasDestructivePostUpdates) {
+                for (AstNodeStmt* const stmtp : senResults.m_destructivePostUpdates) {
+                    chainp = AstNode::addNextNull(chainp, stmtp->cloneTree(false));
+                }
+            }
+            chainp = AstNode::addNextNull(chainp, loopp);
+            nodep->replaceWith(chainp);
         } else {
             auto* const sentreep = m_finder.getSenTree(nodep->sentreep());
             nodep->sentreep()->unlinkFrBack()->deleteTree();
@@ -1201,7 +1218,10 @@ class TimingControlVisitor final : public VNVisitor {
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
-        addCLocalScope(flp, insertBeforep);
+        // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
+        // a variable initialization that would be inserted before `insertBeforep`. All
+        // access to this variable should be contained within returned `AstCLocalScope`.
+        if (m_underJumpBlock) addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
@@ -1270,10 +1290,13 @@ class TimingControlVisitor final : public VNVisitor {
         if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
             if (AstNodeExpr* fallDelayp = delayp->fallDelay()) {
                 fallDelayp = fallDelayp->unlinkFrBack();
+                AstNodeExpr* lhsp = delayp->lhsp()->unlinkFrBack();
                 // Use fall only for an all-zero value, rise otherwise.
+                lhsp = delayToIntegral(delayp, lhsp);
+                fallDelayp = delayToIntegral(delayp, fallDelayp);
                 delayp->lhsp(
                     new AstCond{flp, new AstEq{flp, rhs1p->cloneTree(false), new AstConst{flp, 0}},
-                                fallDelayp, delayp->lhsp()->unlinkFrBack()});
+                                fallDelayp, lhsp});
             }
         }
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};

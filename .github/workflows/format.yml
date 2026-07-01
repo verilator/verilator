@@ -21,7 +21,7 @@ jobs:
       CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build
@@ -38,11 +38,11 @@ jobs:
           ./configure
           make venv
           source .venv/bin/activate
-          make -j 2 format CLANGFORMAT=clang-format-18
+          make -j 4 format CLANGFORMAT=clang-format-18
           git status
       - name: Push
         run: |-
           if [ -n "$(git status --porcelain)" ]; then
-            git commit . -m "Apply 'make format'" &&
+            git commit . -m "Apply 'make format' [ci skip]" &&
             git push origin
           fi

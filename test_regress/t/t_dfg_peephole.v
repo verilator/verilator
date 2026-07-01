@@ -50,6 +50,9 @@ module t (
   assign unitArrayParts[0][1] = rand_a[1];
   assign unitArrayParts[0][9] = rand_a[9];
 
+  // Complicated way to write constant 0 that only Dfg can decipher
+  wire [63:0] convoluted_zero = (({64{rand_a[0]}} & ~{64{rand_a[0]}}));
+
   `signal(FOLD_UNARY_LogNot,      !const_a[0]);
   `signal(FOLD_UNARY_Negate,      -const_a);
   `signal(FOLD_UNARY_Not,         ~const_a);
@@ -62,12 +65,21 @@ module t (
   //verilator lint_on WIDTH
   `signal(FOLD_UNARY_Extend, tmp_FOLD_UNARY_Extend);
   `signal(FOLD_UNARY_ExtendS, tmp_FOLD_UNARY_ExtendS);
+  `signal(FOLD_UNARY_CountOnes, $countones(const_a));
+  `signal(FOLD_UNARY_OneHot,    $onehot(const_a));
+  `signal(FOLD_UNARY_OneHot0,   $onehot0(const_a));
+  `signal(FOLD_UNARY_OneHot_A,  $onehot(const_a[0]));
+  `signal(FOLD_UNARY_OneHot_B,  $onehot(~const_a[0]));
+  `signal(FOLD_UNARY_OneHot0_A, $onehot0(const_a[0]));
+  `signal(FOLD_UNARY_OneHot0_B, $onehot0(~const_a[0]));
 
   `signal(FOLD_BINARY_Add,       const_a + const_b);
   `signal(FOLD_BINARY_And,       const_a & const_b);
   `signal(FOLD_BINARY_Concat,    {const_a, const_b});
   `signal(FOLD_BINARY_Div,       const_a / 64'd3);
   `signal(FOLD_BINARY_DivS,      sconst_a / 64'sd3);
+  `signal(REMOVE_DIV_ONE,        rand_a / 64'd1);
+  `signal(REMOVE_DIVS_ONE,       srand_a / 64'sd1);
   `signal(FOLD_BINARY_Eq,        const_a == const_b);
   `signal(FOLD_BINARY_Gt,        const_a > const_b);
   `signal(FOLD_BINARY_GtS,       sconst_a > sconst_b);
@@ -89,6 +101,10 @@ module t (
   `signal(FOLD_BINARY_ModDivS,   sconst_a % 64'sd3);
   `signal(FOLD_BINARY_Mul,       const_a * 64'd3);
   `signal(FOLD_BINARY_MulS,      sconst_a * 64'sd3);
+  `signal(REMOVE_MUL_ZERO,       rand_a * 64'd0);
+  `signal(REMOVE_MUL_ONE,        rand_a * 64'd1);
+  `signal(REMOVE_MULS_ZERO,      srand_a * 64'sd0);
+  `signal(REMOVE_MULS_ONE,       srand_a * 64'sd1);
   `signal(FOLD_BINARY_Neq,       const_a != const_b);
   `signal(FOLD_BINARY_Or,        const_a | const_b);
   `signal(FOLD_BINARY_Pow,       const_a ** 64'd2);
@@ -120,6 +136,13 @@ module t (
 
   `signal(FOLD_SEL,              const_a[3:1]);
 
+  int fold_arraysel_table;
+  ffs ffs_a(convoluted_zero[0] ? 20'hff: 20'd2, fold_arraysel_table);
+  int fold_matchmasked;
+  ffs ffs_b(convoluted_zero[1] ? 20'hff: 20'd7, fold_matchmasked);
+  `signal(FOLD_ARRAYSEL_TABLE, fold_arraysel_table);
+  `signal(FOLD_MATCHMASKED, fold_matchmasked);
+
   `signal(SWAP_CONST_IN_COMMUTATIVE_BINARY, rand_a + const_a);
   `signal(SWAP_NOT_IN_COMMUTATIVE_BINARY, rand_a + ~rand_a);
   `signal(SWAP_VAR_IN_COMMUTATIVE_BINARY, rand_b + rand_a);
@@ -134,8 +157,21 @@ module t (
   `signal(REPLACE_EXTEND, 4'(rand_a[0]));
   `signal(PUSH_NOT_THROUGH_COND, ~(rand_a[0] ? rand_a[4:0] : 5'hb));
   `signal(REMOVE_NOT_NOT, ~~rand_a);
-  `signal(REPLACE_NOT_NEQ, ~(rand_a != rand_b));
-  `signal(REPLACE_NOT_EQ, ~(srand_a == srand_b));
+  `signal(REPLACE_NOT_NEQ,  ~(rand_a != rand_b));
+  `signal(REPLACE_NOT_EQ,   ~(srand_a == srand_b));
+  // GT/GTE variants use shifted operands to avoid CSE interference.  The peephole's
+  // REPLACE_NOT_LT fires first and emits a new DfgGte(rand_a, rand_b); the intra-pass
+  // CSE then merges it with the existing DfgGte(rand_a, rand_b) that is the source of
+  // REPLACE_NOT_GTE, giving that vertex two sinks and causing its !hasMultipleSinks()
+  // guard to fail.  Unique shift amounts break the CSE match, so all eight patterns fire.
+  `signal(REPLACE_NOT_GT,   ~((rand_a  >> 18) >  (rand_b  >> 18)));
+  `signal(REPLACE_NOT_GTE,  ~((rand_a  >> 19) >= (rand_b  >> 19)));
+  `signal(REPLACE_NOT_GTES, ~((srand_a >>> 20) >= (srand_b >>> 20)));
+  `signal(REPLACE_NOT_GTS,  ~((srand_a >>> 21) >  (srand_b >>> 21)));
+  `signal(REPLACE_NOT_LT,   ~(rand_a  <  rand_b));
+  `signal(REPLACE_NOT_LTE,  ~(rand_a  <= rand_b));
+  `signal(REPLACE_NOT_LTES, ~(srand_a <= srand_b));
+  `signal(REPLACE_NOT_LTS,  ~(srand_a <  srand_b));
   `signal(REPLACE_NOT_OF_CONST, ~4'd0);
   `signal(REPLACE_DISTRIBUTIVE_AND_OR_ABAC, ((rand_a >> 10) | (rand_b >> 10)) & ((rand_a  >> 10) | (srand_b >> 10)));
   `signal(REPLACE_DISTRIBUTIVE_AND_OR_ABCA, ((rand_a >> 11) | (rand_b >> 11)) & ((srand_b >> 11) | (rand_a  >> 11)));
@@ -164,6 +200,7 @@ module t (
   `signal(REMOVE_OR_WITH_ZERO, 64'd0 | rand_a);
   `signal(REPLACE_TAUTOLOGICAL_OR, rand_a | ~rand_a);
   `signal(REPLACE_TAUTOLOGICAL_OR_3, ~(rand_a + 1) | ((rand_a + 1) | rand_b));
+  `signal(FOLD_SELF_SUB, rand_a - rand_a);
   `signal(REMOVE_SUB_ZERO, rand_a - 64'd0);
   `signal(REPLACE_SUB_WITH_NOT, rand_a[0] - 1'b1);
   `signal(REMOVE_REDUNDANT_ZEXT_ON_RHS_OF_SHIFT, rand_a << {2'b0, rand_a[2:0]});
@@ -256,10 +293,20 @@ module t (
   `signal(REPLACE_COND_CONST_ZERO_ONAE, rand_a[0] ?  80'b0 : -80'b1);
   `signal(REPLACE_COND_CAT_LHS_CONST_ONE_ZERO, rand_a[0] ? {8'b1, rand_b[0]} : {8'b0, rand_b[1]});
   `signal(REPLACE_COND_CAT_LHS_CONST_ZERO_ONE, rand_a[0] ? {8'b0, rand_b[0]} : {8'b1, rand_b[1]});
-  `signal(REPLACE_COND_SAME_CAT_LHS, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
-  `signal(REPLACE_COND_SAME_CAT_RHS, rand_a[0] ? {rand_b[0], 8'd0} : {rand_b[1], 8'd0});
   `signal(REPLACE_COND_SAM_COND_THEN, rand_a[0] ? (rand_a[0] ? rand_b[1:0] : rand_b[3:2]) : rand_b[5:4]);
   `signal(REPLACE_COND_SAM_COND_ELSE, rand_a[0] ? rand_b[1:0] : (rand_a[0] ? rand_b[3:2] : rand_b[5:4]));
+
+  `signal(REPLACE_COND_COMMON_MSBS_A, rand_a[0] ? {8'd0, rand_b[0]} : {8'd0, rand_b[1]});
+  `signal(REPLACE_COND_COMMON_MSBS_B, rand_a[0] ? {8'hf0, rand_b[1:0]} : {9'h1e2, rand_b[1]});
+  `signal(REPLACE_COND_COMMON_MSBS_C, rand_a[0] ? {rand_a[63 -: 3] , rand_b[0]} : {rand_a[63 -: 2],  rand_b[2:1]});
+  `signal(REPLACE_COND_COMMON_LSBS_A, rand_a[0] ? {rand_b[0], 8'd0} : {rand_b[1], 8'd0});
+  `signal(REPLACE_COND_COMMON_LSBS_B, rand_a[0] ? {rand_b[2:1], 8'h0f} : {rand_b[1], 9'h08f});
+  `signal(REPLACE_COND_COMMON_LSBS_C, rand_a[0] ? {rand_b[0], rand_a[3:0]} : {rand_b[1:0], rand_a[2:0]});
+  wire [5:0] tmp_REPLACE_COND_COMMON_LSBS_D = rand_b[5:0];
+  wire [5:0] tmp_REPLACE_COND_COMMON_MSBS_D = rand_b[63:58];
+  `signal(REPLACE_COND_COMMON_LSBS_D, rand_a[0] ? rand_b[4:0] : tmp_REPLACE_COND_COMMON_LSBS_D[4:0]);
+  `signal(REPLACE_COND_COMMON_MSBS_D, rand_a[0] ? rand_b[63:59] : tmp_REPLACE_COND_COMMON_MSBS_D[5:1]);
+
   `signal(REMOVE_SHIFTL_ZERO, rand_a << 0);
   `signal(REPLACE_SHIFTL_OVER, rand_a << 64);
   `signal(REPLACE_SHIFTL_SEL, rand_a[27:0] << 4);
@@ -325,7 +372,6 @@ module t (
   `signal(REMOVE_EQ_BIT_1, 1'b1 == rand_a[0]);
   `signal(REMOVE_NEQ_BIT_0, 1'b0 != rand_a[0]);
   `signal(REPLACE_NEQ_BIT_1, 1'b1 != rand_a[0]);
-  `signal(REPLACE_COND_INSERT, rand_a[0] ? {rand_b[63:40], {1'd0, rand_b[38:0]}} : rand_b);
   `signal(REPLACE_REP_REP, {2{({3{rand_a[0]}})}});
 
   // Operators that should work wiht mismatched widths
@@ -390,4 +436,36 @@ module t (
   assign sconst_b = 64'hba0123456789cdef;
   assign zero = '0;
   assign ones = '1;
+endmodule
+
+module ffs(
+  input logic [19:0] i,
+  output int o
+);
+  // V3Table will convert this
+  always_comb begin
+    casez (i)
+      20'b1???????????????????: o = 19;
+      20'b?1??????????????????: o = 18;
+      20'b??1?????????????????: o = 17;
+      20'b???1????????????????: o = 16;
+      20'b????1???????????????: o = 15;
+      20'b?????1??????????????: o = 14;
+      20'b??????1?????????????: o = 13;
+      20'b???????1????????????: o = 12;
+      20'b????????1???????????: o = 11;
+      20'b?????????1??????????: o = 10;
+      20'b??????????1?????????: o =  9;
+      20'b???????????1????????: o =  8;
+      20'b????????????1???????: o =  7;
+      20'b?????????????1??????: o =  6;
+      20'b??????????????1?????: o =  5;
+      20'b???????????????1????: o =  4;
+      20'b????????????????1???: o =  3;
+      20'b?????????????????1??: o =  2;
+      20'b??????????????????1?: o =  1;
+      20'b???????????????????1: o =  0;
+      default:                  o = 32'hffffffff;
+    endcase
+  end
 endmodule

@@ -27,7 +27,7 @@ module t (
         c = new;
         rand_result = c.randomize();
         $display("rand: %x x: %x ", rand_result, c.x);  // Get verilated_random.cpp
-        force frc=42; // Get verilated_force.h
+        force frc = 42;  // Get verilated_force.h
         $write("*-* All Finished *-*\n");
         $finish;
       end

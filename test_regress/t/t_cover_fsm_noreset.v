@@ -16,11 +16,6 @@ module t (
   int cyc;
   state_t state;
 
-  initial begin
-    cyc = 0;
-    state = S0;
-  end
-
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 4) begin

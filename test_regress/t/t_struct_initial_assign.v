@@ -15,7 +15,7 @@ module t (
     input clk
 );
 
-  str_t bar_in;
+  str_t bar_in = '0;  // Set bar_in to 0 initially
   str_t bar_out;
 
   Sub sub (
@@ -27,8 +27,6 @@ module t (
   initial begin
     integer i;
     str_t initOut;
-
-    bar_in = '0;  // Set bar_in to 0 initially
 
     // Wait for the first falling edge of the clock
     @(negedge clk);

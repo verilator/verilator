@@ -157,6 +157,7 @@ void V3Global::removeStd() {
         UINFO(3, "Removing unused std:: package");
         if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
             v3Global.rootp()->stdPackagep(nullptr);
+            v3Global.rootp()->stdPackageProcessp(nullptr);
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
         }
     }
@@ -244,6 +245,8 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.opt.vpi()) result.emplace_back("verilated_vpi.cpp");
     if (v3Global.opt.savable()) result.emplace_back("verilated_save.cpp");
     if (v3Global.opt.coverage()) result.emplace_back("verilated_cov.cpp");
+    if (v3Global.opt.coverage() || v3Global.useCovergroup())
+        result.emplace_back("verilated_covergroup.cpp");
     for (const string& base : v3Global.opt.traceSourceBases())
         result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");

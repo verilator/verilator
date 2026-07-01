@@ -13,6 +13,24 @@ module t (
   integer cyc;
   initial cyc = 1;
   wire [7:0] cyc_copy = cyc[7:0];
+  typedef enum logic { CAST_ONE = 1'b1 } cast_e;
+  cast_e cast_dst;
+  integer action_hits = 0;
+
+  assert property (@(posedge clk) 1'b1)
+    if (cyc >= 0) action_hits++;
+
+  assert property (@(posedge clk) 1'b1)
+    action_hits++;
+  else
+    action_hits--;
+
+  cover property (@(posedge clk) 1'b1)
+    action_hits++;
+
+  initial begin
+    $cast(cast_dst, 1);
+  end
 
   always @(negedge clk) begin
     AssertionFalse1 : assert (cyc < 100);
@@ -26,6 +44,12 @@ module t (
     if (cyc != 0) begin
       cyc <= cyc + 1;
       toggle <= !cyc[0];
+      assert (cyc >= 0)
+        if (cyc >= 0) action_hits++;
+      assert (cyc >= 0)
+        action_hits++;
+      else
+        action_hits--;
       if (cyc == 7) assert (cyc[0] == cyc[1]);  // bug743
       if (cyc == 9) begin
 `ifdef FAILING_ASSERTIONS

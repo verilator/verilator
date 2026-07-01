@@ -9,17 +9,16 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
-# Use thresholds that guarantee rejection to test the "return false" path in isInlineable()
-# --inline-cfuncs 1: pass still runs (not skipped)
-# --inline-cfuncs-product 0: guarantees all functions rejected (node_count * call_count > 0 always)
 test.compile(verilator_flags2=[
-    "--stats", "--binary", "--inline-cfuncs", "1", "--inline-cfuncs-product", "0"
+    "--stats", "--binary", "--inline-cfuncs", "0", "--inline-cfuncs-product", "0"
 ])
 
-test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)', 0)
-
 test.execute()
+
+test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 0)
 
 test.passes()

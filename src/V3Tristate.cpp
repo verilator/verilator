@@ -352,7 +352,9 @@ class TristatePinVisitor final : public TristateBaseVisitor {
     TristateGraph& m_tgraph;
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
-    void visit(AstVarRef* nodep) override {
+    // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an
+    // interface (.pin(iface.net)) is an AstVarXRef and needs the same access flip.
+    void visit(AstNodeVarRef* nodep) override {
         UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access flip");
         if (m_lvalue && !nodep->access().isWriteOrRW()) {
             UINFO(9, "  Flip-to-LValue " << nodep);
@@ -403,8 +405,15 @@ class TristateVisitor final : public TristateBaseVisitor {
     const VNUser4InUse m_inuser4;
 
     struct AuxAstVar final {
-        AstPull* pullp = nullptr;  // pullup/pulldown direction
+        AstPull* pullp = nullptr;  // pullup/pulldown direction (whole variable)
         AstVar* outVarp = nullptr;  // output __out var
+        bool ifaceTristate = false;  // Interface var known to be tristate (set when the
+                                     // interface module is processed). Lets a module that
+                                     // drives this var across hierarchy with a plain (non-Z)
+                                     // assign be recognised as a tristate contributor even
+                                     // though that module's own graph has no Z on the net.
+        std::unordered_map<int, int>
+            bitPulls;  // Per-bit pull: bit_index -> direction (1=up, 0=down)
     };
 
     AstUser3Allocator<AstVar, AuxAstVar> m_varAux;
@@ -437,6 +446,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
     bool m_inAlias = false;  // Inside alias statement
+    bool m_processedIfaces = false;  // Interface modules already processed (interfaces-first pass)
     VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
                                                       // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
@@ -652,6 +662,35 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void setBitPullDirection(AstVar* varp, int bitIndex, int direction) {
+        // Set pull direction for a specific bit of a bus.
+        // direction: 1 = pullup, 0 = pulldown
+        auto& bitPulls = m_varAux(varp).bitPulls;
+        auto it = bitPulls.find(bitIndex);
+        if (it != bitPulls.end() && it->second != direction) {
+            varp->v3warn(E_UNSUPPORTED, "Conflicting pullup/pulldown direction on bit "
+                                            << bitIndex << " of " << varp->prettyNameQ());
+        }
+        bitPulls[bitIndex] = direction;
+    }
+
+    AstConst* createPerBitPullConst(AstVar* varp) {
+        // Create a constant with per-bit pull values.
+        // Bits without explicit pull default to pulldown (0).
+        // V3Number::setBit silently no-ops if bitIndex exceeds the variable width.
+        const auto& bitPulls = m_varAux(varp).bitPulls;
+        V3Number num{varp, varp->width(), 0};  // Start with all zeros
+        for (const auto& pair : bitPulls) {
+            if (pair.second == 1) num.setBit(pair.first, 1);
+        }  // LCOV_EXCL_LINE
+        return new AstConst{varp->fileline(), num};
+    }
+
+    bool hasPerBitPulls(AstVar* varp) {
+        // Note: Not const - m_varAux allocates on access
+        return !m_varAux(varp).bitPulls.empty();
+    }
+
     void checkUnhandled(AstNode* nodep) {
         // Check for unsupported tristate constructs. This is not a 100% check.
         // The best way would be to visit the tree again and find any user1p()
@@ -679,14 +718,17 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (!m_tgraph.isTristate(varp)) continue;
             const auto it = m_lhsmap.find(varp);
             if (it != m_lhsmap.end()) continue;
-            // This variable is floating, set output enable to
-            // always be off on this assign
+            // This variable is floating, set output enable to always be off on this assign.
+            // For pullup/pulldown vars, use pull value with en=0 - the final resolution will
+            // apply the pull formula: final = (driven_value & en) | (~en & pull_value)
             UINFO(8, "  Adding driver to var " << varp);
-            AstConst* const constp = newAllZerosOrOnes(varp, false);
+            const AstPull* const pullp = m_varAux(varp).pullp;
+            const bool pullValue = pullp && pullp->direction() == 1;
+            AstConst* const constp = newAllZerosOrOnes(varp, pullValue);
             AstVarRef* const varrefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
             AstAssignW* const newp = new AstAssignW{varp->fileline(), varrefp, constp};
             UINFO(9, "       newoev " << newp);
-            varrefp->user1p(newAllZerosOrOnes(varp, false));
+            varrefp->user1p(newAllZerosOrOnes(varp, false));  // en=0 for floating/pullup vars
             nodep->addStmtsp(new AstAlways{newp});
             mapInsertLhsVarRef(varrefp);  // insertTristates will convert
             //                               // to a varref to the __out# variable
@@ -705,7 +747,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // Check if the var is owned by a different module (cross-module reference).
                 // For interface vars this is expected; for regular modules it's unsupported.
                 AstNodeModule* const ownerModp = findParentModule(invarp);
-                const bool isCrossModule = ownerModp && ownerModp != nodep && !invarp->isIO();
+                const bool isCrossModule = ownerModp && ownerModp != nodep;
                 const bool isIfaceTri = isCrossModule && VN_IS(ownerModp, Iface);
 
                 if (isCrossModule && !isIfaceTri) {
@@ -721,6 +763,9 @@ class TristateVisitor final : public TristateBaseVisitor {
                         }
                     }
                 } else if (isIfaceTri) {
+                    // Mark here too, so a net made tristate only by an external 'z driver
+                    // still captures a plain cross-hierarchy driver processed later.
+                    m_varAux(invarp).ifaceTristate = true;
                     // Interface tristate vars: drivers from different interface instances
                     // (different VarXRef dotted paths) must be processed separately.
                     // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
@@ -744,9 +789,13 @@ class TristateVisitor final : public TristateBaseVisitor {
                                               kv.second.inlinedDots,
                                               findModportForDotted(nodep, kv.first));
                     }
-                } else if (VN_IS(nodep, Iface)) {
+                } else if (VN_IS(nodep, Iface) && !invarp->isIO()) {
                     // Local driver in an interface module - use contribution mechanism
-                    // so it can be combined with any external drivers later
+                    // so it can be combined with any external drivers later. Record that
+                    // this interface net is tristate, so a module that drives it across
+                    // hierarchy with a plain (non-Z) assign is also routed through the
+                    // contribution mechanism (its own graph has no Z to mark it tristate).
+                    m_varAux(invarp).ifaceTristate = true;
                     insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);
                 } else {
                     insertTristatesSignal(nodep, invarp, refsp, false, "", "", nullptr);
@@ -869,7 +918,12 @@ class TristateVisitor final : public TristateBaseVisitor {
                 envarp = getCreateEnVarp(invarp, isTopInout);  // dir set in visit(AstPin*)
                 outvarp->user1p(envarp);
                 m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
+                m_varAux(outvarp).bitPulls
+                    = m_varAux(invarp).bitPulls;  // Per-bit pull propagation
                 if (m_varAux(invarp).pullp) UINFO(9, "propagate pull to " << outvarp);
+                if (!m_varAux(invarp).bitPulls.empty()) {
+                    UINFO(9, "propagate per-bit pulls to " << outvarp);
+                }
             } else if (invarp->user1p()) {
                 envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
             }
@@ -1001,28 +1055,40 @@ class TristateVisitor final : public TristateBaseVisitor {
             return;
         }
 
-        if (!outvarp) {
-            // This is the final pre-forced resolution of the tristate, so we apply
-            // the pull direction to any undriven pins.
-            const AstPull* const pullp = m_varAux(lhsp).pullp;
-            const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
-
+        // Apply pull formula: final = orp | (~enp & pull_value)
+        // Always run at top level (!outvarp) so that the strength-enable expression (enp)
+        // is consumed into orp even when no pull is present; pull_value is then all-zeros
+        // so this is semantically a no-op but it links enp into the tree.
+        // Also run at intermediate levels when there's a pull, so the pull is baked into
+        // the contribution flowing up the hierarchy.
+        const bool hasPull = m_varAux(lhsp).pullp || hasPerBitPulls(lhsp);
+        if (!outvarp || hasPull) {
             AstNodeExpr* undrivenp;
             if (envarp) {
                 undrivenp = new AstNot{envarp->fileline(),
                                        new AstVarRef{envarp->fileline(), envarp, VAccess::READ}};
+            } else if (enp) {
+                undrivenp = new AstNot{enp->fileline(), enp};
+                enp = nullptr;  // moved into undrivenp
             } else {
-                if (enp) {
-                    undrivenp = new AstNot{enp->fileline(), enp};
-                } else {
-                    undrivenp = newAllZerosOrOnes(invarp, true);
-                }
+                undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            undrivenp
-                = new AstAnd{invarp->fileline(), undrivenp, newAllZerosOrOnes(invarp, pull1)};
-            orp = new AstOr{invarp->fileline(), orp, undrivenp};
+            AstConst* pullConstp;
+            if (hasPerBitPulls(lhsp)) {
+                pullConstp = createPerBitPullConst(lhsp);
+            } else {
+                const AstPull* const pullp = m_varAux(lhsp).pullp;
+                const bool pull1 = pullp && pullp->direction() == 1;
+                pullConstp = newAllZerosOrOnes(invarp, pull1);
+            }
+
+            undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
+            orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
         }
+
+        // Ensure enp is valid when envarp exists (pullup/pulldown only = no active driver)
+        if (envarp && !enp) enp = newAllZerosOrOnes(invarp, false);
 
         if (envarp) {
             AstAssignW* const enAssp = new AstAssignW{
@@ -1536,7 +1602,27 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, "   enp<-rhs " << nodep->lhsp()->user1p());
                 m_tgraph.didProcess(nodep);
             } else {
-                m_tgraph.didProcess(nodep, true);
+                // Non-tristate RHS. For SEL assigns to tristate variables, we still
+                // need to track which bits are driven by creating a proper enable.
+                if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+                    if (AstNodeVarRef* const varrefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                        if (m_tgraph.isTristate(varrefp->varp())) {
+                            // Create an all-1s enable for the SEL width - this will be
+                            // deposited into the correct bit positions by newEnableDeposit
+                            nodep->lhsp()->user1p(newAllZerosOrOnes(nodep->lhsp(), true));
+                            UINFO(9, "   enp<-nonTri SEL " << nodep->lhsp()->user1p());
+                            m_tgraph.didProcess(nodep);
+                        } else {
+                            m_tgraph.didProcess(nodep, true);
+                        }
+                    } else {
+                        m_tgraph.didProcess(nodep, true);  // LCOV_EXCL_LINE
+                    }
+                } else {
+                    // Don't set user1p here as there are no handlers for many LHS node types
+                    // (ArraySel, MemberSel, StructSel, etc.) and checkUnhandled() would error.
+                    m_tgraph.didProcess(nodep, true);
+                }
             }
             m_alhs = true;  // And user1p() will indicate tristate equation, if any
             if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
@@ -1939,9 +2025,53 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Propagate any pullups/pulldowns upwards if necessary
             if (exprrefp) {
-                if (AstPull* const pullp = m_varAux(nodep->modVarp()).pullp) {
+                AstPull* const pullp = m_varAux(nodep->modVarp()).pullp;
+                const auto& srcBitPulls = m_varAux(nodep->modVarp()).bitPulls;
+
+                // For part-select port connections (e.g. .out(bus[23:16])) extract
+                // the parent var, LSB, and width once; reused by both propagations.
+                AstVar* selVarp = nullptr;
+                int selLsb = 0;
+                int selWidth = 0;
+                if (outAssignp) {
+                    if (AstSel* const selp = VN_CAST(outAssignp->lhsp(), Sel)) {
+                        AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+                        AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+                        if (vrefp && lsbp) {  // LCOV_EXCL_BR_LINE
+                            selVarp = vrefp->varp();
+                            selLsb = lsbp->toSInt();
+                            selWidth = selp->widthConst();
+                        }
+                    }
+                }
+
+                if (pullp) {
                     UINFO(9, "propagate pull on " << exprrefp);
                     setPullDirection(exprrefp->varp(), pullp);
+                    // For a part-select target, record per-bit pull direction across
+                    // the SEL range instead of setting pull on the whole variable.
+                    if (selVarp) {
+                        const int direction = pullp->direction();
+                        for (int i = 0; i < selWidth; ++i) {
+                            setBitPullDirection(selVarp, selLsb + i, direction);
+                        }
+                    }
+                }
+
+                // Per-bit pulls: the source bit indices must be offset by the SEL's
+                // LSB so they land on the correct bits of the parent variable.
+                if (!srcBitPulls.empty()) {
+                    UINFO(9, "propagate per-bit pulls from " << nodep->modVarp());
+                    for (const auto& pair : srcBitPulls) {
+                        setBitPullDirection(exprrefp->varp(), pair.first, pair.second);
+                    }  // LCOV_EXCL_LINE
+                    if (selVarp) {
+                        UINFO(9, "propagate per-bit pulls to SEL target " << selVarp
+                                                                          << " offset=" << selLsb);
+                        for (const auto& pair : srcBitPulls) {
+                            setBitPullDirection(selVarp, selLsb + pair.first, pair.second);
+                        }  // LCOV_EXCL_LINE
+                    }
                 }
             }
             // Don't need to visit the created assigns, as it was added at
@@ -1965,6 +2095,15 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
+            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
+            // driver has no Z in its own module's graph, so mark the net tristate here to
+            // collect the driver as a contribution. The ifaceTristate flag is only set for
+            // interface nets; a non-interface cross-module tri driver does nothing here and
+            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
+            if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
+                && m_varAux(nodep->varp()).ifaceTristate) {
+                m_tgraph.setTristate(nodep->varp());
+            }
         } else {
             if (nodep->user2() & U2_NONGRAPH) return;  // Processed
             nodep->user2Or(U2_NONGRAPH);
@@ -2045,6 +2184,9 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstNodeModule* nodep) override {
+        // Interfaces are processed first in the constructor; skip the duplicate visit
+        // during the later iterateChildrenBackwardsConst() pass over all modules.
+        if (m_processedIfaces && VN_IS(nodep, Iface)) return;
         UINFO(8, dbgState() << nodep);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_graphing);
@@ -2181,6 +2323,18 @@ public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clearAndCheck();
+        // Process interface modules first, so an interface tristate net is recorded
+        // (AuxAstVar::ifaceTristate) before any module that drives it across hierarchy is
+        // graphed. A module driving such a net with a plain (non-Z) assign has no Z in its
+        // own graph to mark the net tristate, so without this its driver would be dropped.
+        // Collect only the interfaces (reverse declaration order to match the pass below).
+        std::vector<AstNodeModule*> ifacesp;
+        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+            if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
+        }
+        for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);
+        m_processedIfaces = true;
+        // Then the rest in the historical order; interfaces are skipped (already done).
         iterateChildrenBackwardsConst(netlistp);
 
         // Combine interface tristate contributions after all modules processed

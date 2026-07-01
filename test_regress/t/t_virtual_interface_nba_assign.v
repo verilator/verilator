@@ -33,7 +33,6 @@ module t;
   assign i.clk = c.clk;
   Clocker clocker;
   initial begin
-    i.clk = 0;
     i.v = 0;
     clocker = new;
     clocker.clk = c;

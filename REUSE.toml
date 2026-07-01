@@ -4,9 +4,9 @@ version = 1
 
 [[annotations]]
 path = [
+    "**/.clang-format",
     "**/.gitattributes",
     "**/.gitignore",
-    ".clang-format",
     ".clang-tidy",
     ".codacy.yml",
     ".devcontainer/devcontainer.json",

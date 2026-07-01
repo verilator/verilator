@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
-`define stop  // TODO
+`define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
@@ -31,9 +31,6 @@ module t;
     a = 2;
     #1;
     `checkh(a, 2);
-    // TODO
-    // IEEE 1800-2023 10.6
-    // Assignment shall be reevaluated while the assign or force is in effect.
     `checkh(b, 2);
 
     a = 3;

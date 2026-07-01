@@ -22,13 +22,22 @@ module t;
     int qe[int];  // Empty
     int qv[$];  // Value returns
     int qi[$];  // Index returns
+    bit[229:0] qw[int]; // Wide values
+    bit[229:0] qwe[int]; // Wide values - empty
+    bit[229:0] qwv[$];  // Wide values - Value returns
+    int qwi[$];  // Wide values - Index returns
     point points_q[int];
+    point points_qe[int]; // Empty points
     point points_qv[$];
     int i;
     bit b;
+    bit[229:0] w;
 
     q = '{10: 1, 11: 2, 12: 2, 13: 4, 14: 3};
     `checkp(q, "'{'ha:'h1, 'hb:'h2, 'hc:'h2, 'hd:'h4, 'he:'h3}");
+
+    qw = '{10: 1, 11: 2, 12: 2, 13: 4, 14: 3};
+    `checkp(qw, "'{'ha:'h1, 'hb:'h2, 'hc:'h2, 'hd:'h4, 'he:'h3}");
 
     // NOT tested: with ... selectors
 
@@ -42,21 +51,45 @@ module t;
     `checkp(qv, "'{'h1, 'h2, 'h4, 'h3}");
     qv = qe.unique;
     `checkp(qv, "'{}");
+
+    qwv = qw.unique;
+    `checkp(qwv, "'{'h1, 'h2, 'h4, 'h3}");
+    qwv = qwe.unique;
+    `checkp(qwv, "'{}");
+
     qi = q.unique_index;
     qi.sort;
     `checkp(qi, "'{'ha, 'hb, 'hd, 'he}");
     qi = qe.unique_index;
     `checkp(qi, "'{}");
 
+    qwi = qw.unique_index;
+    qwi.sort;
+    `checkp(qwi, "'{'ha, 'hb, 'hd, 'he}");
+    qwi = qwe.unique_index;
+    `checkp(qwi, "'{}");
+
     points_q[0] = point'{1, 2};
     points_q[1] = point'{2, 4};
     points_q[5] = point'{1, 4};
+
+    qi = points_qe.unique_index();
+    `checkp(qi, "'{}");
+
+    qi = points_q.unique_index();
+    `checkh(qi.size, 3);
 
     points_qv = points_q.unique(p) with (p.x);
     `checkh(points_qv.size, 2);
     qi = points_q.unique_index (p) with (p.x + p.y);
     qi.sort;
     `checkp(qi, "'{'h0, 'h1, 'h5}");
+
+    qi = points_qe.unique_index();
+    `checkp(qi, "'{}");
+
+    qi = points_q.unique_index();
+    `checkh(qi.size, 3);
 
     qi = points_q.find_first_index with (item.x == 1);
     `checkp(qi, "'{'h0}");
@@ -106,6 +139,10 @@ module t;
 
     qv = q.min;
     `checkp(qv, "'{'h1}");
+
+    qwv = qw.min;
+    `checkp(qwv, "'{'h1}");
+
     points_qv = points_q.min(p) with (p.x + p.y);
     if (points_qv[0].x != 1 || points_qv[0].y != 2) $stop;
 
@@ -123,8 +160,13 @@ module t;
     qv = qe.max(x) with (x + 1);
     `checkp(qv, "'{}");
 
-    // Reduction methods
+    // Wide
+    qwv = qwe.min;
+    `checkp(qwv, "'{}");
+    qwv = qwe.max;
+    `checkp(qwv, "'{}");
 
+    // Reduction methods
     i = q.sum;
     `checkh(i, 32'hc);
     i = q.sum with (item + 1);
@@ -134,6 +176,12 @@ module t;
     i = q.product with (item + 1);
     `checkh(i, 32'h168);
 
+    // Wide
+    w = qw.sum;
+    `checkh(w, 230'hc);
+    w = qw.product;
+    `checkh(w, 230'h30);
+
     i = qe.sum;
     `checkh(i, 32'h0);
     i = qe.sum with (item + 1);
@@ -142,6 +190,12 @@ module t;
     `checkh(i, 32'h0);
     i = qe.product with (item + 1);
     `checkh(i, 32'h0);
+
+    // Wide
+    w = qwe.sum;
+    `checkh(w, 230'h0);
+    w = qwe.product;
+    `checkh(w, 230'h0);
 
     q = '{10: 32'b1100, 11: 32'b1010};
     i = q.and;
@@ -157,6 +211,14 @@ module t;
     i = q.xor with (item + 1);
     `checkh(i, 32'b0110);
 
+    qw = '{10: 230'b1100, 11: 230'b1010};
+    w = qw.and;
+    `checkh(w, 230'b1000);
+    w = qw.or;
+    `checkh(w, 230'b1110);
+    w = qw.xor;
+    `checkh(w, 230'b0110);
+
     i = qe.and;
     `checkh(i, 32'b0);
     i = qe.and with (item + 1);
@@ -169,6 +231,14 @@ module t;
     `checkh(i, 32'b0);
     i = qe.xor with (item + 1);
     `checkh(i, 32'b0);
+
+    // Wide
+    w = qwe.and;
+    `checkh(w, 230'b0);
+    w = qwe.or;
+    `checkh(w, 230'b0);
+    w = qwe.xor;
+    `checkh(w, 230'b0);
 
     i = q.and();
     `checkh(i, 32'b1000);
@@ -183,12 +253,28 @@ module t;
     i = q.xor() with (item + 1);
     `checkh(i, 32'b0110);
 
+    // Wide
+    w = qw.and();
+    `checkh(w, 230'b1000);
+    w = qw.or();
+    `checkh(w, 230'b1110);
+    w = qw.xor();
+    `checkh(w, 230'b0110);
+
     i = qe.and();
     `checkh(i, 32'b0);
     i = qe.or();
     `checkh(i, 32'b0);
     i = qe.xor();
     `checkh(i, 32'b0);
+
+    // Wide
+    w = qwe.and();
+    `checkh(w, 230'b0);
+    w = qwe.or();
+    `checkh(w, 230'b0);
+    w = qwe.xor();
+    `checkh(w, 230'b0);
 
     q = '{10: 1, 11: 2};
     qe = '{10: 1, 11: 2};

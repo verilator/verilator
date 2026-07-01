@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
 verilator Arguments
@@ -112,6 +113,15 @@ Summary:
 
    In versions before 5.038, these were disabled by default, and `--assert`
    or `--assert-case` was required to enable case assertions.
+
+.. option:: --assert-unroll-limit <iterations>
+
+   Rarely needed. Specifies the maximum repetition or range count Verilator
+   will unroll inside an SVA concurrent assertion (e.g. ``[*N]``, ``[->M:N]``,
+   ``always[lo:hi]``). Beyond this, the assertion is rejected with an error
+   so that pathological counts do not blow up compile time or memory.
+
+   Defaults to 1024. Increase if a design needs larger repetition counts.
 
 .. option:: --autoflush
 
@@ -308,6 +318,20 @@ Summary:
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
 
+.. option:: --coverage-per-instance
+
+   For Verilator-inserted coverage, preserve generated coverage counters and
+   ``.dat`` records per hierarchy instance. This option must be specified when
+   Verilating the model, together with one or more coverage instrumentation
+   options, for example :vlopt:`--coverage`, :vlopt:`--coverage-line`,
+   :vlopt:`--coverage-toggle`, :vlopt:`--coverage-expr`,
+   :vlopt:`--coverage-fsm`, or :vlopt:`--coverage-user`. It may increase
+   generated model size, counter memory, coverage write time, and ``.dat`` file
+   size.
+
+   This does not affect SystemVerilog ``cover``, which uses the IEEE-specified
+   coverage option ``per_instance``.
+
 .. option:: --coverage-toggle
 
    Enables adding signal toggle coverage. See :ref:`Toggle Coverage`.
@@ -320,8 +344,8 @@ Summary:
 
 .. option:: --coverage-user
 
-   Enables adding user-inserted functional coverage. See :ref:`User
-   Coverage`.
+   Enables adding user-inserted functional covergroup coverage. See
+   :ref:`Covergroup Coverage`.
 
 .. option:: -D<var>=<value>
 
@@ -466,6 +490,10 @@ Summary:
 
    Rarely needed - for developer use. Enable all dumping in the given
    source file at level 3.
+
+.. option:: --dump-ast-patterns
+
+   Rarely needed. Enable dumping AstNodeExpr pattern statistics.
 
 .. option:: --dump-defines
 
@@ -634,7 +662,27 @@ Summary:
 
 .. option:: -fno-assemble
 
+.. option:: -fno-bit-scan-loops
+
+   Rarely needed. Disable converting bit counting loops into built-in operations.
+
 .. option:: -fno-case
+
+   Rarely needed. Disable all case statement optimizations.
+
+   Alias for all other `-fno-case-*` options.
+
+.. option:: -fno-case-decoder
+
+   Rarely needed. Disable converting case statements into decoder tables.
+
+.. option:: -fno-case-table
+
+   Rarely needed. Disable converting case statements into table lookups.
+
+.. option:: -fno-case-tree
+
+   Rarely needed. Disable converting case statements into bit-wise branch trees.
 
 .. option:: -fno-combine
 
@@ -714,11 +762,40 @@ Summary:
    this is not recommended as may cause additional warnings and ordering
    issues.
 
+.. option:: -fno-ico-change-detect
+
+   Rarely needed. Disable input change detection in the input combinational
+   ('ico') region. With change detection enabled (the default, unless
+   :vlopt:`--vpi` is passed), the input combinational logic is evaluated only
+   when a top level input has actually changed, rather than unconditionally on
+   the first scheduling iteration.
+
+   The change detection logic assumes a top level input only ever changes
+   externally between evaluations. The optimization is automatically disabled
+   for top level input signals that are written within the design. Accesses via
+   the VPI cannot be analyzed at compile time, therefore :vlopt:`--vpi`
+   disables this optimization for all inputs; it may be turned back on by
+   explicitly passing :vlopt:`-fico-change-detect <-fno-ico-change-detect>`.
+
 .. option:: -fno-inline
+
+   Rarely needed. Disable module inlining.
+
+.. option:: -fno-inline-cfuncs
+
+   Rarely needed. Disable inlining of small generated C++ functions into their
+   callers.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs` is
+   used.
 
 .. option:: -fno-inline-funcs
 
+   Rarely needed. Disable inlining of SystemVerilog functions and tasks.
+
 .. option:: -fno-inline-funcs-eager
+
+   Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
 .. option:: -fno-life
 
@@ -757,6 +834,14 @@ Summary:
    Rarely needed. Do not attempt to split variables
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
+
+.. option:: --fourstate
+
+   Enables four-state logic support. Experimental, for developer use only.
+
+.. option:: --no-fourstate
+
+   Disables four-state logic support which is the default. Exists for forward compatibility.
 
 .. option:: --fslice-element-limit
 
@@ -913,27 +998,21 @@ Summary:
 
 .. option:: --inline-cfuncs <value>
 
-   Inline small C++ function (internal AstCFunc) calls directly into their
-   callers when the function has at most <value> nodes. This reduces
-   function call overhead when :vlopt:`--output-split-cfuncs` places
-   functions in separate compilation units that the C++ compiler cannot
-   inline.
+   Tune the inlining of small generated C++ function. Functions no bigger than
+   <value> nodes will be inlined if possible. The default is 20.
 
-   Set to 0 to disable this optimization. The default is 20.
-
-   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
-   or :vlopt:`--trace` is used.
+   See also :vlopt:`--inline-cfuncs-product` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-cfuncs-product <value>
 
-   Tune the inlining of C++ function (internal AstCFunc) calls for larger
-   functions. When a function is too large to always inline (exceeds
-   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
-   function size multiplied by the number of call sites is at most <value>.
+   Tune the inlining of small generated C++ function. If a function's node
+   count multiplied by the number of calls is not bigger than <value>, the
+   function will be inlined if possible.
 
-   This allows functions that are called only once or twice to be inlined
-   even if they exceed the small function threshold. Set to 0 to only inline
-   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+   This allows functions that are called only once or twice to be inlined even
+   if they exceed the small function threshold. The default is 200.
+
+   See also :vlopt:`--inline-cfuncs` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-mult <value>
 

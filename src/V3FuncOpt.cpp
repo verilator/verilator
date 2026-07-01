@@ -264,7 +264,8 @@ class FuncOptVisitor final : public VNVisitor {
         if (!VN_IS(rhsp, Concat) && !VN_IS(rhsp, Extend)) return false;
         // Will need the LHS
         AstNodeExpr* lhsp = nodep->lhsp();
-        UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Inconsistent assignment");
+        if (!VN_IS(lhsp->dtypep()->skipRefp(), QueueDType))
+            UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Inconsistent assignment");
         // Only consider pure assignments. Nodes inserted below are safe.
         if (!nodep->user1() && (!lhsp->isPure() || !rhsp->isPure())) return false;
         // Do not split assignments to SC variables, they cannot be assigned in parts

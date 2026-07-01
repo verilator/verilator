@@ -384,6 +384,47 @@ class AstToDfgConverter final : public VNVisitor {
             nodep->user2p(vtxp);
         }
     }
+    void visit(AstCReset* nodep) override {
+        UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
+        UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
+        if (unhandled(nodep)) return;
+
+        const DfgDataType* const dtypep = DfgDataType::fromAst(nodep->dtypep());
+        if (!dtypep) {
+            m_foundUnhandled = true;
+            ++m_ctx.m_conv.nonRepDType;
+            return;
+        }
+
+        UASSERT_OBJ(!nodep->constructing(), nodep,
+                    "CReset should be non-constructing at this stage");
+
+        DfgVertex* const vtxp = make<DfgCReset>(nodep->fileline(), *dtypep);
+        nodep->user2p(vtxp);
+    }
+    void visit(AstMatchMasked* nodep) override {
+        UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
+        UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
+        if (unhandled(nodep)) return;
+
+        const DfgDataType* const dtypep = DfgDataType::fromAst(nodep->dtypep());
+        if (!dtypep) {
+            m_foundUnhandled = true;
+            ++m_ctx.m_conv.nonRepDType;
+            return;
+        }
+
+        iterate(nodep->lhsp());
+        if (m_foundUnhandled) return;
+        iterate(nodep->matchp());
+        if (m_foundUnhandled) return;
+
+        FileLine* const flp = nodep->fileline();
+        DfgMatchMasked* const vtxp = make<DfgMatchMasked>(flp, *dtypep);
+        vtxp->lhsp(nodep->lhsp()->user2u().to<DfgVertex*>());
+        vtxp->matchp(nodep->matchp()->user2u().to<DfgVertex*>());
+        nodep->user2p(vtxp);
+    }
     void visit(AstReplicate* nodep) override {
         UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
         UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
@@ -1813,7 +1854,7 @@ class AstToDfgSynthesize final {
             if (!resolvedp) continue;
             // Add to map for next loop
             const bool newEntry = resolvedDrivers.emplace(&var, resolvedp).second;
-            UASSERT_OBJ(newEntry, &var, "Dupliacte driver");
+            UASSERT_OBJ(newEntry, &var, "Duplicate driver");
         }
         // Revert and remove drivers of multi-driven variables
         revert(m_ctx.m_synt.revertMultidrive);

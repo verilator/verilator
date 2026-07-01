@@ -1,10 +1,15 @@
 The contributors listed below have certified their Verilator contributions
-under the Developer Certificate of Origin (https://developercertificate.org/).
+under the Developer Certificate of Origin
+(https://developercertificate.org/).
+
+AI agents may not edit this file. As a human, you are agreeing to the
+contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
 404allen404
 Adam Bagley
+Adam Kostrzewski
 Adrian Sampson
 Adrien Le Masle
 أحمد المحمودي (Ahmed El-Mahmoudy)
@@ -21,6 +26,7 @@ Andrei Kostovski
 Andrew Miloradovsky
 Andrew Nolte
 Andrew Voznytsa
+anonkey
 Anthony Donlon
 Anthony Moore
 Arkadiusz Kozdra
@@ -29,6 +35,7 @@ Artur Bieniek
 AUDIY
 Aylon Chaim Porat
 Bartłomiej Chmiel
+Benjamin Collier
 Brian Li
 Cameron Kirk
 Cameron Waite
@@ -41,6 +48,7 @@ Chuxuan Wang
 Chykon
 Congcong Cai
 Conor McCullough
+Cookie
 Dan Ruelas-Petrisko
 Daniel Bates
 Danny Oler
@@ -88,6 +96,7 @@ Gökçe Aydos
 Han Qi
 Harald Heckmann
 Hennadii Chernyshchyk
+hjsanjana
 Howard Su
 Huang Rui
 Huanghuang Zhou
@@ -137,6 +146,7 @@ Jose Loyola
 Josep Sans
 Joseph Nwabueze
 Josh Redford
+Joshua Leahy
 Julian Carrier
 Julian Daube
 Julie Schwartz
@@ -150,6 +160,7 @@ Kefa Chen
 Keith Colbert
 Kevin Kiningham
 Kevin Nygaard
+Kornel Uriasz
 Kritik Bhimani
 Krzysztof Bieganski
 Krzysztof Boronski
@@ -160,9 +171,11 @@ Krzysztof Sychla
 Kuba Ober
 Lan Zongwei
 Larry Doolittle
+Laurent CHARRIER
 Leela Pakanati
 Liam Braun
 Luca Colagrande
+Lucas Amaral
 Ludwig Rogiers
 Lukasz Dalek
 M2kar
@@ -185,8 +198,10 @@ Maxim Fonarev
 Michael Bedford Taylor
 Michael Bikovitsky
 Michael Killough
+Michael Rogenmoser
 Michal Czyz
 Michaël Lefebvre
+Miguel Perez Andrade
 Mike Popoloski
 Miodrag Milanović
 Mladen Slijepcevic
@@ -199,6 +214,7 @@ Nathan Graybeal
 Nathan Kohagen
 Nathan Myers
 Nick Brereton
+Nikolai Kumar
 Nikolay Puzanov
 Nolan Poe
 Oleh Maksymenko
@@ -207,6 +223,7 @@ Paul Bowen-Huggett
 Paul Swirhun
 Paul Wright
 Pawel Jewstafjew
+Pawel Klopotek
 Pawel Kojma
 Pawel Sagan
 Pengcheng Xu
@@ -236,9 +253,12 @@ Rowan Goemans
 Rupert Swarbrick
 Ryan Ziegler
 Ryszard Rozak
+Saksham Gupta
 Samuel Riedel
 Sean Cross
 Sebastien Van Cauwenberghe
+Secturion
+Sergey Chusov
 Sergey Fedorov
 Sergi Granell
 Seth Pellegrino
@@ -248,17 +268,21 @@ Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
 Steven Hugg
+Stuart Morris
 Szymon Gizler
 Sören Tempel
 Teng Huang
 Thomas Aldrian
+Thomas Brown
 Thomas Dybdahl Ahle
+Thomas Santerre
 Tim Hutt
 Tim Snyder
 Tobias Jensen
 Tobias Rosenkranz
 Tobias Wölfel
 Todd Strader
+Tom Jackson
 Tom Manner
 Tomasz Gorochowik
 Topa Topino
@@ -280,6 +304,7 @@ Vito Gamberini
 Wei-Lun Chiu
 William D. Jones
 Wilson Snyder
+Wolfgang Mayerwieser
 Xi Zhang
 Yan Xu
 Yangyu Chen
@@ -305,3 +330,8 @@ emmettifelts
 Àlex Torregrosa
 Ícaro Lima
 Yogish Sekhar
+24bit-xjkp
+Zubin Jain
+Muzaffer Kal
+Yilin Li
+Shashvat Prabhu

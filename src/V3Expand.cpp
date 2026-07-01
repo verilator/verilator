@@ -206,31 +206,19 @@ class ExpandVisitor final : public VNVisitor {
     static AstNodeExpr* newWordGrabShift(FileLine* fl, int word, AstNodeExpr* lhsp, int shift) {
         // Extract the expression to grab the value for the specified word, if it's the shift
         // of shift bits from lhsp
-        AstNodeExpr* newp;
         // Negative word numbers requested for lhs when it's "before" what we want.
         // We get a 0 then.
         const int othword = word - shift / VL_EDATASIZE;
-        AstNodeExpr* const llowp = newAstWordSelClone(lhsp, othword);
-        if (const int loffset = VL_BITBIT_E(shift)) {
-            AstNodeExpr* const lhip = newAstWordSelClone(lhsp, othword - 1);
-            const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
-            newp = new AstOr{
-                fl,
-                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData{}, VL_MASK_E(loffset)},
-                           new AstShiftR{fl, lhip,
-                                         new AstConst{fl, static_cast<uint32_t>(nbitsonright)},
-                                         VL_EDATASIZE}},
-                new AstAnd{fl,
-                           new AstConst{fl, AstConst::SizedEData{},
-                                        static_cast<uint32_t>(~VL_MASK_E(loffset))},
-                           new AstShiftL{fl, llowp,
-                                         new AstConst{fl, static_cast<uint32_t>(loffset)},
-                                         VL_EDATASIZE}}};
-            newp = V3Const::constifyEditCpp(newp);
-        } else {
-            newp = llowp;
-        }
-        return newp;
+        AstNodeExpr* const lop = newAstWordSelClone(lhsp, othword);
+        const uint32_t loShift = VL_BITBIT_E(shift);
+        if (!loShift) return lop;
+        AstNodeExpr* const hip = newAstWordSelClone(lhsp, othword - 1);
+        const uint32_t hiShift = VL_EDATASIZE - loShift;  // Complement offset
+        AstNodeExpr* const newp
+            = new AstOr{fl,  //
+                        new AstShiftR{fl, hip, new AstConst{fl, hiShift}, VL_EDATASIZE},
+                        new AstShiftL{fl, lop, new AstConst{fl, loShift}, VL_EDATASIZE}};
+        return V3Const::constifyEditCpp(newp);
     }
 
     // Return expression indexing the word that contains 'lsbp' + the given word offset
@@ -508,6 +496,9 @@ class ExpandVisitor final : public VNVisitor {
             // Sel is an LHS assignment select
         } else if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
+        } else if (VN_IS(nodep->fromp()->dtypep(), StreamDType)
+                   || VN_IS(nodep->fromp()->dtypep(), QueueDType)) {
+            //sel stream or queue
         } else if (nodep->fromp()->isWide()) {
             if (isImpure(nodep)) return;
             UINFO(8, "    SEL(wide) " << nodep);
@@ -962,7 +953,9 @@ class ExpandVisitor final : public VNVisitor {
     void visitEqNeq(AstNodeBiop* nodep) {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
-        if (nodep->lhsp()->isWide()) {
+        if (nodep->lhsp()->isWide()
+            && !(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), StreamDType)
+                 || VN_IS(nodep->rhsp()->dtypep()->skipRefp(), StreamDType))) {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
             if (!doExpandWide(nodep->rhsp())) return;

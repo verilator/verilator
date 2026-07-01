@@ -17,5 +17,6 @@ test.execute()
 
 test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 6)
 test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 3)
+test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 3)
 
 test.passes()

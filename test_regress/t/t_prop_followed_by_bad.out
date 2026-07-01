@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_prop_followed_by_bad.v:23:38: Unsupported: sequence expression as antecedent of followed-by (#-# / #=#) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   23 |   assert property (@(posedge clk) (a ##1 b) #-# c);
+      |                                      ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_prop_followed_by_bad.v:29:38: Unsupported: followed-by (#-# / #=#) nested inside property operator (iff/implies/or) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) (a #-# b) iff c);
+      |                                      ^~~
+%Error: Exiting due to

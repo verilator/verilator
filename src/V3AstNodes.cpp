@@ -31,6 +31,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
@@ -182,6 +183,15 @@ AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeEx
     }
 }
 
+void AstAbortOn::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " [" << kind().ascii() << "]";
+}
+void AstAbortOn::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kind", kind().ascii());
+    dumpJsonGen(str);
+}
+
 void AstAddrOfCFunc::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -273,7 +283,9 @@ bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
           || (m.m_keyword == VBasicDTypeKwd::LOGIC
               && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
         return false;
-    if (!(m.m_nrange == sp->m.m_nrange)) return false;
+    // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
+    if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
+    if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
     // Squash so NOSIGN == UNSIGNED
     if (numeric().isSigned() != sp->numeric().isSigned()) return false;
     if (!rangep() && !sp->rangep()) return true;
@@ -456,6 +468,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
+void AstPropAlways::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isStrong()) str << " [strong]";
+}
+void AstPropAlways::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonGen(str);
+}
 void AstConsQueue::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";
@@ -527,12 +547,55 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
 
 string AstConstraintRef::name() const { return constrp()->name(); }
 
+uint32_t AstMatchMasked::fold(const V3Number& lhs, AstVar* matchVarp) {
+    const V3Number& numTable = VN_AS(matchVarp->valuep(), Const)->num();
+    V3Number numMask{matchVarp, lhs.width(), 0};
+    V3Number numBits{matchVarp, lhs.width(), 0};
+    V3Number numAnd{matchVarp, lhs.width(), 0};
+    const int width = lhs.width();
+    const int entryWidth = VL_WORDS_I(width) * VL_EDATASIZE;
+    uint32_t i = 0;
+    while (true) {
+        const int lsb = 2 * i * entryWidth;
+        const int msb = lsb + width - 1;
+        numMask.opSel(numTable, msb, lsb);
+        numBits.opSel(numTable, msb + entryWidth, lsb + entryWidth);
+        numAnd.opAnd(numMask, lhs);
+        if (numAnd.isCaseEq(numBits)) break;
+        ++i;
+    }
+    return i;
+}
+
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
     , m_constPoolp{new AstConstPool{fileline()}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
+}
+
+const char* AstNetlist::broken() const {
+    for (const AstVar* const varp : m_deferredParamVarps) {
+        BROKEN_RTN(!varp || !varp->brokeExists());
+    }
+    return nullptr;
+}
+
+string AstNetlist::astConstOrigParamName(const AstConst* nodep) const {
+    if (!nodep->num().hasOrigParamName()) return "";
+    const auto it = m_constOrigParamNames.find(nodep);
+    UASSERT_OBJ(it != m_constOrigParamNames.end(), nodep, "Missing originating parameter name");
+    return it->second;
+}
+
+void AstNetlist::astConstOrigParamName(const AstConst* nodep, const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
+    m_constOrigParamNames[nodep] = name;
+}
+
+void AstNetlist::astConstOrigParamNameErase(const AstConst* nodep) {
+    m_constOrigParamNames.erase(nodep);
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
@@ -588,6 +651,7 @@ void AstVar::combineType(const AstVar* otherp) {
         varType(otherp->varType());
         direction(otherp->direction());
     }
+    if (otherp->icoMaybeWritten()) icoMaybeWritten(true);
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
@@ -640,9 +704,14 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
 
-string AstVar::vlEnumType() const {
+string AstNodeDType::vlEnumType() const {
     string arg;
-    const AstBasicDType* const bdtypep = basicp();
+    const AstNodeDType* dtypep = skipRefp();
+    while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    const AstBasicDType* const bdtypep = dtypep->basicp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
     const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
@@ -652,6 +721,8 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_STRING";
     } else if (isDouble()) {
         arg += "VLVT_REAL";
+    } else if (sdtypep && !sdtypep->packed()) {
+        arg += VN_IS(sdtypep, StructDType) ? "VLVT_STRUCT" : "VLVT_UNION";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
@@ -666,6 +737,8 @@ string AstVar::vlEnumType() const {
     // else return "VLVT_UNKNOWN"
     return arg;
 }
+
+string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }
 
 string AstVar::vlEnumDir() const {
     string out;
@@ -696,6 +769,7 @@ string AstVar::vlEnumDir() const {
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
+    if (isNet()) out += "|VLVF_NET";
     return out;
 }
 
@@ -1010,6 +1084,25 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     return nullptr;
 }
 
+const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
+    const AstNodeDType* dtypep = this;
+    while (true) {
+        if (skipRef) dtypep = dtypep->skipRefp();
+        if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
+            dtypep = adtypep->subDTypep();
+        } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = adtypep->subDTypep();
+        } else {
+            break;
+        }
+    }
+    return dtypep;
+}
+
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
     nodep = nodep->skipRefToNonRefp();
@@ -1198,6 +1291,47 @@ uint32_t AstNodeDType::arrayUnpackedElements() const {
     return entries;
 }
 
+bool AstNodeDType::isStreamableFixedAggregate() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->isStreamableFixedAggregate();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (sdtypep->packed()) return true;
+        if (!VN_IS(sdtypep, StructDType)) return false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->dtypep()->isStreamableFixedAggregate()) return false;
+        }
+        return true;
+    }
+    return dtypep->isIntegralOrPacked() || dtypep->isDouble();
+}
+
+bool AstNodeDType::containsUnpackedStruct() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->containsUnpackedStruct();
+    }
+    const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType);
+    return sdtypep && !sdtypep->packed();
+}
+
+int AstNodeDType::widthStream() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->widthStream() * adtypep->elementsConst();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (!VN_IS(sdtypep, StructDType) || sdtypep->packed()) return width();
+        int width = 0;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            width += itemp->dtypep()->widthStream();
+        }
+        return width;
+    }
+    return dtypep->width();
+}
+
 std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
@@ -1260,6 +1394,12 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_AS(nodep, Sel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, AssocSel)) {
+            nodep = VN_AS(nodep, AssocSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, WildcardSel)) {
+            nodep = VN_AS(nodep, WildcardSel)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
@@ -1520,6 +1660,7 @@ AstConstPool::AstConstPool(FileLine* fl)
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
     AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
+    varp->setConstPoolEntry();
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
@@ -1637,6 +1778,31 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     AstVarScope* const varScopep = createNewEntry(name, initp);
     m_consts.emplace(hash.value(), varScopep);
     return varScopep;
+}
+
+void AstConstPool::rebuildVarScopesAndCache() {
+    m_tables.clear();
+    m_consts.clear();
+    std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
+    for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
+        varScopeps.emplace(vscp->varp(), vscp);
+    }
+    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        AstVar* const varp = VN_CAST(nodep, Var);
+        if (!varp) continue;
+        AstNode* const valuep = varp->valuep();
+        if (!valuep) continue;
+        const bool isTable = VN_IS(valuep, InitArray);
+        const AstConst* const constp = VN_CAST(valuep, Const);
+        if (!isTable && !constp) continue;
+        AstVarScope*& vscp = varScopeps[varp];
+        if (!vscp) {
+            vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
+            m_scopep->addVarsp(vscp);
+        }
+        if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
+        if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
+    }
 }
 
 //======================================================================
@@ -1811,6 +1977,46 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+AstConst::~AstConst() {
+    // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
+    // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit
+    // is set, erase the entry before this AstConst address can be reused by a different node.
+    if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
+}
+
+string AstConst::origParamName() const {
+    if (!m_num.hasOrigParamName()) return "";
+    return v3Global.rootp()->astConstOrigParamName(this);
+}
+
+void AstConst::origParamName(const string& name) {
+    UASSERT(!name.empty(), "Empty originating parameter name");
+    v3Global.rootp()->astConstOrigParamName(this, name);
+    m_num.hasOrigParamName(true);
+}
+
+void AstConst::cloneRelink() {
+    // Preserve parameter-origin metadata across AST clones; the side-table key must be this
+    // new AstConst, not the original node.
+    if (const AstConst* const oldp = clonep()) {
+        const string name = oldp->origParamName();
+        m_num.hasOrigParamName(false);
+        if (!name.empty()) origParamName(name);
+    }
+    m_num.nodep(this);
+}
+
+void AstConst::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    const string name = origParamName();
+    if (!name.empty()) str << " origParamName=" << name;
+}
+void AstConst::dumpJson(std::ostream& str) const {
+    const string name = origParamName();
+    if (!name.empty()) dumpJsonStr(str, "origParamName", name);
+    dumpJsonGen(str);
+}
+
 bool AstNodeExpr::isLValue() const {
     if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
         return varrefp->access().isWriteOrRW();
@@ -1839,6 +2045,14 @@ void AstCCast::dump(std::ostream& str) const {
 }
 void AstCCast::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, size);
+    dumpJsonGen(str);
+}
+void AstLogNot::dump(std::ostream& str) const {
+    this->AstNodeUniop::dump(str);
+    if (fromProperty()) str << " [fromProperty]";
+}
+void AstLogNot::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, fromProperty);
     dumpJsonGen(str);
 }
 void AstCvtArrayToArray::dump(std::ostream& str) const {
@@ -1924,6 +2138,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
     if (useVirtualPublic()) str << " [VIRPUB]";
+    if (isPrintedFrom()) str << " [PRINTED]";
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
@@ -1931,6 +2146,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExtended);
     dumpJsonBoolFuncIf(str, isInterfaceClass);
     dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isPrintedFrom);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
@@ -1995,6 +2211,21 @@ bool AstClassRefDType::similarDTypeNode(const AstNodeDType* samep) const {
     }
     return !lp && !rp;
 }
+bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
+    if (m_packed != sp->m_packed) return false;
+    if (fileline()->tokenNum() != sp->fileline()->tokenNum()) return false;
+    const AstMemberDType* lp = membersp();
+    const AstMemberDType* rp = sp->membersp();
+    while (lp && rp) {
+        if (lp->name() != rp->name()) return false;
+        if (lp->width() != rp->width()) return false;
+        if (!lp->subDTypep()->similarDType(rp->subDTypep())) return false;
+        lp = VN_CAST(lp->nextp(), MemberDType);
+        rp = VN_CAST(rp->nextp(), MemberDType);
+    }
+    return !lp && !rp;
+}
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " ["s + this->userType().ascii() + "]";
@@ -2006,6 +2237,14 @@ void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
     dumpJsonBoolFuncIf(str, immediate);
     dumpJsonBoolFuncIf(str, senFromAlways);
+}
+void AstCover::dump(std::ostream& str) const {
+    this->AstNodeCoverOrAssert::dump(str);
+    if (isCoverSeq()) str << " [COVERSEQ]";
+}
+void AstCover::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isCoverSeq);
+    this->AstNodeCoverOrAssert::dumpJson(str);
 }
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2137,6 +2376,16 @@ void AstIfaceRefDType::dumpJson(std::ostream& str) const {
 void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
+}
+void AstImplication::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (isOverlapped()) str << " [overlapped]";
+    if (isFollowedBy()) str << " [followed-by]";
+}
+void AstImplication::dumpJson(std::ostream& str) const {
+    this->AstNodeExpr::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isOverlapped);
+    dumpJsonBoolFuncIf(str, isFollowedBy);
 }
 void AstInitArray::dumpInitList(std::ostream& str) const {
     int n = 0;
@@ -2504,10 +2753,12 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (emitToString()) str << " [EMITSTR]";
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, emitToString);
     dumpJsonGen(str);
 }
 void AstUnionDType::dump(std::ostream& str) const {
@@ -2585,6 +2836,10 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCompound);
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
+}
+void AstNodeAssign::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (timingControlp()) str << " [TIMING=" << nodeAddr(timingControlp()) << "]";
 }
 string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
@@ -2669,6 +2924,18 @@ AstVarScope* AstNetlist::stlFirstIterationp() {
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
     return vscp;
+}
+AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
+    UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
+    AstFunc* selfp = nullptr;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
+         itemp = itemp->nextp()) {
+        if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
+    }
+    UASSERT(selfp, "'std::process::self' should be found");
+    AstFuncRef* const processSelfp = new AstFuncRef{flp, selfp};
+    processSelfp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+    return processSelfp;
 }
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2855,6 +3122,11 @@ bool AstWildcardArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
 }
+bool AstUnpackArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
+    const AstUnpackArrayDType* const asamep = VN_DBG_AS(samep, UnpackArrayDType);
+    return hi() == asamep->hi() && rangep()->sameTree(asamep->rangep())
+           && subDTypep()->similarDType(asamep->subDTypep());
+}
 void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[*]";
@@ -2983,6 +3255,7 @@ int AstVarRef::instrCount() const {
 }
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (constPoolEntry()) str << " [CONSTPOOL]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3003,7 +3276,6 @@ void AstVar::dump(std::ostream& str) const {
     if (noReset()) str << " [!RST]";
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
-    if (attrIsolateAssign()) str << " [aISO]";
     if (attrFsmState()) str << " [aFSMSTATE]";
     if (attrFsmResetArc()) str << " [aFSMRESETARC]";
     if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
@@ -3014,6 +3286,7 @@ void AstVar::dump(std::ostream& str) const {
         str << " [FUNC]";
     }
     if (hasUserInit()) str << " [UINIT]";
+    if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -3024,6 +3297,7 @@ void AstVar::dump(std::ostream& str) const {
 void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, constPoolEntry);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);
@@ -3038,11 +3312,11 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, noReset);
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
-    dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFsmState);
     dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
     dumpJsonBoolFuncIf(str, attrFileDescr);
+    dumpJsonBoolFuncIf(str, icoMaybeWritten);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);
@@ -3550,3 +3824,81 @@ const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
 }
+void AstWith::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (m_restricted) {
+        str << " [RESTRICTED={";
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) str << ",";
+            str << n;
+            first = false;
+        }
+        str << "}]";
+    }
+}
+void AstWith::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "restricted", m_restricted);
+    if (m_restricted) {
+        std::string joined;
+        bool first = true;
+        for (const std::string& n : m_restrictedNames) {
+            if (!first) joined += ",";
+            joined += n;
+            first = false;
+        }
+        dumpJsonStr(str, "restrictedNames", joined);
+    }
+    dumpJsonGen(str);
+}
+
+//######################################################################
+// Functional coverage dump methods
+
+void AstCoverpoint::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
+
+void AstCoverpoint::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
+
+void AstCoverBin::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_type.ascii();
+    if (m_isArray) str << "[]";
+}
+
+void AstCoverBin::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"binsType\": \"" << m_type.ascii() << "\"";
+    if (m_isArray) str << ", \"isArray\": true";
+}
+
+void AstCoverTransItem::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (m_repType != VTransRepType::NONE) str << " " << m_repType.ascii();
+}
+
+void AstCoverTransItem::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"repType\": " << m_repType.asciiJson();
+}
+
+void AstCoverTransSet::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
+void AstCoverTransSet::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }
+
+void AstCoverCross::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
+
+void AstCoverCross::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
+
+void AstCoverOption::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_type.ascii();
+}
+
+void AstCoverOption::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"optionType\": \"" << m_type.ascii() << "\"";
+}
+
+void AstCoverpointRef::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
+void AstCoverpointRef::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }

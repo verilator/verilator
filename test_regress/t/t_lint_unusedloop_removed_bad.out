@@ -12,17 +12,14 @@
                                                             : ... note: In instance 't.non_parametrized_initial'
   158 |     do ; while(0);
       |     ^~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:114:5: Loop condition is always false
-  114 |     while(always_zero < 0) begin
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:136:5: Loop is not used and will be optimized out
+  136 |     while(param_unused_while < always_zero) begin
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:156:5: Loop condition is always false
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:156:5: Loop is not used and will be optimized out
   156 |     while(always_false);
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:157:5: Loop condition is always false
-  157 |     while(always_zero < 0);
-      |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:171:5: Loop condition is always false
-  171 |     while(always_false) begin
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:280:5: Loop is not used and will be optimized out
+  280 |     while (m_2_ticked);
       |     ^~~~~
 %Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:181:5: Loop condition is always false
   181 |     while(always_zero) begin
@@ -33,10 +30,10 @@
 %Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:190:5: Loop condition is always false
   190 |     for (int i = 0; i < always_zero; i++)
       |     ^~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:136:5: Loop is not used and will be optimized out
-  136 |     while(param_unused_while < always_zero) begin
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:171:5: Loop condition is always false
+  171 |     while(always_false) begin
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:280:5: Loop is not used and will be optimized out
-  280 |     while (m_2_ticked);
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:114:5: Loop condition is always false
+  114 |     while(always_zero < 0) begin
       |     ^~~~~
 %Error: Exiting due to

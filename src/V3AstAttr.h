@@ -39,6 +39,29 @@ class VFlagLogicPacked {};
 
 // ######################################################################
 
+class VAbortKind final {
+public:
+    // IEEE 1800-2023 16.12.14 property abort operators.
+    enum en : uint8_t {
+        ACCEPT_ON,  // accept_on(cond) prop: async abort, property succeeds
+        REJECT_ON,  // reject_on(cond) prop: async abort, property fails
+        SYNC_ACCEPT_ON,  // sync_accept_on(cond) prop: sampled at matured clock, succeeds
+        SYNC_REJECT_ON  // sync_reject_on(cond) prop: sampled at matured clock, fails
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAbortKind(en _e)
+        : m_e{_e} {}
+    const char* ascii() const {
+        static const char* const names[]
+            = {"accept_on", "reject_on", "sync_accept_on", "sync_reject_on"};
+        return names[m_e];
+    }
+    bool isAccept() const { return m_e == ACCEPT_ON || m_e == SYNC_ACCEPT_ON; }
+};
+
+//######################################################################
+
 class VAccess final {
 public:
     enum en : uint8_t {
@@ -319,7 +342,6 @@ public:
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RD,             // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RW,             // V3LinkParse moves to AstVar::sigPublic
-        VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
         VAR_SC_BIGUINT,                 // V3LinkParse moves to AstVar::attrScBigUint
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
@@ -341,11 +363,29 @@ public:
             "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
             "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
-            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW", "VAR_ISOLATE_ASSIGNMENTS",
+            "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];
+    }
+    // True for attributes that read an operand's type rather than its value, such as $bits.
+    bool isTypeQuery() const {
+        switch (m_e) {
+        case DIM_BITS:
+        case DIM_BITS_OR_NUMBER:
+        case DIM_DIMENSIONS:
+        case DIM_HIGH:
+        case DIM_INCREMENT:
+        case DIM_LEFT:
+        case DIM_LOW:
+        case DIM_RIGHT:
+        case DIM_SIZE:
+        case DIM_UNPK_DIMENSIONS:
+        case TYPEID:
+        case TYPENAME: return true;
+        default: return false;
+        }
     }
     VAttrType()
         : m_e{ILLEGAL} {}
@@ -815,6 +855,7 @@ public:
         FORCE_ADD,
         FORCE_READ,
         FORCE_READ_INDEX,
+        FORCE_READ_SEL,
         FORCE_RELEASE,
         FORCE_TOUCH,
         FORK_DONE,
@@ -834,6 +875,8 @@ public:
         RANDOMIZER_WRITE_VAR,
         RANDOMIZER_SET_VAR_DISABLED,
         RANDOMIZER_CLEAR_VAR_DISABLED,
+        RANDOMIZER_MARK_VAR_STATIC,
+        RANDOMIZER_SET_STATIC_RANDMODE,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -966,6 +1009,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORCE_ADD, "addForce", false}, \
            {FORCE_READ, "read", true}, \
            {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_READ_SEL, "readSel", true}, \
            {FORCE_RELEASE, "release", false}, \
            {FORCE_TOUCH, "touch", false}, \
            {FORK_DONE, "done", false}, \
@@ -985,6 +1029,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
            {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
+           {RANDOMIZER_MARK_VAR_STATIC, "mark_var_static", false}, \
+           {RANDOMIZER_SET_STATIC_RANDMODE, "set_static_randmode", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
@@ -1117,6 +1163,133 @@ constexpr bool operator==(VCastable::en lhs, const VCastable& rhs) { return lhs 
 inline std::ostream& operator<<(std::ostream& os, const VCastable& rhs) {
     return os << rhs.ascii();
 }
+
+//######################################################################
+
+class VCoverBinsType final {
+public:
+    enum en : uint8_t {
+        BINS_ARRAY,  // Array of bins with user-speciifed size
+        BINS_AUTO,  // Auto-sized array of bins (eg auto_bin_max)
+        BINS_DEFAULT,  // Default bin
+        BINS_IGNORE,  // Ignore bin
+        BINS_ILLEGAL,  // Illegal bin
+        BINS_TRANSITION,  // Transition bin
+        BINS_USER,  // Single bin with one or more values/ranges
+        BINS_WILDCARD  // Wildcard bin
+    };
+    enum en m_e;
+    VCoverBinsType()  // LCOV_EXCL_START
+        : m_e{BINS_USER} {}  // LCOV_EXCL_STOP
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCoverBinsType(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
+    const char* ascii() const {
+        static const char* const names[]
+            = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
+        return names[m_e];
+    }
+    // VlCovBinKind enumerator naming the bin's set
+    const char* binSetEnum() const {
+        switch (m_e) {
+        case BINS_IGNORE: return "VlCovBinKind::KIND_IGNORE";
+        case BINS_ILLEGAL: return "VlCovBinKind::KIND_ILLEGAL";
+        case BINS_DEFAULT: return "VlCovBinKind::KIND_DEFAULT";
+        default: return "VlCovBinKind::KIND_NORMAL";
+        }
+    }
+    // Normal bins (feed coverage) are anything but ignore/illegal/default
+    bool binIsNormal() const {
+        return m_e != BINS_IGNORE && m_e != BINS_ILLEGAL && m_e != BINS_DEFAULT;
+    }
+};
+constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
+    return lhs.m_e == rhs;
+}
+
+//######################################################################
+
+class VCoverOptionType final {
+public:
+    enum en : uint8_t {
+        // Shared by option.* and type_option.*
+        WEIGHT,
+        GOAL,
+        AT_LEAST,
+        AUTO_BIN_MAX,
+        PER_INSTANCE,
+        COMMENT,
+        // option.* only (IEEE 1800-2023 Table 19-1)
+        NAME,
+        CROSS_NUM_PRINT_MISSING,
+        CROSS_RETAIN_AUTO_BINS,
+        DETECT_OVERLAP,
+        GET_INST_COVERAGE,
+        // type_option.* only (IEEE 1800-2023 Table 19-3)
+        STROBE,
+        MERGE_INSTANCES,
+        DISTRIBUTE_FIRST,
+        REAL_INTERVAL,
+        // sentinel - should never appear after parse-time validation
+        UNKNOWN
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCoverOptionType(en _e)
+        : m_e{_e} {}
+    const char* ascii() const {
+        static const char* const names[] = {"weight",
+                                            "goal",
+                                            "at_least",
+                                            "auto_bin_max",
+                                            "per_instance",
+                                            "comment",
+                                            "name",
+                                            "cross_num_print_missing",
+                                            "cross_retain_auto_bins",
+                                            "detect_overlap",
+                                            "get_inst_coverage",
+                                            "strobe",
+                                            "merge_instances",
+                                            "distribute_first",
+                                            "real_interval",
+                                            "unknown"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VCoverOptionType& lhs, VCoverOptionType::en rhs) {
+    return lhs.m_e == rhs;
+}
+
+//######################################################################
+
+class VTransRepType final {
+public:
+    enum en : uint8_t {
+        NONE,  // No repetition
+        CONSEC,  // Consecutive repetition [*]
+        GOTO,  // Goto repetition [->]
+        NONCONS  // Nonconsecutive repetition [=]
+    };
+    enum en m_e;
+    VTransRepType()  // LCOV_EXCL_START
+        : m_e{NONE} {}  // LCOV_EXCL_STOP
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VTransRepType(en _e)
+        : m_e{_e} {}
+    explicit VTransRepType(int _e)  // LCOV_EXCL_START
+        : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
+    const char* ascii() const {
+        static const char* const names[] = {"", "[*]", "[->]", "[=]"};
+        return names[m_e];
+    }
+    const char* asciiJson() const {
+        static const char* const names[] = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
+        return names[m_e];
+    }
+};
 
 //######################################################################
 
@@ -1255,6 +1428,7 @@ public:
         ET_EVENT,  // VlEventBase::isFired
         // Involving an expression
         ET_TRUE,
+        ET_INITIAL_NBA,  // Event that is fired initially and never again
         //
         ET_COMBO,  // Sensitive to all combo inputs to this block
         ET_COMBO_STAR,  // Sensitive to all combo inputs to this block (from .*)
@@ -1273,6 +1447,7 @@ public:
             true,  // ET_NEGEDGE
             true,  // ET_EVENT
             true,  // ET_TRUE
+            true,  // ET_INITIAL_NBA
 
             false,  // ET_COMBO
             false,  // ET_COMBO_STAR
@@ -1296,14 +1471,14 @@ public:
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
-               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",  "ET_INITIAL_NBA",
+               "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[]
-            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
-               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
+        static const char* const names[] = {
+            "[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",  "[initial_nba]",
+            "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions

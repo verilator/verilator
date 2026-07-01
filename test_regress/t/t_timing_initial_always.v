@@ -6,20 +6,24 @@
 
 module t;
   wire sig;
-  foo foo(sig);
+  foo foo (sig);
 
-  initial #1 begin
-    $write("*-* All Finished *-*\n");
-    $finish();
-  end
+  initial
+    #1 begin
+      $write("*-* All Finished *-*\n");
+      $finish();
+    end
 endmodule
 
-module foo(inout sig);
+module foo (
+    inout sig
+);
   reg cond = $c(0);
 
   always @(sig) begin
     if (cond) begin
-      #1; $c("");
+      #1;
+      $c("");
     end
   end
 endmodule

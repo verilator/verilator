@@ -6,10 +6,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  output [2:0] c_b_a,
-  input a,
-  input b,
-  input c
+    output [2:0] c_b_a,
+    input a,
+    input b,
+    input c
 );
   assign c_b_a = {c, {b, a}};
 endmodule

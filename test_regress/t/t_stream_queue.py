@@ -9,9 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+# Issue #7780 unstable with --vltmt
+test.scenarios('simulator_st')
 
-test.compile()
+test.compile(verilator_flags2=["--timing"])
 
 test.execute()
 

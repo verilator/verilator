@@ -61,6 +61,7 @@ class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
     AstCFunc* m_cFuncp = nullptr;
+    bool m_needsNonInlineCFunc = false;  // Needs CFunc for selected non-inlined call sites
 
 public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
@@ -72,6 +73,8 @@ public:
     string dotColor() const override { return pure() ? "black" : "red"; }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
+    bool needsNonInlineCFunc() const { return m_needsNonInlineCFunc; }
+    void needsNonInlineCFunc(bool flag) { m_needsNonInlineCFunc = flag; }
 };
 
 class TaskCodeVertex final : public TaskBaseVertex {
@@ -116,9 +119,22 @@ class TaskStateVisitor final : public VNVisitor {
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
     std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
+    bool m_underPortVar = false;  // Visiting under a port AstVar; any expression there
+                                  // is a default value, evaluated at call sites only
 
 public:
     // METHODS
+    static bool isVirtualIfaceMethodCall(const AstNodeFTaskRef* refp) {
+        const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall);
+        if (!mrefp) return false;
+        const AstNodeExpr* const fromp = mrefp->fromp();
+        if (!fromp || !fromp->dtypep()) return false;
+        const AstIfaceRefDType* const ifrefp = VN_CAST(fromp->dtypep()->skipRefp(), IfaceRefDType);
+        return ifrefp && ifrefp->isVirtual();
+    }
+    static bool isIfaceFTaskScope(const AstScope* scopep) {
+        return scopep && VN_IS(scopep->modp(), Iface);
+    }
     AstScope* getScope(AstNodeFTask* nodep) {
         AstScope* const scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
@@ -138,6 +154,9 @@ public:
         m_funcToClassMap[newp] = getClassp(nodep);
     }
     bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
+    bool ftaskNeedsNonInlineCFunc(AstNodeFTask* nodep) {
+        return getFTaskVertex(nodep)->needsNonInlineCFunc();
+    }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
@@ -229,6 +248,9 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
         new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
+        // Virtual-interface method calls dispatch through a runtime handle and
+        // must not be inlined.
+        if (isVirtualIfaceMethodCall(nodep)) taskVtxp->needsNonInlineCFunc(true);
         // Do we have to disable inlining the function?
         const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         if (!taskVtxp->noInline()) {  // Else short-circuit below
@@ -251,13 +273,6 @@ private:
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         if (nodep->recursive()) m_curVxp->noInline(true);
-        // V3Scope resolves virtual-interface MethodCalls via user2p (last-wins),
-        // so inlining would bake in the wrong instance's VarScope refs.
-        if (v3Global.hasVirtIfaces()) {
-            if (const AstScope* const scopep = VN_CAST(nodep->user3p(), Scope)) {
-                if (VN_IS(scopep->modp(), Iface)) m_curVxp->noInline(true);
-            }
-        }
         if (nodep->isConstructor()) {
             m_curVxp->noInline(true);
             m_ctorp = nodep;
@@ -276,11 +291,14 @@ private:
         }
     }
     void visit(AstVar* nodep) override {
+        VL_RESTORER(m_underPortVar);
+        if (nodep->isIO()) m_underPortVar = true;
         iterateChildren(nodep);
         nodep->user4p(m_curVxp);  // Remember what task it's under
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
+        if (m_underPortVar) return;
         AstVar* const varp = nodep->varp();
         if (varp->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
@@ -421,6 +439,7 @@ class TaskVisitor final : public VNVisitor {
     int m_unconVarNum = 0;  // Unique bad connection variable
 
     // STATE - across all visitors
+    V3UniqueNames m_forceTmpNames;  // For generating unique force-RHS helper names
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
     VDouble0 m_statInlines;  // Statistic tracking
     VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
@@ -1336,6 +1355,7 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->isVirtual(nodep->isVirtual());
         cfuncp->dpiPure(nodep->dpiPure());
         if (nodep->name() == "new") cfuncp->isConstructor(true);
+        if (nodep->isCovergroupSample()) cfuncp->isCovergroupSample(true);
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
         if (cfuncp->dpiImportWrapper()) cfuncp->cname(nodep->cname());
@@ -1390,7 +1410,15 @@ class TaskVisitor final : public VNVisitor {
                         // Move it to new function
                         unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
+                        if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
                         cfuncp->addArgsp(portp);
+                        // Pass inputs to DPI import wrappers by reference, unless fits in register
+                        if (cfuncp->dpiImportWrapper() && portp->isReadOnly()) {
+                            AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                            if (dtypep->isCompound() || dtypep->isWide()) {
+                                portp->direction(VDirection::CONSTREF);
+                            }
+                        }
                     } else {
                         // "Normal" variable, mark inside function
                         portp->funcLocal(true);
@@ -1495,8 +1523,10 @@ class TaskVisitor final : public VNVisitor {
         // Iterate into the FTask we are calling.  Note it may be under a different
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_insStmtp);
         m_scopep = m_statep->getScope(nodep);
+        m_modp = m_scopep->modp();
         iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -1526,6 +1556,16 @@ class TaskVisitor final : public VNVisitor {
             exprstmtp->stmtsp()->addNext(assignp);
             argp->exprp(exprstmtp);
         }
+    }
+
+    bool isIfaceLocalImpure(AstNodeFTask* nodep, AstNode* impurep) {
+        const AstScope* const scopep = m_statep->getScope(nodep);
+        if (!TaskStateVisitor::isIfaceFTaskScope(scopep)) return false;
+
+        const AstVarRef* const refp = VN_CAST(impurep, VarRef);
+        if (!refp || !refp->varScopep()) return false;
+
+        return refp->varScopep()->scopep() == scopep;
     }
 
     // VISITORS
@@ -1598,7 +1638,11 @@ class TaskVisitor final : public VNVisitor {
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
-        if (m_statep->ftaskNoInline(nodep->taskp())) {
+        // getScope() is safe here: TaskStateVisitor stamped all FTask scopes before this pass.
+        const bool virtualIfaceCall
+            = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
+              && TaskStateVisitor::isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));
+        if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
@@ -1697,32 +1741,38 @@ class TaskVisitor final : public VNVisitor {
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
+            const bool needsNonInlineCFunc = m_statep->ftaskNeedsNonInlineCFunc(nodep);
             // Warn if not inlining an impure ftask (unless method, recursive,
-            // or interface function -- interface member access is not truly external).
+            // or interface-local member access, which is not truly external).
             // Will likely not schedule correctly.
             // TODO: Why not if recursive? It will not work ...
-            if (noInline && !nodep->classMethod() && !nodep->recursive()
-                && !VN_IS(m_modp, Iface)) {
+            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    nodep->v3warn(
-                        IMPURE,
-                        "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << impurep->warnOther() << "... Location of the external reference: "
-                            << impurep->prettyNameQ() << '\n'
-                            << impurep->warnContextSecondary());
+                    if (!isIfaceLocalImpure(nodep, impurep)) {
+                        nodep->v3warn(IMPURE, "Unsupported: External variable referenced by "
+                                              "non-inlined function/task: "
+                                                  << nodep->prettyNameQ() << '\n'
+                                                  << nodep->warnContextPrimary() << '\n'
+                                                  << impurep->warnOther()
+                                                  << "... Location of the external reference: "
+                                                  << impurep->prettyNameQ() << '\n'
+                                                  << impurep->warnContextSecondary());
+                    }
                 }
             }
 
-            if (noInline || nodep->dpiImport() || nodep->dpiExport() || nodep->taskPublic()) {
+            if (noInline || needsNonInlineCFunc || nodep->dpiImport() || nodep->dpiExport()
+                || nodep->taskPublic()) {
                 // Clone it first, because we may have later FTaskRef's that still need
                 // the original version.
                 AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
-                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, noInline)) {
+                const bool makeNonInlineFunc = noInline || needsNonInlineCFunc;
+                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, makeNonInlineFunc)) {
                     nodep->addNextHere(cfuncp);
-                    if (nodep->dpiImport() || noInline) m_statep->ftaskCFuncp(nodep, cfuncp);
+                    if (nodep->dpiImport() || makeNonInlineFunc) {
+                        m_statep->ftaskCFuncp(nodep, cfuncp);
+                    }
                     iterateIntoFTask(clonedFuncp);  // Do the clone too
                 }
             }
@@ -1748,6 +1798,47 @@ class TaskVisitor final : public VNVisitor {
             // remain until visitor exits
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+    void visit(AstAssignForce* nodep) override {
+        // Force statements cannot be converted to always blocks outside of a logic block
+        // This causes function calls on RHS of force assignments to be improperly inlined and
+        // called just once. To prevent this, we create a temporary variable for each function
+        // reference on RHS. This variable is declared in the nearest scope and gets a continuous
+        // assignment of the function, so it can be converted to always and properly inlined This
+        // temporary variable becomes the RHS of the force assignment
+        std::vector<AstNodeFTaskRef*> refs;
+        nodep->rhsp()->foreach([&refs](AstNodeFTaskRef* refp) { refs.push_back(refp); });
+        for (AstNodeFTaskRef* const refp : refs) {
+
+            // Create the temporary variable and its scope
+            // Replicate the logic from V3Task, every function call gets
+            // a unique temp variable
+            AstVar* const interVarp = new AstVar{
+                nodep->fileline(), VVarType::VAR,
+                refp->name() + "__Vforcefuncout" + m_forceTmpNames.get(nodep), refp->dtypep()};
+            UASSERT_OBJ(m_modp->stmtsp(), m_modp, "Module should have statements in it");
+            m_modp->stmtsp()->addHereThisAsNext(interVarp);
+            AstVarScope* const interVscp = new AstVarScope{refp->fileline(), m_scopep, interVarp};
+            m_scopep->addVarsp(interVscp);
+
+            // Recompute the helper in a combo block so any inlined function body stays
+            // inside schedulable logic rather than spilling statements at module scope.
+            AstAssign* const assignp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), interVscp, VAccess::WRITE},
+                nodep->rhsp()->cloneTreePure(false)};
+            AstSenTree* const senTreep = new AstSenTree{
+                nodep->fileline(), new AstSenItem{nodep->fileline(), AstSenItem::Combo{}}};
+            AstActive* const activep
+                = new AstActive{nodep->fileline(), "force-func-update", senTreep};
+            activep->senTreeStorep(activep->sentreep());
+            activep->addStmtsp(
+                new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, nullptr, assignp});
+            m_scopep->addBlocksp(activep);
+
+            // Replace RHS of force assignment with the temporary variable
+            refp->replaceWith(new AstVarRef{nodep->fileline(), interVscp, VAccess::READ});
+            VL_DO_DANGLING(refp->deleteTree(), refp);
         }
     }
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
@@ -2056,6 +2147,14 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newTaskp->addStmtsp(newPortp);
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
+            if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
+                const VAccess refAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+                AstVarRef* const refp = VN_AS(valuep->cloneTree(false), VarRef);
+                refp->access(refAccess);
+                AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(), refp};
+                newCallp->addArgsp(newArgp);
+                continue;
+            }
             // Create local temporary
             newPortp = new AstVar{portp->fileline(), VVarType::BLOCKTEMP, portp->name(),
                                   portp->dtypep()};

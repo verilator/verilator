@@ -106,6 +106,13 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
     }
+    // If array, returns element dtype, otherwise returns skipRef dtype
+    // If skipRef is false, RefDTypes are not followed (safe before typedef linking)
+    const AstNodeDType* elemDTypep(bool skipRef = true) const VL_MT_STABLE;
+    AstNodeDType* elemDTypep(bool skipRef = true) VL_MT_STABLE {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->elemDTypep(skipRef));
+    }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
@@ -163,6 +170,11 @@ public:
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic) const;
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
+    // Fixed aggregate streaming properties
+    bool isStreamableFixedAggregate() const;
+    bool containsUnpackedStruct() const;
+    int widthStream() const;
+    string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
@@ -204,7 +216,7 @@ public:
     }  // HashedDT doesn't recurse, so need to check children
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         const AstNodeArrayDType* const asamep = VN_DBG_AS(samep, NodeArrayDType);
-        return hi() == asamep->hi() && rangenp()->sameTree(asamep->rangenp())
+        return elementsConst() == asamep->elementsConst()
                && subDTypep()->similarDType(asamep->subDTypep());
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -239,6 +251,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
+    bool m_emitToString = false;  // Generate to_string() for this struct/union if set
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
@@ -275,9 +288,7 @@ public:
     int widthAlignBytes() const override;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     int widthTotalBytes() const override;
-    bool similarDTypeNode(const AstNodeDType* samep) const override {
-        return this == samep;  // We don't compare members, require exact equivalence
-    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool packed() const VL_MT_SAFE { return m_packed; }
@@ -295,6 +306,8 @@ public:
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
     bool isConstrainedRand() const { return m_constrainedRand; }
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
+    bool emitToString() const { return m_emitToString; }
+    void setEmitToString() { m_emitToString = true; }
 };
 
 // === Concrete node types =====================================================
@@ -1444,6 +1457,7 @@ public:
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;
     }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     bool isAggregateType() const override { return true; }
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();

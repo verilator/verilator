@@ -249,6 +249,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Combine.o \
   V3Common.o \
   V3Coverage.o \
+  V3Covergroup.o \
   V3CoverageJoin.o \
   V3Dead.o \
   V3Delayed.o \
@@ -263,7 +264,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DfgDataType.o \
   V3DfgDecomposition.o \
   V3DfgDfgToAst.o \
-  V3DfgDumpPatterns.o \
   V3DfgOptimizer.o \
   V3DfgPasses.o \
   V3DfgPeephole.o \
@@ -313,6 +313,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3OrderProcessDomains.o \
   V3OrderSerial.o \
   V3Param.o \
+  V3PatternStats.o \
   V3Premit.o \
   V3ProtectLib.o \
   V3RandSequence.o \
@@ -332,11 +333,9 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Scoreboard.o \
   V3Slice.o \
   V3Split.o \
-  V3SplitAs.o \
   V3SplitVar.o \
   V3StackCount.o \
   V3Subst.o \
-  V3TSP.o \
   V3Table.o \
   V3Task.o \
   V3Timing.o \

@@ -1,57 +1,62 @@
-.. Github doesn't render images unless absolute URL
-.. Do not know of a conditional tag, "only: github" nor "github display" works
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   Github doesn't render images unless absolute URL
+   Do not know of a conditional tag, "only: github" nor "github display" works
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 |badge1| |badge2| |badge3| |badge4| |badge5| |badge7| |badge8|
 
 .. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
    :target: https://verilator.org
+
 .. |badge2| image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
    :target: https://www.gnu.org/licenses/lgpl-3.0
+
 .. |badge3| image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
    :target: https://opensource.org/licenses/Artistic-2.0
+
 .. |badge4| image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
    :target: https://repology.org/project/verilator/versions
+
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
    :target: https://hub.docker.com/r/verilator/verilator
+
 .. |badge7| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
    :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+
 .. |badge8| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/rtlmeter.yml?branch=master&event=schedule&label=benchmarks
    :target: https://verilator.github.io/verilator-rtlmeter-results
-
 
 Welcome to Verilator
 ====================
 
 .. list-table::
 
-   * - **Welcome to Verilator, the fastest Verilog/SystemVerilog simulator.**
-        * Accepts Verilog or SystemVerilog
-        * Performs lint code-quality checks
-        * Compiles into multithreaded C++, or SystemC
-        * Creates JSON to front-end your own tools
+   - - **Welcome to Verilator, the fastest Verilog/SystemVerilog simulator.**
+          - Accepts Verilog or SystemVerilog
+          - Performs lint code-quality checks
+          - Compiles into multithreaded C++, or SystemC
+          - Creates JSON to front-end your own tools
      - |Logo|
-   * - |verilator multithreaded performance|
+   - - |verilator multithreaded performance|
      - **Fast**
-        * Outperforms many closed-source commercial simulators
-        * Single- and multithreaded output models
-   * - **Widely Used**
-        * Wide industry and academic deployment
-        * Out-of-the-box support from Arm and RISC-V vendor IP
-        * Over 700 contributors
+          - Outperforms many closed-source commercial simulators
+          - Single- and multithreaded output models
+   - - **Widely Used**
+          - Wide industry and academic deployment
+          - Out-of-the-box support from Arm and RISC-V vendor IP
+          - Over 700 contributors
      - |verilator usage|
-   * - |verilator community|
+   - - |verilator community|
      - **Community Driven & Openly Licensed**
-        * Guided by the `CHIPS Alliance`_ and `Linux Foundation`_
-        * Open, and free as in both speech and beer
-        * More simulation for your verification budget
-   * - **Commercial Support Available**
-        * Commercial support contracts
-        * Design support contracts
-        * Enhancement contracts
+          - Guided by the `CHIPS Alliance`_ and `Linux Foundation`_
+          - Open, and free as in both speech and beer
+          - More simulation for your verification budget
+   - - **Commercial Support Available**
+          - Commercial support contracts
+          - Design support contracts
+          - Enhancement contracts
      - |verilator support|
-
 
 What Verilator Does
 ===================
@@ -77,7 +82,6 @@ SDF annotation, or mixed-signal simulation. However, if you are looking for
 a path to migrate SystemVerilog to C++/SystemC, or want high-speed
 simulation, Verilator is the tool for you.
 
-
 Performance
 ===========
 
@@ -95,7 +99,6 @@ Verilog simulators (e.g., Aldec Riviera-Pro, Cadence Incisive/NC-Verilog,
 Mentor ModelSim/Questa, Synopsys VCS, VTOC, and Pragmatic CVer/CVC). But,
 Verilator is open-sourced, so you can spend on computes rather than
 licenses. Thus, Verilator gives you the best simulation cycles/dollar.
-
 
 Installation & Documentation
 ============================
@@ -115,7 +118,6 @@ For more information:
 
 - `Verilator issues <https://verilator.org/issues>`_
 
-
 Support
 =======
 
@@ -131,7 +133,6 @@ Thanks to our `Contributors and Sponsors
 Verilator also supports and encourages commercial support models and
 organizations; please see `Verilator Commercial Support
 <https://verilator.org/verilator_commercial_support>`_.
-
 
 Related Projects
 ================
@@ -149,7 +150,6 @@ Related Projects
 - `Surfer <https://surfer-project.org/>`_ - Web or offline waveform viewer
   for Verilator traces.
 
-
 Open License
 ============
 
@@ -161,10 +161,17 @@ the terms of either the GNU Lesser General Public License Version 3 or the
 Perl Artistic License Version 2.0. See the documentation for more details.
 
 .. _chips alliance: https://chipsalliance.org
+
 .. _icarus verilog: https://steveicarus.github.io/iverilog
+
 .. _linux foundation: https://www.linuxfoundation.org
+
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png
+
 .. |verilator multithreaded performance| image:: https://www.veripool.org/img/verilator_multithreaded_performance_bg-min.png
+
 .. |verilator usage| image:: https://www.veripool.org/img/verilator_usage_400x200-min.png
+
 .. |verilator community| image:: https://www.veripool.org/img/verilator_community_400x125-min.png
+
 .. |verilator support| image:: https://www.veripool.org/img/verilator_support_400x125-min.png

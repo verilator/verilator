@@ -139,12 +139,12 @@ C 'ft/t_wrapper_context.vl21n3tlinepagev_line/topoblockS21-24,28,3
 C 'ft/t_wrapper_context.vl35n3tlinepagev_line/topoblockS35htop0.top' 11
 C 'ft/t_wrapper_context.vl36n5tbranchpagev_branch/topoifS36htop0.top' 1
 C 'ft/t_wrapper_context.vl36n6tbranchpagev_branch/topoelseS37htop0.top' 10
-C 'ft/t_wrapper_context.vl39n3tlinepagev_line/topoblockS39-40htop0.top' 34
+C 'ft/t_wrapper_context.vl39n3tlinepagev_line/topoblockS39-40htop0.top' 13
 C 'ft/t_wrapper_context.vl41n5tbranchpagev_branch/topoifS41htop0.top' 0
-C 'ft/t_wrapper_context.vl41n6tbranchpagev_branch/topoelseS47htop0.top' 34
+C 'ft/t_wrapper_context.vl41n6tbranchpagev_branch/topoelseS47htop0.top' 13
 C 'ft/t_wrapper_context.vl42n24texprpagev_expr/topo((counter >= 32'sh5)==0) => 0htop0.top' 0
 C 'ft/t_wrapper_context.vl42n24texprpagev_expr/topo((counter >= 32'sh5)==1 && stop==1) => 1htop0.top' 0
 C 'ft/t_wrapper_context.vl42n24texprpagev_expr/topo(stop==0) => 0htop0.top' 0
 C 'ft/t_wrapper_context.vl42n8tlinepagev_line/topoelsehtop0.top' 0
 C 'ft/t_wrapper_context.vl48n7tbranchpagev_branch/topoifS48-50htop0.top' 1
-C 'ft/t_wrapper_context.vl48n8tbranchpagev_branch/topoelsehtop0.top' 33
+C 'ft/t_wrapper_context.vl48n8tbranchpagev_branch/topoelsehtop0.top' 12

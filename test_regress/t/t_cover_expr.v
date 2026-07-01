@@ -21,6 +21,7 @@ module t (
   integer some_int;
   integer other_int;
   logic some_bool;
+  logic [1:0] assign_lhs;
 
   wire t1 = cyc[0];
   wire t2 = cyc[1];
@@ -86,6 +87,9 @@ module t (
         if (cyc[loop_var] && t2) $write("");
       end
     end
+    for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
+      if (cyc[loop_var_2] | cyc[loop_var_2 + 1]) $write("");
+    end
     // stop at the first layer even if there's more to find
     if ((cyc[3+32'(t1&&t2)+:2] == cyc[5+32'(t3||t4)+:2]) || cyc[31]) $write("");
     // impossible branches and redundant terms
@@ -116,6 +120,9 @@ module t (
   always_comb begin
     if (t1 && t2) $write("");
   end
+
+  assign assign_lhs[0] = t1 && t2;
+  assign assign_lhs[1] = (t1 && t2) || (t3 && t4);
 
   logic ta, tb, tc;
   initial begin

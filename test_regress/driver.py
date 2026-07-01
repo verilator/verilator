@@ -143,6 +143,7 @@ class Capabilities:
     _cached_have_dev_asan = None
     _cached_have_dev_gcov = None
     _cached_have_gdb = None
+    _cached_have_lldb = None
     _cached_have_sc = None
     _cached_have_solver = None
     _cached_make_version = None
@@ -197,6 +198,13 @@ class Capabilities:
         return Capabilities._cached_have_gdb
 
     @staticproperty
+    def have_lldb() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_lldb is None:
+            out = VtOs.run_capture('lldb --help 2>/dev/null', check=False)
+            Capabilities._cached_have_lldb = bool('USAGE: lldb' in out)
+        return Capabilities._cached_have_lldb
+
+    @staticproperty
     def have_sc() -> bool:  # pylint: disable=no-method-argument
         if Capabilities._cached_have_sc is None:
             if 'SYSTEMC' in os.environ:
@@ -237,6 +245,7 @@ class Capabilities:
         _ignore = Capabilities.have_dev_asan
         _ignore = Capabilities.have_dev_gcov
         _ignore = Capabilities.have_gdb
+        _ignore = Capabilities.have_lldb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
 
@@ -1541,8 +1550,9 @@ class VlTest:
             debugger_exec_cmd_start = ""
             debugger_exec_cmd_end = ""
             if Args.gdbsim:
-                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
-                debugger_exec_cmd_start = " -ex 'run "
+                use_lldb = not self.have_gdb and self.have_lldb
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "lldb" if use_lldb else "gdb") + " "
+                debugger_exec_cmd_start = " -b -o 'run " if use_lldb else " -ex 'run "
                 debugger_exec_cmd_end = "'"
             cmd = [
                 run_env + debugger + 'vvp', debugger_exec_cmd_start,
@@ -1606,14 +1616,22 @@ class VlTest:
             pli_opt = ""
             if param['use_libvpi']:
                 pli_opt = "-loadvpi " + self.obj_dir + "/libvpi.so:vpi_compat_bootstrap"
+            done = "XRUN_DONE"
             cmd = [
-                "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
+                run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
                 ' '.join(param['xrun_run_flags']),
                 ' '.join(param['xrun_flags2']),
                 ' '.join(param['v_flags']),
                 ' '.join(param['all_run_flags']),
                 pli_opt,
+                '-input',
+                '@run',
+                '-input',
+                f'"@puts {done}"',
+                '-input',
+                '@exit',
                 param['top_filename'],
+                param['top_shell_filename'],
             ]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
@@ -1621,6 +1639,8 @@ class VlTest:
                      expect_filename=param.get('xrun_run_expect_filename', None),
                      fails=param['fails'],
                      logfile=param.get('logfile', self.obj_dir + "/xrun_sim.log"),
+                     stop_re=r'Simulation stopped via',
+                     done_re=done,
                      tee=param['tee'])
         elif param['xsim']:
             cmd = [
@@ -1639,15 +1659,18 @@ class VlTest:
             if not param['executable']:
                 param['executable'] = self.obj_dir + "/" + param['vm_prefix']
             debugger = ""
+            run_flags = ""
+            trailer = ""
             if Args.gdbsim:
-                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
+                use_lldb = not self.have_gdb and self.have_lldb
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "lldb" if use_lldb else "gdb") + " "
+                run_flag = " -o " if use_lldb else " -ex "
+                run_flags = run_flag + "'run "
+                trailer = "'"
             elif Args.rrsim:
                 debugger = "rr record "
-            cmd = [
-                (run_env + debugger + param['executable'] + (" -ex 'run " if Args.gdbsim else "")),
-                *param['all_run_flags'],
-                ("'" if Args.gdbsim else ""),
-            ]
+            cmd = [(run_env + debugger + param['executable'] + run_flags), *param['all_run_flags'],
+                   trailer]
             cmd += self.driver_verilated_flags
             self.run(
                 cmd=cmd,
@@ -1677,8 +1700,9 @@ class VlTest:
         return VlTest._cached_aslr_off
 
     @property
-    def build_jobs(self) -> str:
-        return "--build-jobs " + str(Args.driver_build_jobs_n)
+    def build_jobs_groups(self) -> str:
+        return "--build-jobs " + str(Args.driver_build_jobs_n) + " --output-groups " + str(
+            max(6, Args.driver_build_jobs_n))
 
     @property
     def driver_verilator_flags(self) -> list:
@@ -1762,6 +1786,10 @@ class VlTest:
         return Capabilities.have_coroutines
 
     @property
+    def have_dbg(self) -> bool:
+        return Capabilities.have_gdb or Capabilities.have_lldb
+
+    @property
     def have_dev_asan(self) -> bool:
         return Capabilities.have_dev_asan
 
@@ -1772,6 +1800,10 @@ class VlTest:
     @property
     def have_gdb(self) -> bool:
         return Capabilities.have_gdb
+
+    @property
+    def have_lldb(self) -> bool:
+        return Capabilities.have_lldb
 
     @property
     def have_sc(self) -> bool:
@@ -1832,6 +1864,8 @@ class VlTest:
             expect_filename=None,  # Filename that should match logfile
             fails=False,  # True: normal 1 exit code, 'any': any exit code
             logfile=None,  # Filename to write putput to
+            stop_re=None,  # Regex for $stop
+            done_re=None,  # Regex for sim completion
             tee=True,
             verilator_run=False) -> bool:  # Move gcov data to parallel area
 
@@ -1950,14 +1984,17 @@ class VlTest:
             return False
 
         # Read the log file a couple of times to allow for NFS delays
-        if check_finished:
+        if stop_re and not done_re:
+            self.error("Must provide done_re when using stop_re")
+
+        if check_finished or stop_re or done_re:
             delay = 0.25
             for tryn in range(Args.log_retries - 1, -1, -1):
                 if tryn != Args.log_retries - 1:
                     time.sleep(delay)
                     delay = min(1, delay * 2)
                 moretry = tryn != 0
-                if not self._run_log_try(logfile, check_finished, moretry):
+                if not self._run_log_try(logfile, check_finished, moretry, stop_re, done_re):
                     break
         if expect_filename:
             self.files_identical(logfile, expect_filename, is_logfile=True)
@@ -1976,7 +2013,8 @@ class VlTest:
         if logfh:
             logfh.write(data)
 
-    def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool) -> bool:
+    def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool,
+                     stop_re: Optional[str], done_re: Optional[str]) -> bool:
         # If moretry, then return true to try again
         with open(logfile, 'r', encoding='latin-1', newline='\n') as fh:
             if not fh and moretry:
@@ -1988,6 +2026,14 @@ class VlTest:
             if moretry:
                 return True
             self.error("Missing '*-* All Finished *-*'")
+
+        if done_re and not re.search(done_re, wholefile):
+            if moretry:
+                return True
+            self.error(f"Missing '{done_re}'")
+
+        if stop_re and re.search(stop_re, wholefile):
+            self.error("Found $stop")
 
         return False
 
@@ -2873,10 +2919,6 @@ def run_them() -> None:
 
 if __name__ == '__main__':
     os.environ['PYTHONUNBUFFERED'] = "1"
-
-    # GDB is broken on macOS
-    if platform.system() == "Darwin":
-        os.environ['VERILATOR_TEST_NO_GDB'] = "1"
 
     if ('VERILATOR_ROOT' not in os.environ) and os.path.isfile('../bin/verilator'):
         os.environ['VERILATOR_ROOT'] = os.getcwd() + "/.."

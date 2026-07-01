@@ -12,7 +12,7 @@ class unconstrained_struct_array_test;
     int field_c;
   } simple_struct_t;
 
-  simple_struct_t struct_array[3]; // Unpacked array
+  simple_struct_t struct_array[3];  // Unpacked array
 
   function new();
     // Initialize struct_array
@@ -31,13 +31,13 @@ class unconstrained_struct_array_test;
 endclass
 
 module t_struct_array_assignment;
-  unconstrained_struct_array_test  cl;
+  unconstrained_struct_array_test cl;
 
   initial begin
 
     cl = new();
 
-    foreach(cl.struct_array[i]) begin
+    foreach (cl.struct_array[i]) begin
       cl.struct_array[i].field_a = i;
       cl.struct_array[i].field_b = i + 1;
       cl.struct_array[i].field_c = i + 2;

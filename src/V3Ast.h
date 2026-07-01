@@ -541,6 +541,14 @@ public:
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
     AstNode* aboveLoopp() const;  // Get parent node above, may have performance issues as loops
+    AstNode* lastp() const {  // Get last node in list, only for list head
+        UASSERT_OBJ(m_backp->m_nextp != this, this, "lastp() only allowed on head of list");
+        return m_headtailp;
+    }
+    AstNode* prevp() const {  // Previous node in list, nullptr for head of list
+        if (m_backp->m_nextp != this) return nullptr;
+        return m_backp;
+    }
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
@@ -756,9 +764,13 @@ public:
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
     void dtypeSetBit() { dtypep(findBitDType()); }
+    void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
+    void dtypeSetInt() { dtypep(findIntDType()); }
+    void dtypeSetInteger() { dtypep(findIntegerDType()); }
+    // TODO: add a type to handle 4-state integers with 2-state domain
+    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
-    void dtypeSetSigned32() { dtypep(findSigned32DType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
@@ -767,11 +779,12 @@ public:
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
+    AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
+    AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
-    AstNodeDType* findSigned32DType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }

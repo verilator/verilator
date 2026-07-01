@@ -7,9 +7,9 @@
 
 module top (
     output logic [1:0] q,
-    input  logic [1:0] d,
-    input  logic       clk
-  );
+    input logic [1:0] d,
+    input logic clk
+);
 
   genvar i;
   assign q[i] = d[i];  // <--- Error: Misusing genvar i

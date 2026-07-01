@@ -1,0 +1,30 @@
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:12:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   12 |   assign y[0] = !|v;
+      |                 ^
+                 ... For error description see https://verilator.org/warn/NOTREDOP?v=latest
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:13:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   13 |   assign y[1] = !&v;
+      |                 ^
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:14:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   14 |   assign y[2] = !^v;
+      |                 ^
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:15:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   15 |   assign y[3] = !~^v;
+      |                 ^
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:16:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   16 |   assign y[4] = !^~v;
+      |                 ^
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:17:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   17 |   assign y[5] = !~&v;
+      |                 ^
+%Error-NOTREDOP: t/t_lint_notredop_bad.v:18:17: Logical not directly before reduction operator is illegal
+                                              : ... Suggest use parentheses, e.g. '!(|expr)'
+   18 |   assign y[6] = !~|v;
+      |                 ^
+%Error: Exiting due to

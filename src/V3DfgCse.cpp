@@ -52,6 +52,7 @@ class V3DfgCse final {
 
         // Special vertices
         case VDfgType::Const:  // LCOV_EXCL_START
+        case VDfgType::CReset:
         case VDfgType::VarArray:
         case VDfgType::VarPacked:
         case VDfgType::AstRd:  // LCOV_EXCL_STOP
@@ -71,6 +72,7 @@ class V3DfgCse final {
         }
 
         // Vertices with no internal information
+        case VDfgType::MatchMasked:
         case VDfgType::Mux:
         case VDfgType::UnitArray: return V3Hash{};
 
@@ -110,6 +112,8 @@ class V3DfgCse final {
         case VDfgType::NeqCase:
         case VDfgType::NeqWild:
         case VDfgType::Not:
+        case VDfgType::OneHot:
+        case VDfgType::OneHot0:
         case VDfgType::Or:
         case VDfgType::Pow:
         case VDfgType::PowSS:
@@ -168,6 +172,7 @@ class V3DfgCse final {
 
         // Special vertices
         case VDfgType::Const: return a.as<DfgConst>()->num().isCaseEq(b.as<DfgConst>()->num());
+        case VDfgType::CReset: return false;
 
         case VDfgType::VarArray:
         case VDfgType::VarPacked:  // CSE does not combine variables
@@ -193,6 +198,7 @@ class V3DfgCse final {
         }
 
         // Vertices with no internal information
+        case VDfgType::MatchMasked:
         case VDfgType::Mux:
         case VDfgType::UnitArray: return true;
 
@@ -232,6 +238,8 @@ class V3DfgCse final {
         case VDfgType::NeqCase:
         case VDfgType::NeqWild:
         case VDfgType::Not:
+        case VDfgType::OneHot:
+        case VDfgType::OneHot0:
         case VDfgType::Or:
         case VDfgType::Pow:
         case VDfgType::PowSS:
@@ -299,6 +307,10 @@ class V3DfgCse final {
         for (const DfgVertexVar& vtx : dfg.varVertices()) m_hashCache[vtx] = V3Hash{++varHash};
         // Pre-hash Ast references, these are all unique like variables
         for (const DfgVertexAst& vtx : dfg.astVertices()) m_hashCache[vtx] = V3Hash{++varHash};
+        // Pre-hash CReset vertices, these are all unique
+        for (const DfgVertex& vtx : dfg.opVertices()) {
+            if (vtx.is<DfgCReset>()) m_hashCache[vtx] = V3Hash{++varHash};
+        }
 
         // Similarly pre-hash constants for speed. While we don't combine constants, we do want
         // expressions using the same constants to be combined, so we do need to hash equal

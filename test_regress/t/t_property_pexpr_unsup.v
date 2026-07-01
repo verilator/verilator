@@ -1,22 +1,23 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2023 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input clk
-  );
+    input clk
+);
 
-  int a;
-  int b;
-  int c;
+  bit  a;
+  bit  b;
+  bit  c;
   int cyc = 0;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
   end
 
+`ifdef PARSING_TIME
   // NOTE this grammar hasn't been checked with other simulators,
   // is here just to avoid uncovered code lines in the grammar.
   property p_strong;
@@ -25,6 +26,10 @@ module t (
 
   property p_weak;
     weak(a);
+  endproperty
+
+  property p_until;
+    a until b;
   endproperty
 
   property p_suntil;
@@ -105,19 +110,11 @@ module t (
   property p_arg_seqence(sequence inseq);
     inseq;
   endproperty
+`endif
 
-  property p_case_1;
-    case (a) endcase
-  endproperty
-  property p_case_2;
-    case (a) default: b; endcase
-  endproperty
-  property p_if;
-    if (a) b
-  endproperty
-  property p_ifelse;
-    if (a) b else c
-  endproperty
+  assert property ((s_eventually a) implies (s_eventually a));
+
+  assert property ((s_eventually a) iff (s_eventually a));
 
   always @(posedge clk) begin
     if (cyc == 10) begin

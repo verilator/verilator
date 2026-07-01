@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -32,6 +33,49 @@ class SenExprBuilder;
 //============================================================================
 
 namespace V3Sched {
+
+namespace util {
+using VarScopeSet = std::unordered_set<const AstVarScope*>;
+
+inline bool isVlForceVec(const AstVarScope* vscp) {
+    const AstCDType* const dtypep = VN_CAST(vscp->dtypep()->skipRefp(), CDType);
+    return dtypep && dtypep->name() == "VlForceVec";
+}
+
+inline bool isForceReadMethod(VCMethod method) {
+    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX;
+}
+
+inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
+    VarScopeSet writtenForceVecs;
+    VarScopeSet writtenVars;
+
+    nodep->foreach([&](const AstVarRef* refp) {
+        AstVarScope* const vscp = refp->varScopep();
+        if (!refp->access().isWriteOrRW()) return;
+        if (!refp->varp()->ignoreSchedWrite()) writtenVars.emplace(vscp);
+        if (!isVlForceVec(vscp)) return;
+        writtenForceVecs.emplace(vscp);
+        if (!refp->varp()->ignoreSchedWrite()) out.emplace(vscp);
+    });
+
+    if (writtenForceVecs.empty() || writtenVars.empty()) return;
+
+    nodep->foreach([&](const AstCMethodHard* callp) {
+        if (!isForceReadMethod(callp->method())) return;
+
+        const AstVarRef* const fromRefp = VN_CAST(callp->fromp(), VarRef);
+        if (!fromRefp || !writtenForceVecs.count(fromRefp->varScopep())) return;
+
+        AstNodeExpr* const origp = callp->pinsp();
+        if (!origp) return;
+        origp->foreach([&](const AstVarRef* refp) {
+            AstVarScope* const vscp = refp->varScopep();
+            if (refp->access().isReadOrRW() && writtenVars.count(vscp)) out.emplace(vscp);
+        });
+    });
+}
+}  // namespace util
 
 //============================================================================
 // Throughout scheduling, we need to keep hold of AstActive nodes, together with the AstScope that

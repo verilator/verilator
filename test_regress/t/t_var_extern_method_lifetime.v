@@ -27,8 +27,7 @@ module t;
     foo2 = new(2);
     foo1.add_in_fork_delayed(10, foo2);
     #20;
-    if (foo1.m_v != 3)
-      $stop;
+    if (foo1.m_v != 3) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

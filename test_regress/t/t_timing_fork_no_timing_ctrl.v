@@ -6,10 +6,10 @@
 
 module t;
   initial
-    fork
-      begin
-        $write("*-* All Finished *-*\n");
-        $finish;
-      end
-    join_none
+  fork
+    begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  join_none
 endmodule

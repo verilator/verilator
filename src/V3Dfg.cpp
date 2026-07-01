@@ -91,6 +91,16 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     for (const DfgVertex& vtx : m_opVertices) {
         switch (vtx.type()) {
 #include "V3Dfg__gen_clone_cases.h"  // From ./astgen
+        case VDfgType::CReset: {  // LCOV_EXCL_START - No algorithm actually hits this today
+            DfgCReset* const cp = new DfgCReset{*clonep, vtx.fileline(), vtx.dtype()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }  // LCOV_EXCL_STOP
+        case VDfgType::MatchMasked: {
+            DfgMatchMasked* const cp = new DfgMatchMasked{*clonep, vtx.fileline(), vtx.dtype()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
         case VDfgType::Sel: {
             DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtype()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
@@ -132,11 +142,14 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             VL_UNREACHABLE;
             break;
         }
-        default: {
-            vtx.v3fatalSrc("Unhandled operation vertex type: " + vtx.typeName());
+        case VDfgType::AstRd:  // LCOV_EXCL_START
+        case VDfgType::Const:
+        case VDfgType::VarArray:
+        case VDfgType::VarPacked: {
+            vtx.v3fatalSrc("Vertex should have been handled above: " + vtx.typeName());
             VL_UNREACHABLE;
             break;
-        }
+        }  // LCOV_EXCL_STOP
         }
     }
     UASSERT(size() == clonep->size(), "Size of clone should be the same");
@@ -618,6 +631,10 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         CHECK(isPacked(), "Should be Packed type");
         return;
     }
+    case VDfgType::CReset: {
+        CHECK(isPacked() || isArray(), "Should be Packed or Array type");
+        return;
+    }
     case VDfgType::AstRd: {
         const DfgAstRd& v = *as<DfgAstRd>();
         CHECK(v.isPacked() || v.isArray(), "Should be Packed or Array type");
@@ -658,6 +675,15 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         const DfgSel& v = *as<DfgSel>();
         CHECK(v.isPacked(), "Should be Packed type");
         CHECK(v.dtype() == DfgDataType::select(v.srcp()->dtype(), v.lsb(), v.size()), "sel");
+        return;
+    }
+    case VDfgType::MatchMasked: {
+        const DfgMatchMasked& v = *as<DfgMatchMasked>();
+        CHECK(v.isPacked(), "Should be Packed type");
+        CHECK(v.size() == 32U, "Should yield a 32-bit result");
+        CHECK(v.lhsp()->isPacked(), "Lhs should be packed");
+        CHECK(v.matchp()->isPacked(), "Match should be Packed type");
+        CHECK(v.matchp()->is<DfgVertexVar>(), "Match should be a variable");
         return;
     }
     case VDfgType::Mux: {
@@ -774,7 +800,9 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
     case VDfgType::LogNot:
     case VDfgType::RedAnd:
     case VDfgType::RedOr:
-    case VDfgType::RedXor: {
+    case VDfgType::RedXor:
+    case VDfgType::OneHot:
+    case VDfgType::OneHot0: {
         CHECK(dtype() == DfgDataType::packed(1), "Should be 1-bit");
         CHECK(inputp(0)->isPacked(), "Operand should be Packed type");
         return;
@@ -892,17 +920,20 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
         }
     }
 
+    AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
+    AstScope* const constPoolp = v3Global.rootp()->constPoolp()->scopep();
+
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
     AstScope*& resultr = cache[this];
     if (!resultr) {
         // Mark to prevent infinite recursion on circular graphs - should never be called on such
         resultr = reinterpret_cast<AstScope*>(1);
-        // Find scope based on sources, falling back on the root scope
-        AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
+        // Find scope based on sources, falling back on the root scope,
+        // also make sure it's not the constant pool scope, which is special.
         AstScope* foundp = nullptr;
         foreachSource([&](DfgVertex& src) {
             AstScope* const scp = src.scopep(cache, true);
-            if (scp != rootp) {
+            if (scp != rootp && scp != constPoolp) {
                 foundp = scp;
                 return true;
             }
@@ -927,6 +958,9 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     // Delete - this will unlink sources
     delete this;
 }
+
+//######################################################################
+// Renders the canonical pattern S-expression for a single DfgVertex
 
 class DfgPatternString final {
     std::ostream& m_os;

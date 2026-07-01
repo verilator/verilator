@@ -4,12 +4,9 @@
 // SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+module t (
+    input clk
+);
 
   always_comb @(*) begin
     $stop;

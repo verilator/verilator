@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_coverage
 ==================
@@ -37,6 +38,10 @@ verilator_coverage Example Usage
    verilator_coverage --version
 
    verilator_coverage --annotate obj_dir coverage.dat
+
+   verilator_coverage --report summary coverage.dat
+
+   verilator_coverage --report hier --levels 3 coverage.dat
 
    verilator_coverage --write merged.dat coverage.dat ...
 
@@ -129,9 +134,13 @@ verilator_coverage Arguments
 .. option:: --filter-type <regex>
 
    Skips records of coverage types that matches with <regex>
-   Possible values are `toggle`, `line`, `branch`, `expr`, `user`,
-   `fsm_state`, `fsm_arc` and a wildcard with `\*` or `?`. The default
-   value is `\*`.
+   Possible values are `toggle`, `line`, `branch`, `expr`, `covergroup`,
+   `user`, `fsm_state`, `fsm_arc` and a wildcard with `\*` or `?`. The
+   default value is `\*`.
+
+   The `covergroup` type represents SystemVerilog functional coverage
+   including covergroups, coverpoints, bins, and cross coverage as defined
+   in IEEE 1800-2023 Section 19.
 
 .. option:: --help
 
@@ -142,6 +151,13 @@ verilator_coverage Arguments
    Includes FSM reset arcs in the printed summaries and annotated output.
    By default, reset arcs are tracked but summarized separately from the
    non-reset FSM arcs.
+
+.. option:: --levels <depth>
+
+   With :option:`--report hierarchy`, limits displayed hierarchy depth.
+   Deeper descendants still roll-up into the visible parent totals. A depth
+   of 0 shows the top-level hierarchy roll-up. If negative or omitted, all
+   depths are shown.
 
 .. option:: --rank
 
@@ -154,6 +170,18 @@ verilator_coverage Arguments
    "RankPts" indicates the number of coverage points this test will
    contribute to overall coverage if all tests are run in the order of
    highest to the lowest rank.
+
+.. option:: --report <kind>[,<kind>...]
+
+   Generates a human-consumable report. Supported report kinds are
+   ``summary``, ``hier``, and ``hierarchy``. Multiple report kinds may be
+   comma-separated, for example ``summary,hier``. With no explicit
+   :option:`--report`, the legacy flat summary is printed. ``summary`` is
+   equivalent to the flat type summary. ``hier`` and ``hierarchy`` build a
+   deterministic hierarchy roll-up from ``hier`` fields. Collapsed wildcard
+   hierarchy can be reported, but it is not precise per-instance coverage.
+   If no hierarchy fields are present, a warning is printed and the flat
+   summary is shown instead.
 
 .. option:: --unlink
 

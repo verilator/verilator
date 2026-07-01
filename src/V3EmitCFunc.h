@@ -148,6 +148,72 @@ protected:
         return false;
     }
 
+    bool coverageUsesLocalCounter(AstNodeCoverDecl* const declp) const {
+        // Only functions with an object receiver can address the module-local
+        // coverage array. Static/package/class helper functions still use the
+        // symbol-table array, as they may have vlSymsp but no vlSelf/this.
+        // Also require the coverage declaration to belong to the current
+        // module; cloned task bodies can increment declarations owned by a
+        // different module, and those must keep using the global array.
+        return m_cfuncp && !m_cfuncp->isStatic() && !VN_IS(m_modp, Class)
+               && !VN_IS(m_modp, ClassPackage)
+               && EmitCParentModule::get(declp->dataDeclThisp()) == m_modp;
+    }
+    int coverageBinNum(AstNodeCoverDecl* const declp, bool forceGlobal = false) const {
+        return !forceGlobal && coverageUsesLocalCounter(declp)
+                   ? declp->dataDeclThisp()->localBinNum()
+                   : declp->dataDeclThisp()->binNum();
+    }
+    void putCoverageArray(AstNodeCoverDecl* const declp, bool forceGlobal = false) {
+        if (!forceGlobal && coverageUsesLocalCounter(declp)) {
+            // Keep counters on the module object when possible, so every
+            // no-inline instance has storage available if coverage output is
+            // later written with forcePerInstance.
+            puts(m_cfuncp->isLoose() ? "vlSelf->__Vcoverage" : "this->__Vcoverage");
+        } else {
+            // Static/package/class helper functions do not have vlSelf, so
+            // keep using the shared symbol-table coverage array there.
+            puts("vlSymsp->__Vcoverage");
+        }
+    }
+    void emitCoverOtherDeclInsert(AstCoverOtherDecl* nodep, bool forceGlobal = false) {
+        putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
+        putCoverageArray(nodep, forceGlobal);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep, forceGlobal)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(!forceGlobal && coverageUsesLocalCounter(nodep) ? "true" : "false");
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(", ");
+        putsQuoted(nodep->linescov());
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
+        puts(");\n");
+    }
+
 public:
     // METHODS
     bool displayEmitHeader(AstNode* nodep);
@@ -187,7 +253,6 @@ public:
     void emitDereference(AstNode* nodep, const string& pointer);
     std::string dereferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
-    void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
@@ -508,8 +573,14 @@ public:
                      + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
                     memberVarp, resetp->constructing());
             } else {
-                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
-                emitVarReset("", varp, resetp->constructing());
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                AstVar* const varp = fromVarRefp->varp();
+                const string prefix
+                    = fromVarRefp->selfPointer().isEmpty()
+                          ? ""
+                          : dereferenceString(
+                                VN_AS(fromp, NodeVarRef)->selfPointerProtect(m_useSelfForThis));
+                emitVarReset(prefix, varp, resetp->constructing());
             }
             return;
         }
@@ -627,6 +698,15 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
+        } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)
+                   && (VN_IS(nodep->rhsp(), StreamL) || VN_IS(nodep->lhsp(), StreamL)
+                       || VN_IS(nodep->rhsp(), StreamR) || VN_IS(nodep->lhsp(), StreamR)
+                       || VN_IS(nodep->rhsp(), StreamR))) {
+            //if either side is streamL or streamR don't emit lhsp everything will be passed by
+            //reference
+
+            paren = false;
+
         } else {
             paren = false;
             iterateAndNextConstNull(nodep->lhsp());
@@ -723,15 +803,16 @@ public:
         iterateConst(nodep->fromp());
         putns(nodep, nodep->usePtr() ? "->" : ".");
         putns(nodep, nodep->name());
+        if (nodep->method() == VCMethod::FORCE_READ_SEL) {
+            emitIQW(nodep);
+            if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        }
         puts("(");
         bool comma = false;
         int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            // handle wide arguments to the queues
-            if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
-                emitCvtWideArray(subnodep, nodep->fromp());
-            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+            if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
                 // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
                 // apply protect() similar to VL_STOP to handle --protected flag
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
@@ -801,40 +882,13 @@ public:
         iterateChildrenConst(nodep);
     }
     void visit(AstCoverOtherDecl* nodep) override {
-        putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
-        puts("&(vlSymsp->__Vcoverage[");
-        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
-        puts("])");
-        // If this isn't the first instantiation of this module under this
-        // design, don't really count the bucket, and rely on verilator_cov to
-        // aggregate counts.  This is because Verilator combines all
-        // hierarchies itself, and if verilator_cov also did it, you'd end up
-        // with (number-of-instant) times too many counts in this bin.
-        puts(", first");  // Enable, passed from __Vconfigure parameter
-        puts(", ");
-        putsQuoted(protect(nodep->fileline()->filename()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", ");
-        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
-        puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
-        puts(", ");
-        putsQuoted(nodep->linescov());
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmVar(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmFrom(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
-        puts(");\n");
+        emitCoverOtherDeclInsert(nodep);
+        if (coverageUsesLocalCounter(nodep)) {
+            // Some task bodies are cloned into a caller module where the
+            // original instance-local counter is not addressable. Those clones
+            // fall back to the global bin number, so register that slot too.
+            emitCoverOtherDeclInsert(nodep, true);
+        }
     }
     void visit(AstCoverToggleDecl* nodep) override {
         putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
@@ -844,15 +898,16 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->range().ranged()));
         puts(", ");
-        puts("&(vlSymsp->__Vcoverage[");
-        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
-        puts("])");
-        // If this isn't the first instantiation of this module under this
-        // design, don't really count the bucket, and rely on verilator_cov to
-        // aggregate counts.  This is because Verilator combines all
-        // hierarchies itself, and if verilator_cov also did it, you'd end up
-        // with (number-of-instant) times too many counts in this bin.
+        putCoverageArray(nodep);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
         puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
         puts(", ");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -871,12 +926,16 @@ public:
     void visit(AstCoverInc* nodep) override {
         if (VN_IS(nodep->declp(), CoverOtherDecl)) {
             if (v3Global.opt.threads() > 1) {
-                putns(nodep, "vlSymsp->__Vcoverage[");
-                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                putns(nodep, "");
+                putCoverageArray(nodep->declp());
+                puts("[");
+                puts(cvtToStr(coverageBinNum(nodep->declp())));
                 puts("].fetch_add(1, std::memory_order_relaxed);\n");
             } else {
-                putns(nodep, "++(vlSymsp->__Vcoverage[");
-                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                putns(nodep, "++(");
+                putCoverageArray(nodep->declp());
+                puts("[");
+                puts(cvtToStr(coverageBinNum(nodep->declp())));
                 puts("]);\n");
             }
         } else {
@@ -892,8 +951,11 @@ public:
             // coverpoint
             puts(cvtToStr(nodep->declp()->size() / 2));
             puts(", ");
-            puts("vlSymsp->__Vcoverage + ");
-            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+            // Toggle update uses the same object-local counter array that
+            // __vlCoverToggleInsert registered.
+            putCoverageArray(nodep->declp());
+            puts(" + ");
+            puts(cvtToStr(coverageBinNum(nodep->declp())));
             puts(", ");
             iterateConst(nodep->toggleExprp());
             puts(", ");
@@ -1072,7 +1134,7 @@ public:
     }
     void visit(AstFFlush* nodep) override {
         if (!nodep->filep()) {
-            putns(nodep, "Verilated::runFlushCallbacks();\n");
+            putns(nodep, "VL_FFLUSH_MT();");
         } else {
             putns(nodep, "VL_FFLUSH_I(");
             iterateAndNextConstNull(nodep->filep());
@@ -1528,6 +1590,9 @@ public:
             puts(")");
         }
     }
+    void visit(AstMatchMasked* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
+    }
     void visit(AstMemberSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
@@ -1595,6 +1660,33 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->srcp(), nodep->countp(), nullptr);
         }
     }
+    void emitStreamR(AstStreamR* nodep, AstNode* parent) {
+        //TODO: This might need to handle more cases like the visit(AstStreamR) function
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+    }
+    void visit(AstStreamR* nodep) override {
+        //The parrent node of our AstStreamR will give just enough info for what streamR should
+        //output if nodep->backp() is not the parent then emitStreamR should have been used. throw
+        //an error
+        bool backpIsParent = (nodep->backp()->op1p() == nodep || nodep->backp()->op2p() == nodep);
+        UASSERT(backpIsParent, "can not find return type for streamR");
+        if ((VN_IS(nodep->backp()->dtypep()->skipRefp(), QueueDType))) {
+            emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
+                       nodep->rhsp(), nullptr);
+        } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+            if (!((nodep->backp()->op1p() && nodep->backp()->op1p()->isWide())
+                  || (nodep->backp()->op2p() && nodep->backp()->op2p()->isWide()))) {
+                //If our lhsp is a queue make sure we streamR and return the correct type.
+                //If either side is wide or the previous node is string type dont use this case
+                emitOpName(nodep->backp(), "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)",
+                           nodep->lhsp(), nodep->rhsp(), nullptr);
+            } else {
+                emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+            }
+        } else {
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        }
+    }
     void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
@@ -1602,11 +1694,26 @@ public:
             const uint32_t sliceSize = VN_AS(nodep->rhsp(), Const)->toUInt();
             if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
                 putns(nodep, "VL_STREAML_FAST_");
-                emitIQW(nodep);
+                bool usesQueue = false;
+                AstQueueDType* qtypep
+                    = nodep->backp()->op2p()
+                          ? VN_CAST(nodep->backp()->op2p()->dtypep()->skipRefp(), QueueDType)
+                          : nullptr;
+                if (VN_IS(nodep->backp(), Assign)
+                    && qtypep) {  // If we are assigning to a queue then emit the correct symbol
+                    puts("R");  // R for queue
+                    usesQueue = true;
+                } else {
+                    emitIQW(nodep);
+                }
                 emitIQW(nodep->lhsp());
                 puts("I(");
                 puts(cvtToStr(nodep->lhsp()->widthMin()));
                 puts(", ");
+                if (usesQueue) {
+                    iterateAndNextConstNull(nodep->backp()->op2p());
+                    puts(", ");
+                }
                 iterateAndNextConstNull(nodep->lhsp());
                 puts(", ");
                 const uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
@@ -1614,7 +1721,18 @@ public:
                 return;
             }
         }
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        if (VN_IS(nodep->backp(), Assign)
+            && VN_IS(nodep->backp()->op2p()->dtypep()->skipRefp(), QueueDType)) {
+            int queueWidth
+                = nodep->backp()->op2p()->dtypep()->subDTypep()->width();  //We need to know the
+                                                                           //width of both sides
+            emitOpName(nodep,
+                       "VL_STREAML_%nq%lq%rq(%lw," + std::to_string(queueWidth)
+                           + ", %P, %li, %ri)",
+                       nodep->lhsp(), nodep->rhsp(), nullptr);
+        } else {
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        }
     }
     void visit(AstCastDynamic* nodep) override {
         putnbs(nodep, "VL_CAST_DYNAMIC(");

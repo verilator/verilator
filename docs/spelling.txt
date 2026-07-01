@@ -180,6 +180,7 @@ Guo
 Gustafsson
 Güzel
 Hameed
+Hamming
 Hammoud
 Hao
 Haojin
@@ -429,6 +430,7 @@ Sasselli
 Sauter
 Scharrer
 Schless
+Secturion
 Seitz
 Shahid
 Shahrestani
@@ -579,6 +581,7 @@ Yujia
 Yurii
 Zaruba
 Zhang
+Zhi
 abirkmanis
 accessor
 accessors
@@ -667,6 +670,7 @@ concatenatable
 concats
 conf
 config
+consequents
 const
 constexpr
 constification
@@ -680,6 +684,8 @@ countones
 cout
 covergroup
 covergroups
+coverpoint
+coverpoints
 cpp
 cppstyle
 cpu
@@ -698,6 +704,7 @@ datafiles
 david
 ddd
 de
+dearray
 deassign
 debugi
 defenv
@@ -855,6 +862,7 @@ hx
 hyperthreading
 hyperthreads
 icecream
+ico
 idmap
 ifdef
 ifdefed
@@ -864,6 +872,7 @@ impot
 incdir
 includer
 incrementing
+inferable
 inferfaces
 informationals
 inhibitSim
@@ -899,6 +908,7 @@ libext
 libgoogle
 libjemalloc
 liblist
+liblz
 libsystemc
 libtcmalloc
 libverilated
@@ -908,6 +918,8 @@ linters
 linux
 liu
 livelock
+liveness
+lldb
 ln
 loc
 localparam
@@ -915,6 +927,7 @@ localparams
 localtime
 logicals
 longint
+lookups
 lossy
 lsb
 lubc
@@ -1114,6 +1127,7 @@ specparam
 splitme
 spp
 sqrt
+srand
 srandom
 src
 srcdir
@@ -1194,6 +1208,7 @@ typename
 uint
 un
 unbased
+unclocked
 uncomment
 undef
 undefineall
@@ -1209,6 +1224,7 @@ unnamedblk
 unopt
 unoptflat
 unoptimizable
+unparenthesized
 unroller
 unsatisfiable
 unsized

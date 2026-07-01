@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   logic clk;
-   logic out;
-   clocking cb @(posedge clk);
-       output #1 out;
-   endclocking
+  logic clk;
+  logic out;
+  clocking cb @(posedge clk);
+    output #1 out;
+  endclocking
 endmodule

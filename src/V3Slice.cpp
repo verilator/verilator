@@ -206,6 +206,11 @@ class SliceVisitor final : public VNVisitor {
                                          : elemIdx));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false, needPure),
                                    leOffset};
+        } else if (const AstSampled* const snodep = VN_CAST(nodep, Sampled)) {
+            UINFO(9, "  cloneSliceSel(" << elements << "," << elemIdx << ") " << nodep);
+            AstNodeExpr* const exprp = VN_AS(snodep->exprp(), NodeExpr);
+            AstNodeExpr* const selp = cloneAndSel(exprp, elements, elemIdx, needPure);
+            return new AstSampled{nodep->fileline(), selp, nullptr};
         } else if (AstExprStmt* const snodep = VN_CAST(nodep, ExprStmt)) {
             UINFO(9, "  cloneExprStmt(" << elements << "," << elemIdx << ") " << nodep);
             AstNodeExpr* const resultSelp

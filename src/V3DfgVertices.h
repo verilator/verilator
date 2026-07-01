@@ -248,6 +248,14 @@ public:
     }
 };
 
+class DfgCReset final : public DfgVertexNullary {
+public:
+    DfgCReset(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexNullary{dfg, dfgType(), flp, dtype} {}
+
+    ASTGEN_MEMBERS_DfgCReset;
+};
+
 //------------------------------------------------------------------------------
 // Unary vertices - 1 inputs
 
@@ -291,6 +299,7 @@ public:
     void fromp(DfgVertex* vtxp) { srcp(vtxp); }
     uint32_t lsb() const { return m_lsb; }
     void lsb(uint32_t value) { m_lsb = value; }
+    uint32_t msb() const { return m_lsb + width() - 1; }
 };
 
 class DfgUnitArray final : public DfgVertexUnary {
@@ -318,6 +327,21 @@ protected:
 
 public:
     ASTGEN_MEMBERS_DfgVertexBinary;
+};
+
+class DfgMatchMasked final : public DfgVertexBinary {
+    // Dfg equivalent of AstMatchMasked
+public:
+    DfgMatchMasked(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgMatchMasked;
+
+    DfgVertex* lhsp() const { return inputp(0); }
+    void lhsp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    DfgVertex* matchp() const { return inputp(1); }
+    void matchp(DfgVertex* vtxp) { inputp(1, vtxp); }
+
+    std::string srcName(size_t idx) const override { return idx ? "matchp" : "lhsp"; }
 };
 
 class DfgMux final : public DfgVertexBinary {

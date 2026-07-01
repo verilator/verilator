@@ -55,14 +55,48 @@ class PremitVisitor final : public VNVisitor {
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
 
     // METHODS
-    void checkNode(AstNodeExpr* nodep) {
+    bool needsTemp(AstNodeExpr* nodep) {
         // Consider adding a temp for this expression.
-        if (!m_stmtp) return;  // Not under a statement
-        if (nodep->user1SetOnce()) return;  // Already processed
-        if (!nodep->isWide()) return;  // Not wide
-        if (m_assignLhs) return;  // This is an lvalue!
+        if (!m_stmtp) return false;  // Not under a statement
+        if (nodep->user1SetOnce()) return false;  // Already processed
+        if (!nodep->isWide()) return false;  // Not wide
+        if (m_assignLhs) return false;  // This is an lvalue!
         UASSERT_OBJ(!VN_IS(nodep->firstAbovep(), ArraySel), nodep, "Should have been ignored");
-        createTemp(nodep);
+        return true;
+    }
+
+    void checkNode(AstNodeExpr* nodep) {
+        if (needsTemp(nodep)) createTemp(nodep);
+    }
+
+    AstVarRef* isRhsOfAssignToVar(AstNodeExpr* nodep) {
+        // If enclosing statement is an assign
+        AstNodeAssign* const assignp = VN_CAST(m_stmtp, NodeAssign);
+        if (!assignp) return nullptr;
+        // of which 'nodep' is the RHS of
+        if (assignp->rhsp() != nodep) return nullptr;
+        // and the LHS is a sipmple variable reference
+        AstVarRef* const lRefp = VN_CAST(assignp->lhsp(), VarRef);
+        if (!lRefp) return nullptr;
+        AstVar* const varp = lRefp->varp();
+        // And the RHS does not use the same variable
+        if (nodep->exists([varp](const AstVarRef* refp) { return refp->varp() == varp; })) {
+            return nullptr;
+        }
+        // Then return the LHS reference
+        return lRefp;
+    }
+
+    // Create a new temporary that can hold the value of the given expression
+    AstVar* newTmpFor(AstNodeExpr* nodep) {
+        FileLine* const flp = nodep->fileline();
+        const std::string name = "__Vtemp_" + std::to_string(++m_tmpVarCnt);
+        AstVar* const varp = new AstVar{flp, VVarType::STMTTEMP, name, nodep->dtypep()};
+        varp->funcLocal(true);
+        varp->noReset(true);
+        m_cfuncp->addVarsp(varp);
+        ++m_temporaryVarsCreated;
+        return varp;
     }
 
     AstVar* createTemp(AstNodeExpr* nodep) {
@@ -89,16 +123,10 @@ class PremitVisitor final : public VNVisitor {
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary.
-            const std::string name = "__Vtemp_" + std::to_string(++m_tmpVarCnt);
-            varp = new AstVar{flp, VVarType::STMTTEMP, name, nodep->dtypep()};
-            varp->funcLocal(true);
-            varp->noReset(true);
-            m_cfuncp->addVarsp(varp);
-            ++m_temporaryVarsCreated;
-
+            varp = newTmpFor(nodep);
             // Assignment to put before the referencing statement
-            AstAssign* const assignp
-                = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
+            AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
+            AstAssign* const assignp = new AstAssign{flp, refp, nodep};
             // Insert before the statement
             m_stmtp->addHereThisAsNext(assignp);
         }
@@ -111,34 +139,52 @@ class PremitVisitor final : public VNVisitor {
     }
 
     void visitShift(AstNodeBiop* nodep) {
-        // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
         UINFO(4, "  ShiftFix  " << nodep);
-        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
-        if (shiftp && shiftp->num().mostSetBitP1() > 32) {
-            shiftp->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Shifting of by over 32-bit number isn't supported."
-                    << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
-        }
-        if (nodep->widthMin() <= 64  // Else we'll use large operators which work right
-                                     // C operator's width must be < maximum shift which is
-                                     // based on Verilog width
-            && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
-            AstNode* newp;
-            if (VN_IS(nodep, ShiftL)) {
-                newp = new AstShiftLOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                        nodep->rhsp()->unlinkFrBack()};
-            } else if (VN_IS(nodep, ShiftR)) {
-                newp = new AstShiftROvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                        nodep->rhsp()->unlinkFrBack()};
-            } else {
-                UASSERT_OBJ(VN_IS(nodep, ShiftRS), nodep, "Bad case");
-                newp = new AstShiftRSOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                         nodep->rhsp()->unlinkFrBack()};
+        UASSERT_OBJ(VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR) || VN_IS(nodep, ShiftRS), nodep,
+                    "Bad case");
+        // Shift larger than the width of the type (overshift) is undefined behavour in C++
+        // (in practice will shift by the wrapped shift amount). These are requierd to go to
+        // zero/msbs, so replacing them here.
+        FileLine* const flp = nodep->fileline();
+        if (const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const)) {
+            // Shift amount known to be constant. If oversized shift, replace with zero/msbs.
+            // Otherwise we can leave the original shifts which have better constant folding
+            // than the *Ovr versions.
+            const bool isOversized = shiftp->num().mostSetBitP1() > 32  //
+                                     || (shiftp->num().toSQuad() >= nodep->width());
+            if (isOversized) {
+                AstNodeExpr* newp = nullptr;
+                if (VN_IS(nodep, ShiftRS)) {
+                    AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+                    AstNodeExpr* const msbp = new AstSel{flp, lhsp, nodep->width() - 1, 1};
+                    newp = new AstExtendS{flp, msbp, nodep->width()};
+                } else {
+                    newp = new AstConst{flp, AstConst::DTyped{}, nodep->dtypep()};
+                }
+                nodep->replaceWithKeepDType(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
             }
-            nodep->replaceWithKeepDType(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
+        } else {
+            // Shift amount not known at compile time. Convert to *Ovr version. Don't need to do
+            // if it would use a wide operation which works correctly at runtime, of if the max
+            // value of the shift amount is less than the with of the shifted value.
+            if (nodep->widthMin() <= VL_QUADSIZE
+                && (nodep->width() < (1LL << nodep->rhsp()->widthMin()))) {
+                AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstNodeExpr* newp = nullptr;
+                if (VN_IS(nodep, ShiftL)) {
+                    newp = new AstShiftLOvr{flp, lhsp, rhsp};
+                } else if (VN_IS(nodep, ShiftR)) {
+                    newp = new AstShiftROvr{flp, lhsp, rhsp};
+                } else {
+                    newp = new AstShiftRSOvr{flp, lhsp, rhsp};
+                }
+                nodep->replaceWithKeepDType(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
         iterateChildren(nodep);
         checkNode(nodep);
@@ -189,9 +235,11 @@ class PremitVisitor final : public VNVisitor {
         // Direct assignment to a simple variable
         if (VN_IS(nodep->lhsp(), VarRef) && !AstVar::scVarRecurse(nodep->lhsp())) {
             AstNode* const rhsp = nodep->rhsp();
-            // Rhs is already a var ref, so nothing to so
+            // Rhs is already a var ref, so nothing to do
             if (VN_IS(rhsp, VarRef) && !AstVar::scVarRecurse(rhsp)) return;
-            if (!VN_IS(rhsp, Const)) {
+            if (VN_IS(rhsp, Cond)) {
+                // Do replace Cond on RHS, even if a simple assignment
+            } else if (!VN_IS(rhsp, Const)) {
                 // Don't replace the rhs, it's already a simple assignment
                 rhsp->user1(true);
             } else if (rhsp->width() < STATIC_CONST_MIN_WIDTH) {
@@ -210,6 +258,15 @@ class PremitVisitor final : public VNVisitor {
 
         m_assignLhs = true;  // Restored by VL_RESTORER in START_STATEMENT_OR_RETURN
         iterateAndNextNull(nodep->lhsp());
+
+        // It's possible we end up with an 'a' = 'a' after expanding an AstCond
+        if (AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
+            if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
+                if (lhsp->varp() == rhsp->varp()) {
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                }
+            }
+        }
     }
     void visit(AstDisplay* nodep) override {
         START_STATEMENT_OR_RETURN(nodep);
@@ -308,16 +365,50 @@ class PremitVisitor final : public VNVisitor {
         }
         checkNode(nodep);
     }
-    void visit(AstCond* nodep) override {
+    void visit(AstMatchMasked* nodep) override {
         iterateChildren(nodep);
-        if (nodep->thenp()->isWide() && !VN_IS(nodep->condp(), Const)
-            && !VN_IS(nodep->condp(), VarRef)) {
-            // We're going to need the expression several times in the expanded code,
-            // so might as well make it a common expression
-            createTemp(nodep->condp());
-            VIsCached::clearCacheTree();
+        if (!nodep->user1SetOnce()) {
+            // Don't want this replicated by V3Expand
+            AstVar* const varp = createTemp(nodep);
+            varp->noSubst(true);  // Do not re-inline in V3Subst
         }
-        checkNode(nodep);
+    }
+    void visit(AstCond* nodep) override {
+        // Convert AstCond to AstIf in order to avoid evaluating
+        // sub-expressions in both branches unconditionally.
+        if (needsTemp(nodep)) {
+            // Check if LHS variable could be used directly
+            AstVarRef* const lRefp = isRhsOfAssignToVar(nodep);
+            // If not, create a new temporary variable
+            AstVar* varp = lRefp ? lRefp->varp() : newTmpFor(nodep);
+            // Can't substitute across basic blocks
+            varp->noSubst(true);
+
+            FileLine* const flp = nodep->fileline();
+            // Create 'then' assignment
+            AstVarRef* const thenRefp = new AstVarRef{flp, varp, VAccess::WRITE};
+            if (lRefp) thenRefp->selfPointer(lRefp->selfPointer());
+            AstNodeExpr* const thenExprp = nodep->thenp()->unlinkFrBack();
+            AstAssign* const thenAsspp = new AstAssign{flp, thenRefp, thenExprp};
+            // Create 'else' assignment
+            AstVarRef* const elseRefp = new AstVarRef{flp, varp, VAccess::WRITE};
+            if (lRefp) elseRefp->selfPointer(lRefp->selfPointer());
+            AstNodeExpr* const elseExprp = nodep->elsep()->unlinkFrBack();
+            AstAssign* const elseAsspp = new AstAssign{flp, elseRefp, elseExprp};
+            // Creae 'if' and insert it before the statement
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            AstIf* const ifp = new AstIf{flp, condp, thenAsspp, elseAsspp};
+            m_stmtp->addHereThisAsNext(ifp);
+            // Replace the AstCond with the result variable
+            nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Splitting to multiple statements can change purity
+            VIsCached::clearCacheTree();
+            // Iterate the resulting assignments
+            iterate(ifp);
+            return;
+        }
+        iterateChildren(nodep);
     }
     void visit(AstSFormatF* nodep) override {
         iterateChildren(nodep);

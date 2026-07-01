@@ -1050,6 +1050,10 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (fourstate()) {
         cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
+        if (hierarchical()) {
+            cmdfl->v3warn(E_UNSUPPORTED,
+                          "--fourstate is not supported with hierarchical Verilation");
+        }
     }
 
     if (coverage() && savable()) {
@@ -1072,6 +1076,9 @@ void V3Options::notify() VL_MT_DISABLED {
 
     // Preprocessor defines based on options used
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
+
+    // If VPI is used, and no explicit ico change detect option was passed, disable it by default
+    if (m_vpi && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
 
     // === Leave last
     // Mark options as available
@@ -1286,6 +1293,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_assertCase = flag;
     });
     DECL_OPTION("-assert-case", OnOff, &m_assertCase);
+    DECL_OPTION("-assert-unroll-limit", Set, &m_assertUnrollLimit);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
@@ -1355,6 +1363,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
@@ -1439,7 +1448,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
-    DECL_OPTION("-fcase", FOnOff, &m_fCase);
+    DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
+    DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
+        m_fCaseDecoder = flag;
+        m_fCaseTable = flag;
+        m_fCaseTree = flag;
+    });
+    DECL_OPTION("-fcase-decoder", FOnOff, &m_fCaseDecoder);
+    DECL_OPTION("-fcase-table", FOnOff, &m_fCaseTable);
+    DECL_OPTION("-fcase-tree", FOnOff, &m_fCaseTree);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
@@ -1477,7 +1494,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-ffunc-opt-balance-cat", FOnOff, &m_fFuncBalanceCat);
     DECL_OPTION("-ffunc-opt-split-cat", FOnOff, &m_fFuncSplitCat);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
+    DECL_OPTION("-fico-change-detect", CbFOnOff, [this](bool flag) {  //
+        m_fIcoChangeDetect.setTrueOrFalse(flag);
+    });
     DECL_OPTION("-finline", FOnOff, &m_fInline);
+    DECL_OPTION("-finline-cfuncs", FOnOff, &m_fInlineCFuncs);
     DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
@@ -2339,7 +2360,10 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
-    m_fCase = flag;
+    m_fBitScanLoops = flag;
+    m_fCaseDecoder = flag;
+    m_fCaseTable = flag;
+    m_fCaseTree = flag;
     m_fCombine = flag;
     m_fConst = flag;
     m_fConstBitOpTree = flag;
@@ -2350,6 +2374,7 @@ void V3Options::optimize(int level) {
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;
+    m_fInlineCFuncs = flag;
     m_fLife = flag;
     m_fLifePost = flag;
     m_fLocalize = flag;

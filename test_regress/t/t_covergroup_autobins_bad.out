@@ -1,0 +1,88 @@
+%Error: t/t_covergroup_autobins_bad.v:18:12: Automatic bins array size must be a constant
+                                           : ... note: In instance 't'
+   18 |       bins auto[size_var];
+      |            ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_autobins_bad.v:25:12: Automatic bins array size must be >= 1, got 0
+                                           : ... note: In instance 't'
+   25 |       bins auto[0];
+      |            ^~~~
+%Error: t/t_covergroup_autobins_bad.v:32:12: Automatic bins array size of 1001 exceeds limit of 1000
+                                           : ... note: In instance 't'
+   32 |       bins auto[1001];
+      |            ^~~~
+%Error: t/t_covergroup_autobins_bad.v:44:26: Non-constant expression in bin value list; values must be constants
+                                           : ... note: In instance 't'
+   44 |       ignore_bins ign = {size_var};   
+      |                          ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:45:32: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   45 |       ignore_bins ign_range = {[0:size_var]};   
+      |                                ^
+%Error: t/t_covergroup_autobins_bad.v:39:12: Non-constant expression in array bins range; range bounds must be constants
+                                           : ... note: In instance 't'
+   39 |       bins b[] = {[size_var:size_var]};   
+      |            ^
+%Error: t/t_covergroup_autobins_bad.v:40:12: Non-constant expression in array bins range; range bounds must be constants
+                                           : ... note: In instance 't'
+   40 |       bins b_mixed[] = {[0:size_var]};   
+      |            ^~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:41:23: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   41 |       bins b_range = {[size_var:4]};   
+      |                       ^
+%Error: t/t_covergroup_autobins_bad.v:42:24: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   42 |       bins b_range2 = {[0:size_var]};  
+      |                        ^
+%Error: t/t_covergroup_autobins_bad.v:43:18: Non-constant expression in bin range; values must be constants
+                                           : ... note: In instance 't'
+   43 |       bins b2 = {size_var};   
+      |                  ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:44:26: Non-constant expression in bin range; values must be constants
+                                           : ... note: In instance 't'
+   44 |       ignore_bins ign = {size_var};   
+      |                          ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:52:25: Ignoring unsupported: non-constant 'option.at_least'; using default value
+                                                      : ... note: In instance 't'
+   52 |       option.at_least = size_var;   
+      |                         ^~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_autobins_bad.v:62:31: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   62 |       ignore_bins ign_nclo = {[size_var:4]};   
+      |                               ^
+%Error: t/t_covergroup_autobins_bad.v:59:20: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   59 |       bins b_xz = {[4'bxxxx:4'hF]};   
+      |                    ^
+%Error: t/t_covergroup_autobins_bad.v:60:32: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   60 |       ignore_bins ign_xz_lo = {[4'bxxxx:4'hF]};   
+      |                                ^
+%Error: t/t_covergroup_autobins_bad.v:61:32: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   61 |       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};   
+      |                                ^
+%Error: t/t_covergroup_autobins_bad.v:63:23: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   63 |       bins b_nc_ub = {[size_var:$]};   
+      |                       ^
+%Error: t/t_covergroup_autobins_bad.v:64:23: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   64 |       bins b_xz_ub = {[4'bxxxx:$]};   
+      |                       ^
+%Error: t/t_covergroup_autobins_bad.v:65:12: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   65 |       bins b_xz_arr[] = {[4'bxxxx:4'hF]};   
+      |            ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:66:12: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   66 |       bins b_xz_arr_hi[] = {[4'h0:4'bzzzz]};   
+      |            ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:73:12: Unsupported: array 'bins' covering more than 1000 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin ignored
+                                                      : ... note: In instance 't'
+   73 |       bins b_huge[] = {[0:$]};   
+      |            ^~~~~~
+%Error: Exiting due to

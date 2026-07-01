@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module x;
-   // Syntax error
-   if if if;
+  // Syntax error
+  if if if;
 endmodule

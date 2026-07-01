@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_property_disable_iff_unsup.v:20:48: Unsupported: $sampled inside disabled condition of a sequence
+                                                          : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) disable iff ($sampled(val)) s_eventually 1);
+      |                                                ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

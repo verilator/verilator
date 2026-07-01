@@ -57,7 +57,7 @@ for filename in sorted(files.keys()):
         continue
     if not re.search(r'\.(h|c|cpp)(\.in)?$', filename):
         continue
-    if '/gtkwave/' in filename:
+    if '/fstcpp/' in filename:
         continue
 
     contents = test.file_contents(filename) + "\n\n"
@@ -89,6 +89,14 @@ for filename in sorted(files.keys()):
         # Ignore common m_e enum constructors
         r'.*(Need \(\)|: m_e\()|V3OPTION_PARSER_DEF',
         "Use brace instead of parenthesis-style constructors e.g. ': m_...{...}'")
+
+    check_pattern(
+        filename,
+        contents,
+        r'\s*enum\s+(class\s+)?([a-zA-Z0-9_]+)',
+        # Ignore common m_e enum constructors
+        r' enum m_e | enum en | : [a-zA-Z]',
+        "Add type to enum declaration e.g. 'enum class foo : uint8_t'")
 
     if re.search(r'\.(c|cpp)', filename):
         check_pattern(filename, contents, r'(\w+\s+)*(\binline\b)[^\n]*', None,

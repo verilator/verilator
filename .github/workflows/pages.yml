@@ -10,7 +10,7 @@ on:
     paths: ["ci/**", ".github/workflows"]
   workflow_dispatch:
   workflow_run:
-    workflows: ["Code coverage"]
+    workflows: ["Code coverage", "RTLMeter"]
     types: [completed]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -35,20 +35,20 @@ jobs:
     name: Build content
     runs-on: ubuntu-24.04
     outputs:
-      coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
+      pr-run-ids: ${{ steps.build.outputs.pr-run-ids }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - name: Build pages
         id: build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          bash -x ./ci/ci-pages.bash
+          ./ci/ci-pages.bash
           ls -lsha
           tree -L 3 pages
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
         with:
           path: pages
 
@@ -61,7 +61,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5
 
   notify:
     name: Notify
@@ -70,18 +70,18 @@ jobs:
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.1.1
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
+          client-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
           permission-actions: write
           permission-pull-requests: write
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          COVERAGE_PR_RUN_IDS: ${{ needs.build.outputs.coverage-pr-run-ids }}
-        run: bash -x ./ci/ci-pages-notify.bash
+          PR_RUN_IDS: ${{ needs.build.outputs.pr-run-ids }}
+        run: ./ci/ci-pages-notify.bash

@@ -48,7 +48,8 @@
 //END_MODULE_NAME--------------------------------------------------------------
 
 //See also: https://github.com/twosigma/verilator_support
-// verilator lint_off COMBDLY,INITIALDLY,LATCH,MULTIDRIVEN,UNSIGNED,WIDTH
+// verilog_format: off
+// verilator lint_off COMBDLY,LATCH,MULTIDRIVEN,UNSIGNED,WIDTH
 
 // BEGINNING OF MODULE
 `timescale 1 ps / 1 ps

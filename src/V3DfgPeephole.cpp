@@ -138,11 +138,14 @@ template <> const DfgDataType& resultDType<DfgXor>        (const DfgVertex* lhsp
 
 // Unary constant folding
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
+template <> void foldOp<DfgCountOnes>  (V3Number& out, const V3Number& src) { out.opCountOnes(src); }
 template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
 template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
 template <> void foldOp<DfgLogNot>     (V3Number& out, const V3Number& src) { out.opLogNot(src); }
 template <> void foldOp<DfgNegate>     (V3Number& out, const V3Number& src) { out.opNegate(src); }
 template <> void foldOp<DfgNot>        (V3Number& out, const V3Number& src) { out.opNot(src); }
+template <> void foldOp<DfgOneHot>     (V3Number& out, const V3Number& src) { out.opOneHot(src); }
+template <> void foldOp<DfgOneHot0>    (V3Number& out, const V3Number& src) { out.opOneHot0(src); }
 template <> void foldOp<DfgRedAnd>     (V3Number& out, const V3Number& src) { out.opRedAnd(src); }
 template <> void foldOp<DfgRedOr>      (V3Number& out, const V3Number& src) { out.opRedOr(src); }
 template <> void foldOp<DfgRedXor>     (V3Number& out, const V3Number& src) { out.opRedXor(src); }
@@ -1155,7 +1158,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
             // Sel from a partial variable (including narrowed vertex)
             if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-                if (varp->srcp() && !varp->isVolatile()) {
+                if (varp->srcp() && !varp->isVolatile() && !varp->srcp()->is<DfgCReset>()) {
                     // Must be a splice, otherwise it would have been inlined
                     DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
                     DfgVertex* driverp = nullptr;
@@ -1185,6 +1188,102 @@ class V3DfgPeephole final : public DfgVisitor {
         return {fromp, lsb};
     }
 
+    // Given a pair of vertices, returns a vertex representing the common LSBs of the two,
+    // and the number of common LSBs. Returns {nullptr, 0} if no common LSBs are found.
+    std::pair<DfgVertex*, uint32_t> commonLSBs(DfgVertex* ap, DfgVertex* bp) {
+        if (ap == bp) return {ap, ap->width()};
+
+        // If both constants, check LSBs
+        if (DfgConst* const aConstp = ap->cast<DfgConst>()) {
+            if (DfgConst* const bConstp = bp->cast<DfgConst>()) {
+                const V3Number& aNum = aConstp->num();
+                const V3Number& bNum = bConstp->num();
+                // Max match is the shorter constant
+                const uint32_t maxMatch = std::min(aConstp->width(), bConstp->width());
+                // Check all bits
+                uint32_t matchWidth = 0;
+                for (; matchWidth < maxMatch; ++matchWidth) {
+                    if (aNum.bitIs0(matchWidth) != bNum.bitIs0(matchWidth)) break;
+                }
+                // Will always return the shorter constant in case it can be used directly
+                DfgConst* const shorterp = aConstp->width() < bConstp->width() ? aConstp : bConstp;
+                return {matchWidth ? shorterp : nullptr, matchWidth};
+            }
+        }
+
+        // If Concat, check against the RHS
+        if (DfgConcat* const catp = ap->cast<DfgConcat>()) return commonLSBs(catp->rhsp(), bp);
+        if (DfgConcat* const catp = bp->cast<DfgConcat>()) return commonLSBs(ap, catp->rhsp());
+
+        // If selecting the LSBs, check against the source of the Sel
+        if (DfgSel* const selp = ap->cast<DfgSel>()) {
+            if (selp->lsb() == 0) {
+                DfgVertex* const fromp = selp->fromp();
+                const std::pair<DfgVertex*, uint32_t> common = commonLSBs(fromp, bp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+        if (DfgSel* const selp = bp->cast<DfgSel>()) {
+            if (selp->lsb() == 0) {
+                DfgVertex* const fromp = selp->fromp();
+                const std::pair<DfgVertex*, uint32_t> common = commonLSBs(ap, fromp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+
+        // Otherwise no common LSBs
+        return {nullptr, 0};
+    }
+
+    // Given a pair of vertices, returns a vertex representing the common MSBs of the two,
+    // and the number of common LSBs. Returns {nullptr, 0} if no common LSBs are found.
+    std::pair<DfgVertex*, uint32_t> commonMSBs(DfgVertex* ap, DfgVertex* bp) {
+        if (ap == bp) return {ap, ap->width()};
+
+        // If both constants, check MSBs
+        if (DfgConst* const aConstp = ap->cast<DfgConst>()) {
+            if (DfgConst* const bConstp = bp->cast<DfgConst>()) {
+                const uint32_t aMsb = aConstp->width() - 1;
+                const uint32_t bMsb = bConstp->width() - 1;
+                const V3Number& aNum = aConstp->num();
+                const V3Number& bNum = bConstp->num();
+                // Max match is the shorter constant
+                const uint32_t maxMatch = std::min(aConstp->width(), bConstp->width());
+                // Check all bits
+                uint32_t matchWidth = 0;
+                for (; matchWidth < maxMatch; ++matchWidth) {
+                    if (aNum.bitIs0(aMsb - matchWidth) != bNum.bitIs0(bMsb - matchWidth)) break;
+                }
+                // Will always return the shorter constant in case it can be used directly
+                DfgConst* const shorterp = aMsb < bMsb ? aConstp : bConstp;
+                return {matchWidth ? shorterp : nullptr, matchWidth};
+            }
+        }
+
+        // If Concat, check against the LHS
+        if (DfgConcat* const catp = ap->cast<DfgConcat>()) return commonMSBs(catp->lhsp(), bp);
+        if (DfgConcat* const catp = bp->cast<DfgConcat>()) return commonMSBs(ap, catp->lhsp());
+
+        // If selecting the MSBs, check against the source of the Sel
+        if (DfgSel* const selp = ap->cast<DfgSel>()) {
+            DfgVertex* const fromp = selp->fromp();
+            if (selp->msb() == fromp->width() - 1) {
+                const std::pair<DfgVertex*, uint32_t> common = commonMSBs(fromp, bp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+        if (DfgSel* const selp = bp->cast<DfgSel>()) {
+            DfgVertex* const fromp = selp->fromp();
+            if (selp->msb() == fromp->width() - 1) {
+                const std::pair<DfgVertex*, uint32_t> common = commonMSBs(ap, fromp);
+                return {common.first, std::min(common.second, selp->width())};
+            }
+        }
+
+        // Otherwise no common MSBs
+        return {nullptr, 0};
+    }
+
     // VISIT methods
 
     void visit(DfgVertex*) override {}
@@ -1192,6 +1291,10 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
     //  DfgVertexUnary
     //=========================================================================
+
+    void visit(DfgCountOnes* const vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
 
     void visit(DfgExtend* const vtxp) override {
         if (foldUnary(vtxp)) return;
@@ -1270,7 +1373,67 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+
+            // Not of unsigned comparisons
+            if (DfgLt* const p = vtxp->srcp()->cast<DfgLt>()) {
+                APPLYING(REPLACE_NOT_LT) {
+                    replace(make<DfgGte>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGte* const p = vtxp->srcp()->cast<DfgGte>()) {
+                APPLYING(REPLACE_NOT_GTE) {
+                    replace(make<DfgLt>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGt* const p = vtxp->srcp()->cast<DfgGt>()) {
+                APPLYING(REPLACE_NOT_GT) {
+                    replace(make<DfgLte>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgLte* const p = vtxp->srcp()->cast<DfgLte>()) {
+                APPLYING(REPLACE_NOT_LTE) {
+                    replace(make<DfgGt>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+
+            // Not of signed comparisons
+            if (DfgLtS* const p = vtxp->srcp()->cast<DfgLtS>()) {
+                APPLYING(REPLACE_NOT_LTS) {
+                    replace(make<DfgGteS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGteS* const p = vtxp->srcp()->cast<DfgGteS>()) {
+                APPLYING(REPLACE_NOT_GTES) {
+                    replace(make<DfgLtS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgGtS* const p = vtxp->srcp()->cast<DfgGtS>()) {
+                APPLYING(REPLACE_NOT_GTS) {
+                    replace(make<DfgLteS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
+            if (DfgLteS* const p = vtxp->srcp()->cast<DfgLteS>()) {
+                APPLYING(REPLACE_NOT_LTES) {
+                    replace(make<DfgGtS>(p->fileline(), vtxp->dtype(), p->lhsp(), p->rhsp()));
+                    return;
+                }
+            }
         }
+    }
+
+    void visit(DfgOneHot* const vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgOneHot0* const vtxp) override {
+        if (foldUnary(vtxp)) return;
     }
 
     void visit(DfgRedOr* const vtxp) override {
@@ -1722,10 +1885,24 @@ class V3DfgPeephole final : public DfgVisitor {
         if (!idxp) return;
         DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
-        if (varp->vscp()->varp()->isForced()) return;
-        if (varp->vscp()->varp()->isSigUserRWPublic()) return;
+        AstVar* const astVarp = varp->vscp()->varp();
+        if (astVarp->isForced()) return;
+        if (astVarp->isSigUserRWPublic()) return;
         DfgVertex* const srcp = varp->srcp();
-        if (!srcp) return;
+        if (!srcp) {
+            if (vtxp->isPacked()) {
+                if (AstInitArray* const iap = VN_CAST(astVarp->valuep(), InitArray)) {
+                    if (AstConst* const valp
+                        = VN_CAST(iap->getIndexDefaultedValuep(idxp->toSizeT()), Const)) {
+                        APPLYING(FOLD_ARRAYSEL_TABLE) {
+                            replace(new DfgConst{m_dfg, valp->fileline(), valp->num()});
+                            return;
+                        }
+                    }
+                }
+            }
+            return;
+        }
 
         if (DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
             DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
@@ -2007,10 +2184,28 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgDiv* const vtxp) override {
         if (binary(vtxp)) return;
+
+        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            if (isEqOne(rConstp)) {
+                APPLYING(REMOVE_DIV_ONE) {
+                    replace(vtxp->lhsp());
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgDivS* const vtxp) override {
         if (binary(vtxp)) return;
+
+        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+            if (isEqOne(rConstp)) {
+                APPLYING(REMOVE_DIVS_ONE) {
+                    replace(vtxp->lhsp());
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgGt* const vtxp) override {
@@ -2179,10 +2374,48 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgMul* const vtxp) override {
         if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (isZero(lConstp)) {
+                APPLYING(REMOVE_MUL_ZERO) {
+                    replace(makeZero(flp, vtxp->dtype()));
+                    return;
+                }
+            }
+            if (isEqOne(lConstp)) {
+                APPLYING(REMOVE_MUL_ONE) {
+                    replace(rhsp);
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgMulS* const vtxp) override {
         if (binary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (isZero(lConstp)) {
+                APPLYING(REMOVE_MULS_ZERO) {
+                    replace(makeZero(flp, vtxp->dtype()));
+                    return;
+                }
+            }
+            if (isEqOne(lConstp)) {
+                APPLYING(REMOVE_MULS_ONE) {
+                    replace(rhsp);
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgEq* const vtxp) override {
@@ -2493,6 +2726,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
+
+        if (isSame(lhsp, rhsp)) {
+            APPLYING(FOLD_SELF_SUB) {
+                replace(makeZero(flp, vtxp->dtype()));
+                return;
+            }
+        }
 
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             if (rConstp->isZero()) {
@@ -2506,6 +2747,16 @@ class V3DfgPeephole final : public DfgVisitor {
                     replace(make<DfgNot>(vtxp->fileline(), m_bitDType, lhsp));
                     return;
                 }
+            }
+        }
+    }
+
+    void visit(DfgMatchMasked* const vtxp) override {
+        if (DfgConst* const constp = vtxp->lhsp()->cast<DfgConst>()) {
+            APPLYING(FOLD_MATCHMASKED) {
+                AstVar* const matchVarp = vtxp->matchp()->as<DfgVarPacked>()->vscp()->varp();
+                replace(makeI32(vtxp->fileline(), AstMatchMasked::fold(constp->num(), matchVarp)));
+                return;
             }
         }
     }
@@ -2703,56 +2954,62 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        if (DfgConcat* const tConcatp = thenp->cast<DfgConcat>()) {
-            if (DfgConcat* const eConcatp = elsep->cast<DfgConcat>()) {
-                DfgVertex* const tRhsp = tConcatp->rhsp();
-                DfgVertex* const tLhsp = tConcatp->lhsp();
-                DfgVertex* const eRhsp = eConcatp->rhsp();
-                DfgVertex* const eLhsp = eConcatp->lhsp();
-
-                if (isSame(tRhsp, eRhsp)) {
-                    APPLYING(REPLACE_COND_SAME_CAT_RHS) {
-                        DfgCond* const newCondp
-                            = make<DfgCond>(flp, tLhsp->dtype(), condp, tLhsp, eLhsp);
-                        replace(make<DfgConcat>(vtxp, newCondp, tRhsp));
+        if (!thenp->is<DfgConst>() && !elsep->is<DfgConst>()) {
+            const std::pair<DfgVertex*, uint32_t> cLSBs = commonLSBs(thenp, elsep);
+            if (cLSBs.first) {
+                APPLYING(REPLACE_COND_COMMON_LSBS) {
+                    // Create new RHS
+                    const uint32_t rWidth = cLSBs.second;
+                    DfgVertex* rhsp = cLSBs.first;
+                    if (rWidth != rhsp->width()) {
+                        const DfgDataType& rDtype = DfgDataType::packed(rWidth);
+                        rhsp = make<DfgSel>(flp, rDtype, rhsp, 0U);
+                    }
+                    // If it's all the same, just replace
+                    if (rhsp->dtype() == vtxp->dtype()) {
+                        // Note this branch can only be hit if rules run in the right order,
+                        // it might have missing code coverage after a refactor.
+                        replace(rhsp);
                         return;
                     }
-                }
-
-                if (isSame(tLhsp, eLhsp)) {
-                    APPLYING(REPLACE_COND_SAME_CAT_LHS) {
-                        DfgCond* const newCondp
-                            = make<DfgCond>(flp, tRhsp->dtype(), condp, tRhsp, eRhsp);
-                        replace(make<DfgConcat>(vtxp, tLhsp, newCondp));
-                        return;
-                    }
+                    // Create new LHS
+                    const uint32_t lWidth = vtxp->width() - rWidth;
+                    const DfgDataType& lDtype = DfgDataType::packed(lWidth);
+                    DfgVertex* const lThenp = make<DfgSel>(flp, lDtype, thenp, rWidth);
+                    DfgVertex* const lElsep = make<DfgSel>(flp, lDtype, elsep, rWidth);
+                    DfgVertex* const lhsp = make<DfgCond>(flp, lDtype, condp, lThenp, lElsep);
+                    // Replace with concat
+                    replace(make<DfgConcat>(vtxp, lhsp, rhsp));
+                    return;
                 }
             }
 
-            if (!tConcatp->hasMultipleSinks()) {
-                if (DfgConcat* const tRCatp = tConcatp->rhsp()->cast<DfgConcat>()) {
-                    if (!tRCatp->hasMultipleSinks()) {
-                        if (DfgSel* const tLSelp = tConcatp->lhsp()->cast<DfgSel>()) {
-                            if (DfgSel* const tRRSelp = tRCatp->rhsp()->cast<DfgSel>()) {
-                                if (tLSelp->lsb() == tRCatp->width()  //
-                                    && tRRSelp->lsb() == 0  //
-                                    && isSame(tLSelp->fromp(), elsep)  //
-                                    && isSame(tRRSelp->fromp(), elsep)) {
-                                    APPLYING(REPLACE_COND_INSERT) {
-                                        DfgVertex* const newTp = tRCatp->lhsp();
-                                        DfgVertex* const newEp = make<DfgSel>(
-                                            flp, newTp->dtype(), elsep, tRRSelp->width());
-                                        DfgCond* const newCp = make<DfgCond>(flp, newTp->dtype(),
-                                                                             condp, newTp, newEp);
-                                        replace(make<DfgConcat>(
-                                            vtxp, tLSelp,
-                                            make<DfgConcat>(tRCatp, newCp, tRRSelp)));
-                                        return;
-                                    }
-                                }
-                            }
-                        }
+            const std::pair<DfgVertex*, uint32_t> cMSBs = commonMSBs(thenp, elsep);
+            if (cMSBs.first) {
+                APPLYING(REPLACE_COND_COMMON_MSBS) {
+                    // Create new LHS
+                    const uint32_t lWidth = cMSBs.second;
+                    DfgVertex* lhsp = cMSBs.first;
+                    if (lWidth != lhsp->width()) {
+                        const DfgDataType& lDtype = DfgDataType::packed(lWidth);
+                        lhsp = make<DfgSel>(flp, lDtype, lhsp, lhsp->width() - lWidth);
                     }
+                    // If it's all the same, just replace
+                    if (lhsp->dtype() == vtxp->dtype()) {
+                        // Note this branch can only be hit if rules run in the right order,
+                        // it might have missing code coverage after a refactor.
+                        replace(lhsp);
+                        return;
+                    }
+                    // Create new RHS
+                    const uint32_t rWidth = vtxp->width() - lWidth;
+                    const DfgDataType& rDtype = DfgDataType::packed(rWidth);
+                    DfgVertex* const rThenp = make<DfgSel>(flp, rDtype, thenp, 0U);
+                    DfgVertex* const rElsep = make<DfgSel>(flp, rDtype, elsep, 0U);
+                    DfgVertex* const rhsp = make<DfgCond>(flp, rDtype, condp, rThenp, rElsep);
+                    // Replace with concat
+                    replace(make<DfgConcat>(vtxp, lhsp, rhsp));
+                    return;
                 }
             }
         }

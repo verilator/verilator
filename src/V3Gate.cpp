@@ -47,6 +47,7 @@ class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
     bool m_consumed = false;  // Output goes to something meaningful
+    bool m_staticInit = false;  // True if this node is a static initializer
 public:
     explicit GateEitherVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -56,10 +57,12 @@ public:
     bool reducible() const { return m_reducible; }
     bool dedupable() const { return m_dedupable; }
     bool consumed() const { return m_consumed; }
+    bool staticInit() const { return m_staticInit; }
     void setConsumed(const char* /*consumedReason*/) {
         // if (!m_consumed) UINFO(0, "\t\tSetConsumed " << consumedReason << " " << this);
         m_consumed = true;
     }
+    void setStaticInit() { m_staticInit = true; }
     void clearReducible(const char* /*nonReducibleReason*/) {
         // UINFO(0, "     NR: " << nonReducibleReason << "  " << name());
         m_reducible = false;
@@ -196,6 +199,7 @@ class GateBuildVisitor final : public VNVisitorConst {
     const AstScope* m_scopep = nullptr;  // Current scope being processed
     AstActive* m_activep = nullptr;  // Current active
     bool m_inClockedActive = false;  // Underneath clocked active
+    bool m_inStaticActive = false;  // Underneath static active
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
 
     // METHODS
@@ -219,6 +223,8 @@ class GateBuildVisitor final : public VNVisitorConst {
             m_logicVertexp->clearReducibleAndDedupable(nonReducibleReason);
         } else if (m_inClockedActive) {
             m_logicVertexp->clearReducible("Clocked logic");  // but dedupable
+        } else if (m_inStaticActive) {
+            m_logicVertexp->setStaticInit();
         }
         if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
         checkNode(nodep);
@@ -242,8 +248,10 @@ class GateBuildVisitor final : public VNVisitorConst {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
         VL_RESTORER(m_inClockedActive);
+        VL_RESTORER(m_inStaticActive);
         m_activep = nodep;
         m_inClockedActive = nodep->hasClocked();
+        m_inStaticActive = nodep->hasStatic();
 
         // AstVarScope::user2 -> bool: Signal used in SenItem in *this* active block
         const VNUser2InUse user2InUse;
@@ -463,6 +471,11 @@ class GateOkVisitor final : public VNVisitorConst {
         // assign to get randomization etc
         clearSimple("CReset");
     }
+    void visit(AstMatchMasked* nodep) override {
+        if (!m_isSimple) return;
+        // This node can be expensive
+        clearSimple("MatchMasked");
+    }
     //--------------------
     void visit(AstNode* nodep) override {
         if (!m_isSimple) return;  // Fastpath
@@ -535,43 +548,62 @@ class GateInline final {
     // Logic block with pending substitutions are stored in this map, together with their ordinal
     std::unordered_map<AstNode*, size_t> m_hasPending;
     size_t m_statInlined = 0;  // Statistic tracking - signals inlined
-    size_t m_statRefs = 0;  // Statistic tracking
-    size_t m_statExcluded = 0;  // Statistic tracking
+    size_t m_statNotInlined = 0;  // Statistic tracking - signals not inlined due to cost
+    size_t m_statRefs = 0;  // Statistic tracking - number of input variable references replaced
 
     // METHODS
-    static bool isCheapWide(const AstNodeExpr* exprp) {
+    static bool isCheap(const AstNodeExpr* exprp) {
+        // Constant is cheap
+        if (VN_IS(exprp, Const)) return true;
+        // Variable reference is cheap
+        if (VN_IS(exprp, NodeVarRef)) return true;
+        // AstSel is cheap if the fromp is cheap, and not a wide needing bit swizzling
         if (const AstSel* const selp = VN_CAST(exprp, Sel)) {
+            if (!isCheap(selp->fromp())) return false;
+            if (!selp->isWide()) return true;
+            if (!VN_IS(selp->lsbp(), Const)) return false;
             if (selp->lsbConst() % VL_EDATASIZE != 0) return false;
-            exprp = selp->fromp();
+            return true;
         }
-        if (const AstArraySel* const aselp = VN_CAST(exprp, ArraySel)) exprp = aselp->fromp();
-        return VN_IS(exprp, Const) || VN_IS(exprp, NodeVarRef);
+        // AstArraySel is cheap if the fromp is cheap
+        if (const AstArraySel* const aselp = VN_CAST(exprp, ArraySel)) {
+            return isCheap(aselp->fromp());
+        }
+        // Otherwise it is not cheap
+        return false;
     }
-    static bool excludedWide(GateVarVertex* const vVtxp, const AstNodeExpr* const rhsp) {
-        // Handle wides with logic drivers that are too wide for V3Expand.
-        if (!vVtxp->varScp()->isWide()  //
-            || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit()  //
-            || vVtxp->inEmpty()  //
-            || isCheapWide(rhsp))
-            return false;
 
-        const GateLogicVertex* const lVtxp
-            = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
-
-        // Exclude from inlining variables READ multiple times.
-        // To decouple actives thus simplifying scheduling, exclude only those
-        // VarRefs that are referenced under the same active as they were assigned.
-        if (const AstActive* const primaryActivep = lVtxp->activep()) {
-            size_t reads = 0;
-            for (const V3GraphEdge& edge : vVtxp->outEdges()) {
-                const GateLogicVertex* const lvp = edge.top()->as<GateLogicVertex>();
-                if (lvp->activep() != primaryActivep) continue;
-
-                reads += edge.weight();
-                if (reads > 1) return true;
+    bool shouldInline(GateVarVertex* vVtxp, GateLogicVertex* lVtxp, size_t nReads,
+                      AstNodeExpr* substp, bool allowMultiIn) {
+        // Always inline constants
+        if (VN_IS(substp, Const)) return true;
+        // Don't inline non-constant static initializers - these are scheduled differently
+        if (lVtxp->staticInit()) return false;
+        // Inline simple variable references
+        if (VN_IS(substp, VarRef)) return true;
+        // Only inline arrays if a simple variable or constant
+        if (VN_IS(vVtxp->varScp()->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        // Inline if reads no variables - unfolded constant expression, nullary builtin e.g.: $time
+        if (nReads == 0) return true;
+        // If it reads one variable, inline if not wide, or if cheap
+        if (nReads == 1 && (!substp->isWide() || isCheap(substp))) return true;
+        // Don't inline on first round if reads more than one variable
+        if (nReads > 1 && !allowMultiIn) return false;
+        // Reads multiple variables, or is expensive to compute.
+        // Inline if used only once, ignoring slow code, or dead code that can be deleted.
+        int n = 0;
+        for (V3GraphEdge& edge : vVtxp->outEdges()) {
+            const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
+            // Ignore slow code, or if the destination is not used
+            if (dstVtxp->slow()) continue;
+            if (dstVtxp->outEmpty() && !dstVtxp->consumed()) continue;
+            n += edge.weight();
+            if (n > 1) {
+                ++m_statNotInlined;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     void recordSubstitution(AstVarScope* vscp, AstNodeExpr* substp, AstNode* logicp) {
@@ -668,40 +700,20 @@ class GateInline final {
             if (!okVisitor.isSimple()) continue;
             // If the varScope is already removed from logicp, no need to try substitution.
             if (!okVisitor.varAssigned(vVtxp->varScp())) continue;
-            if (excludedWide(vVtxp, okVisitor.substitutionp())) {
-                ++m_statExcluded;
-                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'");
-                vVtxp->clearReducible("Excluded wide");  // Check once.
-                continue;
-            }
 
-            // Does it read multiple source variables?
-            if (okVisitor.readVscps().size() > 1) {
-                if (!allowMultiIn) {
-                    continue;
-                } else {
-                    // Do it if not used, or used only once, ignoring slow code
-                    int n = 0;
-                    for (V3GraphEdge& edge : vVtxp->outEdges()) {
-                        const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
-                        // Ignore slow code, or if the destination is not used
-                        if (!dstVtxp->slow() && !dstVtxp->outEmpty()) n += edge.weight();
-                        if (n > 1) break;
-                    }
-                    if (n > 1) continue;
-                }
-            }
+            // Expression we are considering to substitute with
+            AstNodeExpr* const substp = V3Const::constifyEdit(okVisitor.substitutionp());
+            // Number of variables read by the substitution
+            const size_t nReads = okVisitor.readVscps().size();
 
-            AstVarScope* const vscp = vVtxp->varScp();
-            AstNodeExpr* const substp = okVisitor.substitutionp();
-
-            // Only inline arrays if a simple variable
-            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!VN_IS(substp, NodeVarRef)) continue;
-            }
+            // Check if it should be inlined
+            if (!shouldInline(vVtxp, lVtxp, nReads, substp, allowMultiIn)) continue;
 
             // Process it
             ++m_statInlined;
+
+            // Variable we are considering to substitute
+            AstVarScope* const vscp = vVtxp->varScp();
 
             if (debug() >= 9) {
                 vscp->dumpTree("substituting: ");
@@ -798,9 +810,9 @@ class GateInline final {
     }
 
     ~GateInline() {
-        V3Stats::addStat("Optimizations, Gate sigs deleted", m_statInlined);
-        V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);
-        V3Stats::addStat("Optimizations, Gate excluded wide expressions", m_statExcluded);
+        V3Stats::addStat("Optimizations, Gate signals inlined", m_statInlined);
+        V3Stats::addStat("Optimizations, Gate signals not inlined due to cost", m_statNotInlined);
+        V3Stats::addStat("Optimizations, Gate reads replaced", m_statRefs);
     }
 
 public:
@@ -1296,6 +1308,10 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         // the same logic block will have and edge to the logic block with weight 2
         graphp->removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_simp");
+
+        // Remove unused logic
+        GateUnused::apply(*graphp);
+        if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_unused");
 
         // Inline variables
         GateInline::apply(*graphp);

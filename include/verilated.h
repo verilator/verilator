@@ -120,17 +120,13 @@ using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
 using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
 using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
-using EData = uint32_t;   ///< Data representing one element of WData array
-using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
+using EData = uint32_t;   ///< Data representing one element of VlWide
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
 //    N     = std::string;  // No typedef needed; Verilator uses string
 //    U     = VlUnpacked;
 //    R     = VlQueue;
 // clang-format on
-
-using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
-using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
 enum VerilatedVarType : uint8_t {
     VLVT_UNKNOWN = 0,
@@ -139,12 +135,14 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT16,  // AKA SData
     VLVT_UINT32,  // AKA IData
     VLVT_UINT64,  // AKA QData
-    VLVT_WDATA,  // AKA WData
+    VLVT_WDATA,  // AKA VlWide
     VLVT_STRING,  // C++ string
-    VLVT_REAL  // AKA double
+    VLVT_REAL,  // AKA double
+    VLVT_STRUCT,  // SystemVerilog unpacked struct
+    VLVT_UNION  // SystemVerilog unpacked union
 };
 
-enum VerilatedVarFlags {
+enum VerilatedVarFlags : uint32_t {
     VLVD_0 = 0,  // None
     VLVD_IN = 1,  // == vpiInput
     VLVD_OUT = 2,  // == vpiOutput
@@ -158,7 +156,8 @@ enum VerilatedVarFlags {
     VLVF_CONTINUOUSLY = (1 << 11),  // Is continously assigned
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
-    VLVF_BITVAR = (1 << 14)  // Four state bit (vs two state logic)
+    VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
+    VLVF_NET = (1 << 15)  // Net object
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -178,6 +177,15 @@ enum class VerilatedAssertDirectiveType : uint8_t {
     DIRECTIVE_TYPE_ASSERT = (1 << 0),
     DIRECTIVE_TYPE_COVER = (1 << 1),
     DIRECTIVE_TYPE_ASSUME = (1 << 2),
+};
+
+/// Runtime query selector for assertion-control state
+enum class VerilatedAssertCtlQuery : uint8_t {
+    ASSERT_CTL_ON,
+    ASSERT_CTL_KILL,
+    ASSERT_CTL_PASS_ON_VACUOUS,
+    ASSERT_CTL_PASS_ON_NONVACUOUS,
+    ASSERT_CTL_FAIL_ON,
 };
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
@@ -360,6 +368,10 @@ private:
     static constexpr size_t ASSERT_ON_WIDTH
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
+    // Build the assertion-control bit mask for the given assertion x directive types.
+    static uint32_t assertOnMask(VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
 
 protected:
     // TYPES
@@ -379,6 +391,16 @@ protected:
                                                     // for each VerilatedAssertType we store
                                                     // 3-bits, one for each directive type. Last
                                                     // bit guards internal directive types.
+        std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
+                                                // Lock/Unlock); same layout as m_assertOn. While
+                                                // a bit is locked, On/Off/Kill leave it unchanged.
+        std::atomic<uint32_t> m_assertPassOnVacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{
+            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertFailOn{
+            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -391,7 +413,7 @@ protected:
         int m_errorCount = 0;  // Number of errors
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
-        int m_randSeed = 0;  // Random seed: 0=random
+        int m_randSeed = 1;  // Random seed (default 1; +verilator+seed+0 picks at parse time)
         static constexpr int UNITS_NONE = 99;  // Default based on precision
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
@@ -413,6 +435,7 @@ protected:
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
         std::string m_coverageFilename;  // +coverage+file filename
+        std::string m_logFilename;  // +log+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
@@ -421,6 +444,9 @@ protected:
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
+        int m_stdoutFD;  // Duplicated stdout file descriptor
+        int m_stderrFD;  // Duplicated stderr file descriptor
+        int m_logFD;  // Log file descriptor
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -484,6 +510,13 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Apply assertion control for given control, assertion, and directive types
+    void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
+    /// the generation count.
+    uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                          VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -654,6 +687,13 @@ public:
     std::string coverageFilename() const VL_MT_SAFE;
     void coverageFilename(const std::string& flag) VL_MT_SAFE;
 
+    // Internal: logfile
+    std::string logFilename() const VL_MT_SAFE;
+    void logFilename(const std::string& flag) VL_MT_SAFE;
+    bool logOutputToFile() const VL_MT_SAFE;
+    void logOutputToFile(bool append) VL_MT_SAFE;
+    void logRestoreOutput() VL_MT_SAFE;
+
     // Internal: $dumpfile
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
@@ -744,6 +784,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
+                                 VerilatedVarType vltype, int vlflags, int udims, uint32_t entSize,
+                                 ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,
@@ -992,6 +1035,9 @@ public:
     static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
+
+    // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])
+    static void loadVpiLib(const std::string& arg) VL_MT_UNSAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }

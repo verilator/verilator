@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ***************
 Input Languages
@@ -37,14 +38,6 @@ $onehot0, $unit, $warning, always_comb, always_ff, always_latch, bit, byte,
 chandle, const, do-while, enum, export, final, import, int, interface,
 logic, longint, modport, package, program, shortint, struct, time, typedef,
 union, var, void, priority case/if, and unique case/if.
-
-It also supports .name and .\* interconnection.
-
-Verilator partially supports concurrent assert and cover statements; see
-the enclosed coverage tests for the allowed syntax.
-
-Verilator has limited support for class and related object-oriented
-constructs.
 
 
 SystemVerilog 2012 (IEEE 1800-2012) Support
@@ -110,11 +103,11 @@ Time
 
 With :vlopt:`--timing`, all timing controls are supported:
 
-* delay statements,
-* event control statements not only at the top of a process,
-* intra-assignment timing controls,
-* net delays,
-* ``wait`` statements,
+- delay statements,
+- event control statements not only at the top of a process,
+- intra-assignment timing controls,
+- net delays,
+- ``wait`` statements,
 
 as well as all flavors of ``fork``.
 
@@ -136,26 +129,26 @@ simulation (perhaps using :vlopt:`--build`) and run it.
 With :vlopt:`--no-timing`, all timing controls cause the :option:`NOTIMING`
 error, except:
 
-* delay statements - they are ignored (as they are in synthesis), though they
-  do issue a :option:`STMTDLY` warning,
-* intra-assignment timing controls - they are ignored, though they do issue
+- delay statements - they are ignored (as they are in synthesis), though
+  they do issue a :option:`STMTDLY` warning,
+- intra-assignment timing controls - they are ignored, though they do issue
   an :option:`ASSIGNDLY` warning,
-* net delays - they are ignored,
-* event controls at the top of the procedure,
+- net delays - they are ignored,
+- event controls at the top of the procedure,
 
 Forks cause this error as well, except:
 
-* forks with no statements,
-* ``fork..join`` or ``fork..join_any`` with one statement,
-* forks with :vlopt:`--bbox-unsup`.
+- forks with no statements,
+- ``fork..join`` or ``fork..join_any`` with one statement,
+- forks with :vlopt:`--bbox-unsup`.
 
 If neither :vlopt:`--timing` nor :vlopt:`--no-timing` is specified, all
 timing controls cause the :option:`NEEDTIMINGOPT` error, except event
 controls at the top of the process. Forks cause this error as well, except:
 
-* forks with no statements,
-* ``fork..join`` or ``fork..join_any`` with one statement,
-* forks with :vlopt:`--bbox-unsup`.
+- forks with no statements,
+- ``fork..join`` or ``fork..join_any`` with one statement,
+- forks with :vlopt:`--bbox-unsup`.
 
 Timing controls and forks can also be ignored in specific files or parts of
 files. The :option:`/*verilator&32;timing_off*/` and
@@ -363,13 +356,15 @@ appropriate width.
 Assertions
 ----------
 
-Verilator is beginning to add support for assertions. Verilator currently
-only converts assertions to simple ``if (...) error`` statements, and
-coverage statements to increment the line counters described in the
-coverage section.
+Verilator partially supports assertions and assertion-driven functional
+coverage.
 
-Verilator does not support SEREs yet. All assertion and coverage statements
-must be simple expressions that complete in one cycle.
+Coverage
+--------
+
+Verilator partially supports SystemVerilog functional coverage with
+``covergroup``, ``coverpoint``, bins, cross coverage, and transition bins.
+See :ref:`Covergroup Coverage`.
 
 
 Encrypted Verilog

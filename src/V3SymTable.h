@@ -207,9 +207,18 @@ public:
     void importFromClass(VSymGraph* graphp, const VSymEnt* srcp) {
         // Import tokens from source symbol table into this symbol table
         // Used for classes in early parsing only to handle "extends"
+
+        // If an "extern foo" exists, then we can't import "foo" from the base class.
+        // But ok for "extern foo" and "foo" to both come from base (so must check before insert)
+        std::unordered_set<std::string> haveExterns;
         for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
              it != srcp->m_idNameMap.end(); ++it) {
-            importOneSymbol(graphp, it->first, it->second, false);
+            if (m_idNameMap.count("extern " + it->first)) haveExterns.emplace(it->first);
+        }
+        for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
+             it != srcp->m_idNameMap.end(); ++it) {
+            if (!haveExterns.count(it->first))
+                importOneSymbol(graphp, it->first, it->second, false);
         }
     }
     void importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {

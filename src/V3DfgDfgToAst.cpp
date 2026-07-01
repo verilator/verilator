@@ -227,6 +227,19 @@ class DfgToAstVisitor final : DfgVisitor {
     void visit(DfgConst* vtxp) override {  //
         m_resultp = new AstConst{vtxp->fileline(), vtxp->num()};
     }
+    void visit(DfgCReset* vtxp) override {
+        DfgVertex* const sinkp = vtxp->singleSink();
+        UASSERT_OBJ(sinkp, vtxp, "CReset should only have one sink");
+        UASSERT_OBJ(sinkp->is<DfgVertexVar>(), sinkp, "CReset should drive a variable");
+        AstVar* const varp = sinkp->as<DfgVertexVar>()->vscp()->varp();
+        m_resultp = new AstCReset{vtxp->fileline(), varp, false};
+    }
+    void visit(DfgMatchMasked* vtxp) override {
+        FileLine* const flp = vtxp->fileline();
+        AstNodeExpr* const lhsp = convertDfgVertexToAstNodeExpr(vtxp->lhsp());
+        AstVarScope* const matchp = vtxp->matchp()->as<DfgVertexVar>()->vscp();
+        m_resultp = new AstMatchMasked{flp, lhsp, matchp};
+    }
 
     void visit(DfgRep* vtxp) override {
         FileLine* const flp = vtxp->fileline();

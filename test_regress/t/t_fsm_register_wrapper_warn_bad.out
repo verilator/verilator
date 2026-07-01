@@ -1,0 +1,35 @@
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:156:5: Ignoring unsupported: fsm_register_wrapper d and q connections must be simple variables
+                                                            : ... note: In instance 't'
+  156 |   ) u_bad_simple (
+      |     ^~~~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:166:5: Ignoring unsupported: fsm_register_wrapper d and q connections must be simple variables
+                                                            : ... note: In instance 't'
+  166 |   ) u_missing_q_port (
+      |     ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:176:5: Ignoring unsupported: fsm_register_wrapper instance requires a simple clock connection
+                                                            : ... note: In instance 't'
+  176 |   ) u_missing_clock_port (
+      |     ^~~~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:186:5: Ignoring unsupported: fsm_register_wrapper reset arcs require both reset polarity and static reset value; reset_value parameter is not configured
+                                                            : ... note: In instance 't'
+  186 |   ) u_partial_reset (
+      |     ^~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:196:5: Ignoring unsupported: fsm_register_wrapper reset arcs require both reset polarity and static reset value; reset_value parameter is missing or not static
+                                                            : ... note: In instance 't'
+  196 |   ) u_missing_reset_value (
+      |     ^~~~~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:206:5: Ignoring unsupported: fsm_register_wrapper reset arcs require both reset polarity and static reset value; reset port is not configured
+                                                            : ... note: In instance 't'
+  206 |   ) u_value_no_reset (
+      |     ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:216:5: Ignoring unsupported: fsm_register_wrapper reset arcs require both reset polarity and static reset value; reset polarity could not be inferred from the wrapper
+                                                            : ... note: In instance 't'
+  216 |   ) u_sync_reset (
+      |     ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_fsm_register_wrapper_warn_bad.v:226:5: Ignoring unsupported: fsm_register_wrapper reset arcs require both reset polarity and static reset value; reset connection is missing or not a simple variable
+                                                            : ... note: In instance 't'
+  226 |   ) u_missing_reset_connection (
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

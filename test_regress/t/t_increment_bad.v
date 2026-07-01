@@ -22,6 +22,10 @@ module t (
     if (a <-> --b);
     if (0 -> ++b);
 
+    // ++/-- nested in ?:/-> inside a supported &&/|| must still error
+    if (1 && (a > 0 ? a++ : --b));
+    if (0 || (a > 0 -> ++b));
+
     pos = (a > 0) ? a++ : --b;
 
     pos = array[0][0]++;

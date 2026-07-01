@@ -12,10 +12,6 @@ module t (
 );
   logic a;
   logic b;
-  initial begin
-    a = 1'd0;
-    b = 1'd0;
-  end
   assign a = ~i;
   assign b = a;
   assign o = b;

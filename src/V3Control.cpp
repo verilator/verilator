@@ -182,7 +182,6 @@ class V3ControlFTask final {
     V3ControlVarResolver m_params;  // Parameters in function/task
     V3ControlVarResolver m_ports;  // Ports in function/task
     V3ControlVarResolver m_vars;  // Variables in function/task
-    bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
     bool m_public = false;  // Public function/task
 
@@ -190,7 +189,6 @@ public:
     V3ControlFTask() = default;
     void update(const V3ControlFTask& f) {
         // Don't overwrite true with false
-        if (f.m_isolate) m_isolate = true;
         if (f.m_noinline) m_noinline = true;
         if (f.m_public) m_public = true;
         m_params.update(f.m_params);
@@ -203,7 +201,6 @@ public:
     V3ControlVarResolver& ports() { return m_ports; }
     V3ControlVarResolver& vars() { return m_vars; }
 
-    void setIsolate(bool set) { m_isolate = set; }
     void setNoInline(bool set) { m_noinline = set; }
     void setPublic(bool set) { m_public = set; }
 
@@ -212,8 +209,6 @@ public:
             ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::NO_INLINE_TASK});
         if (m_public)
             ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::PUBLIC_TASK});
-        // Only functions can have isolate (return value)
-        if (VN_IS(ftaskp, Func)) ftaskp->attrIsolateAssign(m_isolate);
     }
 };
 
@@ -227,8 +222,10 @@ class V3ControlModule final {
     V3ControlVarResolver m_params;  // Parameters in module
     V3ControlVarResolver m_ports;  // Ports in module
     V3ControlVarResolver m_vars;  // Variables in module
+    V3Control::FsmRegisterWrapper m_fsmRegisterWrapper;  // FSM wrapper descriptor
     std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
     std::set<VPragmaType> m_modPragmas;  // List of Pragmas for modules
+    bool m_hasFsmRegisterWrapper = false;  // Whether descriptor has been set
     bool m_inline = false;  // Whether to force the inline
     bool m_inlineValue = false;  // The inline value (on/off)
 
@@ -240,6 +237,10 @@ public:
         m_params.update(m.m_params);
         m_ports.update(m.m_ports);
         m_vars.update(m.m_vars);
+        if (m.m_hasFsmRegisterWrapper) {
+            m_fsmRegisterWrapper = m.m_fsmRegisterWrapper;
+            m_hasFsmRegisterWrapper = true;
+        }
         for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
         if (!m_inline) {
             m_inline = m.m_inline;
@@ -260,6 +261,18 @@ public:
     void setInline(bool set) {
         m_inline = true;
         m_inlineValue = set;
+    }
+    void setFsmRegisterWrapper(FileLine* fl, const V3Control::FsmRegisterWrapper& desc) {
+        if (m_hasFsmRegisterWrapper) {
+            fl->v3warn(BADVLTPRAGMA, "Duplicate fsm_register_wrapper descriptor for module "
+                                         << AstNode::prettyNameQ(desc.moduleName)
+                                         << "; replacing previous descriptor");
+        }
+        m_fsmRegisterWrapper = desc;
+        m_hasFsmRegisterWrapper = true;
+    }
+    const V3Control::FsmRegisterWrapper* fsmRegisterWrapperp() const {
+        return m_hasFsmRegisterWrapper ? &m_fsmRegisterWrapper : nullptr;
     }
     void addModulePragma(VPragmaType pragma) { m_modPragmas.insert(pragma); }
 
@@ -877,6 +890,23 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
     V3ControlResolver::s().addHierWorkers(fl, model, workers);
 }
 
+void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
+                                      const string& q, const string& clock, const string& reset,
+                                      const string& resetValue) {
+    string missing;
+    if (module.empty()) missing += "-module";
+    if (d.empty()) missing = VString::dot(missing, ", ", "-d");
+    if (q.empty()) missing = VString::dot(missing, ", ", "-q");
+    if (clock.empty()) missing = VString::dot(missing, ", ", "-clock");
+    if (!missing.empty()) {
+        fl->v3error("fsm_register_wrapper missing " << missing);
+        return;
+    }
+
+    const FsmRegisterWrapper desc{module, d, q, clock, reset, resetValue};
+    V3ControlResolver::s().modules().at(module).setFsmRegisterWrapper(fl, desc);
+}
+
 void V3Control::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
     UINFO(9, "addIgnore " << code << " " << min << "-" << max << " fn=" << filename);
     if (filename == "*") {  // For "lint_off/lint_on [--rule x]"
@@ -946,13 +976,7 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
 
     // Semantics: Most of the attributes operate on signals
     if (pattern.empty()) {
-        if (attr == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
-            if (ftask.empty()) {
-                fl->v3error("isolate_assignments only applies to signals or functions/tasks");
-            } else {
-                V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
-            }
-        } else if (attr == VAttrType::VAR_PUBLIC) {
+        if (attr == VAttrType::VAR_PUBLIC) {
             if (ftask.empty()) {
                 // public module, this is the only exception from var here
                 V3ControlResolver::s().modules().at(module).addModulePragma(
@@ -1065,6 +1089,10 @@ int V3Control::getHierWorkers(const string& model) {
 }
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
+}
+const V3Control::FsmRegisterWrapper* V3Control::getFsmRegisterWrapper(const string& module) {
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(module);
+    return modp ? modp->fsmRegisterWrapperp() : nullptr;
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
     return V3ControlResolver::s().getProfileData(hierDpi);

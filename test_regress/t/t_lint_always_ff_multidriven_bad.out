@@ -1,0 +1,27 @@
+%Warning-MULTIDRIVEN: t/t_lint_always_ff_multidriven_bad.v:14:5: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'a'
+                                                               : ... note: In instance 't'
+                      t/t_lint_always_ff_multidriven_bad.v:14:5: 
+   14 |     a <= 1'b1;   
+      |     ^
+                      t/t_lint_always_ff_multidriven_bad.v:11:11: ... Location of other write
+   11 |   initial a = 1'b0;
+      |           ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_always_ff_multidriven_bad.v:23:11: Variable also written to in always_ff (IEEE 1800-2023 9.2.2.4): 'b'
+                                                                : ... note: In instance 't'
+                      t/t_lint_always_ff_multidriven_bad.v:23:11: 
+   23 |   initial b = 1'b0;   
+      |           ^
+                      t/t_lint_always_ff_multidriven_bad.v:20:5: ... Location of always_ff write
+   20 |     b <= 1'b1;
+      |     ^
+%Warning-MULTIDRIVEN: t/t_lint_always_ff_multidriven_bad.v:34:7: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'q'
+                                                               : ... note: In instance 't'
+                      t/t_lint_always_ff_multidriven_bad.v:34:7: 
+   34 |       q[i][1] <= a;  
+      |       ^
+                      t/t_lint_always_ff_multidriven_bad.v:29:7: ... Location of other write
+   29 |       q[i][0] <= a;  
+      |       ^
+%Error: Exiting due to

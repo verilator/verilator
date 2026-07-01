@@ -26,7 +26,7 @@ test.file_grep(test.stats,
 test.file_grep(test.stats,
                r'Optimizations, Loop unrolling, Failed - unknown loop condition\s+(\d+)', 0)
 test.file_grep(test.stats, r'Optimizations, Loop unrolling, Pragma unroll_disable\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 6)
-test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 40)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 13)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 77)
 
 test.passes()

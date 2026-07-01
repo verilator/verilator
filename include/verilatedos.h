@@ -438,10 +438,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Constants for VL_SFORMATF; see V3Number.h VFormatAttr
 // Character codes are upper case so harder to confuse with format %codes.
 // (...) indicates what is passed as arguments in emitted code
-#define VL_VFORMATATTR_UNSIGNED '#'  // (int widthMin, IData/WData/etc) Use standard format
-#define VL_VFORMATATTR_SIGNED '~'  // (int widthMin, IData/WData/etc) Signed number; for %d showing sign
+#define VL_VFORMATATTR_UNSIGNED '#'  // (int widthMin, IData/VlWide/etc) Use standard format
+#define VL_VFORMATATTR_SIGNED '~'  // (int widthMin, IData/VlWide/etc) Signed number; for %d showing sign
 #define VL_VFORMATATTR_COMPLEX '!'  // (std::string*); for non-POD; e.g. struct, requires %p typically
 #define VL_VFORMATATTR_DOUBLE 'D'  // (double); promote %p to %f
+#define VL_VFORMATATTR_ENUM 'E'  // (width, IData/QData, std::string* name); <= 64 bit enum with runtime %p/%s
 #define VL_VFORMATATTR_SCOPE 'M'  // (char* name, char* scope); for scopes
 #define VL_VFORMATATTR_STRING 'S'  // (char* name, char* scope); for scopes  // (std::string*); for %p/%s
 #define VL_VFORMATATTR_TIMEUNIT 'T'  // (int timeunit); timeunits passed from V3Emit to runtime
@@ -462,7 +463,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
 #define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
-#define VL_EDATASIZE 32  ///< Bits in an EData (WData entry)
+#define VL_EDATASIZE 32  ///< Bits in an EData (VlWide entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
 

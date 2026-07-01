@@ -210,6 +210,7 @@ protected:
 private:
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
+    std::vector<bool> m_initCbsCalled;  // Init callbacks already run for this open
     std::vector<CallbackRecord> m_constCbs;  // Routines to perform const dump
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
@@ -220,6 +221,7 @@ private:
     uint32_t m_numSignals = 0;  // Number of distinct signals
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
     void* m_initUserp = nullptr;  // The callback userp of the instance currently being initialized
+    bool m_rootInit = true;  // Whether the current init callback was reached from the root
     // TODO: Should keep this as a Trie, that is how it's accessed all the time.
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
@@ -236,6 +238,7 @@ private:
     // to access duck-typed functions to avoid a virtual function call.
     T_Trace* self() { return static_cast<T_Trace*>(this); }
 
+    void runInitCallback(size_t index, bool rootInit) VL_MT_UNSAFE;
     void runCallbacks(const std::vector<CallbackRecord>& cbVec);
 
     // Flush any remaining data for this file
@@ -325,6 +328,7 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
+    bool rootInit() const VL_MT_UNSAFE { return m_rootInit; }
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
     void addInitCb(initCb_t cb, void* userp, const std::string& name, bool isLibInstance,
                    uint32_t nTraceCodes) VL_MT_SAFE;
@@ -374,7 +378,7 @@ public:
     // duck-typed void emitSData(uint32_t code, SData newval, int bits) = 0;
     // duck-typed void emitIData(uint32_t code, IData newval, int bits) = 0;
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
-    // duck-typed void emitWData(uint32_t code, const WData* newvalp, int bits) = 0;
+    // duck-typed void emitWData(uint32_t code, WDataInP newval, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
     VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
@@ -385,7 +389,7 @@ public:
     void fullSData(uint32_t* oldp, SData newval, int bits);
     void fullIData(uint32_t* oldp, IData newval, int bits);
     void fullQData(uint32_t* oldp, QData newval, int bits);
-    void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
+    void fullWData(uint32_t* oldp, WDataInP newval, int bits);
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
@@ -413,10 +417,10 @@ public:
         const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
+    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, WDataInP newval, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
-            if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
-                fullWData(oldp, newvalp, bits);
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullWData(oldp, newval, bits);
                 return;
             }
         }

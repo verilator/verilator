@@ -65,7 +65,166 @@ class VlUnpacked;
 #endif
 
 //===================================================================
+/// Verilog wide packed bit container.
+/// Similar to std::array<EData, N>, but lighter weight, only methods needed
+/// by Verilator, to help compile time.
+///
+/// A 'struct' as we want this to be an aggregate type that allows
+/// static aggregate initialization. Consider data members private.
+///
+/// For example a Verilog "bit [94:0]" will become a VlWide<3> because 3*32
+/// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
+/// zero in memory, but during intermediate operations in the Verilated
+/// internals is unpredictable.
+
+template <std::size_t N_Words>
+struct VlWide final {
+    static constexpr size_t Words = N_Words;
+
+    // MEMBERS
+    // This should be the only data member, otherwise generated static initializers need updating
+    EData m_storage[N_Words];  // Contents of the packed array
+
+    // CONSTRUCTORS
+    // Default constructors and destructor are used. Note however that C++20 requires that
+    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
+    // one.
+
+    // OPERATOR METHODS
+    bool operator==(const VlWide<N_Words>& that) const VL_PURE {
+        return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(EData)) == 0;
+    }
+    bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
+    EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
+    const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    VlWide<N_Words>& operator&=(const VlWide& rhs) {
+        VL_AND_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator|=(const VlWide& rhs) {
+        VL_OR_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator^=(const VlWide& rhs) {
+        VL_XOR_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator+=(const VlWide& rhs) {
+        VL_ADD_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator*=(const VlWide& rhs) {
+        VlWide<N_Words> out{};
+        VL_MUL_W(N_Words, out, *this, rhs);
+        for (size_t i = 0; i < N_Words; ++i) m_storage[i] = out.m_storage[i];
+        return *this;
+    }
+
+    // METHODS
+    EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
+    const EData& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    size_t size() const VL_PURE { return N_Words; }
+    EData* data() VL_MT_SAFE { return &m_storage[0]; }
+    const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
+    inline bool operator<(const VlWide<N_Words>& rhs) const VL_PURE;
+};
+
+// Type trait to check if a type is VlWide
+template <typename>
+struct VlIsVlWide : public std::false_type {};
+template <std::size_t N_Words>
+struct VlIsVlWide<VlWide<N_Words>> : public std::true_type {};
+
+// Opaque handles to backing store of a VlWide, These are used to pass the
+// backing store to runtime functions without having to template all the
+// runtime functions on the VlWide template patameters. They created via
+// implicit constructors from any VlWide, so a VlWide can be passed directly
+// to functions that take one of these handles. The handles are 'opaque' in
+// the sense that they are not primitive C++ types. They have necessary
+// operators defined to allow them to behave like pointers to the extent
+// it is necessary to implement the runtime functions. They are still only
+// a single pointer underneath, so they will be passed in registers.
+
+// Read-Write VlWide handle
+class WDataOutP final {
+    EData* m_datap;  // The backing store - non const as the handle is assignable
+
+    // Use WDataOutP::external() to create a handle from a raw pointer
+    explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
+
+public:
+    // FACTORY METHODS
+    // Create a handle from a raw pointer - only to be used in verilated*.h
+    static WDataOutP external(EData* datap) VL_PURE { return WDataOutP{datap}; }
+
+    // CONSTRUCTORS
+    // Implicit conversion from 'VlWide'
+    template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    WDataOutP(const WDataOutP& other) VL_PURE = default;
+    WDataOutP(WDataOutP&& other) VL_PURE = default;
+    WDataOutP& operator=(const WDataOutP& other) VL_PURE = default;
+
+    // METHODS
+    EData* datap() const VL_PURE { return m_datap; }
+    operator bool() const VL_PURE { return m_datap; }
+    EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
+    WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
+    WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
+};
+static_assert(sizeof(WDataOutP) == sizeof(EData*), "WDataOutP should be a single pointer");
+
+// Read-Only VlWide handle
+class WDataInP final {
+    const EData* m_datap;  // The backing store - non const as the handle is assignable
+
+    // Use WDataInP::external() to create a handle from a raw pointer
+    explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
+
+public:
+    // FACTORY METHODS
+    // Create a handle from a raw pointer - only to be used in verilated*.h
+    static WDataInP external(const EData* datap) VL_PURE { return WDataInP{datap}; }
+
+    // CONSTRUCTORS
+    // Implicit conversion from 'VlWide'
+    template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    // Implicit conversion from 'const VlWide'
+    template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    // Implicit conversion from 'WDataOutP'
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
+    // Initialize with 'nullptr'
+    explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
+    WDataInP(const WDataInP& other) VL_PURE = default;
+    WDataInP(WDataInP&& other) VL_PURE = default;
+    WDataInP& operator=(const WDataInP& other) VL_PURE = default;
+
+    // METHODS
+    const EData* datap() const VL_PURE { return m_datap; }
+    operator bool() const VL_PURE { return m_datap; }
+    const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
+    WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
+    WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
+};
+static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
+
+static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+
+template <std::size_t N_Words>
+bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
+    return _vl_cmp_w(N_Words, *this, rhs) < 0;
+}
+
+//===================================================================
 // String formatters (required by below containers)
+
+extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 
 extern std::string VL_TO_STRING(CData lhs);
 extern std::string VL_TO_STRING(SData lhs);
@@ -73,7 +232,10 @@ extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
 extern std::string VL_TO_STRING(double lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
-extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
+template <std::size_t N_Words>
+inline std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
+    return VL_TO_STRING_W(N_Words, obj);
+}
 
 //=========================================================================
 // Declare net data types
@@ -382,78 +544,6 @@ public:
     bool isOpen() const { return m_fp != nullptr; }
     void print(QData addr, bool addrstamp, const void* valuep);
 };
-
-//===================================================================
-/// Verilog wide packed bit container.
-/// Similar to std::array<WData, N>, but lighter weight, only methods needed
-/// by Verilator, to help compile time.
-///
-/// A 'struct' as we want this to be an aggregate type that allows
-/// static aggregate initialization. Consider data members private.
-///
-/// For example a Verilog "bit [94:0]" will become a VlWide<3> because 3*32
-/// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
-/// zero in memory, but during intermediate operations in the Verilated
-/// internals is unpredictable.
-
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
-
-template <std::size_t N_Words>
-struct VlWide;
-
-// Type trait to check if a type is VlWide
-template <typename>
-struct VlIsVlWide : public std::false_type {};
-
-template <std::size_t N_Words>
-struct VlIsVlWide<VlWide<N_Words>> : public std::true_type {};
-
-template <std::size_t N_Words>
-struct VlWide final {
-    static constexpr size_t Words = N_Words;
-
-    // MEMBERS
-    // This should be the only data member, otherwise generated static initializers need updating
-    EData m_storage[N_Words];  // Contents of the packed array
-
-    // CONSTRUCTORS
-    // Default constructors and destructor are used. Note however that C++20 requires that
-    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
-    // one.
-
-    // OPERATOR METHODS
-    // Default copy assignment operators are used.
-    operator WDataOutP() VL_PURE { return &m_storage[0]; }  // This also allows []
-    operator WDataInP() const VL_PURE { return &m_storage[0]; }  // This also allows []
-    bool operator!=(const VlWide<N_Words>& that) const VL_PURE {
-        for (size_t i = 0; i < N_Words; ++i) {
-            if (m_storage[i] != that.m_storage[i]) return true;
-        }
-        return false;
-    }
-
-    // METHODS
-    const EData& at(size_t index) const { return m_storage[index]; }
-    EData& at(size_t index) { return m_storage[index]; }
-    size_t size() const { return N_Words; }
-    WData* data() { return &m_storage[0]; }
-    const WData* data() const { return &m_storage[0]; }
-    bool operator<(const VlWide<N_Words>& rhs) const {
-        return _vl_cmp_w(N_Words, data(), rhs.data()) < 0;
-    }
-};
-
-// Convert a C array to std::array reference by pointer magic, without copy.
-// Data type (second argument) is so the function template can automatically generate.
-template <std::size_t N_Words>
-VlWide<N_Words>& VL_CVT_W_A(const WDataInP inp, const VlWide<N_Words>&) {
-    return *((VlWide<N_Words>*)inp);
-}
-
-template <std::size_t N_Words>
-std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
-    return VL_TO_STRING_W(N_Words, obj.data());
-}
 
 template <typename T_Class>
 class VlClassRef;
@@ -1090,7 +1180,7 @@ public:
     }
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
-        std::set<T_Key> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_map) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
@@ -1212,7 +1302,7 @@ public:
     }
 
     T_Value r_sum() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out += i.second;
         return out;
     }
@@ -1223,8 +1313,9 @@ public:
         return out;
     }
     T_Value r_product() const {
-        if (m_map.empty()) return T_Value(0);  // The big three do it this way
-        T_Value out = T_Value(1);
+        // The big three return 0 when assoc array is empty
+        if (m_map.empty()) return T_Value{};
+        T_Value out = T_Value{1};
         for (const auto& i : m_map) out *= i.second;
         return out;
     }
@@ -1236,8 +1327,9 @@ public:
         return out;
     }
     T_Value r_and() const {
-        if (m_map.empty()) return T_Value(0);  // The big three do it this way
-        T_Value out = ~T_Value(0);
+        // The big three return 0 when assoc array is empty
+        if (m_map.empty()) return T_Value{};
+        T_Value out = m_map.cbegin()->second;
         for (const auto& i : m_map) out &= i.second;
         return out;
     }
@@ -1249,7 +1341,7 @@ public:
         return out;
     }
     T_Value r_or() const {
-        T_Value out = T_Value(0);
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out |= i.second;
         return out;
     }
@@ -1260,7 +1352,7 @@ public:
         return out;
     }
     T_Value r_xor() const {
-        T_Value out = T_Value(0);
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out ^= i.second;
         return out;
     }
@@ -1355,8 +1447,8 @@ public:
 
     // METHODS
     // Raw access
-    WData* data() { return &m_storage[0]; }
-    const WData* data() const { return &m_storage[0]; }
+    T_Value* data() { return &m_storage[0]; }
+    const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
 

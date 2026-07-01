@@ -46,6 +46,7 @@ public:
         //
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
+        ENUM = VL_VFORMATATTR_ENUM,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
         TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
@@ -62,6 +63,7 @@ public:
     char ascii() const { return m_e; }
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
+    bool isEnum() const { return m_e == ENUM; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
@@ -134,6 +136,7 @@ public:
     bool m_isNull : 1;  // True if "null" versus normal 0
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
+    bool m_hasOrigParamName : 1;  // Owning AstConst has originating parameter-name metadata
 
     // CONSTRUCTORS
     V3NumberData()
@@ -143,10 +146,13 @@ public:
         , m_is1Step{false}
         , m_isNull{false}
         , m_fromString{false}
-        , m_autoExtend{false} {}
+        , m_autoExtend{false}
+        , m_hasOrigParamName{false} {}
 
     ~V3NumberData() { destroyStoredValue(); }
 
+    // m_hasOrigParamName is ownership bookkeeping for an AstConst side-table entry, not part of
+    // the numeric value. Copies/moves of V3NumberData must not claim the destination has metadata.
     V3NumberData(const V3NumberData& other)
         : m_width{other.m_width}
         , m_type{other.m_type}
@@ -155,7 +161,8 @@ public:
         , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
-        , m_autoExtend{other.m_autoExtend} {
+        , m_autoExtend{other.m_autoExtend}
+        , m_hasOrigParamName{false} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -195,7 +202,8 @@ public:
         , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
-        , m_autoExtend{other.m_autoExtend} {
+        , m_autoExtend{other.m_autoExtend}
+        , m_hasOrigParamName{false} {
         if (other.isInlineNumber()) {
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
@@ -528,8 +536,8 @@ public:
         m_data.num()[0].m_value = value;
         opCleanThis();
     }
-    V3Number(FileLine* flp, int width, uint32_t value) {
-        init(nullptr, width, true);
+    V3Number(FileLine* flp, int width, uint32_t value, bool sized = true) {
+        init(nullptr, width, sized);
         m_fileline = flp;
         m_data.num()[0].m_value = value;
         opCleanThis();
@@ -648,6 +656,8 @@ public:
     bool sized() const VL_MT_SAFE { return m_data.m_sized; }
     bool autoExtend() const VL_MT_SAFE { return m_data.m_autoExtend; }
     bool isFromString() const { return m_data.m_fromString; }
+    bool hasOrigParamName() const { return m_data.m_hasOrigParamName; }
+    void hasOrigParamName(bool flag) { m_data.m_hasOrigParamName = flag; }
     V3NumberDataType dataType() const VL_MT_SAFE { return m_data.type(); }
     void dataType(V3NumberDataType newType) {
         if (dataType() == newType) return;
@@ -718,6 +728,7 @@ public:
     uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;  // Highest bit set + 1, e.g. for 16 return 5, for 0 return 0
+    uint32_t leastSetBitP1() const;  // Lowest bit set + 1, e.g. for 14 return 2, for 0 return 0
 
     // Operators
     bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
@@ -731,7 +742,7 @@ public:
 
     // MATH
     // "this" is the output, as we need the output width before some computations
-    V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
+    V3Number& opBitsNonXZ(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0
@@ -750,6 +761,7 @@ public:
     V3Number& opOneHot(const V3Number& lhs);
     V3Number& opOneHot0(const V3Number& lhs);
     V3Number& opCLog2(const V3Number& lhs);
+    V3Number& opMostSetBitP1(const V3Number& lhs);
     V3Number& opClean(const V3Number& lhs, uint32_t bits);
     V3Number& opConcat(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLenN(const V3Number& lhs);

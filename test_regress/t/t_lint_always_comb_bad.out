@@ -7,8 +7,11 @@
                                                    : ... note: In instance 't'
    31 |       temp1 = (temp1_d1r - 'h1);
       |       ^~~~~
-%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:32:5: Always_comb variable driven after use: 'mid'
+%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:32:5: always_comb reads 'mid' before assigning it later in the same block; behavior may imply latch/state-like behavior and is not purely combinational
                                                       : ... note: In instance 't'
+                       t/t_lint_always_comb_bad.v:28:9: ... Location of earlier read
+   28 |     if (mid)
+      |         ^~~
    32 |     mid = (temp1_d1r == 'h0);   
       |     ^~~
                        ... For warning description see https://verilator.org/warn/ALWCOMBORDER?v=latest

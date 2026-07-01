@@ -260,7 +260,7 @@ VL_INST_INC_SRCDIR_FILES = \
   include/*.[chv]* \
   include/*.vlt \
   include/*.sv \
-  include/gtkwave/*.[chv]* \
+  include/fstcpp/*.[chv]* \
   include/vltstd/*.[chv]* \
 
 VL_INST_DATA_SRCDIR_FILES = \
@@ -292,15 +292,14 @@ installbin: | mkbindirs
 	done
 
 installredirect: installbin | mkbindirs
-	cp ${srcdir}/bin/redirect ${srcdir}/bin/redirect.tmp
-	perl -p -i -e 'use File::Spec;' \
-	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(bindir))", "$(realpath $(DESTDIR)$(pkgdatadir)/bin)");' \
-	           -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect.tmp"
-	cd $(srcdir)/bin; \
+	REDIR_SCRATCH=$$(mktemp redir_XXXXXX); \
+	perl -p -e 'use File::Spec;' \
+	        -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(bindir))", "$(realpath $(DESTDIR)$(pkgdatadir)/bin)");' \
+	        -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect" > $$REDIR_SCRATCH; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
-		$(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(pkgdatadir)/bin/$$p; \
-	done
-	rm ${srcdir}/bin/redirect.tmp
+		$(INSTALL_PROGRAM) $$REDIR_SCRATCH $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	done; \
+	rm $$REDIR_SCRATCH
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -311,7 +310,7 @@ installman: $(VL_INST_MAN_FILES)
 	done
 
 installdata:
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/gtkwave
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/fstcpp
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
 		$(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -356,7 +355,7 @@ uninstall:
 	-rm $(DESTDIR)$(pkgdatadir)/verilator-config.cmake
 	-rm $(DESTDIR)$(pkgdatadir)/verilator-config-version.cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
-	-rmdir $(DESTDIR)$(pkgdatadir)/include/gtkwave
+	-rmdir $(DESTDIR)$(pkgdatadir)/include/fstcpp
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_binary
@@ -417,7 +416,7 @@ CPPCHECK_FLAGS += --cppcheck-build-dir=$(CPPCHECK_CACHE)
 CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DINFILTER_PIPE=1 -D__GNUC__=1
 CPPCHECK_FLAGS += -j$(CPPCHECK_JOBS)
 CPPCHECK_INC = -I$(srcdir)/include
-CPPCHECK_INC += -I$(srcdir)/include/gtkwave
+CPPCHECK_INC += -I$(srcdir)/include/fstcpp
 CPPCHECK_INC += -I$(srcdir)/include/vltstd
 CPPCHECK_INC += -I$(srcdir)/src/obj_dbg
 CPPCHECK_INC += -I$(srcdir)/src
@@ -444,7 +443,7 @@ cppcheck:
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
   -header-filter='.*' \
-  -checks='*,-abseil-*,-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+  -checks='*,-abseil-*,-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-avoid-do-while,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
 
 # Good checks: -checks='-*,bugprone-assignment-in-if-condition,google-build-using-namespace,google-readability-casting,modernize-use-default-member-init,modernize-use-emplace,modernize-use-equals-default,modernize-use-equals-delete,modernize-use-nullptr,performance-faster-string-find,readability-isolate-declaration,readability-redundant-control-flow,readability-redundant-member-init,readability-redundant-string-cstr,readability-uppercase-literal-suffix
 
@@ -496,6 +495,11 @@ MAKE_FILES = \
   src/Makefile*.in \
   test_regress/Makefile* \
 
+# Markdown
+MD_FILES = \
+  *.md \
+  */*.md \
+
 # Perl programs
 PERL_PROGRAMS = \
   bin/redirect \
@@ -536,10 +540,18 @@ PY_PROGRAMS = \
 # Python files, subject to format but not lint
 PY_FILES = \
   $(PY_PROGRAMS) \
+  ci/*.py \
   test_regress/t/*.py \
 
 # Python files, test_regress tests
 PY_TEST_FILES = test_regress/t/*.py
+
+# reStructuredText Sphinx files
+RST_FILES = \
+  *.rst \
+  */*.rst \
+  ci/docker/*/*.rst \
+  docs/guide/*.rst \
 
 # YAML files
 YAML_FILES = \
@@ -553,7 +565,7 @@ YAML_FILES = \
 # Format
 
 format:
-	$(MAKE) -j 5 format-c format-cmake format-exec format-py format-yaml
+	$(MAKE) -j 5 format-c format-cmake format-exec format-md format-py format-rst format-yaml
 
 BEAUTYSH = beautysh
 BEAUTYSH_FLAGS = --indent-size 2
@@ -590,12 +602,26 @@ format-make mbake:
 	$(MBAKE) --version
 	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
 
+MDFORMAT = mdformat
+MDFORMAT_FLAGS =
+
+format-md:
+	$(MDFORMAT) --version
+	$(MDFORMAT) $(MDFORMAT_FLAGS) $(MD_FILES)
+
 YAPF = yapf
 YAPF_FLAGS = -i --parallel
 
 format-py yapf:
 	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+
+DOCSTRFMT = docstrfmt
+DOCSTRFMT_FLAGS = --line-length 75 --indent-width 3 --keep-blanks --ordered-marker "\#" --preserve-adornments --no-center-section-titles
+
+format-rst:
+	$(DOCSTRFMT) --version
+	$(DOCSTRFMT) $(DOCSTRFMT_FLAGS) $(RST_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
 YAMLFIX_FLAGS =
@@ -684,7 +710,7 @@ FASTCOV_OPT += --dump-statistic
 FASTCOV_OPT += --exclude-glob
 FASTCOV_OPT += '/usr/*'
 FASTCOV_OPT += '*examples/*'
-FASTCOV_OPT += '*include/gtkwave/*'
+FASTCOV_OPT += '*include/fstcpp/*'
 FASTCOV_OPT += '*src/obj_dbg/*'
 FASTCOV_OPT += '*src/obj_opt/*.yy.cpp'
 FASTCOV_OPT += '*src/obj_opt/V3Ast*'

@@ -46,6 +46,40 @@ module t (  /*AUTOARG*/
     results[5].passs++;
   else results[5].fails++;
 
+  assert property (@(posedge clk) 0 s_until 1)
+    results[6].passs++;
+  else results[6].fails++;
+
+  assert property (@(posedge clk) cyc < 5 s_until cyc >= 5)
+    results[7].passs++;
+  else results[7].fails++;
+
+  assert property (@(posedge clk) cyc % 3 == 0 s_until cyc % 5 == 0)
+    results[8].passs++;
+  else results[8].fails++;
+
+  // Check that s_until accepts immediately when RHS is true, even if LHS is false.
+  assert property (@(posedge clk) cyc % 2 == 0 s_until 1)
+    results[9].passs++;
+  else results[9].fails++;
+
+  // Check that s_until_with requires LHS when RHS is true on the same tick.
+  assert property (@(posedge clk) 0 s_until_with 1)
+    results[10].passs++;
+  else results[10].fails++;
+
+  assert property (@(posedge clk) 1 s_until_with cyc >= 5)
+    results[11].passs++;
+  else results[11].fails++;
+
+  assert property (@(posedge clk) cyc <= 5 s_until_with cyc >= 5)
+    results[12].passs++;
+  else results[12].fails++;
+
+  assert property (@(posedge clk) cyc < 5 s_until_with cyc >= 5)
+    results[13].passs++;
+  else results[13].fails++;
+
   always @(edge clk) begin
     ++cyc;
     if (cyc == MAX) begin
@@ -54,6 +88,14 @@ module t (  /*AUTOARG*/
       expected[3] = '{0, 7};
       expected[4] = '{5, 2};
       expected[5] = '{2, 5};
+      expected[6] = '{0, 7};
+      expected[7] = '{0, 7};
+      expected[8] = '{5, 2};
+      expected[9] = '{0, 7};
+      expected[10] = '{7, 0};
+      expected[11] = '{0, 7};
+      expected[12] = '{4, 3};
+      expected[13] = '{7, 0};
       `checkh(results, expected);
       $write("*-* All Finished *-*\n");
       $finish;

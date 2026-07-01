@@ -22,6 +22,7 @@
 #include "V3AssertNfa.h"
 #include "V3AssertPre.h"
 #include "V3Ast.h"
+#include "V3AstPatterns.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
@@ -38,6 +39,7 @@
 #include "V3Control.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
+#include "V3Covergroup.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -97,12 +99,10 @@
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
-#include "V3SplitAs.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
-#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
@@ -183,6 +183,7 @@ static void process() {
         V3Param::param(v3Global.rootp());
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+        V3Param::finalizeDeferredParams(v3Global.rootp());
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         // Link cleanup of 'with' as final link phase before V3Width
@@ -239,6 +240,10 @@ static void process() {
         // the AST context needed to recover and lower FSMs reliably.
         if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
 
+        // Functional coverage code generation
+        //    Generate code for covergroups/coverpoints
+        if (v3Global.useCovergroup()) V3Covergroup::covergroup(v3Global.rootp());
+
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
 
@@ -255,6 +260,7 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertCommon::collectDefaultDisable(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.
@@ -315,6 +321,7 @@ static void process() {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
             // V3Scope's V3LinkDot is in the AstVar.
+            if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
             if (v3Global.opt.fInline()) {
                 V3Inline::inlineAll(v3Global.rootp());
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
@@ -414,7 +421,6 @@ static void process() {
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
-            V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
             if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
@@ -422,7 +428,10 @@ static void process() {
             // Convert forceable signals, process force/release statements.
             // After V3TraceDecl so we don't trace additional signals inserted to implement
             // forcing.
-            V3Force::forceAll(v3Global.rootp());
+            // Convert forceable signals and assign/deassign statements in one combined pass set.
+            // We reserve AST user slots across both sub-passes so helper pointers can be handed
+            // directly from force discovery to assign/deassign lowering without rediscovery.
+            V3Force::forceAndAssignAll(v3Global.rootp());
 
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
@@ -533,6 +542,8 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());
 
+            if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "prec");
+
             // Here down, widthMin() is the Verilog width, and width() is the C++ width
             // Bits between widthMin() and width() are irrelevant, but may be non-zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
@@ -574,8 +585,14 @@ static void process() {
                 // Must be after all Sel/array index based optimizations
                 V3Reloop::reloopAll(v3Global.rootp());
             }
+        }
 
-            if (v3Global.opt.inlineCFuncs()) {
+        // These are no longer needed, remove references before CFunc inlining
+        v3Global.rootp()->evalp(nullptr);
+        v3Global.rootp()->evalNbap(nullptr);
+
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
+            if (v3Global.opt.fInlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
                 V3InlineCFuncs::inlineAll(v3Global.rootp());
             }
@@ -620,6 +637,8 @@ static void process() {
                 v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
             }
         }
+
+        if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "emit");
 
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
@@ -724,7 +743,6 @@ static bool verilate(const string& argString) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
@@ -798,7 +816,7 @@ static bool verilate(const string& argString) {
     V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
     if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteAll");
-    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast");
+    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast", true);
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();

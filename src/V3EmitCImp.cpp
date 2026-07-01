@@ -178,7 +178,8 @@ class EmitCImp final : public EmitCFunc {
             puts("\n// Coverage\n");
             puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
                  "linescovp,\n");
             puts("const char* fsmVarp, const char* fsmFromp, const char* fsmTop, const char* "
@@ -193,8 +194,11 @@ class EmitCImp final : public EmitCFunc {
             puts("static uint32_t fake_zero_count = 0;\n");
             puts("std::string fullhier = std::string{vlNamep} + hierp;\n");
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
-            // Used for second++ instantiation of identical bin
-            puts("if (!enable) count32p = &fake_zero_count;\n");
+            // Global-counter users still redirect later duplicate instances
+            // to fake_zero_count for default collapsed coverage. Object-local
+            // counters must keep the real pointer so forcePerInstance can
+            // report each hierarchy independently.
+            puts("if (!enable && !localCounter) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
             puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), vlNamep, count32p,");
             puts("  \"filename\",filenamep,");
@@ -215,7 +219,8 @@ class EmitCImp final : public EmitCFunc {
             puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
             puts("int begin, int end, bool ranged, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
-            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("* countp, bool enable, bool localCounter, const char* filenamep, int lineno, "
+                 "int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
@@ -236,8 +241,11 @@ class EmitCImp final : public EmitCFunc {
             puts("std::string commentWithIndex = commentp;\n");
             puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
             puts("commentWithIndex += j ? \":0->1\" : \":1->0\";\n");
-            // Used for second++ instantiation of identical bin
-            puts("if (!enable) count32p = &fake_zero_count;\n");
+            // Global-counter users still redirect later duplicate instances
+            // to fake_zero_count for default collapsed coverage. Object-local
+            // counters must keep the real pointer so forcePerInstance can
+            // report each hierarchy independently.
+            puts("if (!enable && !localCounter) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
             puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), vlNamep, count32p,");
             puts("  \"filename\",filenamep,");
@@ -695,6 +703,8 @@ class EmitCTrace final : public EmitCFunc {
 
         // Type
         puts(", VerilatedTraceSigType::");
+        UASSERT_OBJ(nodep->dtypep()->basicp()->keyword() != VBasicDTypeKwd::UNKNOWN, nodep,
+                    "DType is unknown");
         puts(nodep->dtypep()->basicp()->keyword().traceSigType());
 
         // Array range

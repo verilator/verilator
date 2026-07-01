@@ -167,6 +167,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         UINFO(1, "No module found to wrap");
         return;
     }
+    rootp->resolvedTopModuleName(oldmodp->name());
 
     AstNodeModule* const newmodp = new AstModule{oldmodp->fileline(), "$root", oldmodp->libname()};
     newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
@@ -290,6 +291,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     varp->sigPublic(true);  // User needs to be able to get to it...
                     oldvarp->primaryIO(false);
                     varp->primaryIO(true);
+                    varp->icoMaybeWritten(oldvarp->icoMaybeWritten());
                     if (varp->isRef() || varp->isConstRef()) {
                         varp->v3warn(E_UNSUPPORTED,
                                      "Unsupported: ref/const ref as primary input/output: "

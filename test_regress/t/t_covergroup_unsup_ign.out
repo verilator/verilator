@@ -1,0 +1,31 @@
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:76:5: Logical operator COVERPOINT 'a' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                : ... note: In instance 't'
+   76 |     coverpoint a iff (b);
+      |     ^~~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:79:9: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                : ... note: In instance 't'
+   79 |     id: coverpoint a iff (b);
+      |         ^~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:82:13: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                 : ... note: In instance 't'
+   82 |     int id: coverpoint a iff (b);
+      |             ^~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:85:17: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                 : ... note: In instance 't'
+   85 |     var int id: coverpoint a iff (b);
+      |                 ^~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:88:19: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                 : ... note: In instance 't'
+   88 |     var [3:0] id: coverpoint a iff (b);
+      |                   ^~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:91:15: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                 : ... note: In instance 't'
+   91 |     [3:0] id: coverpoint a iff (b);
+      |               ^~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:94:16: Logical operator COVERPOINT 'id' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
+                                                 : ... note: In instance 't'
+   94 |     signed id: coverpoint a iff (b);
+      |                ^~~~~~~~~~
+%Error: Exiting due to

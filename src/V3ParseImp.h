@@ -303,11 +303,13 @@ public:
     int tokenToBison() VL_MT_DISABLED;  // Pass token to bison
 
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary, bool inLibMap,
-                   const string& libname, const string& errmsg) VL_MT_DISABLED;
+                   const string& libname, const string& errmsg,
+                   const std::string& notFoundName) VL_MT_DISABLED;
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
     void importIfInStd(FileLine* fileline, const string& id, bool doImport);
+    AstNodeExpr* makePropertyCase(FileLine* flp, AstNodeExpr* exprp, AstCaseItem* itemsp);
 
 private:
     void preprocDumps(std::ostream& os);

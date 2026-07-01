@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _environment:
 
@@ -89,7 +90,8 @@ associated programs.
 .. option:: VERILATOR_GDB
 
    If set, the command to run when using the :vlopt:`--gdb` option, such as
-   "ddd". If not specified, it will use "gdb".
+   "ddd". If not specified, it will use "gdb" if available, otherwise
+   "lldb" if available.
 
 .. option:: VERILATOR_NUMA_STRATEGY
 

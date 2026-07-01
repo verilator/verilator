@@ -59,6 +59,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeAssign;
     // Clone single node, just get same type back.
+    void dump(std::ostream& str) const override;
     virtual AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) = 0;
     bool hasDType() const override VL_MT_SAFE { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -539,6 +540,16 @@ public:
     }
     // but isPure()  true
 };
+class AstDeassign final : public AstNodeStmt {
+    // Procedural 'deassign' statement
+    // @astgen op1 := lhsp : AstNodeExpr
+public:
+    AstDeassign(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_Deassign(fl) {
+        this->lhsp(lhsp);
+    }
+    ASTGEN_MEMBERS_AstDeassign;
+};
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
@@ -931,13 +942,16 @@ public:
 class AstPExprClause final : public AstNodeStmt {
     const bool m_pass;  // True if will be replaced by passing assertion clause, false for
                         // assertion failure clause
+    const bool m_vacuous;  // True if pass is vacuous
 
 public:
     ASTGEN_MEMBERS_AstPExprClause;
-    explicit AstPExprClause(FileLine* fl, bool pass = true)
+    explicit AstPExprClause(FileLine* fl, bool pass = true, bool vacuous = false)
         : ASTGEN_SUPER_PExprClause(fl)
-        , m_pass{pass} {}
+        , m_pass{pass}
+        , m_vacuous{vacuous} {}
     bool pass() const { return m_pass; }
+    bool vacuous() const { return m_vacuous; }
 };
 class AstPrintTimeScale final : public AstNodeStmt {
     // Parents: stmtlist
@@ -1126,6 +1140,12 @@ public:
         newp->optionalFormat(optionalFormat);
         fmtp(newp);
         this->lhsp(lhsp);
+    }
+    AstSFormat(FileLine* fl, AstSFormatF* fmtp, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_SFormat(fl) {
+        this->fmtp(fmtp);
+        this->lhsp(lhsp);
+        fmtp->hidden(true);
     }
     ASTGEN_MEMBERS_AstSFormat;
     const char* broken() const override {
@@ -1427,6 +1447,40 @@ public:
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
 };
+class AstAssignCompound final : public AstNodeAssign {
+    // Compound assignments (+=, -=, *=, ...)
+public:
+    enum operation : uint8_t {
+        Add,
+        And,
+        Div,
+        ModDiv,
+        Mul,
+        Or,
+        ShiftL,
+        ShiftR,
+        ShiftRS,
+        Sub,
+        Xor,
+    };
+
+private:
+    operation m_operation;
+
+public:
+    AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,
+                      AstNodeExpr* rhsp, AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCompound(fl, lhsp, rhsp, timingControlp) {
+        this->m_operation = operation;
+        dtypeFrom(lhsp);
+    }
+    ASTGEN_MEMBERS_AstAssignCompound;
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignCompound{operation(), fileline(), lhsp, rhsp, controlp};
+    }
+    operation operation() { return m_operation; }
+};
 class AstAssignCont final : public AstNodeAssign {
     // Continuous procedural 'assign'.  See AstAssignW for non-procedural version.
 public:
@@ -1556,12 +1610,18 @@ public:
 };
 class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
+    bool m_isCoverSeq = false;  // 'cover sequence' (IEEE 1800-2023 16.14.3): fires per
+                                // end-of-match, not per property success
 public:
     ASTGEN_MEMBERS_AstCover;
     AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
              const string& name = "")
         : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
     string verilogKwd() const override { return "cover"; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isCoverSeq() const { return m_isCoverSeq; }
+    void isCoverSeq(bool flag) { m_isCoverSeq = flag; }
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:

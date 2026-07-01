@@ -34,6 +34,9 @@ public:
         std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
         std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
         std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
+        // Aliases of destructive post updates (for example event clearFired) that may need
+        // to run once before entering a fresh dynamic wait loop.
+        std::vector<AstNodeStmt*> m_destructivePostUpdates;
         std::vector<AstVar*> m_vars;  // Created temporary variables
     };
 
@@ -75,7 +78,7 @@ private:
     // Check if expression contains a class member access that could be null
     // (e.g., accessing an event through a class reference that may not be initialized)
     static bool hasClassMemberAccess(const AstNode* const exprp) {
-        return exprp->exists([](const AstNode* const nodep) {
+        return exprp && exprp->exists([](const AstNode* const nodep) {
             if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
                 // Check if the base expression is a class reference
                 return mselp->fromp()->dtypep()
@@ -278,8 +281,10 @@ private:
             AstCMethodHard* const clearp
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_CLEAR_FIRED};
             clearp->dtypeSetVoid();
-            m_results.m_postUpdates.push_back(
-                wrapStmtWithNullCheck(flp, clearp->makeStmt(), baseClassRefp));
+            AstNodeStmt* const clearStmtp
+                = wrapStmtWithNullCheck(flp, clearp->makeStmt(), baseClassRefp);
+            m_results.m_postUpdates.push_back(clearStmtp);
+            m_results.m_destructivePostUpdates.push_back(clearStmtp);
 
             // Get 'fired' state
             AstCMethodHard* const callp
@@ -289,6 +294,8 @@ private:
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};
+        case VEdgeType::ET_INITIAL_NBA:  //
+            return {new AstConst{flp, AstConst::BitFalse{}}, true};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};
@@ -313,7 +320,7 @@ public:
         bool firedAtInitialization = false;
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
-            const auto& pair = createTerm(senItemp);
+            const auto& pair = build(senItemp);
             if (AstNodeExpr* termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;

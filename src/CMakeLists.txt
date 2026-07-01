@@ -51,6 +51,7 @@ set(HEADERS
     V3AstNodeExpr.h
     V3AstNodeOther.h
     V3AstNodeStmt.h
+    V3AstPatterns.h
     V3AstUserAllocator.h
     V3Begin.h
     V3Branch.h
@@ -70,6 +71,7 @@ set(HEADERS
     V3Control.h
     V3Coverage.h
     V3CoverageJoin.h
+    V3Covergroup.h
     V3Dead.h
     V3DebugBisect.h
     V3Delayed.h
@@ -174,7 +176,6 @@ set(HEADERS
     V3Simulate.h
     V3Slice.h
     V3Split.h
-    V3SplitAs.h
     V3SplitVar.h
     V3StackCount.h
     V3Stats.h
@@ -182,7 +183,6 @@ set(HEADERS
     V3String.h
     V3Subst.h
     V3SymTable.h
-    V3TSP.h
     V3Table.h
     V3Task.h
     V3ThreadPool.h
@@ -237,6 +237,7 @@ set(COMMON_SOURCES
     V3Const__gen.cpp
     V3Coverage.cpp
     V3CoverageJoin.cpp
+    V3Covergroup.cpp
     V3Dead.cpp
     V3Delayed.cpp
     V3Depth.cpp
@@ -250,7 +251,6 @@ set(COMMON_SOURCES
     V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
-    V3DfgDumpPatterns.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
@@ -327,6 +327,7 @@ set(COMMON_SOURCES
     V3ParseGrammar.cpp
     V3ParseImp.cpp
     V3ParseLex.cpp
+    V3PatternStats.cpp
     V3PreProc.cpp
     V3PreShell.cpp
     V3Premit.cpp
@@ -348,14 +349,12 @@ set(COMMON_SOURCES
     V3Scoreboard.cpp
     V3Slice.cpp
     V3Split.cpp
-    V3SplitAs.cpp
     V3SplitVar.cpp
     V3StackCount.cpp
     V3Stats.cpp
     V3StatsReport.cpp
     V3String.cpp
     V3Subst.cpp
-    V3TSP.cpp
     V3Table.cpp
     V3Task.cpp
     V3ThreadPool.cpp

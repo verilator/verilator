@@ -57,6 +57,24 @@ string VlcOptions::version() {
     return ver;
 }
 
+void VlcOptions::parseReportOption() {
+    if (m_report.empty()) return;
+    string::size_type start = 0;
+    while (true) {
+        const string::size_type comma = m_report.find(',', start);
+        const string kind = m_report.substr(start, comma - start);
+        if (kind == "summary") {
+            m_reportSummary = true;
+        } else if (kind == "hier" || kind == "hierarchy") {
+            m_reportHierarchy = true;
+        } else {
+            v3fatal("Invalid --report option: " << m_report);
+        }
+        if (comma == string::npos) break;
+        start = comma + 1;
+    }
+}
+
 void VlcOptions::parseOptsList(int argc, char** argv) {
     V3OptionParser parser;
     V3OptionParser::AppendHelper DECL_OPTION{parser};
@@ -70,7 +88,9 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
     DECL_OPTION("-filter-type", Set, &m_filterType);
     DECL_OPTION("-include-reset-arcs", OnOff, &m_includeResetArcs);
+    DECL_OPTION("-levels", Set, &m_reportLevels);
     DECL_OPTION("-rank", OnOff, &m_rank);
+    DECL_OPTION("-report", Set, &m_report);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
         showVersion(true);
@@ -101,6 +121,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             ++i;
         }
     }
+    parseReportOption();
 }
 
 void VlcOptions::showVersion(bool verbose) {
@@ -141,7 +162,12 @@ int main(int argc, char** argv) {
         top.points().dump();
     }
 
-    if (!top.opt.rank() && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty()) {
+    const bool defaultReport = !top.opt.reportSpecified() && !top.opt.rank()
+                               && top.opt.writeFile().empty() && top.opt.writeInfoFile().empty();
+    if (top.opt.reportSpecified()) {
+        if (top.opt.reportSummary()) top.printTypeSummary();
+        if (top.opt.reportHierarchy()) top.printHierarchyReport();
+    } else if (defaultReport) {
         top.printTypeSummary();
     }
 

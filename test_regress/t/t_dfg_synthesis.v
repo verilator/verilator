@@ -570,4 +570,20 @@ module t (
   wire logic [7:0] func_3 = pkg::branchy(rand_a[7:0], rand_b[7:0]);
   `signal(FUNC_3, func_3);
 
+  logic [1:0] via_creset;
+  always_comb begin
+    automatic logic [1:0] a /* = AstCReset */;
+    via_creset = a + 2'd1;
+  end
+  `signal(VIA_CRESET, via_creset);
+
+  logic [1:0] LUT [2] = '{0: 2'b11, 1: 2'b10};
+  logic [1:0] array_read;
+  always_comb begin
+    array_read = 2'd0;
+    array_read += LUT[rand_a[0]];
+    array_read += LUT[rand_a[1]];
+  end
+  `signal(ARRAY_READ, array_read);
+
 endmodule
