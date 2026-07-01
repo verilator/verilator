@@ -21,7 +21,9 @@
 #include "V3InstrCount.h"
 #include "V3String.h"
 
-#include <charconv>
+#include <cerrno>
+#include <cstdlib>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -1150,12 +1152,18 @@ void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* f
 
 // Parse one decimal array index from 'indexText' and append it to seg.m_indices.
 static bool parseIndexDigits(const std::string& indexText, V3ControlHierSegment& seg) {
-    int index = 0;
-    const char* const first = indexText.data();
-    const char* const last = first + indexText.size();
-    const auto [ptr, ec] = std::from_chars(first, last, index);
-    if (ec != std::errc{} || ptr != last) return false;
-    seg.m_indices.push_back(index);
+    const size_t firstDigit = (!indexText.empty() && indexText[0] == '-') ? 1 : 0;
+    if (indexText.size() <= firstDigit) return false;  // Empty, or just "-"
+    for (size_t i = firstDigit; i < indexText.size(); ++i) {
+        if (indexText[i] < '0' || indexText[i] > '9') return false;
+    }
+    errno = 0;
+    char* endp = nullptr;
+    const long value = std::strtol(indexText.c_str(), &endp, 10);
+    if (errno != 0 || *endp != '\0') return false;  // Overflow of long, or trailing junk
+    if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
+        return false;  // Overflow of int
+    seg.m_indices.push_back(static_cast<int>(value));
     return true;
 }
 
