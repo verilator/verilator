@@ -179,7 +179,7 @@ DPI Example
 In the SYSTEMC example above, if you wanted to import C++ functions into
 Verilog, put in our.v:
 
-.. code-block:: sv
+.. code-block::
 
    import "DPI-C" function int add (input int a, input int b);
 
@@ -211,7 +211,7 @@ Verilator extends the DPI format to allow using the same scheme to
 efficiently add system functions. Use a dollar-sign prefixed system
 function name for the import, but note it must be escaped.
 
-.. code-block:: sv
+.. code-block::
 
    import "DPI-C" function integer \$myRand;
 
