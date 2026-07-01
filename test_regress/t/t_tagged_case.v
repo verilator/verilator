@@ -4,8 +4,6 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// verilator lint_off SHORTREAL
-
 // Test case pattern matching with tagged unions
 // IEEE 1800-2023 Section 12.6.1
 
