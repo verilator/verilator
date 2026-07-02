@@ -1293,7 +1293,7 @@ class ParamProcessor final {
                     // member's expression references another paramed class), resolve
                     // those first so constify can fold the whole chain.
                     std::vector<AstDot*> nestedDots;
-                    varp->valuep()->foreach([&](AstDot* dp) {
+                    varp->valuep()->foreach([&](AstDot* const dp) {
                         if (VN_IS(dp->lhsp(), ClassOrPackageRef)) nestedDots.push_back(dp);
                     });
                     for (auto it = nestedDots.rbegin(); it != nestedDots.rend(); ++it) {
@@ -1310,22 +1310,25 @@ class ParamProcessor final {
                     int sliceWidth = varp->width();
                     AstNodeDType* curDTypep = varp->dtypep();
                     AstNode* topp = dotp;
-                    AstDot* outerDot = VN_CAST(dotp->backp(), Dot);
-                    while (outerDot && outerDot->lhsp() == topp) {
-                        const AstParseRef* const fieldRef = VN_CAST(outerDot->rhsp(), ParseRef);
-                        if (!fieldRef) break;
+                    AstDot* outerDotp = VN_CAST(dotp->backp(), Dot);
+                    // On any mismatch (non-ParseRef rhs, non-packed-struct dtype, or
+                    // unknown field name) leave the outer Dots intact so V3Width can
+                    // emit the proper user-facing diagnostic.
+                    while (outerDotp && outerDotp->lhsp() == topp) {
+                        const AstParseRef* const fieldRefp = VN_CAST(outerDotp->rhsp(), ParseRef);
+                        if (!fieldRefp) break;
                         AstNodeDType* const skippedp = curDTypep ? curDTypep->skipRefp() : nullptr;
                         AstNodeUOrStructDType* const structp
                             = VN_CAST(skippedp, NodeUOrStructDType);
                         if (!structp) break;
                         AstMemberDType* const foundMemp = VN_CAST(
-                            m_memberMap.findMember(structp, fieldRef->name()), MemberDType);
+                            m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
                         if (!foundMemp) break;
                         totalLsb += foundMemp->lsb();
                         sliceWidth = foundMemp->width();
                         curDTypep = foundMemp->subDTypep();
-                        topp = outerDot;
-                        outerDot = VN_CAST(outerDot->backp(), Dot);
+                        topp = outerDotp;
+                        outerDotp = VN_CAST(outerDotp->backp(), Dot);
                     }
                     if (topp == dotp) {
                         dotp->replaceWith(constp->cloneTree(false));
@@ -1336,8 +1339,11 @@ class ParamProcessor final {
                             = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
                         // Match V3Width::memberSelStruct: skip RefDTypes to surface
                         // enum dtype, and mark didWidth so V3Width doesn't reflatten.
-                        if (curDTypep) selp->dtypep(curDTypep->skipRefToEnump());
-                        selp->didWidth(true);
+                        // Only mark didWidth when we have a resolved dtype to attach.
+                        if (curDTypep) {
+                            selp->dtypep(curDTypep->skipRefToEnump());
+                            selp->didWidth(true);
+                        }
                         topp->replaceWith(selp);
                         VL_DO_DANGLING(topp->deleteTree(), topp);
                     }
@@ -2247,20 +2253,20 @@ public:
         std::set<const AstTypedef*> reachedTypedefs;
         std::vector<AstNode*> worklist{rootp};
         while (!worklist.empty()) {
-            AstNode* const p = worklist.back();
+            AstNode* const curDotp = worklist.back();
             worklist.pop_back();
-            p->foreach([&](AstNode* np) {
+            curDotp->foreach([&](AstNode* const np) {
                 if (AstDot* const dotp = VN_CAST(np, Dot)) {
                     if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
                 } else if (const AstRefDType* const refp = VN_CAST(np, RefDType)) {
                     AstTypedef* const tdefp = refp->typedefp();
                     if (tdefp && reachedTypedefs.insert(tdefp).second) {
                         tdefps.push_back(tdefp);
-                        if (tdefp->subDTypep()) worklist.push_back(tdefp->subDTypep());
+                        worklist.push_back(tdefp->subDTypep());
                     }
                 } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
                     AstVar* const varp = refp->varp();
-                    if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
+                    if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
                         && reachedDeferred.insert(varp).second && varp->valuep()) {
                         worklist.push_back(varp->valuep());
                     }
