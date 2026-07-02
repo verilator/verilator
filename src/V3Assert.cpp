@@ -1180,6 +1180,8 @@ public:
         V3Stats::addStat("Assertions, $past variables", m_statPastVars);
         V3Stats::addStat("Assertions, assertOn checks combined", m_statAssertOnCombined);
         V3Stats::addStat("Assertions, assertOn checks hoisted", m_statAssertOnHoisted);
+        // Rewrites can change purity, e.g. by compiling out assertion statements with --no-assert
+        VIsCached::clearCacheTree();
     }
 };
 
