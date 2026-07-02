@@ -749,15 +749,32 @@ class TimingControlVisitor final : public VNVisitor {
         addDebugInfo(donep);
         beginp->addStmtsp(donep->makeStmt());
     }
+    static bool isDisableProcessQueueExpr(const AstNode* const nodep) {
+        const AstVar* varp = nullptr;
+        if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+            varp = selp->varp();
+        }
+        return varp && varp->processQueue();
+    }
     static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
-        const AstStmtExpr* const stmtExprp = VN_CAST(beginp->stmtsp(), StmtExpr);
-        if (!stmtExprp) return false;
-        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-        if (!methodp || methodp->name() != "push_back") return false;
-        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->varp()->processQueue();
+        // By this pass V3LiftExpr has lifted the std::process::self() argument into a preceding
+        // temporary (and left a leading comment), so the push_back is no longer necessarily the
+        // first statement. Scan across the leading registration statements for it, stopping at the
+        // fork-start sentinel or the branch body. The branch's own registration is at the front;
+        // registrations for nested forks live in sub-blocks and so are not in this statement list.
+        for (const AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (VN_IS(stmtp, Comment)) continue;
+            const AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
+            if (!stmtExprp) break;
+            const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+            if (!methodp || methodp->name() != "push_back") continue;
+            if (isDisableProcessQueueExpr(methodp->fromp())) return true;
+        }
+        return false;
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
