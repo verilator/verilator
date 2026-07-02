@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_mod_interface_array5.v:60:55: Hierarchical references are unsupported in assigns with --fourstate
+   60 |       assign muxIn[muxIdx].value = demuxOut[demuxIdx].value;
+      |                                                       ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_mod_interface_array5.v:24:71: Hierarchical references are unsupported in assigns with --fourstate
+   24 |   for (i = 0; i < N; i = i + 1) assign downstream[i].value = upstream.value;
+      |                                                                       ^~~~~
+%Error: Exiting due to
