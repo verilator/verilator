@@ -67,7 +67,7 @@ public:
 
     static void addHierVarAttr(FileLine* fl, const string& path, VAttrType type);
     static void applyHierVarAttrs(AstNetlist* netlistp);
-    static std::string cellPathPublicSignature(const std::string& cellInstancePath);
+    static int cellPathPublicVariant(const std::string& cellInstancePath);
     static void applyHierVarScopes(AstNetlist* netlistp);
 
     static void applyCase(AstCase* nodep);

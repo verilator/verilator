@@ -18,6 +18,7 @@
 
 #include "V3Control.h"
 
+#include "V3Hash.h"
 #include "V3InstrCount.h"
 #include "V3String.h"
 
@@ -843,6 +844,7 @@ class V3ControlResolver final {
     std::vector<V3ControlHierVarEntry> m_hierVarAttrs;  // -path public attrs
     V3ControlHierTreeNode m_hierVarTreeRoot;  // Prefix tree over m_hierVarAttrs
     std::unordered_map<std::string, V3ControlHierTreeNode*> m_hierVarCellPaths;
+    std::map<V3Hash, int> m_hierVarVariants;  // Interned hier variant hashes
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;
@@ -865,6 +867,7 @@ public:
     std::unordered_map<std::string, V3ControlHierTreeNode*>& hierVarCellPaths() {
         return m_hierVarCellPaths;
     }
+    std::map<V3Hash, int>& hierVarVariants() { return m_hierVarVariants; }
 
     void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
         // Empty key for hierarchical DPI wrapper costs.
@@ -1519,43 +1522,29 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
 
 //----------------------------------------------------------------------
 // V3Param time per-cell -path unique cloning
-static void appendNodeSignature(const V3ControlHierTreeNode* nodep, std::string& out) {
-    // Leaf vars: "<name>=<attr>;" sorted by (name, attr).
-    std::vector<std::pair<std::string, VAttrType>> vars = nodep->m_vars;
-    std::sort(vars.begin(), vars.end(), [](const auto& a, const auto& b) {
-        if (a.first != b.first) return a.first < b.first;
-        return a.second.ascii() < b.second.ascii();
-    });
-    // NOCOMMIT -- is this too verbose?
-    out += "v{";
-    for (const auto& var : vars) {
-        out += var.first;
-        out += "=";
-        out += var.second.ascii();
-        out += ";";
+
+static V3Hash hashNodeMarkings(const V3ControlHierTreeNode* nodep) {
+    uint32_t varsXor = 0;  // Order-independent accumulator over the leaf var set
+    for (const auto& var : nodep->m_vars) {
+        varsXor ^= (V3Hash{var.first} + V3Hash{static_cast<int32_t>(var.second)}).value();
     }
-    out += "}";
-    // Child scopes: "<key>(<kind>:<subsig>)" in sorted key order (std::map).
-    out += "c{";
+    V3Hash hash{varsXor};
     for (const auto& child : nodep->m_children) {
-        out += child.first;
-        out += ":";
-        out += std::to_string(static_cast<int>(child.second->m_kind));
-        out += "(";
-        appendNodeSignature(child.second.get(), out);
-        out += ")";
+        hash += V3Hash{child.first} + V3Hash{static_cast<int32_t>(child.second->m_kind)}
+                + hashNodeMarkings(child.second.get());
     }
-    out += "}";
+    return hash;
 }
 
-// -path'ed public marking as a string for V3Param uniquification and cloning
-std::string V3Control::cellPathPublicSignature(const std::string& cellInstancePath) {
+// Variant ID if -path'ed, else -1
+int V3Control::cellPathPublicVariant(const std::string& cellInstancePath) {
     const auto& cellPaths = V3ControlResolver::s().hierVarCellPaths();
     const auto it = cellPaths.find(cellInstancePath);
-    if (it == cellPaths.end()) return "";
-    std::string sig;
-    appendNodeSignature(it->second, sig);
-    return sig;
+    if (it == cellPaths.end()) return -1;  // Not a -path'ed cell; no clone needed
+    auto& variants = V3ControlResolver::s().hierVarVariants();
+    const V3Hash hash = hashNodeMarkings(it->second);
+    const auto pair = variants.emplace(hash, static_cast<int>(variants.size()));
+    return pair.first->second;
 }
 
 //----------------------------------------------------------------------

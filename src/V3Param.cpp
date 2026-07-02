@@ -1963,10 +1963,10 @@ class ParamProcessor final {
         string longname = srcModp->name() + "_";
         // Clone for .vlt -path'ed variants
         if (VN_IS(nodep, Cell)) {
-            const string pubSig = V3Control::cellPathPublicSignature(srcModp->someInstanceName());
-            if (!pubSig.empty()) {
+            const int pubVariant = V3Control::cellPathPublicVariant(srcModp->someInstanceName());
+            if (pubVariant >= 0) {
                 any_overrides = true;
-                longname += "__Vhier" + V3Hash{pubSig}.toString();
+                longname += "__Vhier" + cvtToStr(pubVariant);
             }
         }
         if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
