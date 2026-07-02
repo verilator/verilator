@@ -563,9 +563,10 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
 }
 
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -574,9 +575,10 @@ IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 }
 
 QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -586,10 +588,17 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 
 WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                  uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() != 2) { return VL_RAND_RESET_W(obits, outwp); }
-    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
-    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
+    const int words = VL_WORDS_I(obits);
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) {
+        VL_MEMSET_ZERO_W(outwp, words);
+    } else if (randReset == 1) {
+        VL_MEMSET_ONES_W(outwp, words);
+    } else {
+        VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+        for (int i = 0; i < words; ++i) outwp[i] = rng.rand64();
+    }
+    outwp[words - 1] &= VL_MASK_E(obits);
     return outwp;
 }
 
@@ -614,30 +623,14 @@ WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t sco
 }
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_I();
-    }
+    if (randReset != 1) data = VL_RANDOM_I();  // if 2, randomize
     data &= VL_MASK_I(obits);
     return data;
 }
 
-QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
-    QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_Q();
-    }
-    data &= VL_MASK_Q(obits);
-    return data;
-}
-
-WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
-    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-    return outwp;
-}
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
