@@ -1,0 +1,30 @@
+__vlAnonCG_branch_cg.cp_branch.hi: 8
+__vlAnonCG_branch_cg.cp_branch.lo: 8
+__vlAnonCG_clock_cg.cp_clocked.hi: 8
+__vlAnonCG_clock_cg.cp_clocked.lo: 8
+__vlAnonCG_copy_cg.cp_copy.hi: 0
+__vlAnonCG_copy_cg.cp_copy.lo: 1
+__vlAnonCG_derived_cg.cp_inherited.hi: 8
+__vlAnonCG_derived_cg.cp_inherited.lo: 8
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_0 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_1 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_2 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_3 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_0 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_1 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_2 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_3 [cross]: 2
+__vlAnonCG_mon_cg.cp_addr.hi: 8
+__vlAnonCG_mon_cg.cp_addr.lo: 8
+__vlAnonCG_mon_cg.cp_enabled.hi: 8
+__vlAnonCG_mon_cg.cp_enabled.lo: 0
+__vlAnonCG_mon_cg.cp_inner.hi: 8
+__vlAnonCG_mon_cg.cp_inner.lo: 8
+__vlAnonCG_mon_cg.cp_op_a.hi: 8
+__vlAnonCG_mon_cg.cp_op_a.lo: 8
+__vlAnonCG_mon_cg.cp_op_b.auto_0: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_1: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_2: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_3: 4
+__vlAnonCG_this_cg.cp_this.hi: 8
+__vlAnonCG_this_cg.cp_this.lo: 8

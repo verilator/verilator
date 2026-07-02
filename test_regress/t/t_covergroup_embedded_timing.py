@@ -9,8 +9,11 @@
 
 import vltest_bootstrap
 
+import coverage_covergroup_common
+
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, fails=True)
-
-test.passes()
+# --timing enables full embedded-covergroup clocking-event support: the covergroup is
+# sampled on every occurrence of the event, including events driven from outside the
+# enclosing class and complex member-chain events.
+coverage_covergroup_common.run(test, verilator_flags2=['--timing'], timing_loop=True)

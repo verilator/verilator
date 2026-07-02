@@ -249,8 +249,37 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (!classp->isInterfaceClass() && !classp->isVirtual()) {
                 decorateFirst(first, section);
-                putns(classp, "VlClass* clone() const { return new "
-                                  + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
+                std::vector<const AstVar*> embeddedCovergroupVars;
+                std::vector<AstClass*> classes;
+                for (AstClass* scanClassp = const_cast<AstClass*>(classp); scanClassp;
+                     scanClassp = scanClassp->extendsp() ? scanClassp->extendsp()->classp()
+                                                         : nullptr) {
+                    classes.push_back(scanClassp);
+                }
+                for (auto it = classes.rbegin(); it != classes.rend(); ++it) {
+                    AstClass* const memberClassp = *it;
+                    for (AstNode* stmtp = memberClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                        AstVar* const varp = VN_CAST(stmtp, Var);
+                        if (!varp) continue;
+                        const AstClassRefDType* const refp
+                            = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                        if (refp && refp->classp()->isCovergroup()) {
+                            embeddedCovergroupVars.push_back(varp);
+                        }
+                    }
+                }
+                const string className = EmitCUtil::prefixNameProtect(classp);
+                if (embeddedCovergroupVars.empty()) {
+                    putns(classp, "VlClass* clone() const { return new " + className
+                                      + "(*this); }\n");
+                } else {
+                    putns(classp, "VlClass* clone() const { " + className
+                                      + "* const clonep = new " + className + "(*this); ");
+                    for (const AstVar* const varp : embeddedCovergroupVars) {
+                        puts("clonep->" + varp->nameProtect() + " = VlNull{}; ");
+                    }
+                    puts("return clonep; }\n");
+                }
             }
         }
     }
