@@ -42,6 +42,7 @@ public:
 
     // Final step... Mark all widths as equal
     static void widthCommit(AstNetlist* nodep) VL_MT_DISABLED;
+    static void widthCommitClean(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 //######################################################################

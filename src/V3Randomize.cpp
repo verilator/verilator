@@ -1011,12 +1011,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (targetWidth > exprWidth) {
             // Extend to match target width
             AstNodeExpr* const result = new AstExtend{fl, exprp, targetWidth};
-            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            if (exprp->dtypep()->isFourstate()) {
+                result->dtypeSetLogicSized(targetWidth, targetSigning);
+            } else {
+                result->dtypeSetBitSized(targetWidth, targetSigning);
+            }
             return result;
         } else if (targetWidth < exprWidth) {
             // Truncate to match target width
             AstNodeExpr* const result = new AstSel{fl, exprp, 0, targetWidth};
-            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            if (exprp->dtypep()->isFourstate()) {
+                result->dtypeSetLogicSized(targetWidth, targetSigning);
+            } else {
+                result->dtypeSetBitSized(targetWidth, targetSigning);
+            }
             return result;
         } else {
             // Width already matches
@@ -1964,7 +1972,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
             if (indexp->width() < 32) {
                 AstExtend* const extendp = new AstExtend{fl, indexp, 32};
-                extendp->dtypeSetLogicSized(32, VSigning::UNSIGNED);
                 extendp->user1(true);
                 indexp = extendp;
             }

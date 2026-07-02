@@ -1071,7 +1071,8 @@ class WidthVisitor final : public VNVisitor {
             const bool inParameterizedTemplate
                 = m_modep && (m_modep->dead() || m_modep->parameterizedTemplate());
 
-            if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
+            if (!v3Global.opt.fourstate() && VN_IS(nodep->lsbp(), Const)
+                && nodep->msbConst() < nodep->lsbConst()) {
                 // Likely impossible given above width check
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: left < right of bit extract: "  // LCOV_EXCL_LINE
@@ -1145,22 +1146,24 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related node: " << nodep);
                 }
                 if (lrefp) UINFO(9, "    Select extend lrefp " << lrefp);
-                if (lrefp && lrefp->access().isWriteOrRW()) {
-                    // lvarref[X] = ..., the expression assigned is too wide
-                    // WTF to do
-                    // Don't change the width of this lhsp, instead propagate up
-                    // to upper assign/expression the correct width
-                    AstNodeDType* const subDTypep
-                        = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
-                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
-                                    false /*noerror*/);
-                } else {
-                    // Extend it
-                    const int extendTo = nodep->msbConst() + 1;
-                    AstNodeDType* const subDTypep = nodep->findLogicDType(
-                        extendTo, extendTo, nodep->fromp()->dtypep()->numeric());
-                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
-                                    false /*noerror*/);
+                if (!v3Global.opt.fourstate()) {
+                    if (lrefp && lrefp->access().isWriteOrRW()) {
+                        // lvarref[X] = ..., the expression assigned is too wide
+                        // WTF to do
+                        // Don't change the width of this lhsp, instead propagate up
+                        // to upper assign/expression the correct width
+                        AstNodeDType* const subDTypep = nodep->findLogicDType(
+                            width, width, nodep->fromp()->dtypep()->numeric());
+                        widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep,
+                                        EXTEND_EXP, false /*noerror*/);
+                    } else {
+                        // Extend it
+                        const int extendTo = nodep->msbConst() + 1;
+                        AstNodeDType* const subDTypep = nodep->findLogicDType(
+                            extendTo, extendTo, nodep->fromp()->dtypep()->numeric());
+                        widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep,
+                                        EXTEND_EXP, false /*noerror*/);
+                    }
                 }
             }
             // iterate FINAL is two blocks above
@@ -1168,7 +1171,7 @@ class WidthVisitor final : public VNVisitor {
             // If we have a width problem with GENERATE etc, this will reduce
             // it down and mask it, so we have no chance of finding a real
             // error in the future. So don't do this for them.
-            if (!m_doGenerate) {
+            if (!v3Global.opt.fourstate() && !m_doGenerate) {
                 // lsbp() must be self-determined, however for performance
                 // we want the select to be truncated to fit within the
                 // maximum select range, e.g. turn Xs outside of the select
@@ -1908,13 +1911,15 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCExprUser* nodep) override {
         // Give it the size the user wants.
         if (m_vup && m_vup->prelim()) {
-            nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
+            nodep->dtypeSetBitUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
             // All arguments seek their natural sizes
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
-            nodep->dtypep(expDTypep);  // Assume user knows the rules; go with the flow
+            nodep->dtypeSetBitUnsized(
+                expDTypep->width(), expDTypep->widthMin(),
+                expDTypep->numeric());  // Assume user knows the rules; go with the flow
             if (nodep->width() > 64) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: $c can't generate wider than 64 bits");
             }
@@ -2046,7 +2051,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "FHS", nodep->fhsp(), SELF, BOTH);
             // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
             const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
+            nodep->dtypeSetBitUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCountOnes* nodep) override {
@@ -2054,7 +2059,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
             const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
+            nodep->dtypeSetBitUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCvtPackString* nodep) override {

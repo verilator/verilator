@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Two supported case statements in the same combinational always block for the
 # same FSM are legal RTL, but Phase 1 only instruments the first and warns on

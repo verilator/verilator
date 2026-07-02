@@ -44,7 +44,9 @@ All_Scenarios = {
     'xrun': ['linter', 'simulator', 'simulator_st', 'xrun'],
     'xsim': ['linter', 'simulator', 'simulator_st', 'xsim'],
     'vlt': ['linter', 'simulator', 'simulator_st', 'vlt_all', 'vlt'],
+    'vlt4': ['linter', 'simulator', 'simulator_st', 'vlt_all', 'vlt'],
     'vltmt': ['simulator', 'vlt_all', 'vltmt'],
+    'vltmt4': ['simulator', 'vlt_all', 'vltmt'],
     # yapf: enable
 }
 
@@ -731,11 +733,13 @@ class VlTest:
         # Make e.g. self.vlt, self.vltmt etc
         self.vlt = False  # Set below also
         self.vltmt = False  # Set below also
+        self.vlt4 = False  # Set below also
+        self.vltmt4 = False  # Set below also
         self.xsim = False  # Set below also
         for ascenario in All_Scenarios:
             self.__dict__[ascenario] = False
         self.__dict__[scenario] = True
-        self.vlt_all = self.vlt or self.vltmt  # Any Verilator scenario
+        self.vlt_all = self.vlt or self.vltmt or self.vlt4 or self.vltmt4  # Any Verilator scenario
 
         (self.py_filename, self.t_dir) = Runner._py_filename_adjust(self.py_filename, ".")
         for tdir in Args.test_dirs:  # pylint: disable=redefined-outer-name
@@ -895,6 +899,9 @@ class VlTest:
             self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
         self.pli_filename = re.sub(r'\.py$', '', self.py_filename) + '.cpp'
         self.top_shell_filename = self.obj_dir + "/" + self.vm_prefix + "__top.v"
+        self.twostate_capable = True
+        self.fourstate_capable = True
+        self.fourstate_nowarn = True  # This is only a temporary workaround
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"
@@ -1150,9 +1157,10 @@ class VlTest:
             verilator_flags += ["--trace-vcd"]
         if Args.gdbsim or Args.rrsim:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
-        verilator_flags += ["--x-assign unique"]  # More likely to be buggy
+        if not (param['vlt4'] or param['vltmt4']):
+            verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
-        if param['vltmt']:
+        if param['vltmt'] or param['vltmt4']:
             verilator_flags += ["--debug-partition"]
         if param['threads'] >= 0:
             verilator_flags += ["--threads", str(param['threads'])]
@@ -1160,6 +1168,10 @@ class VlTest:
             verilator_flags += ["--exe"]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
+        if param['vlt4'] or param['vltmt4']:
+            verilator_flags += ["--fourstate"]
+            if self.fourstate_nowarn:
+                verilator_flags += ["-Wno-FUTURE", "-Wno-CASTFOURSTATE"]
 
         cmdargs = [
             "--prefix",
@@ -1216,7 +1228,7 @@ class VlTest:
         if re.search(r'(^|\s)-?-threads\s', checkflags):
             self.error("Specify threads via 'threads=' argument, not as a command line option")
 
-        if param['threads'] < 0 and param['vltmt']:
+        if param['threads'] < 0 and (param['vltmt'] or param['vltmt4']):
             param['threads'] = calc_threads(Vltmt_Threads)
         if not param['context_threads']:
             param['context_threads'] = param['threads'] if (param['threads'] >= 1) else 1
@@ -1356,6 +1368,15 @@ class VlTest:
 
             if self.timing and not self.have_coroutines:
                 self.skip("Test requires Coroutines; ignore error since not available\n")
+                return
+
+            if not self.twostate_capable and (param['vlt'] or param['vltmt']):
+                self.skip("Test is not twostate capable")
+                return
+
+            if not self.fourstate_capable and (param['vlt4'] or param['vltmt4']):
+                self.skip("Test is not fourstate capable - maybe verilator does not"
+                          "support all used features")
                 return
 
             if self.timing and self.sc and re.search(r'Ubuntu 24.04', distro.name(
@@ -1868,6 +1889,11 @@ class VlTest:
             done_re=None,  # Regex for sim completion
             tee=True,
             verilator_run=False) -> bool:  # Move gcov data to parallel area
+
+        if not self.fourstate_capable and (self.vlt4 or self.vltmt4):
+            self.skip("Test is not fourstate capable - maybe verilator does not"
+                      "support all used features")
+            return False
 
         try:
             command = ' '.join(cmd)

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")

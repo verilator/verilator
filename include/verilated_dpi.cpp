@@ -286,7 +286,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
     case VLVT_UINT32: d[0] = *(reinterpret_cast<IData*>(datap)); return;
     case VLVT_UINT64: {
         VlWide<2> lwp;
-        VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
+        VL_SET_WQ_T(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0] = lwp[0];
         d[1] = lwp[1];
         break;
@@ -323,7 +323,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         return;
     case VLVT_UINT64: {
         VlWide<2> lwp;
-        VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
+        VL_SET_WQ_T(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0].aval = lwp[0];
         d[0].bval = 0;
         d[1].aval = lwp[1];
@@ -781,7 +781,7 @@ int svGetTime(const svScope /*scope*/, svTimeVal* time) {
     if (VL_UNLIKELY(!time)) return -1;
     const QData qtime = VL_TIME_Q();
     VlWide<2> itime;
-    VL_SET_WQ(itime, qtime);
+    VL_SET_WQ_T(itime, qtime);
     time->low = itime[0];
     time->high = itime[1];
     return 0;

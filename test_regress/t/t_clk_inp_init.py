@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 test.compile(make_main=False, verilator_flags2=["--exe", test.pli_filename])
 

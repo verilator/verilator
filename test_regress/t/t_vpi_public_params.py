@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.pli_filename = "t/t_vpi_param.cpp"
 
 # same vpi script should work with --public-params instead of inline publics

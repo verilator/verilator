@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_lib_as_top_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_lib_as_top_common.run(test)

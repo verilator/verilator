@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_cover_toggle.v"
 
 test.compile(verilator_flags2=['--cc --coverage-toggle --coverage-max-width 1025'])

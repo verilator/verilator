@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_time_sc.v"
 
 test.sc_time_resolution = 'SC_MS'

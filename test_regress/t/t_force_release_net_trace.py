@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_force_release_net.v"
 
 test.compile(verilator_flags2=['--trace-vcd'])

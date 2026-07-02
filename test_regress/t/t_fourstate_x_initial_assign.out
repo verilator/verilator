@@ -1,0 +1,4 @@
+%Error: --x-initial has no sense with --fourstate
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: --x-assign has no sense with --fourstate
+%Error: Exiting due to

@@ -12,6 +12,7 @@ import collections
 import math
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = test.obj_dir + "/t_gate_tree.v"
 test.cycles = (1000000 if test.benchmark else 100)
 test.sim_time = test.cycles * 10 + 1000

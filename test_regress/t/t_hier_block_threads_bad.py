@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 
 test.compile(fails=True,
              verilator_flags2=['t/t_hier_block_threads_bad.vlt', '-DWORKERS=8', '--hierarchical'],
