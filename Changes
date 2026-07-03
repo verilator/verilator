@@ -15,6 +15,14 @@ Verilator 5.051 devel
 
 **Other:**
 
+* Add comments as a branch description in coverage .info files (#7843). [Eryk Szpotanski]
+* Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
+* Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
+* Fix unique0 case side effects (#7787). [Pawel Klopotek]
+* Fix cleaning purity cache after assertions. [Geza Lore, Testorrent USA, Inc.]
+* Fix clang++ ambiguous overload of '==' operator (#7863). [Pawel Kojma, Antmicro Ltd.]
+* Fix heap-use-after-free in `VlRNG::VlRNG()` (#7865). [Dragon-Git]
+
 
 Verilator 5.050 2026-07-01
 ==========================

@@ -477,6 +477,7 @@ Syms
 Synopsys
 SystemC
 SystemVerilog
+Szpotanski
 Takatsukasa
 Tambe
 Tarik
@@ -537,6 +538,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+VlRNG
 VlWide
 Vlip
 Vm
@@ -947,6 +949,7 @@ misconnected
 misconversion
 misdetecting
 misoptimized
+misoptimizing
 missized
 mk
 mno
