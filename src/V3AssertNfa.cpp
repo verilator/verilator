@@ -58,6 +58,9 @@ struct SvaVertexData final {
     // instead of one 1-bit register per position (verilator/verilator#7792).
     AstVar* shiftVecp = nullptr;  // Shared packed shift vector, or null for a standalone reg
     int shiftBit = -1;  // Bit index within shiftVecp (0 = chain entry)
+    // Uniform per-step condition of a shift chain (e.g. `b` in `b[*N]`), borrowed
+    // from the transition edge; null for a pure ##N delay. Set on bit 0 only.
+    AstNodeExpr* shiftStepCondp = nullptr;
 };
 
 // NFA state vertex -- one per NFA position in the sequence evaluation
@@ -1698,11 +1701,13 @@ class SvaNfaLowering final {
             }
         }
 
-        // Pure ##N delay chains: one masked shift per vector.
-        //   vec <= ((vec << 1) | inject) & {W{!disable & !kill}}
+        // Delay / uniform-repetition chains: one masked shift per vector.
+        //   vec <= (((vec << 1) & {W{step}}) | inject) & {W{!disable & !kill}}
         // bit 0 injects the head's feeder contribution; interior bits shift up.
-        // The per-bit mask reproduces the same disable/kill gating the standalone
-        // registers get, so mid-window disable zeroing is preserved.
+        // `step` is the shared per-cycle condition (e.g. `b` in `b[*N]`, absent
+        // for a pure ##N delay) applied to the shifted bits only. The outer mask
+        // reproduces the same disable/kill gating the standalone registers get,
+        // so mid-window disable zeroing is preserved.
         for (int i = 0; i < c.N; ++i) {
             if (!c.vtx[i]->datap()->shiftVecp || c.vtx[i]->datap()->shiftBit != 0) continue;
             AstVar* const vecp = c.vtx[i]->datap()->shiftVecp;
@@ -1718,9 +1723,14 @@ class SvaNfaLowering final {
                                   te.m_condp);
             }
             UASSERT_OBJ(injectp, c.vtx[i], "Shift-chain head has no clocked feeder");
-            AstNodeExpr* const shiftedp
+            AstNodeExpr* shiftedp
                 = new AstShiftL{c.flp, new AstVarRef{c.flp, vecp, VAccess::READ},
                                 new AstConst{c.flp, AstConst::WidthedValue{}, 32, 1u}, width};
+            if (AstNodeExpr* const stepp = c.vtx[i]->datap()->shiftStepCondp) {
+                shiftedp = new AstAnd{c.flp, shiftedp,
+                                      new AstReplicate{c.flp, stepp->cloneTreePure(false),
+                                                       static_cast<uint32_t>(width)}};
+            }
             AstNodeExpr* const nextp
                 = new AstOr{c.flp, shiftedp, new AstExtend{c.flp, injectp, width}};
             AstNodeExpr* gatep = notKillActive(c);
@@ -2305,38 +2315,94 @@ public:
             if (!v->m_throughoutConds.empty()) return false;
             return singleClockedInEdge(v) != nullptr;
         };
-        const auto outClockedCount = [](SvaStateVertex* v) -> int {
-            int n = 0;
-            for (const V3GraphEdge& er : v->outEdges())
-                if (static_cast<const SvaTransEdge&>(er).m_consumesCycle) ++n;
-            return n;
+        // Chain predecessor of a registered vertex, plus the per-step condition on
+        // the transition into it (null = unconditional). Two lowered shapes count
+        // as a shift step: a direct clocked edge (##N delay), and a clocked edge
+        // fed through one pass-through condition Link vertex -- the shape of
+        // consecutive repetition `b[*N]`, whose ##1 edge is unconditional and
+        // whose boolean sits on a combinational Link. The Link boolean becomes the
+        // step condition, folded into the shift mask.
+        const auto chainPred = [&](int ci, AstNodeExpr*& condpr) -> int {
+            condpr = nullptr;
+            const SvaTransEdge* const e = singleClockedInEdge(vtx[ci]);
+            if (!e || e->m_rejectOnFail || e->m_condVtxp) return -1;
+            const int mi = e->fromVtxp()->color();
+            if (shiftable(mi)) {  // direct clocked step
+                condpr = e->m_condp;
+                return mi;
+            }
+            if (e->m_condp) return -1;  // pass-through requires an unconditional ##1 edge
+            SvaStateVertex* const m = vtx[mi];
+            const SvaTransEdge* linkp = nullptr;
+            for (const V3GraphEdge& er : m->inEdges()) {
+                if (linkp) return -1;  // more than one input -> not a clean pass-through
+                linkp = static_cast<const SvaTransEdge*>(&er);
+            }
+            if (!linkp || linkp->m_consumesCycle || linkp->m_rejectOnFail || linkp->m_condVtxp)
+                return -1;
+            const int pi = linkp->fromVtxp()->color();
+            if (!shiftable(pi)) return -1;
+            condpr = linkp->m_condp;
+            return pi;
         };
+        const auto sameCond = [](const AstNodeExpr* a, const AstNodeExpr* b) -> bool {
+            if (!a && !b) return true;
+            if (!a || !b) return false;
+            return a->sameTree(b);
+        };
+        // Bond each vertex to its chain predecessor; a predecessor feeding more
+        // than one chain vertex branches and cannot shift unambiguously.
+        std::vector<int> predOf(N, -1);
+        std::vector<AstNodeExpr*> stepCondp(N, nullptr);  // borrowed; step into vtx[i]
+        std::vector<int> childCount(N, 0);
+        for (int i = 0; i < N; ++i) {
+            if (!shiftable(i)) continue;
+            AstNodeExpr* cp = nullptr;
+            const int p = chainPred(i, cp);
+            if (p < 0) continue;
+            predOf[i] = p;
+            stepCondp[i] = cp;
+            ++childCount[p];
+        }
         std::vector<int> nextInChain(N, -1);
         std::vector<bool> hasPrevInChain(N, false);
         for (int i = 0; i < N; ++i) {
-            if (!shiftable(i)) continue;
-            const SvaTransEdge* const inp = singleClockedInEdge(vtx[i]);
-            // A conditional/reject in-edge keeps its own inject; such a vertex can
-            // still be a chain head, never a shifted interior bit.
-            if (inp->m_condp || inp->m_rejectOnFail || inp->m_condVtxp) continue;
-            const int p = inp->fromVtxp()->color();
-            if (!shiftable(p) || outClockedCount(vtx[p]) != 1) continue;  // p branches
+            const int p = predOf[i];
+            if (p < 0 || childCount[p] != 1) continue;
             nextInChain[p] = i;
             hasPrevInChain[i] = true;
         }
-        for (int i = 0; i < N; ++i) {
-            if (hasPrevInChain[i] || nextInChain[i] == -1) continue;  // head of a >=2 chain only
-            int len = 0;
-            for (int j = i; j != -1; j = nextInChain[j]) ++len;
-            AstVar* const vecp
-                = new AstVar{flp, VVarType::MODULETEMP, baseName + "__v" + std::to_string(i),
-                             m_modp->findBitDType(len, len, VSigning::UNSIGNED)};
-            vecp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(vecp);
-            int bit = 0;
-            for (int j = i; j != -1; j = nextInChain[j], ++bit) {
-                vtx[j]->datap()->shiftVecp = vecp;
-                vtx[j]->datap()->shiftBit = bit;
+        // Walk each chain head, splitting into maximal segments whose interior
+        // steps share one condition (`##N` = all null, `b[*N]` = all `b`); each
+        // segment of >= 2 vertices collapses to one packed vector. Segments are
+        // also capped at 64 bits: V3AssertNfa runs after V3Width, and wider
+        // (VlWide) arithmetic emitted this late is not lowered by later passes.
+        // A capped chain simply continues in the next vector, whose bit 0 injects
+        // the previous segment's top bit through the shared clocked predecessor.
+        constexpr int kMaxShiftVec = 64;
+        for (int h = 0; h < N; ++h) {
+            if (hasPrevInChain[h] || nextInChain[h] == -1) continue;
+            std::vector<int> chain;
+            for (int j = h; j != -1; j = nextInChain[j]) chain.push_back(j);
+            int a = 0;
+            while (a + 1 < static_cast<int>(chain.size())) {
+                AstNodeExpr* const segCondp = stepCondp[chain[a + 1]];
+                int b = a + 1;
+                while (b + 1 < static_cast<int>(chain.size())
+                       && sameCond(stepCondp[chain[b + 1]], segCondp)
+                       && (b - a + 1) < kMaxShiftVec)
+                    ++b;
+                AstVar* const vecp = new AstVar{
+                    flp, VVarType::MODULETEMP, baseName + "__v" + std::to_string(chain[a]),
+                    m_modp->findBitDType(b - a + 1, b - a + 1, VSigning::UNSIGNED)};
+                vecp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(vecp);
+                for (int k = a; k <= b; ++k) {
+                    vtx[chain[k]]->datap()->shiftVecp = vecp;
+                    vtx[chain[k]]->datap()->shiftBit = k - a;
+                }
+                vtx[chain[a]]->datap()->shiftStepCondp = segCondp;  // borrowed
+                a = b + 1;  // next segment starts at the condition-change vertex
             }
         }
 
