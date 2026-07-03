@@ -337,6 +337,7 @@ public:
 
     ~VlProcess() {
         if (m_parentp) m_parentp->detach(this);
+        if (t_currentp == this) t_currentp = m_parentp.get();
     }
 
     void attach(VlProcess* childp) { m_children.insert(childp); }
