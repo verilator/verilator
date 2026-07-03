@@ -5744,7 +5744,7 @@ Verilator 3.104 2003-04-30
 **Major:**
 
 * Indicate direction of ports with VL_IN and VL_OUT.
-* Allow $c32, etc, to specify width of the $c statement for VCS.
+* Allow $c32, etc, to specify width of the $c statement.
 * Numerous performance improvements, worth about 25%
 
 **Minor:**

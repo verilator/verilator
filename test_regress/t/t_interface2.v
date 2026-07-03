@@ -12,7 +12,7 @@ module t (
 
   counter_io c1_data();
   counter_io c2_data();
-  //counter_io c3_data;        // IEEE illegal, and VCS doesn't allow non-() as it does with cells
+  // counter_io c3_data;  // IEEE illegal
   counter_io c3_data();
 
   counter_ansi  c1 (.clkm(clk),

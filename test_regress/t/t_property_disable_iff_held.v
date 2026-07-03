@@ -46,20 +46,12 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 99) begin
-      `checkd(n_held_assert, 0);  // Questa: 0
-      `checkd(n_held_cover, 0);  // Questa: 0
-      `checkd(n_ctrl_assert, 58);  // Questa: 58
-      `checkd(n_ctrl_cover, 26);  // Questa: 26
+      `checkd(n_held_assert, 0);
+      `checkd(n_held_cover, 0);
+      `checkd(n_ctrl_assert, 58);
+      `checkd(n_ctrl_cover, 26);  // Others: 26, One other: 0
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
 endmodule
-
-`ifndef VERILATOR
-module wrap;
-  logic clk = 0;
-  always #5 clk = ~clk;
-  t inst (.clk(clk));
-endmodule
-`endif

@@ -60,18 +60,17 @@ module t (
     // A cover of an implication counts only non-vacuous matches (IEEE
     // 1800-2023 16.15.2): the antecedent must match. So it is identical to the
     // corresponding sequence cover, not the vacuous implication value.
-    `checkd(n_imp_no, n_seq)
-    `checkd(n_imp_ov, n_seq0)
+    `checkd(n_imp_no, n_seq);  // Other sims: pass, 73
+    `checkd(n_imp_ov, n_seq0);  // Other sims: pass, 45
     // A named-property cover lowers the same implication, so it also counts
     // non-vacuously (regression guard for the property-inlining path).
-    `checkd(n_named, n_imp_no)
-    // Pinned Verilator counts; Questa golden cross-checked.
-    `checkd(n_imp_no, 28)  // Questa: 28
-    `checkd(n_imp_ov, 27)  // Questa: 27
-    `checkd(n_seq, 28)  // Questa: 28
-    `checkd(n_seq0, 27)  // Questa: 27
-    `checkd(n_bool, 55)  // Questa: 54
-    `checkd(n_named, 28)  // Questa: 28
+    `checkd(n_named, n_imp_no);
+    `checkd(n_imp_no, 28);
+    `checkd(n_imp_ov, 27);  // Other sims: pass, 73
+    `checkd(n_seq, 28);  // Other sims: 45, 27
+    `checkd(n_seq0, 27);
+    `checkd(n_bool, 55);  // Other sims: pass, 25
+    `checkd(n_named, 28);  // Other sims: 73, 54, 54
   end
 
 endmodule

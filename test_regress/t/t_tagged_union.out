@@ -8,145 +8,145 @@
 %Error-UNSUPPORTED: t/t_tagged_union.v:57:5: Unsupported: void (for tagged unions)
    57 |     void           Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:79:5: Unsupported: void (for tagged unions)
-   79 |     void    Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:80:5: Unsupported: void (for tagged unions)
+   80 |     void    Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:85:5: Unsupported: void (for tagged unions)
-   85 |     void      Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:87:5: Unsupported: void (for tagged unions)
+   87 |     void      Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:94:5: Unsupported: void (for tagged unions)
-   94 |     void      Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:96:5: Unsupported: void (for tagged unions)
+   96 |     void      Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:101:5: Unsupported: void (for tagged unions)
-  101 |     void   Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:103:5: Unsupported: void (for tagged unions)
+  103 |     void   Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:107:5: Unsupported: void (for tagged unions)
-  107 |     void  Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:109:5: Unsupported: void (for tagged unions)
+  109 |     void  Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:116:5: Unsupported: void (for tagged unions)
-  116 |     void  Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:118:5: Unsupported: void (for tagged unions)
+  118 |     void  Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:137:11: Unsupported: tagged union
-  137 |     vi1 = tagged Invalid;
-      |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:138:11: Unsupported: tagged union
-  138 |     vi2 = tagged Invalid;
-      |           ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:141:11: Unsupported: tagged union
-  141 |     vi1 = tagged Valid (42);
+  141 |     vi1 = tagged Invalid;
       |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:144:11: Unsupported: tagged union
-  144 |     vi2 = tagged Valid (23 + 34);
+%Error-UNSUPPORTED: t/t_tagged_union.v:142:11: Unsupported: tagged union
+  142 |     vi2 = tagged Invalid;
       |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:148:10: Unsupported: tagged union
-  148 |     mt = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:145:11: Unsupported: tagged union
+  145 |     vi1 = tagged Valid (42);
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:148:11: Unsupported: tagged union
+  148 |     vi2 = tagged Valid (23 + 34);
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:152:10: Unsupported: tagged union
+  152 |     mt = tagged Invalid;
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:150:10: Unsupported: tagged union
-  150 |     mt = tagged IntVal (32'h12345678);
+%Error-UNSUPPORTED: t/t_tagged_union.v:154:10: Unsupported: tagged union
+  154 |     mt = tagged IntVal (32'h12345678);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:153:10: Unsupported: tagged union
-  153 |     mt = tagged ShortVal (16'hABCD);
+%Error-UNSUPPORTED: t/t_tagged_union.v:157:10: Unsupported: tagged union
+  157 |     mt = tagged ShortVal (16'hABCD);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:156:10: Unsupported: tagged union
-  156 |     mt = tagged ByteVal (8'h5A);
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:159:10: Unsupported: tagged union
-  159 |     mt = tagged BitVal (1'b1);
+%Error-UNSUPPORTED: t/t_tagged_union.v:160:10: Unsupported: tagged union
+  160 |     mt = tagged ByteVal (8'h5A);
       |          ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:163:10: Unsupported: tagged union
-  163 |     mt = tagged Byte8NonZeroLSB (8'hA5);
+  163 |     mt = tagged BitVal (1'b1);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:166:10: Unsupported: tagged union
-  166 |     mt = tagged Word16NonZeroLSB (16'h1234);
+%Error-UNSUPPORTED: t/t_tagged_union.v:167:10: Unsupported: tagged union
+  167 |     mt = tagged Byte8NonZeroLSB (8'hA5);
       |          ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:170:10: Unsupported: tagged union
-  170 |     mt = tagged Word32LittleEndian (32'hDEADBEEF);
+  170 |     mt = tagged Word16NonZeroLSB (16'h1234);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:173:10: Unsupported: tagged union
-  173 |     mt = tagged Word16LittleEndian (16'hCAFE);
+%Error-UNSUPPORTED: t/t_tagged_union.v:174:10: Unsupported: tagged union
+  174 |     mt = tagged Word32LittleEndian (32'hDEADBEEF);
       |          ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:177:10: Unsupported: tagged union
-  177 |     mt = tagged Wide60 (60'hFEDCBA987654321);
+  177 |     mt = tagged Word16LittleEndian (16'hCAFE);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:180:10: Unsupported: tagged union
-  180 |     mt = tagged Wide60NonZeroLSB (60'h123456789ABCDEF);
+%Error-UNSUPPORTED: t/t_tagged_union.v:181:10: Unsupported: tagged union
+  181 |     mt = tagged Wide60 (60'hFEDCBA987654321);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:183:10: Unsupported: tagged union
-  183 |     mt = tagged Wide60LittleEndian (60'hABCDEF012345678);
+%Error-UNSUPPORTED: t/t_tagged_union.v:184:10: Unsupported: tagged union
+  184 |     mt = tagged Wide60NonZeroLSB (60'h123456789ABCDEF);
       |          ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:187:10: Unsupported: tagged union
-  187 |     mt = tagged Wide90 (90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
+  187 |     mt = tagged Wide60LittleEndian (60'hABCDEF012345678);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:190:10: Unsupported: tagged union
-  190 |     mt = tagged Wide90NonZeroLSB (90'hDE_ADBEEFCA_FEBABE12_3456);
+%Error-UNSUPPORTED: t/t_tagged_union.v:191:10: Unsupported: tagged union
+  191 |     mt = tagged Wide90 (90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:193:10: Unsupported: tagged union
-  193 |     mt = tagged Wide90LittleEndian (90'h11_11111122_22222233_3333);
+%Error-UNSUPPORTED: t/t_tagged_union.v:194:10: Unsupported: tagged union
+  194 |     mt = tagged Wide90NonZeroLSB (90'hDE_ADBEEFCA_FEBABE12_3456);
       |          ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:197:10: Unsupported: tagged union
-  197 |     at = tagged Invalid;
+  197 |     mt = tagged Wide90LittleEndian (90'h11_11111122_22222233_3333);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:199:10: Unsupported: tagged union
-  199 |     at = tagged Scalar (999);
+%Error-UNSUPPORTED: t/t_tagged_union.v:201:10: Unsupported: tagged union
+  201 |     at = tagged Invalid;
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:202:10: Unsupported: tagged union
-  202 |     at = tagged UnpackedArr '{100, 200, 300, 400};
+%Error-UNSUPPORTED: t/t_tagged_union.v:203:10: Unsupported: tagged union
+  203 |     at = tagged Scalar (999);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:208:10: Unsupported: tagged union
-  208 |     at = tagged UnpackedArr2D '{'{32'hA, 32'hB, 32'hC}, '{32'hD, 32'hE, 32'hF}};
+%Error-UNSUPPORTED: t/t_tagged_union.v:206:10: Unsupported: tagged union
+  206 |     at = tagged UnpackedArr '{100, 200, 300, 400};
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:217:13: Unsupported: tagged union
-  217 |     instr = tagged Add '{5'd1, 5'd2, 5'd3};
+%Error-UNSUPPORTED: t/t_tagged_union.v:212:10: Unsupported: tagged union
+  212 |     at = tagged UnpackedArr2D '{'{32'hA, 32'hB, 32'hC}, '{32'hD, 32'hE, 32'hF}};
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:221:13: Unsupported: tagged union
+  221 |     instr = tagged Add '{5'd1, 5'd2, 5'd3};
       |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:223:13: Unsupported: tagged union
-  223 |     instr = tagged Add '{reg2:5'd10, regd:5'd20, reg1:5'd5};
+%Error-UNSUPPORTED: t/t_tagged_union.v:227:13: Unsupported: tagged union
+  227 |     instr = tagged Add '{reg2:5'd10, regd:5'd20, reg1:5'd5};
       |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:229:13: Unsupported: tagged union
-  229 |     instr = tagged Jmp (tagged JmpU 10'd512);
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:229:25: Unsupported: tagged union
-  229 |     instr = tagged Jmp (tagged JmpU 10'd512);
-      |                         ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:233:13: Unsupported: tagged union
-  233 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+  233 |     instr = tagged Jmp (tagged JmpU 10'd512);
       |             ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:233:25: Unsupported: tagged union
-  233 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+  233 |     instr = tagged Jmp (tagged JmpU 10'd512);
       |                         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:238:13: Unsupported: tagged union
-  238 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+%Error-UNSUPPORTED: t/t_tagged_union.v:237:13: Unsupported: tagged union
+  237 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:238:25: Unsupported: tagged union
-  238 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+%Error-UNSUPPORTED: t/t_tagged_union.v:237:25: Unsupported: tagged union
+  237 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |                         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:243:11: Unsupported: tagged union
-  243 |     cht = tagged Invalid;
-      |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:244:11: Unsupported: tagged union
-  244 |     cht = tagged Handle (null);
-      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:242:13: Unsupported: tagged union
+  242 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+      |             ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:242:25: Unsupported: tagged union
+  242 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+      |                         ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:248:11: Unsupported: tagged union
-  248 |     clt = tagged Invalid;
+  248 |     cht = tagged Invalid;
       |           ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:249:11: Unsupported: tagged union
-  249 |     clt = tagged Obj (obj);
+  249 |     cht = tagged Handle (null);
       |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:253:10: Unsupported: tagged union
-  253 |     rt = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:254:11: Unsupported: tagged union
+  254 |     clt = tagged Invalid;
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:255:11: Unsupported: tagged union
+  255 |     clt = tagged Obj (obj);
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:259:10: Unsupported: tagged union
+  259 |     rt = tagged Invalid;
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:254:10: Unsupported: tagged union
-  254 |     rt = tagged RealVal (3.14159);
+%Error-UNSUPPORTED: t/t_tagged_union.v:260:10: Unsupported: tagged union
+  260 |     rt = tagged RealVal (3.14159);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:258:10: Unsupported: tagged union
-  258 |     rt = tagged ShortRealVal (2.5);
+%Error-UNSUPPORTED: t/t_tagged_union.v:264:10: Unsupported: tagged union
+  264 |     rt = tagged ShortRealVal (2.5);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:262:10: Unsupported: tagged union
-  262 |     st = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:268:10: Unsupported: tagged union
+  268 |     st = tagged Invalid;
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:263:10: Unsupported: tagged union
-  263 |     st = tagged StrVal ("hello");
+%Error-UNSUPPORTED: t/t_tagged_union.v:269:10: Unsupported: tagged union
+  269 |     st = tagged StrVal ("hello");
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:267:10: Unsupported: tagged union
-  267 |     et = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:273:10: Unsupported: tagged union
+  273 |     et = tagged Invalid;
       |          ^~~~~~
 %Error: Exiting due to
