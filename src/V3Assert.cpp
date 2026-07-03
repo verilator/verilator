@@ -20,6 +20,7 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -228,6 +229,9 @@ class AssertVisitor final : public VNVisitor {
     AstNode* m_failsp = nullptr;  // Current fail statement
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     AstFinal* m_finalp = nullptr;  // Current final block
+    VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    V3UniqueNames m_caseTempNames{"__VCase"};
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -755,6 +759,28 @@ class AssertVisitor final : public VNVisitor {
 
     //========== Case assertions
     void visit(AstCase* nodep) override {
+        // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
+        // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
+        // that V3Scope will take care of a scope creation
+        // We also need to do it before V3Begin, co that pragmas like `unique0` also work correctly
+        if (!nodep->exprp()->isPure()) {
+            ++m_statLiftedCaseExprs;
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, m_caseTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
+            AstNodeExpr* const origp = nodep->exprp()->unlinkFrBack();
+            nodep->addHereThisAsNext(
+                new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, origp});
+            nodep->exprp(new AstVarRef{fl, varp, VAccess::READ});
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modp->stmtsp()->addHereThisAsNext(varp);
+            }
+            VIsCached::clearCacheTree();
+        }
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
@@ -1180,6 +1206,7 @@ public:
         V3Stats::addStat("Assertions, $past variables", m_statPastVars);
         V3Stats::addStat("Assertions, assertOn checks combined", m_statAssertOnCombined);
         V3Stats::addStat("Assertions, assertOn checks hoisted", m_statAssertOnHoisted);
+        V3Stats::addStat("Assertions, lifted impure case expressions", m_statLiftedCaseExprs);
         // Rewrites can change purity, e.g. by compiling out assertion statements with --no-assert
         VIsCached::clearCacheTree();
     }
