@@ -168,12 +168,8 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return false;
     }
-    static AstNode* parentNodep(AstNode* nodep) {
-        while (nodep && nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
-        return nodep ? nodep->backp() : nullptr;
-    }
     static AstNodeModule* findOwnerModulep(AstNode* nodep) {
-        for (AstNode* curp = nodep; curp; curp = parentNodep(curp)) {
+        for (AstNode* curp = nodep; curp; curp = curp->aboveLoopp()) {
             if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
         }
         return nullptr;
@@ -239,8 +235,7 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         return new AstStmtExpr{fl, killQueueCall};
     }
-    template <typename T_Node>
-    static void prependStmtsp(T_Node* const nodep, AstNode* const stmtp) {
+    static void prependStmtsp(AstBegin* const nodep, AstNode* const stmtp) {
         if (AstNode* const origStmtsp = nodep->stmtsp()) {
             origStmtsp->unlinkFrBackWithNext();
             stmtp->addNext(origStmtsp);

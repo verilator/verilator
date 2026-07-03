@@ -593,14 +593,15 @@ class ForkVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
         return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
     }
-    static bool isDisableProcessQueueExpr(const AstNode* const nodep) {
-        const AstVar* varp = nullptr;
-        if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            varp = refp->varp();
-        } else if (const AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
-            varp = selp->varp();
+    static bool isDisableProcessQueueExpr(const AstNodeExpr* const nodep) {
+        const AstNode* const basep
+            = AstArraySel::baseFromp(const_cast<AstNodeExpr*>(nodep), false);
+        if (const AstVarRef* const refp = VN_CAST(basep, VarRef))
+            return refp->varp()->processQueue();
+        if (const AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
+            return selp->varp() && selp->varp()->processQueue();
         }
-        return varp && varp->processQueue();
+        return false;
     }
     static bool isDisableQueuePushSelfStmt(const AstNode* const nodep) {
         // Detect LinkJump-generated registration:

@@ -96,13 +96,9 @@ static string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
     }
     return "";
 }
-static AstNode* parentNodep(AstNode* nodep) {
-    while (nodep && nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
-    return nodep ? nodep->backp() : nullptr;
-}
 static string lexicalDisablePath(AstNode* const targetp) {
     std::vector<string> names;
-    for (AstNode* curp = targetp; curp; curp = parentNodep(curp)) {
+    for (AstNode* curp = targetp; curp; curp = curp->aboveLoopp()) {
         if (AstNodeBlock* const blockp = VN_CAST(curp, NodeBlock)) {
             if (blockp->name() != "") names.push_back(blockp->name());
         } else if (AstNodeFTask* const ftaskp = VN_CAST(curp, NodeFTask)) {
@@ -6210,8 +6206,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 pushDeletep(nodep->unlinkFrBack());
             }
             if (nodep->targetp()) {
-                AstNodeExpr* oldRefp = nodep->targetRefp()->unlinkFrBack();
-                VL_DO_DANGLING(oldRefp->deleteTree(), oldRefp);
+                nodep->targetRefp()->unlinkFrBack()->deleteTree();
                 if (!hasPartSelect) {
                     const string instancePath = targetInstancePath(nodep->targetp(), targetPath);
                     if (instancePath != "") {
