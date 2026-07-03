@@ -20,6 +20,7 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -89,11 +90,71 @@ public:
     explicit DefaultDisablePropagateVisitor(AstNetlist* nodep) { iterate(nodep); }
 };
 
+// Lower a sequence used as an event control ('@seq', IEEE 1800-2023 9.4.2.4) into a
+// synthesized event plus an internal 'cover sequence' that fires the event on every
+// end-of-match. Runs before V3AssertNfa so the sequence's automaton is built by the
+// ordinary cover-sequence path; nothing sequence-event-specific reaches V3AssertNfa.
+class SeqEventLowerVisitor final : public VNVisitor {
+    // STATE
+    AstNodeModule* m_modp = nullptr;  // Current module
+    V3UniqueNames m_names{"__VseqEvent"};  // Synthesized event names
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstSenItem* nodep) override {
+        AstFuncRef* const funcrefp = VN_CAST(nodep->sensp(), FuncRef);
+        if (funcrefp && VN_IS(funcrefp->taskp(), Sequence)) {
+            FileLine* const flp = nodep->fileline();
+            AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_names.get(nodep),
+                                              m_modp->findBasicDType(VBasicDTypeKwd::EVENT)};
+            eventp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(eventp);
+            v3Global.setHasEvents();
+            funcrefp->unlinkFrBack();
+            nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
+            // An automatic actual cannot be referenced from the module-level cover
+            const bool automaticActual = funcrefp->exists([](const AstNodeVarRef* refp) {
+                return refp->varp() && refp->varp()->lifetime().isAutomatic();
+            });
+            if (automaticActual) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: automatic variable as an argument"
+                                             " of a sequence used as an event control");
+                VN_AS(funcrefp->taskp(), Sequence)->isReferenced(false);
+                VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+                return;
+            }
+            AstFireEvent* const firep
+                = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
+            AstCover* const coverp
+                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, funcrefp}, firep,
+                               VAssertType::CONCURRENT};
+            coverp->isCoverSeq(true);
+            coverp->isSeqEvent(true);
+            m_modp->addStmtsp(coverp);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit SeqEventLowerVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
 }  // namespace
 
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
     { DefaultDisableLocalVisitor{nodep}; }
     { DefaultDisablePropagateVisitor{nodep}; }
+}
+
+void V3AssertCommon::lowerSequenceEvents(AstNetlist* nodep) {
+    { SeqEventLowerVisitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("assertseqevent", 0, dumpTreeEitherLevel() >= 3);
 }
 
 //######################################################################
@@ -546,7 +607,11 @@ class AssertVisitor final : public VNVisitor {
         bool passspGated = false;
         if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
             ++m_statCover;
-            if (!v3Global.opt.coverageUser()) {
+            if (snodep->isSeqEvent()) {
+                // Synthesized driver for a sequence used as an event control; keep the
+                // action (the event fire) with no coverage bucket, independent of
+                // --coverage.
+            } else if (!v3Global.opt.coverageUser()) {
                 selfDestruct = true;
             } else {
                 // V3Coverage assigned us a bucket to increment.

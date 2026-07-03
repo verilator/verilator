@@ -2226,9 +2226,11 @@ void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
 void AstCover::dump(std::ostream& str) const {
     this->AstNodeCoverOrAssert::dump(str);
     if (isCoverSeq()) str << " [COVERSEQ]";
+    if (isSeqEvent()) str << " [SEQEVENT]";
 }
 void AstCover::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCoverSeq);
+    dumpJsonBoolFuncIf(str, isSeqEvent);
     this->AstNodeCoverOrAssert::dumpJson(str);
 }
 void AstClocking::dump(std::ostream& str) const {

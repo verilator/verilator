@@ -11,22 +11,22 @@ module t (
   logic g = 0;
 
   // verilog_format: off
-  sequence s_clockless;
-    a ##1 b;
-  endsequence
-
   sequence s_nonedge;
     @(g) a ##1 b;
   endsequence
 
-  sequence s_noncons;
-    @(posedge clk) a[=2];
+  sequence s_arg(x);
+    @(posedge clk) x;
   endsequence
   // verilog_format: on
 
+  task automatic f;
+    bit x = 1;
+    @(s_arg(x));
+  endtask
+
   initial begin
-    @s_clockless;
     @s_nonedge;
-    @s_noncons;
+    f();
   end
 endmodule

@@ -14,9 +14,10 @@ module t (
 );
   int unsigned crc = 32'h1;
   bit a, b, c;
-  bit a1, a2, b1;
+  bit a1, a2, a3, b1;
   int cyc = 0;
   int seq_hits = 0, seq_hits2 = 0, ref_hits = 0, one_hits = 0, dc_hits = 0;
+  int rng_hits = 0, rng_ref = 0;
 
   // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence seq;
@@ -25,6 +26,10 @@ module t (
 
   sequence seq_one;
     @(posedge clk) a;
+  endsequence
+
+  sequence seq_rng;
+    @(posedge clk) a ##[1:3] b;
   endsequence
   // verilog_format: on
 
@@ -41,6 +46,9 @@ module t (
   // (IEEE 1800-2023 9.4.2.4). seq_hits/seq_hits2 are two waiters on the same
   // multi-cycle sequence; ref_hits is an independent shift-register oracle (end
   // point at posedge N when a@N-2, b@N-1, c@N); one_hits is the single-cycle case.
+  // rng_hits waits on the ranged form: end points at posedge N when b@N and a@N-d
+  // for any d in 1..3; simultaneous end points resume a blocked waiter once, so
+  // rng_ref counts cycles with at least one end point.
   initial forever begin
     @seq;
     seq_hits = seq_hits + 1;
@@ -57,9 +65,15 @@ module t (
     @seq_dc;
     dc_hits = dc_hits + 1;
   end
+  initial forever begin
+    @seq_rng;
+    rng_hits = rng_hits + 1;
+  end
 
   always @(posedge clk) begin
     if (a2 && b1 && c) ref_hits = ref_hits + 1;
+    if (b && (a1 || a2 || a3)) rng_ref = rng_ref + 1;
+    a3 <= a2;
     a2 <= a1;
     a1 <= a;
     b1 <= b;
@@ -84,6 +98,8 @@ module t (
     `checkd(ref_hits, 14);
     `checkd(one_hits, 30);
     `checkd(dc_hits, 14);
+    `checkd(rng_hits, 26);
+    `checkd(rng_ref, 26);
     $write("*-* All Finished *-*\n");
   end
 endmodule
