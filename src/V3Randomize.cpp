@@ -3269,7 +3269,10 @@ class RandomizeVisitor final : public VNVisitor {
             m_dynarrayDtp->dtypep(m_dynarrayDtp);
             v3Global.rootp()->typeTablep()->addTypesp(m_dynarrayDtp);
         }
-        AstVar* const modeVarp = new AstVar{fl, VVarType::MODULETEMP, name, m_dynarrayDtp};
+        // MEMBER, not MODULETEMP: V3Localize exempts class members; a temp whose
+        // only VarRefs sit in new() would be localized there, leaving the member
+        // read through member selects forever empty (= all inactive)
+        AstVar* const modeVarp = new AstVar{fl, VVarType::MEMBER, name, m_dynarrayDtp};
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
         return modeVarp;
@@ -3290,6 +3293,9 @@ class RandomizeVisitor final : public VNVisitor {
         // to point to the package scope when the variable is moved by V3Class.
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
+        // Register so findStaticRandModeVarMember sees it through the already
+        // scanned member cache
+        m_memberMap.insert(classp, modeVarp);
         return modeVarp;
     }
     static void addSetRandMode(AstNodeFTask* const ftaskp, AstVar* const genp,
@@ -4331,20 +4337,20 @@ class RandomizeVisitor final : public VNVisitor {
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
-    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp) {
+    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp) {
         for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
             nextip = itemp->nextp();
 
             // Recursively handle ConstraintIf nodes (dist can be inside if/else)
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp()) lowerDistConstraints(taskp, cifp->thensp());
-                if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp());
+                if (cifp->thensp()) lowerDistConstraints(taskp, cifp->thensp(), randModeVarp);
+                if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp);
                 continue;
             }
 
             // Recursively handle ConstraintForeach nodes (dist can be inside foreach)
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp());
+                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp);
                 continue;
             }
 
@@ -4364,7 +4370,7 @@ class RandomizeVisitor final : public VNVisitor {
                     AstConstraintIf* const liftedp = liftLogIfChainToConstraintIf(topLogIfp);
                     constrExprp->replaceWith(liftedp);
                     VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                    lowerDistConstraints(taskp, liftedp->thensp());
+                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp);
                     continue;
                 }
             }
@@ -4519,6 +4525,113 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
 
+            // The bucket chain re-draws a bucket every randomize() call. If a
+            // mode-carrying variable of the dist expression is INACTIVE at that
+            // call (rand_mode(0) / not listed in a scoped randomize), its frozen
+            // value stays as-is and asserting the freshly drawn bucket is wrong:
+            // whenever the frozen value lies in a different bucket the constraint
+            // set is UNSAT and randomize() fails. Gate the chain on the
+            // conjunction of the runtime rand_mode bits of every referenced
+            // variable (direct, static, or sub-object member); when any is frozen
+            // require only membership in the union of the dist ranges, excluding
+            // runtime-zero weights (IEEE 1800-2023 18.5.3).
+            AstNodeExpr* gatep = nullptr;
+            std::unordered_set<const AstVar*> gatedVars;
+            const auto addModeGate = [&](AstNodeExpr* modeArrayp, uint32_t index) {
+                AstCMethodHard* const atp = new AstCMethodHard{fl, modeArrayp, VCMethod::ARRAY_AT,
+                                                               new AstConst{fl, index}};
+                atp->dtypeSetUInt32();
+                if (gatep) {
+                    gatep = new AstLogAnd{fl, gatep, atp};
+                    gatep->dtypeSetBit();
+                } else {
+                    gatep = atp;
+                }
+            };
+            const auto staticModeRead = [&](AstVar* varp) -> AstNodeExpr* {
+                AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
+                AstVar* const smodep = ownerp ? getStaticRandModeVar(ownerp) : nullptr;
+                if (!smodep) return nullptr;
+                return new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep,
+                                     VAccess::READ};
+            };
+            distp->exprp()->foreach([&](const AstNodeVarRef* refp) {
+                AstVar* const varp = refp->varp();
+                const RandomizeMode rmode = {.asInt = varp->user1()};
+                if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
+                if (varp->lifetime().isStatic()) {
+                    if (AstNodeExpr* const readp = staticModeRead(varp))
+                        addModeGate(readp, rmode.index);
+                } else if (randModeVarp) {
+                    addModeGate(new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule),
+                                              randModeVarp, VAccess::READ},
+                                rmode.index);
+                }
+            });
+            distp->exprp()->foreach([&](const AstMemberSel* mselp) {
+                AstVar* const varp = mselp->varp();
+                const RandomizeMode rmode = {.asInt = varp->user1()};
+                if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
+                if (varp->lifetime().isStatic()) {
+                    if (AstNodeExpr* const readp = staticModeRead(varp))
+                        addModeGate(readp, rmode.index);
+                    return;
+                }
+                AstVar* const memberModep
+                    = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+                if (!memberModep) return;
+                AstMemberSel* const modeSelp
+                    = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
+                modeSelp->dtypep(memberModep->dtypep());
+                addModeGate(modeSelp, rmode.index);
+            });
+            if (chainp && gatep) {
+                AstNodeExpr* unionExprp = nullptr;
+                for (auto& bucket : buckets) {
+                    AstNodeExpr* termp;
+                    if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
+                        AstNodeExpr* const exprCopy1p = distp->exprp()->cloneTreePure(false);
+                        exprCopy1p->user1(true);
+                        AstNodeExpr* const exprCopy2p = distp->exprp()->cloneTreePure(false);
+                        exprCopy2p->user1(true);
+                        AstGte* const gtep
+                            = new AstGte{fl, exprCopy1p, irp->lhsp()->cloneTreePure(false)};
+                        gtep->user1(true);
+                        AstLte* const ltep
+                            = new AstLte{fl, exprCopy2p, irp->rhsp()->cloneTreePure(false)};
+                        ltep->user1(true);
+                        termp = new AstLogAnd{fl, gtep, ltep};
+                        termp->user1(true);
+                    } else {
+                        AstNodeExpr* const exprCopyp = distp->exprp()->cloneTreePure(false);
+                        exprCopyp->user1(true);
+                        termp = new AstEq{fl, exprCopyp, bucket.rangep->cloneTreePure(false)};
+                        termp->user1(true);
+                    }
+                    // Compile-time zero weights never enter buckets; a weight that
+                    // is zero only at runtime excludes the bucket's values too
+                    bool runtimeWeight = false;
+                    bucket.weightExprp->foreach(
+                        [&](const AstNodeVarRef*) { runtimeWeight = true; });
+                    if (runtimeWeight) {
+                        AstNeq* const nzp
+                            = new AstNeq{fl, bucket.weightExprp->cloneTreePure(false),
+                                         new AstConst{fl, AstConst::Unsized64{}, 0}};
+                        nzp->user1(true);
+                        termp = new AstLogAnd{fl, termp, nzp};
+                        termp->user1(true);
+                    }
+                    if (unionExprp) {
+                        unionExprp = new AstLogOr{fl, unionExprp, termp};
+                        unionExprp->user1(true);
+                    } else {
+                        unionExprp = termp;
+                    }
+                }
+                chainp = new AstConstraintIf{fl, gatep, chainp,
+                                             new AstConstraintExpr{fl, unionExprp}};
+            }
+
             if (chainp) {
                 constrExprp->replaceWith(chainp);
                 VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
@@ -4597,7 +4710,8 @@ class RandomizeVisitor final : public VNVisitor {
                 }
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
-                if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
+                if (constrp->itemsp())
+                    lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
                                       nullptr,       genp,        randModeVarp,
