@@ -1006,7 +1006,19 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
 
         // Solver session setup
         os << "(set-option :produce-models true)\n";
-        os << "(set-logic QF_ABV)\n";
+        // Arrays with recorded elements are pinned per element (plain bit-vector
+        // literals, below) and round-trip under QF_ABV. Only a container whose
+        // element table is not enumerable falls back to a whole-array pin, whose
+        // model text ("(as const ...)") the solver accepts only under ALL.
+        bool hasNonEnumArray = false;
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0
+                && var.second->countMatchingElements(m_arr_vars, var.second->name()) == 0) {
+                hasNonEnumArray = true;
+                break;
+            }
+        }
+        os << "(set-logic " << (hasNonEnumArray ? "ALL" : "QF_ABV") << ")\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 
@@ -1021,8 +1033,13 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             os << ")\n";
         }
 
-        // Pin all previously solved variables
+        // Pin all previously solved variables. Model text naming solver-internal
+        // terms ("(_ as-array f)", "(lambda ...)") cannot be re-asserted as
+        // input; skipping such a pin is safe because ordering never changes the
+        // solution space (IEEE 1800-2023 18.5.9), it only weakens the bias.
         for (const auto& entry : solvedValues) {
+            if (entry.second.find("as-array") != std::string::npos) continue;
+            if (entry.second.find("(lambda") != std::string::npos) continue;
             os << "(assert (= " << entry.first << " " << entry.second << "))\n";
         }
 
@@ -1072,7 +1089,24 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             auto getValueCmd = [&]() {
                 os << "(get-value (";
                 for (const auto& varName : layerVars) {
-                    if (m_vars.count(varName)) os << varName << " ";
+                    const auto it = m_vars.find(varName);
+                    if (it == m_vars.end()) continue;
+                    if (it->second->dimension() > 0) {
+                        auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                        it->second->setArrayInfo(arrVarsp);
+                        // Enumerable (fixed-size) arrays: query each element via a
+                        // (select ...) so the value is a plain bit-vector literal
+                        // that round-trips as a QF_ABV pin, avoiding array model
+                        // text ("(as const ...)" / "(_ as-array ...)").
+                        if (it->second->countMatchingElements(m_arr_vars, it->second->name())
+                            > 0) {
+                            it->second->emitGetValue(os);
+                            continue;
+                        }
+                    }
+                    // Scalars, and dynamic containers whose element table is empty,
+                    // query the whole term (pinned via the ALL session above).
+                    os << varName << " ";
                 }
                 os << "))\n";
             };
@@ -1085,8 +1119,25 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                     os >> c;
                     if (c == ')') break;  // outer closing
                     if (c != '(') return false;
+                    // The queried term is echoed back verbatim as the pair's LHS:
+                    // a bare name for scalars, a balanced "(select arr idx)" for
+                    // array elements. Keep it as the pin target either way.
+                    os >> std::ws;
                     std::string name;
-                    os >> name;
+                    if (os.peek() == '(') {
+                        int ndepth = 0;
+                        char nc;
+                        do {
+                            os.get(nc);
+                            name += nc;
+                            if (nc == '(')
+                                ++ndepth;
+                            else if (nc == ')')
+                                --ndepth;
+                        } while (ndepth > 0 && os);
+                    } else {
+                        os >> name;
+                    }
 
                     // Read value handling nested parens for (_ bvN W) format
                     os >> std::ws;
