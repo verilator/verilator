@@ -1153,12 +1153,11 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
-        VL_RESTORER(m_modExpr2Sen2DelayedAlwaysp);
         VL_RESTORER(m_finalp);
+        VL_RESTORER_CLEAR(m_modExpr2Sen2DelayedAlwaysp);
         m_modp = nodep;
         m_modPastNum = 0;
         m_modStrobeNum = 0;
-        m_modExpr2Sen2DelayedAlwaysp.clear();
         m_finalp = nullptr;
         iterateChildren(nodep);
     }

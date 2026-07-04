@@ -137,12 +137,9 @@ class BeginVisitor final : public VNVisitor {
             UINFO(8, "     rename to " << nodep->name());
             m_statep->userMarkChanged(nodep);
         }
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
-        m_displayScope = "";
-        m_namedScope = "";
-        m_unnamedScope = "";
+        VL_RESTORER_CLEAR(m_displayScope);
+        VL_RESTORER_CLEAR(m_namedScope);
+        VL_RESTORER_CLEAR(m_unnamedScope);
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -163,14 +160,13 @@ class BeginVisitor final : public VNVisitor {
         // naming; so that any begin's inside the function will rename
         // inside the function.
         // Process children
-        VL_RESTORER(m_displayScope);
+        VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER(m_ftaskp);
         VL_RESTORER(m_liftedp);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_CLEAR(m_namedScope);
+        VL_RESTORER_CLEAR(m_unnamedScope);
         m_displayScope = dot(m_displayScope, nodep->name());
-        m_namedScope = "";
-        m_unnamedScope = "";
+
         m_ftaskp = nodep;
         m_liftedp = nullptr;
         iterateChildren(nodep);
@@ -191,9 +187,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstGenBlock* nodep) override {
         // GenBlocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
         dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
         iterateAndNextNull(nodep->itemsp());
@@ -227,9 +223,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
@@ -261,9 +257,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstNodeBlock* nodep) override {
         // Begin/Fork blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = VN_IS(nodep, Fork);

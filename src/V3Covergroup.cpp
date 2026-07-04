@@ -1727,15 +1727,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             VL_RESTORER(m_covergroupp);
             VL_RESTORER(m_sampleFuncp);
             VL_RESTORER(m_constructorp);
-            VL_RESTORER(m_coverpoints);
-            VL_RESTORER(m_coverpointMap);
-            VL_RESTORER(m_coverCrosses);
+            VL_RESTORER_CLEAR(m_coverpoints);
+            VL_RESTORER_CLEAR(m_coverpointMap);
+            VL_RESTORER_CLEAR(m_coverCrosses);
             m_covergroupp = nodep;
             m_sampleFuncp = nullptr;
             m_constructorp = nullptr;
-            m_coverpoints.clear();
-            m_coverpointMap.clear();
-            m_coverCrosses.clear();
 
             // Extract and store the clocking event from AstCovergroup node
             // The parser creates this node to preserve the event information

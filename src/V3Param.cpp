@@ -2571,11 +2571,9 @@ class ParamVisitor final : public VNVisitor {
                 // Iterate the body
                 {
                     VL_RESTORER(m_modp);
-                    VL_RESTORER(m_ifacePortNames);
-                    VL_RESTORER(m_ifaceInstCells);
+                    VL_RESTORER_CLEAR(m_ifacePortNames);
+                    VL_RESTORER_CLEAR(m_ifaceInstCells);
                     m_modp = modp;
-                    m_ifacePortNames.clear();
-                    m_ifaceInstCells.clear();
                     iterateChildren(modp);
                 }
             }
@@ -3241,7 +3239,7 @@ class ParamVisitor final : public VNVisitor {
                 // Note this clears nodep->genforp(), so begin is no longer special
             }
         } else {
-            VL_RESTORER(m_generateHierName);
+            VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
             iterateChildren(nodep);
         }
