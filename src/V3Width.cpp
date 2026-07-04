@@ -9564,9 +9564,11 @@ class WidthVisitor final : public VNVisitor {
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
         case VNType::Eq:
-        case VNType::EqCase: newp = new AstEqN{fl, lhsp, rhsp}; break;
+        case VNType::EqCase:
+        case VNType::EqWild: newp = new AstEqN{fl, lhsp, rhsp}; break;
         case VNType::Neq:
-        case VNType::NeqCase: newp = new AstNeqN{fl, lhsp, rhsp}; break;
+        case VNType::NeqCase:
+        case VNType::NeqWild: newp = new AstNeqN{fl, lhsp, rhsp}; break;
         case VNType::Gt:
         case VNType::GtS: newp = new AstGtN{fl, lhsp, rhsp}; break;
         case VNType::Gte:
