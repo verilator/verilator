@@ -10,10 +10,10 @@ module t;
     1;
   endsequence
 
-  // s_one is referenced only from another sequence that is never expanded into
-  // an assertion, so it is left referenced outside any assertion property.
-  sequence s_two;
-    s_one ##1 1;
-  endsequence
+  initial begin
+    @s_one;
+    $display("got sequence");
+    $finish;
+  end
 
 endmodule

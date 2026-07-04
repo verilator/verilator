@@ -116,13 +116,12 @@ class SeqEventLowerVisitor final : public VNVisitor {
             v3Global.setHasEvents();
             funcrefp->unlinkFrBack();
             nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
-            // An automatic actual cannot be referenced from the module-level cover
             const bool automaticActual = funcrefp->exists([](const AstNodeVarRef* refp) {
                 return refp->varp() && refp->varp()->lifetime().isAutomatic();
             });
             if (automaticActual) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: automatic variable as an argument"
-                                             " of a sequence used as an event control");
+                nodep->v3error("Arguments to a sequence used as an event control must be"
+                               " static (IEEE 1800-2023 9.4.2.4)");
                 VN_AS(funcrefp->taskp(), Sequence)->isReferenced(false);
                 VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
                 return;

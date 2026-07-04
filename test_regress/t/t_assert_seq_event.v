@@ -15,9 +15,9 @@ module t (
   int unsigned crc = 32'h1;
   bit a, b, c;
   bit a1, a2, a3, b1;
-  int cyc = 0;
-  int seq_hits = 0, seq_hits2 = 0, ref_hits = 0, one_hits = 0, dc_hits = 0;
-  int rng_hits = 0, rng_ref = 0;
+  int cyc;
+  int seq_hits, seq_hits2, ref_hits, one_hits, dc_hits;
+  int rng_hits, rng_ref;
 
   // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence seq;
