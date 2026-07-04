@@ -1053,7 +1053,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->user1(false);
             return;
         }
-        bool anyChild = false;
+        int anyChild = false;  // Used as bool
         if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
             propagateUser1InlineRecurse(cp);
             anyChild |= cp->user1();

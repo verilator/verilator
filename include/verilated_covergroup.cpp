@@ -14,7 +14,8 @@
 /// \file
 /// \brief Verilated functional-coverage collection runtime implementation
 ///
-/// Compiled and linked when "verilator --coverage" is used with covergroups.
+/// Linked when covergroups are present.  The coverage-database registration
+/// is compiled only with "verilator --coverage".
 ///
 //=============================================================================
 
@@ -22,7 +23,9 @@
 
 #include "verilated_covergroup.h"
 
+#if VM_COVERAGE
 #include "verilated_cov.h"
+#endif
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, int nBins) {
     m_hier = hier;
@@ -54,6 +57,7 @@ std::string VlCoverpoint::binName(int i) const {
     return name;
 }
 
+#if VM_COVERAGE
 void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* page) {
     for (int i = 0; i < binCount(); ++i) {
         const VlCovNamer& nm = namerFor(i);
@@ -76,3 +80,4 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         }
     }
 }
+#endif  // VM_COVERAGE

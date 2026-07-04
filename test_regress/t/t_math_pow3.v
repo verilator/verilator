@@ -16,22 +16,21 @@ module t;
 
   // verilog_format: off
   initial begin
-    // NC=67b6cfc1b29a21  VCS=c1b29a20(wrong)   IV=67b6cfc1b29a21  Verilator=67b6cfc1b29a21
     $display("15 ** 14    = %0x  expect 67b6cfc1b29a21", 64'b1111 ** 64'b1110);
-    // NC=1   VCS=0  IV=0   Verilator=1 (wrong,fixed)
     $display("15 **-4'sd2 = %0x expect 0 (per IEEE negative power)", ((-4'd1 ** -4'sd2)));
-    // NC=1   VCS=0  IV=67b6cfc1b29a21(wrong)  Verilator=1
     $display("15 ** 14    = %0x expect 1 (LSB 4-bits of 67b6cfc1b29a21)", ((-4'd1 ** -4'd2)));
-    // NC=1   VCS=0  IV=67b6cfc1b29a21(wrong)  Verilator=1
     $display("15 ** 14    = %0x expect 1 (LSB 4-bits of 67b6cfc1b29a21)", ((4'd15 ** 4'd14)));
-    // NC=8765432187654321  VCS=8765432187654000(wrong) IV=8765432187654321   Verilator=8765432187654321
     $display("64'big ** 1 = %0x  expect %0x", 64'h8765432187654321 ** 1, 64'h8765432187654321);
     $display("\n");
 
     `checkh( (64'b1111 ** 64'b1110),  64'h67b6cfc1b29a21);
+`ifndef NC
     `checkh( (-4'd1 ** -4'sd2),       4'h0);  //bug730
+`endif
+`ifndef VCS
     `checkh( (-4'd1 ** -4'd2),                4'h1);
     `checkh( (4'd15 ** 4'd14),                4'h1);
+`endif
     `checkh( (64'h8765432187654321 ** 4'h1), 64'h8765432187654321);
 
     `checkh((-8'sh3 **  8'h3) ,  8'he5 );  // a**b  (-27)
@@ -70,13 +69,23 @@ module t;
     `checkh(( 8'h3  ** -8'sh0),  8'h1 );  // a**0 always 1
     `checkh(( 8'sh3 ** -8'sh0),  8'h1 );  // a**0 always 1
 
-    `checkh((-8'sh3 ** -8'sh3),  8'h0 );  // 0 (a<-1)    // NCVERILOG bug
+`ifndef NC
+    `checkh((-8'sh3 ** -8'sh3),  8'h0 );  // 0 (a<-1)
+`endif
+`ifndef IVERILOG
+`ifndef QUESTA
+`ifndef VCS
     `checkh((-8'sh1 ** -8'sh2),  8'h1 );  // -1^odd=-1, -1^even=1
     `checkh((-8'sh1 ** -8'sh3),  8'hff);  // -1^odd=-1, -1^even=1
-//    `checkh(( 8'h0  ** -8'sh3),  8'hx );  // x  // NCVERILOG bug
+`endif
+`endif
+`endif
+//    `checkh(( 8'h0  ** -8'sh3),  8'hx );  // x
     `checkh(( 8'h1  ** -8'sh3),  8'h1 );  // 1**b always 1
-    `checkh(( 8'h3  ** -8'sh3),  8'h0 );  // 0  // NCVERILOG bug
-    `checkh(( 8'sh3 ** -8'sh3),  8'h0 );  // 0  // NCVERILOG bug
+`ifndef NC
+    `checkh(( 8'h3  ** -8'sh3),  8'h0 );  // 0
+    `checkh(( 8'sh3 ** -8'sh3),  8'h0 );  // 0
+`endif
 
 
     if (fail) $stop;

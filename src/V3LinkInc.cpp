@@ -307,6 +307,7 @@ class LinkIncVisitor final : public VNVisitor {
                 return new AstSub{nodep->fileline(), lhsp, rhsp};
             case AstAssignCompound::operation::Xor:
                 return new AstXor{nodep->fileline(), lhsp, rhsp};
+            default:;  // Error below  // LCOV_EXCL_LINE
             }
         }
         nodep->v3fatalSrc("Unhandled compound assignment operation");

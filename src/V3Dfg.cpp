@@ -620,6 +620,12 @@ DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataT
     dfg.addVertex(*this);
 }
 
+bool DfgVertex::unsafe() const {
+    if (is<DfgMux>()) return true;
+    if (is<DfgArraySel>()) return !as<DfgArraySel>()->bitp()->is<DfgConst>();
+    return false;
+}
+
 void DfgVertex::typeCheck(const DfgGraph& dfg) const {
 
 #define CHECK(cond, msg) \

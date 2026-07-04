@@ -20,6 +20,7 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -228,6 +229,9 @@ class AssertVisitor final : public VNVisitor {
     AstNode* m_failsp = nullptr;  // Current fail statement
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     AstFinal* m_finalp = nullptr;  // Current final block
+    VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    V3UniqueNames m_caseTempNames{"__VCase"};
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -278,30 +282,26 @@ class AssertVisitor final : public VNVisitor {
         }
         VL_UNREACHABLE;
     }
-    static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
-        const int controlled = !!(static_cast<int>(directiveType)
-                                  & (static_cast<int>(VAssertDirectiveType::ASSERT)
-                                     | static_cast<int>(VAssertDirectiveType::COVER)
-                                     | static_cast<int>(VAssertDirectiveType::ASSUME)));
-        const int checkRuntime = controlled & static_cast<int>(v3Global.opt.assertOn());
-        return "("s + std::to_string(controlled ^ 1) + " || ("s + std::to_string(checkRuntime)
-               + " && "s;
+
+    static bool isControlled(VAssertDirectiveType directiveType) {
+        return (static_cast<int>(directiveType)
+                & (static_cast<int>(VAssertDirectiveType::ASSERT)
+                   | static_cast<int>(VAssertDirectiveType::COVER)
+                   | static_cast<int>(VAssertDirectiveType::ASSUME)));
     }
     static AstNodeExpr* assertPassOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType, bool vacuous) {
+        if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertActionControlPrefix(directiveType)
-                                + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
-                                + "))"s,
-                            1};
+                            assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType), 1};
     }
     static AstNodeExpr* assertFailOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType) {
+        if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertActionControlPrefix(directiveType)
-                                + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType)
-                                + "))"s,
-                            1};
+                            assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType), 1};
     }
     string assertDisplayMessage(const AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
@@ -374,6 +374,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
+        newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
     static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
@@ -385,6 +386,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
+        newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
 
@@ -696,9 +698,9 @@ class AssertVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
-
-            iterateChildren(nodep);
         }
+
+        iterateChildren(nodep);
 
         if (nodep->user2()) {
             // Combine consecutive assertOn checks if possible
@@ -757,6 +759,28 @@ class AssertVisitor final : public VNVisitor {
 
     //========== Case assertions
     void visit(AstCase* nodep) override {
+        // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
+        // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
+        // that V3Scope will take care of a scope creation
+        // We also need to do it before V3Begin, co that pragmas like `unique0` also work correctly
+        if (!nodep->exprp()->isPure()) {
+            ++m_statLiftedCaseExprs;
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, m_caseTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
+            AstNodeExpr* const origp = nodep->exprp()->unlinkFrBack();
+            nodep->addHereThisAsNext(
+                new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, origp});
+            nodep->exprp(new AstVarRef{fl, varp, VAccess::READ});
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modp->stmtsp()->addHereThisAsNext(varp);
+            }
+            VIsCached::clearCacheTree();
+        }
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
@@ -1182,6 +1206,9 @@ public:
         V3Stats::addStat("Assertions, $past variables", m_statPastVars);
         V3Stats::addStat("Assertions, assertOn checks combined", m_statAssertOnCombined);
         V3Stats::addStat("Assertions, assertOn checks hoisted", m_statAssertOnHoisted);
+        V3Stats::addStat("Assertions, lifted impure case expressions", m_statLiftedCaseExprs);
+        // Rewrites can change purity, e.g. by compiling out assertion statements with --no-assert
+        VIsCached::clearCacheTree();
     }
 };
 

@@ -124,10 +124,6 @@ extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint6
 
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (init time only)
-extern QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (init time only)
-extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
@@ -1025,14 +1021,10 @@ static inline IData VL_EQ_R(int words, VlQueue<T> q, WDataInP const rwp) VL_PURE
     } else if (sizeof(T) == 4) {
         for (int i = 0; (i < wordsInQ + 1); ++i) { nequal |= (q.at(wordsInQ - i) ^ rwp[i]); }
     } else if (sizeof(T) == 8) {
-        QData temp = 0;
         int qSize = q.size() - 1;
         for (int i = 0; (i < qSize); i += 2) {
-            temp = q.at(qSize - i);
             nequal |= (static_cast<QData>(q.at(qSize - i)) >> 32 ^ rwp[i + 1]);
-            temp = rwp[i + 1];
             nequal |= (static_cast<QData>(q.at(qSize - i)) ^ rwp[i]);
-            temp = rwp[i];
         }
     }
     return (nequal == 0);
@@ -1042,7 +1034,6 @@ template <std::size_t N_Words>
 static inline IData VL_EQ_R(int words, const VlQueue<VlWide<N_Words>>& q,
                             WDataInP const rwp) VL_PURE {
     EData nequal = 0;
-    const int wordsInQ = q.size() * N_Words;
     if ((q.size() * N_Words) != words) { return false; }
     int count = 0;
     for (int qIndex = q.size() - 1; qIndex >= 0; qIndex--) {
@@ -1953,7 +1944,6 @@ static inline void VL_STREAMR_RRI(int lbits, VlQueue<T_Value>& to_q,
                                   const VlQueue<VlWide<N_Words>>& from_q, IData rd) VL_MT_SAFE {
     to_q.clear();
 
-    VL_CONSTEXPR_CXX17 size_t otherSize = 4 * N_Words;
     VL_CONSTEXPR_CXX17 size_t sizeOfThis = sizeof(T_Value);
     T_Value temp = 0;
     for (auto val : from_q) {

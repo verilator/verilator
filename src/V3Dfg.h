@@ -195,6 +195,8 @@ public:
         UASSERT_OBJ(m_dtype.isPacked(), this, "Non packed vertex has no 'width'");
         return m_dtype.size();
     }
+    // Has terminating side-effect
+    bool unsafe() const;
 
     // Type check vertex (for debugging)
     void typeCheck(const DfgGraph& dfg) const;

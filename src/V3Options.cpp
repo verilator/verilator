@@ -542,7 +542,7 @@ bool V3Options::fileStatNormal(const string& filename) {
 }
 
 string V3Options::fileExists(const string& filename) {
-    // Surprisingly, for VCS and other simulators, this process
+    // Surprisingly, for some other simulators, this process
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
 

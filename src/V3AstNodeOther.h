@@ -1000,8 +1000,8 @@ public:
     // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
     // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
     AstVarScope* findConst(AstConst* initp, bool mergeDType);
-    // Rebuild hashes after potential removals
-    void reCache();
+    // Rebuild hashes and missing variable scopes after potential removals
+    void rebuildVarScopesAndCache();
 };
 class AstConstraint final : public AstNode {
     // Constraint

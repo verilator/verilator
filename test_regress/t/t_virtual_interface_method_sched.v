@@ -20,7 +20,10 @@ package helper_pkg;
   endfunction
 endpackage
 
-interface intf(output logic a, output logic b);
+interface intf (
+    output logic a,
+    output logic b
+);
   msg m;
   event e;
 
@@ -34,7 +37,7 @@ interface intf(output logic a, output logic b);
     // verilator no_inline_task
     m.set_context("go_helper");
     helper_pkg::bump();
-    -> e;
+    ->e;
     a <= 1;
   endtask
 endinterface
@@ -56,7 +59,10 @@ module t;
   wire b;
   virtual intf vif;
 
-  intf i(a, b);
+  intf i (
+      a,
+      b
+  );
 
   initial begin
     driver d;

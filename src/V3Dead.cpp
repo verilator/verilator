@@ -597,7 +597,7 @@ public:
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
         VIsCached::clearCacheTree();  // Removing assignments may affect isPure
-        nodep->constPoolp()->reCache();
+        nodep->constPoolp()->rebuildVarScopesAndCache();
     }
     ~DeadVisitor() override {
         V3Stats::addStatSum("Optimizations, deadified FTasks", m_statFTasksDeadified);

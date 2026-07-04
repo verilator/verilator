@@ -52,6 +52,9 @@ CFG_GCH_IF_CLANG = @CFG_GCH_IF_CLANG@
 CFG_LDFLAGS_VERILATED = @CFG_LDFLAGS_VERILATED@
 # Linker libraries for multithreading
 CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
+# Linker flags/libraries for runtime VPI library loading (+verilator+vpi+<lib>)
+CFG_LDFLAGS_DYNAMIC = @CFG_LDFLAGS_DYNAMIC@
+CFG_LDLIBS_DYNAMIC = @CFG_LDLIBS_DYNAMIC@
 
 ######################################################################
 # Programs
@@ -93,6 +96,7 @@ VK_CPPFLAGS_ALWAYS += \
   -DVM_TRACE_FST=$(VM_TRACE_FST) \
   -DVM_TRACE_VCD=$(VM_TRACE_VCD) \
   -DVM_TRACE_SAIF=$(VM_TRACE_SAIF) \
+  -DVM_VPI=$(VM_VPI) \
   $(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users

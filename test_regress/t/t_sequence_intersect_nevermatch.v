@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
-`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 module t (
@@ -51,7 +52,8 @@ module t (
   else f_dis <= f_dis + 1;
 
   final begin
-    `checkd(f_fix, 0);  // Questa: 0
-    `checkd(f_dis, 0);  // Questa: 0
+    // TODO need better non-zero test
+    `checkd(f_fix, 0);
+    `checkd(f_dis, 0);
   end
 endmodule
