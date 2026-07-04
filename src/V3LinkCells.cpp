@@ -157,11 +157,11 @@ class LinkConfigsVisitor final : public VNVisitor {
             m_isDefault = true;
             iterateAndNextNull(nodep->usep());
         } else if (nodep->isCell()) {
-            VL_RESTORER(m_cell);
+            VL_RESTORER_CLEAR(m_cell);
             m_cell = nodep->cellp()->name();
             iterateAndNextNull(nodep->usep());
         } else {
-            VL_RESTORER(m_hierInst);
+            VL_RESTORER_COPY(m_hierInst);
             {
                 VL_RESTORER(m_dotp);
                 m_dotp = VN_AS(nodep->cellp(), Dot);

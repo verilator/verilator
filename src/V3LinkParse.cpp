@@ -273,7 +273,7 @@ class LinkParseVisitor final : public VNVisitor {
                            << nodep->verilogKwd() << "'");
         }
 
-        VL_RESTORER(m_portDups);
+        VL_RESTORER_COPY(m_portDups);
         collectPorts(nodep->stmtsp());
 
         iterateChildren(nodep);
@@ -763,12 +763,12 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
-        VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         VL_RESTORER(m_moduleWithGenericIface);
         VL_RESTORER(m_randSequenceNum);
         VL_RESTORER(m_valueModp);
+        VL_RESTORER_CLEAR(m_implTypedef);
 
         // Module: Create sim table for entire module and iterate
         cleanFileline(nodep);
@@ -780,7 +780,6 @@ class LinkParseVisitor final : public VNVisitor {
         m_genblkAbove = 0;
         m_genblkNum = 0;
         m_beginDepth = 0;
-        m_implTypedef.clear();
         m_valueModp = nodep;
         m_lifetime = nodep->lifetime().makeImplicit();
         m_lifetimeAllowed = VN_IS(nodep, Class);
@@ -797,7 +796,7 @@ class LinkParseVisitor final : public VNVisitor {
                                          "Verilator top-level internals");
         }
 
-        VL_RESTORER(m_portDups);
+        VL_RESTORER_COPY(m_portDups);
         collectPorts(nodep->stmtsp());
 
         iterateChildren(nodep);
