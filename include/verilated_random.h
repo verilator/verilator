@@ -105,12 +105,30 @@ public:
         return count;
     }
 };
+// Compile-time SMT key widths of nested associative-array levels; matches the
+// key formats emitted by V3Randomize (string = 128, integral = 8 * sizeof).
+// Recursion stops at non-assoc levels, which keep the 32-bit default.
+template <typename T>
+struct VlRandomAssocKeyWidths {
+    static void push(std::vector<size_t>&) {}
+};
+template <typename T_Key, typename T_Value>
+struct VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>> {
+    static void push(std::vector<size_t>& widths) {
+        widths.push_back(std::is_same<T_Key, std::string>::value ? 128 : sizeof(T_Key) * 8);
+        VlRandomAssocKeyWidths<T_Value>::push(widths);
+    }
+};
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {
+    // Static key widths per level for the empty-array declaration fallback
+    const std::vector<size_t> m_fallbackIdxWidths;
+
 public:
     VlRandomArrayVarTemplate(const std::string& name, int width, void* datap, int dimension,
-                             std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+                             std::uint32_t randModeIdx, const std::vector<size_t>& idxWidths = {})
+        : VlRandomVar{name, width, datap, dimension, randModeIdx}
+        , m_fallbackIdxWidths{idxWidths} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
@@ -175,7 +193,15 @@ public:
             }
         } else {
             if (dimension() > 0) {
-                for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+                // No recorded element (array empty at write_var time): fall back
+                // to the static per-level key widths so the declared domain still
+                // matches the constraint text (e.g. 128-bit string keys)
+                for (int i = 0; i < dimension(); ++i) {
+                    const size_t idxWidth = i < static_cast<int>(m_fallbackIdxWidths.size())
+                                                ? m_fallbackIdxWidths[i]
+                                                : 32;
+                    s << "(Array (_ BitVec " << idxWidth << ") ";
+                }
                 s << "(_ BitVec " << width() << ")";
                 for (int i = 0; i < dimension(); ++i) s << ")";
             } else {
@@ -433,9 +459,11 @@ public:
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) == m_vars.end()) {
+            std::vector<size_t> keyWidths;
+            VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>>::push(keyWidths);
             m_vars[name]
                 = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-                    name, width, &var, dimension, randmodeIdx);
+                    name, width, &var, dimension, randmodeIdx, keyWidths);
         }
         if (dimension > 0) {
             m_index = 0;
