@@ -3437,6 +3437,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
+    VSymEnt* enclosingClassSympForCovergroup(VSymEnt* classSymp) {
+        if (!classSymp) return nullptr;
+        const AstClass* const classp = VN_CAST(classSymp->nodep(), Class);
+        if (!classp || !classp->isCovergroup()) return nullptr;
+        VSymEnt* parentSymp = classSymp->parentp();
+        while (parentSymp && !VN_IS(parentSymp->nodep(), Class)) {
+            parentSymp = parentSymp->parentp();
+        }
+        return parentSymp;
+    }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
         UINFO(8, indent() << "importDerivedClass to " << derivedClassp << " from " << baseClassp);
@@ -4312,6 +4322,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+            }
+            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
+                && m_ds.m_dotp->lhsp()->name() == "this") {
+                if (VSymEnt* const parentClassSymp
+                    = enclosingClassSympForCovergroup(m_ds.m_dotSymp)) {
+                    foundp = parentClassSymp->findIdFallback(nodep->name());
+                    if (foundp) m_ds.m_dotSymp = parentClassSymp;
+                }
             }
             // If not found in modport, check interface fallback for parameters and typedefs.
             // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).

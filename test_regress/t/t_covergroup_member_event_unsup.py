@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, fails=True)
+# Without --timing, an embedded covergroup clocked on (or otherwise referencing) an
+# enclosing-class member cannot be fully supported: dynamic per-instance event waits are
+# unavailable.  Verilator emits a clean COVERIGN warning for each such limitation.  With
+# --timing these same covergroups are fully supported (see t_covergroup_embedded_timing).
+test.lint(verilator_flags2=['--no-timing'], expect_filename=test.golden_filename, fails=True)
 
 test.passes()
