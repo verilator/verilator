@@ -109,11 +109,11 @@ public:
 // key formats emitted by V3Randomize (string = 128, integral = 8 * sizeof).
 // Recursion stops at non-assoc levels, which keep the 32-bit default.
 template <typename T>
-struct VlRandomAssocKeyWidths {
+struct VlRandomAssocKeyWidths final {
     static void push(std::vector<size_t>&) {}
 };
 template <typename T_Key, typename T_Value>
-struct VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>> {
+struct VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>> final {
     static void push(std::vector<size_t>& widths) {
         widths.push_back(std::is_same<T_Key, std::string>::value ? 128 : sizeof(T_Key) * 8);
         VlRandomAssocKeyWidths<T_Value>::push(widths);
