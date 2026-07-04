@@ -28,12 +28,9 @@ on:
         type: number
 
 env:
-  CI_OS_NAME: linux
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
-  INSTALL_DIR: ${{ github.workspace }}/install
-  RELOC_DIR: ${{ github.workspace }}/relloc
 
 defaults:
   run:
@@ -46,9 +43,6 @@ jobs:
     runs-on: ${{ inputs.os }}
     name: Test
     env:
-      CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ${{ inputs.os }}
-      CI_RELOC: ${{inputs.reloc }}
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
       CACHE_BASE_KEY: test-${{ inputs.os }}-${{ inputs.cc }}-${{inputs.reloc }}-${{ inputs.suite }}
       CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
@@ -78,17 +72,17 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          ./ci/ci-install.bash
+          ./ci/ci-install.bash test
           make venv
 
       - name: Test
         id: run-test
         continue-on-error: true
-        env:
-          TESTS: ${{ inputs.suite }}
         run: |
           source .venv/bin/activate
-          ./ci/ci-script.bash
+          ./ci/ci-test.bash \
+            --suite ${{ inputs.suite }} \
+            ${{ inputs.reloc && format('--reloc {0}/reloc', github.workspace) || '' }}
 
       - name: Combine code coverage data
         if: ${{ inputs.dev-gcov }}

@@ -43,7 +43,6 @@ jobs:
       # between the root of the pull request and the target branch
       sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       os: ubuntu-24.04
-      os-name: linux
       cc: gcc
       dev-asan: 0
       dev-gcov: 1

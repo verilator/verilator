@@ -29,127 +29,79 @@ concurrency:
 jobs:
 
   build-2604-gcc:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+    name: Build | ubuntu-26.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: linux
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: ubuntu-26.04
+      cc: gcc
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: ubuntu-26.04, cc: gcc, asan: 0}
 
   build-2604-clang:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+    name: Build | ubuntu-26.04 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: linux
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: ubuntu-26.04
+      cc: clang
+      dev-asan: 1
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: ubuntu-26.04, cc: clang, asan: 1}
 
   build-2404-gcc:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+    name: Build | ubuntu-24.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: linux
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: ubuntu-24.04
+      cc: gcc
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: ubuntu-24.04, cc: gcc, asan: 0}
 
   build-2404-clang:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+    name: Build | ubuntu-24.04 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: linux
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: ubuntu-24.04
+      cc: clang
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: ubuntu-24.04, cc: clang, asan: 0}
 
   build-2204-gcc:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+    name: Build | ubuntu-22.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: linux
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: ubuntu-22.04
+      cc: gcc
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: ubuntu-22.04, cc: gcc, asan: 0}
 
-  build-osx-gcc:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+  build-macos-15-gcc:
+    name: Build | macos-15 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: osx
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: macos-15
+      cc: gcc
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: macos-15, cc: gcc, asan: 0}
 
-  build-osx-clang:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
+  build-macos-15-clang:
+    name: Build | macos-15 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
       sha: ${{ github.sha }}
-      os: ${{ matrix.os }}
-      os-name: osx
-      cc: ${{ matrix.cc }}
-      dev-asan: ${{ matrix.asan }}
+      os: macos-15
+      cc: clang
+      dev-asan: 0
       dev-gcov: 0
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: macos-15, cc: clang, asan: 0}
 
   build-windows:
-    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {os: windows-2025-vs2026, cc: msvc}
+    name: Build | windows-2025-vs2026 | msvc
+    runs-on: windows-2025-vs2026
     env:
-      CI_OS_NAME: win
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_LIMIT_MULTIPLE: 0.95
@@ -177,7 +129,7 @@ jobs:
           name: verilator-win.zip
 
   test-2604-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
     needs: build-2604-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -201,7 +153,7 @@ jobs:
           - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: vltmt-2}
 
   test-2604-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
     needs: build-2604-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -225,7 +177,7 @@ jobs:
           - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: vltmt-2}
 
   test-2404-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
     needs: build-2404-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -249,7 +201,7 @@ jobs:
           - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-2}
 
   test-2404-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
     needs: build-2404-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -273,7 +225,7 @@ jobs:
           - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-2}
 
   test-2204-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
     needs: build-2204-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
