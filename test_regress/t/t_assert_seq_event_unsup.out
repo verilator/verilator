@@ -3,4 +3,8 @@
    18 |     @(g) a ##1 b;
       |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:21:12: Unsupported: sequence referenced outside assertion property
+                                                      : ... note: In instance 't'
+   21 |   sequence s_ref;
+      |            ^~~~~
 %Error: Exiting due to

@@ -17,7 +17,17 @@ module t (
   sequence s_nonedge;
     @(g) a ##1 b;
   endsequence
+
+  sequence s_ref;
+    @(posedge clk) a;
+  endsequence
   // verilog_format: on
+
+  // Legal: p is never asserted, so s_ref stays referenced outside any
+  // assertion property, which is not yet supported.
+  property p;
+    s_ref;
+  endproperty
 
   initial begin
     @s_nonedge;
