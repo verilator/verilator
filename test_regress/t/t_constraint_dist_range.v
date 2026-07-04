@@ -14,13 +14,20 @@
 // Scalar: uniform over [0:9] (10% each)
 class DistScalarRange;
   rand bit [3:0] x;
-  constraint c { x dist {[4'd0:4'd9] := 1}; }
+  constraint c {
+    x dist {
+      [4'd0 : 4'd9] := 1
+    };
+  }
 endclass
 
 // Array foreach: uniform over [0:4] (20% each per element)
 class DistForeachUniform;
   rand bit [2:0] a[5];
-  constraint c { foreach (a[i]) a[i] dist {[3'd0:3'd4] := 1}; }
+  constraint c {
+    foreach (a[i])
+    a[i] dist {[3'd0 : 3'd4] := 1};
+  }
 endclass
 
 // Array foreach: mixed single + range
@@ -28,32 +35,50 @@ endclass
 //   0: 5/14 ~= 35.7%,  1..9: 1/14 ~= 7.1% each
 class DistForeachMixed;
   rand bit [3:0] a[5];
-  constraint c { foreach (a[i]) a[i] dist {4'd0 := 5, [4'd1:4'd9] := 1}; }
+  constraint c {
+    foreach (a[i])
+    a[i] dist {
+      4'd0 := 5,
+      [4'd1 : 4'd9] := 1
+    };
+  }
 endclass
 
 // Scalar signed int: uniform over negative range [-9:0] (10% each)
 class DistNegRange;
   rand int x;
-  constraint c { x dist {[-9:0] := 1}; }
+  constraint c {
+    x dist {
+      [-9 : 0] := 1
+    };
+  }
 endclass
 
 // Non-constant unsigned range bounds: uniform over [lo_val:hi_val] = [2:7] (6 values)
 class DistVarRangeUnsigned;
   rand bit [3:0] x;
   bit [3:0] lo_val = 4'd2, hi_val = 4'd7;
-  constraint c { x dist {[lo_val:hi_val] := 1}; }
+  constraint c {
+    x dist {
+      [lo_val : hi_val] := 1
+    };
+  }
 endclass
 
 // Mixed const/non-const bounds: lo is constant, hi is a variable [1:hi_val] = [1:7]
 class DistMixedBounds;
   rand bit [3:0] x;
   bit [3:0] hi_val = 4'd7;
-  constraint c { x dist {[4'd1:hi_val] := 1}; }
+  constraint c {
+    x dist {
+      [4'd1 : hi_val] := 1
+    };
+  }
 endclass
 
 module t;
-  parameter int N = 2000; // randomize() calls per test
-  parameter int TOL_PCT = 30; // +-% tolerance on expected counts
+  parameter int N = 2000;  // randomize() calls per test
+  parameter int TOL_PCT = 30;  // +-% tolerance on expected counts
 
   initial begin
 
@@ -71,8 +96,7 @@ module t;
         end
         cnt[obj.x]++;
       end
-      foreach (cnt[v])
-        `check_tol(cnt[v], N/10)
+      foreach (cnt[v]) `check_tol(cnt[v], N / 10)
     end
 
     // --- T2: array foreach uniform [0:4], 5 elements * N calls ---
@@ -91,8 +115,7 @@ module t;
           cnt[obj.a[i]]++;
         end
       end
-      foreach (cnt[v])
-        `check_tol(cnt[v], N)
+      foreach (cnt[v]) `check_tol(cnt[v], N)
     end
 
     // --- T3: array foreach mixed {0:=5, [1:9]:=1}, 5 elements * N calls ---
@@ -113,9 +136,8 @@ module t;
           cnt[obj.a[i]]++;
         end
       end
-      `check_tol(cnt[0], N*5*5/14)
-      for (int v = 1; v <= 9; v++)
-        `check_tol(cnt[v], N*5*1/14)
+      `check_tol(cnt[0], N * 5 * 5 / 14)
+      for (int v = 1; v <= 9; v++) `check_tol(cnt[v], N * 5 * 1 / 14)
     end
 
     // --- T4: signed int, uniform over negative range [-9:0] ---
@@ -131,10 +153,9 @@ module t;
           $write("%%Error: x=%0d outside valid range [-9:0]\n", obj.x);
           `stop;
         end
-        cnt[obj.x + 9]++;
+        cnt[obj.x+9]++;
       end
-      foreach (cnt[v])
-        `check_tol(cnt[v], N/10)
+      foreach (cnt[v]) `check_tol(cnt[v], N / 10)
     end
 
     // --- T5: non-constant unsigned range bounds [lo_val:hi_val] = [2:7] ---
@@ -151,8 +172,7 @@ module t;
         end
         cnt[obj.x]++;
       end
-      for (int v = 2; v <= 7; v++)
-        `check_tol(cnt[v], N/6)
+      for (int v = 2; v <= 7; v++) `check_tol(cnt[v], N / 6)
     end
 
     // --- T6: mixed const/non-const bounds [4'd1:hi_val] = [1:7] ---
@@ -169,8 +189,7 @@ module t;
         end
         cnt[obj.x]++;
       end
-      for (int v = 1; v <= 7; v++)
-        `check_tol(cnt[v], N/7)
+      for (int v = 1; v <= 7; v++) `check_tol(cnt[v], N / 7)
     end
 
     $write("*-* All Finished *-*\n");

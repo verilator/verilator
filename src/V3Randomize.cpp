@@ -1053,7 +1053,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->user1(false);
             return;
         }
-        bool anyChild = false;
+        int anyChild = false;  // Used as bool
         if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
             propagateUser1InlineRecurse(cp);
             anyChild |= cp->user1();
@@ -1171,16 +1171,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
 
-        // For global constraints: check shared path-level set
-        // For inline constraints: check per-instance set (each __Vrandwith has own randomizer)
-        // For class-level constraints: check varp->user3()
+        // Global / inline / class-level member-select refs key on the full path
+        // (so same-type sub-objects c1.x, c2.x stay distinct); a plain class-level
+        // variable keys on user3().
         const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
                                     : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
+                                    : membersel         ? m_writtenVars.count(smtName) > 0
                                                         : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (isGlobalConstrained) m_writtenVars.insert(smtName);
+            if (isGlobalConstrained || (membersel && !m_inlineInitTaskp))
+                m_writtenVars.insert(smtName);
             if (m_inlineInitTaskp) m_inlineWrittenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3882,6 +3884,22 @@ class RandomizeVisitor final : public VNVisitor {
             return VN_IS(dtypep, ClassRefDType);
         });
     }
+    // True if this class owns a global constraint: a member-select chain rooted
+    // at a rand class-typed handle reaching into a sub-object.
+    bool classOwnsGlobalConstraint(const AstClass* classp) const {
+        return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
+            bool owns = false;
+            constrp->foreach([&](const AstMemberSel* memberSelp) {
+                const AstNode* rootp = memberSelp->fromp();
+                while (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel))
+                    rootp = sp->fromp();
+                if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
+                    if (VN_IS(refp->varp()->dtypep()->skipRefp(), ClassRefDType)) owns = true;
+                }
+            });
+            return owns;
+        });
+    }
     // Get or create __VrandCb_pre/__VrandCb_post task for nested callbacks
     AstTask* getCreateNestedCallbackTask(AstClass* classp, const string& suffix) {
         const string name = "__VrandCb_" + suffix;
@@ -4773,6 +4791,10 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
 
+        // Detect global-constraint ownership BEFORE the constraint items are
+        // unlinked into setup tasks below (after that the member-selects are gone).
+        const bool basicFirst = classOwnsGlobalConstraint(nodep);
+
         FileLine* fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
@@ -5081,29 +5103,41 @@ class RandomizeVisitor final : public VNVisitor {
             beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
         }
 
+        AstFunc* const basicRandomizep
+            = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
+        addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
+        // A basicFirst owner basic-randomizes first, then the solver overrides the
+        // constrained leaves, so a globally-constrained leaf (not user3) is still
+        // basic-randomized when its type is randomized standalone.
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-        randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
+        randomizep->addStmtsp(new AstAssign{
+            fl, fvarRefp, basicFirst ? new AstFuncRef{fl, basicRandomizep} : beginValp});
 
         const auto sizeArraysIt = m_sizeConstrainedArrays.find(nodep);
         const bool needsSizePhase
             = sizeArraysIt != m_sizeConstrainedArrays.end() && !sizeArraysIt->second.empty();
-        if (!needsSizePhase) {
+        // Size-only resize fallback (no element constraint, so no two-pass phase).
+        // Must run after the solver .next() that sets the size variable; emit it
+        // after whichever assignment below holds the solver call.
+        const auto emitResizeFallback = [&]() {
+            if (needsSizePhase) return;
             if (AstTask* const resizeAllTaskp
                 = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
                 AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp};
                 randomizep->addStmtsp(resizeTaskRefp->makeStmt());
             }
-        }
+        };
+        if (!basicFirst) emitResizeFallback();
 
         AstVarRef* const fvarRefReadp = fvarRefp->cloneTree(false);
         fvarRefReadp->access(VAccess::READ);
 
-        AstFunc* const basicRandomizep
-            = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-        addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep};
+        AstNodeExpr* const secondHalfp
+            = basicFirst ? beginValp : new AstFuncRef{fl, basicRandomizep};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
-                                            new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
+                                            new AstAnd{fl, fvarRefReadp, secondHalfp}});
+
+        if (basicFirst) emitResizeFallback();
 
         // Call nested post_randomize on rand class-type members (IEEE 18.4.1)
         if (classHasRandClassMembers(nodep)) {
@@ -5643,15 +5677,21 @@ public:
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
-        // Mark variables in global constraints
-        // These should not be randomized in nested class's __VBasicRand
-        nodep->foreach([&](AstConstraint* constrp) {
-            constrp->foreach([&](AstMemberSel* memberSelp) {
-                // Only mark if this MemberSel was created during constraint cloning
-                if (memberSelp->user2p()) {
+        // Flag local constraint leaves as solver-owned so __VBasicRand skips them.
+        // Runs before any class is lowered. Only a randomized class counts, and
+        // only a leaf owned by the constraint's own class: a leaf reached through
+        // a global constraint stays basic-randomized so a standalone randomize()
+        // of its type still randomizes it (issue #7833); a class-typed sub-object
+        // is skipped so its own members are still basic-randomized.
+        nodep->foreach([&](AstClass* const classp) {
+            if (!classp->user1()) return;
+            classp->foreachMember([&](AstClass* const ownerClassp, AstConstraint* const constrp) {
+                constrp->foreach([&](AstMemberSel* const memberSelp) {
                     AstVar* const varp = memberSelp->varp();
+                    if (VN_IS(varp->dtypep()->skipRefp(), ClassRefDType)) return;
+                    if (VN_AS(varp->user2p(), NodeModule) != ownerClassp) return;
                     if (!varp->user3()) varp->user3(true);
-                }
+                });
             });
         });
 

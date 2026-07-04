@@ -662,6 +662,10 @@ Summary:
 
 .. option:: -fno-assemble
 
+.. option:: -fno-bit-scan-loops
+
+   Rarely needed. Disable converting bit counting loops into built-in operations.
+
 .. option:: -fno-case
 
    Rarely needed. Disable all case statement optimizations.

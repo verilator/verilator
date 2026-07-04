@@ -89,6 +89,12 @@
 # include <unistd.h>
 # define _VL_HAVE_GETRLIMIT
 #endif
+#if VM_VPI
+# include <cstring>
+# ifndef _WIN32
+#  include <dlfcn.h>  // dlopen
+# endif
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -261,6 +267,58 @@ void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char*
 }
 
 //===========================================================================
+// Runtime VPI shared library loading (--vpi)
+
+// Load one VPI shared library named by a +verilator+vpi+<lib>[:<bootstrap>] argument.
+// 'arg' is the payload after the prefix: either "<lib>" (invoke the library's
+// vlog_startup_routines array) or "<lib>:<bootstrap>" (invoke the named bootstrap).
+void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
+#if VM_VPI
+    if (arg.empty()) return;
+#ifdef _WIN32
+    VL_FATAL_MT("", 0, "",
+                "+verilator+vpi+: runtime VPI library loading is not supported on"
+                " Windows; link the VPI code into the model instead");
+#else
+    using vlog_startup_t = void (*)();
+    // Split <lib>:<bootstrap> on the last ':'
+    const std::string::size_type colon_pos = arg.rfind(':');
+    const bool has_entry = (colon_pos != std::string::npos);
+    const std::string libpath = has_entry ? arg.substr(0, colon_pos) : arg;
+    const std::string entry_name = has_entry ? arg.substr(colon_pos + 1) : std::string{};
+    void* handle = dlopen(libpath.c_str(), RTLD_LAZY);
+    if (!handle)
+        // The library path is stable; the dlerror() text is platform-specific, so put it on
+        // a separate "- " line (test golden files strip "- " lines, keeping output portable).
+        VL_FATAL_MT(
+            "", 0, "",
+            (std::string{"Cannot load VPI library: "} + libpath + "\n- dlerror: " + dlerror())
+                .c_str());
+    if (has_entry) {
+        vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
+        if (!bsp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find VPI bootstrap '"} + entry_name + "' in: " + libpath)
+                    .c_str());
+        bsp();
+    } else {
+        vlog_startup_t* routinesp
+            = reinterpret_cast<vlog_startup_t*>(dlsym(handle, "vlog_startup_routines"));
+        if (!routinesp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find 'vlog_startup_routines' in: "} + libpath).c_str());
+        for (int j = 0; routinesp[j]; ++j) routinesp[j]();
+    }
+#endif
+#else
+    // Never reached: the command-line handler only calls this when compiled with --vpi.
+    (void)arg;
+#endif
+}
+
+//===========================================================================
 // Debug prints
 
 // sprintf but return as string (this isn't fast, for print messages only)
@@ -319,7 +377,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 }
 
 void VL_FFLUSH_MT() VL_MT_SAFE {
-    va_list ap;
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         Verilated::runFlushCallbacks();
     }});
@@ -506,9 +563,10 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
 }
 
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -517,9 +575,10 @@ IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 }
 
 QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -529,10 +588,17 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 
 WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                  uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() != 2) { return VL_RAND_RESET_W(obits, outwp); }
-    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
-    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
+    const int words = VL_WORDS_I(obits);
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) {
+        VL_MEMSET_ZERO_W(outwp, words);
+    } else if (randReset == 1) {
+        VL_MEMSET_ONES_W(outwp, words);
+    } else {
+        VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+        for (int i = 0; i < words; ++i) outwp[i] = rng.rand64();
+    }
+    outwp[words - 1] &= VL_MASK_E(obits);
     return outwp;
 }
 
@@ -557,30 +623,14 @@ WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t sco
 }
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_I();
-    }
+    if (randReset != 1) data = VL_RANDOM_I();  // if 2, randomize
     data &= VL_MASK_I(obits);
     return data;
 }
 
-QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
-    QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_Q();
-    }
-    data &= VL_MASK_Q(obits);
-    return data;
-}
-
-WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
-    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-    return outwp;
-}
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
@@ -3544,6 +3594,17 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             // and the run can be reproduced by passing +verilator+seed+<that_value>.
             if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+vpi+", str)) {
+            // With --vpi, load the requested shared library now.  Without --vpi there is
+            // no VPI runtime, so warn the argument is ignored.
+#if VM_VPI
+            Verilated::loadVpiLib(str);
+#else
+            VL_WARN_MT(
+                "COMMAND_LINE", 0, "",
+                ("+verilator+vpi+ ignored: simulation was not compiled with --vpi '" + arg + "'")
+                    .c_str());  // LCOV_EXCL_LINE  (gcov zeroes this wrapped continuation line)
+#endif
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",

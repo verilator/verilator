@@ -542,7 +542,7 @@ bool V3Options::fileStatNormal(const string& filename) {
 }
 
 string V3Options::fileExists(const string& filename) {
-    // Surprisingly, for VCS and other simulators, this process
+    // Surprisingly, for some other simulators, this process
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
 
@@ -1448,6 +1448,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
+    DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
     DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
         m_fCaseDecoder = flag;
         m_fCaseTable = flag;
@@ -2359,6 +2360,7 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
+    m_fBitScanLoops = flag;
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;

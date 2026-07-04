@@ -16,10 +16,8 @@ module t (
   integer action_hits = 0;
   integer cyc = 0;
 
-  assert property (@(posedge clk) ##1 1'b1)
-    action_hits++;
-  else
-    action_hits--;
+  assert property (@(posedge clk) ##1 1'b1) action_hits++;
+  else action_hits--;
 
   always @(posedge clk) begin
     cyc++;

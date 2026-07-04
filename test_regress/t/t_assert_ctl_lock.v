@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `ifdef verilator
  `define no_optimize(v) $c(v)
 `else
@@ -12,7 +14,7 @@
 `endif
 // verilog_format: on
 
-module t (  /*AUTOARG*/);
+module t;
   logic clk = 0;
   int imm_fails = 0, conc_fails = 0;
   logic a = 1'b1;  // antecedent always true
@@ -58,11 +60,8 @@ module t (  /*AUTOARG*/);
   end
 
   final begin
-    // Concrete counts cross-checked against Questa 2022.3: imm_fails=5 conc_fails=7.
-    if (imm_fails != 5 || conc_fails != 7) begin
-      $display("%%Error: imm_fails=%0d (exp 5) conc_fails=%0d (exp 7)", imm_fails, conc_fails);
-      $stop;
-    end
+    `checkd(imm_fails, 5);
+    `checkd(conc_fails, 7);  // Other sims: 7 or 1
     $write("*-* All Finished *-*\n");
   end
 endmodule

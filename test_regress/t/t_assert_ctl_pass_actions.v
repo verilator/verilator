@@ -36,7 +36,8 @@ interface AssertCtlIface;
     $assertcontrol(3, 2, 1);
   endfunction
   function void fail_check();
-    assert (0) `stop; else fails++;
+    assert (0) `stop;
+    else fails++;
   endfunction
   function void run_checks();
     assert_off();
@@ -69,12 +70,13 @@ module t;
       $assertcontrol(3, 2, 1);
     endfunction
     function void fail_check();
-      assert (0) `stop; else class_fails++;
+      assert (0) `stop;
+      else class_fails++;
     endfunction
   endclass
 
   AssertCtlClass assert_ctl_class;
-  AssertCtlIface assert_ctl_iface();
+  AssertCtlIface assert_ctl_iface ();
   virtual AssertCtlIface v_assert_ctl_iface = assert_ctl_iface;
 
   always #5 clk = !clk;
@@ -84,17 +86,17 @@ module t;
 
   assert property (@(posedge clk) 1'b0 |-> ##1 1'b1) begin
     vacuous_passes++;
-  end else
-    `stop;
+  end
+  else `stop;
 
   assert property (@(posedge clk) 1'b1 |-> ##1 1'b1) begin
     nonvacuous_passes++;
-  end else
-    `stop;
+  end
+  else `stop;
 
   assert property (@(posedge clk) 1'b1 |-> ##1 1'b0) begin
-  end else
-    concurrent_fails++;
+  end
+  else concurrent_fails++;
 
   task automatic tick_and_check(input int exp_vacuous, input int exp_nonvacuous,
                                 input int exp_concurrent_fails);
@@ -110,62 +112,73 @@ module t;
 
     $assertcontrol(4, 16, 1);
     $assertcontrol(5, 16, 1);
-    $assertcontrol(3*`IMPURE_ONE, 2*`IMPURE_ONE);
+    $assertcontrol(3 * `IMPURE_ONE, 2 * `IMPURE_ONE);
 
     $assertcontrol(3, 255, 7);
     $assertcontrol(6, 255, 7);
     $assertcontrol(8, 255, 7);
 
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 1);
 
     $assertcontrol(1, 2, 1);
     $assertcontrol(4, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 2);
 
     $assertcontrol(2, 2, 1);
     $assertcontrol(4, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 2);
 
     $assertcontrol(3, 2, 1);
 
     $assertcontrol(1, 2, 1);
     $assertcontrol(7, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 3);
 
     $assertcontrol(2, 2, 1);
     $assertcontrol(7, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 3);
 
     $assertcontrol(10, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 4);
 
     $assertcontrol(11, 2, 1);
-    assert (1) imm_passes++; else `stop;
+    assert (1) imm_passes++;
+    else `stop;
     `checkd(imm_passes, 5);
 
     $assertcontrol(6, 2, 1);
 
-    assert (0) `stop; else imm_fails++;
+    assert (0) `stop;
+    else imm_fails++;
     `checkd(imm_fails, 1);
 
     $assertcontrol(1, 2, 1);
     $assertcontrol(9, 2, 1);
-    assert (0) `stop; else imm_fails++;
+    assert (0) `stop;
+    else imm_fails++;
     `checkd(imm_fails, 2);
 
     $assertcontrol(2, 2, 1);
     $assertcontrol(9, 2, 1);
-    assert (0) `stop; else imm_fails++;
+    assert (0) `stop;
+    else imm_fails++;
     `checkd(imm_fails, 2);
 
     $assertcontrol(8, 2, 1);
-    assert (0) `stop; else imm_fails++;
+    assert (0) `stop;
+    else imm_fails++;
     `checkd(imm_fails, 3);
 
     assert_ctl_class.assert_off();

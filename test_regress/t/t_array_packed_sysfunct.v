@@ -33,9 +33,7 @@ module t (
 
   initial begin
     `checkh($dimensions (array_unpk), 3);
-`ifndef VCS
     `checkh($unpacked_dimensions (array_unpk), 2);  // IEEE 2009
-`endif
     `checkh($bits (array_unpk), 2*2*2);
     `checkh($low  (array_unpk), 2);
     `checkh($high (array_unpk), 3);

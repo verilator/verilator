@@ -124,10 +124,6 @@ extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint6
 
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (init time only)
-extern QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (init time only)
-extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
@@ -903,15 +899,31 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
     return 0;
 }
 
+static inline IData VL_MOSTSETBITP1_I(IData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;  // __builtin_clz is undefined for 0
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return VL_EDATASIZE - __builtin_clz(lhs);
+#else
+    for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
+        if (VL_BITISSET_E(lhs, bit)) return bit + 1;
+    }
+    return 0;  // LCOV_EXCL_LINE  // Can't get here - one bit must be set
+#endif
+}
+static inline IData VL_MOSTSETBITP1_Q(QData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return 64 - __builtin_clzll(static_cast<unsigned long long>(lhs));
+#else
+    const IData hi = static_cast<IData>(lhs >> 32ULL);
+    return hi ? (VL_EDATASIZE + VL_MOSTSETBITP1_I(hi))
+              : VL_MOSTSETBITP1_I(static_cast<IData>(lhs));
+#endif
+}
 static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
-    // MSB set bit plus one; similar to FLS.  0=value is zero
     for (int i = words - 1; i >= 0; --i) {
-        if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
-            for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
-                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) return i * VL_EDATASIZE + bit + 1;
-            }
-            // Can't get here - one bit must be set
-        }
+        // Shorter worst case if predict not taken
+        if (VL_UNLIKELY(lwp[i])) return i * VL_EDATASIZE + VL_MOSTSETBITP1_I(lwp[i]);
     }
     return 0;
 }
@@ -1009,14 +1021,10 @@ static inline IData VL_EQ_R(int words, VlQueue<T> q, WDataInP const rwp) VL_PURE
     } else if (sizeof(T) == 4) {
         for (int i = 0; (i < wordsInQ + 1); ++i) { nequal |= (q.at(wordsInQ - i) ^ rwp[i]); }
     } else if (sizeof(T) == 8) {
-        QData temp = 0;
         int qSize = q.size() - 1;
         for (int i = 0; (i < qSize); i += 2) {
-            temp = q.at(qSize - i);
             nequal |= (static_cast<QData>(q.at(qSize - i)) >> 32 ^ rwp[i + 1]);
-            temp = rwp[i + 1];
             nequal |= (static_cast<QData>(q.at(qSize - i)) ^ rwp[i]);
-            temp = rwp[i];
         }
     }
     return (nequal == 0);
@@ -1026,7 +1034,6 @@ template <std::size_t N_Words>
 static inline IData VL_EQ_R(int words, const VlQueue<VlWide<N_Words>>& q,
                             WDataInP const rwp) VL_PURE {
     EData nequal = 0;
-    const int wordsInQ = q.size() * N_Words;
     if ((q.size() * N_Words) != words) { return false; }
     int count = 0;
     for (int qIndex = q.size() - 1; qIndex >= 0; qIndex--) {
@@ -1937,7 +1944,6 @@ static inline void VL_STREAMR_RRI(int lbits, VlQueue<T_Value>& to_q,
                                   const VlQueue<VlWide<N_Words>>& from_q, IData rd) VL_MT_SAFE {
     to_q.clear();
 
-    VL_CONSTEXPR_CXX17 size_t otherSize = 4 * N_Words;
     VL_CONSTEXPR_CXX17 size_t sizeOfThis = sizeof(T_Value);
     T_Value temp = 0;
     for (auto val : from_q) {

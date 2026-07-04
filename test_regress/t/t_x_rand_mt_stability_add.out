@@ -3,8 +3,8 @@ x_assigned (initial) = 0x00000000
 uninitialized2 = 0xdf5768de
 big = 0x355d75711c3bf0ca3e65805db585c43beae34b336b9dbe44a2d040cbe101a665
 random_init = 0x5fa24450
-top.t.the_sub_yes_inline_1 no_init 0x842cd8b1033a58
 top.t.the_sub_yes_inline_2 no_init 0xa36c65459f4b9f46
+top.t.the_sub_yes_inline_1 no_init 0x842cd8b1033a58
 top.t.the_sub_no_inline_1 no_init 0x42d55205d10c58f8
 top.t.the_sub_no_inline_2 no_init 0xac98037e5042d96d
 rand = 0x5fa24450
