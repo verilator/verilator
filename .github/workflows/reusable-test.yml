@@ -63,7 +63,7 @@ jobs:
       - name: Unpack repository archive
         working-directory: ${{ github.workspace }}
         run: |
-          tar -x -z -f ${{ inputs.archive }}
+          tar --zstd -x -f ${{ inputs.archive }}
           ls -lsha
 
       - name: Cache $CCACHE_DIR
