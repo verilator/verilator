@@ -54,13 +54,9 @@ struct SvaVertexData final {
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
     AstNodeExpr* stateSigp = nullptr;  // Combinational state signal (owned during lowering)
     bool needsReg = false;  // True if vertex has incoming clocked edge
-    // Pure ##N delay chains collapse to one packed vector shifted once per clock
-    // instead of one 1-bit register per position (verilator/verilator#7792).
-    AstVar* shiftVecp = nullptr;  // Shared packed shift vector, or null for a standalone reg
+    AstVar* shiftVecp = nullptr;  // Packed shift vector of a delay/repetition chain, or null
     int shiftBit = -1;  // Bit index within shiftVecp (0 = chain entry)
-    // Uniform per-step condition of a shift chain (e.g. `b` in `b[*N]`), borrowed
-    // from the transition edge; null for a pure ##N delay. Set on bit 0 only.
-    AstNodeExpr* shiftStepCondp = nullptr;
+    AstNodeExpr* shiftStepCondp = nullptr;  // Borrowed per-step condition; set on bit 0 only
 };
 
 // NFA state vertex -- one per NFA position in the sequence evaluation
@@ -1656,13 +1652,10 @@ class SvaNfaLowering final {
         AstNodeExpr* throughoutRejectp = nullptr;  // Reject when a throughout guard drops
     };
 
-    // Pack ##N delay and uniform b[*N] repetition sub-chains into packed shift
-    // vectors: a maximal simple path of registered vertices whose state is the
-    // previous vertex shifted one position (optionally gated by a shared per-step
-    // condition) lowers to one vector shifted once per clock instead of L separate
-    // 1-bit registers with L shift assignments (igorosky, verilator/verilator#7792).
-    // Sets shiftVecp/shiftBit/shiftStepCondp on each packed vertex; uniform
-    // disable/kill gating is applied later by masking the whole vector.
+    // Pack ##N delay and uniform b[*N] repetition sub-chains -- maximal simple
+    // paths of registered vertices, each holding the previous vertex's state
+    // delayed one cycle -- into single vectors shifted once per clock
+    // (verilator/verilator#7792). Sets shiftVecp/shiftBit/shiftStepCondp.
     void detectShiftChains(const std::vector<SvaStateVertex*>& vtx, int N, int startIdx,
                            const std::string& baseName, FileLine* flp) {
         const auto singleClockedInEdge = [](SvaStateVertex* v) -> const SvaTransEdge* {
@@ -1685,13 +1678,10 @@ class SvaNfaLowering final {
             if (!v->m_throughoutConds.empty()) return false;
             return singleClockedInEdge(v) != nullptr;
         };
-        // Chain predecessor of a registered vertex, plus the per-step condition on
-        // the transition into it (null = unconditional). Two lowered shapes count
-        // as a shift step: a direct clocked edge (##N delay), and a clocked edge
-        // fed through one pass-through condition Link vertex -- the shape of
-        // consecutive repetition `b[*N]`, whose ##1 edge is unconditional and
-        // whose boolean sits on a combinational Link. The Link boolean becomes the
-        // step condition, folded into the shift mask.
+        // Chain predecessor of a registered vertex, plus the per-step condition
+        // into it (null = unconditional). A shift step is a direct clocked edge
+        // (##N delay) or a clocked edge fed through one pass-through condition
+        // Link vertex (`b[*N]` repetition; the Link boolean is the condition).
         const auto chainPred = [&](int ci, AstNodeExpr*& condpr) -> int {
             condpr = nullptr;
             const SvaTransEdge* const e = singleClockedInEdge(vtx[ci]);
@@ -1745,14 +1735,10 @@ class SvaNfaLowering final {
             hasPrevInChain[i] = true;
         }
         // Walk each chain head, splitting into maximal segments whose interior
-        // steps share one condition (`##N` = all null, `b[*N]` = all `b`); each
-        // segment of >= 2 vertices collapses to one packed vector. Segments are
-        // also capped at 64 bits: V3AssertNfa runs after V3Width, and emitting a
-        // wider (VlWide) shift here trips V3Subst ("Non AstNodeExpr under
-        // AstNodeExpr"), which expects wide ops to have been word-split earlier --
-        // an upstream limitation this cap works around. A capped chain simply
-        // continues in the next vector, whose bit 0 injects the previous
-        // segment's top bit through the shared clocked predecessor.
+        // steps share one condition; each segment of >= 2 vertices packs into
+        // one vector. Segments cap at 64 bits: a wider (VlWide) shift emitted
+        // after V3Width is not word-split and breaks V3Subst. A capped chain
+        // carries into the next vector through the shared clocked predecessor.
         constexpr int kMaxShiftVec = 64;
         for (int h = 0; h < N; ++h) {
             if (hasPrevInChain[h] || nextInChain[h] == -1) continue;
@@ -1801,9 +1787,8 @@ class SvaNfaLowering final {
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
                 srcSigp = andCond(c.flp, srcSigp, te.m_condp);
 
-                // Zero in-flight state on an active disable in both modes; the
-                // edge counter misses a held or mid-window disable (IEEE
-                // 1800-2023 16.12, level-based).
+                // Zero in-flight state while the disable is active; the edge
+                // counter misses a held or mid-window disable (IEEE 1800-2023 16.12)
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
@@ -1828,11 +1813,8 @@ class SvaNfaLowering final {
 
         // Delay / uniform-repetition chains: one masked shift per vector.
         //   vec <= (((vec << 1) & {W{step}}) | inject) & {W{!disable & !kill}}
-        // bit 0 injects the head's feeder contribution; interior bits shift up.
-        // `step` is the shared per-cycle condition (e.g. `b` in `b[*N]`, absent
-        // for a pure ##N delay) applied to the shifted bits only. The outer mask
-        // reproduces the same disable/kill gating the standalone registers get,
-        // so mid-window disable zeroing is preserved.
+        // bit 0 injects the head's feeder; `step` is the shared per-step
+        // condition (absent for a pure ##N delay), on the shifted bits only.
         for (int i = 0; i < c.N; ++i) {
             if (!c.vtx[i]->datap()->shiftVecp || c.vtx[i]->datap()->shiftBit != 0) continue;
             AstVar* const vecp = c.vtx[i]->datap()->shiftVecp;
@@ -1937,9 +1919,8 @@ class SvaNfaLowering final {
 
             AstNodeExpr* donep = new AstLogOr{c.flp, killActive(c),
                                               new AstLogOr{c.flp, matchedNowp, counterAtEndp}};
-            // A mid-window disable aborts the in-flight count, as the state
-            // register and shift vector already zero their state (IEEE 1800-2023
-            // 16.12, level-based); the expiry reject is separately disable-gated.
+            // A mid-window disable aborts the in-flight count (IEEE 1800-2023
+            // 16.12); the expiry reject is separately disable-gated
             if (c.disableExprp)
                 donep = new AstLogOr{c.flp, donep, c.disableExprp->cloneTreePure(false)};
 
@@ -2023,10 +2004,8 @@ class SvaNfaLowering final {
 
             AstNodeExpr* clearCondp = new AstLogOr{
                 c.flp, killActive(c), c.vtx[ai]->datap()->stateSigp->cloneTreePure(false)};
-            // A mid-window disable clears a half-latched and-combiner side so a
-            // disabled attempt's progress cannot pair with a later attempt's
-            // completion, keeping the latches consistent with the state-register
-            // and shift-vector zeroing (IEEE 1800-2023 16.12).
+            // A mid-window disable clears a half-latched side so a disabled
+            // attempt cannot pair with a later attempt (IEEE 1800-2023 16.12)
             if (c.disableExprp)
                 clearCondp = new AstLogOr{c.flp, clearCondp, c.disableExprp->cloneTreePure(false)};
             AstIf* const topp = new AstIf{c.flp, clearCondp, clearLp, setLIfp};
