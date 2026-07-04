@@ -3431,9 +3431,17 @@ class WidthVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();
             itemp = VN_AS(itemp, DistItem)->rangep();
-            // InsideRange will get replaced with Lte&Gte and finalized later
-            if (!VN_IS(itemp, InsideRange))
+            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
+                // Finalize both bounds now: the in-constraint path keeps the dist
+                // (and its ranges) for constraint lowering, which cannot re-width
+                // a mixed-width bound expression
+                iterateCheck(nodep, "Dist Range", rangep->lhsp(), CONTEXT_DET, FINAL, subDTypep,
+                             EXTEND_EXP);
+                iterateCheck(nodep, "Dist Range", rangep->rhsp(), CONTEXT_DET, FINAL, subDTypep,
+                             EXTEND_EXP);
+            } else {
                 iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+            }
         }
 
         // Inside a constraint, V3Randomize handles dist lowering with proper weights,
@@ -3471,6 +3479,8 @@ class WidthVisitor final : public VNVisitor {
         UINFOTREE(9, nodep, "", "dist-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        // Width the replacement (same reason as in visit(AstInside) below)
+        userIterate(newp, m_vup);
     }
 
     void visit(AstInside* nodep) override {
@@ -3566,6 +3576,10 @@ class WidthVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        // Width the replacement: InsideRange bounds are skipped above (finalized
+        // "later"), and a single-BOTH context (e.g. the RHS of '->' via
+        // iterateCheckBool) never revisits it, leaving mixed-width bounds unextended.
+        userIterate(newp, m_vup);
     }
     AstNodeExpr* insideItem(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* itemp) {
         const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
