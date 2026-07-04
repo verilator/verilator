@@ -7,19 +7,17 @@
 module t (
   input clk
 );
-  bit a, b;
-  logic g = 0;
-
-  default clocking @(posedge clk);
-  endclocking
 
   // verilog_format: off
-  sequence s_nonedge;
-    @(g) a ##1 b;
+  sequence s_arg(x);
+    @(posedge clk) x;
   endsequence
   // verilog_format: on
 
-  initial begin
-    @s_nonedge;
-  end
+  task automatic f;
+    bit x = 1;
+    @(s_arg(x));
+  endtask
+
+  initial f();
 endmodule

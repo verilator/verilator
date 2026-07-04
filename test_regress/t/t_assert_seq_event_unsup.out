@@ -1,15 +1,6 @@
-%Error: t/t_assert_seq_event_unsup.v:25:7: Arguments to a sequence used as an event control must be static (IEEE 1800-2023 9.4.2.4)
-                                         : ... note: In instance 't'
-   25 |     @(s_arg(x));
-      |       ^~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:15:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:18:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
                                                      : ... note: In instance 't'
-   15 |     @(g) a ##1 b;
+   18 |     @(g) a ##1 b;
       |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:29:6: Unsupported: Unclocked assertion
-                                                     : ... note: In instance 't'
-   29 |     @s_nonedge;
-      |      ^~~~~~~~~
 %Error: Exiting due to
