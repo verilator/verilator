@@ -69,14 +69,6 @@ jobs:
       runs-on: ubuntu-22.04
       sha: ${{ github.sha }}
 
-  build-macos-15-gcc:
-    name: Build | macos-15 | gcc
-    uses: ./.github/workflows/reusable-build.yml
-    with:
-      cc: gcc
-      runs-on: macos-15
-      sha: ${{ github.sha }}
-
   build-macos-15-clang:
     name: Build | macos-15 | clang
     uses: ./.github/workflows/reusable-build.yml
