@@ -78,5 +78,8 @@ autoconf
 # Build
 
 ccache -z
+BUILD_START=$SECONDS
 "$MAKE" -j "$NPROC" -k
+ccache -svv
+ccache --evict-older-than "$((SECONDS - BUILD_START + 60))s"
 ccache -svv

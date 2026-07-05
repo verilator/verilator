@@ -35,9 +35,10 @@ on:
         type: string
 
 env:
-  CCACHE_COMPRESS: 1
+  CACHE_BASE_KEY: test-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.suite }}
+  CCACHE_COMPILERCHECK: content
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
+  CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
 
 defaults:
   run:
@@ -49,10 +50,6 @@ jobs:
   test:
     runs-on: ${{ inputs.runs-on }}
     name: Test
-    env:
-      CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
-      CACHE_BASE_KEY: test-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.reloc }}-${{ inputs.suite }}
-      CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
     steps:
 
       - name: Download repository archive
@@ -70,12 +67,12 @@ jobs:
       - name: Cache $CCACHE_DIR
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
         env:
-          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
+          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CACHE_KEY }}-${{ github.sha }}
           restore-keys: |
-            ${{ env.CACHE_KEY }}-
+            ${{ env.CACHE_KEY }}
 
       - name: Install test dependencies
         run: |

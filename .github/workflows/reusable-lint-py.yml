@@ -7,11 +7,6 @@ name: reusable-lint-py
 on:
   workflow_call:
 
-env:
-  CCACHE_COMPRESS: 1
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
-
 defaults:
   run:
     shell: bash
