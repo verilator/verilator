@@ -92,6 +92,7 @@ test.compile(verilator_flags2=[
     "--prefix", "Vopt",
     "-Werror-UNOPTFLAT",
     "--dumpi-V3DfgBreakCycles", "9",  # To fill code coverage
+    "--debugi-V3DfgBreakCycles", "9",  # To fill code coverage
     "--debug", "--debugi", "0", "--dumpi-tree", "0",
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
