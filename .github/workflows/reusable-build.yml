@@ -7,25 +7,41 @@ name: reusable-build
 on:
   workflow_call:
     inputs:
+      cc:
+        description: "Compiler to use: 'gcc' or 'clang'"
+        required: true
+        type: string
+      ccwarn:
+        description: "Build Verilator with warnings treated as errors (--enable-ccwarn)"
+        required: false
+        default: true
+        type: boolean
+      dev-asan:
+        description: "Build Verilator with the address sanitizer (--enable-dev-asan)"
+        required: false
+        default: false
+        type: boolean
+      dev-gcov:
+        description: "Build Verilator with gcov instrumentation (--enable-dev-gcov)"
+        required: false
+        default: false
+        type: boolean
+      install:
+        description: "Archive the Verilator installation, not the repo tree"
+        required: false
+        default: false
+        type: boolean
+      runs-on:
+        description: "Runner to build on, e.g. ubuntu-24.04"
+        required: true
+        type: string
       sha:
         description: "Commit SHA to build"
         required: true
         type: string
-      os:  # e.g. ubuntu-24.04
-        required: true
-        type: string
-      cc: # 'clang' or 'gcc'
-        required: true
-        type: string
-      dev-asan:
-        required: true
-        type: number
-      dev-gcov:
-        required: true
-        type: number
     outputs:
       archive:
-        description: "Name of the built repository archive artifact"
+        description: "Name of the built archive artifact"
         value: ${{ jobs.build.outputs.archive }}
 
 env:
@@ -42,19 +58,21 @@ jobs:
 
   build:
     name: Build
-    runs-on: ${{ inputs.os }}
+    runs-on: ${{ inputs.runs-on }}
     outputs:
       archive: ${{ steps.create-archive.outputs.archive }}
     env:
-      CACHE_BASE_KEY: build-${{ inputs.os }}-${{ inputs.cc }}
-      CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
+      CACHE_BASE_KEY: build-${{ inputs.runs-on }}-${{ inputs.cc }}
+      CCACHE_MAXSIZE: 1000M
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           path: repo
           ref: ${{ inputs.sha }}
-          fetch-depth: ${{ inputs.dev-gcov && '0' || '1' }}  # Coverage flow needs full history
+          # Coverage needs full history; install needs it for the 'git describe'
+          # behind 'verilator --version'
+          fetch-depth: ${{ (inputs.install || inputs.dev-gcov) && '0' || '1' }}
 
       - name: Cache $CCACHE_DIR
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
@@ -74,24 +92,33 @@ jobs:
           ./ci/ci-build.bash \
             --prefix ${{ github.workspace }}/install \
             --compiler ${{ inputs.cc }} \
-            --ccwarn \
+            ${{ inputs.ccwarn && '--ccwarn' || '' }} \
             ${{ inputs.dev-asan && '--asan' || '' }} \
             ${{ inputs.dev-gcov && '--gcov' || '' }}
 
-      - name: Create repository archive
+      - name: Install
+        if: ${{ inputs.install }}
+        run: make install
+
+      - name: Create archive
         id: create-archive
         working-directory: ${{ github.workspace }}
         run: |
-          # Name of the archive must be unique based on the build parameters
-          ARCHIVE=verilator-${{ inputs.sha }}-${{ inputs.os }}-${{ inputs.cc }}-${{ inputs.dev-asan }}-${{ inputs.dev-gcov }}.tar.zst
-          # zstd compresses faster than gzip and decompresses far faster in the many downstream test jobs
-          ZSTD_NBTHREADS=0 tar --posix --zstd -c -f $ARCHIVE repo
+          # Archive name, unique per build; flavour tags mark non-default builds
+          ARCHIVE="verilator-${{ inputs.sha }}-${{ inputs.runs-on }}-${{ inputs.cc }}"
+          ARCHIVE="$ARCHIVE${{ inputs.ccwarn && '-ccwarn' || '' }}"
+          ARCHIVE="$ARCHIVE${{ inputs.dev-asan && '-asan' || '' }}"
+          ARCHIVE="$ARCHIVE${{ inputs.dev-gcov && '-gcov' || '' }}"
+          ARCHIVE="$ARCHIVE.tar.zst"
+          # zstd compresses faster than gzip and decompresses far faster in the many downstream jobs
+          ZSTD_NBTHREADS=0 tar --posix --zstd -c -f "$ARCHIVE" ${{ inputs.install && 'install' || 'repo' }}
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
 
-      - name: Upload repository archive
+      - name: Upload archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: ${{ github.workspace }}/${{ steps.create-archive.outputs.archive }}
           name: ${{ steps.create-archive.outputs.archive }}
+          overwrite: true
           # Archive is already zstd-compressed; skip upload-artifact's zip pass
           compression-level: 0

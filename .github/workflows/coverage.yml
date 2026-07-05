@@ -38,14 +38,13 @@ jobs:
       (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-build.yml
     with:
+      cc: gcc
+      dev-gcov: true
+      runs-on: ubuntu-24.04
       # For pull requests, build the head of the pull request branch, not the
       # merge commit, otherwise patch coverage would include the changes
       # between the root of the pull request and the target branch
       sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      os: ubuntu-24.04
-      cc: gcc
-      dev-asan: 0
-      dev-gcov: 1
 
   test:
     name: Test | ${{ matrix.test }}${{ matrix.num }}
@@ -53,11 +52,10 @@ jobs:
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build.outputs.archive }}
-      os: ubuntu-24.04
       cc: gcc
-      reloc: 0
+      dev-gcov: true
+      runs-on: ubuntu-24.04
       suite: ${{ matrix.test }}${{ matrix.num }}
-      dev-gcov: 1
     strategy:
       fail-fast: false
       matrix:
