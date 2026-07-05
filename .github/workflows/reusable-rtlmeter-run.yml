@@ -101,7 +101,7 @@ jobs:
 
       - name: Unpack Verilator installation archive - new
         run: |
-          tar -x -z -f ${{ inputs.verilator-archive-new }}
+          tar --zstd -x -f ${{ inputs.verilator-archive-new }}
           mv install verilator-new
 
       - name: Compile cases - new
@@ -164,7 +164,7 @@ jobs:
       - name: Unpack Verilator installation archive - old
         if: ${{ inputs.verilator-archive-old != '' }}
         run: |
-          tar -x -z -f ${{ inputs.verilator-archive-old }}
+          tar --zstd -x -f ${{ inputs.verilator-archive-old }}
           mv install verilator-old
 
       - name: Compile cases - old

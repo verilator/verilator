@@ -121,7 +121,7 @@ jobs:
 
       - name: Unpack repository archive
         run: |
-          tar -x -z -f ${{ needs.build.outputs.archive }}
+          tar --zstd -x -f ${{ needs.build.outputs.archive }}
           ls -lsha
 
       - name: Download code coverage data

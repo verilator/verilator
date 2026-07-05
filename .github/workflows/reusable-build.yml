@@ -88,8 +88,9 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           # Name of the archive must be unique based on the build parameters
-          ARCHIVE=verilator-${{ inputs.sha }}-${{ inputs.os }}-${{ inputs.cc }}-${{ inputs.dev-asan }}-${{ inputs.dev-gcov }}.tar.gz
-          tar --posix -c -z -f $ARCHIVE repo
+          ARCHIVE=verilator-${{ inputs.sha }}-${{ inputs.os }}-${{ inputs.cc }}-${{ inputs.dev-asan }}-${{ inputs.dev-gcov }}.tar.zst
+          # zstd compresses faster than gzip and decompresses far faster in the many downstream test jobs
+          ZSTD_NBTHREADS=0 tar --posix --zstd -c -f $ARCHIVE repo
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
 
       - name: Upload repository archive
@@ -97,3 +98,5 @@ jobs:
         with:
           path: ${{ github.workspace }}/${{ steps.create-archive.outputs.archive }}
           name: ${{ steps.create-archive.outputs.archive }}
+          # Archive is already zstd-compressed; skip upload-artifact's zip pass
+          compression-level: 0

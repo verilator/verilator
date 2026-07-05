@@ -84,8 +84,9 @@ jobs:
         id: create-archive
         run: |
           SHA=$(git -C repo rev-parse HEAD)
-          ARCHIVE=verilator-$SHA-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}.tar.gz
-          tar --posix -c -z -f $ARCHIVE install
+          ARCHIVE=verilator-$SHA-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}.tar.zst
+          # zstd compresses faster than gzip and decompresses far faster in the downstream run jobs
+          ZSTD_NBTHREADS=0 tar --posix --zstd -c -f $ARCHIVE install
           echo "archive=$ARCHIVE" >> $GITHUB_OUTPUT
 
       - name: Upload Verilator installation archive
@@ -94,3 +95,5 @@ jobs:
           path: ${{ steps.create-archive.outputs.archive }}
           name: ${{ steps.create-archive.outputs.archive }}
           overwrite: true
+          # Archive is already zstd-compressed; skip upload-artifact's zip pass
+          compression-level: 0
