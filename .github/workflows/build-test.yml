@@ -263,14 +263,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu 24.04 clang
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-2}
+          # Ubuntu 24.04 clang, also test relocation
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-0}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-1}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-2}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-3}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-0}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-1}
+          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-2}
 
   test-2204-gcc:
     name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
