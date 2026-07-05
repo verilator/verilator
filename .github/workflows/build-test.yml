@@ -88,32 +88,19 @@ jobs:
   build-windows:
     name: Build | windows-2025-vs2026 | msvc
     runs-on: windows-2025-vs2026
-    env:
-      CCACHE_COMPRESS: 1
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_LIMIT_MULTIPLE: 0.95
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           path: repo
-      - name: Cache $CCACHE_DIR
+      - name: Cache win_flex_bison
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
         with:
-          path: ${{ env.CCACHE_DIR }}
-          key: msbuild-msvc-cmake
+          path: ${{ github.workspace }}/win_flex_bison
+          key: win_flex_bison
       - name: compile
-        env:
-          WIN_FLEX_BISON: ${{ github.workspace }}/.ccache
         run: ./ci/ci-win-compile.ps1
       - name: test build
         run: ./ci/ci-win-test.ps1
-      - name: Zip up repository
-        run: Compress-Archive -LiteralPath install -DestinationPath verilator.zip
-      - name: Upload zip archive
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          path: ${{ github.workspace }}/repo/verilator.zip
-          name: verilator-win.zip
 
   test-2604-gcc:
     name: Test | 26.04 | gcc | ${{ matrix.suite }}
