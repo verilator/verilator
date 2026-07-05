@@ -8,9 +8,6 @@ on:
   workflow_call:
 
 env:
-  CI_OS_NAME: linux
-  CI_BUILD_STAGE_NAME: build
-  CI_RUNS_ON: ubuntu-22.04
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
@@ -32,7 +29,7 @@ jobs:
           path: repo
 
       - name: Install packages for build
-        run: ./ci/ci-install.bash
+        run: ./ci/ci-install.bash build
 
       - name: Configure
         run: |
