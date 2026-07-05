@@ -7,13 +7,17 @@
 
 Set-PSDebug -Trace 1
 
+$NPROC = $env:NUMBER_OF_PROCESSORS
+
 cd install
 $Env:VERILATOR_ROOT=$PWD
 cd examples/cmake_tracing_c
 mkdir build
 cd build
-cmake ..
-cmake --build . --config Release -j 3
+# /Od skips optimization; this only checks the example verilates and builds, so
+# an optimized binary is not needed (see ci-win-compile.ps1).
+cmake .. "-DCMAKE_CXX_FLAGS_RELEASE=/Od /DNDEBUG"
+cmake --build . --config Release -j $NPROC
 
 # TODO put this back in, see issue# 5163
 # Release/example.exe
