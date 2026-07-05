@@ -20,11 +20,11 @@ on:
         type: string
         required: true
       verilator-archive-new:
-        description: "Name of the installation archive artifact from reusable-rtlmeter-build, new version"
+        description: "Name of the installation archive artifact from reusable-build, new version"
         type: string
         required: true
       verilator-archive-old:
-        description: "Name of the installation archive artifact from reusable-rtlmeter-build, old version"
+        description: "Name of the installation archive artifact from reusable-build, old version"
         type: string
         required: false
         default: ""

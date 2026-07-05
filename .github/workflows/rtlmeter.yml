@@ -65,39 +65,47 @@ jobs:
   build-gcc-new:
     name: Build New Verilator - GCC
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-clang-new:
     name: Build New Verilator - Clang
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-gcc-old:
     name: Build Old Verilator - GCC
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   build-clang-old:
     name: Build Old Verilator - Clang
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:

@@ -153,7 +153,9 @@ else
 fi
 
 # Report where the tools we may have installed live (ok if some are missing)
+set +x
+echo "Tools:"
 for bin in autoconf bear bison ccache flex gdb help2man jq lcov mold perl wavediff z3; do
-  echo -n "$bin "
-  which "$bin" || true
+  echo -n "  $bin: "
+  which "$bin" || echo "Not found"
 done

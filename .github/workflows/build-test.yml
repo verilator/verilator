@@ -29,74 +29,61 @@ concurrency:
 jobs:
 
   build-2604-gcc:
-    name: Build | ubuntu-26.04 | gcc
+    name: Build | 26.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: ubuntu-26.04
       cc: gcc
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: ubuntu-26.04
+      sha: ${{ github.sha }}
 
   build-2604-clang:
-    name: Build | ubuntu-26.04 | clang
+    name: Build | 26.04 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: ubuntu-26.04
       cc: clang
-      dev-asan: 1
-      dev-gcov: 0
+      dev-asan: true  # Build (and run) with address sanitizer
+      runs-on: ubuntu-26.04
+      sha: ${{ github.sha }}
 
   build-2404-gcc:
-    name: Build | ubuntu-24.04 | gcc
+    name: Build | 24.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: ubuntu-24.04
       cc: gcc
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: ubuntu-24.04
+      sha: ${{ github.sha }}
 
   build-2404-clang:
-    name: Build | ubuntu-24.04 | clang
+    name: Build | 24.04 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: ubuntu-24.04
       cc: clang
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: ubuntu-24.04
+      sha: ${{ github.sha }}
 
   build-2204-gcc:
-    name: Build | ubuntu-22.04 | gcc
+    name: Build | 22.04 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: ubuntu-22.04
       cc: gcc
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: ubuntu-22.04
+      sha: ${{ github.sha }}
 
   build-macos-15-gcc:
     name: Build | macos-15 | gcc
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: macos-15
       cc: gcc
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: macos-15
+      sha: ${{ github.sha }}
 
   build-macos-15-clang:
     name: Build | macos-15 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
-      os: macos-15
       cc: clang
-      dev-asan: 0
-      dev-gcov: 0
+      runs-on: macos-15
+      sha: ${{ github.sha }}
 
   build-windows:
     name: Build | windows-2025-vs2026 | msvc
@@ -129,124 +116,75 @@ jobs:
           name: verilator-win.zip
 
   test-2604-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
+    name: Test | 26.04 | gcc | ${{ matrix.suite }}
     needs: build-2604-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build-2604-gcc.outputs.archive }}
-      os: ${{ matrix.os }}
-      cc: ${{ matrix.cc }}
-      reloc: ${{ matrix.reloc }}
+      cc: gcc
+      runs-on: ubuntu-26.04
       suite: ${{ matrix.suite }}
-      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Ubuntu 26.04 gcc
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-26.04, cc: gcc, reloc: 0, suite: vltmt-2}
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
 
   test-2604-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
+    name: Test | 26.04 | clang | ${{ matrix.suite }}
     needs: build-2604-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build-2604-clang.outputs.archive }}
-      os: ${{ matrix.os }}
-      cc: ${{ matrix.cc }}
-      reloc: ${{ matrix.reloc }}
+      cc: clang
+      runs-on: ubuntu-26.04
       suite: ${{ matrix.suite }}
-      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Ubuntu 26.04 clang
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-26.04, cc: clang, reloc: 0, suite: vltmt-2}
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
 
   test-2404-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
+    name: Test | 24.04 | gcc | ${{ matrix.suite }}
     needs: build-2404-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build-2404-gcc.outputs.archive }}
-      os: ${{ matrix.os }}
-      cc: ${{ matrix.cc }}
-      reloc: ${{ matrix.reloc }}
+      cc: gcc
+      runs-on: ubuntu-24.04
       suite: ${{ matrix.suite }}
-      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Ubuntu 24.04 gcc
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-2}
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
 
   test-2404-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
+    name: Test | 24.04 | clang | ${{ matrix.suite }}
     needs: build-2404-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build-2404-clang.outputs.archive }}
-      os: ${{ matrix.os }}
-      cc: ${{ matrix.cc }}
-      reloc: ${{ matrix.reloc }}
+      cc: clang
+      reloc: true  # Test with relocated installation
+      runs-on: ubuntu-24.04
       suite: ${{ matrix.suite }}
-      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Ubuntu 24.04 clang, also test relocation
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-0}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-1}
-          - {os: ubuntu-24.04, cc: clang, reloc: 1, suite: vltmt-2}
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
 
   test-2204-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.suite }}
+    name: Test | 22.04 | gcc | ${{ matrix.suite }}
     needs: build-2204-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
       archive: ${{ needs.build-2204-gcc.outputs.archive }}
-      os: ${{ matrix.os }}
-      cc: ${{ matrix.cc }}
-      reloc: ${{ matrix.reloc }}
+      cc: gcc
+      runs-on: ubuntu-22.04
       suite: ${{ matrix.suite }}
-      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Ubuntu 22.04 gcc
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-2}
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1, vltmt-2]
 
   lint-py:
     name: Lint Python
