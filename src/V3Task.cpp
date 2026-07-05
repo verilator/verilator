@@ -248,9 +248,9 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
         new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
-        if (isVirtualIfaceMethodCall(nodep) && isIfaceFTaskScope(getScope(nodep->taskp()))) {
-            taskVtxp->needsNonInlineCFunc(true);
-        }
+        // Virtual-interface method calls dispatch through a runtime handle and
+        // must not be inlined.
+        if (isVirtualIfaceMethodCall(nodep)) taskVtxp->needsNonInlineCFunc(true);
         // Do we have to disable inlining the function?
         const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         if (!taskVtxp->noInline()) {  // Else short-circuit below
@@ -306,10 +306,9 @@ private:
     }
     void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
-        VL_RESTORER(m_initialps);
+        VL_RESTORER_CLEAR(m_initialps);
         VL_RESTORER(m_ctorp);
         VL_RESTORER(m_classp);
-        m_initialps.clear();
         m_ctorp = nullptr;
         m_classp = nodep;
         {  // Find m_initialps, m_ctor
@@ -1638,6 +1637,7 @@ class TaskVisitor final : public VNVisitor {
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
+        // getScope() is safe here: TaskStateVisitor stamped all FTask scopes before this pass.
         const bool virtualIfaceCall
             = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
               && TaskStateVisitor::isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));

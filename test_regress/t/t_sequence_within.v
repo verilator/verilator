@@ -11,9 +11,6 @@
 // verilog_format: on
 
 // IEEE 1800-2023 16.9.10: seq1 within seq2
-// CRC-driven random stimulus. Each property has a counter; at cyc==99 we
-// `checkd` against Verilator's actual count and record the Questa golden
-// value in a trailing comment for cross-simulator reference.
 
 module t (
     input clk
@@ -91,7 +88,9 @@ module t (
       (a ##3 b) intersect ((c ##1 d) within (a ##3 b)))
     count_p10 <= count_p10 + 1;
 
-  always_ff @(posedge clk) begin
+  initial $assertvacuousoff;
+
+  always @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
 
@@ -101,30 +100,20 @@ module t (
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       // p1/p2/p5 use |->; the NFA currently fires the pass action on
-      // vacuous passes too, so counts are inflated vs. Questa. Pre-existing
+      // vacuous passes too, so counts are inflated vs. others. Pre-existing
       // engine-wide behavior, not within-specific.
-      `checkd(count_p1, 89);  // Questa: 23
-      `checkd(count_p2, 89);  // Questa: 44
-      `checkd(count_p3, 26);  // Questa: 20
-      `checkd(count_p4, 24);  // Questa: 22
-      `checkd(count_p5, 89);  // Questa: 26
-      `checkd(count_p6, 21);  // Questa: 16
-      `checkd(count_p7, 15);  // Questa: 9
-      `checkd(count_p8, 15);  // Questa: 4
-      `checkd(count_p9, 17);  // Questa: 10
-      `checkd(count_p10, 24);  // Questa: 15
+      `checkd(count_p1, 23);  // Other sims: 23, or 16
+      `checkd(count_p2, 44);  // Other sims: 44, or 21
+      `checkd(count_p3, 25);  // Other sims: 20
+      `checkd(count_p4, 23);  // Other sims: 22
+      `checkd(count_p5, 26);
+      `checkd(count_p6, 21);  // Other sims: 16
+      `checkd(count_p7, 15);  // Other sims: 9
+      `checkd(count_p8, 15);  // Other sims: 4
+      `checkd(count_p9, 15);  // Other sims: 10
+      `checkd(count_p10, 23);  // Other sims: 15
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
 endmodule
-
-// Harness for stand-alone simulators (e.g. QuestaSim). Verilator uses
-// test_regress's built-in clock shell and ignores this module.
-`ifndef VERILATOR
-module wrap;
-  logic clk = 0;
-  always #5 clk = ~clk;
-  t inst (.clk(clk));
-endmodule
-`endif

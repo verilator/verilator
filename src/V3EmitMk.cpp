@@ -567,6 +567,12 @@ public:
         of.puts("VM_TRACE_VCD = ");
         of.puts(v3Global.opt.traceEnabledVcd() ? "1" : "0");
         of.puts("\n");
+        of.puts("# VPI enabled?  0/1 (from --vpi)\n");
+        of.puts("VM_VPI = ");
+        of.puts(v3Global.opt.vpi() ? "1" : "0");
+        of.puts("\n");
+        // Link flags for runtime VPI library loading are emitted by emitOverallMake() after
+        // verilated.mk is included (so $(CFG_LDFLAGS_DYNAMIC)/$(CFG_LDLIBS_DYNAMIC) are defined).
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
@@ -729,6 +735,17 @@ public:
             of.puts("\n### Executable rules... (from --exe)\n");
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
+
+            if (v3Global.opt.vpi()) {
+                // Runtime VPI library loading (+verilator+vpi+<lib>) needs the executable to
+                // export its VPI symbols so the dlopen'd library can resolve them, plus the
+                // dl library for dlopen/dlsym.  The exact flags are probed at configure time
+                // (CFG_LDFLAGS_DYNAMIC / CFG_LDLIBS_DYNAMIC in verilated.mk).
+                of.puts("# Runtime VPI library loading (+verilator+vpi+) link requirements\n");
+                of.puts("LDFLAGS += $(CFG_LDFLAGS_DYNAMIC)\n");
+                of.puts("LDLIBS += $(CFG_LDLIBS_DYNAMIC)\n");
+                of.puts("\n");
+            }
         }
 
         const string compilerIncludePch

@@ -34,9 +34,9 @@ module t (
     if (sgn_wide[2:0] != 3'sh7) $stop;
     if (unsgn_wide[2:0] != 3'h7) $stop;
     // Simulators differ here.
-    if (sgn_wide !== 8'sbzzzzz111  // z-extension - NC
-        && sgn_wide !== 8'sb11111111)
-      $stop;  // sign extension - VCS
+    if (sgn_wide !== 8'sbzzzzz111  // z-extension - some others
+        && sgn_wide !== 8'sb11111111)  // sign extension - some others
+      $stop;
     if (unsgn_wide !== 8'sbzzzzz111 && unsgn_wide !== 8'sb00000111) $stop;
     cyc <= cyc + 1;
     if (cyc == 3) begin

@@ -477,7 +477,13 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         UINFO(4, "Start checking " << nodep->prettyNameQ());
         if (!VN_IS(nodep, Module)) {
             UINFO(4, "Skip " << nodep->prettyNameQ());
-            nodep->foreach([this](AstVarXRef* const nodep) { handleVarXRef(nodep); });
+            nodep->foreach([this](AstNodeVarRef* const nodep) {
+                if (AstVarXRef* const varXRefp = VN_CAST(nodep, VarXRef)) {
+                    handleVarXRef(varXRefp);
+                } else if (m_modp) {
+                    iterate(VN_AS(nodep, VarRef));
+                }
+            });
             return;
         }
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");

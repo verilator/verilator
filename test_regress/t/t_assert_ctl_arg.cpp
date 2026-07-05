@@ -82,6 +82,61 @@ void verilatedTest() {
     contextp->assertOn(false);
     // Now everything is disabled
     TEST_CHECK_Z(contextp->assertOn());
+
+    // Unified runtime query getter
+    using Query = VerilatedAssertCtlQuery;
+    constexpr uint32_t LOCK = 1;
+    constexpr uint32_t UNLOCK = 2;
+    constexpr uint32_t ON = 3;
+    constexpr uint32_t OFF = 4;
+    constexpr uint32_t KILL = 5;
+    constexpr uint32_t PASS_ON = 6;
+    constexpr uint32_t PASS_OFF = 7;
+    constexpr uint32_t FAIL_ON = 8;
+    constexpr uint32_t FAIL_OFF = 9;
+    constexpr uint32_t NONVACUOUS_ON = 10;
+    constexpr uint32_t VACUOUS_OFF = 11;
+    constexpr uint32_t TYPE = 1;
+    constexpr uint32_t DIRECTIVE = 1;
+
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, 0, DIRECTIVE));
+
+    contextp->assertCtl(LOCK, TYPE, DIRECTIVE);
+    contextp->assertCtl(ON, TYPE, DIRECTIVE);
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
+    contextp->assertCtl(UNLOCK, TYPE, DIRECTIVE);
+    contextp->assertCtl(ON, TYPE, DIRECTIVE);
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
+    contextp->assertCtl(OFF, TYPE, DIRECTIVE);
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
+
+    const uint32_t killBefore = contextp->assertCtlGet(Query::ASSERT_CTL_KILL, TYPE, DIRECTIVE);
+    contextp->assertCtl(KILL, TYPE, DIRECTIVE);
+    TEST_CHECK_EQ(contextp->assertCtlGet(Query::ASSERT_CTL_KILL, TYPE, DIRECTIVE), killBefore + 1);
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
+
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
+    contextp->assertCtl(PASS_OFF, TYPE, DIRECTIVE);
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
+
+    contextp->assertCtl(NONVACUOUS_ON, TYPE, DIRECTIVE);
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
+    contextp->assertCtl(PASS_ON, TYPE, DIRECTIVE);
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
+    contextp->assertCtl(VACUOUS_OFF, TYPE, DIRECTIVE);
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
+
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
+    contextp->assertCtl(FAIL_OFF, TYPE, DIRECTIVE);
+    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
+    contextp->assertCtl(FAIL_ON, TYPE, DIRECTIVE);
+    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
 }
 int main(int argc, char** argv) {
     verilatedTest();

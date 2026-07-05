@@ -1,0 +1,5 @@
+%Error-FINALDLY: t/t_finaldly_bad.v:9:13: Non-blocking assignment '<=' in final block
+    9 |   final foo <= 1;   
+      |             ^~
+                 ... For error description see https://verilator.org/warn/FINALDLY?v=latest
+%Error: Exiting due to

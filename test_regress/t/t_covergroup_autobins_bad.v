@@ -10,6 +10,7 @@
 module t;
   int size_var;
   logic [3:0] cp_expr;
+  logic [15:0] cp_wide;
 
   // Error: array size must be a constant
   covergroup cg1;
@@ -61,6 +62,15 @@ module t;
       ignore_bins ign_nclo = {[size_var:4]};  // non-constant lower bound
       bins b_nc_ub = {[size_var:$]};  // non-constant lower bound, open-ended '$' upper
       bins b_xz_ub = {[4'bxxxx:$]};  // four-state lower bound, open-ended '$' upper
+      bins b_xz_arr[] = {[4'bxxxx:4'hF]};  // four-state lower bound (array-bins path)
+      bins b_xz_arr_hi[] = {[4'h0:4'bzzzz]};  // four-state upper bound (array-bins path)
+    }
+  endgroup
+
+  // Warning (COVERIGN): array bins range exceeds COVER_BINS_LIMIT
+  covergroup cg6;
+    cp1: coverpoint cp_wide {
+      bins b_huge[] = {[0:$]};  // open '[lo:$]' over 16-bit coverpoint exceeds bin limit
     }
   endgroup
 
@@ -70,6 +80,7 @@ module t;
   cg3 cg3_inst = new;
   cg4 cg4_inst = new;
   cg5 cg5_inst = new;
+  cg6 cg6_inst = new;
 
   initial $finish;
 endmodule

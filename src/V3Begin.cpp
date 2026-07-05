@@ -61,7 +61,6 @@ class BeginVisitor final : public VNVisitor {
     // NODE STATE
     // AstCase::user1   -> bool, if already purified
 
-    V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names used by cases
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
 
@@ -75,7 +74,6 @@ class BeginVisitor final : public VNVisitor {
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
     bool m_keepBegins = false;  // True if begins should not be inlined
-    VDouble0 m_statPurifiedCaseExpr;  // Count of purified case expressions
 
     // METHODS
 
@@ -132,7 +130,6 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_caseTempNames);
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
@@ -140,12 +137,9 @@ class BeginVisitor final : public VNVisitor {
             UINFO(8, "     rename to " << nodep->name());
             m_statep->userMarkChanged(nodep);
         }
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
-        m_displayScope = "";
-        m_namedScope = "";
-        m_unnamedScope = "";
+        VL_RESTORER_CLEAR(m_displayScope);
+        VL_RESTORER_CLEAR(m_namedScope);
+        VL_RESTORER_CLEAR(m_unnamedScope);
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -166,15 +160,13 @@ class BeginVisitor final : public VNVisitor {
         // naming; so that any begin's inside the function will rename
         // inside the function.
         // Process children
-        VL_RESTORER(m_displayScope);
+        VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER(m_ftaskp);
         VL_RESTORER(m_liftedp);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
-        VL_RESTORER(m_caseTempNames);
+        VL_RESTORER_CLEAR(m_namedScope);
+        VL_RESTORER_CLEAR(m_unnamedScope);
         m_displayScope = dot(m_displayScope, nodep->name());
-        m_namedScope = "";
-        m_unnamedScope = "";
+
         m_ftaskp = nodep;
         m_liftedp = nullptr;
         iterateChildren(nodep);
@@ -195,9 +187,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstGenBlock* nodep) override {
         // GenBlocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
         dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
         iterateAndNextNull(nodep->itemsp());
@@ -231,9 +223,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
@@ -265,9 +257,9 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstNodeBlock* nodep) override {
         // Begin/Fork blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_displayScope);
-        VL_RESTORER(m_namedScope);
-        VL_RESTORER(m_unnamedScope);
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = VN_IS(nodep, Fork);
@@ -415,29 +407,7 @@ class BeginVisitor final : public VNVisitor {
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
-    void visit(AstCase* nodep) override {
-        // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
-        // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
-        // that V3Scope will take care of a scope creation
-        if (!nodep->exprp()->isPure() && !nodep->user1SetOnce()) {
-            ++m_statPurifiedCaseExpr;
-            FileLine* const fl = nodep->exprp()->fileline();
-            AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
-                                            nodep->exprp()->dtypep()};
-            nodep->exprp(new AstExprStmt{fl,
-                                         new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                                       nodep->exprp()->unlinkFrBack()},
-                                         new AstVarRef{fl, varp, VAccess::READ}});
-            if (m_ftaskp) {
-                varp->funcLocal(true);
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
-            } else {
-                m_modp->stmtsp()->addHereThisAsNext(varp);
-            }
-        }
-        iterateChildren(nodep);
-    }
+    void visit(AstCase* nodep) override { iterateChildren(nodep); }
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
         VL_RESTORER(m_keepBegins);
@@ -464,10 +434,8 @@ class BeginVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_caseTempNames{"__VCase"}
-        , m_statep{statep} {
+        : m_statep{statep} {
         iterate(nodep);
-        V3Stats::addStatSum("Impure case expressions", m_statPurifiedCaseExpr);
     }
     ~BeginVisitor() override = default;
 };

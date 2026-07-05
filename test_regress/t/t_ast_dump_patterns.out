@@ -1,0 +1,251 @@
+AST patterns with depth 1
+          126 (CONST #A):a/a
+           54 (VARREF):a/b
+           36 (CCAST (VARREF):a/b):a/b
+           34 (AND (CONST #A):a/a _:a/1):a/1
+           29 (VARREF):a/a
+           23 (CONST ZERO):a/a
+           21 (VARREF):(w64)u[1:0]
+           20 (CCAST _:a/1):a/1
+           18 (AND (CONST #A):a/a _:a/a):a/a
+           18 (SHIFTR _:a/b (CONST #A):a/a):a/1
+           17 (VARREF):a/1
+           15 (SHIFTL _:a/1 (CONST #A):a/a):a/a
+           14 (NEGATE _:a/1):a/a
+           12 (AND (CONST #A):a/a _:a/b):a/b
+           12 (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b
+           12 (NOT _:a/b):a/b
+           12 (VARREF):(w64)u[0:0]
+           11 (OR _:a/a _:a/b):a/c
+            9 (OR _:a/a _:a/1):a/b
+            9 (VARREF):(G/str)
+            8 (CCAST _:a/a):a/a
+            8 (CCAST _:a/a):b/b
+            8 (CRESET):a/a
+            8 (NOT _:a/a):a/a
+            8 (REDXOR _:a/b):a/1
+            7 (SHIFTL _:a/b (CONST #A):a/a):a/a
+            6 (AND _:a/b _:a/b):a/b
+            6 (REDXOR _:a/a):b/1
+            5 (CCAST _:a/a):b/1
+            5 (OR _:a/a _:a/a):a/a
+            4 (ADD _:a/a (VARREF):a/a):a/a
+            4 (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b
+            4 (CCAST (CONST #A):a/a):a/a
+            4 (CCAST (VARREF):a/1):a/1
+            4 (CCAST _:a/1):b/1
+            4 (CONST #A):(G/str)
+            4 (CONST #A):a/1
+            4 (NEGATE _:a/1):a/b
+            4 (SHIFTL _:a/a (CONST #A):b/b):a/a
+            3 (AND (VARREF):a/a (CONST #A):b/b):a/a
+            3 (CONST ZERO):a/1
+            3 (CRESET):(w64)u[0:0]
+            3 (CRESET):(w64)u[1:0]
+            3 (NOT _:a/1):a/1
+            3 (OR (CONST #A):a/a _:a/a):a/a
+            2 (CCALL [(VARREF):(w64)u[0:0], (VARREF):(w64)u[0:0]]):a/a
+            2 (CCALL [(VARREF):(w64)u[0:0]]):a/1
+            2 (CCALL [(VARREF):(w64)u[1:0], (VARREF):(w64)u[1:0]]):a/a
+            2 (CCALL [(VARREF):(w64)u[1:0]]):a/1
+            2 (CCALL []):a/1
+            2 (CRESET):(G/str)
+            2 (GT (CONST #A):a/a (VARREF):a/a):a/1
+            2 (LT (CONST #A):a/a (VARREF):a/a):a/1
+            2 (NEQ _:a/b _:a/b):a/1
+            2 (OR _:a/a _:a/a):a/b
+            2 (REDXOR (VARREF):a/b):a/1
+            2 (REDXOR _:a/a):a/1
+            2 (REDXOR _:a/b):c/1
+            2 (SHIFTR _:a/a (CONST #A):b/b):a/a
+            1 (ARRAYSEL (VARREF):(w64)u[0:0] (VARREF):a/a):b/b
+            1 (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b
+            1 (ARRAYSEL (VARREF):(w64)u[1:0] (VARREF):a/a):b/b
+            1 (CCAST _:a/1):b/b
+            1 (CCAST _:a/b):a/b
+            1 (CCAST _:a/b):c/c
+            1 (CRESET):1/1
+            1 (NEQ _:a/b _:a/b):a/c
+            1 (VARREF):1/1
+
+AST patterns with depth 2
+           18 (AND (CONST #A):a/a (SHIFTR _:a/b (CONST #A):a/a):a/1):a/1
+           18 (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1
+           18 (SHIFTR (CCAST (VARREF):a/b):a/b (CONST #A):a/a):a/1
+           14 (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a
+           12 (NOT (CCAST (VARREF):a/b):a/b):a/b
+           10 (NEGATE (CCAST _:a/1):a/1):a/a
+            8 (CCAST (CCAST _:a/a):a/a):b/b
+            8 (CCAST (NOT _:a/a):a/a):a/a
+            8 (NOT (NEGATE _:a/1):a/a):a/a
+            8 (OR (AND (CONST #A):a/a _:a/a):a/a (AND (CONST #B):a/a _:a/1):a/1):a/b
+            8 (REDXOR (AND (CONST #A):a/a _:a/b):a/b):a/1
+            6 (AND (CONST #A):a/a (AND _:a/b _:a/b):a/b):a/b
+            6 (AND (NOT _:a/b):a/b (NOT _:a/b):a/b):a/b
+            6 (OR (AND (CONST #A):a/a _:a/a):a/a (OR _:a/a _:a/1):a/b):a/c
+            6 (SHIFTL (OR _:a/a _:a/b):a/c (CONST #A):a/a):a/a
+            5 (AND (CONST #A):a/a (CCAST _:b/b):a/1):a/1
+            4 (ADD (CCAST (CONST #A):a/a):a/a (VARREF):a/a):a/a
+            4 (AND (CONST #A):a/a (NEGATE _:a/1):a/b):a/b
+            4 (AND (CONST #A):a/a (REDXOR _:a/b):a/1):a/1
+            4 (AND (CONST #A):a/a (REDXOR _:b/b):a/1):a/1
+            4 (CCAST (CCAST _:a/1):a/1):b/1
+            4 (NEGATE (CCAST _:a/1):a/1):a/b
+            4 (NEGATE (CCAST _:a/1):b/1):b/b
+            4 (REDXOR (NEGATE _:a/1):a/a):b/1
+            4 (SHIFTL (CCAST _:a/a):b/b (CONST #A):a/a):b/b
+            4 (SHIFTL (REDXOR _:a/b):a/1 (CONST #A):a/a):a/a
+            3 (AND (CONST #A):a/a (NOT _:a/1):a/1):a/1
+            3 (OR (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):b/b):a/a):a/a
+            2 (AND (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):b/b):a/a):a/a
+            2 (AND (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):b/b):a/a):a/a
+            2 (AND (CONST #A):a/a (OR _:a/a _:a/a):a/b):a/b
+            2 (CCAST (SHIFTR _:a/a (CONST #A):b/b):a/a):b/1
+            2 (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1
+            2 (NOT (CCAST _:a/1):a/1):a/1
+            2 (OR (OR _:a/a _:a/a):a/a (OR _:a/a _:a/b):a/c):a/d
+            2 (OR (SHIFTL _:a/a (CONST #A):b/b):a/a (CCAST _:b/b):a/a):a/a
+            2 (OR (SHIFTL _:a/a (CONST #A):b/b):a/a (CCAST _:b/b):a/a):a/c
+            2 (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/c):a/d
+            2 (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (SHIFTL _:a/b (CONST #B):a/a):a/a):a/a
+            2 (REDXOR (AND (CONST #A):a/a _:a/b):a/b):c/1
+            2 (REDXOR (NEGATE _:a/1):a/a):a/1
+            2 (REDXOR (OR _:a/a _:a/a):a/a):b/1
+            2 (SHIFTL (CCAST (VARREF):a/1):a/1 (CONST #A):a/a):a/a
+            2 (SHIFTL (REDXOR (VARREF):a/b):a/1 (CONST #A):a/a):a/a
+            2 (SHIFTL (REDXOR _:a/a):a/1 (CONST #A):a/a):a/a
+            2 (SHIFTL (REDXOR _:a/a):b/1 (CONST #A):b/b):b/b
+            2 (SHIFTL (REDXOR _:a/b):c/1 (CONST #A):c/c):c/c
+            2 (SHIFTR (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b (CONST #A):a/a):b/b
+            1 (CCAST (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b):a/1
+            1 (CCAST (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b):a/1
+            1 (CCAST (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b):a/1
+            1 (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1
+            1 (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1
+            1 (CCAST (CCAST (VARREF):a/1):a/1):b/b
+            1 (CCAST (CCAST _:a/b):a/b):c/c
+            1 (CCAST (OR _:a/a _:a/b):a/c):a/c
+            1 (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c
+            1 (NOT (CCAST (VARREF):a/1):a/1):a/1
+            1 (OR (AND (CONST #A):a/a _:a/a):a/a (CCAST _:b/1):a/a):a/a
+            1 (OR (SHIFTL _:a/1 (CONST #A):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c
+            1 (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c
+            1 (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #A):a/a):a/a
+            1 (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a
+
+AST patterns with depth 3
+           18 (AND (CONST #A):a/a (SHIFTR (CCAST (VARREF):a/b):a/b (CONST #A):a/a):a/1):a/1
+           18 (CCAST (AND (CONST #A):a/a (SHIFTR _:a/b (CONST #A):a/a):a/1):a/1):a/1
+           10 (NEGATE (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):a/a
+            8 (CCAST (CCAST (NOT _:a/a):a/a):a/a):b/b
+            8 (CCAST (NOT (NEGATE _:a/1):a/a):a/a):a/a
+            8 (NOT (NEGATE (CCAST _:a/1):a/1):a/a):a/a
+            6 (AND (CONST #A):a/a (AND (NOT _:a/b):a/b (NOT _:a/b):a/b):a/b):a/b
+            6 (AND (NOT (CCAST (VARREF):a/b):a/b):a/b (NOT (CCAST (VARREF):a/b):a/b):a/b):a/b
+            6 (OR (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a _:a/a):a/a (AND (CONST #C):a/a _:a/1):a/1):a/b):a/c
+            6 (SHIFTL (OR (AND (CONST #A):a/a _:a/a):a/a (OR _:a/a _:a/1):a/b):a/c (CONST #B):a/a):a/a
+            4 (AND (CONST #A):a/a (NEGATE (CCAST _:a/1):a/1):a/b):a/b
+            4 (AND (CONST #A):a/a (REDXOR (AND (CONST #B):a/a _:a/b):a/b):a/1):a/1
+            4 (AND (CONST #A):a/a (SHIFTL (REDXOR _:a/b):a/1 (CONST #B):a/a):a/a):a/a
+            4 (CCAST (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):b/1
+            4 (NEGATE (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):a/b
+            4 (NEGATE (CCAST (CCAST _:a/1):a/1):b/1):b/b
+            4 (OR (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR _:a/b):a/1):a/1):a/c
+            4 (OR (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR _:b/b):a/1):a/1):a/c
+            4 (REDXOR (AND (CONST #A):a/a (AND _:a/b _:a/b):a/b):a/b):a/1
+            4 (REDXOR (AND (CONST #A):a/a (NEGATE _:a/1):a/b):a/b):a/1
+            4 (REDXOR (NEGATE (CCAST _:a/1):b/1):b/b):a/1
+            4 (SHIFTL (CCAST (CCAST _:a/a):a/a):b/b (CONST #A):a/a):b/b
+            4 (SHIFTL (REDXOR (AND (CONST #A):a/a _:a/b):a/b):a/1 (CONST #B):a/a):a/a
+            2 (AND (CONST #A):a/a (NOT (CCAST _:a/1):a/1):a/1):a/1
+            2 (AND (CONST #A):a/a (OR (SHIFTL _:a/a (CONST #B):b/b):a/a (CCAST _:b/b):a/a):a/c):a/c
+            2 (AND (CONST #A):a/a (REDXOR (NEGATE _:b/1):b/b):a/1):a/1
+            2 (AND (CONST #A):a/a (REDXOR (OR _:b/b _:b/b):b/b):a/1):a/1
+            2 (AND (CONST #A):a/a (SHIFTL (CCAST (VARREF):a/1):a/1 (CONST #B):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR (VARREF):a/b):a/1 (CONST #B):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR _:a/a):a/1 (CONST #B):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR _:b/b):a/1 (CONST #B):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR _:b/c):a/1 (CONST #B):a/a):a/a):a/a
+            2 (CCAST (SHIFTR (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b (CONST #A):a/a):b/b):a/1
+            2 (OR (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (SHIFTL _:a/b (CONST #B):a/a):a/a):a/a (OR (SHIFTL _:a/b (CONST #C):a/a):a/a (OR _:a/a _:a/1):a/c):a/d):a/e
+            2 (OR (SHIFTL (CCAST _:a/a):b/b (CONST #A):a/a):b/b (CCAST (CCAST _:a/a):a/a):b/b):b/b
+            2 (OR (SHIFTL (CCAST _:a/a):b/b (CONST #A):a/a):b/b (CCAST (CCAST _:a/a):a/a):b/b):b/c
+            2 (OR (SHIFTL (OR _:a/a _:a/b):a/c (CONST #A):a/a):a/a (OR (AND (CONST #A):a/a _:a/a):a/a (AND (CONST #B):a/a _:a/1):a/1):a/b):a/d
+            2 (OR (SHIFTL (OR _:a/a _:a/b):a/c (CONST #A):a/a):a/a (SHIFTL (OR _:a/a _:a/b):a/c (CONST #B):a/a):a/a):a/a
+            2 (REDXOR (AND (CONST #A):a/a (OR _:a/a _:a/a):a/b):a/b):c/1
+            2 (REDXOR (NEGATE (CCAST _:a/1):a/1):a/a):a/1
+            2 (REDXOR (OR (SHIFTL _:a/a (CONST #A):b/b):a/a (CCAST _:b/b):a/a):a/a):b/1
+            2 (SHIFTL (REDXOR (AND (CONST #A):a/a _:a/b):a/b):c/1 (CONST #B):c/c):c/c
+            2 (SHIFTL (REDXOR (NEGATE _:a/1):a/a):a/1 (CONST #A):a/a):a/a
+            2 (SHIFTL (REDXOR (NEGATE _:a/1):a/a):b/1 (CONST #A):b/b):b/b
+            1 (AND (CONST #A):a/a (CCAST (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (CCAST (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (CCAST (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (CCAST (SHIFTR _:b/b (CONST #A):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (CCAST (SHIFTR _:b/b (CONST #B):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (NOT (CCAST (VARREF):a/1):a/1):a/1):a/1
+            1 (CCAST (CCAST (OR _:a/a _:a/b):a/c):a/c):d/d
+            1 (CCAST (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c):a/c
+            1 (NOT (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1):a/1
+            1 (NOT (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1):a/1
+            1 (OR (AND (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):b/b):a/a):a/a (CCAST (CCAST (VARREF):b/1):b/1):a/a):a/a
+            1 (OR (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #A):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c
+            1 (OR (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c):a/b
+            1 (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1 (CONST #A):a/a):a/a
+            1 (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c (CONST #A):a/a):a/a
+
+AST patterns with depth 4
+           18 (CCAST (AND (CONST #A):a/a (SHIFTR (CCAST (VARREF):a/b):a/b (CONST #A):a/a):a/1):a/1):a/1
+           10 (NEGATE (CCAST (AND (CONST #A):a/a (SHIFTR _:a/b (CONST #A):a/a):a/1):a/1):a/1):a/a
+            8 (CCAST (CCAST (NOT (NEGATE _:a/1):a/a):a/a):a/a):b/b
+            8 (CCAST (NOT (NEGATE (CCAST _:a/1):a/1):a/a):a/a):a/a
+            8 (NOT (NEGATE (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):a/a):a/a
+            6 (AND (CONST #A):a/a (AND (NOT (CCAST (VARREF):a/b):a/b):a/b (NOT (CCAST (VARREF):a/b):a/b):a/b):a/b):a/b
+            4 (AND (CONST #A):a/a (NEGATE (CCAST (AND (CONST #B):a/a _:a/1):a/1):a/1):a/b):a/b
+            4 (AND (CONST #A):a/a (SHIFTL (REDXOR (AND (CONST #B):a/a _:a/b):a/b):a/1 (CONST #C):a/a):a/a):a/a
+            4 (CCAST (CCAST (AND (CONST #A):a/a (SHIFTR _:a/b (CONST #A):a/a):a/1):a/1):a/1):c/1
+            4 (NEGATE (CCAST (AND (CONST #A):a/a (SHIFTR _:a/b (CONST #A):a/a):a/1):a/1):a/1):a/c
+            4 (NEGATE (CCAST (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):b/1):b/b
+            4 (REDXOR (AND (CONST #A):a/a (AND (NOT _:a/b):a/b (NOT _:a/b):a/b):a/b):a/b):a/1
+            4 (REDXOR (AND (CONST #A):a/a (NEGATE (CCAST _:a/1):a/1):a/b):a/b):a/1
+            4 (REDXOR (NEGATE (CCAST (CCAST _:a/1):a/1):b/1):b/b):a/1
+            4 (SHIFTL (CCAST (CCAST (NOT _:a/a):a/a):a/a):b/b (CONST #A):a/a):b/b
+            4 (SHIFTL (OR (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a _:a/a):a/a (AND (CONST #C):a/a _:a/1):a/1):a/b):a/c (CONST #D):a/a):a/a
+            2 (AND (CONST #A):a/a (OR (SHIFTL (CCAST _:b/b):a/a (CONST #B):b/b):a/a (CCAST (CCAST _:b/b):b/b):a/a):a/c):a/c
+            2 (AND (CONST #A):a/a (REDXOR (AND (CONST #B):a/a (AND _:a/b _:a/b):a/b):a/b):a/1):a/1
+            2 (AND (CONST #A):a/a (REDXOR (AND (CONST #B):a/a (NEGATE _:a/1):a/b):a/b):a/1):a/1
+            2 (AND (CONST #A):a/a (REDXOR (NEGATE (CCAST _:a/1):b/1):b/b):a/1):a/1
+            2 (AND (CONST #A):a/a (REDXOR (OR (SHIFTL _:b/b (CONST #B):a/a):b/b (CCAST _:a/a):b/b):b/b):a/1):a/1
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR (AND (CONST #B):b/b _:b/c):b/c):a/1 (CONST #C):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR (NEGATE _:a/1):a/a):a/1 (CONST #B):a/a):a/a):a/a
+            2 (AND (CONST #A):a/a (SHIFTL (REDXOR (NEGATE _:b/1):b/b):a/1 (CONST #B):a/a):a/a):a/a
+            2 (OR (AND (CONST #A):a/a (SHIFTL (CCAST (VARREF):a/1):a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a (SHIFTL _:a/1 (CONST #C):a/a):a/a):a/a (AND (CONST #C):a/a (REDXOR _:a/b):a/1):a/1):a/c):a/d
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR (VARREF):a/b):a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a (SHIFTL _:a/1 (CONST #C):a/a):a/a):a/a (AND (CONST #C):a/a (REDXOR _:a/b):a/1):a/1):a/c):a/d
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR _:a/a):a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a (SHIFTL _:a/1 (CONST #C):a/a):a/a):a/a (AND (CONST #C):a/a (REDXOR _:b/b):a/1):a/1):a/c):a/d
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR _:a/b):a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR (AND (CONST #C):a/a _:a/b):a/b):a/1):a/1):a/c
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR _:a/b):a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR (AND (CONST #C):a/a _:a/c):a/c):a/1):a/1):a/d
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR _:b/b):a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR (OR _:b/b _:b/b):b/b):a/1):a/1):a/c
+            2 (OR (AND (CONST #A):a/a (SHIFTL (REDXOR _:b/c):a/1 (CONST #B):a/a):a/a):a/a (AND (CONST #B):a/a (REDXOR (NEGATE _:b/1):b/b):a/1):a/1):a/d
+            2 (OR (OR (SHIFTL (OR _:a/a _:a/b):a/c (CONST #A):a/a):a/a (SHIFTL (OR _:a/a _:a/b):a/c (CONST #B):a/a):a/a):a/a (OR (SHIFTL (OR _:a/a _:a/b):a/c (CONST #C):a/a):a/a (OR (AND (CONST #C):a/a _:a/a):a/a (AND (CONST #D):a/a _:a/1):a/1):a/b):a/d):a/e
+            2 (OR (SHIFTL (CCAST (CCAST _:a/a):a/a):b/b (CONST #A):a/a):b/b (CCAST (CCAST (NOT _:a/a):a/a):a/a):b/b):b/b
+            2 (OR (SHIFTL (CCAST (CCAST _:a/a):a/a):b/b (CONST #A):a/a):b/b (CCAST (CCAST (NOT _:a/a):a/a):a/a):b/b):b/c
+            2 (OR (SHIFTL (OR (AND (CONST #A):a/a _:a/a):a/a (OR _:a/a _:a/1):a/b):a/c (CONST #B):a/a):a/a (OR (AND (CONST #B):a/a (SHIFTL _:a/1 (CONST #C):a/a):a/a):a/a (AND (CONST #C):a/a (REDXOR _:d/d):a/1):a/1):a/b):a/e
+            2 (OR (SHIFTL (OR (AND (CONST #A):a/a _:a/a):a/a (OR _:a/a _:a/1):a/b):a/c (CONST #B):a/a):a/a (SHIFTL (OR (AND (CONST #A):a/a _:a/a):a/a (OR _:a/a _:a/1):a/b):a/c (CONST #C):a/a):a/a):a/a
+            2 (REDXOR (AND (CONST #A):a/a (OR (SHIFTL _:a/a (CONST #B):b/b):a/a (CCAST _:b/b):a/a):a/c):a/c):b/1
+            2 (REDXOR (NEGATE (CCAST (AND (CONST #A):a/a _:a/1):a/1):a/1):a/a):a/1
+            2 (REDXOR (OR (SHIFTL (CCAST _:a/a):b/b (CONST #A):a/a):b/b (CCAST (CCAST _:a/a):a/a):b/b):b/b):a/1
+            2 (SHIFTL (OR (AND (CONST #A):a/a (SHIFTL _:a/1 (CONST #B):a/a):a/a):a/a (OR (AND (CONST #B):a/a _:a/a):a/a (AND (CONST #C):a/a _:a/1):a/1):a/b):a/c (CONST #B):a/a):a/a
+            2 (SHIFTL (REDXOR (AND (CONST #A):a/a (AND _:a/b _:a/b):a/b):a/b):a/1 (CONST #B):a/a):a/a
+            2 (SHIFTL (REDXOR (AND (CONST #A):a/a (NEGATE _:a/1):a/b):a/b):a/1 (CONST #B):a/a):a/a
+            2 (SHIFTL (REDXOR (AND (CONST #A):a/a (OR _:a/a _:a/a):a/b):a/b):c/1 (CONST #B):c/c):c/c
+            2 (SHIFTL (REDXOR (NEGATE (CCAST _:a/1):a/1):a/a):a/1 (CONST #A):a/a):a/a
+            2 (SHIFTL (REDXOR (NEGATE (CCAST _:a/1):b/1):b/b):a/1 (CONST #A):a/a):a/a
+            1 (AND (CONST #A):a/a (CCAST (SHIFTR (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b (CONST #A):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (CCAST (SHIFTR (ARRAYSEL (VARREF):(w64)u[1:0] (CONST ZERO):a/a):b/b (CONST #B):a/a):b/b):a/1):a/1
+            1 (AND (CONST #A):a/a (NOT (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1):a/1):a/1
+            1 (AND (CONST #A):a/a (NOT (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1):a/1):a/1
+            1 (CCAST (CCAST (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c):a/c):d/d
+            1 (CCAST (OR (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c):a/b):a/b
+            1 (OR (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1 (CONST #A):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c
+            1 (OR (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #B):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c):a/b
+

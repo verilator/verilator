@@ -17,7 +17,6 @@ module t;
 
     unique case (state)
       S0: $stop;
-      S2: $stop;
     endcase
   end
 endmodule

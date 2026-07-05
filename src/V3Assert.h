@@ -24,6 +24,11 @@
 
 //============================================================================
 
+class V3AssertCommon final {
+public:
+    static void collectDefaultDisable(AstNetlist* nodep) VL_MT_DISABLED;
+};
+
 class V3Assert final {
 public:
     static void assertAll(AstNetlist* nodep) VL_MT_DISABLED;

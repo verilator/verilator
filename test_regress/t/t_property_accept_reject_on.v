@@ -94,16 +94,16 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 29);  // Questa: 14
-      `checkd(count_fail2, 65);  // Questa: 64
-      `checkd(count_fail3, 29);  // Questa: 14
-      `checkd(count_fail4, 65);  // Questa: 64
-      `checkd(count_fail5, 46);  // Questa: 31
-      `checkd(count_fail6, 65);  // Questa: 59
-      `checkd(count_fail7, 29);  // Questa: 14
-      `checkd(count_fail8, 14);  // Questa: 10
-      `checkd(count_fail9, 29);  // Questa: 14
-      `checkd(count_fail10, 29);  // Questa: 14
+      `checkd(count_fail1, 28);  // Other sims: 14, one other: 15
+      `checkd(count_fail2, 64);  // One other sim: 66
+      `checkd(count_fail3, 28);  // Other sims: 14
+      `checkd(count_fail4, 64);
+      `checkd(count_fail5, 45);  // Other sims: 31, one other: 32
+      `checkd(count_fail6, 64);  // Other sims: 59, one other: 60
+      `checkd(count_fail7, 28);  // Other sims: 14, one other: 15
+      `checkd(count_fail8, 13);  // Other sims: 10
+      `checkd(count_fail9, 28);  // Other sims: 14, one other: 15
+      `checkd(count_fail10, 28);  // Other sims: 14
       $write("*-* All Finished *-*\n");
       $finish;
     end
