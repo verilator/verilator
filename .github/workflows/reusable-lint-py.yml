@@ -24,10 +24,7 @@ jobs:
           path: repo
 
       - name: Install dependencies
-        run: |
-          ./ci/ci-install.bash build
-          sudo apt install python3-clang || \
-          sudo apt install python3-clang
+        run: ./ci/ci-install.bash lint-py
 
       - name: Configure
         run: |
