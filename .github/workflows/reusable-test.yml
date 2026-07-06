@@ -67,9 +67,17 @@ jobs:
           tar --zstd -x -f ${{ inputs.archive }}
           ls -lsha
 
+      - name: Configure ccache
+        run: |
+          # ccache is unreliable on macOS, and does nothing with 'gcc --coverage'
+          if [ "${{ startsWith(inputs.runs-on, 'macos') }}" = true ] || [ "${{ inputs.dev-gcov }}" = true ]; then
+            echo "CCACHE_DISABLE=1" >> "$GITHUB_ENV"
+          fi
+
       # Test-job ccache is stored as an artifact, not actions/cache
       - name: Restore ccache
         id: ccache
+        if: ${{ env.CCACHE_DISABLE != '1' }}
         uses: ./repo/.github/actions/artifact-cache
         with:
           mode: restore
@@ -109,7 +117,7 @@ jobs:
           name: code-coverage-${{ inputs.suite }}
 
       - name: Save ccache
-        if: ${{ !cancelled() }}
+        if: ${{ env.CCACHE_DISABLE != '1' && !cancelled() }}
         uses: ./repo/.github/actions/artifact-cache
         with:
           mode: save
