@@ -71,10 +71,12 @@ jobs:
           # behind 'verilator --version'
           fetch-depth: ${{ (inputs.install || inputs.dev-gcov) && '0' || '1' }}
 
-      # ccache is unreliable on the macOS runners; disable it there
-      - name: Disable ccache on macOS
-        if: ${{ startsWith(inputs.runs-on, 'macos') }}
-        run: echo "CCACHE_DISABLE=1" >> "$GITHUB_ENV"
+      - name: Configure ccache
+        run: |
+          # ccache is unreliable on macOS, and does nothing with 'gcc --coverage'
+          if [ "${{ startsWith(inputs.runs-on, 'macos') }}" = true ] || [ "${{ inputs.dev-gcov }}" = true ]; then
+            echo "CCACHE_DISABLE=1" >> "$GITHUB_ENV"
+          fi
 
       - name: Cache $CCACHE_DIR
         if: ${{ env.CCACHE_DISABLE != '1' }}
