@@ -146,10 +146,21 @@ elif [ "$STAGE" = "test" ]; then
   install-wavediff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
+elif [ "$STAGE" = "lint-py" ]; then
+  # nodist/clang_check_attributes.
+  if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
+    PACKAGES=(
+      python3-clang  # Not run, but importers are linted
+    )
+    sudo apt-get update ||
+    sudo apt-get update
+    sudo apt-get install --yes "${PACKAGES[@]}" ||
+    sudo apt-get install --yes "${PACKAGES[@]}"
+  fi
 else
   ##############################################################################
   # Unknown build stage
-  fatal "Unknown stage '$STAGE' (expected 'build' or 'test')"
+  fatal "Unknown stage '$STAGE' (expected 'build', 'test' or 'lint-py')"
 fi
 
 # Report where the tools we may have installed live (ok if some are missing)
