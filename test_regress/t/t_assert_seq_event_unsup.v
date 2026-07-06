@@ -21,6 +21,12 @@ module t (
   sequence s_ref;
     @(posedge clk) a;
   endsequence
+
+  // Legal but its endpoint topology is not buildable, so the wait could never
+  // resume; rejected rather than silently ignored.
+  sequence s_or;
+    @(posedge clk) (a ##1 b) or (a ##2 b);
+  endsequence
   // verilog_format: on
 
   // Legal: p is never asserted, so s_ref stays referenced outside any
@@ -31,5 +37,6 @@ module t (
 
   initial begin
     @s_nonedge;
+    @s_or;
   end
 endmodule

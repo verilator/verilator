@@ -287,12 +287,23 @@ class SvaNfaBuilder final {
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
     bool m_isCoverSeq = false;
+    // Unsupported endpoint topology must reject, not ignore, or the wait hangs
+    bool m_isSeqEvent = false;
 
     struct RangeDelayRejectInfo final {
         SvaStateVertex* startp = nullptr;
         int range = 0;
         int rhsLen = 0;
     };
+
+    void warnEndpointUnsupported(FileLine* flp, const string& what) const {
+        if (m_isSeqEvent) {
+            flp->v3warn(E_UNSUPPORTED,
+                        "Unsupported: sequence used as an event control with " << what);
+        } else {
+            flp->v3warn(COVERIGN, "Ignoring unsupported: cover sequence with " << what);
+        }
+    }
 
     AstNodeExpr* throughoutCond(AstNodeExpr* baseCondp, FileLine* flp) {
         if (m_throughoutStack.empty()) return baseCondp;
@@ -574,8 +585,7 @@ class SvaNfaBuilder final {
         // overlapping ends and the nested-sequence merge collapses them, so
         // reject those for a cover sequence rather than under-count.
         if (m_isCoverSeq && (range > kChainLimit || VN_IS(rhsExprp, SExpr))) {
-            flp->v3warn(COVERIGN,
-                        "Ignoring unsupported: cover sequence with this ranged cycle delay");
+            warnEndpointUnsupported(flp, "this ranged cycle delay");
             outErrorEmitted = true;
             return false;
         }
@@ -881,8 +891,7 @@ class SvaNfaBuilder final {
         // terminal, so a cover sequence would under-count. Reject the ranged form
         // (the single-count b[->N] has one end and is enumerated correctly).
         if (m_isCoverSeq && hasMax && maxN > minN) {
-            flp->v3warn(COVERIGN,
-                        "Ignoring unsupported: cover sequence with a ranged goto repetition");
+            warnEndpointUnsupported(flp, "a ranged goto repetition");
             return BuildResult::failWithError();
         }
 
@@ -946,8 +955,7 @@ class SvaNfaBuilder final {
         // than under-count. Plain boolean disjunction has one end per cycle and
         // is handled by the OR-fold.
         if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
-            flp->v3warn(COVERIGN,
-                        "Ignoring unsupported: cover sequence with a sequence operand of 'or'");
+            warnEndpointUnsupported(flp, "a sequence operand of 'or'");
             return BuildResult::failWithError();
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
@@ -1442,11 +1450,12 @@ class SvaNfaBuilder final {
 
 public:
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
-                  bool isCoverSeq = false)
+                  bool isCoverSeq = false, bool isSeqEvent = false)
         : m_graph{graph}
         , m_modp{modp}
         , m_propTempNames{propTempNames}
-        , m_isCoverSeq{isCoverSeq} {}
+        , m_isCoverSeq{isCoverSeq}
+        , m_isSeqEvent{isSeqEvent} {}
 
     // Reset scope between antecedent and consequent: liveness must not leak.
     void resetScope() {
@@ -2900,7 +2909,7 @@ class AssertNfaVisitor final : public VNVisitor {
         FileLine* const flp = assertp->fileline();
 
         SvaGraph graph;
-        SvaNfaBuilder builder{graph, m_modp, m_propTempNames, isCoverSeq};
+        SvaNfaBuilder builder{graph, m_modp, m_propTempNames, isCoverSeq, isSeqEvent};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);

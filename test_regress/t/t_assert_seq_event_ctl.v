@@ -66,8 +66,8 @@ module t (
   final begin
     `checkd(hits, ref_hits);
     `checkd(one_hits, one_ref);
-    `checkd(hits, 19);  // Other simulator: 19
-    `checkd(one_hits, 60);  // Other simulator: 60
+    `checkd(hits, 19);
+    `checkd(one_hits, 60);
     $write("*-* All Finished *-*\n");
   end
 endmodule
