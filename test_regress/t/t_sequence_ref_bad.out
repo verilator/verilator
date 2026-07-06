@@ -1,0 +1,7 @@
+%Error: t/t_sequence_ref_bad.v:14:6: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                   : ... note: In instance 't'
+                                   : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   14 |     @s_one;
+      |      ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
