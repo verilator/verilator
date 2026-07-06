@@ -34,10 +34,15 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+  actions: read
+
 env:
-  CCACHE_COMPRESS: 1
+  CCACHE_COMPILERCHECK: content
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
+  CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
+  GH_TOKEN: ${{ github.token }}
 
 defaults:
   run:
@@ -49,10 +54,6 @@ jobs:
   test:
     runs-on: ${{ inputs.runs-on }}
     name: Test
-    env:
-      CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
-      CACHE_BASE_KEY: test-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.reloc }}-${{ inputs.suite }}
-      CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
     steps:
 
       - name: Download repository archive
@@ -67,15 +68,73 @@ jobs:
           tar --zstd -x -f ${{ inputs.archive }}
           ls -lsha
 
-      - name: Cache $CCACHE_DIR
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
+      # Test-job ccache is stored as an artifact, not actions/cache
+      # - pull_request: restore this PR's own previous run; if none, fall back to the PR's target branch.
+      # - branch push:  restore that branch's own cache
+      # Artifact names are a global, unauthenticated namespace, so a PR could
+      # upload a "-branch-<x>" artifact impersonating a branch. Branch-scoped
+      # restores are therefore provenance-checked below (must come from a same-repo
+      # push to that branch); the pr-<N> scope is not (a PR can only affect its own
+      # unmerged cache).
+      - name: Compute ccache artifact name
+        # Pass github refs via env, not ${{ }} interpolation, so a branch name
+        # containing shell metacharacters can't break or inject into the script.
         env:
-          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          base="ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.suite }}"
+          sanitize() { printf '%s' "$1" | tr '/' '_'; }  # artifact names cannot contain '/'
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            echo "CCACHE_ARTIFACT=${base}-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
+            echo "CCACHE_ARTIFACT_BRANCH=" >> "$GITHUB_ENV"
+            echo "CCACHE_FALLBACK=${base}-branch-$(sanitize "$BASE_REF")" >> "$GITHUB_ENV"
+            echo "CCACHE_FALLBACK_BRANCH=${BASE_REF}" >> "$GITHUB_ENV"
+          else
+            echo "CCACHE_ARTIFACT=${base}-branch-$(sanitize "$REF_NAME")" >> "$GITHUB_ENV"
+            echo "CCACHE_ARTIFACT_BRANCH=${REF_NAME}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Restore ccache from artifact
+        continue-on-error: true  # a cold start is fine; never fail the job here
+        run: |
+          set -euo pipefail
+          mkdir -p "$CCACHE_DIR"
+          # Return newest non-expired artifact named $1 (empty if none). When
+          # $2 (branch) is non-empty, require provenance: the artifact must come from
+          # a same-repo run (head_repository_id == repository_id) whose head branch
+          # is $2, so a fork PR cannot forge a branch-scoped artifact.
+          newest_run_id() {
+            want="$1" br="$2" gh api \
+              "/repos/$GITHUB_REPOSITORY/actions/artifacts?name=$1&per_page=100" \
+              --jq '.artifacts[]
+                    | select(.expired == false and .name == env.want)
+                    | select(env.br == ""
+                             or (.workflow_run.head_branch == env.br
+                                 and .workflow_run.head_repository_id == .workflow_run.repository_id))
+                    | [.created_at, (.workflow_run.id | tostring)] | @tsv' \
+              | sort | tail -n1 | cut -f2
+          }
+          restore() {  # $1=name $2=branch(empty ok); returns 0 on a successful restore
+            local name="$1" br="$2" rid tarball
+            [ -n "$name" ] || return 1
+            rid="$(newest_run_id "$name" "$br")" || return 1
+            [ -n "$rid" ] || return 1
+            echo "Restoring ccache from '$name' (run $rid)"
+            gh run download "$rid" --name "$name" --dir "$RUNNER_TEMP/ccache-dl" || return 1
+            tarball="$(find "$RUNNER_TEMP/ccache-dl" -name ccache.tar.zst -print -quit)"
+            [ -n "$tarball" ] || return 1
+            tar -I zstd -x -f "$tarball" -C "$CCACHE_DIR"
+          }
+          if restore "${CCACHE_ARTIFACT:-}" "${CCACHE_ARTIFACT_BRANCH:-}"; then
+            echo "Restored primary ccache"
+            exit 0
+          fi
+          if restore "${CCACHE_FALLBACK:-}" "${CCACHE_FALLBACK_BRANCH:-}"; then
+            echo "Restored fallback ccache"
+            exit 0
+          fi
+          echo "No ccache artifact found; starting cold"
 
       - name: Install test dependencies
         run: |
@@ -104,6 +163,20 @@ jobs:
         with:
           path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info
           name: code-coverage-${{ inputs.suite }}
+
+      - name: Pack ccache
+        if: ${{ !cancelled() && env.CCACHE_ARTIFACT != '' }}
+        run: tar -I 'zstd -T0' -cf "$GITHUB_WORKSPACE/ccache.tar.zst" -C "$CCACHE_DIR" .
+
+      - name: Save ccache artifact
+        if: ${{ !cancelled() && env.CCACHE_ARTIFACT != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: ${{ env.CCACHE_ARTIFACT }}
+          path: ${{ github.workspace }}/ccache.tar.zst
+          retention-days: 3
+          overwrite: true
+          compression-level: 0
 
       - name: Fail job if a test failed
         if: ${{ steps.run-test.outcome == 'failure' && !cancelled() }}

@@ -73,6 +73,7 @@ fi
 
 # Run the specified suite
 ccache -z
+TEST_START=$SECONDS
 case $OPT_SUITE in
   dist-vlt-0)
     "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=0/4
@@ -162,5 +163,7 @@ case $OPT_SUITE in
     fatal "Unknown suite: $OPT_SUITE"
     ;;
 esac
+ccache -svv
+ccache --evict-older-than "$((SECONDS - TEST_START + 60))s"
 ccache -svv
 uptime # To see load average
