@@ -8567,6 +8567,10 @@ class WidthVisitor final : public VNVisitor {
                 ch = std::tolower(ch);
                 switch (ch) {
                 case '?':  // Unspecified by user, guess
+                    if (VN_IS(subargp, StreamL) || VN_IS(subargp, StreamR)) {
+                        subargp->v3error("Streaming concatenation cannot be used as an implicit "
+                                         "$display-like argument.");
+                    }
                     if (dtypep->isDouble()) {
                         ch = 'g';
                     } else if (dtypep->isString()) {

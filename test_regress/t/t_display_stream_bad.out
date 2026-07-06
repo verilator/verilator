@@ -1,0 +1,6 @@
+%Error: t/t_display_stream_bad.v:11:15: Streaming concatenation cannot be used as an implicit $display-like argument.
+                                      : ... note: In instance 't'
+   11 |     $display({<<{value}});
+      |               ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
