@@ -1,0 +1,6 @@
+%Error: t/t_class_static_virtual_method_bad.v:8:23: Static methods cannot be virtual
+                                                  : ... note: In instance '$unit.Foo'
+    8 |   static virtual task foo(); endtask
+      |                       ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
