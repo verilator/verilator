@@ -1324,6 +1324,7 @@ class ParamProcessor final {
                         AstMemberDType* const foundMemp = VN_CAST(
                             m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
                         if (!foundMemp) break;
+                        if (!foundMemp->subDTypep()) break;
                         totalLsb += foundMemp->lsb();
                         sliceWidth = foundMemp->width();
                         curDTypep = foundMemp->subDTypep();
@@ -1339,11 +1340,8 @@ class ParamProcessor final {
                             = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
                         // Match V3Width::memberSelStruct: skip RefDTypes to surface
                         // enum dtype, and mark didWidth so V3Width doesn't reflatten.
-                        // Only mark didWidth when we have a resolved dtype to attach.
-                        if (curDTypep) {
-                            selp->dtypep(curDTypep->skipRefToEnump());
-                            selp->didWidth(true);
-                        }
+                        selp->dtypep(curDTypep->skipRefToEnump());
+                        selp->didWidth(true);
                         topp->replaceWith(selp);
                         VL_DO_DANGLING(topp->deleteTree(), topp);
                     }
