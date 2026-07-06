@@ -1318,6 +1318,21 @@ module Vt_debug_emitv_sub;
     endfunction
     real r;
 endmodule
+module Vt_debug_emitv_seq_event;
+    input logic clk;
+    bit a;
+    bit b;
+    bit c;
+    sequence sq;
+    @(posedge clk) a##1 b##1 c
+    endsequence
+    initial begin
+        begin
+
+            ???? // EVENTCONTROL
+            @( sq())end
+    end
+endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
 endpackage
