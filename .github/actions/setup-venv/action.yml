@@ -1,0 +1,55 @@
+---
+# DESCRIPTION: Github actions composite action
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: Set up Python venv
+description: >-
+  Restore, create, and optionally save the make-managed Python venv in a GitHub
+  Actions cache. The cache key combines the venv path (venvs are not
+  relocatable), the host OS and version, the Python major.minor version, and
+  the python-dev-requirements.txt hash, so any of those changing invalidates
+  it. Requires the already-configured Verilator tree to be present in 'repo'.
+
+inputs:
+  repo:
+    description: "Verilator checkout holding the Makefile and .venv"
+    required: false
+    default: repo
+  save:
+    description: "Save the cache on a miss (set true only on trusted branches)"
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Compute Python venv cache key
+      id: cachekey
+      shell: bash
+      working-directory: ${{ inputs.repo }}
+      run: |
+        source ci/ci-common.bash
+        host="${DISTRO_ID:-$HOST_OS}${DISTRO_VERSION:+-$DISTRO_VERSION}"
+        pyver="$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+        reqs="$(sha256sum python-dev-requirements.txt | cut -d' ' -f1)"
+        venv="${PWD#/}/.venv"  # absolute venv path (leading '/' trimmed)
+        echo "key=venv-${host}-py${pyver}-${reqs}-${venv//\//-}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Python venv
+      id: venv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
+      with:
+        path: ${{ inputs.repo }}/.venv
+        key: ${{ steps.cachekey.outputs.key }}
+
+    - name: Create Python venv
+      shell: bash
+      working-directory: ${{ inputs.repo }}
+      run: make venv
+
+    - name: Save Python venv
+      if: ${{ inputs.save == 'true' && steps.venv.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
+      with:
+        path: ${{ inputs.repo }}/.venv
+        key: ${{ steps.venv.outputs.cache-primary-key }}

@@ -139,7 +139,11 @@ jobs:
       - name: Install test dependencies
         run: |
           ./ci/ci-install.bash test
-          make venv
+
+      - name: Set up Python venv
+        uses: ./repo/.github/actions/setup-venv
+        with:
+          save: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Test
         id: run-test
