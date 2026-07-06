@@ -23,19 +23,21 @@ jobs:
         with:
           path: repo
 
-      - name: Install packages for build
-        run: ./ci/ci-install.bash build
+      - name: Install dependencies
+        run: |
+          ./ci/ci-install.bash build
+          sudo apt install python3-clang || \
+          sudo apt install python3-clang
 
       - name: Configure
         run: |
           autoconf
           ./configure --enable-longtests --enable-ccwarn
 
-      - name: Install python dependencies
-        run: |
-          sudo apt install python3-clang || \
-          sudo apt install python3-clang
-          make venv
+      - name: Set up Python venv
+        uses: ./repo/.github/actions/setup-venv
+        with:
+          save: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Lint
         run: |-
