@@ -60,7 +60,7 @@ esac
 ################################################################################
 # Configure
 
-CONFIGURE_ARGS="--prefix=$OPT_PREFIX --enable-longtests"
+CONFIGURE_ARGS="--prefix=$OPT_PREFIX --enable-longtests --enable-light-debug"
 if [ "$OPT_CCWARN" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-ccwarn"
 fi
