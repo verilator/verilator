@@ -461,8 +461,8 @@ class SvaNfaBuilder final {
     AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, int cloneCount) {
         constexpr int kHoistThreshold = 2;
         if (cloneCount < kHoistThreshold) return nullptr;
-        AstVar* const tempVarp = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp),
-                                            m_modp->findBitDType()};
+        AstVar* const tempVarp
+            = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp), exprp->dtypep()};
         m_modp->addStmtsp(tempVarp);
         AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
                                                  sampled(exprp->cloneTreePure(false))};

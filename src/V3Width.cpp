@@ -731,6 +731,17 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
+        if (nodep->isCycleDelay() && m_underSExpr) {
+            // Fold parameterized SVA cycle-delay bounds
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
+            if (nodep->rhsp() && !nodep->isUnbounded()) {
+                // Fold parametrized SVA cycle-delay max bound
+                userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
+            }
+            return;
+        }
         if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
             iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
             iterateCheckDelay(nodep, "delay", fallDelayp, BOTH);
