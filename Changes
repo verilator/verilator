@@ -10,12 +10,26 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
-Verilator 5.049 devel
+Verilator 5.051 devel
+==========================
+
+**Other:**
+
+* Add comments as a branch description in coverage .info files (#7843). [Eryk Szpotanski]
+* Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
+* Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
+* Fix unique0 case side effects (#7787). [Pawel Klopotek]
+* Fix cleaning purity cache after assertions. [Geza Lore, Testorrent USA, Inc.]
+* Fix clang++ ambiguous overload of '==' operator (#7863). [Pawel Kojma, Antmicro Ltd.]
+* Fix heap-use-after-free in `VlRNG::VlRNG()` (#7865). [Dragon-Git]
+
+
+Verilator 5.050 2026-07-01
 ==========================
 
 **Important:**
 
-* Support covergroups, coverpoints, and bins (#784) (#7117). [Matthew Ballance]
+* Support covergroups, coverpoints, and bins (#784) (#7117) (#7728). [Matthew Ballance]
 * Support new FST writer API (#6871) (#6992). [Yu-Sheng Lin]
   Use of FST may requiring installing liblz4 and/or liblz4-dev packages, see docs/install.rst.
 
@@ -27,9 +41,12 @@ Verilator 5.049 devel
 * Add `--coverage-per-instance` (#7636). [Yogish Sekhar]
 * Add NOTREDOP error on reduction and negation operators (#7417) (#7623) (#7624).
 * Add hierarchy-aware reporting to `verilator_coverage` (#7657). [Yogish Sekhar]
+* Add FINALDLY error (#7754). [Igor Zaworski, Antmicro Ltd.]
+* Deprecate isolate_assignments attribute (#7774) (#7144). [Geza Lore, Testorrent USA, Inc.]
 * Improve `--coverage-fsm` (#7490) (#7529) (#7561) (#7573) (#7619). [Yogish Sekhar]
 * Change `+verilator+seed` to default to 1, and 0 to randomly select (#7325) (#7516). [Miguel]
 * Change JSON to include parameter constant mnemonics for FSM Coverage (#7531). [Yogish Sekhar]
+* Support assert property `default disable iff` (#4848) (#7723). [Artur Bieniek, Antmicro Ltd.]
 * Support printing enum names for %p and %s (#5523) (#7338 repair) (#7521) (#7527). [Nick Brereton]
 * Support weak `until` / `until_with` property operators (#7290) (#7548) (#7685). [Yilou Wang]
 * Support `s_eventually` (#7291) (#7508). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -50,6 +67,7 @@ Verilator 5.049 devel
 * Support procedural concurrent assertions with inferred clock (#7581). [Yilou Wang]
 * Support calling interface functions without parens (#7584). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support streaming on queues (#7597). [Benjamin Collier, Secturion Systems, Inc.]
+* Support clocking event on a sequence declaration body (#7598) (#7793). [Yilou Wang]
 * Support generic interface arrays (#7604). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support FSM detection in primitive wrappers (#7607). [Yogish Sekhar]
 * Support busses with mix of pullup/pulldown (#7632). [Lucas Amaral]
@@ -59,6 +77,24 @@ Verilator 5.049 devel
 * Support if/if-else in properties (#7692). [Artur Bieniek, Antmicro Ltd.]
 * Support process::self().srand() (#7695). [Igor Zaworski, Antmicro Ltd.]
 * Support MacOS lldb (#7697). [Tracy Narine]
+* Support assoc array methods with wide value types (#7680). [pawelktk]
+* Support property case (#7682) (#7721). [Artur Bieniek, Antmicro Ltd.]
+* Support `s_until` and `s_until_with`(#7722). [Artur Bieniek, Antmicro Ltd.]
+* Support covergroup runtime model Phase A1 (#7728). [Matthew Ballance]
+* Support hierarchical reference cross members (#7749) (#7820). [Matthew Ballance]
+* Support reduction XOR/AND operations in constraints (#7753). [Kornel Uriasz, Antmicro Ltd.]
+* Support NBAs in initial blocks (#7754). [Igor Zaworski, Antmicro Ltd.]
+* Support assertion control system tasks in classes and interfaces (#7761). [Yilou Wang]
+* Support cover sequence statement (#7764). [Yilou Wang]
+* Support unpacked struct stream (#7767). [Nick Brereton]
+* Support $assertcontrol control_type from lock to kill (#7788). [Yilou Wang]
+* Support unbounded always [m:$] and strong s_always liveness (#7798). [Yilou Wang]
+* Support method calls on a sub-interface via a virtual interface (#7800). [Yilou Wang]
+* Support global $assertcontrol (#7807). [Artur Bieniek, Antmicro Ltd.]
+* Support VPI access to unpacked struct members (#7823). [Nick Brereton]
+* Support variable-length intersect in SVA sequences (#7835). [Yilou Wang]
+* Support dynamic loading of VPI extensions (#7727). [Matthew Ballance]
+* Optimize DFG cycle breaking to do less work (#7210). [Geza Lore, Testorrent USA, Inc.]
 * Optimize emitting to_string() for compiler speedup (#7468). [Jakub Michalski, Antmicro Ltd.]
 * Optimize additional DFG peephole cases (#7553). [Varun Koyyalagunta, Testorrent USA, Inc.]
 * Optimize forced signal handling (#7554 partial) (#7572) (#7594) (#7596). [Krzysztof Bieganski, Artur Bieniek, Antmicro Ltd.]
@@ -71,9 +107,27 @@ Verilator 5.049 devel
 * Optimize runtime assertOn() checks (#7707). [Geza Lore, Testorrent USA, Inc.]
 * Optimize $countones and $onehot in DFG. [Geza Lore, Testorrent USA, Inc.]
 * Optimize procedural loop unrolling. [Geza Lore, Testorrent USA, Inc.]
+* Optimize V3Gate inlining heuristic (#7716). [Geza Lore, Testorrent USA, Inc.]
+* Optimize reset in DFG (#7737). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG with relaxed live variable analysis (#7739). [Geza Lore, Testorrent USA, Inc.]
+* Optimize conditional patterns sharing common MBSs/LSBs in DfgPeephole (#7760). [Geza Lore, Testorrent USA, Inc.]
+* Optimize bit select removal earlier in DFG (#7762). [Geza Lore, Testorrent USA, Inc.]
+* Optimize away proven redundant case statement assertions (#7771). [Geza Lore, Testorrent USA, Inc.]
+* Optimize table lookups in DFG (#7772). [Geza Lore, Testorrent USA, Inc.]
+* Optimize input combinational logic by change detection (#7784). [Geza Lore, Testorrent USA, Inc.]
+* Optimize decoder case statements into lookup tables (#7795). [Geza Lore, Testorrent USA, Inc.]
+* Optimize wide decoder case statements into decoder expressions (#7804). [Geza Lore, Testorrent USA, Inc.]
+* Optimize statically known oversize shifts (#7806). [Geza Lore, Testorrent USA, Inc.]
+* Optimize generated function inlining (#7811). [Geza Lore, Testorrent USA, Inc.]
+* Optimize bit-scan loops into most-set-bit or $countones (#7822). [Thomas Santerre]
+* Optimize additional expression patterns (#7824). [Geza Lore, Testorrent USA, Inc.]
+* Optimize module inlining heuristic (#7837). [Geza Lore, Testorrent USA, Inc.]
+* Fix `$bits` on unpacked structs (#4521) (#7796). [Nick Brereton]
 * Fix TSP variable ordering for mtasks (#5342) (#7610). [Muzaffer Kal]
 * Fix inlining static initializer in V3Gate (#5381) (#7503). [Andrew Nolte] [Geza Lore, Testorrent USA, Inc.]
+* Fix timed nested fork block with disable (#6720) (#7743). [Marco Bartoli]
 * Fix segmentation fault when using --trace with --lib-create (#7299) (#7518). [anonkey]
+* Fix cross-hierarchy tristate drivers of interface nets (#7339) (#7801). [Yilou Wang]
 * Fix destructive event state before dynamic waits (#7340). [Nick Brereton]
 * Fix ALWCOMBORDER on variable ordering (#7350) (#7608). [Cookie]
 * Fix false MULTIDRIVEN warning on always_ff variables (#7351) (#7621) (#7672).
@@ -118,6 +172,7 @@ Verilator 5.049 devel
 * Fix reference counting for modport task references (#7628). [Nick Brereton]
 * Fix internal error when handling typedefs containing parameterized class type members (#7635) (#7661). [em2machine]
 * Fix forceable signal with a procedural continuous assign (#7638) (#7639). [Zubin Jain]
+* Fix scheduling of virtual interface method writes (#7641). [Artur Bieniek, Antmicro Ltd.]
 * Fix implicit conversions of VlWide (#7642). [Geza Lore, Testorrent USA, Inc.]
 * Fix CASEINCOMPLETE to not warn on `unique0 case` (#7647).
 * Fix hierarchical coverage counts for duplicate no-inline module instances (#7649). [Yogish Sekhar]
@@ -128,13 +183,45 @@ Verilator 5.049 devel
 * Fix loss of events due to bit shift (#7670). [Artur Bieniek, Antmicro Ltd.]
 * Fix parameter read through locally-declared interface instance (#7679). [Nick Brereton]
 * Fix skipping nulls in $sscanf (#7689).
+* Fix bounds checks in expressions with read/write references (#7694). [Ryszard Rozak, Antmicro Ltd.]
 * Fix (const) ref default task argument handling (#7698). [Nick Brereton]
 * Fix `ref` argument type check for packed arrays with differing range directions (#7700). [Nick Brereton]
 * Fix ignoring not-found modules with encoded names (#7706). [Igor Zaworski, Antmicro Ltd.]
 * Fix MULTIDRIVEN in generates (#7709). [Todd Strader]
+* Fix parameter pollution when using class parameters (#7711) (#7763). [em2machine]
 * Fix Makefile action to not write to ${srcdir} (#7715). [Larry Doolittle]
 * Fix splitting functions containing fork logic (#7717). [Mateusz Gancarz, Antmicro Ltd.]
 * Fix optimizations of assignments with timing controls (#7718). [Ryszard Rozak, Antmicro Ltd.]
+* Fix s_eventually on interface (#7731) (#7733). [Marco Bartoli]
+* Fix parameter values in coverage bins widths (#7732) (#7734). [Marco Bartoli]
+* Fix configure fall back on dynamic malloc libraries (#7736). [Geza Lore, Testorrent USA, Inc.]
+* Fix crash on overlapping priority case. [Geza Lore, Testorrent USA, Inc.]
+* Fix s_eventually in parameterized interfaces (#7741). [Nick Brereton]
+* Fix dpi export pointers (#7742) (#7751). [Yilin Li]
+* Fix force on unpacked bit select (#7744) (#7745). [Nikolai Kumar]
+* Fix `$` as unsupported coverpoint-bin range bounds (#7750) (#7825). [Matthew Ballance]
+* Fix FSM detect unchecked casts and variable redeclaration (#7758). [Adam Kostrzewski, Antmicro Ltd.]
+* Fix no-scope internal error on virtual interface method calls (#7759). [Yilou Wang]
+* Fix `case (_) inside` with x wildcards (#7766). [Geza Lore, Testorrent USA, Inc.]
+* Fix not failing assertion when RHS of a range window rejects once (#7773). [Artur Bieniek, Antmicro Ltd.]
+* Fix $fflush and autoflush with --threads (#7782).
+* Fix out-of-bounds read value for 2-state types (#7785). [Jakub Michalski]
+* Fix `cover property` of an implication counting vacuous matches (#7789). [Yilou Wang]
+* Fix randomization of dynamic arrays of objects (#7790). [Ryszard Rozak, Antmicro Ltd.]
+* Fix randomize() with skipping derived pre/post_randomize (#7799). [Yilou Wang]
+* Fix skewed dist operator for arrays (#7802). [Jakub Wasilewski, Antmicro Ltd.]
+* Fix assertion when loop unrolling failed (#7810). [Geza Lore, Testorrent USA, Inc.]
+* Fix CASEINCOMPLETE for all uncovered enum items (#7815) (#7817). [Saksham]
+* Fix split optimization nested-class crash (#7826). [Igor Zaworski, Antmicro Ltd.]
+* Fix class/var named identically to an enclosing-scope type (#7827) (#7828). [Tom Jackson]
+* Fix performance on large package-scoped structs (#7830). [Wolfgang Mayerwieser]
+* Fix unclocked concurrent assertion misreported as unsupported  (#7831). [Yilou Wang]
+* Fix insertion of expression coverage statement (#7832). [Ryszard Rozak, Antmicro Ltd.]
+* Fix lifetime of expression coverage variable (#7834). [Ryszard Rozak, Antmicro Ltd.]
+* Fix disable iff ignored when its condition is held continuously true (#7841). [Yilou Wang]
+* Fix constant pool cache after dead scope removal (#7845). [Nick Brereton]
+* Fix covergroups without --coverage (#7848) (#7849). [Joshua Leahy]
+* Fix class scope '::' reference through an inherited type parameter (#7844). [Sergey Chusov]
 
 
 Verilator 5.048 2026-04-26
@@ -471,7 +558,7 @@ Verilator 5.044 2026-01-01
 * Support clocking output delay `1step` (#6681). [Ondrej Ille]
 * Support parsing of dotted `bins_expression` (#6683). [Pawel Kojma, Antmicro Ltd.]
 * Support constant expression cycle delays in sequences (#6691). [Ryszard Rozak, Antmicro Ltd.]
-* Support general global constraints (#6709) (#6711). [Yilou Wang]
+* Support general global constraints (#6709) (#6711) (#7833) (#7838). [Yilou Wang]
 * Support complex std::randomize patterns (#6736) (#6737). [Yilou Wang]
 * Support `rand_mode` in global constraint gathering (#6740) (#6752). [Yilou Wang]
 * Support reduction or in constraints (#6840). [Pawel Kojma, Antmicro Ltd.]
@@ -5665,7 +5752,7 @@ Verilator 3.104 2003-04-30
 **Major:**
 
 * Indicate direction of ports with VL_IN and VL_OUT.
-* Allow $c32, etc, to specify width of the $c statement for VCS.
+* Allow $c32, etc, to specify width of the $c statement.
 * Numerous performance improvements, worth about 25%
 
 **Minor:**

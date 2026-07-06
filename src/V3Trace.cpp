@@ -1094,6 +1094,7 @@ class TraceVisitor final : public VNVisitor {
         // Create the trace registration function
         m_regFuncp = new AstCFunc{m_topScopep->fileline(), "trace_register", m_topScopep};
         m_regFuncp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
+        m_regFuncp->entryPoint(true);
         m_regFuncp->isTrace(true);
         m_regFuncp->slow(true);
         m_regFuncp->isStatic(false);

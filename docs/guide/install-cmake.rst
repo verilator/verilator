@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _cmakeinstallation:
 
@@ -16,16 +17,16 @@ Linux).
 Quick Install
 =============
 
-1. Install Python for your platform from https://www.python.org/downloads/.
-2. Install CMake for your platform from https://cmake.org/download/ or
+#. Install Python for your platform from https://www.python.org/downloads/.
+#. Install CMake for your platform from https://cmake.org/download/ or
    build it from source.
-3. If the compiler of your choice is MSVC, then install
+#. If the compiler of your choice is MSVC, then install
    https://visualstudio.microsoft.com/downloads/. If the compiler of your
    choice is Clang, then install https://releases.llvm.org/download.html or
    build it from source.
-4. For flex and bison use https://github.com/lexxmark/winflexbison to build
+#. For flex and bison use https://github.com/lexxmark/winflexbison to build
    and install.
-5. For build on Windows using MSVC set environment variable WIN_FLEX_BISON
+#. For build on Windows using MSVC set environment variable WIN_FLEX_BISON
    to install directory. For build on Windows/Linux/OS-X using ninja set
    the environment variable FLEX_INCLUDE to the directory containing
    FlexLexer.h and ensure that flex/bison is available within the PATH.

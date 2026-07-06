@@ -75,14 +75,14 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 20);  // Questa: 20
-      `checkd(count_fail2, 25);  // Questa: 25
-      `checkd(count_fail3, 19);  // Questa: 19
-      `checkd(count_fail4, 0);  // Questa: 0
-      `checkd(count_fail5, 20);  // Questa: 20
-      `checkd(count_fail6, 25);  // Questa: 25
-      `checkd(count_fail7, 20);  // Questa: 20
-      `checkd(count_fail8, 20);  // Questa: 20
+      `checkd(count_fail1, 20);
+      `checkd(count_fail2, 25);
+      `checkd(count_fail3, 19);
+      `checkd(count_fail4, 0);
+      `checkd(count_fail5, 20);
+      `checkd(count_fail6, 25);
+      `checkd(count_fail7, 20);
+      `checkd(count_fail8, 20);
       $write("*-* All Finished *-*\n");
       $finish;
     end

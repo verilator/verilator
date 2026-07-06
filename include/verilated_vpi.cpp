@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <list>
 #include <map>
 #include <set>
@@ -67,6 +68,25 @@ constexpr unsigned VL_VPI_LINE_SIZE_ = 8192;
 
 //======================================================================
 // Implementation
+
+static const char* _vl_vpi_find_unescaped_dot(const char* posp) {
+    for (; *posp; ++posp) {
+        if (*posp == '\\') {
+            while (*posp && *posp != ' ') ++posp;
+            if (!*posp) return nullptr;
+        } else if (*posp == '.') {
+            return posp;
+        }
+    }
+    return nullptr;
+}
+
+static std::string _vl_vpi_member_local_name(const char* const namep) {
+    const char* localp = namep;
+    const char* posp = namep;
+    while ((posp = _vl_vpi_find_unescaped_dot(posp))) localp = ++posp;
+    return localp;
+}
 
 // Base VPI handled object
 class VerilatedVpio VL_NOT_FINAL {
@@ -201,6 +221,9 @@ public:
     }
     const VerilatedVar* varp() const { return m_varp; }
     const VerilatedScope* scopep() const { return m_scopep; }
+    bool isStructOrUnion() const {
+        return varp()->vltype() == VLVT_STRUCT || varp()->vltype() == VLVT_UNION;
+    }
     // Returns the number of the currently indexed dimension (starting at -1 for none).
     int32_t indexedDim() const { return m_indexedDim; }
     // Returns whether the currently indexed dimension is unpacked.
@@ -363,6 +386,8 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     uint32_t m_entSize = 0;  // memoized variable size
     uint32_t m_bitOffset = 0;
     int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
+    std::string m_name;
+    std::string m_fullNameOverride;
 
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
@@ -373,6 +398,17 @@ public:
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
+        if (_vl_vpi_find_unescaped_dot(varp->name())) {
+            m_name = _vl_vpi_member_local_name(varp->name());
+        }
+    }
+    VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep, void* datap,
+                     const std::string& name, const std::string& fullname)
+        : VerilatedVpioVarBase{varp, scopep} {
+        m_entSize = varp->entSize();
+        m_varDatap = datap;
+        m_name = name;
+        m_fullNameOverride = fullname;
     }
     explicit VerilatedVpioVar(const VerilatedVpioVar* vop)
         : VerilatedVpioVarBase{vop} {
@@ -380,6 +416,8 @@ public:
             m_entSize = vop->m_entSize;
             m_varDatap = vop->m_varDatap;
             m_index = vop->m_index;
+            m_name = vop->m_name;
+            m_fullNameOverride = vop->m_fullNameOverride;
             m_partselBits = vop->m_partselBits;
             m_bitOffset = vop->m_bitOffset;
             // Not copying m_prevDatap, must be nullptr
@@ -395,15 +433,22 @@ public:
     uint32_t bitOffset() const override { return m_bitOffset; }
     int32_t partselBits() const { return m_partselBits; }
     uint32_t bitSize() const {
+        if (isStructOrUnion() && !isIndexedDimUnpacked()) return 0;
         if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
         return VerilatedVpioVarBase::bitSize();
     }
     uint32_t size() const override {
+        if (isStructOrUnion() && !isIndexedDimUnpacked()) return 0;
         if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
         return VerilatedVpioVarBase::size();
     }
+    const VerilatedRange* rangep() const override {
+        if (isStructOrUnion() && !isIndexedDimUnpacked()) return nullptr;
+        return VerilatedVpioVarBase::rangep();
+    }
     uint32_t entSize() const { return m_entSize; }
     const std::vector<int32_t>& index() const { return m_index; }
+    const char* name() const override { return m_name.empty() ? varp()->name() : m_name.c_str(); }
     // Create a part-selected view of this variable with the given bit range [hi:lo].
     VerilatedVpioVar* withPartSelect(int32_t hi, int32_t lo) const {
         if (isIndexedDimUnpacked()) return nullptr;
@@ -456,22 +501,43 @@ public:
 
         return ret;
     }
+    VerilatedVpioVar* withMember(const VerilatedVar* memberVarp) const {
+        const char* const parentName = varp()->name();
+        const std::string memberName = memberVarp->name();
+        const size_t parentLen = std::strlen(parentName);
+
+        void* const parentDatap = varp()->datap();
+        void* const memberDatap = memberVarp->datap();
+        if (VL_UNLIKELY(!parentDatap) || VL_UNLIKELY(!memberDatap)) return nullptr;
+        const auto offset
+            = static_cast<uint8_t*>(memberDatap) - static_cast<uint8_t*>(parentDatap);
+
+        const std::string localName = _vl_vpi_member_local_name(memberVarp->name());
+
+        return new VerilatedVpioVar{memberVarp, scopep(),
+                                    static_cast<uint8_t*>(varDatap()) + offset, localName,
+                                    std::string{fullname()} + memberName.substr(parentLen)};
+    }
     uint32_t type() const override {
         uint32_t type;
         // TODO have V3EmitCSyms.cpp put vpiType directly into constant table
         switch (varp()->vltype()) {
         case VLVT_REAL: type = vpiRealVar; break;
         case VLVT_STRING: type = vpiStringVar; break;
+        case VLVT_STRUCT: type = varp()->isNet() ? vpiStructNet : vpiStructVar; break;
+        case VLVT_UNION: type = varp()->isNet() ? vpiUnionNet : vpiUnionVar; break;
         default: type = varp()->isBitVar() ? vpiBitVar : vpiReg; break;
         }
-        if (isIndexedDimUnpacked()) return vpiRegArray;
+        if (isIndexedDimUnpacked())
+            return isStructOrUnion() && varp()->isNet() ? vpiNetArray : vpiRegArray;
         return type;
     }
     const char* fullname() const override {
-        static thread_local std::string t_out;
-        t_out = std::string{scopep()->name()} + "." + name();
-        for (auto idx : index()) t_out += "[" + std::to_string(idx) + "]";
-        return t_out.c_str();
+        m_fullname = m_fullNameOverride.empty()
+                         ? std::string{scopep()->name()} + "." + varp()->name()
+                         : m_fullNameOverride;
+        for (auto idx : index()) m_fullname += "[" + std::to_string(idx) + "]";
+        return m_fullname.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const override { return m_varDatap; }
@@ -590,25 +656,63 @@ public:
     }
 };
 
+class VerilatedVpioMemberIter final : public VerilatedVpio {
+    const VerilatedScope* const m_scopep;
+    const VerilatedVarNameMap* const m_varsp;
+    VerilatedVarNameMap::const_iterator m_it;
+    VerilatedVpioVar* m_varp;
+    const std::string m_namePrefix;
+    bool m_started = false;
+
+    static std::string namePrefix(const VerilatedVpioVar* vop) {
+        return std::string{vop->varp()->name()} + ".";
+    }
+
+    vpiHandle atEnd() {
+        delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        return nullptr;
+    }
+
+public:
+    explicit VerilatedVpioMemberIter(const VerilatedVpioVar* vop)
+        : m_scopep{vop->scopep()}
+        , m_varsp{m_scopep->varsp()}
+        , m_varp{new VerilatedVpioVar{vop}}
+        , m_namePrefix{namePrefix(vop)} {}
+    ~VerilatedVpioMemberIter() override { VL_DO_CLEAR(delete m_varp, m_varp = nullptr); }
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioMemberIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioMemberIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        if (VL_UNLIKELY(!m_varsp)) return atEnd();
+        if (VL_UNLIKELY(!m_started)) {
+            m_it = m_varsp->begin();
+            m_started = true;
+        } else if (VL_LIKELY(m_it != m_varsp->end())) {
+            ++m_it;
+        }
+        for (; m_it != m_varsp->end(); ++m_it) {
+            const char* const name = m_it->second.name();
+            if (std::strncmp(name, m_namePrefix.c_str(), m_namePrefix.length()) != 0) continue;
+            // Only direct members, not grandchildren
+            if (_vl_vpi_find_unescaped_dot(name + m_namePrefix.length())) continue;
+            VerilatedVpioVar* const memberp = m_varp->withMember(&(m_it->second));
+            if (VL_UNLIKELY(!memberp)) continue;
+            return memberp->castVpiHandle();
+        }
+        return atEnd();
+    }
+};
+
 class VerilatedVpioModule final : public VerilatedVpioScope {
 
 public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
         // Look for '.' not inside escaped identifier
-        const std::string scopename = m_fullname;
-        std::string::size_type pos = std::string::npos;
-        size_t i = 0;
-        while (i < scopename.length()) {
-            if (scopename[i] == '\\') {
-                while (i < scopename.length() && scopename[i] != ' ') ++i;
-                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
-            } else {
-                while (i < scopename.length() && scopename[i] != '.') ++i;
-                if (i < scopename.length()) pos = i++;
-            }
-        }
-        if (VL_UNLIKELY(pos == std::string::npos)) m_toplevel = true;
+        if (VL_UNLIKELY(!_vl_vpi_find_unescaped_dot(m_fullname))) m_toplevel = true;
     }
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioModule* castp(vpiHandle h) {
@@ -1770,6 +1874,8 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
     };
     // clang-format on
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
+    // vpiUnionNet is outside the otherwise contiguous SystemVerilog object type range.
+    if (vpiVal == vpiUnionNet) return "vpiUnionNet";
     if (vpiVal <= vpiAutomatics) return names[vpiVal];
     if (vpiVal >= vpiPackage && vpiVal <= vpiPropFormalDecl)
         return sv_names1[(vpiVal - vpiPackage)];
@@ -2135,6 +2241,7 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEnumVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionNet);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassObj);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiChandleVar);
@@ -2404,6 +2511,162 @@ static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indi
     return true;
 }
 
+static const VerilatedScope* _vl_vpi_top_port_scopep(const VerilatedScope* const scopep) {
+    if (VL_UNLIKELY(!scopep)) return nullptr;
+    if (scopep->type() != VerilatedScope::SCOPE_MODULE) return nullptr;
+    if (std::strcmp(scopep->name(), "TOP") == 0) return nullptr;
+    if (_vl_vpi_find_unescaped_dot(scopep->name())) return nullptr;
+    return Verilated::threadContextp()->scopeFind("TOP");
+}
+
+static bool _vl_vpi_find_dotted_var(const std::string& scopename, const std::string& basename,
+                                    const VerilatedScope*& scopep, const VerilatedVar*& varp,
+                                    std::string& fullname) {
+    if (scopename.empty()) return false;
+
+    // Unpacked struct/union members are exposed as synthetic vars whose names contain dots
+    // (e.g. "mystruct.member"), so the boundary between the scope and the variable name is
+    // ambiguous. Walk the boundary leftward, moving one scope segment at a time onto the front
+    // of the dotted variable name, and try each candidate scope. An exhausted scope means the
+    // variable lives in the toplevel "TOP" scope.
+    std::string dottedName = basename;
+    std::string dottedScope = scopename;
+    while (true) {
+        const std::string::size_type lastDot = dottedScope.rfind('.');
+        dottedName = (lastDot == std::string::npos ? dottedScope : dottedScope.substr(lastDot + 1))
+                     + "." + dottedName;
+        dottedScope.resize(lastDot == std::string::npos ? 0 : lastDot);
+        scopep = Verilated::threadContextp()->scopeFind(dottedScope.empty() ? "TOP"
+                                                                            : dottedScope.c_str());
+        if (scopep) {
+            if (const VerilatedScope* const topScopep = _vl_vpi_top_port_scopep(scopep)) {
+                if (const VerilatedVar* const topVarp = topScopep->varFind(dottedName.c_str())) {
+                    scopep = topScopep;
+                    varp = topVarp;
+                    fullname = dottedScope.empty() ? dottedName : dottedScope + "." + dottedName;
+                    return true;
+                }
+            }
+            varp = scopep->varFind(dottedName.c_str());
+            if (varp) return true;
+        }
+        if (lastDot == std::string::npos) return false;
+    }
+}
+
+static VerilatedVpioVar* _vl_vpi_handle_member_by_name(const std::string& name,
+                                                       const VerilatedVpioVar* vop) {
+    const VerilatedScope* const scopep = vop->scopep();
+    if (VL_UNLIKELY(!scopep)) return nullptr;
+    const std::string memberName = std::string{vop->varp()->name()} + "." + name;
+    const VerilatedVar* const memberVarp = scopep->varFind(memberName.c_str());
+    if (!memberVarp) return nullptr;
+    return vop->withMember(memberVarp);
+}
+
+static VerilatedVpioVar* _vl_vpi_handle_apply_indices(VerilatedVpioVar* vop,
+                                                      const std::vector<PLI_INT32>& indices) {
+    for (const PLI_INT32 index : indices) {
+        VerilatedVpioVar* const nextVop = vop->withIndex(index);
+        VL_DO_CLEAR(delete vop, vop = nullptr);
+        if (!nextVop) return nullptr;
+        vop = nextVop;
+    }
+    return vop;
+}
+
+static bool _vl_vpi_parse_optional_indices(std::string& name, std::vector<PLI_INT32>& indices) {
+    indices.clear();
+    if (name.empty()) return false;
+    if (name.back() != ']') return true;
+
+    VlVpiBitRange bitRange;
+    return vl_vpi_parse_indices(name, indices, &bitRange) && !bitRange.valid;
+}
+
+static void _vl_vpi_split_dotted_name(const std::string& name, std::vector<std::string>& parts) {
+    parts.clear();
+    const char* const namep = name.c_str();
+    const char* beginp = namep;
+    const char* posp = beginp;
+    while ((posp = _vl_vpi_find_unescaped_dot(posp))) {
+        parts.emplace_back(beginp, posp - beginp);
+        beginp = ++posp;
+    }
+    parts.emplace_back(beginp);
+}
+
+static VerilatedVpioVar*
+_vl_vpi_handle_indexed_member_from_scope(const VerilatedScope* const scopep,
+                                         const std::vector<std::string>& parts,
+                                         const size_t firstPart) {
+    if (VL_UNLIKELY(!scopep) || VL_UNLIKELY(firstPart >= parts.size())) return nullptr;
+
+    std::string baseName = parts[firstPart];
+    std::vector<PLI_INT32> indices;
+    if (!_vl_vpi_parse_optional_indices(baseName, indices)) return nullptr;
+
+    const VerilatedScope* varScopep = scopep;
+    const VerilatedVar* baseVarp = nullptr;
+    std::string fullnameOverride;
+    if (const VerilatedScope* const topScopep = _vl_vpi_top_port_scopep(scopep)) {
+        if (const VerilatedVar* const topVarp = topScopep->varFind(baseName.c_str())) {
+            varScopep = topScopep;
+            baseVarp = topVarp;
+            fullnameOverride = std::string{scopep->name()} + "." + baseName;
+        }
+    }
+    if (!baseVarp) baseVarp = scopep->varFind(baseName.c_str());
+    if (!baseVarp) return nullptr;
+
+    VerilatedVpioVar* baseVop
+        = fullnameOverride.empty()
+              ? new VerilatedVpioVar{baseVarp, varScopep}
+              : new VerilatedVpioVar{baseVarp, varScopep, baseVarp->datap(),
+                                     _vl_vpi_member_local_name(baseVarp->name()),
+                                     fullnameOverride};
+    VerilatedVpioVar* vop = _vl_vpi_handle_apply_indices(baseVop, indices);
+    if (!vop) return nullptr;
+
+    for (size_t i = firstPart + 1; i < parts.size(); ++i) {
+        std::string memberName = parts[i];
+        if (!_vl_vpi_parse_optional_indices(memberName, indices)) {
+            VL_DO_CLEAR(delete vop, vop = nullptr);
+            return nullptr;
+        }
+
+        VerilatedVpioVar* const memberVop = _vl_vpi_handle_member_by_name(memberName, vop);
+        VL_DO_CLEAR(delete vop, vop = nullptr);
+        if (!memberVop) return nullptr;
+
+        vop = _vl_vpi_handle_apply_indices(memberVop, indices);
+        if (!vop) return nullptr;
+    }
+    return vop;
+}
+
+static VerilatedVpioVar*
+_vl_vpi_handle_dotted_indexed_member_by_name(const std::string& scopeAndName) {
+    std::vector<std::string> parts;
+    _vl_vpi_split_dotted_name(scopeAndName, parts);
+    if (parts.size() < 2) return nullptr;
+
+    for (size_t firstPart = parts.size() - 1; firstPart > 0; --firstPart) {
+        std::string scopeName = parts[0];
+        for (size_t i = 1; i < firstPart; ++i) scopeName += "." + parts[i];
+        const VerilatedScope* const scopep
+            = Verilated::threadContextp()->scopeFind(scopeName.c_str());
+        if (!scopep) continue;
+        if (VerilatedVpioVar* const vop
+            = _vl_vpi_handle_indexed_member_from_scope(scopep, parts, firstPart)) {
+            return vop;
+        }
+    }
+
+    const VerilatedScope* const topScopep = Verilated::threadContextp()->scopeFind("TOP");
+    return _vl_vpi_handle_indexed_member_from_scope(topScopep, parts, 0);
+}
+
 // for obtaining handles
 
 vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
@@ -2425,7 +2688,9 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
 
     const VerilatedVar* varp = nullptr;
     const VerilatedScope* scopep;
+    std::string fullnameOverride;
     const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
+    const VerilatedVpioVar* const voVarp = VerilatedVpioVar::castp(scope);
 
     if (0 == std::strncmp(scopeAndName.c_str(), "$root.", std::strlen("$root."))) {
         scopeAndName.erase(0, std::strlen("$root."));
@@ -2433,6 +2698,12 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         const bool scopeIsPackage = VerilatedVpioPackage::castp(scope) != nullptr;
         scopeAndName
             = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + scopeAndName;
+    } else if (voVarp && voVarp->isStructOrUnion()) {
+        if (VerilatedVpioVar* const memberp
+            = _vl_vpi_handle_member_by_name(scopeAndName, voVarp)) {
+            return memberp->castVpiHandle();
+        }
+        scopeAndName = std::string{voVarp->fullname()} + "." + scopeAndName;
     }
     {
         // This doesn't yet follow the hierarchy in the proper way
@@ -2491,8 +2762,18 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         }
         if (!varp) {
             scopep = Verilated::threadContextp()->scopeFind(scopename.c_str());
-            if (!scopep) return nullptr;
-            varp = scopep->varFind(basename.c_str());
+            if (scopep) { varp = scopep->varFind(basename.c_str()); }
+            // Unpacked struct members are exposed as synthetic variables with dotted names.
+            // Exact unindexed member names can be found directly; indexed member paths need the
+            // component walker so array indices are applied before member offsets.
+            if (!varp
+                && !_vl_vpi_find_dotted_var(scopename, basename, scopep, varp, fullnameOverride)) {
+                if (VerilatedVpioVar* const memberp
+                    = _vl_vpi_handle_dotted_indexed_member_by_name(scopeAndName)) {
+                    return memberp->castVpiHandle();
+                }
+                return nullptr;
+            }
         }
     }
     if (!varp) return nullptr;
@@ -2501,6 +2782,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     vpiHandle resultHandle;
     if (varp->isParam()) {
         resultHandle = (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
+    } else if (!fullnameOverride.empty()) {
+        resultHandle
+            = (new VerilatedVpioVar{varp, scopep, varp->datap(),
+                                    _vl_vpi_member_local_name(varp->name()), fullnameOverride})
+                  ->castVpiHandle();
     } else {
         resultHandle = (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
     }
@@ -2642,6 +2928,11 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         if (vop) return ((new VerilatedVpioRegIter{vop})->castVpiHandle());
         return nullptr;
     }
+    case vpiMember: {
+        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+        if (!vop || !vop->isStructOrUnion()) return nullptr;
+        return ((new VerilatedVpioMemberIter{vop})->castVpiHandle());
+    }
     case vpiParameter: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
@@ -2733,6 +3024,11 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return vpiUndefined;
         return vop->varp()->isSigned();
+    }
+    case vpiPacked: {
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
+        if (VL_LIKELY(vop && vop->isStructOrUnion())) return 0;
+        [[fallthrough]];
     }
     default:
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",

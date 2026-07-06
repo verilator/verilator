@@ -78,9 +78,15 @@ class DataflowOptimize final {
             if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                 const AstVar* const varp = vscp->varp();
                 // Force and trace have already been processed
-                const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
-                const bool hasExtWr
-                    = (varp->isPrimaryIO() && varp->isNonOutput()) || varp->isSigUserRWPublic();
+                const bool hasExtRd =  //
+                    varp->isPrimaryIO()  // Top level port - readable
+                    || varp->isSigUserRdPublic()  // Readable by user
+                    || varp->constPoolEntry()  // Stored in AstConstPool hashmap, but read only
+                    ;
+                const bool hasExtWr =  //
+                    (varp->isPrimaryIO() && varp->isNonOutput())  // Top level port - writable
+                    || varp->isSigUserRWPublic()  // Writable by user
+                    ;
                 if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                 if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
                 return;
@@ -138,6 +144,13 @@ class DataflowOptimize final {
         // Merge those that were made acyclic back to the graph, this enables optimizing more
         dfg.mergeGraphs(std::move(madeAcyclicComponents));
         endOfStage("breakCycles", dfg, cyclicComps);
+
+        // Remove redundant selects
+        V3DfgPasses::removeSelects(dfg, m_ctx.m_removeSelectsContext);
+        for (std::unique_ptr<DfgGraph>& compp : cyclicComps) {
+            V3DfgPasses::removeSelects(*compp, m_ctx.m_removeSelectsContext);
+        }
+        endOfStage("removeSelects", dfg, cyclicComps);
 
         // Split the acyclic DFG into [weakly] connected components
         std::vector<std::unique_ptr<DfgGraph>> acyclicComps = dfg.splitIntoComponents("acyclic");

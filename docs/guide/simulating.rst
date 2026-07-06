@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _simulating:
 
@@ -209,7 +210,8 @@ For simple coverage points, use the ``cover property`` construct:
 
    DefaultClock: cover property (@(posedge clk) cyc==3);
 
-This adds a coverage point that tracks whether the condition has been observed.
+This adds a coverage point that tracks whether the condition has been
+observed.
 
 .. _covergroup coverage:
 
@@ -218,8 +220,8 @@ Covergroup Coverage
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
 translate covergroup coverage points the user has inserted manually in
-SystemVerilog code into the Verilated model. Verilator supports
-coverpoints with value and transition bins, and cross points.
+SystemVerilog code into the Verilated model. Verilator supports coverpoints
+with value and transition bins, and cross points.
 
 
 .. _fsm coverage:
@@ -244,15 +246,15 @@ encodings in these common forms:
 - Single-process FSMs, whose state dispatch is written as ``case (state)``
   or as a top-level ``if`` / ``else if`` chain comparing the same state
   variable against known state values
-- Two-process and three-block FSMs, where a clocked state register is paired
-  with a combinational next-state block using the same supported
+- Two-process and three-block FSMs, where a clocked state register is
+  paired with a combinational next-state block using the same supported
   ``case`` or top-level ``if`` / ``else if`` dispatch forms
 
-Scalar state encodings may be wider than 32 bits. This allows sparse
-state encodings, such as high-Hamming-distance enum or localparam values,
-to be preserved in the detected FSM model. Verilator uses the declared
-enum item name, parameter name, or localparam name as the reported state
-label where possible.
+Scalar state encodings may be wider than 32 bits. This allows sparse state
+encodings, such as high-Hamming-distance enum or localparam values, to be
+preserved in the detected FSM model. Verilator uses the declared enum item
+name, parameter name, or localparam name as the reported state label where
+possible.
 
 Simple input guards are supported when they appear inside a recognized
 state branch, or as a top-level conjunction containing exactly one state
@@ -267,18 +269,17 @@ deeply nested control recovery, or cross-module state alias tracing.
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
 
-- ``/*verilator fsm_state*/`` forces the variable to be treated as
-  FSM state.
-- ``/*verilator fsm_reset_arc*/`` marks reset transitions as
-  user-visible reset arcs instead of defaulting to a hidden reset-only
-  summary.
-- ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch
-  arcs that would otherwise be skipped by the conservative extractor.
+- ``/*verilator fsm_state*/`` forces the variable to be treated as FSM
+  state.
+- ``/*verilator fsm_reset_arc*/`` marks reset transitions as user-visible
+  reset arcs instead of defaulting to a hidden reset-only summary.
+- ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch arcs that
+  would otherwise be skipped by the conservative extractor.
 
-State registers may also be wrapped by a transparent instance, for
-example a project flop wrapper or primitive. Such wrappers must be
-described explicitly with a VLT command file action before Verilator will
-use their data, state, clock, or reset connections for FSM extraction:
+State registers may also be wrapped by a transparent instance, for example
+a project flop wrapper or primitive. Such wrappers must be described
+explicitly with a VLT command file action before Verilator will use their
+data, state, clock, or reset connections for FSM extraction:
 
 .. code-block:: sv
 
@@ -298,11 +299,10 @@ Optional reset metadata may also be supplied:
    fsm_register_wrapper -module "my_fsm_flop" -d "state_i" -q "state_o" -clock "clk_i" \
       -reset "rst_ni" -reset_value "ResetValue"
 
-Reset arcs are emitted only when the configured reset port has an
-inferable edge in the wrapper and the configured reset value parameter is
-statically resolvable. If reset metadata is incomplete, Verilator warns
-and may still emit FSM state and transition coverage, but reset arcs are
-omitted.
+Reset arcs are emitted only when the configured reset port has an inferable
+edge in the wrapper and the configured reset value parameter is statically
+resolvable. If reset metadata is incomplete, Verilator warns and may still
+emit FSM state and transition coverage, but reset arcs are omitted.
 
 Reset transitions are included in the collected data either way. By
 default, :command:`verilator_coverage` summarizes reset-only arcs rather
@@ -433,11 +433,11 @@ coverage point insertions into the model and collect the coverage data.
 
 To get the coverage data from the model, write the coverage with either:
 
-1. Using :vlopt:`--binary` or :vlopt:`--main`, and Verilator will dump
+#. Using :vlopt:`--binary` or :vlopt:`--main`, and Verilator will dump
    coverage when the test completes to the filename specified with
    :vlopt:`+verilator+coverage+file+\<filename\>`.
 
-2. In the user wrapper code, typically at the end once a test passes, call
+#. In the user wrapper code, typically at the end once a test passes, call
    ``Verilated::threadContextp()->coveragep()->write`` with an argument of
    the filename for the coverage data file to write coverage data to
    (typically "logs/coverage.dat").
@@ -502,12 +502,12 @@ how execution time is distributed in a verilated model.
 
 With the :vlopt:`--prof-exec` option, Verilator will:
 
-* Add code to the Verilated model to record execution flow.
+- Add code to the Verilated model to record execution flow.
 
-* Add code to save profiling data in non-human-friendly form to the file
+- Add code to save profiling data in non-human-friendly form to the file
   specified with :vlopt:`+verilator+prof+exec+file+\<filename\>`.
 
-* In multithreaded models, add code to record each macro-task's start and
+- In multithreaded models, add code to record each macro-task's start and
   end time across several calls to eval. (What is a macro-task? See the
   Verilator internals document (:file:`docs/internals.rst` in the
   distribution.)
@@ -607,8 +607,8 @@ There are two forms of profile-guided optimizations. Unfortunately, for
 best results, they must each be performed from the highest level code to
 the lowest, which means performing them separately and in this order:
 
-* :ref:`Thread PGO`
-* :ref:`Compiler PGO`
+- :ref:`Thread PGO`
+- :ref:`Compiler PGO`
 
 Other forms of PGO may be supported in the future, such as clock and reset
 toggle rate PGO, branch prediction PGO, statement execution time PGO, or
@@ -674,7 +674,7 @@ multithreaded models.
 Please see the appropriate compiler documentation to use PGO with GCC or
 Clang. The process in GCC 10 was as follows:
 
-1. Compile the Verilated model with the compiler's "-fprofile-generate"
+#. Compile the Verilated model with the compiler's "-fprofile-generate"
    flag:
 
    .. code-block:: bash
@@ -685,10 +685,10 @@ Clang. The process in GCC 10 was as follows:
    Or, if calling make yourself, add -fprofile-generate appropriately to
    your Makefile.
 
-2. Run your simulation. This will create \*.gcda file(s) in the same
+#. Run your simulation. This will create \*.gcda file(s) in the same
    directory as the source files.
 
-3. Recompile the model with -fprofile-use. The compiler will read the
+#. Recompile the model with -fprofile-use. The compiler will read the
    \*.gcda file(s).
 
    For GCC:

@@ -1,14 +1,18 @@
-%Error: t/t_sequence_intersect_range_unsup.v:12:10: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
-                                                  : ... note: In instance 't'
-   12 |       (a ##[1:5] b) intersect (c ##2 d));
-      |          ^~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_sequence_intersect_range_unsup.v:12:34: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
-                                                  : ... note: In instance 't'
-   12 |       (a ##[1:5] b) intersect (c ##2 d));
-      |                                  ^~
-%Error: Internal Error: t/t_sequence_intersect_range_unsup.v:12:10: ../V3Ast.cpp:#: AstSExpr must have non-nullptr delayp()
-                                                                  : ... note: In instance 't'
-   12 |       (a ##[1:5] b) intersect (c ##2 d));
-      |          ^~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:16:44: Unsupported: intersect with this variable-length operand
+                                                              : ... note: In instance 't'
+   16 |   assert property ((a ##[1:3] b ##[1:2] c) intersect (d ##2 e));
+      |                                            ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:19:45: Unsupported: intersect operand is not a plain boolean sequence
+                                                              : ... note: In instance 't'
+   19 |   assert property ((a throughout (b ##1 c)) intersect (d ##[0:2] e));
+      |                                             ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:22:42: Unsupported: intersect of two sequences that each vary in length over a range with internal structure
+                                                              : ... note: In instance 't'
+   22 |   assert property ((a ##[1:3] (b ##1 c)) intersect (d ##[2:4] e));
+      |                                          ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_intersect_range_unsup.v:25:42: Unsupported: intersect of two sequences that each vary in length over a range with internal structure
+                                                              : ... note: In instance 't'
+   25 |   assert property ((a ##2 (b ##[1:3] c)) intersect (d ##[3:5] e));
+      |                                          ^~~~~~~~~
+%Error: Exiting due to

@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
 verilator Arguments
@@ -490,6 +491,10 @@ Summary:
    Rarely needed - for developer use. Enable all dumping in the given
    source file at level 3.
 
+.. option:: --dump-ast-patterns
+
+   Rarely needed. Enable dumping AstNodeExpr pattern statistics.
+
 .. option:: --dump-defines
 
    With :vlopt:`-E`, suppress normal output, and instead print a list of
@@ -657,7 +662,27 @@ Summary:
 
 .. option:: -fno-assemble
 
+.. option:: -fno-bit-scan-loops
+
+   Rarely needed. Disable converting bit counting loops into built-in operations.
+
 .. option:: -fno-case
+
+   Rarely needed. Disable all case statement optimizations.
+
+   Alias for all other `-fno-case-*` options.
+
+.. option:: -fno-case-decoder
+
+   Rarely needed. Disable converting case statements into decoder tables.
+
+.. option:: -fno-case-table
+
+   Rarely needed. Disable converting case statements into table lookups.
+
+.. option:: -fno-case-tree
+
+   Rarely needed. Disable converting case statements into bit-wise branch trees.
 
 .. option:: -fno-combine
 
@@ -737,11 +762,40 @@ Summary:
    this is not recommended as may cause additional warnings and ordering
    issues.
 
+.. option:: -fno-ico-change-detect
+
+   Rarely needed. Disable input change detection in the input combinational
+   ('ico') region. With change detection enabled (the default, unless
+   :vlopt:`--vpi` is passed), the input combinational logic is evaluated only
+   when a top level input has actually changed, rather than unconditionally on
+   the first scheduling iteration.
+
+   The change detection logic assumes a top level input only ever changes
+   externally between evaluations. The optimization is automatically disabled
+   for top level input signals that are written within the design. Accesses via
+   the VPI cannot be analyzed at compile time, therefore :vlopt:`--vpi`
+   disables this optimization for all inputs; it may be turned back on by
+   explicitly passing :vlopt:`-fico-change-detect <-fno-ico-change-detect>`.
+
 .. option:: -fno-inline
+
+   Rarely needed. Disable module inlining.
+
+.. option:: -fno-inline-cfuncs
+
+   Rarely needed. Disable inlining of small generated C++ functions into their
+   callers.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs` is
+   used.
 
 .. option:: -fno-inline-funcs
 
+   Rarely needed. Disable inlining of SystemVerilog functions and tasks.
+
 .. option:: -fno-inline-funcs-eager
+
+   Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
 .. option:: -fno-life
 
@@ -944,27 +998,21 @@ Summary:
 
 .. option:: --inline-cfuncs <value>
 
-   Inline small C++ function (internal AstCFunc) calls directly into their
-   callers when the function has at most <value> nodes. This reduces
-   function call overhead when :vlopt:`--output-split-cfuncs` places
-   functions in separate compilation units that the C++ compiler cannot
-   inline.
+   Tune the inlining of small generated C++ function. Functions no bigger than
+   <value> nodes will be inlined if possible. The default is 20.
 
-   Set to 0 to disable this optimization. The default is 20.
-
-   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
-   or :vlopt:`--trace` is used.
+   See also :vlopt:`--inline-cfuncs-product` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-cfuncs-product <value>
 
-   Tune the inlining of C++ function (internal AstCFunc) calls for larger
-   functions. When a function is too large to always inline (exceeds
-   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
-   function size multiplied by the number of call sites is at most <value>.
+   Tune the inlining of small generated C++ function. If a function's node
+   count multiplied by the number of calls is not bigger than <value>, the
+   function will be inlined if possible.
 
-   This allows functions that are called only once or twice to be inlined
-   even if they exceed the small function threshold. Set to 0 to only inline
-   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+   This allows functions that are called only once or twice to be inlined even
+   if they exceed the small function threshold. The default is 200.
+
+   See also :vlopt:`--inline-cfuncs` and :vlopt:`-fno-inline-cfuncs`.
 
 .. option:: --inline-mult <value>
 

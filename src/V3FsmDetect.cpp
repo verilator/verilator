@@ -30,6 +30,7 @@
 #include "V3Ast.h"
 #include "V3Control.h"
 #include "V3Graph.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <cctype>
@@ -987,14 +988,23 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
+    static AstVarRef* tryExtractVarRef(AstNodeExpr* const exprp) {
+        AstVarRef* const varp = VN_CAST(AstArraySel::baseFromp(exprp, true), VarRef);
+        if (!varp) {
+            exprp->v3warn(COVERIGN,
+                          "Ignoring unsupported: FSM coverage with " << exprp->prettyTypeName());
+            return nullptr;
+        }
+        return varp;
+    }
+
     static AstNodeAssign* nodeStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
-        UASSERT_OBJ(lhsp, assp, "register commit lhs should be normalized to a VarRef");
+        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
         AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
-        if (!rhsp) return nullptr;
+        if (!rhsp || !lhsp) return nullptr;
         stateVscp = lhsp->varScopep();
         fromVscp = rhsp->varScopep();
         return assp;
@@ -1006,11 +1016,9 @@ class FsmDetectVisitor final : public VNVisitor {
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
-        UASSERT_OBJ(lhsp, assp,
-                    "conditional register commit lhs should be normalized to a VarRef");
+        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
-        if (!rhsp) return nullptr;
+        if (!rhsp || !lhsp) return nullptr;
         if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
             if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK)
                 return nullptr;
@@ -1033,7 +1041,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                      FsmStateValue& value) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_AS(assp->lhsp(), VarRef);
+        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
         UASSERT_OBJ(lhsp, assp,
                     "direct constant state assignment lhs should be normalized to a VarRef");
         if (constValueStatus(assp->rhsp(), value) != ConstValueStatus::OK) return nullptr;
@@ -1220,7 +1228,8 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* vrefp = VN_CAST(eqp->lhsp(), VarRef);
         AstNodeExpr* valuep = eqp->rhsp();
         if (!vrefp) {
-            vrefp = VN_AS(eqp->rhsp(), VarRef);
+            vrefp = tryExtractVarRef(eqp->rhsp());
+            if (!vrefp) { return false; }
             valuep = eqp->lhsp();
         }
 
@@ -2082,6 +2091,7 @@ public:
 class FsmLowerVisitor final {
     // STATE - across all visitors
     const FsmState& m_state;
+    V3UniqueNames m_fsmBuildNames;
 
     // METHODS
     // Rebuild a state-typed constant using the tracked state variable
@@ -2133,8 +2143,8 @@ class FsmLowerVisitor final {
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep = scopep->findLogicDType(
             sampleVscp->width(), sampleVscp->width(), sampleVscp->dtypep()->numeric());
-        AstVarScope* const prevVscp
-            = scopep->createTemp("__Vfsmcov_prev__" + stateVscp->varp()->shortName(), prevDTypep);
+        const std::string tmpName = m_fsmBuildNames.get(stateVscp->varp()->shortName());
+        AstVarScope* const prevVscp = scopep->createTemp(tmpName, prevDTypep);
         // The saved previous-state temp crosses the scheduler's pre/post split
         // in the same way as Verilator's built-in NBA shadow variables, so keep
         // both vars marked as post-life participants for stable MT ordering.
@@ -2283,7 +2293,8 @@ public:
     // concrete coverage instrumentation while the saved scoped pointers are
     // still valid in the same pass.
     explicit FsmLowerVisitor(const FsmState& state)
-        : m_state{state} {
+        : m_state{state}
+        , m_fsmBuildNames{"__Vfsmcov_prev"} {
         for (const DetectedFsm& fsm : m_state.fsms()) { buildOne(*fsm.graphp); }
     }
 };

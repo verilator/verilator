@@ -13,4 +13,10 @@ module t;
     i badi;  // Bad
   } struct_t;
 
+  typedef union packed {
+    // Bad
+    logic [($bits(later) / 8)-1:0][7:0] bad_forward;
+    logic [15:0] later;
+  } forward_member_t;
+
 endmodule

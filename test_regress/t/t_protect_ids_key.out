@@ -16,13 +16,11 @@
   <map from="PSScAO" to="__VactTriggered"/>
   <map from="PSx9Nt" to="__Vconfigure"/>
   <map from="PSrjMj" to="__Vdly__secret_cyc"/>
-  <map from="PSAW38" to="__Vdly__t__DOT__secret_inst2__DOT__secret_cyc"/>
   <map from="PS4o5S" to="__Vdpiexp_dpix_a_func_TOP__t__DOT__secret_inst"/>
   <map from="PStVA8" to="__Vdpiexp_dpix_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PSxbIE" to="__Vdpiimwrap_dpii_a_func_TOP__t__DOT__secret_inst"/>
-  <map from="PSIv2l" to="__Vdpiimwrap_dpii_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PS76My" to="__Vfunc_dpii_a_func__0__Vfuncout"/>
-  <map from="PSZAsk" to="__Vinline__nba_sequent__TOP__0___Vdly__t__DOT__secret_inst2__DOT__secret_cyc"/>
+  <map from="PSywKw" to="__Vinline_0__eval_nba___Vinline_0__nba_sequent__TOP__0___Vdly__t__DOT__secret_inst2__DOT__secret_cyc"/>
   <map from="PSo9XV" to="__VnbaExecute"/>
   <map from="PSEtOH" to="__VnbaIterCount"/>
   <map from="PSeNXP" to="__VnbaPhaseResult"/>
@@ -36,13 +34,10 @@
   <map from="PSKZ7c" to="_eval_debug_assertions"/>
   <map from="PSEZzj" to="_eval_final"/>
   <map from="PSABAY" to="_eval_initial"/>
-  <map from="PSjoVa" to="_eval_nba"/>
   <map from="PS0BBP" to="_eval_phase__act"/>
   <map from="PSfNDT" to="_eval_phase__nba"/>
   <map from="PSBUJ6" to="_eval_settle"/>
   <map from="PS0mmd" to="_eval_static"/>
-  <map from="PSf5GY" to="_eval_triggers_vec__act"/>
-  <map from="PSgp53" to="_nba_sequent__TOP__0"/>
   <map from="PSoFVg" to="_nba_sequent__TOP__t__DOT__secret_inst__0"/>
   <map from="PSMRXn" to="_trigger_anySet__act"/>
   <map from="PSBKaZ" to="_trigger_clear__act"/>

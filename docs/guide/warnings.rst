@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
 Errors and Warnings
@@ -882,6 +883,22 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FINALDLY
+
+   Error issued when a non-blocking assignment `<=` is used in a
+   `final` block.
+
+   This error can be disabled. If disabled, the assignment will be
+   executed as a `=` blocking assignment.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_FINALDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_FINALDLY_msg.rst
+
 .. option:: FSMMULTI
 
    Warns that the same always block contains multiple enum-typed case
@@ -1178,7 +1195,7 @@ List Of Warnings
 
 .. option:: INITIALDLY
 
-   .. TODO better example
+   Historical, never issued since version 5.050.
 
    Warns that the code has a delayed assignment inside of an ``initial`` or
    ``final`` block. If this message is suppressed, Verilator will convert
@@ -2365,11 +2382,6 @@ List Of Warnings
    will cause the variable to be split internally, potentially resolving
    the conflict. If you run with :vlopt:`--report-unoptflat`, Verilator will
    suggest possible candidates for :option:`/*verilator&32;split_var*/`.
-
-   The UNOPTFLAT warning may also occur where outputs from a block of logic
-   are independent, but occur in the same always block. To fix this, use
-   the :option:`/*verilator&32;isolate_assignments*/` metacomment described
-   above.
 
    Before version 5.000, the UNOPTFLAT warning may also have been due to
    clock enables, identified from the reported path going through a clock

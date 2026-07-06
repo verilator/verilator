@@ -30,6 +30,7 @@ module t (
   int count_fail2 = 0;
   int count_fail3 = 0;
   int count_fail4 = 0;
+  int count_fail5 = 0;
 
   always_ff @(posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -49,13 +50,11 @@ module t (
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkh(sum, 64'h38c614665c6b71ad);
-      // count_fail1 overcounts Questa by 1: NFA per-cycle reject merging
-      // OR's requiredStep-fail and terminal-fail into one signal; Questa
-      // resolves the same overlap as a single per-attempt miss.
-      `checkd(count_fail1, 25);  // Questa: 24
-      `checkd(count_fail2, 50);  // Questa: 50
-      `checkd(count_fail3, 24);  // Questa: 24
-      `checkd(count_fail4, 1);   // Questa: 1
+      `checkd(count_fail1, 24);
+      `checkd(count_fail2, 50);
+      `checkd(count_fail3, 24);
+      `checkd(count_fail4, 1);
+      `checkd(count_fail5, 1);
       $write("*-* All Finished *-*\n");
       $finish;
     end
@@ -130,5 +129,26 @@ module t (
   // Multi-step with unbounded range: ##[+] then fixed ##1
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[+] b ##1 (a | b | c | d | e));
+
+  // Finite range delay with a multi-cycle RHS must not reject on an earlier
+  // candidate when a later candidate in the same window matches.
+  assert property (@(posedge clk)
+      cyc == 10 |-> ##[2:4] ((cyc == 12 || cyc == 13) ##1 cyc == 14));
+
+  // Same shape, but every RHS candidate in the range window rejects, so the
+  // assertion attempt itself must reject once.
+  assert property (@(posedge clk)
+      cyc == 20 |-> ##[2:4] ((cyc == 22 || cyc == 23) ##1 cyc == 25))
+    else count_fail5 <= count_fail5 + 1;
+
+  // Variable-length nested RHS, then another finite range below
+  // the liveness scope.
+  assert property (@(posedge clk)
+      cyc == 30 |-> ##[1:2] ((cyc == 31) ##[1:2] ((cyc == 32) ##1 1'b1)));
+
+  // Finite range whose RHS ends in an NFA state, not a final
+  // boolean condition.
+  assert property (@(posedge clk)
+      cyc == 40 |-> ##[1:2] (##1 (((cyc == 43) ##1 1'b1) or ((cyc == 43) ##1 1'b1))));
 
 endmodule

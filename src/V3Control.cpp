@@ -182,7 +182,6 @@ class V3ControlFTask final {
     V3ControlVarResolver m_params;  // Parameters in function/task
     V3ControlVarResolver m_ports;  // Ports in function/task
     V3ControlVarResolver m_vars;  // Variables in function/task
-    bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
     bool m_public = false;  // Public function/task
 
@@ -190,7 +189,6 @@ public:
     V3ControlFTask() = default;
     void update(const V3ControlFTask& f) {
         // Don't overwrite true with false
-        if (f.m_isolate) m_isolate = true;
         if (f.m_noinline) m_noinline = true;
         if (f.m_public) m_public = true;
         m_params.update(f.m_params);
@@ -203,7 +201,6 @@ public:
     V3ControlVarResolver& ports() { return m_ports; }
     V3ControlVarResolver& vars() { return m_vars; }
 
-    void setIsolate(bool set) { m_isolate = set; }
     void setNoInline(bool set) { m_noinline = set; }
     void setPublic(bool set) { m_public = set; }
 
@@ -212,8 +209,6 @@ public:
             ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::NO_INLINE_TASK});
         if (m_public)
             ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::PUBLIC_TASK});
-        // Only functions can have isolate (return value)
-        if (VN_IS(ftaskp, Func)) ftaskp->attrIsolateAssign(m_isolate);
     }
 };
 
@@ -981,13 +976,7 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
 
     // Semantics: Most of the attributes operate on signals
     if (pattern.empty()) {
-        if (attr == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
-            if (ftask.empty()) {
-                fl->v3error("isolate_assignments only applies to signals or functions/tasks");
-            } else {
-                V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
-            }
-        } else if (attr == VAttrType::VAR_PUBLIC) {
+        if (attr == VAttrType::VAR_PUBLIC) {
             if (ftask.empty()) {
                 // public module, this is the only exception from var here
                 V3ControlResolver::s().modules().at(module).addModulePragma(

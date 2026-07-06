@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *******************************
 Contributing and Reporting Bugs
@@ -86,7 +87,8 @@ Please refer to `sv-bugpoint README
 <https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ for more
 information on how to use `sv-bugpoint`.
 
-.. Contributing
-.. ============
+..
+   Contributing
+   ============
 
 .. include:: ../CONTRIBUTING.rst

@@ -76,6 +76,7 @@ class VerilatedVarProps VL_NOT_FINAL {
     const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
+    const uint32_t m_entSize;  // Element size in bytes, or 0 to derive from type
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     VerilatedRange m_packedDpi;  // Flattened packed array range
@@ -104,10 +105,12 @@ class VerilatedVarProps VL_NOT_FINAL {
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
-    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims, int pdims)
+    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims, int pdims,
+                      uint32_t entSize = 0)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{vlflags} {
+        , m_vlflags{vlflags}
+        , m_entSize{entSize} {
         // Only preallocate the ranges
         initUnpacked(udims, nullptr);
         initPacked(pdims, nullptr);
@@ -119,12 +122,14 @@ public:
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags)) {}  // Need () or GCC 4.8 false warning
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_entSize{0} {}
 
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_entSize{0} {
         initUnpacked(udims, ulims);
     }
     // With packed
@@ -132,14 +137,16 @@ public:
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_entSize{0} {
         initPacked(pdims, plims);
     }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
                       Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_entSize{0} {
         initUnpacked(udims, ulims);
         initPacked(pdims, plims);
     }
@@ -164,6 +171,7 @@ public:
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     bool isSigned() const { return ((m_vlflags & VLVF_SIGNED) != 0); }
     bool isBitVar() const { return ((m_vlflags & VLVF_BITVAR) != 0); }
+    bool isNet() const { return ((m_vlflags & VLVF_NET) != 0); }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
     int pdims() const VL_MT_SAFE { return m_packed.size(); }
     int dims() const VL_MT_SAFE { return pdims() + udims(); }
@@ -266,6 +274,8 @@ protected:
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize);
+    VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
                  std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);
 
@@ -293,6 +303,13 @@ struct VerilatedForceControlSignals final {
 inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                                   VerilatedVarFlags vlflags, int udims, int pdims, bool isParam)
     : VerilatedVarProps{vltype, vlflags, udims, pdims}
+    , m_datap{datap}
+    , m_namep{namep}
+    , m_isParam{isParam} {}
+inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
+                                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
+                                  uint32_t entSize)
+    : VerilatedVarProps{vltype, vlflags, udims, pdims, entSize}
     , m_datap{datap}
     , m_namep{namep}
     , m_isParam{isParam} {}

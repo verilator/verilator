@@ -7,3 +7,5 @@ cg.cp_trans2.trans2: 1
 cg.cp_trans2.trans3: 1
 cg.cp_trans3.seq_a: 1
 cg.cp_trans3.seq_b: 1
+cg_legacy.cp_mix.tr: 1
+cg_legacy.cp_mix.vals: 1
