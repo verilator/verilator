@@ -1,0 +1,97 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain
+        // SPDX-FileCopyrightText: 2026 Antmicro
+        // SPDX-License-Identifier: CC0-1.0
+        
+        package P;
+          typedef struct packed {logic [7:0] vs;} C;
+          typedef struct packed {
+            C a;
+            int b;
+          } B;
+          typedef struct packed {B a;} A;
+        endpackage
+        
+        module t (
+%000009     input clk
+        );
+          typedef enum logic [1:0] {
+            S_IDLE = 2'd0,
+            S_RUN = 2'd1,
+            S_DONE = 2'd2,
+            S_ERR = 2'd3
+          } state_t;
+        
+%000001   logic rst;
+%000001   logic start;
+          integer cyc;
+%000001   state_t state  /*verilator fsm_reset_arc*/;
+%000002   P::A a;
+%000001   logic done;
+        
+          logic [7:0] va[int];
+          logic [7:0] va2d[int][int];
+        
+%000001   logic b;
+%000001   logic c;
+%000001   logic d;
+        
+          assign b = (a.a.a.vs == 8'h0);
+          assign c = (va[0] == 8'h0);
+          assign d = (va2d[0][0] == 8'h0);
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     start = 1'b0;
+%000001     cyc = 0;
+          end
+        
+%000009   always @(posedge clk) begin
+%000009     cyc <= cyc + 1;
+%000008     if (cyc == 1) rst <= 1'b0;
+%000008     if (cyc == 2) start <= 1'b1;
+%000008     if (cyc == 3) start <= 1'b0;
+%000008     if (cyc == 8) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) begin
+%000002       state <= S_IDLE;
+            end
+%000007     else begin
+%000007       case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state::ANY->S_IDLE[reset_include]] [reset arc, excluded from %]
+%000002        // [fsm_arc t.state::S_DONE->S_DONE]
+%000003        // [fsm_arc t.state::S_IDLE->S_IDLE]
+%000001        // [fsm_arc t.state::S_IDLE->S_RUN]
+%000001        // [fsm_state t.state::S_DONE]
+%000000        // [fsm_state t.state::S_ERR] *** UNCOVERED ***
+%000000        // [fsm_state t.state::S_IDLE] *** UNCOVERED ***
+%000001        // [fsm_state t.state::S_RUN]
+%000002         S_IDLE:
+%000001         if (start) state <= S_RUN;
+%000001         else state <= S_IDLE;
+%000003         S_RUN: begin
+%000003           a.a.a.vs <= a.a.a.vs + 1;
+%000003           done <= (a.a.a.vs == 8'h1);
+%000002           if (done) begin
+%000001             state <= S_DONE;
+                  end
+%000002           else begin
+%000002             state <= S_RUN;
+                  end
+                end
+%000002         S_DONE: state <= S_DONE;
+%000000         default: state <= S_ERR;
+              endcase
+            end
+          end
+        
+        endmodule
+        

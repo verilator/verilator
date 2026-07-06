@@ -14,9 +14,9 @@
         
         module t;
 %000001   logic [1:0] addr;
--000001  point: type=toggle comment=addr[0]:0->1 hier=top.t
+-000000  point: type=toggle comment=addr[0]:0->1 hier=top.t
 -000000  point: type=toggle comment=addr[0]:1->0 hier=top.t
--000000  point: type=toggle comment=addr[1]:0->1 hier=top.t
+-000001  point: type=toggle comment=addr[1]:0->1 hier=top.t
 -000000  point: type=toggle comment=addr[1]:1->0 hier=top.t
 %000001   logic cmd;
 -000001  point: type=toggle comment=cmd:0->1 hier=top.t
@@ -27,6 +27,14 @@
 %000001   logic parity;
 -000001  point: type=toggle comment=parity:0->1 hier=top.t
 -000000  point: type=toggle comment=parity:1->0 hier=top.t
+        
+          typedef struct packed {logic m_p; logic h_mode;} cfg_t;
+%000001   cfg_t s_cfg = '0;
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=toggle comment=s_cfg.h_mode:0->1 hier=top.t
+-000000  point: type=toggle comment=s_cfg.h_mode:1->0 hier=top.t
+-000000  point: type=toggle comment=s_cfg.m_p:0->1 hier=top.t
+-000000  point: type=toggle comment=s_cfg.m_p:1->0 hier=top.t
         
           // 2-way cross
           covergroup cg2;
@@ -257,6 +265,12 @@
         //  cross: [addr1, write]
               option.per_instance = 1;  // unsupported for cross - expect COVERIGN warning
             }
+            // Non-standard hierarchical reference as a cross item (an implicit coverpoint):
+            // accepted with NONSTD, but implicit coverpoints are unsupported so the whole
+            // cross is dropped (COVERIGN, suppressed here) - it contributes no bins.
+            /* verilator lint_off NONSTD */
+            cross_hier: cross cp_addr, s_cfg.m_p;
+            /* verilator lint_on NONSTD */
           endgroup
         
           // Covergroup with an unnamed cross - the cross is reported under the default name "cross"
@@ -268,13 +282,57 @@
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.read
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.write
 %000001     cross cp_a, cp_c;  // no label: reported under the default cross name
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_read
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_read
         //  cross: [a0, read]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a0_x_write
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_write
         //  cross: [a0, write]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a1_x_read
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_read
         //  cross: [a1, read]
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross7.a1_x_write
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_write
+        //  cross: [a1, write]
+          endgroup
+        
+          // Cross plus an un-crossed coverpoint: get_inst_coverage must combine the converted
+          // (VlCoverpoint) coverpoint cp_solo with the legacy cross/crossed-coverpoint bins.
+          covergroup cg_mixed;
+%000002     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_addr.addr0
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_addr.addr1
+%000002     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_cmd.read
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_cmd.write
+%000002     cp_solo: coverpoint mode {bins normal = {0}; bins debug = {1};}  // not crossed
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_solo.normal
+-000002  point: type=covergroup comment= hier=cg_mixed.cp_solo.debug
+%000001     ab: cross cp_addr, cp_cmd;
+-000001  point: type=covergroup comment= hier=cg_mixed.ab.addr0_x_read
+        //  cross: [addr0, read]
+-000001  point: type=covergroup comment= hier=cg_mixed.ab.addr0_x_write
+        //  cross: [addr0, write]
+-000001  point: type=covergroup comment= hier=cg_mixed.ab.addr1_x_read
+        //  cross: [addr1, read]
+-000001  point: type=covergroup comment= hier=cg_mixed.ab.addr1_x_write
+        //  cross: [addr1, write]
+          endgroup
+        
+          // Crossed (hence non-convertible) coverpoint that also has a default bin: exercises the
+          // legacy default-bin codegen path that converted coverpoints bypass.
+          covergroup cg_def_cross;
+%000001     cp_a: coverpoint addr iff (mode) {bins a0 = {0}; bins a1 = {1}; bins ad = default;}
+-000001  point: type=covergroup comment= hier=cg_def_cross.cp_a.a0
+-000000  point: type=covergroup comment= hier=cg_def_cross.cp_a.a1
+-000001  point: type=covergroup comment= hier=cg_def_cross.cp_a.ad
+%000001     cp_c: coverpoint cmd {bins read = {0}; bins write = {1};}
+-000001  point: type=covergroup comment= hier=cg_def_cross.cp_c.read
+-000001  point: type=covergroup comment= hier=cg_def_cross.cp_c.write
+%000001     axc: cross cp_a, cp_c;
+-000001  point: type=covergroup comment= hier=cg_def_cross.axc.a0_x_read
+        //  cross: [a0, read]
+-000000  point: type=covergroup comment= hier=cg_def_cross.axc.a0_x_write
+        //  cross: [a0, write]
+-000000  point: type=covergroup comment= hier=cg_def_cross.axc.a1_x_read
+        //  cross: [a1, read]
+-000000  point: type=covergroup comment= hier=cg_def_cross.axc.a1_x_write
         //  cross: [a1, write]
           endgroup
         
@@ -297,6 +355,10 @@
 %000001   cg_unsup_cross_opt cg_unsup_cross_opt_inst = new;
 -000001  point: type=line comment=block hier=top.t
 %000001   cg_unnamed_cross cg_unnamed_cross_inst = new;
+-000001  point: type=line comment=block hier=top.t
+%000001   cg_mixed cg_mixed_inst = new;
+-000001  point: type=line comment=block hier=top.t
+%000001   cg_def_cross cg_def_cross_inst = new;
 -000001  point: type=line comment=block hier=top.t
         
 %000001   initial begin
@@ -640,6 +702,40 @@
 -000001  point: type=line comment=block hier=top.t
 -000000  point: type=line comment=block hier=top.t
 -000001  point: type=line comment=else hier=top.t
+        
+            // Sample cg_mixed: 10 bins total (cp_addr 2 + cp_cmd 2 + cp_solo 2 + cross ab 4)
+%000001     addr = 0; cmd = 0; mode = 0;
+-000001  point: type=line comment=block hier=top.t
+%000001     cg_mixed_inst.sample();  // addr0, read, solo normal, ab(addr0_x_read)
+-000001  point: type=line comment=block hier=top.t
+%000001     `checkr(cg_mixed_inst.get_inst_coverage(), 40.0);  // 4/10
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=line comment=block hier=top.t
+-000001  point: type=line comment=else hier=top.t
+%000001     addr = 0; cmd = 1; mode = 1;
+-000001  point: type=line comment=block hier=top.t
+%000001     cg_mixed_inst.sample();  // addr0, write, solo debug, ab(addr0_x_write)
+-000001  point: type=line comment=block hier=top.t
+%000001     addr = 1; cmd = 0; mode = 0;
+-000001  point: type=line comment=block hier=top.t
+%000001     cg_mixed_inst.sample();  // addr1, read, ab(addr1_x_read)
+-000001  point: type=line comment=block hier=top.t
+%000001     addr = 1; cmd = 1; mode = 1;
+-000001  point: type=line comment=block hier=top.t
+%000001     cg_mixed_inst.sample();  // addr1, write, ab(addr1_x_write)
+-000001  point: type=line comment=block hier=top.t
+%000001     `checkr(cg_mixed_inst.get_inst_coverage(), 100.0);  // 10/10
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=line comment=block hier=top.t
+-000001  point: type=line comment=else hier=top.t
+        
+            // Sample cg_def_cross (default bin in a crossed coverpoint, gated by iff)
+%000001     mode = 1;
+-000001  point: type=line comment=block hier=top.t
+%000001     addr = 0; cmd = 0; cg_def_cross_inst.sample();  // a0, read
+-000001  point: type=line comment=block hier=top.t
+%000001     addr = 2; cmd = 1; cg_def_cross_inst.sample();  // ad (default), write
+-000001  point: type=line comment=block hier=top.t
         
 %000001     $write("*-* All Finished *-*\n");
 -000001  point: type=line comment=block hier=top.t

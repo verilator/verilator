@@ -1050,8 +1050,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->packed()) puts("packed ");
         {
             puts("{\n");
-            VL_RESTORER(m_packedps);
-            m_packedps.clear();
+            VL_RESTORER_CLEAR(m_packedps);
             for (AstMemberDType* itemp = nodep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 iterateConst(itemp);
@@ -1141,6 +1140,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConst(nodep->condp());
         puts(") ");
         iterateConst(nodep->propp());
+    }
+    void visit(AstSClocked* nodep) override {
+        puts("@(");
+        iterateConst(nodep->sensesp());
+        puts(") ");
+        iterateConst(nodep->exprp());
+        puts("\n");
     }
     void visit(AstPropAlways* nodep) override {
         puts(nodep->isStrong() ? "s_always" : "always");

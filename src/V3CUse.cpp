@@ -65,6 +65,7 @@ class CUseVisitor final : public VNVisitorConst {
         iterateConst(nodep->lhsp()->dtypep());
     }
     void visit(AstNodeDType* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterateConst(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterateConst(nodep->virtRefDType2p());
 

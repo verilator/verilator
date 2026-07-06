@@ -95,23 +95,23 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 5);    // Questa: 5
-      `checkd(count_fail2, 25);   // Questa: 25
-      `checkd(count_fail3, 9);    // Questa: 9
-      `checkd(count_fail4, 49);   // Questa: 49
-      `checkd(count_fail5, 0);    // Questa: 0
-      // NFA merge-node range [*M:N] over-counts rejects (Questa: 51); match
+      `checkd(count_fail1, 5);
+      `checkd(count_fail2, 25);  // One other sim: 19
+      `checkd(count_fail3, 9);
+      `checkd(count_fail4, 49);
+      `checkd(count_fail5, 0);
+      // NFA merge-node range [*M:N] over-counts rejects; match
       // detection is correct, only reject counting is imprecise
-      `checkd(count_fail6, 59);
-      `checkd(count_fail7, 51);   // Questa: 51
-      `checkd(count_fail8, 20);   // Questa: 20
+      `checkd(count_fail6, 59);  // All other sims: 51
+      `checkd(count_fail7, 51);
+      `checkd(count_fail8, 20);
       // IEEE 1800-2023 16.9.2 permits empty match of [*0]; NFA reports
-      // rejects on each tick while Questa suppresses (Questa: 20)
-      `checkd(count_fail9, 49);
-      `checkd(count_fail10, 59);  // Questa: 59
+      // rejects on each tick while others suppress
+      `checkd(count_fail9, 49);  // Most others: 20, one other 49
+      `checkd(count_fail10, 59);
       // a[*] ##1 b: NFA treats unbounded [*] as liveness (no reject);
-      // Questa treats as definite antecedent (Questa: 29)
-      `checkd(count_fail11, 0);
+      // Should be definite antecedent
+      `checkd(count_fail11, 0);  // All other sims: 29
       $write("*-* All Finished *-*\n");
       $finish;
     end

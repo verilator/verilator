@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2024 Antmicro Ltd
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 `define check_rand(cl, field, cond) \
@@ -11,7 +11,7 @@ begin \
   if (!bit'(cl.randomize())) $stop; \
   prev_result = longint'(field); \
   if (!(cond)) $stop; \
-  repeat(9) begin \
+  repeat(100) begin \
     longint result; \
     if (!bit'(cl.randomize())) $stop; \
     result = longint'(field); \
@@ -33,8 +33,12 @@ class C;
   };
   constraint distinside {
      z dist {que};
-     w dist {arr};
-  };
+     w dist {arr}; }; endclass
+
+class DistNarrow;
+  rand bit [3:0] x;
+  constraint c1 { x dist {[4'd1:4'd9] := 1}; }
+  constraint c2 { x > 4'd5; }
 endclass
 
 module t;
@@ -45,6 +49,11 @@ module t;
     `check_rand(c, c.y, 5 <= c.y && c.y <= 6);
     `check_rand(c, c.z, 3 <= c.z && c.z <= 5);
     `check_rand(c, c.w, 5 <= c.w && c.w <= 7);
+    begin
+      DistNarrow dn;
+      dn = new;
+      `check_rand(dn, dn.x, 6 <= dn.x && dn.x <= 9);
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end

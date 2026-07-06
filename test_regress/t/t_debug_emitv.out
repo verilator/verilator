@@ -364,6 +364,16 @@ module Vt_debug_emitv_t;
             release sum;
         end
     end
+    sequence s_clocked;
+    @(posedge clk) in
+    endsequence
+    begin : assert_seq_clocked
+        assert property ( s_clocked()
+        ) begin
+        end
+        else begin
+        end
+    end
     property p;
     @(posedge clk) ##1 sum[0]
     endproperty
@@ -649,6 +659,11 @@ module Vt_debug_emitv_t;
         cover property ( prop
         ) begin
             $display("pass");
+        end
+    end
+    begin : cover_sequence_concurrent
+        cover property (@(posedge clk) in##1 in
+        ) begin
         end
     end
     begin : assert_prop_always
@@ -1302,6 +1317,21 @@ module Vt_debug_emitv_sub;
         end
     endfunction
     real r;
+endmodule
+module Vt_debug_emitv_seq_event;
+    input logic clk;
+    bit a;
+    bit b;
+    bit c;
+    sequence sq;
+    @(posedge clk) a##1 b##1 c
+    endsequence
+    initial begin
+        begin
+
+            ???? // EVENTCONTROL
+            @( sq())end
+    end
 endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;

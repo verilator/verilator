@@ -3121,7 +3121,7 @@ sigAttr<nodep>:
         |       yVL_PUBLIC_FLAT                         { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RD                      { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RD}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RW attr_event_controlE  { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RW}; v3Global.dpi(true); DEL($2); }
-        |       yVL_ISOLATE_ASSIGNMENTS                 { $$ = new AstAttrOf{$1, VAttrType::VAR_ISOLATE_ASSIGNMENTS}; }
+        |       yVL_ISOLATE_ASSIGNMENTS                 { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_SC_BIGUINT                          { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BIGUINT}; }
         |       yVL_SC_BV                               { $$ = new AstAttrOf{$1, VAttrType::VAR_SC_BV}; }
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
@@ -4657,12 +4657,12 @@ task_prototype<nodeFTaskp>:             // ==IEEE: task_prototype
 
 function_declaration<nodeFTaskp>:       // IEEE: function_declaration + function_body_declaration
                 yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                        { $$ = $4; $$->addStmtsp($6);
                           $$->baseOverride($2);
                           $$->lifetime($3);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                        { $$ = $4; $$->addStmtsp($6);
                           $$->baseOverride($2);
                           $$->lifetime($3);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
@@ -6497,14 +6497,34 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
         |       yCOVER yPROPERTY '(' property_spec ')' stmt
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
         //                      // IEEE: cover_sequence_statement
+        //                      // Reuses AstCover + AstPropSpec (same wrapper as
+        //                      // cover_property_statement above) and the isCoverSeq
+        //                      // flag drives V3AssertNfa to fire stmt per end-of-match
+        //                      // (IEEE 1800-2023 16.14.3), not per property success.
         |       yCOVER ySEQUENCE '(' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DEL($4, $6); }
-        //                      // IEEE: yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
-        //                      // sexpr already includes "clocking_event sexpr"
+                        { AstCover* const coverp = new AstCover{$1,
+                              new AstPropSpec{$4->fileline(), nullptr, nullptr, $4},
+                              $6, VAssertType::CONCURRENT};
+                          coverp->isCoverSeq(true);
+                          $$ = coverp; }
+        |       yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
+                        { AstCover* const coverp = new AstCover{$1,
+                              new AstPropSpec{$4->fileline(), $4, nullptr, $5},
+                              $7, VAssertType::CONCURRENT};
+                          coverp->isCoverSeq(true);
+                          $$ = coverp; }
         |       yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DEL($4, $8, $10, $12);}
+                        { AstCover* const coverp = new AstCover{$1,
+                              new AstPropSpec{$4->fileline(), $4, $8, $10},
+                              $12, VAssertType::CONCURRENT};
+                          coverp->isCoverSeq(true);
+                          $$ = coverp; }
         |       yCOVER ySEQUENCE '(' yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DEL($7, $9, $11); }
+                        { AstCover* const coverp = new AstCover{$1,
+                              new AstPropSpec{$7->fileline(), nullptr, $7, $9},
+                              $11, VAssertType::CONCURRENT};
+                          coverp->isCoverSeq(true);
+                          $$ = coverp; }
         //                      // IEEE: restrict_property_statement
         |       yRESTRICT yPROPERTY '(' property_spec ')' ';'
                         { $$ = new AstRestrict{$1, $4}; }
@@ -6653,6 +6673,12 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
         |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
         |       sexpr                                   { $$ = $1; }
         |       sexpr ';'                               { $$ = $1; }
+        //                      // IEEE: clocking_event sequence_expr (16.7)
+        //                      // A leading clocking event on a named sequence body.
+        |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
+        |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
+        |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
+        |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec
@@ -6664,14 +6690,8 @@ property_spec<propSpecp>:               // IEEE: property_spec
                         { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
         |       '@' senitemVar pexpr
                         { $$ = new AstPropSpec{$1, $2, nullptr, $3}; }
-        //                      // Disable applied after the event occurs,
-        //                      // so no existing AST can represent this
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
-                        { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
-                          BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
-                                  + $<fl>1->warnMore()
-                                  + "... Suggest use property '(@(...) disable iff (...))'"); }
-        //UNSUP remove above
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' pexpr
+                        { $$ = new AstPropSpec{$1, $8, $4, $10}; }
         |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
         ;
@@ -7319,8 +7339,29 @@ cross_itemList<nodep>:  // IEEE: part of list_of_cross_items
         ;
 
 cross_item<nodep>:  // ==IEEE: cross_item
-                id/*cover_point_identifier*/
-                        { $$ = new AstCoverpointRef{$<fl>1, *$1}; }
+        //                      // IEEE: cover_point_identifier | variable_identifier - both are a
+        //                      // simple identifier.  We parse idDotted (a plain hierarchical
+        //                      // reference a.b.c, with no bit/array selects) to also accept the
+        //                      // non-standard dotted form (e.g. 'cross a.b') that several
+        //                      // simulators support; the common simple-identifier case is detected
+        //                      // and handled exactly as before.
+                idDotted
+                        {
+                          if (AstParseRef* const refp = VN_CAST($1, ParseRef)) {
+                              // Standard: simple cover_point_identifier / variable_identifier
+                              $$ = new AstCoverpointRef{refp->fileline(), refp->name()};
+                              VL_DO_DANGLING(refp->deleteTree(), refp);
+                          } else {
+                              // Verilator extension beyond strict IEEE (cross_item is a simple
+                              // identifier): some tools accept a hierarchical/dotted reference.
+                              // Carry the reference expression (still an AstDot here) out of the
+                              // parser unchanged; later stages resolve and, eventually, implement
+                              // it as an implicit coverpoint.
+                              $1->v3warn(NONSTD, "Non-standard hierarchical reference as a coverage "
+                                                 "cross item (an implicit coverpoint)");
+                              $$ = new AstCoverpointRef{$1->fileline(), $1};
+                          }
+                        }
         ;
 
 cross_body<nodep>:  // ==IEEE: cross_body
@@ -8559,8 +8600,7 @@ vltVarAttrSpecE<strp>:
         ;
 
 vltVarAttrFront<attrtypeen>:
-                yVLT_ISOLATE_ASSIGNMENTS    { $$ = VAttrType::VAR_ISOLATE_ASSIGNMENTS; }
-        |       yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
+                yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
         |       yVLT_PUBLIC                 { $$ = VAttrType::VAR_PUBLIC; v3Global.dpi(true); }
         |       yVLT_PUBLIC_FLAT            { $$ = VAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }
         |       yVLT_PUBLIC_FLAT_RD         { $$ = VAttrType::VAR_PUBLIC_FLAT_RD; v3Global.dpi(true); }
@@ -8574,6 +8614,7 @@ vltVarAttrFront<attrtypeen>:
 vltVarAttrFrontDeprecated:
                 yVLT_CLOCK_ENABLE           { }
         |       yVLT_CLOCKER                { }
+        |       yVLT_ISOLATE_ASSIGNMENTS    { }
         |       yVLT_NO_CLOCKER             { }
         ;
 

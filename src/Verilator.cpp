@@ -22,6 +22,7 @@
 #include "V3AssertNfa.h"
 #include "V3AssertPre.h"
 #include "V3Ast.h"
+#include "V3AstPatterns.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
@@ -98,12 +99,10 @@
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
-#include "V3SplitAs.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
-#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
@@ -261,6 +260,8 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertCommon::collectDefaultDisable(v3Global.rootp());
+        V3AssertCommon::lowerSequenceEvents(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.
@@ -421,7 +422,6 @@ static void process() {
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
-            V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
             if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
@@ -543,6 +543,8 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());
 
+            if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "prec");
+
             // Here down, widthMin() is the Verilog width, and width() is the C++ width
             // Bits between widthMin() and width() are irrelevant, but may be non-zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
@@ -584,8 +586,14 @@ static void process() {
                 // Must be after all Sel/array index based optimizations
                 V3Reloop::reloopAll(v3Global.rootp());
             }
+        }
 
-            if (v3Global.opt.inlineCFuncs()) {
+        // These are no longer needed, remove references before CFunc inlining
+        v3Global.rootp()->evalp(nullptr);
+        v3Global.rootp()->evalNbap(nullptr);
+
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
+            if (v3Global.opt.fInlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
                 V3InlineCFuncs::inlineAll(v3Global.rootp());
             }
@@ -630,6 +638,8 @@ static void process() {
                 v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
             }
         }
+
+        if (v3Global.opt.dumpAstPatterns()) V3AstPatterns::dumpAll(v3Global.rootp(), "emit");
 
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
@@ -734,7 +744,6 @@ static bool verilate(const string& argString) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
@@ -808,7 +817,7 @@ static bool verilate(const string& argString) {
     V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
     if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteAll");
-    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast");
+    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "WroteFast", true);
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();

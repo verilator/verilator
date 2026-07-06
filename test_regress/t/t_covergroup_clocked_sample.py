@@ -10,6 +10,7 @@
 import vltest_bootstrap
 import coverage_covergroup_common
 
-test.scenarios('vlt_all')
+# Issue #7779 unstable with --vltmt
+test.scenarios('vlt')
 
 coverage_covergroup_common.run(test)

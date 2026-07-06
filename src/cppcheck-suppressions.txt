@@ -137,8 +137,6 @@ constParameterPointer:src/V3Tristate.cpp
 constParameterReference:src/V3Tristate.cpp
 constVariablePointer:src/V3Tristate.cpp
 constVariableReference:src/V3Tristate.cpp
-constVariablePointer:src/V3TSP.cpp
-constVariableReference:src/V3TSP.cpp
 constParameterPointer:src/V3Undriven.cpp
 constVariablePointer:src/V3Undriven.cpp
 constParameterPointer:src/V3Unroll.cpp

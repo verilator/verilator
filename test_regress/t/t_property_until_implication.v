@@ -50,12 +50,12 @@ module t (
       crc <= 64'h5aef0c8d_d70a4497;
     end
     else if (cyc == 99) begin
-      // Counts reflect NFA per-cycle reject aggregation, not Questa's
+      // Counts reflect NFA per-cycle reject aggregation, not some other sim's
       // per-attempt action_block firing; the two differ by a small constant
       // (see PR description for the model gap). Test is a regression for
       // "no internal error on `until` as |=> consequent" (issue #7548).
-      `checkd(fail_nonoverlap, 7);
-      `checkd(fail_overlap, 22);
+      `checkd(fail_nonoverlap, 7);  // Other sims: 8, one other: 7
+      `checkd(fail_overlap, 22);  // Other sims: 24, one other: 22
       $write("*-* All Finished *-*\n");
       $finish;
     end

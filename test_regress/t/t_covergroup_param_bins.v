@@ -26,10 +26,10 @@ module t #(
   covergroup cg;
     cp: coverpoint value {
       bins negative = {[PMIN : -1]};  // parameter as range lower bound
-      bins zero     = {0};
+      bins zero = {0};
       bins positive = {[1 : LMAX]};  // localparam as range upper bound
-      bins maxv     = {LMAX};  // localparam as single value
-      bins minv     = {PMIN};  // parameter as single value
+      bins maxv = {LMAX};  // localparam as single value
+      bins minv = {PMIN};  // parameter as single value
     }
   endgroup
 
