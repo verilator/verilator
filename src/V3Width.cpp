@@ -3431,14 +3431,8 @@ class WidthVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();
             itemp = VN_AS(itemp, DistItem)->rangep();
-            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
-                // Finalize both bounds now: the in-constraint path keeps the dist
-                // (and its ranges) for constraint lowering, which cannot re-width
-                // a mixed-width bound expression
-                iterateCheck(nodep, "Dist Range", rangep->lhsp(), CONTEXT_DET, FINAL, subDTypep,
-                             EXTEND_EXP);
-                iterateCheck(nodep, "Dist Range", rangep->rhsp(), CONTEXT_DET, FINAL, subDTypep,
-                             EXTEND_EXP);
+            if (VN_IS(itemp, InsideRange)) {
+                userIterate(itemp, WidthVP{subDTypep, FINAL}.p());
             } else {
                 iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
             }
@@ -3479,8 +3473,6 @@ class WidthVisitor final : public VNVisitor {
         UINFOTREE(9, nodep, "", "dist-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        // Width the replacement (same reason as in visit(AstInside) below)
-        userIterate(newp, m_vup);
     }
 
     void visit(AstInside* nodep) override {
@@ -3518,10 +3510,12 @@ class WidthVisitor final : public VNVisitor {
                      EXTEND_EXP);
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
-            // InsideRange will get replaced with Lte&Gte and finalized later
-            if (!VN_IS(itemp, InsideRange) && !itemp->dtypep()->isNonPackedArray())
+            if (VN_IS(itemp, InsideRange)) {
+                userIterate(itemp, WidthVP{expDTypep, FINAL}.p());
+            } else if (!itemp->dtypep()->isNonPackedArray()) {
                 iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, expDTypep,
                              EXTEND_EXP);
+            }
         }
 
         AstNodeExpr* exprp;
@@ -3576,10 +3570,6 @@ class WidthVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        // Width the replacement: InsideRange bounds are skipped above (finalized
-        // "later"), and a single-BOTH context (e.g. the RHS of '->' via
-        // iterateCheckBool) never revisits it, leaving mixed-width bounds unextended.
-        userIterate(newp, m_vup);
     }
     AstNodeExpr* insideItem(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* itemp) {
         const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
@@ -3617,8 +3607,25 @@ class WidthVisitor final : public VNVisitor {
             V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
             V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         } else {
-            userIterateAndNext(nodep->lhsp(), m_vup);
-            userIterateAndNext(nodep->rhsp(), m_vup);
+            if (m_vup->prelim()) {
+                userIterateAndNext(nodep->lhsp(), m_vup);
+                userIterateAndNext(nodep->rhsp(), m_vup);
+            }
+            if (m_vup->final()) {
+                AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
+                // Warning waivers match visit_cmp_eq_gt on the lowered Gte/Lte
+                const int expWidth = expDTypep->width();
+                const bool waiveLhs = expWidth == 32
+                                      && !(expDTypep->isSigned() && nodep->lhsp()->isSigned())
+                                      && expDTypep->widthMin() >= nodep->lhsp()->width();
+                const bool waiveRhs = expWidth == 32
+                                      && !(expDTypep->isSigned() && nodep->rhsp()->isSigned())
+                                      && expWidth >= nodep->rhsp()->widthMin();
+                iterateCheck(nodep, "Range LHS", nodep->lhsp(), CONTEXT_DET, FINAL, expDTypep,
+                             EXTEND_EXP, !waiveLhs);
+                iterateCheck(nodep, "Range RHS", nodep->rhsp(), CONTEXT_DET, FINAL, expDTypep,
+                             EXTEND_EXP, !waiveRhs);
+            }
         }
         nodep->dtypeFrom(nodep->lhsp());
     }

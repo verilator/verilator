@@ -14,8 +14,7 @@ test.scenarios('simulator')
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-# The mixed-width range bound (64-bit minus 32-bit) is intentional.
-test.compile(verilator_flags2=["-Wno-WIDTHEXPAND"])
+test.compile()
 
 test.execute()
 
