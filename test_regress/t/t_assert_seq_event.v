@@ -33,8 +33,7 @@ module t (
   endsequence
   // verilog_format: on
 
-  // seq_dc has no clocking event, so it inherits the default clocking and must
-  // behave identically to the explicitly-clocked seq above.
+  // seq_dc inherits the default clocking; counts must match seq
   default clocking @(posedge clk);
   endclocking
 
@@ -42,13 +41,8 @@ module t (
     a ##1 b ##1 c;
   endsequence
 
-  // A sequence used as an `@` event control resumes once per sequence end point
-  // (IEEE 1800-2023 9.4.2.4). seq_hits/seq_hits2 are two waiters on the same
-  // multi-cycle sequence; ref_hits is an independent shift-register oracle (end
-  // point at posedge N when a@N-2, b@N-1, c@N); one_hits is the single-cycle case.
-  // rng_hits waits on the ranged form: end points at posedge N when b@N and a@N-d
-  // for any d in 1..3; simultaneous end points resume a blocked waiter once, so
-  // rng_ref counts cycles with at least one end point.
+  // ref_hits and rng_ref are independent shift-register oracles;
+  // simultaneous end points resume a blocked waiter once
   initial forever begin
     @seq;
     seq_hits = seq_hits + 1;
@@ -79,9 +73,7 @@ module t (
     b1 <= b;
   end
 
-  // a/b/c are spaced to crc[0]/crc[4]/crc[8] -- past the ##2 window -- so the
-  // left-shift LFSR cannot correlate a@T, b@T+1, c@T+2 into one bit; otherwise
-  // the multi-cycle end-point machinery would collapse into a triviality.
+  // a/b/c bit spacing exceeds the ##2 window to decorrelate the LFSR taps
   always @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[30:0], crc[31] ^ crc[21] ^ crc[1] ^ crc[0]};

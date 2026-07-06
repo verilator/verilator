@@ -91,9 +91,7 @@ public:
 };
 
 // Lower a sequence used as an event control ('@seq', IEEE 1800-2023 9.4.2.4) into a
-// synthesized event plus an internal 'cover sequence' that fires the event on every
-// end-of-match. Runs before V3AssertNfa so the sequence's automaton is built by the
-// ordinary cover-sequence path; nothing sequence-event-specific reaches V3AssertNfa.
+// synthesized event fired by an internal 'cover sequence' on each end-of-match
 class SeqEventLowerVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -605,18 +603,19 @@ class AssertVisitor final : public VNVisitor {
 
         bool selfDestruct = false;
         bool passspGated = false;
-        if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
+        const AstCover* const coverp = VN_CAST(nodep, Cover);
+        // A sequence event control is not an assertion directive; no assertion control
+        const bool seqEvent = coverp && coverp->isSeqEvent();
+        if (coverp) {
             ++m_statCover;
-            if (snodep->isSeqEvent()) {
-                // Synthesized driver for a sequence used as an event control; keep the
-                // action (the event fire) with no coverage bucket, independent of
-                // --coverage.
+            if (seqEvent) {
+                // Keep the event-fire action, with no coverage bucket
             } else if (!v3Global.opt.coverageUser()) {
                 selfDestruct = true;
             } else {
                 // V3Coverage assigned us a bucket to increment.
-                AstCoverInc* const covincp = VN_AS(snodep->coverincsp(), CoverInc);
-                UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
+                AstCoverInc* const covincp = VN_AS(coverp->coverincsp(), CoverInc);
+                UASSERT_OBJ(covincp, coverp, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 if (passsp) {
@@ -660,7 +659,8 @@ class AssertVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         bool passspAlreadyGated = false;
         if (passsp && VN_IS(passsp, If)) passspAlreadyGated = VN_AS(passsp, If)->user1();
-        if (passsp && !passspGated && !passspAlreadyGated && !VN_IS(propExprp, PExpr)) {
+        if (passsp && !passspGated && !passspAlreadyGated && !VN_IS(propExprp, PExpr)
+            && !seqEvent) {
             passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
                                        /*vacuous=*/false);
         }
@@ -670,7 +670,7 @@ class AssertVisitor final : public VNVisitor {
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
-        bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
+        if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
         if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);

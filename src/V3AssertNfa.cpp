@@ -2876,11 +2876,17 @@ class AssertNfaVisitor final : public VNVisitor {
         bool senTreeOwned = false;  // True if we created senTreep locally
         AstPropSpec* const propSpecp = VN_CAST(assertp->propp(), PropSpec);
         UASSERT_OBJ(propSpecp, assertp, "Concurrent assertion must have PropSpec");
+        AstCover* const coverp = VN_CAST(assertp, Cover);
+        const bool isCover = coverp != nullptr;
+        const bool isCoverSeq = coverp && coverp->isCoverSeq();
+        // A sequence event control is not an assertion directive; no default
+        // disable iff, no assertion control
+        const bool isSeqEvent = coverp && coverp->isSeqEvent();
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
         if (!propSpecp->sensesp() && m_defaultClockingp) {
             propSpecp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
         }
-        if (!propSpecp->disablep() && m_defaultDisablep) {
+        if (!propSpecp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propSpecp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
         if (!senTreep && propSpecp->sensesp()) {
@@ -2892,9 +2898,6 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!senTreep) return;
 
         FileLine* const flp = assertp->fileline();
-        const bool isCover = VN_IS(assertp, Cover);
-        AstCover* const coverp = VN_CAST(assertp, Cover);
-        const bool isCoverSeq = coverp && coverp->isCoverSeq();
 
         SvaGraph graph;
         SvaNfaBuilder builder{graph, m_modp, m_propTempNames, isCoverSeq};
@@ -2939,13 +2942,16 @@ class AssertNfaVisitor final : public VNVisitor {
         std::vector<AstNodeExpr*> perMidSrcs;
 
         AstNodeExpr* const alwaysTriggerp
-            = assertOnCond(flp, assertp->userType(), assertp->directive());
+            = isSeqEvent ? new AstConst{flp, AstConst::BitTrue{}}
+                         : assertOnCond(flp, assertp->userType(), assertp->directive());
         AstNodeExpr* const outputExprp = m_loweringp->lower(
             flp, graph, alwaysTriggerp, senTreep, result.finalCondp, isCover,
             disableExprp ? disableExprp->cloneTreePure(false) : nullptr, negated,
             needMatch ? &matchExprp : nullptr, disableCntVarp, snapshotVarp,
             needPerSrcFail ? &requiredStepSrcs : nullptr, isCoverSeq ? &perMidSrcs : nullptr,
-            assertp->userType(), assertp->directive());
+            isSeqEvent ? VAssertType{VAssertType::INTERNAL} : assertp->userType(),
+            isSeqEvent ? VAssertDirectiveType{VAssertDirectiveType::INTERNAL}
+                       : assertp->directive());
 
         AstSenTree* const perSrcSenTreep
             = (requiredStepSrcs.size() >= 2) ? senTreep->cloneTree(false) : nullptr;
