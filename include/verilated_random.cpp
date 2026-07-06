@@ -1006,10 +1006,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
 
         // Solver session setup
         os << "(set-option :produce-models true)\n";
-        // Arrays with recorded elements are pinned per element (plain bit-vector
-        // literals, below) and round-trip under QF_ABV. Only a container whose
-        // element table is not enumerable falls back to a whole-array pin, whose
-        // model text ("(as const ...)") the solver accepts only under ALL.
+        // Non-enumerable containers are pinned as a whole array and need ALL.
         bool hasNonEnumArray = false;
         for (const auto& var : m_vars) {
             if (var.second->dimension() > 0
@@ -1033,10 +1030,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             os << ")\n";
         }
 
-        // Pin all previously solved variables. Model text naming solver-internal
-        // terms ("(_ as-array f)", "(lambda ...)") cannot be re-asserted as
-        // input; skipping such a pin is safe because ordering never changes the
-        // solution space (IEEE 1800-2023 18.5.9), it only weakens the bias.
+        // Skip a pin the solver emitted as its own as-array/lambda model text.
         for (const auto& entry : solvedValues) {
             if (entry.second.find("as-array") != std::string::npos) continue;
             if (entry.second.find("(lambda") != std::string::npos) continue;
@@ -1094,75 +1088,63 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                     if (it->second->dimension() > 0) {
                         auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
                         it->second->setArrayInfo(arrVarsp);
-                        // Enumerable (fixed-size) arrays: query each element via a
-                        // (select ...) so the value is a plain bit-vector literal
-                        // that round-trips as a QF_ABV pin, avoiding array model
-                        // text ("(as const ...)" / "(_ as-array ...)").
+                        // Enumerable arrays: query each element for a QF_ABV-safe pin.
                         if (it->second->countMatchingElements(m_arr_vars, it->second->name())
                             > 0) {
                             it->second->emitGetValue(os);
                             continue;
                         }
                     }
-                    // Scalars, and dynamic containers whose element table is empty,
-                    // query the whole term (pinned via the ALL session above).
                     os << varName << " ";
                 }
                 os << "))\n";
             };
 
-            // Helper to parse ((name1 value1) (name2 value2) ...) response
             auto parseGetValue = [&]() -> bool {
                 char c;
+                // Read a balanced parenthesised group, opening '(' already read.
+                auto readGroup = [&](std::string& out) {
+                    out = "(";
+                    int depth = 1;
+                    char gc;
+                    while (depth > 0 && os.get(gc)) {
+                        out += gc;
+                        if (gc == '(') {
+                            ++depth;
+                        } else if (gc == ')') {
+                            --depth;
+                        }
+                    }
+                };
                 os >> c;  // outer '('
                 while (true) {
                     os >> c;
-                    if (c == ')') break;  // outer closing
+                    if (c == ')') break;
                     if (c != '(') return false;
-                    // The queried term is echoed back verbatim as the pair's LHS:
-                    // a bare name for scalars, a balanced "(select arr idx)" for
-                    // array elements. Keep it as the pin target either way.
+
+                    // LHS: the queried term echoed back, a name or (select ...) group.
                     os >> std::ws;
                     std::string name;
-                    if (os.peek() == '(') {
-                        int ndepth = 0;
-                        char nc;
-                        do {
-                            os.get(nc);
-                            name += nc;
-                            if (nc == '(')
-                                ++ndepth;
-                            else if (nc == ')')
-                                --ndepth;
-                        } while (ndepth > 0 && os);
+                    char first;
+                    os.get(first);
+                    if (first == '(') {
+                        readGroup(name);
                     } else {
-                        os >> name;
+                        name = first;
+                        while (os.get(c) && c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+                            name += c;
+                        }
                     }
 
-                    // Read value handling nested parens for (_ bvN W) format
                     os >> std::ws;
                     std::string value;
-                    char firstChar;
-                    os.get(firstChar);
-                    if (firstChar == '(') {
-                        // Compound value like (_ bv5 32)
-                        value = "(";
-                        int depth = 1;
-                        while (depth > 0) {
-                            os.get(c);
-                            value += c;
-                            if (c == '(')
-                                depth++;
-                            else if (c == ')')
-                                depth--;
-                        }
-                        // Read closing ')' of the pair
-                        os >> c;
+                    os.get(first);
+                    if (first == '(') {
+                        readGroup(value);
+                        os >> c;  // pair-closing ')'
                     } else {
-                        // Atom value like #x00000005 or #b101
-                        value += firstChar;
+                        value = first;
                         while (os.get(c) && c != ')') { value += c; }
-                        // Trim trailing whitespace
                         const size_t end = value.find_last_not_of(" \t\n\r");
                         if (end != std::string::npos) value = value.substr(0, end + 1);
                     }
