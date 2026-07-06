@@ -29,6 +29,7 @@
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3Sched.h"
+#include "V3Virtual.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -193,6 +194,8 @@ class AwaitVisitor final : public VNVisitor {
     AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
     // Additional var sensitivities
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
+    std::unique_ptr<V3ClassesGraphWrapper>
+        m_classGraphp;  // class graph to get possibly called functions from a virtual call
     std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
     // Variables written by suspendable processes
     std::set<AstVarScope*> m_writtenBySuspendable;
@@ -320,7 +323,12 @@ class AwaitVisitor final : public VNVisitor {
     void visit(AstNodeCCall* const nodep) override {
         iterateChildren(nodep);
         // We need to visit bodies of non-inlined functions
-        visitCalledCFunc(nodep->funcp());
+        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
+        if (cfuncps.empty()) {
+            visitCalledCFunc(nodep->funcp());
+        } else {
+            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+        }
     }
     void visit(AstCFunc* const nodep) override {
         const auto& value = m_cfuncsCache(nodep);
@@ -377,7 +385,8 @@ public:
         : m_scopeTopp{nodep->topScopep()->scopep()}
         , m_lbs{lbs}
         , m_postUpdatesr{postUpdatesr}
-        , m_externalDomains{externalDomains} {
+        , m_externalDomains{externalDomains}
+        , m_classGraphp{V3Virtual::buildClassGraph(nodep)} {
         iterate(nodep);
     }
     ~AwaitVisitor() override {
