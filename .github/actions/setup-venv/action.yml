@@ -43,6 +43,7 @@ runs:
         key: ${{ steps.cachekey.outputs.key }}
 
     - name: Create Python venv
+      if: ${{ steps.venv.outputs.cache-hit != 'true' }}
       shell: bash
       working-directory: ${{ inputs.repo }}
       run: make venv
