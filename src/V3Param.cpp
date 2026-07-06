@@ -2266,8 +2266,9 @@ public:
                     }
                 } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
                     AstVar* const varp = refp->varp();
-                    if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
-                        && reachedDeferred.insert(varp).second && varp->valuep()) {
+                    if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
+                        && reachedDeferred.insert(varp).second) {
+                        UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
                         worklist.push_back(varp->valuep());
                     }
                 }
