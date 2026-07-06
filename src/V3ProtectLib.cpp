@@ -189,6 +189,8 @@ class ProtectVisitor final : public VNVisitor {
         initialComment(txtp, fl);
         txtp->add("import \"DPI-C\" function chandle " + m_libName
                   + "_protectlib_create(string scope__V);\n\n");
+        txtp->add("import \"DPI-C\" function void " + m_libName
+                  + "_protectlib_initial(chandle handle__V);\n\n");
         comboComment(txtp, fl);
         m_comboPortsp = new AstTextBlock{fl,  //
                                          "import \"DPI-C\" function longint " + m_libName
@@ -249,6 +251,9 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("handle__V = " + m_libName
                   + "_protectlib_create"
                     "($sformatf(\"%m\"));\n");
+        // Run the protected model's first eval here, not as a side effect of create
+        // or by relying on a later combo/seq update.
+        txtp->add(m_libName + "_protectlib_initial(handle__V);\n");
         txtp->add("end\n\n");
 
         // Combinatorial process
@@ -365,6 +370,11 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add(/**/ m_topName + "_container* const handlep__V = new " + m_topName
                   + "_container{scopep__V};\n");
         txtp->add(/**/ "return handlep__V;\n");
+        txtp->add("}\n\n");
+
+        txtp->add("void " + m_libName + "_protectlib_initial(void* vhandlep__V) {\n");
+        castPtr(fl, txtp);
+        txtp->add(/**/ "handlep__V->eval();\n");
         txtp->add("}\n\n");
 
         // Updates

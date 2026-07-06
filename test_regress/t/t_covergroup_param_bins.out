@@ -1,5 +1,5 @@
-cg.cp.maxv: 2
+cg.cp.maxv: 1
 cg.cp.minv: 1
 cg.cp.negative: 1
-cg.cp.positive: 3
+cg.cp.positive: 2
 cg.cp.zero: 1

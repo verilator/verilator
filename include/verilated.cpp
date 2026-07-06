@@ -172,9 +172,10 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 #endif
 
 #ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
-void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+static void vl_stop_impl(const char* filename, int linenum, const char* hier,
+                         bool ignorePriorFinish) VL_MT_UNSAFE {
     // $stop or $fatal reporting; would break current API to add param as to which
-    if (Verilated::threadContextp()->gotFinish()
+    if (!ignorePriorFinish && Verilated::threadContextp()->gotFinish()
         && !Verilated::threadContextp()->executingFinal()) {
         return;
     }
@@ -187,6 +188,9 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
         vl_print_warn_error("%Error", filename, linenum, msg);
         Verilated::runFlushCallbacks();
     }
+}
+void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+    vl_stop_impl(filename, linenum, hier, false);
 }
 #endif
 
@@ -215,7 +219,8 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 #endif
 
 #ifndef VL_USER_STOP_MAYBE  ///< Define this to override the vl_stop_maybe function
-void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
+static void vl_stop_maybe_impl(const char* filename, int linenum, const char* hier, bool maybe,
+                               bool ignorePriorFinish) VL_MT_UNSAFE {
     // $stop or $fatal
     Verilated::threadContextp()->errorCountInc();
     if (maybe
@@ -226,8 +231,15 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
                                 "Verilog $stop, ignored due to +verilator+error+limit");
         }
     } else {
+#ifndef VL_USER_STOP
+        vl_stop_impl(filename, linenum, hier, ignorePriorFinish);
+#else
         vl_stop(filename, linenum, hier);
+#endif
     }
+}
+void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
+    vl_stop_maybe_impl(filename, linenum, hier, maybe, false);
 }
 #endif
 
@@ -243,15 +255,25 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+    // The callback is queued, but generated phase guards need the flag now.
+    Verilated::threadContextp()->gotFinish(true);
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+#ifndef VL_USER_STOP_MAYBE
+    const bool ignorePriorFinish = !Verilated::threadContextp()->gotFinish()
+                                   || Verilated::threadContextp()->executingFinal();
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        vl_stop_maybe_impl(filename, linenum, hier, maybe, ignorePriorFinish);
+    }});
+#else
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
     }});
+#endif
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
@@ -3275,10 +3297,7 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotError = flag;
 }
-void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    m_s.m_gotFinish = flag;
-}
+void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE { m_s.m_gotFinish.store(flag); }
 bool VerilatedContext::executingFinal() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_executingFinal;

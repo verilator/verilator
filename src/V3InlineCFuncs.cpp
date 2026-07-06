@@ -461,6 +461,10 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (m_cfuncVtxp) m_cfuncVtxp->setNoInline("Contains CReturn");
         iterateChildrenConst(nodep);
     }
+    void visit(AstFinishFork* nodep) override {
+        m_cfuncVtxp->setNoInline("Contains finish");
+        iterateChildrenConst(nodep);
+    }
 
     // Base node
     void visit(AstNode* nodep) override {

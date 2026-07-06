@@ -402,6 +402,13 @@ protected:
         m_noReorderWhy = "JumpGo";
         iterateChildren(nodep);
     }
+    void visit(AstFireEvent* nodep) override {
+        // Event triggers unblock only processes that are already waiting. Splitting a process
+        // around the trigger can make the process see its own trigger before its tail executes.
+        UINFO(9, "         NoReordering " << nodep);
+        m_noReorderWhy = "FireEvent";
+        iterateChildren(nodep);
+    }
 
     //--------------------
     // Default

@@ -1380,10 +1380,13 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
+        UASSERT_OBJ(m_cfuncp, nodep, "No current function");
         if (m_cfuncp->isCoroutine()) {
             putns(nodep, "co_return;\n");
-        } else {
+        } else if (m_cfuncp->rtnTypeVoid() == "void") {
             putns(nodep, "return;\n");
+        } else {
+            putns(nodep, "return {};\n");
         }
     }
     void visit(AstPrintTimeScale* nodep) override {
