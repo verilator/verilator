@@ -41,6 +41,11 @@ if [ "$HOST_OS" = "linux" ]; then
   echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
   echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
   echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+elif [ "$HOST_OS" = "macOS" ]; then
+  # The macos runner image ships an untrusted third-party tap we don't use;
+  # untap it so brew stops emitting a tap-trust warning. Force + '|| true' since
+  # untap fails if a formula was installed from it, which is harmless here.
+  brew untap --force aws/tap || true
 fi
 
 install-wavediff() {
