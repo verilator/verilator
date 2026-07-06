@@ -80,6 +80,9 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:10000] (a | b | c | d | e));
 
+  cover property (@(posedge clk) disable iff (cyc < 2)
+      ##[0:10000] 1'b1);
+
   // Range with binary SExpr: nextStep has delay > 0 after range match
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> b ##[1:2] (a | b | c | d | e) ##3 (a | b | c | d | e))

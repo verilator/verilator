@@ -48,8 +48,8 @@ class SvaStateVertex;
 // Per-vertex algorithm data, stored via V3GraphVertex::userp() during lowering
 struct SvaVertexData final {
     AstVar* stateVarp = nullptr;  // NBA state register for this vertex
-    AstVar* counterActiveVarp = nullptr;  // Counter FSM active flag
-    AstVar* counterCountVarp = nullptr;  // Counter FSM count register
+    AstVar* delayRingVarp = nullptr;  // Bitset ring buffer
+    AstVar* delayRingIdxVarp = nullptr;  // Next slot written in delayRingVarp
     AstVar* doneLVarp = nullptr;  // SAnd LHS done-latch
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
     AstNodeExpr* stateSigp = nullptr;  // Combinational state signal (owned during lowering)
@@ -64,10 +64,10 @@ public:
     bool m_isMatch = false;
     // Owned throughout-guard condition clones; IEEE 1800-2023 16.9.9
     std::vector<AstNodeExpr*> m_throughoutConds;
-    // Counter FSM vertex for ##[M:N] when N-M > kChainLimit
-    bool m_isCounter = false;
-    int m_counterMax
-        = 0;  // Counter window maximum (min is always 0; pre-chain handles the M offset)
+    // Nonzero for a bitset ring-buffer vertex for ## delays.
+    bool m_isFixedDelayRing = false;
+    int m_delayRingSize = 0;  // Fixed delay cycles. Range: max-min+1.
+    AstNodeExpr* m_delayRingClearCondp = nullptr;  // local RHS for pure-boolean range
     // Liveness terminal (IEEE weak semantics): reject must not fire from this source
     bool m_isUnbounded = false;
     // Temporal sequence AND combiner; IEEE 1800-2023 16.9.5
@@ -88,15 +88,25 @@ public:
         : V3GraphVertex{graphp} {}
     ~SvaStateVertex() override {
         for (AstNodeExpr* cp : m_throughoutConds) VL_DO_DANGLING(cp->deleteTree(), cp);
+        if (m_delayRingClearCondp)
+            VL_DO_DANGLING(m_delayRingClearCondp->deleteTree(), m_delayRingClearCondp);
         if (m_andLhsCondp) VL_DO_DANGLING(m_andLhsCondp->deleteTree(), m_andLhsCondp);
         if (m_andRhsCondp) VL_DO_DANGLING(m_andRhsCondp->deleteTree(), m_andRhsCondp);
     }
     // METHODS
-    string name() const override { return "s" + cvtToStr(color()); }  // LCOV_EXCL_LINE
     // LCOV_EXCL_START -- Graphviz dump only
+    string name() const override {
+        string name = "s" + cvtToStr(color());
+        if (m_delayRingSize) {
+            name += "\\n";
+            name += m_isFixedDelayRing ? "fixed chain " : "range chain ";
+            name += cvtToStr(m_delayRingSize) + " bits";
+        }
+        return name;
+    }
     string dotColor() const override {
         if (m_isMatch) return "red";
-        if (m_isCounter) return "blue";
+        if (m_delayRingSize) return "blue";
         if (m_isAndCombiner) return "purple";
         return "black";
     }
@@ -513,14 +523,28 @@ class SvaNfaBuilder final {
         return m_graph.addClockedEdge(fromp, top, throughoutCond(nullptr, flp));
     }
 
-    SvaStateVertex* addDelayChain(SvaStateVertex* startp, int n, FileLine* flp) {
-        SvaStateVertex* currentp = startp;
-        for (int i = 0; i < n; ++i) {
+    SvaStateVertex* addDelayChain(SvaStateVertex* startp, int size, FileLine* flp,
+                                  bool isFixed = true, AstNodeExpr* clearCondp = nullptr) {
+        if (isFixed && size == 0) return startp;
+        UASSERT_OBJ(size > 0, startp, "Delay chain needs at least one slot");
+        if (isFixed && size == 1) {
             SvaStateVertex* const nextp = scopedCreateVertex();
-            guardedEdge(currentp, nextp, flp);
-            currentp = nextp;
+            guardedEdge(startp, nextp, flp);
+            return nextp;
         }
-        return currentp;
+        SvaStateVertex* const ringVtxp = scopedCreateVertex();
+        ringVtxp->m_isFixedDelayRing = isFixed;
+        ringVtxp->m_delayRingSize = size;
+        if (clearCondp) {
+            UASSERT_OBJ(!isFixed, startp, "Fixed delay cannot have a clear condition");
+            ringVtxp->m_delayRingClearCondp = clearCondp->cloneTreePure(false);
+        }
+        if (isFixed) {
+            guardedEdge(startp, ringVtxp, flp);
+        } else {
+            guardedLink(startp, ringVtxp, flp);
+        }
+        return ringVtxp;
     }
 
     // Build NFA for an SExpr. finalCond = RHS (not yet added as a vertex).
@@ -565,7 +589,7 @@ class SvaNfaBuilder final {
         const int range = maxDelay - minDelay;
         currentp = addDelayChain(currentp, minDelay, flp);
         // kChainLimit bounds per-attempt unrolled vertices. Above this, a
-        // counter FSM (constant-size state) is used instead, so the vertex
+        // ring buffer (constant-size state) is used instead, so the vertex
         // count is O(1) in range regardless of user input; no adversarial N
         // blowup is possible.
         constexpr int kChainLimit = 256;
@@ -580,13 +604,8 @@ class SvaNfaBuilder final {
             return false;
         }
         if (range > kChainLimit) {
-            // Large range: counter FSM. Overlapping triggers during an active
-            // count are dropped (non-overlapping semantics only).
-            SvaStateVertex* const counterVtxp = scopedCreateVertex();
-            counterVtxp->m_isCounter = true;
-            counterVtxp->m_counterMax = range;
-            guardedEdge(currentp, counterVtxp, flp);
-            currentp = counterVtxp;
+            currentp = addDelayChain(currentp, range + 1, flp, false,
+                                     rhsExprp->isMultiCycleSva() ? nullptr : rhsExprp);
         } else if (VN_IS(rhsExprp, SExpr)) {
             // Nested-SExpr RHS: merge all [M,N] positions. Candidate-local misses
             // are not assertion rejects while a later position can still match.
@@ -1640,6 +1659,25 @@ class SvaNfaLowering final {
         if (!exprp) return nullptr;
         return new AstLogAnd{c.flp, exprp, notKillActive(c)};
     }
+    static AstNodeExpr* nextRingIndex(FileLine* flp, AstVar* idxp, uint32_t size) {
+        const auto u32Const = [flp](uint32_t value) {
+            return new AstConst{flp, AstConst::WidthedValue{}, 32, value};
+        };
+        UASSERT(size > 1, "Delay ring index needs at least two slots");
+        // idx == size - 1 ? 0 : idx + 1
+        AstAdd* const addp = new AstAdd{flp, new AstVarRef{flp, idxp, VAccess::READ}, u32Const(1)};
+        addp->dtypeFrom(idxp);
+        AstCond* const condp = new AstCond{
+            flp, new AstEq{flp, new AstVarRef{flp, idxp, VAccess::READ}, u32Const(size - 1)},
+            u32Const(0), addp};
+        condp->dtypeFrom(idxp);
+        return condp;
+    }
+    static AstNodeExpr* delayRingBit(FileLine* flp, AstVar* ringp, AstNodeExpr* idxExprp,
+                                     VAccess access = VAccess::READ) {
+        // ring[idx]
+        return new AstSel{flp, new AstVarRef{flp, ringp, access}, idxExprp, 1};
+    }
 
     // Phase 3 output signals
     struct SignalSet final {
@@ -1650,12 +1688,14 @@ class SvaNfaLowering final {
     };
 
     // Phase 2/2b/2c: Emit NBA state-update always blocks for registered vertices,
-    // counter FSMs, and SAnd combiner done-latches.
+    // delay rings, and SAnd combiner done-latches.
     // Phase 2: State register NBA always block. Each clocked-edge target
     // latches the OR of its incoming contributions.
     void emitStateRegisterNba(LowerCtx& c) {
         AstNode* bodyp = nullptr;
+        bool hasDelayRing = false;
         for (int i = 0; i < c.N; ++i) {
+            if (c.vtx[i]->datap()->delayRingVarp) hasDelayRing = true;
             if (!c.vtx[i]->datap()->stateVarp) continue;
 
             AstNodeExpr* nextStatep = nullptr;
@@ -1684,100 +1724,104 @@ class SvaNfaLowering final {
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::WRITE},
                 nextStatep};
-            if (!bodyp) {
-                bodyp = assignp;
-            } else {
-                bodyp->addNext(assignp);
-            }
+            bodyp = AstNode::addNextNull(bodyp, assignp);
         }
 
-        if (!bodyp) return;
         // Capture disableCnt in Phase-2 NBA before any reactive re-evaluation.
         // snapshotVarp and disableCntVarp are allocated together.
-        if (c.snapshotVarp) {
+        if (c.snapshotVarp && (bodyp || hasDelayRing)) {
             UASSERT_OBJ(c.disableCntVarp, c.senTreep, "snapshotVarp set without disableCntVarp");
-            bodyp->addNext(
-                new AstAssignDly{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::WRITE},
-                                 new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}});
+            // disable_snapshot <= disable_count;
+            AstAssignDly* const snapshotp
+                = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::WRITE},
+                                   new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
+            bodyp = AstNode::addNextNull(bodyp, snapshotp);
         }
+        if (!bodyp) return;
         m_modp->addStmtsp(
             new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
     }
 
-    // Phase 2b: Counter FSM always block.
-    // if (active) { if (done) active<=0; else counter<=counter+1; }
-    // else if (incoming) { active<=1; counter<=0; }
-    void emitCounterFsmNba(LowerCtx& c) {
-        for (int ci = 0; ci < c.N; ++ci) {
-            if (!c.vtx[ci]->datap()->counterActiveVarp) continue;
-            AstVar* const activep = c.vtx[ci]->datap()->counterActiveVarp;
-            AstVar* const cntp = c.vtx[ci]->datap()->counterCountVarp;
-            const uint32_t counterMax = static_cast<uint32_t>(c.vtx[ci]->m_counterMax);
+    // Phase 2b: Bitset ring-buffer delay always block.
+    void emitDelayRingNba(LowerCtx& c) {
+        for (int ri = 0; ri < c.N; ++ri) {
+            SvaStateVertex* const vtxp = c.vtx[ri];
+            if (!vtxp->datap()->delayRingVarp) continue;
+            AstVar* const ringp = vtxp->datap()->delayRingVarp;
+            AstVar* const idxp = vtxp->datap()->delayRingIdxVarp;
+            const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
-            // Builder only adds clocked edges to counter vertices (guardedEdge
-            // in buildSExpr), so m_consumesCycle is always true here.
             AstNodeExpr* incomingp = nullptr;
             for (const SvaTransEdge* const tep : c.edges) {
-                const int toIdx = tep->toVtxp()->color();
-                if (toIdx != ci) continue;
+                if (static_cast<int>(tep->toVtxp()->color()) != ri) continue;
+                UASSERT_OBJ(tep->m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
+                            "Delay-ring incoming edge kind mismatch");
                 const int fi = tep->fromVtxp()->color();
                 UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, c.vtx[fi],
-                            "Clocked edge source missing stateSig");
+                            "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
                 contribp = andCond(c.flp, contribp, tep->m_condp);
-                if (c.disableExprp) {
+                if (c.disableExprp && !c.snapshotVarp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     contribp = new AstLogAnd{c.flp, contribp, notDisp};
                 }
                 incomingp = orExprs(c.flp, incomingp, contribp);
             }
-            UASSERT_OBJ(incomingp, c.vtx[ci], "Counter vertex has no incoming contribution");
-
-            // Counter window is always [0, m_counterMax]; M offset is handled by
-            // the pre-chain in buildSExpr, so every tick inside an active count
-            // is in-window.
-            AstNodeExpr* inWindowp = new AstConst{c.flp, AstConst::BitTrue{}};
-            AstNodeExpr* matchedNowp = nullptr;
-            if (c.matchCondp) {
-                matchedNowp
-                    = new AstLogAnd{c.flp, inWindowp, sampled(c.matchCondp->cloneTreePure(false))};
-            } else {  // LCOV_EXCL_LINE -- no counter-FSM caller leaves matchCondp null
-                matchedNowp = inWindowp;  // LCOV_EXCL_LINE
+            UASSERT_OBJ(incomingp, vtxp, "Delay ring has no incoming edge");
+            AstNode* updateBodyp = nullptr;
+            if (vtxp->m_isFixedDelayRing) {
+                // ring[idx] <= incoming;
+                updateBodyp = new AstAssignDly{
+                    c.flp,
+                    delayRingBit(c.flp, ringp, new AstVarRef{c.flp, idxp, VAccess::READ},
+                                 VAccess::WRITE),
+                    incomingp};
+            } else {
+                // ring[next_idx] <= 1'b0; ring[idx] <= incoming;
+                AstAssignDly* const clearExpirep = new AstAssignDly{
+                    c.flp,
+                    delayRingBit(c.flp, ringp, nextRingIndex(c.flp, idxp, size), VAccess::WRITE),
+                    new AstConst{c.flp, AstConst::BitFalse{}}};
+                AstAssignDly* const writeIncomingp = new AstAssignDly{
+                    c.flp,
+                    delayRingBit(c.flp, ringp, new AstVarRef{c.flp, idxp, VAccess::READ},
+                                 VAccess::WRITE),
+                    incomingp};
+                clearExpirep->addNext(writeIncomingp);
+                updateBodyp = clearExpirep;
             }
 
-            AstNodeExpr* const counterAtEndp
-                = new AstEq{c.flp, new AstVarRef{c.flp, cntp, VAccess::READ},
-                            new AstConst{c.flp, AstConst::WidthedValue{}, 32, counterMax}};
+            AstNodeExpr* clearCondp = nullptr;
+            if (vtxp->m_delayRingClearCondp) {
+                clearCondp = sampled(vtxp->m_delayRingClearCondp->cloneTreePure(false));
+            }
+            if (c.disableExprp && !c.snapshotVarp) {
+                clearCondp = orExprs(c.flp, clearCondp, c.disableExprp->cloneTreePure(false));
+            }
+            AstNodeExpr* guardp = nullptr;
+            for (AstNodeExpr* const cp : vtxp->m_throughoutConds) {
+                AstNodeExpr* const sampledp = sampled(cp->cloneTreePure(false));
+                guardp = guardp ? static_cast<AstNodeExpr*>(new AstLogAnd{c.flp, guardp, sampledp})
+                                : sampledp;
+            }
+            if (guardp) clearCondp = orExprs(c.flp, clearCondp, new AstLogNot{c.flp, guardp});
+            if (clearCondp) {
+                // if (clear) ring <= '0;
+                AstConst* const zerop = new AstConst{c.flp, AstConst::DTyped{}, ringp->dtypep()};
+                zerop->num().setAllBits0();
+                updateBodyp = new AstIf{
+                    c.flp, clearCondp,
+                    new AstAssignDly{c.flp, new AstVarRef{c.flp, ringp, VAccess::WRITE}, zerop},
+                    updateBodyp};
+            }
+            // idx <= next_idx;
+            updateBodyp->addNext(new AstAssignDly{c.flp,
+                                                  new AstVarRef{c.flp, idxp, VAccess::WRITE},
+                                                  nextRingIndex(c.flp, idxp, size)});
 
-            AstNodeExpr* const donep = new AstLogOr{
-                c.flp, killActive(c), new AstLogOr{c.flp, matchedNowp, counterAtEndp}};
-
-            AstAssignDly* const clearActivep
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, activep, VAccess::WRITE},
-                                   new AstConst{c.flp, AstConst::BitFalse{}}};
-            AstAdd* const addExprp
-                = new AstAdd{c.flp, new AstVarRef{c.flp, cntp, VAccess::READ},
-                             new AstConst{c.flp, AstConst::WidthedValue{}, 32, 1u}};
-            addExprp->dtypeFrom(cntp);
-            AstAssignDly* const incCountp
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, cntp, VAccess::WRITE}, addExprp};
-            AstIf* const doneIfp = new AstIf{c.flp, donep, clearActivep, incCountp};
-
-            AstAssignDly* const setActivep
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, activep, VAccess::WRITE},
-                                   new AstConst{c.flp, AstConst::BitTrue{}}};
-            AstAssignDly* const resetCountp
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, cntp, VAccess::WRITE},
-                                   new AstConst{c.flp, AstConst::WidthedValue{}, 32, 0u}};
-            setActivep->addNext(resetCountp);
-            AstIf* const startIfp
-                = new AstIf{c.flp, gateNotKill(c, incomingp), setActivep, nullptr};
-            AstIf* const topIfp = new AstIf{c.flp, new AstVarRef{c.flp, activep, VAccess::READ},
-                                            doneIfp, startIfp};
-
-            m_modp->addStmtsp(
-                new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), topIfp});
+            m_modp->addStmtsp(new AstAlways{c.flp, VAlwaysKwd::ALWAYS,
+                                            c.senTreep->cloneTree(false), updateBodyp});
         }
     }
 
@@ -1880,16 +1924,22 @@ class SvaNfaLowering final {
                 outPerMidSrcsp->push_back(perMidp);
             }
 
-            if (tep->fromVtxp()->m_isCounter) {
+            if (tep->fromVtxp()->m_delayRingSize && !tep->fromVtxp()->m_isFixedDelayRing) {
                 sigs.terminalActivep
                     = orExprs(c.flp, sigs.terminalActivep, srcSigp->cloneTreePure(false));
-                AstNodeExpr* const atEndp = new AstEq{
-                    c.flp,
-                    new AstVarRef{c.flp, c.vtx[fi]->datap()->counterCountVarp, VAccess::READ},
-                    new AstConst{c.flp, AstConst::WidthedValue{}, 32,
-                                 static_cast<uint32_t>(tep->fromVtxp()->m_counterMax)}};
-                AstNodeExpr* const expireContribp = new AstLogAnd{c.flp, srcSigp, atEndp};
+                AstVar* const ringp = c.vtx[fi]->datap()->delayRingVarp;
+                AstVar* const idxp = c.vtx[fi]->datap()->delayRingIdxVarp;
+                const uint32_t size = static_cast<uint32_t>(c.vtx[fi]->m_delayRingSize);
+                // reject |= ring[next_idx] && final_condition;
+                AstNodeExpr* expireContribp
+                    = delayRingBit(c.flp, ringp, nextRingIndex(c.flp, idxp, size));
+                expireContribp = andCond(c.flp, expireContribp, tep->m_condp);
+                if (snapshotOkp) {
+                    expireContribp
+                        = new AstLogAnd{c.flp, expireContribp, snapshotOkp->cloneTreePure(false)};
+                }
                 sigs.rejectBasep = orExprs(c.flp, sigs.rejectBasep, expireContribp);
+                VL_DO_DANGLING(srcSigp->deleteTree(), srcSigp);
             } else if (tep->fromVtxp()->m_isUnbounded || tep->fromVtxp()->m_isAndCombiner) {
                 sigs.terminalActivep = orExprs(c.flp, sigs.terminalActivep, srcSigp);
             } else {
@@ -1913,6 +1963,10 @@ class SvaNfaLowering final {
             AstNodeExpr* stateExprp = nullptr;
             if (c.vtx[i]->datap()->stateVarp) {
                 stateExprp = new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::READ};
+            } else if (c.vtx[i]->datap()->delayRingVarp && c.vtx[i]->m_isFixedDelayRing) {
+                // fixed_chain_active = |ring;
+                stateExprp = new AstRedOr{
+                    c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->delayRingVarp, VAccess::READ}};
             } else {
                 UASSERT_OBJ(c.vtx[i]->datap()->stateSigp, c.vtx[i],
                             "Throughout-conds vertex missing state representation");
@@ -2027,10 +2081,18 @@ class SvaNfaLowering final {
             if (c.vtx[i]->datap()->stateVarp) {
                 c.vtx[i]->datap()->stateSigp
                     = new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::READ};
-            } else if (c.vtx[i]->datap()->counterActiveVarp) {
-                // Counter window is always [0, m_counterMax]; see buildSExpr.
-                c.vtx[i]->datap()->stateSigp
-                    = new AstVarRef{c.flp, c.vtx[i]->datap()->counterActiveVarp, VAccess::READ};
+            } else if (c.vtx[i]->datap()->delayRingVarp) {
+                if (c.vtx[i]->m_isFixedDelayRing) {
+                    // state = ring[idx];
+                    c.vtx[i]->datap()->stateSigp = delayRingBit(
+                        c.flp, c.vtx[i]->datap()->delayRingVarp,
+                        new AstVarRef{c.flp, c.vtx[i]->datap()->delayRingIdxVarp, VAccess::READ});
+                } else {
+                    // state = |ring;
+                    c.vtx[i]->datap()->stateSigp = new AstRedOr{
+                        c.flp,
+                        new AstVarRef{c.flp, c.vtx[i]->datap()->delayRingVarp, VAccess::READ}};
+                }
             }
         }
         // Fixed-point propagation along zero-delay (Link) edges.
@@ -2247,18 +2309,22 @@ public:
                 vtx[i]->datap()->doneRVarp = rp;
                 continue;
             }
-            if (vtx[i]->m_isCounter) {
-                const std::string base = baseName + "__c" + std::to_string(i);
-                AstVar* const activep = new AstVar{flp, VVarType::MODULETEMP, base + "_active",
-                                                   m_modp->findBitDType()};
-                activep->lifetime(VLifetime::STATIC_EXPLICIT);
-                m_modp->addStmtsp(activep);
-                vtx[i]->datap()->counterActiveVarp = activep;
-                AstVar* const cntp
-                    = new AstVar{flp, VVarType::MODULETEMP, base + "_cnt", u32DTypep};
-                cntp->lifetime(VLifetime::STATIC_EXPLICIT);
-                m_modp->addStmtsp(cntp);
-                vtx[i]->datap()->counterCountVarp = cntp;
+            if (vtx[i]->m_delayRingSize) {
+                const std::string base = baseName + "__d" + std::to_string(i);
+                // bit [size-1:0] ring;
+                AstNodeDType* const ringDTypep = m_modp->findBitDType(
+                    vtx[i]->m_delayRingSize, vtx[i]->m_delayRingSize, VSigning::UNSIGNED);
+                AstVar* const ringp
+                    = new AstVar{flp, VVarType::MODULETEMP, base + "_ring", ringDTypep};
+                ringp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(ringp);
+                vtx[i]->datap()->delayRingVarp = ringp;
+                // int unsigned idx;
+                AstVar* const idxp
+                    = new AstVar{flp, VVarType::MODULETEMP, base + "_idx", u32DTypep};
+                idxp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(idxp);
+                vtx[i]->datap()->delayRingIdxVarp = idxp;
                 continue;
             }
             if (!vtx[i]->datap()->needsReg) continue;
@@ -2279,9 +2345,9 @@ public:
         // Phase 1: Resolve combinational Links via fixed-point propagation.
         resolveLinks(c, triggerExprp);
 
-        // Phase 2/2b/2c: Emit NBA state-update, counter FSM, and SAnd done-latch logic.
+        // Phase 2/2b/2c: Emit NBA state-update, delay-ring, and SAnd done-latch logic.
         emitStateRegisterNba(c);
-        emitCounterFsmNba(c);
+        emitDelayRingNba(c);
         emitAndCombinerDoneLatchNba(c);
         emitKillAckNba(c);
 
@@ -2999,6 +3065,8 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         UINFO(4, "NFA converted assertion at " << flp << endl);
+
+        if (dumpGraphLevel() >= 6) graph.m_graph.dumpDotFilePrefixed("assert-nfa");
     }
 
     // VISITORS
