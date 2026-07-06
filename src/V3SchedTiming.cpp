@@ -26,10 +26,12 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3Sched.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -179,7 +181,8 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
 
 class AwaitVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
+    //  AstSenTree::user1()  -> bool.               Set true if the sentree has been visited.
+    //  AstCFunc::user1()    -> AstUser1Allocator.  See alocator below
     const VNUser1InUse m_inuser1;
 
     // STATE
@@ -192,7 +195,34 @@ class AwaitVisitor final : public VNVisitor {
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
     std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
     // Variables written by suspendable processes
-    std::vector<AstVarScope*> m_writtenBySuspendable;
+    std::set<AstVarScope*> m_writtenBySuspendable;
+    struct CFuncCache final {
+        std::set<AstSenTree*> m_processDomains;  // What shall be added to m_processDomains
+        std::set<AstVarScope*>
+            m_writtenBySuspendable;  // What shall be added to m_writtenBySuspendable
+        std::set<AstCFunc*> m_includes;  // CFuncs whose CFuncCache shall be included into this
+        // m_includes does not need to keep bool with m_gatherVars to know which cache shall be
+        // used since:
+        //  Only possible transition in a graph is from `!m_gatherVars` to `m_gatherVars`
+        //  (in visit(AstFork*) there is a only possible transition, visit(AstNodeProcedure*) is
+        //  not considered since it does not occur during a graph traversal)
+        //  therefore, if change of state occurs it is certain that the first node after transition
+        //  won't be in visiting state
+        //  therefore, every node in a m_includes shall take value of m_gatherVars under which
+        //  current CFuncCache is
+        enum State : uint8_t {
+            UNINITIALIZED = 0,  // Not initialized members are empty
+            VISITING,  // Visiting - needed for breaking recursion
+            INITIALIZED,  // Members contains correct values
+        } m_state  // Current state of Cache
+            = UNINITIALIZED;
+    };
+    std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
+    // Caches how visiting the function with given value of m_gatherVars changes
+    // m_processDomains and m_writtenBySuspendable - only accessed from visit(AstCFunc* nodep)
+    AstUser1Allocator<AstCFunc, std::array<CFuncCache, 2>> m_cfuncsCache;
+    // Count uses of not inlined writes to signals in suspendables
+    VDouble0 m_notInlinedWritesInSuspendableUsage;
 
     // METHODS
     // Add arguments to a resume() call based on arguments in the suspending call
@@ -206,6 +236,18 @@ class AwaitVisitor final : public VNVisitor {
             }
         } else {
             resumep->addPinsp(pinsp->cloneTree(false));
+        }
+    }
+    void addCFuncCachedValues(const AstCFunc* const cfuncp,
+                              std::unordered_set<const AstCFunc*>& visited) {
+        if (!visited.insert(cfuncp).second) return;
+        CFuncCache& value = m_cfuncsCache(cfuncp)[static_cast<size_t>(m_gatherVars)];
+        m_writtenBySuspendable.insert(value.m_writtenBySuspendable.begin(),
+                                      value.m_writtenBySuspendable.end());
+        m_notInlinedWritesInSuspendableUsage += value.m_writtenBySuspendable.size();
+        m_processDomains.insert(value.m_processDomains.begin(), value.m_processDomains.end());
+        for (const AstCFunc* const includedp : value.m_includes) {
+            addCFuncCachedValues(includedp, visited);
         }
     }
     // Create an active with a timing scheduler resume() call
@@ -267,12 +309,61 @@ class AwaitVisitor final : public VNVisitor {
             if (!sentreep->user1SetOnce()) createResumeActive(nodep);
             if (m_inProcess) m_processDomains.insert(sentreep);
         }
+        iterateChildren(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()
             && !nodep->varScopep()->user2SetOnce()) {
-            m_writtenBySuspendable.push_back(nodep->varScopep());
+            m_writtenBySuspendable.insert(nodep->varScopep());
         }
+    }
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        // We need to visit bodies of non-inlined functions
+        visitCalledCFunc(nodep->funcp());
+    }
+    void visit(AstCFunc* const nodep) override {
+        const auto& value = m_cfuncsCache(nodep);
+        // Check whether it was already visited by visitCalledCFunc()
+        if (value[0].m_state != CFuncCache::UNINITIALIZED
+            || value[1].m_state != CFuncCache::UNINITIALIZED) {
+            return;
+        }
+        iterateChildren(nodep);
+    }
+    // Visit AstCFunc from a AstNodeCCall - this function is rather expensive to call therefore, it
+    // only shall be called when necessary
+    void visitCalledCFunc(AstCFunc* const nodep) {
+        if (!m_inProcess) return;  // Skip if not in process - nothing would be added to any set
+        const size_t cacheKey = static_cast<size_t>(m_gatherVars);
+        CFuncCache& value = m_cfuncsCache(nodep)[cacheKey];
+        switch (value.m_state) {
+        case CFuncCache::UNINITIALIZED: {
+            // Save current state
+            VL_RESTORER_CLEAR(m_processDomains);
+            VL_RESTORER_CLEAR(m_writtenBySuspendable);
+
+            // Visit
+            value.m_state = CFuncCache::VISITING;
+            m_callStack.push_back(nodep);
+            iterateChildren(nodep);
+            m_callStack.pop_back();
+            value.m_state = CFuncCache::INITIALIZED;
+
+            // Save a cache
+            std::swap(m_processDomains, value.m_processDomains);
+            std::swap(m_writtenBySuspendable, value.m_writtenBySuspendable);
+        } break;
+        case CFuncCache::VISITING: {
+            for (size_t i = m_callStack.size() - 1; m_callStack.at(i) != nodep; --i) {
+                m_cfuncsCache(m_callStack[i])[cacheKey].m_includes.insert(nodep);
+            }
+            return;  // Break recursion
+        }
+        case CFuncCache::INITIALIZED: break;
+        }
+        std::unordered_set<const AstCFunc*> visited;
+        addCFuncCachedValues(nodep, visited);
     }
     void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
@@ -289,7 +380,10 @@ public:
         , m_externalDomains{externalDomains} {
         iterate(nodep);
     }
-    ~AwaitVisitor() override = default;
+    ~AwaitVisitor() override {
+        V3Stats::addStat("Scheduling, count of non-inlined signal writes in suspendables",
+                         m_notInlinedWritesInSuspendableUsage);
+    }
 };
 
 TimingKit prepareTiming(AstNetlist* const netlistp) {
