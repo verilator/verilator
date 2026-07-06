@@ -1002,6 +1002,14 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (m_vup->final()) {
+            const AstNode* backp = nodep->backp();
+            if (VN_IS(backp, SFormatArg)) backp = backp->backp();
+            if (VN_IS(backp, SFormatF)) {
+                nodep->v3error(
+                    "Streaming concatenation cannot be used in an implicitly cast context "
+                    "(IEEE 1800-2023 11.4.17)\n"
+                    << nodep->warnMore() << "... Suggest use a cast");
+            }
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
                 nodeForUnsizedWarning(nodep)->v3warn(
