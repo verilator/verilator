@@ -4453,6 +4453,39 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintIf{fl, condp, thenBodyp, nullptr};
     }
 
+    static bool distBoundRefsRandVar(const AstNode* boundp) {
+        bool found = false;
+        boundp->foreach([&](const AstVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable()) found = true;
+        });
+        return found;
+    }
+
+    // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
+    static AstNodeExpr* newDistRangeMembership(AstDist* distp, const AstInsideRange* irp) {
+        FileLine* const fl = distp->fileline();
+        const bool isSigned = distp->exprp()->isSigned();
+        AstNodeExpr* const distExprGtep = distp->exprp()->cloneTreePure(false);
+        AstNodeExpr* const distExprLtep = distp->exprp()->cloneTreePure(false);
+        distExprGtep->user1(true);
+        distExprLtep->user1(true);
+        AstNodeExpr* const gep
+            = isSigned ? static_cast<AstNodeExpr*>(
+                             new AstGteS{fl, distExprGtep, irp->lhsp()->cloneTreePure(false)})
+                       : static_cast<AstNodeExpr*>(
+                             new AstGte{fl, distExprGtep, irp->lhsp()->cloneTreePure(false)});
+        AstNodeExpr* const lep
+            = isSigned ? static_cast<AstNodeExpr*>(
+                             new AstLteS{fl, distExprLtep, irp->rhsp()->cloneTreePure(false)})
+                       : static_cast<AstNodeExpr*>(
+                             new AstLte{fl, distExprLtep, irp->rhsp()->cloneTreePure(false)});
+        gep->user1(true);
+        lep->user1(true);
+        AstNodeExpr* const andp = new AstLogAnd{fl, gep, lep};
+        andp->user1(true);
+        return andp;
+    }
+
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp,
@@ -4577,25 +4610,7 @@ class RandomizeVisitor final : public VNVisitor {
             for (const auto& bucket : buckets) {
                 AstNodeExpr* memberp;
                 if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
-                    // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
-                    const bool isSigned = distp->exprp()->isSigned();
-                    AstNodeExpr* const distExprGtep = distp->exprp()->cloneTreePure(false);
-                    AstNodeExpr* const distExprLtep = distp->exprp()->cloneTreePure(false);
-                    distExprGtep->user1(true);
-                    distExprLtep->user1(true);
-                    AstNodeExpr* const gep
-                        = isSigned ? static_cast<AstNodeExpr*>(new AstGteS{
-                                         fl, distExprGtep, irp->lhsp()->cloneTreePure(false)})
-                                   : static_cast<AstNodeExpr*>(new AstGte{
-                                         fl, distExprGtep, irp->lhsp()->cloneTreePure(false)});
-                    AstNodeExpr* const lep
-                        = isSigned ? static_cast<AstNodeExpr*>(new AstLteS{
-                                         fl, distExprLtep, irp->rhsp()->cloneTreePure(false)})
-                                   : static_cast<AstNodeExpr*>(new AstLte{
-                                         fl, distExprLtep, irp->rhsp()->cloneTreePure(false)});
-                    gep->user1(true);
-                    lep->user1(true);
-                    memberp = new AstLogAnd{fl, gep, lep};
+                    memberp = newDistRangeMembership(distp, irp);
                 } else {
                     // distExpr == val
                     AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
@@ -4673,7 +4688,13 @@ class RandomizeVisitor final : public VNVisitor {
             AstNode* chainp = nullptr;
             for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
                 AstNodeExpr* constraintExprp;
-                if (const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange)) {
+                const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
+                if (irp
+                    && (distBoundRefsRandVar(irp->lhsp()) || distBoundRefsRandVar(irp->rhsp()))) {
+                    // Bounds solved concurrently cannot pin a pre-solve value; softly
+                    // prefer the symbolic range so the hard membership stays satisfiable
+                    constraintExprp = newDistRangeMembership(distp, irp);
+                } else if (irp) {
                     // Pick distExpr = lo + rand64() % (hi - lo + 1) for a uniform value in range
                     AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
                     distExprCopyp->user1(true);
