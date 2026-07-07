@@ -33,6 +33,7 @@
 #include "V3UniqueNames.h"
 
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -1652,98 +1653,93 @@ class SvaNfaLowering final {
         AstNodeExpr* throughoutRejectp = nullptr;  // Reject when a throughout guard drops
     };
 
-    // Pack ##N delay and uniform b[*N] repetition sub-chains -- maximal simple
-    // paths of registered vertices, each holding the previous vertex's state
-    // delayed one cycle -- into single vectors shifted once per clock
-    // (verilator/verilator#7792). Sets shiftVecp/shiftBit/shiftStepCondp.
+    static const SvaTransEdge* singleClockedInEdge(SvaStateVertex* vtxp) {
+        const SvaTransEdge* inp = nullptr;
+        for (const V3GraphEdge& er : vtxp->inEdges()) {
+            const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
+            if (!te.m_consumesCycle) return nullptr;  // an incoming Link disqualifies
+            if (inp) return nullptr;  // more than one clocked source -> OR-merge
+            inp = &te;
+        }
+        return inp;
+    }
+    static bool shiftable(const std::vector<SvaStateVertex*>& vtx, int i, int startIdx) {
+        SvaStateVertex* const v = vtx[i];
+        if (!v->datap()->needsReg) return false;
+        if (i == startIdx || v->m_isMatch) return false;
+        if (v->m_isCounter || v->m_isAndCombiner || v->m_isRejectSink) return false;
+        if (v->m_isUnbounded) return false;  // self-loop accumulator, not a pure shift
+        if (v->m_strongPending) return false;  // final-block liveness reads its own reg
+        if (!v->m_throughoutConds.empty()) return false;
+        return singleClockedInEdge(v) != nullptr;
+    }
+    // Chain predecessor of a registered vertex and the per-step condition into it
+    // (null = unconditional ##N delay; else the b[*N] Link boolean).
+    static int chainPred(const std::vector<SvaStateVertex*>& vtx, int ci, int startIdx,
+                         AstNodeExpr*& condpr) {
+        condpr = nullptr;
+        const SvaTransEdge* const e = singleClockedInEdge(vtx[ci]);
+        if (!e || e->m_rejectOnFail || e->m_condVtxp) return -1;
+        const int mi = e->fromVtxp()->color();
+        if (shiftable(vtx, mi, startIdx)) {  // direct clocked step
+            condpr = e->m_condp;
+            return mi;
+        }
+        if (e->m_condp) return -1;  // pass-through requires an unconditional ##1 edge
+        SvaStateVertex* const m = vtx[mi];
+        const SvaTransEdge* linkp = nullptr;
+        for (const V3GraphEdge& er : m->inEdges()) {
+            if (linkp) return -1;  // more than one input -> not a clean pass-through
+            linkp = static_cast<const SvaTransEdge*>(&er);
+        }
+        if (!linkp || linkp->m_consumesCycle || linkp->m_rejectOnFail || linkp->m_condVtxp)
+            return -1;
+        const int pi = linkp->fromVtxp()->color();
+        if (!shiftable(vtx, pi, startIdx)) return -1;
+        condpr = linkp->m_condp;
+        return pi;
+    }
+    static bool sameCond(const AstNodeExpr* a, const AstNodeExpr* b) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        return a->sameTree(b);
+    }
+
+    // Pack ##N delay and uniform b[*N] repetition chains of registered vertices
+    // into single vectors shifted once per clock. Sets shiftVecp/shiftBit/etc.
     void detectShiftChains(const std::vector<SvaStateVertex*>& vtx, int N, int startIdx,
                            const std::string& baseName, FileLine* flp) {
-        const auto singleClockedInEdge = [](SvaStateVertex* v) -> const SvaTransEdge* {
-            const SvaTransEdge* inp = nullptr;
-            for (const V3GraphEdge& er : v->inEdges()) {
-                const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-                if (!te.m_consumesCycle) return nullptr;  // an incoming Link disqualifies
-                if (inp) return nullptr;  // more than one clocked source -> OR-merge
-                inp = &te;
-            }
-            return inp;
-        };
-        const auto shiftable = [&](int i) -> bool {
-            SvaStateVertex* const v = vtx[i];
-            if (!v->datap()->needsReg) return false;
-            if (i == startIdx || v->m_isMatch) return false;
-            if (v->m_isCounter || v->m_isAndCombiner || v->m_isRejectSink) return false;
-            if (v->m_isUnbounded) return false;  // self-loop accumulator, not a pure shift
-            if (v->m_strongPending) return false;  // final-block liveness reads its own reg
-            if (!v->m_throughoutConds.empty()) return false;
-            return singleClockedInEdge(v) != nullptr;
-        };
-        // Chain predecessor of a registered vertex, plus the per-step condition
-        // into it (null = unconditional). A shift step is a direct clocked edge
-        // (##N delay) or a clocked edge fed through one pass-through condition
-        // Link vertex (`b[*N]` repetition; the Link boolean is the condition).
-        const auto chainPred = [&](int ci, AstNodeExpr*& condpr) -> int {
-            condpr = nullptr;
-            const SvaTransEdge* const e = singleClockedInEdge(vtx[ci]);
-            if (!e || e->m_rejectOnFail || e->m_condVtxp) return -1;
-            const int mi = e->fromVtxp()->color();
-            if (shiftable(mi)) {  // direct clocked step
-                condpr = e->m_condp;
-                return mi;
-            }
-            if (e->m_condp) return -1;  // pass-through requires an unconditional ##1 edge
-            SvaStateVertex* const m = vtx[mi];
-            const SvaTransEdge* linkp = nullptr;
-            for (const V3GraphEdge& er : m->inEdges()) {
-                if (linkp) return -1;  // more than one input -> not a clean pass-through
-                linkp = static_cast<const SvaTransEdge*>(&er);
-            }
-            if (!linkp || linkp->m_consumesCycle || linkp->m_rejectOnFail || linkp->m_condVtxp)
-                return -1;
-            const int pi = linkp->fromVtxp()->color();
-            if (!shiftable(pi)) return -1;
-            condpr = linkp->m_condp;
-            return pi;
-        };
-        const auto sameCond = [](const AstNodeExpr* a, const AstNodeExpr* b) -> bool {
-            if (!a && !b) return true;
-            if (!a || !b) return false;
-            return a->sameTree(b);
-        };
-        // Bond each vertex to its chain predecessor; a predecessor feeding more
-        // than one chain vertex branches and cannot shift unambiguously.
+        // Link each shiftable vertex to its unique chain predecessor and successor.
         struct Bond final {
             int pred = -1;
+            int next = -1;
+            int childCount = 0;
+            bool hasPrev = false;
             AstNodeExpr* stepCondp = nullptr;  // borrowed step condition into this vertex
         };
         std::vector<Bond> bond(N);
-        std::vector<int> childCount(N, 0);
         for (int i = 0; i < N; ++i) {
-            if (!shiftable(i)) continue;
+            if (!shiftable(vtx, i, startIdx)) continue;
             AstNodeExpr* cp = nullptr;
-            const int p = chainPred(i, cp);
+            const int p = chainPred(vtx, i, startIdx, cp);
             if (p < 0) continue;
-            bond[i] = {p, cp};
-            ++childCount[p];
+            bond[i].pred = p;
+            bond[i].stepCondp = cp;
+            ++bond[p].childCount;
         }
-        std::vector<int> nextInChain(N, -1);
-        std::vector<bool> hasPrevInChain(N, false);
         for (int i = 0; i < N; ++i) {
             const int p = bond[i].pred;
-            if (p < 0 || childCount[p] != 1) continue;
-            nextInChain[p] = i;
-            hasPrevInChain[i] = true;
+            if (p < 0 || bond[p].childCount != 1) continue;
+            bond[p].next = i;
+            bond[i].hasPrev = true;
         }
-        // Walk each chain head, splitting into maximal segments whose interior
-        // steps share one condition; each segment of >= 2 vertices packs into
-        // one vector. Segments cap at 64 bits: a wider (VlWide) shift emitted
-        // after V3Width is not word-split and breaks V3Subst. A capped chain
-        // carries into the next vector through the shared clocked predecessor.
+        // Split each chain into maximal segments sharing one step condition,
+        // each packed into one vector. Cap at 64 bits (wider VlWide breaks V3Subst).
         constexpr int kMaxShiftVec = 64;
         for (int h = 0; h < N; ++h) {
-            if (hasPrevInChain[h] || nextInChain[h] == -1) continue;
+            if (bond[h].hasPrev || bond[h].next == -1) continue;
             std::vector<int> chain;
-            for (int j = h; j != -1; j = nextInChain[j]) chain.push_back(j);
+            for (int j = h; j != -1; j = bond[j].next) chain.push_back(j);
             int a = 0;
             while (a + 1 < static_cast<int>(chain.size())) {
                 AstNodeExpr* const segCondp = bond[chain[a + 1]].stepCondp;
@@ -1787,8 +1783,7 @@ class SvaNfaLowering final {
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
                 srcSigp = andCond(c.flp, srcSigp, te.m_condp);
 
-                // Zero in-flight state while the disable is active; the edge
-                // counter misses a held or mid-window disable (IEEE 1800-2023 16.12)
+                // Zero in-flight state while the disable is active.
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
@@ -1811,10 +1806,8 @@ class SvaNfaLowering final {
             }
         }
 
-        // Delay / uniform-repetition chains: one masked shift per vector.
+        // One masked shift per vector; bit 0 injects the head's feeder:
         //   vec <= (((vec << 1) & {W{step}}) | inject) & {W{!disable & !kill}}
-        // bit 0 injects the head's feeder; `step` is the shared per-step
-        // condition (absent for a pure ##N delay), on the shifted bits only.
         for (int i = 0; i < c.N; ++i) {
             if (!c.vtx[i]->datap()->shiftVecp || c.vtx[i]->datap()->shiftBit != 0) continue;
             AstVar* const vecp = c.vtx[i]->datap()->shiftVecp;
@@ -1919,8 +1912,7 @@ class SvaNfaLowering final {
 
             AstNodeExpr* donep = new AstLogOr{c.flp, killActive(c),
                                               new AstLogOr{c.flp, matchedNowp, counterAtEndp}};
-            // A mid-window disable aborts the in-flight count (IEEE 1800-2023
-            // 16.12); the expiry reject is separately disable-gated
+            // A mid-window disable aborts the in-flight count.
             if (c.disableExprp)
                 donep = new AstLogOr{c.flp, donep, c.disableExprp->cloneTreePure(false)};
 
@@ -2004,8 +1996,7 @@ class SvaNfaLowering final {
 
             AstNodeExpr* clearCondp = new AstLogOr{
                 c.flp, killActive(c), c.vtx[ai]->datap()->stateSigp->cloneTreePure(false)};
-            // A mid-window disable clears a half-latched side so a disabled
-            // attempt cannot pair with a later attempt (IEEE 1800-2023 16.12)
+            // A mid-window disable clears a half-latched side.
             if (c.disableExprp)
                 clearCondp = new AstLogOr{c.flp, clearCondp, c.disableExprp->cloneTreePure(false)};
             AstIf* const topp = new AstIf{c.flp, clearCondp, clearLp, setLIfp};
@@ -2215,6 +2206,7 @@ class SvaNfaLowering final {
         // Fixed-point propagation along zero-delay (Link) edges.
         // Worst case: longest chain is N hops; SAnd seeding adds one extra round;
         // factor-of-2 covers reverse-order dependencies.
+        std::unordered_map<const SvaTransEdge*, const AstNodeExpr*> consumedSrcp;
         for (int pass = 0; pass < 2 * c.N + 2; ++pass) {
             bool changed = false;
             // Seed SAnd combiners (sub-NFA termVertices may only be available
@@ -2246,14 +2238,18 @@ class SvaNfaLowering final {
             }
             // Propagate Link edges
             for (int fi = 0; fi < c.N; ++fi) {
-                if (!c.vtx[fi]->datap()->stateSigp) continue;
+                AstNodeExpr* const srcp = c.vtx[fi]->datap()->stateSigp;
+                if (!srcp) continue;
                 for (const V3GraphEdge& er : c.vtx[fi]->outEdges()) {
                     const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
                     if (te.m_consumesCycle) continue;
                     const int ti = te.toVtxp()->color();
                     if (te.toVtxp()->m_isMatch || te.toVtxp()->m_isRejectSink) continue;
-                    AstNodeExpr* const contributionp = andCond(
-                        c.flp, c.vtx[fi]->datap()->stateSigp->cloneTreePure(false), te.m_condp);
+                    // Consume each Link edge once per distinct source value
+                    if (consumedSrcp[&te] == srcp) continue;
+                    consumedSrcp[&te] = srcp;
+                    AstNodeExpr* const contributionp
+                        = andCond(c.flp, srcp->cloneTreePure(false), te.m_condp);
                     if (!c.vtx[ti]->datap()->stateSigp) {
                         c.vtx[ti]->datap()->stateSigp = contributionp;
                         changed = true;

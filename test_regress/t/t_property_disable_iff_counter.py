@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+test.sim_time = 16000
+
 test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
 
 test.execute()
