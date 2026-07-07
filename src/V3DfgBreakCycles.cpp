@@ -173,6 +173,7 @@ class TraceDriver final : public DfgVisitor {
     uint64_t m_component = 0;
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
     uint32_t m_msb = 0;  // MSB to extract from the currently visited Vertex
+    std::vector<uint32_t> m_idxs;  // Indices to extract from the currently visited Vertex
     // Result of tracing the currently visited Vertex. Use SET_RESULT below!
     DfgVertex* m_resp = nullptr;
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
@@ -228,8 +229,7 @@ class TraceDriver final : public DfgVisitor {
         return varp;
     }
 
-    // Continue tracing drivers of the given vertex, at the given LSB.
-    // Every visitor should call this to continue the traversal.
+    // Trace drivers of the given packed vertex, at the given bit range.
     DfgVertex* trace(DfgVertex* const vtxp, const uint32_t msb, const uint32_t lsb) {
         UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
         UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
@@ -271,6 +271,7 @@ class TraceDriver final : public DfgVisitor {
             // Otherwise visit the vertex to trace it
             VL_RESTORER(m_msb);
             VL_RESTORER(m_lsb);
+            VL_RESTORER_CLEAR(m_idxs);
             VL_RESTORER(m_resp);
             m_msb = msb;
             m_lsb = lsb;
@@ -283,6 +284,40 @@ class TraceDriver final : public DfgVisitor {
         UASSERT_OBJ(respr, vtxp, "Tracing driver failed for " << vtxp->typeName());
         UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
         return respr;
+    }
+
+    // Trace drivers of the given array vertex, at the current m_idxs, m_msb, m_lsb.
+    DfgVertex* traceSameIdx(DfgVertex* const vtxp) {
+        UASSERT_OBJ(vtxp->isArray(), vtxp, "Should be an array vertex");
+        UASSERT_OBJ(!m_idxs.empty(), vtxp, "Should have a pending index");
+        VL_RESTORER(m_resp);
+        m_resp = nullptr;
+        iterate(vtxp);  // Resolve the element, the array visitors set 'm_resp'
+        UASSERT_OBJ(m_resp, vtxp, "Tracing driver failed for " << vtxp->typeName());
+        UASSERT_OBJ(m_resp->width() == (m_msb - m_lsb + 1), vtxp, "Wrong result width");
+        return m_resp;
+    }
+
+    // Trace drivers of the given array vertex, pushing the given index, at current m_msb, m_lsb.
+    DfgVertex* tracePushIdx(DfgVertex* const vtxp, const uint32_t idx) {
+        const size_t nIdxs = m_idxs.size();
+        m_idxs.push_back(idx);
+        DfgVertex* const resp = traceSameIdx(vtxp);
+        m_idxs.pop_back();
+        UASSERT_OBJ(m_idxs.size() == nIdxs, vtxp, "Index stack size mismatch");
+        return resp;
+    }
+
+    // Trace drivers of the given vertex, popping the innermost index, at current m_msb, m_lsb.
+    DfgVertex* tracePopIdx(DfgVertex* const vtxp) {
+        UASSERT_OBJ(!m_idxs.empty(), vtxp, "Should have a pending index");
+        const size_t nIdxs = m_idxs.size();
+        const uint32_t idx = m_idxs.back();
+        m_idxs.pop_back();
+        DfgVertex* const resp = m_idxs.empty() ? trace(vtxp, m_msb, m_lsb) : traceSameIdx(vtxp);
+        m_idxs.push_back(idx);
+        UASSERT_OBJ(m_idxs.size() == nIdxs, vtxp, "Index stack size mismatch");
+        return resp;
     }
 
     template <typename Vertex>
@@ -388,25 +423,26 @@ class TraceDriver final : public DfgVisitor {
 
         // Gather terms
         std::vector<DfgVertex*> termps;
+        uint32_t lsb = m_lsb;
         for (const Driver& driver : drivers) {
             // Driver is below the searched LSB, move on
-            if (m_lsb > driver.m_msb) continue;
+            if (lsb > driver.m_msb) continue;
             // Driver is above the searched MSB, done
             if (driver.m_lsb > m_msb) break;
             // Gap below this driver, trace default to fill it
-            if (driver.m_lsb > m_lsb) {
+            if (driver.m_lsb > lsb) {
                 UASSERT_OBJ(m_defaultp, vtxp, "Should have a default driver if needs tracing");
-                termps.emplace_back(trace(m_defaultp, driver.m_lsb - 1, m_lsb));
-                m_lsb = driver.m_lsb;
+                termps.emplace_back(trace(m_defaultp, driver.m_lsb - 1, lsb));
+                lsb = driver.m_lsb;
             }
             // Driver covers searched range, pick the needed/available bits
             const uint32_t lim = std::min(m_msb, driver.m_msb);
-            termps.emplace_back(trace(driver.m_vtxp, lim - driver.m_lsb, m_lsb - driver.m_lsb));
-            m_lsb = lim + 1;
+            termps.emplace_back(trace(driver.m_vtxp, lim - driver.m_lsb, lsb - driver.m_lsb));
+            lsb = lim + 1;
         }
-        if (m_msb >= m_lsb) {
+        if (m_msb >= lsb) {
             UASSERT_OBJ(m_defaultp, vtxp, "Should have a default driver if needs tracing");
-            termps.emplace_back(trace(m_defaultp, m_msb, m_lsb));
+            termps.emplace_back(trace(m_defaultp, m_msb, lsb));
         }
 
         // The earlier cheks cover the case when either a whole driver or the default covers
@@ -425,46 +461,58 @@ class TraceDriver final : public DfgVisitor {
         SET_RESULT(resp);
     }
 
-    void visit(DfgVarPacked* vtxp) override {
-        UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile VarPacked");
+    void visit(DfgSpliceArray* vtxp) override {
+        // Explicit per-element driver (a UnitArray wrapping the element value)
+        if (DfgVertex* const driverp = vtxp->driverAt(m_idxs.back())) {
+            // Consume this index, then trace the element value
+            SET_RESULT(tracePopIdx(driverp->as<DfgUnitArray>()->srcp()));
+            return;
+        }
+        // TODO: this is unreachable, as syntheis can't create it today.
+        // // Element not driven explicitly, so it comes from the default array. Keep the
+        // // index pending (the default is the whole array, indexed the same way) and
+        // // continue tracing it.
+        // UASSERT_OBJ(m_defaultp, vtxp, "Independent array element should have a driver or
+        // default"); SET RESULT(traceSameIdx(m_defaultp));
+    }
+
+    void visit(DfgVertexVar* vtxp) override {
+        UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile variable");
         VL_RESTORER(m_defaultp);
         m_defaultp = vtxp->defaultp();
-        SET_RESULT(trace(vtxp->srcp(), m_msb, m_lsb));
+        DfgVertex* const drvp = vtxp->srcp() ? vtxp->srcp() : m_defaultp;
+        UASSERT_OBJ(drvp, vtxp, "Should not have to trace undriven variable");
+        // Packed variable: trace the driver. Array variable: continue navigating it at
+        // the pending element (both at the same bit range).
+        SET_RESULT(m_idxs.empty() ? trace(drvp, m_msb, m_lsb) : traceSameIdx(drvp));
     }
 
     void visit(DfgArraySel* vtxp) override {
-        // From a variable
-        const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
-        if (!varp) return;
-
-        // If index is not constant, independence was proven only if the 'fromp' is
-        // independent, so no need to trace that
-        if (!vtxp->bitp()->is<DfgConst>()) {
-            DfgArraySel* const resp = make<DfgArraySel>(vtxp, vtxp->width());
-            resp->fromp(vtxp->fromp());
-            resp->bitp(trace(vtxp->bitp(), vtxp->bitp()->width() - 1, 0));
-            DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
-            selp->fromp(resp);
-            selp->lsb(m_lsb);
-            SET_RESULT(selp);
+        // If constant index, push it and trace the selected element through the array
+        // structure of 'fromp'. This handles arbitrarily nested (multi-dimensional)
+        // arrays, as each nested ArraySel pushes a further index.
+        if (const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
+            SET_RESULT(tracePushIdx(vtxp->fromp(), idxp->toU32()));
             return;
         }
 
-        // Trace the relevant driver based on the static index
-        const DfgConst* const idxp = vtxp->bitp()->as<DfgConst>();
-        UASSERT_OBJ(!varp->isVolatile(), vtxp, "Should not trace through volatile VarArray");
-        // Skip through intermediate variables
-        while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
-            varp = varp->srcp()->as<DfgVarArray>();
-            UASSERT_OBJ(!varp->isVolatile(), vtxp, "Should not trace through volatile VarArray");
-        }
-        // Find driver
-        const DfgVertex* srcp = varp->srcp();
-        if (const DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
-            srcp = splicep->driverAt(idxp->toSizeT());
-        }
-        // Trace the driver, which at this point must be a UnitArray
-        SET_RESULT(trace(srcp->as<DfgUnitArray>()->srcp(), m_msb, m_lsb));
+        // If index is not constant, independence was proven only if the 'fromp' is
+        // independent, so no need to trace that, just reference it with the traced
+        // index. This only happens at the packed ArraySel leaf.
+        UASSERT_OBJ(m_idxs.empty(), vtxp, "Non-constant index below an outer array index");
+        DfgArraySel* const resp = make<DfgArraySel>(vtxp, vtxp->width());
+        resp->fromp(vtxp->fromp());
+        resp->bitp(trace(vtxp->bitp(), vtxp->bitp()->width() - 1, 0));
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(resp);
+        selp->lsb(m_lsb);
+        SET_RESULT(selp);
+    }
+
+    void visit(DfgUnitArray* vtxp) override {
+        // Single-element array adapter, the pending index must be 0, unwrap the element
+        UASSERT_OBJ(m_idxs.back() == 0, vtxp, "UnitArray element index should be 0");
+        SET_RESULT(tracePopIdx(vtxp->srcp()));
     }
 
     void visit(DfgConcat* vtxp) override {
@@ -710,7 +758,7 @@ class TraceDriver final : public DfgVisitor {
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(resp);
         selp->lsb(m_lsb);
-        SET_RESULT(resp);
+        SET_RESULT(selp);
     }
 
 #undef SET_RESULT
@@ -741,6 +789,142 @@ public:
     }
 };
 
+// A bit mask for each bit in a value, which can be either packed or aggregate type
+class BitMask final {
+    // TYPES
+    const DfgDataType& m_dtype;
+    union {
+        V3Number m_num;  // The bits, if packed
+        std::vector<BitMask> m_sub;  // The per element masks, if aggregate
+    };
+
+public:
+    // CONSTRUCTOR
+    BitMask(FileLine* flp, const DfgDataType& dtype)
+        : m_dtype{dtype} {
+        UASSERT_OBJ(!m_dtype.isNull(), flp, "Expected non-null data type");
+        if (m_dtype.isPacked()) {
+            new (&m_num) V3Number{flp, static_cast<int>(m_dtype.size()), 0};
+        } else {
+            new (&m_sub) std::vector<BitMask>{};
+            m_sub.reserve(m_dtype.size());
+            for (uint32_t i = 0; i < m_dtype.size(); ++i)
+                m_sub.emplace_back(flp, m_dtype.elemDtype());
+        }
+    }
+    BitMask(const DfgVertex& vtx)
+        : BitMask{vtx.fileline(), vtx.dtype()} {}
+    BitMask(const BitMask& other)
+        : m_dtype{other.m_dtype} {
+        if (m_dtype.isPacked()) {
+            new (&m_num) V3Number{other.m_num};
+        } else {
+            new (&m_sub) std::vector<BitMask>{other.m_sub};
+        }
+    }
+    BitMask& operator=(const BitMask& other) {
+        if (this != &other) {
+            UASSERT(m_dtype == other.m_dtype, "Expected same data type");
+            if (other.m_dtype.isPacked()) {
+                m_num = other.m_num;
+            } else {
+                m_sub = other.m_sub;
+            }
+        }
+        return *this;
+    }
+    ~BitMask() {
+        if (m_dtype.isPacked()) {
+            m_num.~V3Number();
+        } else {
+            m_sub.~vector<BitMask>();
+        }
+    }
+
+    // METHODS
+    V3Number& num() {
+        UASSERT(m_dtype.isPacked(), "Expected packed data type");
+        return m_num;
+    }
+    const V3Number& num() const {
+        UASSERT(m_dtype.isPacked(), "Expected packed data type");
+        return m_num;
+    }
+    std::vector<BitMask>& sub() {
+        UASSERT(m_dtype.isArray(), "Expected array data type");
+        return m_sub;
+    }
+
+    bool isZero() const {
+        if (m_dtype.isPacked()) return m_num.isEqZero();
+
+        for (const BitMask& sub : m_sub) {
+            if (!sub.isZero()) return false;
+        }
+        return true;
+    }
+    bool isOnes() const {
+        if (m_dtype.isPacked()) return m_num.isEqAllOnes();
+
+        for (const BitMask& sub : m_sub) {
+            if (!sub.isOnes()) return false;
+        }
+        return true;
+    }
+    void setZero() {
+        if (m_dtype.isPacked()) {
+            m_num.setAllBits0();
+        } else {
+            for (BitMask& sub : m_sub) sub.setZero();
+        }
+    }
+    void setOnes() {
+        if (m_dtype.isPacked()) {
+            m_num.setAllBits1();
+        } else {
+            for (BitMask& sub : m_sub) sub.setOnes();
+        }
+    }
+
+    bool operator==(const BitMask& other) const {
+        UASSERT(m_dtype == other.m_dtype, "Expected same data type");
+        if (m_dtype.isPacked()) return m_num.isCaseEq(other.m_num);
+        return m_sub == other.m_sub;
+    }
+    bool operator!=(const BitMask& other) const { return !(*this == other); }
+
+    // 'this' has a clear bit where 'that' has a set bit, that is,
+    // 'this' has a proper subset of bits set compared to 'that'.
+    bool isContractionOf(const BitMask& that) const {
+        UASSERT(m_dtype == that.m_dtype, "Expected same data type");
+        if (m_dtype.isPacked()) {
+            const size_t words = VL_WORDS_I(m_dtype.size());
+            for (size_t i = 0; i < words; ++i) {
+                if (~m_num.edataWord(i) & that.m_num.edataWord(i)) return true;
+            }
+            return false;
+        }
+
+        UASSERT(m_dtype.isArray(), "Expected array data type");
+        for (size_t i = 0; i < m_sub.size(); ++i) {
+            if (m_sub[i].isContractionOf(that.m_sub[i])) return true;
+        }
+        return false;
+    }
+
+    std::string toString() const {
+        if (m_dtype.isPacked()) return "0x" + m_num.displayed(m_num.fileline(), "%x");
+        std::string result;
+        result += "{";
+        for (const BitMask& sub : m_sub) {
+            if (&sub != &m_sub.front()) result += ", ";
+            result += sub.toString();
+        }
+        result += "}";
+        return result;
+    }
+};
+
 class IndependentBits final : public DfgVisitor {
     // TYPES
     struct VertexState final {
@@ -751,7 +935,7 @@ class IndependentBits final : public DfgVisitor {
     // STATE
     const SccInfo& m_sccInfo;  // The SccInfo instance
     // Vertex to current bit mask map. The mask is set for the bits that are independent of the SCC
-    std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
+    std::unordered_map<const DfgVertex*, BitMask> m_vtxp2Mask;
     // Work list for the traversal (min-queue of vertex RPO numbers)
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> m_workQueue;
     std::unordered_map<const DfgVertex*, VertexState> m_vtxp2State;  // State of each vertex
@@ -761,21 +945,13 @@ class IndependentBits final : public DfgVisitor {
 #endif
 
     // METHODS
-    // Predicate to check if a vertex should be analysed directly
-    bool handledDirectly(const DfgVertex& vtx) const {
-        if (!vtx.isPacked()) return false;
-        if (vtx.is<DfgSplicePacked>()) return false;
-        return true;
-    }
 
     // Retrieve the mask for the given vertex (create it with value 0 if needed)
-    V3Number& mask(const DfgVertex& vtx) {
-        UASSERT_OBJ(handledDirectly(vtx), &vtx, "Vertex should not be handled direclty");
-        // Look up (or create) mask for 'vtxp'
+    BitMask& mask(const DfgVertex& vtx) {
+        // Look up (or create) mask for 'vtx'
         return m_vtxp2Mask
             .emplace(std::piecewise_construct,  //
-                     std::forward_as_tuple(&vtx),  //
-                     std::forward_as_tuple(vtx.fileline(), static_cast<int>(vtx.width()), 0))  //
+                     std::forward_as_tuple(&vtx), std::forward_as_tuple(vtx))
             .first->second;
     }
 
@@ -784,7 +960,7 @@ class IndependentBits final : public DfgVisitor {
     // TODO: Use C++20 std::source_location instead of a macro
 #ifdef VL_DEBUG
 #define MASK(vtxp) \
-    ([this](const DfgVertex& vtx) -> V3Number& { \
+    ([this](const DfgVertex& vtx) -> BitMask& { \
         if (VL_UNLIKELY(m_lineCoverageFile.is_open())) m_lineCoverageFile << __LINE__ << '\n'; \
         return mask(vtx); \
     }(*vtxp))
@@ -810,13 +986,24 @@ class IndependentBits final : public DfgVisitor {
         }
     }
 
-    void propagateFromDriver(V3Number& m, const DfgVertex* srcp) {
+    void propagateFromDriver(BitMask& m, const DfgVertex* srcp) {
         // If there is no driver, we are done
         if (!srcp) return;
         // If it is driven by a splice, we need to combine the masks of the drivers
         if (const DfgSplicePacked* const splicep = srcp->cast<DfgSplicePacked>()) {
             splicep->foreachDriver([&](const DfgVertex& src, uint32_t lo) {
-                m.opSelInto(MASK(&src), lo, src.width());
+                m.num().opSelInto(MASK(&src).num(), lo, src.width());
+                return false;
+            });
+            return;
+        }
+        if (const DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
+            splicep->foreachDriver([&](const DfgVertex& src, uint32_t lo) {
+                if (const DfgUnitArray* const uap = src.cast<DfgUnitArray>()) {
+                    m.sub().at(lo) = MASK(uap->srcp());
+                } else {
+                    // m.sub().at(lo) = Can't happen MASK(&src);
+                }
                 return false;
             });
             return;
@@ -827,15 +1014,15 @@ class IndependentBits final : public DfgVisitor {
 
     // VISITORS
     void visit(DfgVertex* vtxp) override {  // LCOV_EXCL_START
-        UASSERT_OBJ(handledDirectly(*vtxp), vtxp, "Vertex should be handled direclty");
         UINFO(9, "IndependentBits - Unhandled vertex type: " << vtxp->typeName());
         // Conservative assumption about all bits being dependent prevails
     }  // LCOV_EXCL_STOP
 
-    void visit(DfgVarPacked* vtxp) override {
+    void visit(DfgVertexVar* vtxp) override {
         // We cannot trace through a volatile variable, so pretend all bits are dependent
         if (vtxp->isVolatile()) return;
-        V3Number& m = MASK(vtxp);
+
+        BitMask& m = MASK(vtxp);
         DfgVertex* const srcp = vtxp->srcp();
         DfgVertex* const defaultp = vtxp->defaultp();
         // If there is a default driver, we start from that
@@ -844,81 +1031,62 @@ class IndependentBits final : public DfgVisitor {
         propagateFromDriver(m, srcp);
     }
 
-    void visit(DfgArraySel* vtxp) override {
-        // From a variable
-        const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
-        if (!varp) return;
+    void visit(DfgVertexSplice* vtxp) override {
+        propagateFromDriver(MASK(vtxp), vtxp);  // Needed to continue traversal
+    }
 
-        // If index is not constant, independent only if the variable index
-        // is indenpendent and the array is independent. We don't track arrays,
-        // so we will assume an array is only independent if it has no drivers
-        // in the graph. TODO: could check all drivers.
-        if (!vtxp->bitp()->is<DfgConst>()) {
-            if (MASK(vtxp->bitp()).isEqAllOnes() && !varp->srcp() && !varp->defaultp()) {
-                MASK(vtxp).setAllBits1();
-            }
+    void visit(DfgUnitArray* vtxp) override { MASK(vtxp).sub().at(0) = MASK(vtxp->srcp()); }
+
+    void visit(DfgArraySel* vtxp) override {
+        DfgVertex* const fromp = vtxp->fromp();
+
+        // If constant index, copy mask of relevant element
+        if (const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
+            MASK(vtxp) = MASK(vtxp->fromp()).sub().at(idxp->toSizeT());
             return;
         }
 
-        // Trace the relevant driver based on the static index
-        const DfgConst* const idxp = vtxp->bitp()->as<DfgConst>();
-        // We cannot trace through a volatile variable, so pretend all bits are dependent
-        if (varp->isVolatile()) return;
-        // Skip through intermediate variables
-        while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
-            varp = varp->srcp()->as<DfgVarArray>();
-            if (varp->isVolatile()) return;
-        }
-        // Find driver
-        const DfgVertex* srcp = varp->srcp();
-        if (!srcp) return;
-        if (const DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
-            srcp = splicep->driverAt(idxp->toSizeT());
-            if (!srcp) return;
-        }
-        const DfgUnitArray* uap = srcp->cast<DfgUnitArray>();
-        if (!uap) return;
-        srcp = uap->srcp();
-        // Propagate from driver
-        propagateFromDriver(MASK(vtxp), srcp);
+        // If index is not constant, independent only if the index is indenpendent, and the array
+        // is independent. TODO: could relax by '&' reducing, not sure if worth it.
+        if (MASK(vtxp->bitp()).isOnes() && MASK(fromp).isOnes()) MASK(vtxp).setOnes();
     }
 
     void visit(DfgConcat* vtxp) override {
         const DfgVertex* const rhsp = vtxp->rhsp();
         const DfgVertex* const lhsp = vtxp->lhsp();
-        V3Number& m = MASK(vtxp);
-        m.opSelInto(MASK(rhsp), 0, rhsp->width());
-        m.opSelInto(MASK(lhsp), rhsp->width(), lhsp->width());
+        V3Number& m = MASK(vtxp).num();
+        m.opSelInto(MASK(rhsp).num(), 0, rhsp->width());
+        m.opSelInto(MASK(lhsp).num(), rhsp->width(), lhsp->width());
     }
 
     void visit(DfgRep* vtxp) override {
         const uint32_t count = vtxp->count();
         const DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
-        V3Number& vMask = MASK(vtxp);
-        V3Number& sMask = MASK(srcp);
+        V3Number& vMask = MASK(vtxp).num();
+        V3Number& sMask = MASK(srcp).num();
         for (uint32_t i = 0; i < count; ++i) vMask.opSelInto(sMask, i * sWidth, sWidth);
     }
 
     void visit(DfgSel* vtxp) override {
         const uint32_t lsb = vtxp->lsb();
         const uint32_t msb = lsb + vtxp->width() - 1;
-        MASK(vtxp).opSel(MASK(vtxp->fromp()), msb, lsb);
+        MASK(vtxp).num().opSel(MASK(vtxp->fromp()).num(), msb, lsb);
     }
 
     void visit(DfgExtend* vtxp) override {
         const DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
-        V3Number& s = MASK(srcp);
-        V3Number& m = MASK(vtxp);
+        V3Number& s = MASK(srcp).num();
+        V3Number& m = MASK(vtxp).num();
         m.opSelInto(s, 0, sWidth);
         m.opSetRange(sWidth, vtxp->width() - sWidth, '1');
     }
     void visit(DfgExtendS* vtxp) override {
         const DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
-        V3Number& s = MASK(srcp);
-        V3Number& m = MASK(vtxp);
+        V3Number& s = MASK(srcp).num();
+        V3Number& m = MASK(vtxp).num();
         m.opSelInto(s, 0, sWidth);
         m.opSetRange(sWidth, vtxp->width() - sWidth, s.bitIs0(sWidth - 1) ? '0' : '1');
     }
@@ -928,71 +1096,62 @@ class IndependentBits final : public DfgVisitor {
     }
 
     void visit(DfgAnd* vtxp) override {  //
-        MASK(vtxp).opAnd(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        MASK(vtxp).num().opAnd(MASK(vtxp->lhsp()).num(), MASK(vtxp->rhsp()).num());
     }
     void visit(DfgOr* vtxp) override {  //
-        MASK(vtxp).opAnd(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        MASK(vtxp).num().opAnd(MASK(vtxp->lhsp()).num(), MASK(vtxp->rhsp()).num());
     }
     void visit(DfgXor* vtxp) override {  //
-        MASK(vtxp).opAnd(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        MASK(vtxp).num().opAnd(MASK(vtxp->lhsp()).num(), MASK(vtxp->rhsp()).num());
     }
 
     void visit(DfgAdd* vtxp) override {
-        V3Number& m = MASK(vtxp);
-        m.opAnd(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        V3Number& m = MASK(vtxp).num();
+        m.opAnd(MASK(vtxp->lhsp()).num(), MASK(vtxp->rhsp()).num());
         floodTowardsMsb(m);
     }
     void visit(DfgSub* vtxp) override {  // Same as Add: 2's complement (a - b) == (a + ~b + 1)
-        V3Number& m = MASK(vtxp);
-        m.opAnd(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        V3Number& m = MASK(vtxp).num();
+        m.opAnd(MASK(vtxp->lhsp()).num(), MASK(vtxp->rhsp()).num());
         floodTowardsMsb(m);
     }
 
-    void visit(DfgRedAnd* vtxp) override {  //
-        if (MASK(vtxp->lhsp()).isEqAllOnes()) {  //
-            MASK(vtxp).setAllBits1();
-        }
+    void visit(DfgRedAnd* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
-    void visit(DfgRedOr* vtxp) override {  //
-        if (MASK(vtxp->lhsp()).isEqAllOnes()) {  //
-            MASK(vtxp).setAllBits1();
-        }
+    void visit(DfgRedOr* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
-    void visit(DfgRedXor* vtxp) override {  //
-        if (MASK(vtxp->lhsp()).isEqAllOnes()) {  //
-            MASK(vtxp).setAllBits1();
-        }
+    void visit(DfgRedXor* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
 
     void visit(DfgEq* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
     void visit(DfgNeq* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
     void visit(DfgLt* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
     void visit(DfgLte* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
     void visit(DfgGt* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
     void visit(DfgGte* vtxp) override {
-        const bool independent
-            = MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->rhsp()).isEqAllOnes();
-        MASK(vtxp).setBit(0, independent ? '1' : '0');
+        const bool independent = MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->rhsp()).isOnes();
+        if (independent) MASK(vtxp).setOnes();
     }
 
     void visit(DfgShiftRS* vtxp) override {
@@ -1004,14 +1163,10 @@ class IndependentBits final : public DfgVisitor {
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
             if (shiftAmount >= width) {
-                if (MASK(lhsp).bitIs0(width - 1)) {
-                    MASK(vtxp).setAllBits0();
-                } else {
-                    MASK(vtxp).setAllBits1();
-                }
+                if (MASK(lhsp).num().bitIs1(width - 1)) { MASK(vtxp).setOnes(); }
             } else {
-                V3Number& m = MASK(vtxp);
-                m.opShiftRS(MASK(lhsp), rConstp->num(), width);
+                V3Number& m = MASK(vtxp).num();
+                m.opShiftRS(MASK(lhsp).num(), rConstp->num(), width);
                 m.opSetRange(width - shiftAmount, shiftAmount, '1');
             }
             return;
@@ -1020,9 +1175,9 @@ class IndependentBits final : public DfgVisitor {
         // Otherwise, as the shift amount is non-negative, all independent
         // and consecutive top bits in the lhs yield an independent result
         // if the shift amount is independent.
-        if (MASK(rhsp).isEqAllOnes()) {
-            V3Number& m = MASK(vtxp);
-            m = MASK(lhsp);
+        if (MASK(rhsp).isOnes()) {
+            V3Number& m = MASK(vtxp).num();
+            m = MASK(lhsp).num();
             floodTowardsLsb(m);
         }
     }
@@ -1036,10 +1191,10 @@ class IndependentBits final : public DfgVisitor {
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
             if (shiftAmount >= width) {
-                MASK(vtxp).setAllBits1();
+                MASK(vtxp).setOnes();
             } else {
-                V3Number& m = MASK(vtxp);
-                m.opShiftR(MASK(lhsp), rConstp->num());
+                V3Number& m = MASK(vtxp).num();
+                m.opShiftR(MASK(lhsp).num(), rConstp->num());
                 m.opSetRange(width - shiftAmount, shiftAmount, '1');
             }
             return;
@@ -1048,9 +1203,9 @@ class IndependentBits final : public DfgVisitor {
         // Otherwise, as the shift amount is non-negative, all independent
         // and consecutive top bits in the lhs yield an independent result
         // if the shift amount is independent.
-        if (MASK(rhsp).isEqAllOnes()) {
-            V3Number& m = MASK(vtxp);
-            m = MASK(lhsp);
+        if (MASK(rhsp).isOnes()) {
+            V3Number& m = MASK(vtxp).num();
+            m = MASK(lhsp).num();
             floodTowardsLsb(m);
         }
     }
@@ -1064,10 +1219,10 @@ class IndependentBits final : public DfgVisitor {
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
             if (shiftAmount >= width) {
-                MASK(vtxp).setAllBits1();
+                MASK(vtxp).setOnes();
             } else {
-                V3Number& m = MASK(vtxp);
-                m.opShiftL(MASK(lhsp), rConstp->num());
+                V3Number& m = MASK(vtxp).num();
+                m.opShiftL(MASK(lhsp).num(), rConstp->num());
                 m.opSetRange(0, shiftAmount, '1');
             }
             return;
@@ -1076,23 +1231,21 @@ class IndependentBits final : public DfgVisitor {
         // Otherwise, as the shift amount is non-negative, all independent
         // and consecutive bottom bits in the lhs yield an independent result
         // if the shift amount is independent.
-        if (MASK(rhsp).isEqAllOnes()) {
-            V3Number& m = MASK(vtxp);
-            m = MASK(lhsp);
+        if (MASK(rhsp).isOnes()) {
+            V3Number& m = MASK(vtxp).num();
+            m = MASK(lhsp).num();
             floodTowardsMsb(m);
         }
     }
 
     void visit(DfgCond* vtxp) override {
-        if (MASK(vtxp->condp()).isEqAllOnes()) {
-            MASK(vtxp).opAnd(MASK(vtxp->thenp()), MASK(vtxp->elsep()));
+        if (MASK(vtxp->condp()).isOnes()) {
+            MASK(vtxp).num().opAnd(MASK(vtxp->thenp()).num(), MASK(vtxp->elsep()).num());
         }
     }
 
     void visit(DfgMatchMasked* vtxp) override {
-        if (MASK(vtxp->lhsp()).isEqAllOnes() && MASK(vtxp->matchp()).isEqAllOnes()) {  //
-            MASK(vtxp).setAllBits1();
-        }
+        if (MASK(vtxp->lhsp()).isOnes() && MASK(vtxp->matchp()).isOnes()) { MASK(vtxp).setOnes(); }
     }
 
 #undef MASK
@@ -1102,11 +1255,6 @@ class IndependentBits final : public DfgVisitor {
         vtx.foreachSink([&](DfgVertex& sink) {
             // Ignore if sink is not part of an SCC, already has all bits marked independent
             if (!m_sccInfo.get(sink)) return false;
-            // If a vertex is not handled directly, recursively enqueue its sinks instead
-            if (!handledDirectly(sink)) {
-                enqueueSinks(sink);
-                return false;
-            }
             // Otherwise just enqueue it
             VertexState& state = m_vtxp2State.at(&sink);
             if (!state.m_isOnWorkList) {
@@ -1169,18 +1317,15 @@ class IndependentBits final : public DfgVisitor {
         //   always assign constants bits, which are always independent (eg Extend/Shift)
         // Enqueue sinks of all SCC vertices that have at least one independent bit
         for (DfgVertex* const vtxp : rpoEnumeration) {
-            if (!handledDirectly(*vtxp)) continue;
             if (m_sccInfo.get(*vtxp)) continue;
-            mask(*vtxp).setAllBits1();
+            mask(*vtxp).setOnes();
         }
         for (DfgVertex* const vtxp : rpoEnumeration) {
-            if (!handledDirectly(*vtxp)) continue;
             if (!m_sccInfo.get(*vtxp)) continue;
             iterate(vtxp);
-            UINFO(9, "Initial independent bits of "
-                         << vtxp << " " << vtxp->typeName()
-                         << " are: " << mask(*vtxp).displayed(vtxp->fileline(), "%b"));
-            if (!mask(*vtxp).isEqZero()) enqueueSinks(*vtxp);
+            UINFO(9, "Initial independent bits of " << vtxp << " " << vtxp->typeName()
+                                                    << " are: " << mask(*vtxp).toString());
+            if (!mask(*vtxp).isZero()) enqueueSinks(*vtxp);
         }
 
         // Propagate independent bits until no more changes are made
@@ -1191,13 +1336,11 @@ class IndependentBits final : public DfgVisitor {
             m_vtxp2State.at(currp).m_isOnWorkList = false;
             // Should not enqueue vertices that are not in an SCC
             UASSERT_OBJ(m_sccInfo.get(*currp), currp, "Vertex should be in an SCC");
-            // Should only enqueue packed vertices
-            UASSERT_OBJ(handledDirectly(*currp), currp, "Vertex should be handled directly");
 
             // Grab current mask of item
-            const V3Number& currMask = mask(*currp);
+            const BitMask& currMask = mask(*currp);
             // Remember current mask so we can check if it changed
-            const V3Number prevMask = currMask;
+            const BitMask prevMask = currMask;
 
             UINFO(9, "Analyzing independent bits of " << currp << " " << currp->typeName());
 
@@ -1205,19 +1348,16 @@ class IndependentBits final : public DfgVisitor {
             iterate(currp);
 
             // If mask changed, enqueue sinks
-            if (!prevMask.isCaseEq(currMask)) {
+            if (prevMask != currMask) {
                 UINFO(9, "Independent bits of "  //
                              << currp << " " << currp->typeName() << " changed"  //
-                             << "\n    form: " << prevMask.displayed(currp->fileline(), "%b")
-                             << "\n      to: " << currMask.displayed(currp->fileline(), "%b"));
+                             << "\n    form: " << prevMask.toString()
+                             << "\n      to: " << currMask.toString());
                 enqueueSinks(*currp);
                 // Check the mask only ever expands (no bit goes 1 -> 0)
                 if (VL_UNLIKELY(v3Global.opt.debugCheck())) {
-                    V3Number notCurr{currMask};
-                    notCurr.opNot(currMask);
-                    V3Number prevAndNotCurr{currMask};
-                    prevAndNotCurr.opAnd(prevMask, notCurr);
-                    UASSERT_OBJ(prevAndNotCurr.isEqZero(), currp, "Mask should only expand");
+                    UASSERT_OBJ(!currMask.isContractionOf(prevMask), currp,
+                                "Mask should only expand");
                 }
             }
         }
@@ -1228,8 +1368,8 @@ public:
     // returns a map from vertices to a bit mask, where a bit in the mask is
     // set if the corresponding bit in that vertex is known to be independent
     // of the values of vertices in the same SCC as the vertex resides in.
-    static std::unordered_map<const DfgVertex*, V3Number> apply(DfgGraph& dfg,
-                                                                const SccInfo& sccInfo) {
+    static std::unordered_map<const DfgVertex*, BitMask> apply(DfgGraph& dfg,
+                                                               const SccInfo& sccInfo) {
         return std::move(IndependentBits{dfg, sccInfo}.m_vtxp2Mask);
     }
 };
@@ -1239,21 +1379,21 @@ class FixUp final {
     SccInfo& m_sccInfo;  // The SccInfo instance
     TraceDriver m_traceDriver{m_dfg, m_sccInfo};
     // The independent bits map
-    const std::unordered_map<const DfgVertex*, V3Number> m_independentBits
+    const std::unordered_map<const DfgVertex*, BitMask> m_independentBits
         = IndependentBits::apply(m_dfg, m_sccInfo);
-    size_t m_nImprovements = 0;  // Number of improvements mde
+    size_t m_nImprovements = 0;  // Number of improvements made
 
     // Returns a bitmask set if that bit of 'vtx' is used (has a sink)
-    static V3Number computeUsedBits(DfgVertex& vtx) {
-        V3Number result{vtx.fileline(), static_cast<int>(vtx.width()), 0};
+    static BitMask computeUsedBits(DfgVertex& vtx) {
+        BitMask result{vtx};
         vtx.foreachSink([&result](DfgVertex& sink) {
             // If used via a Sel, mark the selected bits used
             if (const DfgSel* const selp = sink.cast<DfgSel>()) {
-                result.opSetRange(selp->lsb(), selp->width(), '1');
+                result.num().opSetRange(selp->lsb(), selp->width(), '1');
                 return false;
             }
             // Used without a Sel, so all bits are used
-            result.setAllBits1();
+            result.setOnes();
             return true;
         });
         return result;
@@ -1306,20 +1446,18 @@ class FixUp final {
         UASSERT_OBJ(!vtx.is<DfgSplicePacked>(), &vtx, "Should not be a splice");
 
         // Get which bits of 'vtxp' are independent of the SCCs
-        const V3Number& indpBits = m_independentBits.at(&vtx);
-        UINFO(9, "Independent bits of '" << debugStr(vtx) << "' are "
-                                         << indpBits.displayed(vtx.fileline(), "%b"));
+        const BitMask& indpBits = m_independentBits.at(&vtx);
+        UINFO(9, "Independent bits of '" << debugStr(vtx) << "' are " << indpBits.toString());
         // Can't do anything if all bits are dependent
-        if (indpBits.isEqZero()) return;
+        if (indpBits.isZero()) return;
 
         // Figure out which bits of 'vtxp' are used
-        const V3Number usedBits = computeUsedBits(vtx);
-        UINFO(9, "Used        bits of '" << debugStr(vtx) << "' are "
-                                         << usedBits.displayed(vtx.fileline(), "%b"));
+        const BitMask usedBits = computeUsedBits(vtx);
+        UINFO(9, "Used        bits of '" << debugStr(vtx) << "' are " << usedBits.toString());
 
         // Nothing to do if no used bits are independen (all used bits are dependent)
         V3Number usedAndIndependent{vtx.fileline(), static_cast<int>(vtx.width()), 0};
-        usedAndIndependent.opAnd(usedBits, indpBits);
+        usedAndIndependent.opAnd(usedBits.num(), indpBits.num());
         if (usedAndIndependent.isEqZero()) return;
 
         // We are computing the terms to concatenate and replace 'vtxp' with
@@ -1328,14 +1466,14 @@ class FixUp final {
         // Iterate through consecutive used/unused ranges
         FileLine* const flp = vtx.fileline();
         const uint32_t width = vtx.width();
-        bool isUsed = usedBits.bitIs1(0);  // Is current range used
+        bool isUsed = usedBits.num().bitIs1(0);  // Is current range used
         uint32_t lsb = 0;  // LSB of current range
         for (uint32_t msb = 0; msb < width; ++msb) {
-            const bool endRange = msb == width - 1 || isUsed != usedBits.bitIs1(msb + 1);
+            const bool endRange = msb == width - 1 || isUsed != usedBits.num().bitIs1(msb + 1);
             if (!endRange) continue;
             if (isUsed) {
                 // The range is used, compute the replacement terms
-                gatherTerms(termps, vtx, indpBits, msb, lsb);
+                gatherTerms(termps, vtx, indpBits.num(), msb, lsb);
             } else {
                 // The range is not used, just use constant 0 as a placeholder
                 DfgConst* const constp = new DfgConst{m_dfg, flp, msb - lsb + 1, 0};

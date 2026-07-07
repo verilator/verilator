@@ -279,8 +279,8 @@ class CoverageVisitor final : public VNVisitor {
         const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
-        VL_RESTORER(m_exprTempNames);
-        VL_RESTORER(m_funcTemps);
+        VL_RESTORER_COPY(m_exprTempNames);
+        VL_RESTORER_COPY(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
         m_state.m_inModOff = false;  // Haven't made top shell, so tops are real tops
@@ -294,8 +294,8 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
-        VL_RESTORER(m_exprTempNames);
-        VL_RESTORER(m_funcTemps);
+        VL_RESTORER_COPY(m_exprTempNames);
+        VL_RESTORER_COPY(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
         // Covergroup declarations are not executable statements; suppress line/expr/toggle
@@ -356,8 +356,8 @@ class CoverageVisitor final : public VNVisitor {
 
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
-        VL_RESTORER(m_exprTempNames);
-        VL_RESTORER(m_funcTemps);
+        VL_RESTORER_COPY(m_exprTempNames);
+        VL_RESTORER_COPY(m_funcTemps);
         m_ftaskp = nodep;
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
@@ -762,7 +762,7 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstGenBlock* nodep) override {
         // Similar to AstBegin
-        VL_RESTORER(m_beginHier);
+        VL_RESTORER_COPY(m_beginHier);
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }
@@ -776,7 +776,7 @@ class CoverageVisitor final : public VNVisitor {
         // generate blocks; each point should get separate consideration.
         // (Currently ignored for line coverage, since any generate iteration
         // covers the code in that line.)
-        VL_RESTORER(m_beginHier);
+        VL_RESTORER_COPY(m_beginHier);
         VL_RESTORER(m_inToggleOff);
         VL_RESTORER(m_exprStmtsp);
         m_exprStmtsp = nodep;
@@ -874,7 +874,7 @@ class CoverageVisitor final : public VNVisitor {
         UASSERT_OBJ(m_exprs.empty(), nodep, "unexpected expression coverage garbage");
         VL_RESTORER(m_seeking);
         VL_RESTORER(m_objective);
-        VL_RESTORER(m_exprs);
+        VL_RESTORER_CLEAR(m_exprs);  // Already asserted above it's empty.
 
         m_seeking = SEEKING;
         m_objective = false;

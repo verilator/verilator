@@ -32,7 +32,7 @@ class LinkWithVisitor final : public VNVisitor {
 
     // STATE
     // Below state needs to be preserved between each module call.
-    string m_randcIllegalWhy;  // Why randc illegal
+    const char* m_randcIllegalWhyp = nullptr;  // Why randc illegal
     AstNode* m_randcIllegalp = nullptr;  // Node causing randc illegal
     AstNodeExpr* m_currentRandomizeSelectp = nullptr;  // fromp() of current `randomize()` call
     bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
@@ -49,24 +49,24 @@ class LinkWithVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalWhyp);
         VL_RESTORER(m_randcIllegalp);
-        m_randcIllegalWhy = "'solve before' (IEEE 1800-2023 18.5.9)";
+        m_randcIllegalWhyp = "'solve before' (IEEE 1800-2023 18.5.9)";
         m_randcIllegalp = nodep;
         iterateChildrenConst(nodep);
     }
     void visit(AstDist* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalWhyp);
         VL_RESTORER(m_randcIllegalp);
-        m_randcIllegalWhy = "'constraint dist' (IEEE 1800-2023 18.5.3)";
+        m_randcIllegalWhyp = "'constraint dist' (IEEE 1800-2023 18.5.3)";
         m_randcIllegalp = nodep;
         iterateChildrenConst(nodep);
     }
     void visit(AstConstraintExpr* nodep) override {
-        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalWhyp);
         VL_RESTORER(m_randcIllegalp);
         if (nodep->isSoft()) {
-            m_randcIllegalWhy = "'constraint soft' (IEEE 1800-2023 18.5.13.1)";
+            m_randcIllegalWhyp = "'constraint soft' (IEEE 1800-2023 18.5.13.1)";
             m_randcIllegalp = nodep;
         }
         iterateChildrenConst(nodep);
@@ -76,7 +76,7 @@ class LinkWithVisitor final : public VNVisitor {
         if (nodep->varp()) {  // Else due to dead code, might not have var pointer
             if (nodep->varp()->isRandC() && m_randcIllegalp) {
                 nodep->v3error("Randc variables not allowed in "
-                               << m_randcIllegalWhy << '\n'
+                               << m_randcIllegalWhyp << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << m_randcIllegalp->warnOther()
                                << "... Location of restricting expression\n"

@@ -20,11 +20,11 @@ on:
         type: string
         required: true
       verilator-archive-new:
-        description: "Name of the installation archive artifact from reusable-rtlmeter-build, new version"
+        description: "Name of the installation archive artifact from reusable-build, new version"
         type: string
         required: true
       verilator-archive-old:
-        description: "Name of the installation archive artifact from reusable-rtlmeter-build, old version"
+        description: "Name of the installation archive artifact from reusable-build, old version"
         type: string
         required: false
         default: ""
@@ -53,8 +53,8 @@ defaults:
     shell: bash
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/ccache
-  CCACHE_MAXSIZE: 512M
+  # RTLMeter measures compile/execute times, so caching must stay off to keep
+  # timings representative; ccache is still on PATH but acts as a pass-through
   CCACHE_DISABLE: 1
 
 jobs:
@@ -82,14 +82,6 @@ jobs:
         working-directory: rtlmeter
         run: make venv
 
-      - name: Use saved ccache
-        if: ${{ env.CCACHE_DISABLE == 0 }}
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}
-
       ########################################################################
       # Run with new Verilator
       ########################################################################
@@ -101,7 +93,7 @@ jobs:
 
       - name: Unpack Verilator installation archive - new
         run: |
-          tar -x -z -f ${{ inputs.verilator-archive-new }}
+          tar --zstd -x -f ${{ inputs.verilator-archive-new }}
           mv install verilator-new
 
       - name: Compile cases - new
@@ -164,7 +156,7 @@ jobs:
       - name: Unpack Verilator installation archive - old
         if: ${{ inputs.verilator-archive-old != '' }}
         run: |
-          tar -x -z -f ${{ inputs.verilator-archive-old }}
+          tar --zstd -x -f ${{ inputs.verilator-archive-old }}
           mv install verilator-old
 
       - name: Compile cases - old

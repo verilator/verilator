@@ -306,10 +306,9 @@ private:
     }
     void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
-        VL_RESTORER(m_initialps);
+        VL_RESTORER_CLEAR(m_initialps);
         VL_RESTORER(m_ctorp);
         VL_RESTORER(m_classp);
-        m_initialps.clear();
         m_ctorp = nullptr;
         m_classp = nodep;
         {  // Find m_initialps, m_ctor

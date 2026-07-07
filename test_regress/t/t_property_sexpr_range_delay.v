@@ -13,6 +13,8 @@
 module t (
     input clk
 );
+  parameter P = 1;
+
   integer cyc = 0;
   reg [63:0] crc = '0;
   reg [63:0] sum = '0;
@@ -63,6 +65,11 @@ module t (
   // Basic ##[1:3] range delay
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:3] (a | b | c | d | e));
+
+  // Parameterized range bound
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[P:P+3] (a | b | c | d | e));
+  assert property (@(posedge clk) ##[P:P+3] 1);
 
   // ##[2:4] range delay
   assert property (@(posedge clk) disable iff (cyc < 2)

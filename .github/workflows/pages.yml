@@ -7,7 +7,7 @@ name: Pages
 on:
   push:
     branches: [master]
-    paths: ["ci/**", ".github/workflows"]
+    paths: ["ci/**", ".github/workflows/**"]
   workflow_dispatch:
   workflow_run:
     workflows: ["Code coverage", "RTLMeter"]
@@ -22,8 +22,11 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run
 # in-progress and latest queued. However, do NOT cancel in-progress runs as we
 # want to allow these deployments to complete.
+# A skipped-upstream run does no work (see the build job's if:), so put it in its
+# own throwaway group: otherwise, as the newest queued run, it would cancel a
+# pending real run and then deploy nothing.
 concurrency:
-  group: "pages"
+  group: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'skipped') && format('pages-skip-{0}', github.run_id) || 'pages' }}
   cancel-in-progress: false
 
 defaults:
@@ -34,6 +37,10 @@ jobs:
   build:
     name: Build content
     runs-on: ubuntu-24.04
+    # A skipped upstream run (e.g. Code coverage / RTLMeter on a branch push)
+    # still fires workflow_run; don't rebuild and redeploy for it. deploy and
+    # notify need this job, so they cascade-skip too.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'skipped' }}
     outputs:
       pr-run-ids: ${{ steps.build.outputs.pr-run-ids }}
     steps:
@@ -58,9 +65,16 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy-2.outputs.page_url || steps.deploy-1.outputs.page_url }}
     steps:
+      # GitHub's Pages backend intermittently fails a deployment mid-sync, retry
       - name: Deploy to GitHub Pages
+        id: deploy-1
+        continue-on-error: true
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5
+      - name: Deploy to GitHub Pages (retry)
+        id: deploy-2
+        if: steps.deploy-1.outcome == 'failure'
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5
 
   notify:

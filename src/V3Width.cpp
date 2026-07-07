@@ -731,6 +731,17 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
+        if (nodep->isCycleDelay() && m_underSExpr) {
+            // Fold parameterized SVA cycle-delay bounds
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
+            if (nodep->rhsp() && !nodep->isUnbounded()) {
+                // Fold parametrized SVA cycle-delay max bound
+                userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
+                V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
+            }
+            return;
+        }
         if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
             iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
             iterateCheckDelay(nodep, "delay", fallDelayp, BOTH);
@@ -7852,7 +7863,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         assertAtStatement(nodep);
-        VL_RESTORER(m_insideTempNames);
+        VL_RESTORER_COPY(m_insideTempNames);
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
             visitClass(classp);
         } else {
@@ -9564,9 +9575,11 @@ class WidthVisitor final : public VNVisitor {
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
         case VNType::Eq:
-        case VNType::EqCase: newp = new AstEqN{fl, lhsp, rhsp}; break;
+        case VNType::EqCase:
+        case VNType::EqWild: newp = new AstEqN{fl, lhsp, rhsp}; break;
         case VNType::Neq:
-        case VNType::NeqCase: newp = new AstNeqN{fl, lhsp, rhsp}; break;
+        case VNType::NeqCase:
+        case VNType::NeqWild: newp = new AstNeqN{fl, lhsp, rhsp}; break;
         case VNType::Gt:
         case VNType::GtS: newp = new AstGtN{fl, lhsp, rhsp}; break;
         case VNType::Gte:

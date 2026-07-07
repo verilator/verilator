@@ -34,9 +34,14 @@ for RUN_ID in ${PR_RUN_IDS//,/ }; do
   cat ${ARTIFACTS_DIR}/body.txt
   gh pr comment $(cat ${ARTIFACTS_DIR}/pr-number.txt) --body-file ${ARTIFACTS_DIR}/body.txt
 
-  # Get the artifact ID
-  ARTIFACT_ID=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "pr-notification") | .id')
+  # Get the artifact IDs. Note there can be more than one artifact named
+  # 'pr-notification' for a single run, as the artifacts endpoint lists
+  # artifacts across all run attempts, and a re-run uploads a new one while
+  # keeping the previous attempt's artifact.
+  ARTIFACT_IDS=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "pr-notification") | .id')
 
-  # Delete it, so we only notify once
-  gh api --method DELETE "repos/{owner}/{repo}/actions/artifacts/${ARTIFACT_ID}"
+  # Delete them all, so we only notify once
+  for ARTIFACT_ID in ${ARTIFACT_IDS}; do
+    gh api --method DELETE "repos/{owner}/{repo}/actions/artifacts/${ARTIFACT_ID}"
+  done
 done

@@ -261,6 +261,7 @@ static void process() {
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
         V3AssertCommon::collectDefaultDisable(v3Global.rootp());
+        V3AssertCommon::lowerSequenceEvents(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.

@@ -11,35 +11,44 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: repo
+
 jobs:
   format:
     runs-on: ubuntu-24.04
     name: Ubuntu 24.04 | format
-    env:
-      CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-24.04
-      CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
+          path: repo
           token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install packages for build
-        env:
-          CI_BUILD_STAGE_NAME: build
         run: |
           sudo apt install clang-format-18 || \
           sudo apt install clang-format-18
           git config --global user.email "action@example.com"
           git config --global user.name "github action"
-      - name: Format code
+
+      - name: Configure
         run: |
           autoconf
           ./configure
-          make venv
+
+      - name: Set up Python venv
+        uses: ./repo/.github/actions/setup-venv
+        with:
+          save: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Format code
+        run: |
           source .venv/bin/activate
           make -j 4 format CLANGFORMAT=clang-format-18
           git status
+
       - name: Push
         run: |-
           if [ -n "$(git status --porcelain)" ]; then

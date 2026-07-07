@@ -1612,6 +1612,8 @@ class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
     bool m_isCoverSeq = false;  // 'cover sequence' (IEEE 1800-2023 16.14.3): fires per
                                 // end-of-match, not per property success
+    bool m_isSeqEvent = false;  // Synthesized for a sequence used as an event control
+                                // (IEEE 1800-2023 9.4.2.4)
 public:
     ASTGEN_MEMBERS_AstCover;
     AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
@@ -1622,6 +1624,8 @@ public:
     void dumpJson(std::ostream& str) const override;
     bool isCoverSeq() const { return m_isCoverSeq; }
     void isCoverSeq(bool flag) { m_isCoverSeq = flag; }
+    bool isSeqEvent() const { return m_isSeqEvent; }
+    void isSeqEvent(bool flag) { m_isSeqEvent = flag; }
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:

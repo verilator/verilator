@@ -2191,8 +2191,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_graphing);
         VL_RESTORER(m_unique);
-        VL_RESTORER(m_lhsmap);
-        VL_RESTORER(m_assigns);
+        VL_RESTORER_CLEAR(m_lhsmap);
+        VL_RESTORER_CLEAR(m_assigns);
         // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
         UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
 
@@ -2201,8 +2201,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         m_tgraph.clearAndCheck();
         m_unique = 0;
         m_logicp = nullptr;
-        m_lhsmap.clear();
-        m_assigns.clear();
         m_modp = nodep;
         // Walk the graph, finding all variables and tristate constructs
         m_graphing = true;

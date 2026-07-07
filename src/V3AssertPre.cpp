@@ -1466,7 +1466,9 @@ private:
         iterateAndNextNull(nodep->sensesp());
         if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
-        if (!nodep->disablep() && m_defaultDisablep) {
+        const AstCover* const coverp = VN_CAST(nodep->backp(), Cover);
+        const bool seqEvent = coverp && coverp->isSeqEvent();
+        if (!nodep->disablep() && m_defaultDisablep && !seqEvent) {
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
         m_disablep = nodep->disablep();
