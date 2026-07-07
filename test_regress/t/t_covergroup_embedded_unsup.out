@@ -1,7 +1,11 @@
-%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:27:34: Unsupported: 'covergroup' coverpoint referencing enclosing class member; ignoring covergroup '__vlAnonCG_cov_trans'
+%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:31:34: Unsupported: 'covergroup' coverpoint referencing enclosing class member; ignoring covergroup '__vlAnonCG_cov_trans'
                                                         : ... note: In instance 't'
-   27 |     trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
+   31 |     trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
       |                                  ^~~~~~~~~~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:54:23: Unsupported: 'covergroup' coverpoint dereferencing a class handle member (parameterized covergroup); ignoring covergroup '__vlAnonCG_cov_param'
+                                                        : ... note: In instance 't'
+   54 |     cp: coverpoint st.test;
+      |                       ^~~~
 %Error: Exiting due to
