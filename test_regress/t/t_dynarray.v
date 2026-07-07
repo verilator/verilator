@@ -26,6 +26,9 @@ module t (
   typedef bit [7:0] byte_t;
   byte_t a[];
   byte_t b[];
+  byte_t fixed[256];
+  byte_t fixed_rev[1:256];
+  byte_t q[$];
 
   // wide data array
   typedef struct packed {
@@ -156,6 +159,26 @@ module t (
 
       p256.delete();
       `checkh(p256.size, 0);
+
+      // Test assignment from dynamic and queue arrays to fixed unpacked arrays.
+      a = new[256];
+      for (int j = 0; j < 256; j++) begin
+        a[j] = byte_t'(j + 32'ha0);
+        q.push_back(byte_t'(j + 32'h40));
+      end
+      fixed = a;
+      `checkh(fixed[0], 8'ha0);
+      `checkh(fixed[255], 8'h9f);
+      fixed = q;
+      `checkh(fixed[0], 8'h40);
+      `checkh(fixed[255], 8'h3f);
+      fixed_rev = a;
+      `checkh(fixed_rev[1], 8'ha0);
+      `checkh(fixed_rev[256], 8'h9f);
+      fixed_rev = q;
+      `checkh(fixed_rev[1], 8'h40);
+      `checkh(fixed_rev[256], 8'h3f);
+      q.delete();
 
     end
 
