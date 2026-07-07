@@ -5,13 +5,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test the graceful-degradation safety net for embedded covergroups (the dominant
-// UVM pattern: a covergroup declared inside a class whose coverpoints reference the
-// enclosing object's members).  Such a covergroup is lowered into a sibling class
-// with no handle to the enclosing instance, so emitting it would produce
-// uncompilable C++ ("invalid use of non-static data member").  Until the enclosing
-// back-pointer feature exists, Verilator must emit a clean COVERIGN warning and skip
-// lowering the covergroup, rather than crashing the C++ compile.
+// Test that two currently-unsupported coverpoint reference styles are properly flagged
+// as COVIGN: references to containing-class members ; references to covergroup formal
+// parameters
 
 class ubus_transfer;
   bit [15:0] addr;
@@ -35,10 +31,34 @@ class ubus_master_monitor;
   endfunction
 endclass
 
+class coverage_state;
+  bit [3:0] test;
+  bit [3:0] test2;
+endclass
+
+class parameterized_monitor;
+  coverage_state cs;
+
+  // Parameterized covergroup: the coverpoints dereference the class-handle argument 'st'.
+  // Two handle-dereferencing coverpoints ensure the safety net reports only the first
+  // offender (a second AstMemberSel is seen with the offender already latched).
+  covergroup cov_param(coverage_state st);
+    cp: coverpoint st.test;
+    cp2: coverpoint st.test2;
+  endgroup
+
+  function new();
+    cs = new;
+    cov_param = new(cs);
+  endfunction
+endclass
+
 module t;
   ubus_master_monitor m;
+  parameterized_monitor p;
   initial begin
     m = new;
+    p = new;
     $write("*-* All Finished *-*\n");
     $finish;
   end
