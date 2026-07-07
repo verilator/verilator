@@ -1466,7 +1466,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
-    DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
+    DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fdfg-break-cycles' is deprecated and has no effect");
+    });
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.erase(optp);

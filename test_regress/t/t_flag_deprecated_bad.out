@@ -8,4 +8,5 @@
 %Warning-DEPRECATED: Option '-fno-dfg-pre-inline' is deprecated and has no effect
 %Warning-DEPRECATED: Option '-fno-dfg-post-inline' is deprecated and has no effect
 %Warning-DEPRECATED: Option '-fno-dfg-scoped' is deprecated, use '-fno-dfg' instead.
+%Warning-DEPRECATED: Option '-fdfg-break-cycles' is deprecated and has no effect
 %Error: Exiting due to

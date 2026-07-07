@@ -715,6 +715,10 @@ Summary:
 
 .. option:: -fno-dfg-break-cycles
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.052:
+
    Rarely needed. Disable breaking combinational cycles during DFG.
 
 .. option:: -fno-dfg-peephole
