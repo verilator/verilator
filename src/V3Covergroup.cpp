@@ -1693,41 +1693,26 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // VISITORS
     AstNode* findUnsupportedCoverpointRef(AstClass* cgClassp) {
-        // An embedded covergroup is lowered into a sibling AstClass that has no handle to
-        // the enclosing object.  Two coverpoint/iff/cross shapes cannot be lowered and would
-        // otherwise emit uncompilable C++ or crash V3Broken; detect them so the caller can
-        // skip lowering with a clean COVERIGN warning.  Returns the first offending node
-        // (or nullptr), preferring the enclosing-member case for message clarity.
-        // Collect the covergroup class's own member variables (sample/constructor args);
-        // references to those are legitimate.
+        // An embedded covergroup is lowered into a sibling AstClass that (currently) has
+        // no handle to the enclosing object. Identify refs to the containing context
+        // or a formal param and flag as unsupported
         std::set<const AstVar*> ownVars;
         for (AstNode* itemp = cgClassp->membersp(); itemp; itemp = itemp->nextp()) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) ownVars.insert(varp);
         }
-        // Pass 1: a (non-static) member of the enclosing class reached with no handle.  The
-        // member would be emitted as if it were static ("invalid use of non-static data
-        // member").
+        // Flag non-static enclosing-class members reached without a handle as unsupported
         AstNode* offenderp = nullptr;
         const auto scanEnclosing = [&](AstNode* rootp) {
             rootp->foreach([&](AstVarRef* refp) {
                 if (offenderp) return;
-                const AstVar* const varp = refp->varp();  // Always set post-LinkDot
-                // A member of another class (the enclosing class) reached with no handle.
-                // Members of the covergroup class itself (sample/constructor args) are
-                // legitimate and excluded via ownVars.
+                const AstVar* const varp = refp->varp();
                 if (varp->isClassMember() && !ownVars.count(varp)) offenderp = refp;
             });
         };
         for (AstCoverpoint* cpp : m_coverpoints) scanEnclosing(cpp);
         for (AstCoverCross* crossp : m_coverCrosses) scanEnclosing(crossp);
         if (offenderp) return offenderp;
-        // Pass 2: the coverpoint expression dereferences a class handle to reach a member,
-        // e.g. a parameterized covergroup 'covergroup cg(cls st); coverpoint st.test;'.  The
-        // lowered covergroup class cannot resolve the handle argument, so lowering leaves a
-        // dangling VarRef and aborts in V3Broken ("Broken link ... VARREF").  AstMemberSel is
-        // class-handle member access only (packed-struct selects use AstStructSel and options
-        // use AstCoverOption), so scanning the value/iff expression will not flag supported
-        // coverpoints.
+        // Flag references to covergroup formal parameters as currently unsupported
         const auto scanHandleDeref = [&](AstNode* rootp) {
             if (!rootp) return;
             rootp->foreach([&](AstMemberSel* selp) {
@@ -1821,13 +1806,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             iterateChildren(nodep);
 
-            // Option B safety net for embedded covergroups: if a coverpoint/iff/cross
-            // references a member of the enclosing class (no handle to the enclosing
-            // instance), or dereferences a class-handle argument of a parameterized
-            // covergroup, lowering would emit uncompilable C++ or crash V3Broken with a
-            // dangling VarRef.  Skip this covergroup with a clean warning rather than
-            // failing.  (Full support - an enclosing back-pointer and handle-argument
-            // lowering - is the planned follow-up.)
+            // Identify embedded covergroup refs to enclosing class members or
+            // covergroup formal parameters and flag as currently unsupported.
             if (AstNode* const offenderp = findUnsupportedCoverpointRef(nodep)) {
                 const bool viaHandle = VN_IS(offenderp, MemberSel);
                 offenderp->v3warn(COVERIGN,

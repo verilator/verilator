@@ -5,17 +5,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test the graceful-degradation safety net for covergroups that cannot yet be lowered.
-// Two unsupported shapes must degrade to a clean COVERIGN warning (rather than emitting
-// uncompilable C++ or crashing) until full support exists:
-//   1. Embedded covergroup (the dominant UVM pattern): coverpoints reference members of
-//      the enclosing object.  The covergroup is lowered into a sibling class with no
-//      handle to the enclosing instance, so emitting it would produce uncompilable C++
-//      ("invalid use of non-static data member").
-//   2. Parameterized covergroup: a coverpoint dereferences a class-handle argument
-//      ('coverpoint st.test').  The lowered class cannot resolve the handle argument, so
-//      lowering leaves a dangling VarRef and aborts in V3Broken ("Broken link ... VARREF").
-// See https://github.com/verilator/verilator/issues/7853
+// Test that two currently-unsupported coverpoint reference styles are properly flagged
+// as COVIGN: references to containing-class members ; references to covergroup formal
+// parameters
 
 class ubus_transfer;
   bit [15:0] addr;
