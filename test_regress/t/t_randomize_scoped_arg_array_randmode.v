@@ -9,9 +9,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// Scoped this.randomize(scalar) while OTHER rand members are arrays that stay
-// frozen (rand_mode machinery engaged): the frozen array's element constraint
-// must format as a valid (select ...) pin, not (select <whole-array> idx).
+// Scoped randomize(scalar) while frozen rand array members are constrained.
 typedef int unsigned uint;
 
 class Base;
@@ -183,9 +181,7 @@ module t;
       end
     end
 
-    // Never-populated assoc array: the declared solver domain must still match
-    // the constraint keys (128-bit string); the frozen default 0 then honestly
-    // violates membership on the scoped call.
+    // Never-populated assoc array: frozen default fails membership on the scoped call.
     begin
       EmptyAssoc ea;
       ea = new;

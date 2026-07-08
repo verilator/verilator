@@ -105,9 +105,7 @@ public:
         return count;
     }
 };
-// Compile-time SMT key widths of nested associative-array levels; matches the
-// key formats emitted by V3Randomize (string = 128, integral = 8 * sizeof).
-// Recursion stops at non-assoc levels, which keep the 32-bit default.
+// SMT key width per associative-array level (string = 128, integral = 8 * sizeof).
 template <typename T>
 struct VlRandomAssocKeyWidths final {
     static void push(std::vector<size_t>&) {}
@@ -193,9 +191,7 @@ public:
             }
         } else {
             if (dimension() > 0) {
-                // No recorded element (array empty at write_var time): fall back
-                // to the static per-level key widths so the declared domain still
-                // matches the constraint text (e.g. 128-bit string keys)
+                // Empty array: declare from the static key widths, not a 32-bit default.
                 for (int i = 0; i < dimension(); ++i) {
                     const size_t idxWidth = i < static_cast<int>(m_fallbackIdxWidths.size())
                                                 ? m_fallbackIdxWidths[i]

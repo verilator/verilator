@@ -631,10 +631,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
             handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
-        // Re-mark members now that the class is IS_RANDOMIZED_INLINE: the
-        // markMembers call above ran before the upgrade, so non-argument
-        // members would have no rand_mode machinery and be re-randomized
-        // instead of staying frozen (IEEE 1800-2023 18.11)
+        // Re-mark members after the class became inline-randomized above.
         if (classp && classp->user1() == IS_RANDOMIZED_INLINE) markMembers(classp);
     }
     void visit(AstConstraintUnique* nodep) override {
@@ -1866,13 +1863,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        // Like visit(AstArraySel), keep a pre-edit clone so a rand_mode-gated base
-        // array can be hoisted below (inactive branch = element's current value).
-        // Assoc keys are always runtime-formatted below (never solver symbols),
-        // so the hoist is valid for rand keys too.
+        // Keep a pre-edit clone for the rand_mode hoist below.
         AstNodeExpr* const origp = nodep->cloneTree(false);
         AstSFormatF* newp = nullptr;
-        // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
@@ -1950,9 +1943,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             editSMT(nodep, nodep->fromp(), indexp);
         } else {
             // Index is constant or non-rand -- format as hex literal.
-            // Keep a pre-edit clone: if the base var is gated by a runtime
-            // rand_mode test, the inactive branch below must evaluate the
-            // element's current value.
+            // Keep a pre-edit clone for the rand_mode hoist below.
             AstNodeExpr* const origp = nodep->cloneTree(false);
             AstNodeExpr* const indexp
                 = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
@@ -1963,12 +1954,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
     }
-    // True only for the runtime rand_mode gate built by visit(AstNodeVarRef*):
-    // an ARRAY_AT read whose target is some class's cached instance mode var
-    // (the var's user2p and the class's user2p point at each other). A user
-    // ternary between two rand arrays also reaches the walk below as a
-    // formatted Cond, but its condition never reads a mode array. Static
-    // rand mode arrays are not detected (not hoisted).
+    // True iff exprp is an ARRAY_AT read of a class's own instance mode array.
     static bool isRandModeGate(const AstNodeExpr* exprp) {
         const AstCMethodHard* const atp = VN_CAST(exprp, CMethodHard);
         if (!atp || atp->method() != VCMethod::ARRAY_AT) return false;
@@ -1982,15 +1968,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstClass* const classp = VN_CAST(varp->user2p(), Class);
         return classp && classp->user2p() == varp;
     }
-    // A rand var gated by a runtime rand_mode test was formatted by
-    // visit(AstNodeVarRef*) as (mode.at(i) ? "<name>" : "<whole value>").
-    // Inside a "(select %s %s)" chain the inactive branch would splice the
-    // WHOLE array's value in as a scalar literal -- not valid SMT (z3:
-    // "unknown constant"/"select requires 1 arguments"). Rebuild as
-    //   mode.at(i) ? "(select <name> <idx>)..." : "<element value>"
-    // hoisting the mode test above the whole select chain; the inactive
-    // branch formats the current value of the selected element instead.
-    // Returns true if it consumed origp (the pre-edit clone of the select).
+    // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
     bool hoistRandModeOverSelect(AstSFormatF* newp, AstNodeExpr* origp) {
         // Only for selects yielding a non-array element (full chains)
         if (VN_IS(origp->dtypep()->skipRefp(), UnpackArrayDType)) return false;
@@ -2395,12 +2373,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
 
         if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
-            // Queue/dynamic-array element access. Like visit(AstArraySel), keep a
-            // pre-edit clone so a rand_mode-gated base array can be hoisted below
-            // (its inactive branch must evaluate the element's current value, not
-            // the whole array -- whose const format is empty for a queue). Only
-            // for a non-rand index; a rand index against a frozen array would
-            // need the whole array as an SMT term.
+            // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index only.
             bool indexIsRand = false;
             if (nodep->pinsp()) {
                 nodep->pinsp()->foreach([&](const AstNodeVarRef* vrefp) {
