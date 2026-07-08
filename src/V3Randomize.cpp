@@ -4605,11 +4605,6 @@ class RandomizeVisitor final : public VNVisitor {
             AstVar* const varp = mselp->varp();
             const RandomizeMode rmode = {.asInt = varp->user1()};
             if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
-            if (varp->lifetime().isStatic()) {
-                if (AstNodeExpr* const readp = staticModeRead(varp))
-                    addModeGate(readp, rmode.index);
-                return;
-            }
             AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
             if (!memberModep) return;
             AstMemberSel* const modeSelp
