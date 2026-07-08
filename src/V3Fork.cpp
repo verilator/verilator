@@ -561,10 +561,9 @@ class ForkVisitor final : public VNVisitor {
     // replace body with a call to that task. Returns true iff wrapped.
     bool taskify(AstBegin* beginp) {
         // Visit statement to gather variables (And recursively process)
-        VL_RESTORER(m_forkLocalsp);
+        VL_RESTORER_CLEAR(m_forkLocalsp);
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedArgsp);
-        m_forkLocalsp.clear();
         m_capturedVarsp = nullptr;
         m_capturedArgsp = nullptr;
         iterate(beginp);

@@ -9,38 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+# Note: This test is historical for the isolate_assignments attribute, which
+# was deprecated and has no effect today. This test ensures it still parses
+# in SystemVerilog and Verilator control files for backward compatibility.
+
+test.scenarios('vlt')
 test.top_filename = "t/t_unopt_combo.v"
 
-out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
-
-test.compile(verilator_flags2=[
-    "--no-json-edit-nums", "--stats", test.t_dir +
-    "/t_unopt_combo_isolate.vlt", "-fno-dfg", "-fno-lift-expr"
-])
-
-if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, isolate_assignments blocks\s+4')
-    test.file_grep(
-        out_filename,
-        r'{"type":"VAR","name":"t.b",.*"loc":"\w,23:[^"]*",.*"origName":"b",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
-    )
-    test.file_grep(
-        out_filename,
-        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__Vfuncout",.*"loc":"\w,104:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
-    )
-    test.file_grep(
-        out_filename,
-        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__t_crc",.*"loc":"\w,105:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
-    )
-    test.file_grep(
-        out_filename,
-        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_crc",.*"loc":"\w,115:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
-    )
-    test.file_grep(
-        out_filename,
-        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_c",.*"loc":"\w,116:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_c",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
-    )
+test.compile(verilator_flags2=[test.t_dir + "/t_unopt_combo_isolate.vlt"])
 
 test.execute()
 

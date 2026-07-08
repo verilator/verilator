@@ -195,6 +195,8 @@ public:
         UASSERT_OBJ(m_dtype.isPacked(), this, "Non packed vertex has no 'width'");
         return m_dtype.size();
     }
+    // Has terminating side-effect
+    bool unsafe() const;
 
     // Type check vertex (for debugging)
     void typeCheck(const DfgGraph& dfg) const;
@@ -484,9 +486,6 @@ public:
         for (const DfgConst& vtx : m_constVertices) f(vtx);
         for (const DfgVertex& vtx : m_opVertices) f(vtx);
     }
-
-    // Return an identical, independent copy of this graph. Vertex and edge order might differ.
-    std::unique_ptr<DfgGraph> clone() const VL_MT_DISABLED;
 
     // Merge contents of other graphs into this graph. Deletes the other graphs.
     // DfgVertexVar instances representing the same Ast variable are unified.
@@ -817,8 +816,11 @@ bool DfgVertex::isCheaperThanLoad() const {
     if (is<DfgConst>()) return true;
     // Variables
     if (is<DfgVertexVar>()) return true;
-    // Array sels are just address computation
-    if (is<DfgArraySel>()) return true;
+    // Array sels are just address computation, but the address itself can be expensive
+    if (const DfgArraySel* aselp = cast<DfgArraySel>()) {
+        if (aselp->bitp()->is<DfgMatchMasked>()) return false;
+        return true;
+    }
     // Small select from variable
     if (const DfgSel* const selp = cast<DfgSel>()) {
         if (!selp->fromp()->is<DfgVarPacked>()) return false;

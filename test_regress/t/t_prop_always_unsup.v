@@ -8,9 +8,6 @@ module t (input clk);
   logic a;
   logic b;
 
-  // IEEE-legal but engine has no sim-end liveness.
-  assert property (@(posedge clk) always [2:$] a);
-
   // Nested sequence/property operators inside bounded always.
   assert property (@(posedge clk) always [0:3] (a |-> b));
   assert property (@(posedge clk) always [0:3] (a |=> b));

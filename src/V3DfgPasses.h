@@ -41,15 +41,12 @@ void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Synthesize DfgLogic vertices into primitive operations.
 // Removes all DfgLogic (even those that were not synthesized).
 void synthesize(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Remove redundant selects
+void removeSelects(DfgGraph& dfg, V3DfgRemoveSelectsContext& ctx) VL_MT_DISABLED;
 // Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
-// equivalent. If the returned pointer is null, then no improvement was
-// possible on the input graph. Otherwise the returned graph is an improvement
-// on the input graph, with at least some cycles eliminated. The returned
-// graph is always independent of the original. If an imporoved graph is
-// returned, then the returned 'bool' flag indicated if the returned graph is
-// acyclic (flag 'true'), or still cyclic (flag 'false').
-std::pair<std::unique_ptr<DfgGraph>, bool>  //
-breakCycles(const DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// equivalent. Genuine combinational cycles can exist, so this might be
+// unsuccessful. Returns true if the graph became acyclic, false otherwise.
+bool breakCycles(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Construct binary to oneHot decoders
 void binToOneHot(DfgGraph&, V3DfgBinToOneHotContext&) VL_MT_DISABLED;
 // Common subexpression elimination
@@ -65,7 +62,8 @@ void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 // Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
 void dfgToAst(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Dump the patterns in the given graphs
-void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&) VL_MT_DISABLED;
+void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&,
+                  const std::string& suffix = "") VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations

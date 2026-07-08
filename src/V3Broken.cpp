@@ -252,18 +252,15 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_inScope);
         m_inScope = true;
-        VL_RESTORER(m_cFuncNames);
-        m_cFuncNames.clear();
+        VL_RESTORER_CLEAR(m_cFuncNames);
         processAndIterate(nodep);
     }
     void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_cFuncNames);
-        m_cFuncNames.clear();
+        VL_RESTORER_CLEAR(m_cFuncNames);
         processAndIterate(nodep);
     }
     void visit(AstNodeUOrStructDType* nodep) override {
-        VL_RESTORER(m_cFuncNames);
-        m_cFuncNames.clear();
+        VL_RESTORER_CLEAR(m_cFuncNames);
         processAndIterate(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {

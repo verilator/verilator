@@ -337,6 +337,7 @@ public:
 
     ~VlProcess() {
         if (m_parentp) m_parentp->detach(this);
+        if (t_currentp == this) t_currentp = m_parentp.get();
     }
 
     void attach(VlProcess* childp) { m_children.insert(childp); }
@@ -2069,8 +2070,24 @@ struct VlNull final {
     operator T*() const {
         return nullptr;
     }
+    template <class T>
+    bool operator==(T* rhs) const {
+        return !rhs;
+    }
+    template <class T>
+    bool operator==(const T* rhs) const {
+        return !rhs;
+    }
 };
-inline bool operator==(const void* ptr, VlNull) { return !ptr; }
+
+template <class T>
+inline bool operator==(T* lhs, VlNull) {
+    return !lhs;
+}
+template <class T>
+inline bool operator==(const T* lhs, VlNull) {
+    return !lhs;
+}
 
 //===================================================================
 // Verilog class reference container

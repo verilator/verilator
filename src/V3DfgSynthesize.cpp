@@ -402,6 +402,29 @@ class AstToDfgConverter final : public VNVisitor {
         DfgVertex* const vtxp = make<DfgCReset>(nodep->fileline(), *dtypep);
         nodep->user2p(vtxp);
     }
+    void visit(AstMatchMasked* nodep) override {
+        UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
+        UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
+        if (unhandled(nodep)) return;
+
+        const DfgDataType* const dtypep = DfgDataType::fromAst(nodep->dtypep());
+        if (!dtypep) {
+            m_foundUnhandled = true;
+            ++m_ctx.m_conv.nonRepDType;
+            return;
+        }
+
+        iterate(nodep->lhsp());
+        if (m_foundUnhandled) return;
+        iterate(nodep->matchp());
+        if (m_foundUnhandled) return;
+
+        FileLine* const flp = nodep->fileline();
+        DfgMatchMasked* const vtxp = make<DfgMatchMasked>(flp, *dtypep);
+        vtxp->lhsp(nodep->lhsp()->user2u().to<DfgVertex*>());
+        vtxp->matchp(nodep->matchp()->user2u().to<DfgVertex*>());
+        nodep->user2p(vtxp);
+    }
     void visit(AstReplicate* nodep) override {
         UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
         UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");
@@ -1982,6 +2005,11 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
         if (!logicp) continue;
+        // If drives an unused variable, synthesize it so the partial logic can be removed
+        if (logicp->drivesUnusedVars()) {
+            worklist.push_front(*logicp);
+            continue;
+        }
         // Blocks corresponding to continuous assignments
         if (logicp->nodep()->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             worklist.push_front(*logicp);
@@ -1993,10 +2021,8 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
             worklist.push_front(*logicp);
             continue;
         }
-        // Simple blocks driving exactly 1 variable, e.g if (rst) a = b else a = c;
-        if (!logicp->hasMultipleSinks() && cfg.nBlocks() <= 4 && cfg.nEdges() <= 4) {
-            worklist.push_front(*logicp);
-        }
+        // Blocks driving exactly 1 variable
+        if (!logicp->hasMultipleSinks()) worklist.push_front(*logicp);
     }
 
     // Now expand to cover all logic driving the same set of variables and mark

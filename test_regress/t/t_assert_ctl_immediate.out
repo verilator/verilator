@@ -1,6 +1,15 @@
-[0] %Error: t_assert_ctl_immediate.v:51: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
--Info: t/t_assert_ctl_immediate.v:51: Verilog $stop, ignored due to +verilator+error+limit
-[0] %Error: t_assert_ctl_immediate.v:57: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:45: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate.v:45: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:52: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+-Info: t/t_assert_ctl_immediate.v:52: Verilog $stop, ignored due to +verilator+error+limit
+[0] %Error: t_assert_ctl_immediate.v:58: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:46: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:46: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:159: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:132: Assertion failed in top.t.module_with_method_ctl.Ctl.check_positive: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:169: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:93: Assertion failed in top.t.module_with_method_ctl.iface.check_positive: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:180: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:186: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:195: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:199: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:203: Assertion failed in top.t.module_with_method_ctl: 'assert' failed.
 *-* All Finished *-*

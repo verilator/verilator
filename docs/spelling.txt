@@ -477,6 +477,7 @@ Syms
 Synopsys
 SystemC
 SystemVerilog
+Szpotanski
 Takatsukasa
 Tambe
 Tarik
@@ -537,6 +538,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+VlRNG
 VlWide
 Vlip
 Vm
@@ -684,6 +686,7 @@ countones
 cout
 covergroup
 covergroups
+coverpoint
 coverpoints
 cpp
 cppstyle
@@ -861,6 +864,7 @@ hx
 hyperthreading
 hyperthreads
 icecream
+ico
 idmap
 ifdef
 ifdefed
@@ -916,6 +920,7 @@ linters
 linux
 liu
 livelock
+liveness
 lldb
 ln
 loc
@@ -924,6 +929,7 @@ localparams
 localtime
 logicals
 longint
+lookups
 lossy
 lsb
 lubc
@@ -943,6 +949,7 @@ misconnected
 misconversion
 misdetecting
 misoptimized
+misoptimizing
 missized
 mk
 mno
@@ -1204,6 +1211,7 @@ typename
 uint
 un
 unbased
+unclocked
 uncomment
 undef
 undefineall

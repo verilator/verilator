@@ -48,6 +48,6 @@ test.compile(
 test.execute()
 
 # Must be <<9000 above to prove this worked
-test.file_grep(test.stats, r'Optimizations, Gate sigs deleted\s+(\d+)', 8550)
+test.file_grep(test.stats, r'Optimizations, Gate signals inlined\s+(\d+)', 8550)
 
 test.passes()

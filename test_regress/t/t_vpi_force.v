@@ -175,8 +175,7 @@ typedef enum byte {
   //   - Continuous assignments do not work
   //   - vpi_handle_by_multi_index is not implemented
   //   - vpi_handle_by_name and vpi_handle_by_index fail with negative indices
-  //  Hence, these signals are excluded from testing with Icarus. Recommend
-  //  Xcelium for cross-checking results.
+  //  Hence, these signals are excluded from testing with Icarus.
 `ifndef IVERILOG
   // Force the entire packed array (no partial forcing possible, because
   // partial indexing only works for bits, not dimension slices)
@@ -2422,10 +2421,8 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     svReleaseValues();
     #8 svCheckValuesReleased();
 
-    // Icarus does not support forcing single bits through VPI
-`ifndef IVERILOG
-    // Xcelium supports forcing single bits through VPI, but crashes on some signals
-`ifndef XRUN
+`ifndef IVERILOG  // Does not support forcing single bits through VPI
+`ifndef XRUN  // Supports forcing single bits through VPI, but crashes on some signals
 
     // Force single bit through VPI, release through VPI
     if (`verbose) $display("*** Forcing single bit through VPI, releasing through VPI ***");

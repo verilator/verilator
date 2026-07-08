@@ -529,8 +529,46 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                                + entry.m_memberp->name());
     }
 
+    // Create the input change detect SenTrees.
+    // If there is a lot of combinationallogic hanging of the top level inputs, we can save
+    // a lot of work by only evaluating it if an input has actually changed. This in
+    // paticular helps hierarchical models partitioned across combinaitonal boundaries.
+    // The change detect itself should be fairly cheap otherwise so alway do it.
+    // For correctness, don't create a change detect for top level inputs also written
+    // by the design, as the change detect 'previous value' would get out of sync.
+    // Also omit a SenTree for types that don't have the required '!=' operator.
+    // Any signal that does not have an explicit change detect trigger will fall back to
+    // using the 'first iteration' trigger, same as if this optimization was disabled.
+    std::unordered_map<const AstVarScope*, AstSenTree*> inp2changedp;
+    std::vector<AstSenTree*> icoChangeSenTreeps;
+    if (v3Global.opt.fIcoChangeDetect().isTrue()) {
+        FileLine* const flp = netlistp->fileline();
+        AstScope* const scopep = netlistp->topScopep()->scopep();
+        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            // Only for top level ports, assume outputs don't change externally
+            if (!vscp->varp()->isPrimaryInish()) continue;
+            // Don't do if written by the design - wouldn't update the change detect 'prev' value
+            if (vscp->varp()->icoMaybeWritten()) continue;
+            // Don't do if forceable, as we can't see the actual value - this is belt and braces
+            if (vscp->varp()->isForced()) continue;
+            // Can't handle unpacked arrays (they have special types when primary input)
+            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) continue;
+            // Similarly to arrays, can't handle SystemC types
+            if (vscp->varp()->isSc()) continue;
+            // Create a sen tree triggered when this input changes
+            AstSenTree*& senTreepr = inp2changedp[vscp];
+            UASSERT_OBJ(!senTreepr, vscp, "Duplicate input change detect trigger");
+            AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
+            AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_CHANGED, refp};
+            senTreepr = new AstSenTree{flp, senItemp};
+            icoChangeSenTreeps.push_back(senTreepr);
+        }
+    }
+    V3Stats::addStat("Scheduling, 'ico' change detect triggers", icoChangeSenTreeps.size());
+
     // Gather the relevant sensitivity expressions and create the trigger kit
-    const auto& senTreeps = getSenTreesUsedBy({&logic});
+    std::vector<const AstSenTree*> senTreeps = getSenTreesUsedBy({&logic});
+    senTreeps.insert(senTreeps.end(), icoChangeSenTreeps.begin(), icoChangeSenTreeps.end());
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, {},
                                                   senTreeps, "ico", extraTriggers, false, false);
     std::ignore = senExprBuilder.getAndClearResults();
@@ -543,14 +581,14 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Remap sensitivities
     remapSensitivities(logic, trigKit.mapVec());
+    for (auto& pair : inp2changedp) pair.second = trigKit.mapVec().at(pair.second);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     V3Order::TrigToSenMap trigToSen;
     invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
 
-    // The trigger top level inputs (first iteration)
-    AstSenTree* const inputChanged
-        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
+    // The 'first iteration' trigger for top level inputs - lazy constructed only if needed
+    AstSenTree* firstIterTriggerp = nullptr;
 
     // The DPI Export trigger
     AstSenTree* const dpiExportTriggered
@@ -565,9 +603,19 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         netlistp, {&logic}, trigToSen, "ico", false, false,
         [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             AstVar* const varp = vscp->varp();
-            if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
-                out.push_back(inputChanged);
+            // If it has an explicit change detect trigger, use that,
+            // otherwise fall back to using the 'first iteration' trigger
+            auto it = inp2changedp.find(vscp);
+            if (it != inp2changedp.end()) {
+                out.push_back(it->second);
+            } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
+                if (!firstIterTriggerp) {
+                    firstIterTriggerp
+                        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
+                }
+                out.push_back(firstIterTriggerp);
             }
+            // Add other triggers
             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
             if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                 const auto& ifaceTriggered
@@ -593,8 +641,14 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         // Work statements: Invoke the 'ico' function
         util::callVoidFunc(icoFuncp));
 
-    // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
+    // Add the first iteration trigger to the trigger computation function - if used
+    if (firstIterTriggerp) {
+        trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
+    }
+
+    // Release temporary input change detect SenTrees
+    for (AstSenTree* const senTreep : icoChangeSenTreeps) senTreep->deleteTree();
+    icoChangeSenTreeps.clear();
 
     return icoLoop.stmtsp;
 }

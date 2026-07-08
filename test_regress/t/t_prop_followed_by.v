@@ -4,11 +4,10 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkd(gotv, expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); \
-    $stop; \
-  end while (0);
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -25,9 +24,12 @@ module t (
   integer impl_f = 0;
   integer nimp_f = 0;
   integer wide_f = 0;
+  integer action_hits = 0;
 
   // Smoke: trivially-true forms must compile and never fail.
   assert property (@(posedge clk) 1'b1 #-# 1'b1);
+  assert property (@(posedge clk) 1'b1 #-# 1'b1)
+    action_hits++;
   assert property (@(posedge clk) 0 |-> (0 #-# 0));
   assert property (@(posedge clk) 0 |-> (0 #=# 0));
 
@@ -51,13 +53,11 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 32) begin
-      // Counts are deterministic for this CRC seed. Questa reference run
-      // (IEEE 1800-2023 16.12.9) reports ovl=28, novl=19, impl=9, nimp=0; the
       // ovl/novl deltas vs Verilator are 1-cycle preponed-sampling differences.
       $display("ovl=%0d novl=%0d impl=%0d nimp=%0d wide=%0d", ovl_f, novl_f, impl_f, nimp_f,
                wide_f);
-      `checkd(ovl_f, 29);
-      `checkd(novl_f, 20);
+      `checkd(ovl_f, 29);  // Other sims: 28, one other sim: 5
+      `checkd(novl_f, 20);  // Other sims: 19
       `checkd(impl_f, 9);
       `checkd(nimp_f, 0);
       `checkd(wide_f, 0);

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_constraint_global_cls_arr_2d_unsup.v:13:12: Unsupported: Nested array element access in global constraint
+                                                                  : ... note: In instance 't'
+   13 |   rand Foo foo_arr[$][];
+      |            ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -45,7 +45,7 @@ jobs:
       cases: ${{ steps.cases.outputs.cases }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
 
       - name: Startup
         id: start
@@ -65,39 +65,47 @@ jobs:
   build-gcc-new:
     name: Build New Verilator - GCC
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-clang-new:
     name: Build New Verilator - Clang
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-gcc-old:
     name: Build Old Verilator - GCC
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   build-clang-old:
     name: Build Old Verilator - Clang
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:
@@ -208,7 +216,7 @@ jobs:
         run: echo "tags=$(jq -r 'keys | map(sub("^run-"; "")) | join(" ")' <<< '${{ toJSON(needs) }}')" >> "$GITHUB_OUTPUT"
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -232,7 +240,7 @@ jobs:
             ./rtlmeter collate ../all-results-$tag/*.json > ../all-results-$tag.json
           done
       - name: Upload combined results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: all-results-*.json
           name: all-results
@@ -259,7 +267,7 @@ jobs:
           done
       - name: Upload reference results
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: all-reference-*.json
           name: all-reference
@@ -278,27 +286,27 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: all-results
           path: results
       - name: Upload published results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: results/*.json
           name: published-results
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
+          client-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
           owner: verilator
           repositories: verilator-rtlmeter-results
           permission-contents: write
       - name: Checkout verilator-rtlmeter-results
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
@@ -331,7 +339,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout RTLMeter
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -341,7 +349,7 @@ jobs:
         run: make venv
 
       - name: Checkout Verilator
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
           path: verilator
 
@@ -367,13 +375,13 @@ jobs:
           echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
 
       - name: Upload report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: report-artifact
           name: rtlmeter-report
 
       - name: Upload notification
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           path: notification-artifact
           name: pr-notification
@@ -392,9 +400,9 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
+          client-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
           owner: verilator
           repositories: verilator

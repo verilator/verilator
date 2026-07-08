@@ -12,7 +12,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.049 devel],
+AC_INIT([Verilator],[5.051 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -128,6 +128,21 @@ AC_ARG_ENABLE([dev-gcov],
                CFG_WITH_DEV_GCOV=no)
 AC_SUBST(CFG_WITH_DEV_GCOV)
 AC_MSG_RESULT($CFG_WITH_DEV_GCOV)
+
+# Flag to reduce the debug info in the debug executable to minimize its size
+AC_MSG_CHECKING(whether to reduce debug info in the debug executable)
+AC_ARG_ENABLE([light-debug],
+              [AS_HELP_STRING([--enable-light-debug],
+                              [Reduce the amount of debug information in the debug
+                               Verilator executable to minimize its size. Enable
+                               slight optimization. Enough for backtraces only.])],
+              [case "${enableval}" in
+                yes) CFG_WITH_LIGHT_DEBUG=yes ;;
+                no)  CFG_WITH_LIGHT_DEBUG=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-light-debug]) ;;
+               esac],
+               CFG_WITH_LIGHT_DEBUG=no)
+AC_MSG_RESULT($CFG_WITH_LIGHT_DEBUG)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -518,15 +533,27 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
-if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  # Slight optimization and minimal compressed debug info. This is enough for
+  # --gdb/--gdbbt backtraces, but omits the bulk of the debug info, which
+  # significantly reduces object file sizes. For CI or release builds.
+  if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+  fi
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb1)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-fdebug-info-for-profiling) # For fully-qualified names with clang
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
+else
+  # Full debug: no optimization, full debug info, for development.
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-O0)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
 fi
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
 AC_SUBST(CFG_CXXFLAGS_DBG)
 
 # Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
-_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+fi
 AC_SUBST(CFG_LDFLAGS_DBG)
 
 # Flags for compiling the optimized version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
@@ -588,6 +615,34 @@ m4_foreach([ldflag], [
     ])
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
+
+# Find link flags for runtime VPI library loading (+verilator+vpi+<lib>).
+# The model executable must export its VPI symbols so the dlopen'd library can
+# resolve them: -rdynamic (GNU ld) or -Wl,-export_dynamic (Darwin); the first the
+# linker accepts wins.  -ldl provides dlopen/dlsym where it is a separate library.
+_MY_LDLIBS_CHECK_SET(CFG_LDFLAGS_DYNAMIC, -rdynamic)
+# -Wl,-export_dynamic contains a comma, so probe it directly rather than through
+# the _MY_LDLIBS_CHECK_* macros (which re-expand their flag argument unquoted).
+if test "$CFG_LDFLAGS_DYNAMIC" = ""; then
+  ACO_SAVE_LIBS="$LIBS"
+  LIBS="$LIBS -Wl,-export_dynamic"
+  AC_MSG_CHECKING([whether $CXX linker accepts -Wl,-export_dynamic])
+  AC_LINK_IFELSE(
+       [AC_LANG_PROGRAM([[]])],
+       [_my_result=yes
+        if test -s conftest.err; then
+          if grep -e "-export_dynamic" conftest.err >/dev/null; then
+            _my_result=no
+          fi
+        fi],
+       [_my_result=no])
+  AC_MSG_RESULT($_my_result)
+  LIBS="$ACO_SAVE_LIBS"
+  if test "$_my_result" = "yes"; then CFG_LDFLAGS_DYNAMIC="-Wl,-export_dynamic"; fi
+fi
+AC_SUBST(CFG_LDFLAGS_DYNAMIC)
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_DYNAMIC, -ldl)
+AC_SUBST(CFG_LDLIBS_DYNAMIC)
 
 # If 'mold' is installed, use it to link for faster buildtimes
 _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -fuse-ld=mold)
