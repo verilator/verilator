@@ -297,6 +297,16 @@ public:
     AstSenTree* sentreep() const { return m_sentreep; }
     void clearSentreep() { m_sentreep = nullptr; }
 };
+class AstCLocalScope final : public AstNodeStmt {
+    // Pack statements into an unnamed scope when generating C++
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_CLocalScope(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCLocalScope;
+};
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
     // @astgen op1 := lhsp : AstNodeExpr
