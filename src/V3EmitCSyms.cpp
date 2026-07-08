@@ -1434,8 +1434,12 @@ void EmitCSyms::emitDpiHdr() {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
             putsDecoration(nodep, "// DPI import" + sourceLoc + "\n");
         }
-        putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
-                         + cFuncArgs(nodep) + ");\n");
+        if (nodep->dpiCDeclOverride()) {
+            putns(nodep, "extern " + nodep->dpiCDecl() + ";\n");
+        } else {
+            putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
+                             + cFuncArgs(nodep) + ");\n");
+        }
     }
 
     puts("\n");

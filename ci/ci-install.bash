@@ -41,6 +41,11 @@ if [ "$HOST_OS" = "linux" ]; then
   echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
   echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
   echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+elif [ "$HOST_OS" = "macOS" ]; then
+  # The macos runner image ships an untrusted third-party tap we don't use;
+  # untap it so brew stops emitting a tap-trust warning. Force + '|| true' since
+  # untap fails if a formula was installed from it, which is harmless here.
+  brew untap --force aws/tap || true
 fi
 
 install-wavediff() {
@@ -146,10 +151,21 @@ elif [ "$STAGE" = "test" ]; then
   install-wavediff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
+elif [ "$STAGE" = "lint-py" ]; then
+  # nodist/clang_check_attributes.
+  if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
+    PACKAGES=(
+      python3-clang  # Not run, but importers are linted
+    )
+    sudo apt-get update ||
+    sudo apt-get update
+    sudo apt-get install --yes "${PACKAGES[@]}" ||
+    sudo apt-get install --yes "${PACKAGES[@]}"
+  fi
 else
   ##############################################################################
   # Unknown build stage
-  fatal "Unknown stage '$STAGE' (expected 'build' or 'test')"
+  fatal "Unknown stage '$STAGE' (expected 'build', 'test' or 'lint-py')"
 fi
 
 # Report where the tools we may have installed live (ok if some are missing)

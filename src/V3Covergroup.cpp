@@ -1692,32 +1692,37 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    AstNode* findEnclosingMemberRef(AstClass* cgClassp) {
-        // An embedded covergroup is lowered into a sibling AstClass that has no handle to
-        // the enclosing object.  A coverpoint/iff/cross expression that references a
-        // (non-static) member of the enclosing class therefore emits C++ that accesses the
-        // member as if it were static ("invalid use of non-static data member").  Detect
-        // such references so the caller can skip lowering with a clean warning instead of
-        // producing uncompilable code.  Returns the first offending node, or nullptr.
-        // Collect the covergroup class's own member variables (sample/constructor args);
-        // references to those are legitimate.
+    AstNode* findUnsupportedCoverpointRef(AstClass* cgClassp) {
+        // An embedded covergroup is lowered into a sibling AstClass that (currently) has
+        // no handle to the enclosing object. Identify refs to the containing context
+        // or a formal param and flag as unsupported
         std::set<const AstVar*> ownVars;
         for (AstNode* itemp = cgClassp->membersp(); itemp; itemp = itemp->nextp()) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) ownVars.insert(varp);
         }
+        // Flag non-static enclosing-class members reached without a handle as unsupported
         AstNode* offenderp = nullptr;
-        const auto scan = [&](AstNode* rootp) {
+        const auto scanEnclosing = [&](AstNode* rootp) {
             rootp->foreach([&](AstVarRef* refp) {
                 if (offenderp) return;
-                const AstVar* const varp = refp->varp();  // Always set post-LinkDot
-                // A member of another class (the enclosing class) reached with no handle.
-                // Members of the covergroup class itself (sample/constructor args) are
-                // legitimate and excluded via ownVars.
+                const AstVar* const varp = refp->varp();
                 if (varp->isClassMember() && !ownVars.count(varp)) offenderp = refp;
             });
         };
-        for (AstCoverpoint* cpp : m_coverpoints) scan(cpp);
-        for (AstCoverCross* crossp : m_coverCrosses) scan(crossp);
+        for (AstCoverpoint* cpp : m_coverpoints) scanEnclosing(cpp);
+        for (AstCoverCross* crossp : m_coverCrosses) scanEnclosing(crossp);
+        if (offenderp) return offenderp;
+        // Flag references to covergroup formal parameters as currently unsupported
+        const auto scanHandleDeref = [&](AstNode* rootp) {
+            if (!rootp) return;
+            rootp->foreach([&](AstMemberSel* selp) {
+                if (!offenderp) offenderp = selp;
+            });
+        };
+        for (AstCoverpoint* cpp : m_coverpoints) {
+            scanHandleDeref(cpp->exprp());
+            scanHandleDeref(cpp->iffp());
+        }
         return offenderp;
     }
 
@@ -1801,16 +1806,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             iterateChildren(nodep);
 
-            // Option B safety net for embedded covergroups: if a coverpoint/iff/cross
-            // references a member of the enclosing class, lowering would emit uncompilable
-            // C++ (no handle to the enclosing instance).  Skip this covergroup with a clean
-            // warning rather than crashing the C++ compile.  (Full support - an enclosing
-            // back-pointer - is the planned follow-up.)
-            if (AstNode* const offenderp = findEnclosingMemberRef(nodep)) {
+            // Identify embedded covergroup refs to enclosing class members or
+            // covergroup formal parameters and flag as currently unsupported.
+            if (AstNode* const offenderp = findUnsupportedCoverpointRef(nodep)) {
+                const bool viaHandle = VN_IS(offenderp, MemberSel);
                 offenderp->v3warn(COVERIGN,
-                                  "Unsupported: 'covergroup' coverpoint referencing enclosing "
-                                  "class member; ignoring covergroup "
-                                      << nodep->prettyNameQ());
+                                  "Unsupported: 'covergroup' coverpoint "
+                                      << (viaHandle ? "dereferencing a class handle member "
+                                                      "(parameterized covergroup)"
+                                                    : "referencing enclosing class member")
+                                      << "; ignoring covergroup " << nodep->prettyNameQ());
                 for (AstCoverpoint* cpp : m_coverpoints) {
                     VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
                 }

@@ -45,9 +45,9 @@ on:
         value: ${{ jobs.build.outputs.archive }}
 
 env:
-  CCACHE_COMPRESS: 1
+  CACHE_BASE_KEY: build-${{ inputs.runs-on }}-${{ inputs.cc }}${{ inputs.ccwarn && '-ccwarn' || '' }}${{ inputs.dev-asan && '-asan' || '' }}${{ inputs.dev-gcov && '-gcov' || '' }}
+  CCACHE_COMPILERCHECK: content
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
 
 defaults:
   run:
@@ -61,9 +61,6 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     outputs:
       archive: ${{ steps.create-archive.outputs.archive }}
-    env:
-      CACHE_BASE_KEY: build-${{ inputs.runs-on }}-${{ inputs.cc }}
-      CCACHE_MAXSIZE: 1000M
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
@@ -74,7 +71,15 @@ jobs:
           # behind 'verilator --version'
           fetch-depth: ${{ (inputs.install || inputs.dev-gcov) && '0' || '1' }}
 
+      - name: Configure ccache
+        run: |
+          # ccache is unreliable on macOS, and does nothing with 'gcc --coverage'
+          if [ "${{ startsWith(inputs.runs-on, 'macos') }}" = true ] || [ "${{ inputs.dev-gcov }}" = true ]; then
+            echo "CCACHE_DISABLE=1" >> "$GITHUB_ENV"
+          fi
+
       - name: Cache $CCACHE_DIR
+        if: ${{ env.CCACHE_DISABLE != '1' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
         env:
           CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
@@ -82,7 +87,7 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CACHE_KEY }}-${{ inputs.sha }}
           restore-keys: |
-            ${{ env.CACHE_KEY }}-
+            ${{ env.CACHE_KEY }}
 
       - name: Install packages for build
         run: ./ci/ci-install.bash build

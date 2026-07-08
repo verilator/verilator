@@ -26,8 +26,6 @@ case "$(uname -s)" in
     HOST_OS=macOS
     MAKE=make
     NPROC=$(sysctl -n hw.logicalcpu)
-    # Disable ccache, doesn't always work in GitHub Actions
-    export OBJCACHE=
     ;;
   *)
     fatal "Unknown host OS: '$(uname -s)'"

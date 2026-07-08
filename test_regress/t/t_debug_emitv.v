@@ -138,6 +138,7 @@ module t (/*AUTOARG*/
   endfunction
 
   sub sub(.*);
+  seq_event seq_event(.*);
 
   initial begin
     int other;
@@ -441,6 +442,16 @@ module sub(input logic clk);
     return {31'd0, v[2]} + 32'd1;
   endfunction
   real r;
+endmodule
+
+module seq_event(input logic clk);
+  bit a, b, c;
+  sequence sq;
+    @(posedge clk) a ##1 b ##1 c;
+  endsequence
+  initial begin
+    @sq;
+  end
 endmodule
 
 package p;
