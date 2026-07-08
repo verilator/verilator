@@ -29,6 +29,12 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+static void markContinuousLhs(AstNode* const nodep) {
+    nodep->foreach([](AstNodeVarRef* refp) {
+        if (refp->access().isWriteOrRW()) refp->varp()->isContinuously(true);
+    });
+}
+
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
@@ -73,16 +79,17 @@ class InstVisitor final : public VNVisitor {
             } else if (nodep->modVarp()->isWritable()) {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
+                markContinuousLhs(exprp);
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
                 m_cellp->addNextHere(new AstAlways{assp});
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstAssignW* const assp
-                    = new AstAssignW{exprp->fileline(),
-                                     new AstVarXRef{exprp->fileline(), nodep->modVarp(),
-                                                    m_cellp->name(), VAccess::WRITE},
-                                     exprp};
+                AstVarXRef* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
+                                                        m_cellp->name(), VAccess::WRITE};
+
+                markContinuousLhs(lhsp);
+                AstAssignW* const assp = new AstAssignW{exprp->fileline(), lhsp, exprp};
                 m_cellp->addNextHere(new AstAlways{assp});
                 UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
@@ -903,9 +910,11 @@ public:
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef{newvarp->fileline(), newvarp, VAccess::WRITE});
                 AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                markContinuousLhs(pinexprp);
                 assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
             } else {
                 // V3 width should have range/extended to make the widths correct
+                newvarp->isContinuously(true);
                 assignp = new AstAssignW{pinp->fileline(),
                                          new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
                                          pinexprp};
