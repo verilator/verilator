@@ -9,10 +9,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// A dist constraint on a variable that is frozen at randomize() time
-// (rand_mode(0)) degrades to a membership test: weights cannot cause the
-// solver to fail (IEEE 1800-2023 18.5.3), but a frozen value outside the set
-// still violates membership.
+// A frozen dist variable degrades to a membership test (IEEE 1800-2023 18.5.3).
 typedef int unsigned uint;
 
 class Base;
@@ -34,6 +31,20 @@ endclass
 
 class MixVals extends Base;
   constraint c {x dist {0 := 1, [100:200] := 5, 9999 := 3};}
+endclass
+
+class DistInIf extends Base;
+  rand uint sel;
+  constraint c {
+    sel inside {0, 1};
+    if (sel == 1) x dist {5 := 9, 70 := 1};
+    else x == 4242;
+  }
+endclass
+
+class DistInForeach;
+  rand uint arr[4];
+  constraint c {foreach (arr[i]) arr[i] dist {10 := 9, 20 := 1};}
 endclass
 
 class StaticVar;
@@ -87,6 +98,8 @@ module t;
     Holder h;
     MultiVar m;
     RtWeight r;
+    DistInIf di;
+    DistInForeach df;
 
     // Frozen in the low-weight bucket -> succeeds, value untouched.
     sv = new;
@@ -273,6 +286,27 @@ module t;
       ok = r.randomize();
       `checkd(ok, 1);
       `checkd(r.x, 5);
+    end
+
+    // dist inside a constraint if: taken branch follows the dist, else pins 4242.
+    di = new;
+    for (int i = 0; i < 16; ++i) begin
+      ok = di.randomize();
+      `checkd(ok, 1);
+      if (di.sel == 1) begin
+        if (di.x != 5 && di.x != 70) `checkd(0, 1);
+      end else begin
+        `checkd(di.x, 4242);
+      end
+    end
+
+    // dist inside a constraint foreach: every element honors the set.
+    df = new;
+    for (int i = 0; i < 16; ++i) begin
+      ok = df.randomize();
+      `checkd(ok, 1);
+      foreach (df.arr[j])
+        if (df.arr[j] != 10 && df.arr[j] != 20) `checkd(0, 1);
     end
 
     $write("*-* All Finished *-*\n");

@@ -3314,9 +3314,7 @@ class RandomizeVisitor final : public VNVisitor {
             m_dynarrayDtp->dtypep(m_dynarrayDtp);
             v3Global.rootp()->typeTablep()->addTypesp(m_dynarrayDtp);
         }
-        // MEMBER, not MODULETEMP: V3Localize exempts class members; a temp whose
-        // only VarRefs sit in new() would be localized there, leaving the member
-        // read through member selects forever empty (= all inactive)
+        // MEMBER, not MODULETEMP, so V3Localize does not localize it into new().
         AstVar* const modeVarp = new AstVar{fl, VVarType::MEMBER, name, m_dynarrayDtp};
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
@@ -4459,6 +4457,188 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintIf{fl, condp, thenBodyp, nullptr};
     }
 
+    struct DistBucket final {
+        AstNodeExpr* rangep;  // A single value or an InsideRange
+        AstNodeExpr* weightExprp;  // Effective 64-bit weight (range weight scaled by size)
+    };
+
+    // Non-zero-weight buckets with each weight extended to 64 bits.
+    std::vector<DistBucket> collectDistBuckets(AstDist* distp) {
+        FileLine* const fl = distp->fileline();
+        std::vector<DistBucket> buckets;
+        for (AstDistItem* ditemp = distp->itemsp(); ditemp;
+             ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+            if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
+                if (constp->toUQuad() == 0) continue;
+            }
+            AstNodeExpr* weightExprp
+                = new AstExtend{fl, ditemp->weightp()->cloneTreePure(false), 64};
+            // := on a range weights every element, so scale by the range size.
+            if (!ditemp->isWhole()) {
+                if (const AstInsideRange* const irp = VN_CAST(ditemp->rangep(), InsideRange)) {
+                    const AstConst* const lop = VN_CAST(irp->lhsp(), Const);
+                    const AstConst* const hip = VN_CAST(irp->rhsp(), Const);
+                    AstNodeExpr* rangeSizep;
+                    if (lop && hip) {
+                        const uint64_t rangeSize = hip->toUQuad() - lop->toUQuad() + 1;
+                        rangeSizep = new AstConst{fl, AstConst::Unsized64{}, rangeSize};
+                    } else {
+                        rangeSizep = new AstAdd{
+                            fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                            new AstSub{fl,
+                                       new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
+                                       new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
+                        rangeSizep->dtypeSetUInt64();
+                    }
+                    weightExprp = new AstMul{fl, weightExprp, rangeSizep};
+                    weightExprp->dtypeSetUInt64();
+                }
+            }
+            buckets.push_back({ditemp->rangep(), weightExprp});
+        }
+        return buckets;
+    }
+
+    // Hard constraint that the dist value stays inside the union of its ranges
+    // (IEEE 1800-2023 18.5.3: values outside the set must never appear).
+    AstConstraintExpr* buildDistMembership(AstDist* distp,
+                                           const std::vector<DistBucket>& buckets) {
+        FileLine* const fl = distp->fileline();
+        const bool isSigned = distp->exprp()->isSigned();
+        AstNodeExpr* unionExprp = nullptr;
+        for (const auto& bucket : buckets) {
+            AstNodeExpr* memberp;
+            if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
+                AstNodeExpr* const gtExprp = distp->exprp()->cloneTreePure(false);
+                AstNodeExpr* const ltExprp = distp->exprp()->cloneTreePure(false);
+                gtExprp->user1(true);
+                ltExprp->user1(true);
+                AstNodeExpr* const gep
+                    = isSigned ? static_cast<AstNodeExpr*>(
+                                     new AstGteS{fl, gtExprp, irp->lhsp()->cloneTreePure(false)})
+                               : static_cast<AstNodeExpr*>(
+                                     new AstGte{fl, gtExprp, irp->lhsp()->cloneTreePure(false)});
+                AstNodeExpr* const lep
+                    = isSigned ? static_cast<AstNodeExpr*>(
+                                     new AstLteS{fl, ltExprp, irp->rhsp()->cloneTreePure(false)})
+                               : static_cast<AstNodeExpr*>(
+                                     new AstLte{fl, ltExprp, irp->rhsp()->cloneTreePure(false)});
+                gep->user1(true);
+                lep->user1(true);
+                memberp = new AstLogAnd{fl, gep, lep};
+            } else {
+                AstNodeExpr* const eqExprp = distp->exprp()->cloneTreePure(false);
+                eqExprp->user1(true);
+                memberp = new AstEq{fl, eqExprp, bucket.rangep->cloneTreePure(false)};
+            }
+            memberp->user1(true);
+            if (!unionExprp) {
+                unionExprp = memberp;
+            } else {
+                unionExprp = new AstLogOr{fl, memberp, unionExprp};
+                unionExprp->user1(true);
+            }
+        }
+        return new AstConstraintExpr{fl, unionExprp};
+    }
+
+    // Gate the weighted chain on the rand_mode bits of the dist's variables, so a
+    // frozen variable requires only membership, not a freshly drawn bucket.
+    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
+                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+        if (!chainp) return chainp;
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* gatep = nullptr;
+        std::unordered_set<const AstVar*> gatedVars;
+        const auto addModeGate = [&](AstNodeExpr* modeArrayp, uint32_t index) {
+            AstCMethodHard* const atp
+                = new AstCMethodHard{fl, modeArrayp, VCMethod::ARRAY_AT, new AstConst{fl, index}};
+            atp->dtypeSetUInt32();
+            if (gatep) {
+                gatep = new AstLogAnd{fl, gatep, atp};
+                gatep->dtypeSetBit();
+            } else {
+                gatep = atp;
+            }
+        };
+        const auto staticModeRead = [&](AstVar* varp) -> AstNodeExpr* {
+            AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
+            AstVar* const smodep = ownerp ? getStaticRandModeVar(ownerp) : nullptr;
+            if (!smodep) return nullptr;
+            return new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
+        };
+        // Direct var references and sub-object member references each carry a mode bit.
+        distp->exprp()->foreach([&](const AstNodeVarRef* refp) {
+            AstVar* const varp = refp->varp();
+            const RandomizeMode rmode = {.asInt = varp->user1()};
+            if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
+            if (varp->lifetime().isStatic()) {
+                if (AstNodeExpr* const readp = staticModeRead(varp))
+                    addModeGate(readp, rmode.index);
+            } else if (randModeVarp) {
+                addModeGate(new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule),
+                                          randModeVarp, VAccess::READ},
+                            rmode.index);
+            }
+        });
+        distp->exprp()->foreach([&](const AstMemberSel* mselp) {
+            AstVar* const varp = mselp->varp();
+            const RandomizeMode rmode = {.asInt = varp->user1()};
+            if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
+            if (varp->lifetime().isStatic()) {
+                if (AstNodeExpr* const readp = staticModeRead(varp))
+                    addModeGate(readp, rmode.index);
+                return;
+            }
+            AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+            if (!memberModep) return;
+            AstMemberSel* const modeSelp
+                = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
+            modeSelp->dtypep(memberModep->dtypep());
+            addModeGate(modeSelp, rmode.index);
+        });
+        if (!gatep) return chainp;
+
+        AstNodeExpr* unionExprp = nullptr;
+        for (auto& bucket : buckets) {
+            AstNodeExpr* termp;
+            if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
+                AstNodeExpr* const gtExprp = distp->exprp()->cloneTreePure(false);
+                AstNodeExpr* const ltExprp = distp->exprp()->cloneTreePure(false);
+                gtExprp->user1(true);
+                ltExprp->user1(true);
+                AstGte* const gtep = new AstGte{fl, gtExprp, irp->lhsp()->cloneTreePure(false)};
+                gtep->user1(true);
+                AstLte* const ltep = new AstLte{fl, ltExprp, irp->rhsp()->cloneTreePure(false)};
+                ltep->user1(true);
+                termp = new AstLogAnd{fl, gtep, ltep};
+                termp->user1(true);
+            } else {
+                AstNodeExpr* const eqExprp = distp->exprp()->cloneTreePure(false);
+                eqExprp->user1(true);
+                termp = new AstEq{fl, eqExprp, bucket.rangep->cloneTreePure(false)};
+                termp->user1(true);
+            }
+            // A weight that is zero only at runtime excludes the bucket's values too.
+            bool runtimeWeight = false;
+            bucket.weightExprp->foreach([&](const AstNodeVarRef*) { runtimeWeight = true; });
+            if (runtimeWeight) {
+                AstNeq* const nzp = new AstNeq{fl, bucket.weightExprp->cloneTreePure(false),
+                                               new AstConst{fl, AstConst::Unsized64{}, 0}};
+                nzp->user1(true);
+                termp = new AstLogAnd{fl, termp, nzp};
+                termp->user1(true);
+            }
+            if (unionExprp) {
+                unionExprp = new AstLogOr{fl, unionExprp, termp};
+                unionExprp->user1(true);
+            } else {
+                unionExprp = termp;
+            }
+        }
+        return new AstConstraintIf{fl, gatep, chainp, new AstConstraintExpr{fl, unionExprp}};
+    }
+
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
@@ -4484,21 +4664,16 @@ class RandomizeVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
             nextip = itemp->nextp();
 
-            // Recursively handle ConstraintIf nodes (dist can be inside if/else)
+            // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp())  // LCOV_EXCL_LINE
-                    lowerDistConstraints(taskp, cifp->thensp(), randModeVarp,  // LCOV_EXCL_LINE
-                                         foreachp);  // LCOV_EXCL_LINE
+                if (cifp->thensp())
+                    lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
                 if (cifp->elsesp())
                     lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
                 continue;
             }
-
-            // Recursively handle ConstraintForeach nodes (dist can be inside foreach)
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                if (cfep->bodyp())  // LCOV_EXCL_LINE
-                    lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp,  // LCOV_EXCL_LINE
-                                         cfep);  // LCOV_EXCL_LINE
+                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
                 continue;
             }
 
@@ -4528,48 +4703,7 @@ class RandomizeVisitor final : public VNVisitor {
 
             FileLine* const fl = distp->fileline();
 
-            struct BucketInfo final {
-                AstNodeExpr* rangep;
-                AstNodeExpr* weightExprp;  // Effective weight as AST expression
-            };
-            std::vector<BucketInfo> buckets;
-
-            for (AstDistItem* ditemp = distp->itemsp(); ditemp;
-                 ditemp = VN_AS(ditemp->nextp(), DistItem)) {
-                // Skip compile-time zero weights
-                if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
-                    if (constp->toUQuad() == 0) continue;
-                }
-
-                // Clone and extend weight to 64-bit
-                AstNodeExpr* weightExprp
-                    = new AstExtend{fl, ditemp->weightp()->cloneTreePure(false), 64};
-
-                // := is per-value weight; for ranges multiply by range size
-                if (!ditemp->isWhole()) {
-                    if (const AstInsideRange* const irp = VN_CAST(ditemp->rangep(), InsideRange)) {
-                        const AstConst* const lop = VN_CAST(irp->lhsp(), Const);
-                        const AstConst* const hip = VN_CAST(irp->rhsp(), Const);
-                        AstNodeExpr* rangeSizep;
-                        if (lop && hip) {
-                            const uint64_t rangeSize = hip->toUQuad() - lop->toUQuad() + 1;
-                            rangeSizep = new AstConst{fl, AstConst::Unsized64{}, rangeSize};
-                        } else {
-                            // Variable range bounds: (hi - lo + 1) at runtime
-                            rangeSizep = new AstAdd{
-                                fl, new AstConst{fl, AstConst::Unsized64{}, 1},
-                                new AstSub{
-                                    fl, new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
-                                    new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
-                            rangeSizep->dtypeSetUInt64();
-                        }
-                        weightExprp = new AstMul{fl, weightExprp, rangeSizep};
-                        weightExprp->dtypeSetUInt64();
-                    }
-                }
-
-                buckets.push_back({ditemp->rangep(), weightExprp});
-            }
+            std::vector<DistBucket> buckets = collectDistBuckets(distp);
 
             if (buckets.empty()) {
                 // All weights are zero: dist is vacuously true (unconstrained)
@@ -4580,46 +4714,7 @@ class RandomizeVisitor final : public VNVisitor {
                 continue;
             }
 
-            // IEEE 1800-2023 18.5.3: values not in the distribution must never appear.
-            // Build the union of all non-zero-weight ranges as a single hard ConstraintExpr
-            AstNodeExpr* unionExprp = nullptr;
-            for (const auto& bucket : buckets) {
-                AstNodeExpr* memberp;
-                if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
-                    // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
-                    const bool isSigned = distp->exprp()->isSigned();
-                    AstNodeExpr* const distExprGtep = distp->exprp()->cloneTreePure(false);
-                    AstNodeExpr* const distExprLtep = distp->exprp()->cloneTreePure(false);
-                    distExprGtep->user1(true);
-                    distExprLtep->user1(true);
-                    AstNodeExpr* const gep
-                        = isSigned ? static_cast<AstNodeExpr*>(new AstGteS{
-                                         fl, distExprGtep, irp->lhsp()->cloneTreePure(false)})
-                                   : static_cast<AstNodeExpr*>(new AstGte{
-                                         fl, distExprGtep, irp->lhsp()->cloneTreePure(false)});
-                    AstNodeExpr* const lep
-                        = isSigned ? static_cast<AstNodeExpr*>(new AstLteS{
-                                         fl, distExprLtep, irp->rhsp()->cloneTreePure(false)})
-                                   : static_cast<AstNodeExpr*>(new AstLte{
-                                         fl, distExprLtep, irp->rhsp()->cloneTreePure(false)});
-                    gep->user1(true);
-                    lep->user1(true);
-                    memberp = new AstLogAnd{fl, gep, lep};
-                } else {
-                    // distExpr == val
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    memberp = new AstEq{fl, distExprCopyp, bucket.rangep->cloneTreePure(false)};
-                }
-                memberp->user1(true);
-                if (!unionExprp) {
-                    unionExprp = memberp;
-                } else {
-                    unionExprp = new AstLogOr{fl, memberp, unionExprp};
-                    unionExprp->user1(true);
-                }
-            }
-            AstConstraintExpr* const membershipp = new AstConstraintExpr{fl, unionExprp};
+            AstConstraintExpr* const membershipp = buildDistMembership(distp, buckets);
 
             // Build totalWeight expression: w[0] + w[1] + ... + w[N-1]
             AstNodeExpr* totalWeightExprp = nullptr;
@@ -4746,112 +4841,7 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
 
-            // The bucket chain re-draws a bucket every randomize() call. If a
-            // mode-carrying variable of the dist expression is INACTIVE at that
-            // call (rand_mode(0) / not listed in a scoped randomize), its frozen
-            // value stays as-is and asserting the freshly drawn bucket is wrong:
-            // whenever the frozen value lies in a different bucket the constraint
-            // set is UNSAT and randomize() fails. Gate the chain on the
-            // conjunction of the runtime rand_mode bits of every referenced
-            // variable (direct, static, or sub-object member); when any is frozen
-            // require only membership in the union of the dist ranges, excluding
-            // runtime-zero weights (IEEE 1800-2023 18.5.3).
-            AstNodeExpr* gatep = nullptr;
-            std::unordered_set<const AstVar*> gatedVars;
-            const auto addModeGate = [&](AstNodeExpr* modeArrayp, uint32_t index) {
-                AstCMethodHard* const atp = new AstCMethodHard{fl, modeArrayp, VCMethod::ARRAY_AT,
-                                                               new AstConst{fl, index}};
-                atp->dtypeSetUInt32();
-                if (gatep) {
-                    gatep = new AstLogAnd{fl, gatep, atp};
-                    gatep->dtypeSetBit();
-                } else {
-                    gatep = atp;
-                }
-            };
-            const auto staticModeRead = [&](AstVar* varp) -> AstNodeExpr* {
-                AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
-                AstVar* const smodep = ownerp ? getStaticRandModeVar(ownerp) : nullptr;
-                if (!smodep) return nullptr;
-                return new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep,
-                                     VAccess::READ};
-            };
-            distp->exprp()->foreach([&](const AstNodeVarRef* refp) {
-                AstVar* const varp = refp->varp();
-                const RandomizeMode rmode = {.asInt = varp->user1()};
-                if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
-                if (varp->lifetime().isStatic()) {
-                    if (AstNodeExpr* const readp = staticModeRead(varp))
-                        addModeGate(readp, rmode.index);
-                } else if (randModeVarp) {
-                    addModeGate(new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule),
-                                              randModeVarp, VAccess::READ},
-                                rmode.index);
-                }
-            });
-            distp->exprp()->foreach([&](const AstMemberSel* mselp) {
-                AstVar* const varp = mselp->varp();
-                const RandomizeMode rmode = {.asInt = varp->user1()};
-                if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
-                if (varp->lifetime().isStatic()) {
-                    if (AstNodeExpr* const readp = staticModeRead(varp))
-                        addModeGate(readp, rmode.index);
-                    return;
-                }
-                AstVar* const memberModep
-                    = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
-                if (!memberModep) return;
-                AstMemberSel* const modeSelp
-                    = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
-                modeSelp->dtypep(memberModep->dtypep());
-                addModeGate(modeSelp, rmode.index);
-            });
-            if (chainp && gatep) {
-                AstNodeExpr* unionExprp = nullptr;
-                for (auto& bucket : buckets) {
-                    AstNodeExpr* termp;
-                    if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
-                        AstNodeExpr* const exprCopy1p = distp->exprp()->cloneTreePure(false);
-                        exprCopy1p->user1(true);
-                        AstNodeExpr* const exprCopy2p = distp->exprp()->cloneTreePure(false);
-                        exprCopy2p->user1(true);
-                        AstGte* const gtep
-                            = new AstGte{fl, exprCopy1p, irp->lhsp()->cloneTreePure(false)};
-                        gtep->user1(true);
-                        AstLte* const ltep
-                            = new AstLte{fl, exprCopy2p, irp->rhsp()->cloneTreePure(false)};
-                        ltep->user1(true);
-                        termp = new AstLogAnd{fl, gtep, ltep};
-                        termp->user1(true);
-                    } else {
-                        AstNodeExpr* const exprCopyp = distp->exprp()->cloneTreePure(false);
-                        exprCopyp->user1(true);
-                        termp = new AstEq{fl, exprCopyp, bucket.rangep->cloneTreePure(false)};
-                        termp->user1(true);
-                    }
-                    // Compile-time zero weights never enter buckets; a weight that
-                    // is zero only at runtime excludes the bucket's values too
-                    bool runtimeWeight = false;
-                    bucket.weightExprp->foreach(
-                        [&](const AstNodeVarRef*) { runtimeWeight = true; });
-                    if (runtimeWeight) {
-                        AstNeq* const nzp
-                            = new AstNeq{fl, bucket.weightExprp->cloneTreePure(false),
-                                         new AstConst{fl, AstConst::Unsized64{}, 0}};
-                        nzp->user1(true);
-                        termp = new AstLogAnd{fl, termp, nzp};
-                        termp->user1(true);
-                    }
-                    if (unionExprp) {
-                        unionExprp = new AstLogOr{fl, unionExprp, termp};
-                        unionExprp->user1(true);
-                    } else {
-                        unionExprp = termp;
-                    }
-                }
-                chainp = new AstConstraintIf{fl, gatep, chainp,
-                                             new AstConstraintExpr{fl, unionExprp}};
-            }
+            chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
             if (chainp) {
                 constrExprp->replaceWith(chainp);
