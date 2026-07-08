@@ -969,6 +969,35 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetInteger();
         }
     }
+    bool streamImplicitUseAllowed(const AstNodeStream* nodep) const {
+        const AstNode* backp = nodep->backp();
+        while (true) {
+            if (const AstArg* const argp = VN_CAST(backp, Arg)) {
+                backp = argp->backp();
+            } else if (const AstSFormatArg* const argp = VN_CAST(backp, SFormatArg)) {
+                backp = argp->backp();
+            } else if (VN_IS(backp, CvtArrayToArray) || VN_IS(backp, CvtArrayToPacked)
+                       || VN_IS(backp, CvtPackedToArray) || VN_IS(backp, CvtPackString)
+                       || VN_IS(backp, CvtUnpackedToQueue)) {
+                backp = backp->backp();
+            } else {
+                break;
+            }
+        }
+        if (!backp) return true;  // Error elsewhere
+
+        // IEEE allows streaming concatenations as assignment sources/targets, nested inside
+        // another stream, or after an explicit cast. Other expression operands require a cast.
+        return VN_IS(backp, NodeAssign)  //
+               || VN_IS(backp, Var)  //
+               || VN_IS(backp, MemberDType)  //
+               || VN_IS(backp, Pin)  //
+               || VN_IS(backp, NodeFTaskRef)  //
+               || VN_IS(backp, NodeStream)  //
+               || VN_IS(backp, Cast)  //
+               || VN_IS(backp, CastSize)  //
+               || VN_IS(backp, CastWrap);
+    }
     void visit(AstNodeStream* nodep) override {
         VL_RESTORER(m_streamConcat);
         // UINFOTREE(1, nodep, "stream-in vup" << m_vup, "stream-in ");
@@ -1002,9 +1031,7 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (m_vup->final()) {
-            const AstNode* backp = nodep->backp();
-            if (VN_IS(backp, SFormatArg)) backp = backp->backp();
-            if (VN_IS(backp, SFormatF)) {
+            if (!streamImplicitUseAllowed(nodep)) {
                 nodep->v3error(
                     "Streaming concatenation cannot be used in an implicitly cast context "
                     "(IEEE 1800-2023 11.4.17)\n"

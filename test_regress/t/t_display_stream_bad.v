@@ -6,10 +6,19 @@
 
 module t;
   int value = 1;
+  int other = 2;
+  int result;
+  bit flag;
 
   initial begin
+    result = {<<{value}} + 1;
+    result = value + {<<{value}};
+    result = value[0] ? {<<{value}} : other;
+    result = {{<<{value}}};
+    flag = ({<<{value}} == other);
     $display({<<{value}});
     $display("%0d", {<<{value}});
     void'($sformatf("%0d", {<<{value}}));
+    result = int'({<<{value}});
   end
 endmodule
