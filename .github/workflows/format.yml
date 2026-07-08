@@ -52,6 +52,6 @@ jobs:
       - name: Push
         run: |-
           if [ -n "$(git status --porcelain)" ]; then
-            git commit . -m "Apply 'make format' [ci skip]" &&
+            git commit . -m "Apply 'make format'" &&
             git push origin
           fi
