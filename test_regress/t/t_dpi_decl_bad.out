@@ -1,0 +1,5 @@
+%Error-BADVLTPRAGMA: t/t_dpi_decl_bad.v:8:57: No function declaration provided in /*verilator dpi_c_decl*/ meta-comment
+    8 |   import "DPI-C" function string func(input string arg) /*verilator dpi_c_decl*/;
+      |                                                         ^~~~~~~~~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error: Exiting due to
