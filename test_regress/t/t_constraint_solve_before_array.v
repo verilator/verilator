@@ -62,12 +62,23 @@ class Que;  // dynamic container solved before a scalar
   }
 endclass
 
+class ScFirst;  // scalar solved before an array
+  rand int unsigned xw;
+  rand int unsigned a[2];
+  constraint c {
+    solve xw before a;
+    xw inside {[1:5]};
+    foreach (a[i]) a[i] == xw + i;
+  }
+endclass
+
 module t;
   OneD o1;
   TwoD o2;
   Mul om;
   Chain oc;
   Que oq;
+  ScFirst osf;
   int ok;
   initial begin
     o1 = new;
@@ -75,6 +86,7 @@ module t;
     om = new;
     oc = new;
     oq = new;
+    osf = new;
     for (int i = 0; i < 10; ++i) begin
       ok = o1.randomize();
       `checkd(ok, 1);
@@ -98,6 +110,11 @@ module t;
       ok = oq.randomize();
       `checkd(ok, 1);
       `checkd(oq.s, oq.q[0] + oq.q[1] + oq.q[2]);
+
+      ok = osf.randomize();
+      `checkd(ok, 1);
+      `checkd(osf.a[0], osf.xw);
+      `checkd(osf.a[1], osf.xw + 1);
     end
     $write("*-* All Finished *-*\n");
     $finish;

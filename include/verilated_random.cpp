@@ -998,24 +998,24 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
     // Step 3: Solve phase by phase
     std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
 
+    bool hasNonEnumArray = false;
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() == 0) continue;
+        if (var.second->countMatchingElements(m_arr_vars, var.second->name()) == 0) {
+            hasNonEnumArray = true;
+            break;
+        }
+    }
+    const char* const logicp = hasNonEnumArray ? "ALL" : "QF_ABV";
+
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);
 
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Solver session setup
         os << "(set-option :produce-models true)\n";
-        // Non-enumerable containers are pinned as a whole array and need ALL.
-        bool hasNonEnumArray = false;
-        for (const auto& var : m_vars) {
-            if (var.second->dimension() > 0
-                && var.second->countMatchingElements(m_arr_vars, var.second->name()) == 0) {
-                hasNonEnumArray = true;
-                break;
-            }
-        }
-        os << "(set-logic " << (hasNonEnumArray ? "ALL" : "QF_ABV") << ")\n";
+        os << "(set-logic " << logicp << ")\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 
@@ -1030,10 +1030,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             os << ")\n";
         }
 
-        // Skip a pin the solver emitted as its own as-array/lambda model text.
         for (const auto& entry : solvedValues) {
-            if (entry.second.find("as-array") != std::string::npos) continue;
-            if (entry.second.find("(lambda") != std::string::npos) continue;
             os << "(assert (= " << entry.first << " " << entry.second << "))\n";
         }
 
@@ -1084,7 +1081,6 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                 os << "(get-value (";
                 for (const auto& varName : layerVars) {
                     const auto it = m_vars.find(varName);
-                    if (it == m_vars.end()) continue;
                     if (it->second->dimension() > 0) {
                         auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
                         it->second->setArrayInfo(arrVarsp);
@@ -1125,25 +1121,20 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                     // LHS: the queried term echoed back, a name or (select ...) group.
                     os >> std::ws;
                     std::string name;
-                    char first;
-                    os.get(first);
-                    if (first == '(') {
+                    if (os.peek() == '(') {
+                        os.get(c);
                         readGroup(name);
                     } else {
-                        name = first;
-                        while (os.get(c) && c != ' ' && c != '\t' && c != '\n' && c != '\r') {
-                            name += c;
-                        }
+                        os >> name;
                     }
 
                     os >> std::ws;
                     std::string value;
-                    os.get(first);
-                    if (first == '(') {
+                    if (os.peek() == '(') {
+                        os.get(c);
                         readGroup(value);
                         os >> c;  // pair-closing ')'
                     } else {
-                        value = first;
                         while (os.get(c) && c != ')') { value += c; }
                         const size_t end = value.find_last_not_of(" \t\n\r");
                         if (end != std::string::npos) value = value.substr(0, end + 1);
