@@ -10,7 +10,12 @@ module t;
   int result;
   bit flag;
 
+  function automatic int passthrough(input int arg);
+    return arg;
+  endfunction
+
   initial begin
+    result = passthrough({<<{value}});
     result = {<<{value}} + 1;
     result = value + {<<{value}};
     result = value[0] ? {<<{value}} : other;

@@ -972,13 +972,9 @@ class WidthVisitor final : public VNVisitor {
     bool streamImplicitUseAllowed(const AstNodeStream* nodep) const {
         const AstNode* backp = nodep->backp();
         while (true) {
-            if (const AstArg* const argp = VN_CAST(backp, Arg)) {
-                backp = argp->backp();
-            } else if (const AstSFormatArg* const argp = VN_CAST(backp, SFormatArg)) {
-                backp = argp->backp();
-            } else if (VN_IS(backp, CvtArrayToArray) || VN_IS(backp, CvtArrayToPacked)
-                       || VN_IS(backp, CvtPackedToArray) || VN_IS(backp, CvtPackString)
-                       || VN_IS(backp, CvtUnpackedToQueue)) {
+            if (VN_IS(backp, Arg) || VN_IS(backp, SFormatArg) || VN_IS(backp, CvtArrayToArray)
+                || VN_IS(backp, CvtArrayToPacked) || VN_IS(backp, CvtPackedToArray)
+                || VN_IS(backp, CvtPackString) || VN_IS(backp, CvtUnpackedToQueue)) {
                 backp = backp->backp();
             } else {
                 break;
