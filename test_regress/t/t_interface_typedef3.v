@@ -20,7 +20,7 @@ module sub (
     interface.mp iface_mp
 );
   typedef iface_mp.choice_t tdef_t;
-  tdef_t P;
+  tdef_t P = '1;
   initial begin
     `checkd($bits(tdef_t), 4);
   end
@@ -29,4 +29,9 @@ endmodule
 module t;
   ifc u_ifc ();
   sub u_sub (u_ifc.mp);
+  initial begin
+    if (u_sub.P != '1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
