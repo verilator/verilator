@@ -1323,7 +1323,7 @@ class ParamProcessor final {
                         if (!structp) break;
                         AstMemberDType* const foundMemp = VN_CAST(
                             m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
-                        if (!foundMemp) break;
+                        UASSERT_OBJ(foundMemp, outerDotp, "member not found in struct/union");
                         if (!foundMemp->subDTypep()) break;
                         totalLsb += foundMemp->lsb();
                         sliceWidth = foundMemp->width();
