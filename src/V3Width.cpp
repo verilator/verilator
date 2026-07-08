@@ -176,17 +176,12 @@ public:
     bool final() const { return m_stage & FINAL; }
     void dump(std::ostream& str) const {
         if (!m_dtypep) {
-            str << "  VUP(s=" << m_stage << ",self";
+            str << "  VUP(s=" << m_stage << ",self)";
         } else {
             str << "  VUP(s=" << m_stage << ",dt=" << cvtToHex(dtypep());
             dtypep()->dumpSmall(str);
+            str << ")";
         }
-        if (m_streamUse == STREAM_USE_ASSIGN) {
-            str << ",stream=assign";
-        } else if (m_streamUse == STREAM_USE_CAST) {
-            str << ",stream=cast";
-        }
-        str << ")";
     }
 };
 std::ostream& operator<<(std::ostream& str, const WidthVP* vup) {
@@ -2138,7 +2133,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCvtUnpackedToQueue* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
-        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
     void visit(AstTimeImport* nodep) override {
