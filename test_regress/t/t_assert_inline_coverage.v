@@ -28,14 +28,8 @@ module t (
     end
   end
 
-  // Labelled INLINE concurrent assertion (not wrapped in a named
-  // property ... endproperty).  With --coverage this previously hit an
-  // internal error (V3Localize.cpp: 'AstVarRef not under function').
   a : assert property (@(posedge clk) !rst_n |=> q == 1'b0);
 
-  // Labelled INLINE concurrent cover with disable-iff and a sampled-value
-  // function.  With --coverage this previously emitted a false
-  // 'Concurrent assertion has no clock' error.
   c : cover property (@(posedge clk) disable iff (!rst_n) en && cnt == $past(cnt));
 
   always @(posedge clk) begin
