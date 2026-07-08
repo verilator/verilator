@@ -10,10 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.pli_filename = "t/t_dpi_decl.cpp"
 
-test.sim_time = 4000
-
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
+test.compile(v_flags2=[test.pli_filename])
 
 test.execute()
 

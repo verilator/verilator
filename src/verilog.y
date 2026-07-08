@@ -780,6 +780,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_CLOCKER               "/*verilator clocker*/"
 %token<fl>              yVL_CLOCK_ENABLE          "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF    "/*verilator coverage_block_off*/"
+%token<fl>              yVL_DPI_C_DECL            "/*verilator dpi_c_decl*/"
 %token<fl>              yVL_FORCEABLE             "/*verilator forceable*/"
 %token<fl>              yVL_FULL_CASE             "/*verilator full_case*/"
 %token<fl>              yVL_HIER_BLOCK            "/*verilator hier_block*/"
@@ -4927,6 +4928,14 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                           $5->dpiContext($3 == iprop_CONTEXT);
                           $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
+                          GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
+        |       yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype yVL_DPI_C_DECL yaSTRING ';'
+                        { $$ = $5;
+                          if (*$4 != "") $5->cname(*$4);
+                          $5->dpiContext($3 == iprop_CONTEXT);
+                          $5->dpiPure($3 == iprop_PURE);
+                          $5->dpiImport(true);
+                          if (*$7 != "") $5->dpiCDecl(*$7);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
         |       yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE task_prototype ';'
                         { $$ = $5;
