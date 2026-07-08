@@ -24,6 +24,8 @@ module t;
     $display({<<{value}});
     $display("%0d", {<<{value}});
     void'($sformatf("%0d", {<<{value}}));
+    result = passthrough({<<{value}} + 1);
     result = int'({<<{value}});
+    result = int'({<<{value}}) + 1;
   end
 endmodule
