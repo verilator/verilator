@@ -3090,13 +3090,9 @@ static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlUnpacked<T, N_Depth>& fro
 template <typename T, std::size_t N_Depth>
 static inline void VL_COPY_Q(VlUnpacked<T, N_Depth>& q, const VlQueue<T>& from, int lbits,
                              int srcElementBits, int dstElementBits) {
-    if (srcElementBits == dstElementBits) {
-        for (size_t i = 0; i < N_Depth; ++i) q[i] = from.at(static_cast<int32_t>(i));
-    } else {
-        VlQueue<T> tmpQ;
-        VL_COPY_Q(tmpQ, from, lbits, srcElementBits, dstElementBits);
-        for (size_t i = 0; i < N_Depth; ++i) q[i] = tmpQ.at(static_cast<int32_t>(i));
-    }
+    VlQueue<T> tmpQ;
+    VL_COPY_Q(tmpQ, from, lbits, srcElementBits, dstElementBits);
+    for (size_t i = 0; i < N_Depth; ++i) q[i] = tmpQ.at(static_cast<int32_t>(i));
 }
 
 template <typename T, std::size_t N_Depth>

@@ -27,6 +27,7 @@ module t (
   byte_t a[];
   byte_t b[];
   byte_t fixed[256];
+  byte_t fixed_desc[255:0];
   byte_t fixed_rev[1:256];
   byte_t q[$];
 
@@ -172,6 +173,12 @@ module t (
       fixed = q;
       `checkh(fixed[0], 8'h40);
       `checkh(fixed[255], 8'h3f);
+      fixed_desc = a;
+      `checkh(fixed_desc[255], 8'h9f);
+      `checkh(fixed_desc[0], 8'ha0);
+      fixed_desc = q;
+      `checkh(fixed_desc[255], 8'h3f);
+      `checkh(fixed_desc[0], 8'h40);
       fixed_rev = a;
       `checkh(fixed_rev[1], 8'ha0);
       `checkh(fixed_rev[256], 8'h9f);
