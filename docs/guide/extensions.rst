@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
 Language Extensions
@@ -293,6 +294,25 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;dpi_c_decl "<C function declaration>"*/
+
+   Specifies C function declaration that will be emitted for given DPI-C
+   function into the Verilator-generated __Dpi.h header, replacing the declaration
+   that Verilator would build by default using the Verilog function signature.
+
+   This enables use of C functions with types not specified in the
+   standard. For example, it enables use of functions that return ``char*``:
+
+   .. code-block:: sv
+
+      module t;
+        import "DPI-C" function string getenv(input string arg) /*verilator dpi_c_decl "char* getenv(const char*)"*/;
+
+        initial begin
+          $display("%s", getenv("HOME"));
+        end
+      endmodule
+
 .. option:: /*verilator&32;fargs <arguments>*/
 
    For Verilator developers only. When a source file containing these `fargs`
@@ -340,6 +360,10 @@ or "`ifdef`"'s may break other tools.
    Same as :option:`inline` control file option.
 
 .. option:: /*verilator&32;isolate_assignments*/
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.050:
 
    Used after a signal declaration to indicate the assignments to this
    signal in any blocks should be isolated into new blocks. When large

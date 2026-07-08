@@ -495,6 +495,11 @@ MAKE_FILES = \
   src/Makefile*.in \
   test_regress/Makefile* \
 
+# Markdown
+MD_FILES = \
+  *.md \
+  */*.md \
+
 # Perl programs
 PERL_PROGRAMS = \
   bin/redirect \
@@ -541,6 +546,13 @@ PY_FILES = \
 # Python files, test_regress tests
 PY_TEST_FILES = test_regress/t/*.py
 
+# reStructuredText Sphinx files
+RST_FILES = \
+  *.rst \
+  */*.rst \
+  ci/docker/*/*.rst \
+  docs/guide/*.rst \
+
 # YAML files
 YAML_FILES = \
   .*.yaml \
@@ -553,7 +565,7 @@ YAML_FILES = \
 # Format
 
 format:
-	$(MAKE) -j 5 format-c format-cmake format-exec format-py format-yaml
+	$(MAKE) -j 5 format-c format-cmake format-exec format-md format-py format-rst format-yaml
 
 BEAUTYSH = beautysh
 BEAUTYSH_FLAGS = --indent-size 2
@@ -590,12 +602,26 @@ format-make mbake:
 	$(MBAKE) --version
 	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
 
+MDFORMAT = mdformat
+MDFORMAT_FLAGS =
+
+format-md:
+	$(MDFORMAT) --version
+	$(MDFORMAT) $(MDFORMAT_FLAGS) $(MD_FILES)
+
 YAPF = yapf
 YAPF_FLAGS = -i --parallel
 
 format-py yapf:
 	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+
+DOCSTRFMT = docstrfmt
+DOCSTRFMT_FLAGS = --line-length 75 --indent-width 3 --keep-blanks --ordered-marker "\#" --preserve-adornments --no-center-section-titles
+
+format-rst:
+	$(DOCSTRFMT) --version
+	$(DOCSTRFMT) $(DOCSTRFMT_FLAGS) $(RST_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
 YAMLFIX_FLAGS =

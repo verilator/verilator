@@ -23,7 +23,7 @@ def check_evals():
         test.error("Too few _eval functions found: " + str(got))
 
 
-test.compile(v_flags2=["--output-split 1 --output-split-cfuncs 20"],
+test.compile(v_flags2=["--output-split 1 --output-split-cfuncs 20 -fno-inline-cfuncs"],
              verilator_make_gmake=False)  # Slow to compile, so skip it)
 
 check_evals()

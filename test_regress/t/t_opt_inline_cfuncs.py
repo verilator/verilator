@@ -9,17 +9,17 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
-# Use --output-split-cfuncs to create small functions that can be inlined
-# Also test --inline-cfuncs-product option
 test.compile(verilator_flags2=[
-    "--stats", "--binary", "--output-split-cfuncs", "1", "--inline-cfuncs-product", "200"
+    "--stats", "--binary", "--inline-cfuncs-product", "200", "--dumpi-V3InlineCFuncs", "9"
 ])
 
-# Verify inlining happened with exact count
-test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)', 39)
-
 test.execute()
+
+if test.vlt:
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 7)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', 7)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 7)
 
 test.passes()

@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _verilator control files:
 
@@ -186,6 +187,10 @@ The grammar of control commands is as follows:
 .. option:: isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 .. option:: isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.050:
 
    Used to indicate that the assignments to this signal in any blocks
    should be isolated into new blocks. Same as

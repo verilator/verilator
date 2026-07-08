@@ -31,6 +31,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
@@ -546,6 +547,26 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
 
 string AstConstraintRef::name() const { return constrp()->name(); }
 
+uint32_t AstMatchMasked::fold(const V3Number& lhs, AstVar* matchVarp) {
+    const V3Number& numTable = VN_AS(matchVarp->valuep(), Const)->num();
+    V3Number numMask{matchVarp, lhs.width(), 0};
+    V3Number numBits{matchVarp, lhs.width(), 0};
+    V3Number numAnd{matchVarp, lhs.width(), 0};
+    const int width = lhs.width();
+    const int entryWidth = VL_WORDS_I(width) * VL_EDATASIZE;
+    uint32_t i = 0;
+    while (true) {
+        const int lsb = 2 * i * entryWidth;
+        const int msb = lsb + width - 1;
+        numMask.opSel(numTable, msb, lsb);
+        numBits.opSel(numTable, msb + entryWidth, lsb + entryWidth);
+        numAnd.opAnd(numMask, lhs);
+        if (numAnd.isCaseEq(numBits)) break;
+        ++i;
+    }
+    return i;
+}
+
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
@@ -630,6 +651,7 @@ void AstVar::combineType(const AstVar* otherp) {
         varType(otherp->varType());
         direction(otherp->direction());
     }
+    if (otherp->icoMaybeWritten()) icoMaybeWritten(true);
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
@@ -682,9 +704,14 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
 
-string AstVar::vlEnumType() const {
+string AstNodeDType::vlEnumType() const {
     string arg;
-    const AstBasicDType* const bdtypep = basicp();
+    const AstNodeDType* dtypep = skipRefp();
+    while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    const AstBasicDType* const bdtypep = dtypep->basicp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
     const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
@@ -694,6 +721,8 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_STRING";
     } else if (isDouble()) {
         arg += "VLVT_REAL";
+    } else if (sdtypep && !sdtypep->packed()) {
+        arg += VN_IS(sdtypep, StructDType) ? "VLVT_STRUCT" : "VLVT_UNION";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
@@ -708,6 +737,8 @@ string AstVar::vlEnumType() const {
     // else return "VLVT_UNKNOWN"
     return arg;
 }
+
+string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }
 
 string AstVar::vlEnumDir() const {
     string out;
@@ -738,6 +769,7 @@ string AstVar::vlEnumDir() const {
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
+    if (isNet()) out += "|VLVF_NET";
     return out;
 }
 
@@ -1259,6 +1291,47 @@ uint32_t AstNodeDType::arrayUnpackedElements() const {
     return entries;
 }
 
+bool AstNodeDType::isStreamableFixedAggregate() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->isStreamableFixedAggregate();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (sdtypep->packed()) return true;
+        if (!VN_IS(sdtypep, StructDType)) return false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->dtypep()->isStreamableFixedAggregate()) return false;
+        }
+        return true;
+    }
+    return dtypep->isIntegralOrPacked() || dtypep->isDouble();
+}
+
+bool AstNodeDType::containsUnpackedStruct() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->containsUnpackedStruct();
+    }
+    const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType);
+    return sdtypep && !sdtypep->packed();
+}
+
+int AstNodeDType::widthStream() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->widthStream() * adtypep->elementsConst();
+    } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (!VN_IS(sdtypep, StructDType) || sdtypep->packed()) return width();
+        int width = 0;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            width += itemp->dtypep()->widthStream();
+        }
+        return width;
+    }
+    return dtypep->width();
+}
+
 std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
@@ -1321,6 +1394,12 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_AS(nodep, Sel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, AssocSel)) {
+            nodep = VN_AS(nodep, AssocSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, WildcardSel)) {
+            nodep = VN_AS(nodep, WildcardSel)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
@@ -1581,6 +1660,7 @@ AstConstPool::AstConstPool(FileLine* fl)
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
     AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
+    varp->setConstPoolEntry();
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
@@ -1698,6 +1778,31 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     AstVarScope* const varScopep = createNewEntry(name, initp);
     m_consts.emplace(hash.value(), varScopep);
     return varScopep;
+}
+
+void AstConstPool::rebuildVarScopesAndCache() {
+    m_tables.clear();
+    m_consts.clear();
+    std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
+    for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
+        varScopeps.emplace(vscp->varp(), vscp);
+    }
+    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        AstVar* const varp = VN_CAST(nodep, Var);
+        if (!varp) continue;
+        AstNode* const valuep = varp->valuep();
+        if (!valuep) continue;
+        const bool isTable = VN_IS(valuep, InitArray);
+        const AstConst* const constp = VN_CAST(valuep, Const);
+        if (!isTable && !constp) continue;
+        AstVarScope*& vscp = varScopeps[varp];
+        if (!vscp) {
+            vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
+            m_scopep->addVarsp(vscp);
+        }
+        if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
+        if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
+    }
 }
 
 //======================================================================
@@ -2132,6 +2237,16 @@ void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
     dumpJsonBoolFuncIf(str, immediate);
     dumpJsonBoolFuncIf(str, senFromAlways);
+}
+void AstCover::dump(std::ostream& str) const {
+    this->AstNodeCoverOrAssert::dump(str);
+    if (isCoverSeq()) str << " [COVERSEQ]";
+    if (isSeqEvent()) str << " [SEQEVENT]";
+}
+void AstCover::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isCoverSeq);
+    dumpJsonBoolFuncIf(str, isSeqEvent);
+    this->AstNodeCoverOrAssert::dumpJson(str);
 }
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2724,6 +2839,10 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
+void AstNodeAssign::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (timingControlp()) str << " [TIMING=" << nodeAddr(timingControlp()) << "]";
+}
 string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     if (const auto subp = subDTypep()) os << subp->prettyDTypeName(full);
@@ -3138,6 +3257,7 @@ int AstVarRef::instrCount() const {
 }
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (constPoolEntry()) str << " [CONSTPOOL]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3158,7 +3278,6 @@ void AstVar::dump(std::ostream& str) const {
     if (noReset()) str << " [!RST]";
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
-    if (attrIsolateAssign()) str << " [aISO]";
     if (attrFsmState()) str << " [aFSMSTATE]";
     if (attrFsmResetArc()) str << " [aFSMRESETARC]";
     if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
@@ -3169,6 +3288,7 @@ void AstVar::dump(std::ostream& str) const {
         str << " [FUNC]";
     }
     if (hasUserInit()) str << " [UINIT]";
+    if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -3179,6 +3299,7 @@ void AstVar::dump(std::ostream& str) const {
 void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, constPoolEntry);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);
@@ -3193,11 +3314,11 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, noReset);
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
-    dumpJsonBoolFuncIf(str, attrIsolateAssign);
     dumpJsonBoolFuncIf(str, attrFsmState);
     dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
     dumpJsonBoolFuncIf(str, attrFileDescr);
+    dumpJsonBoolFuncIf(str, icoMaybeWritten);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);

@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _connecting:
 
@@ -28,13 +29,13 @@ The generated model class file manages all internal state required by the
 model, and exposes the following interface that allows interaction with the
 model:
 
-* Top level IO ports are exposed as references to the appropriate internal
+- Top level IO ports are exposed as references to the appropriate internal
   equivalents.
 
-* Public top level module instances are exposed as pointers to allow access
+- Public top level module instances are exposed as pointers to allow access
   to ``/* verilator public */`` items.
 
-* The root of the design hierarchy (as in SystemVerilog ``$root``) is
+- The root of the design hierarchy (as in SystemVerilog ``$root``) is
   exposed via the ``rootp`` member pointer to allow access to model
   internals, including ``/* verilator public_flat */`` items.
 
@@ -58,22 +59,22 @@ This means that user code that accesses internal signals in the model
 (likely including ``/* verilator public_flat */`` signals, as they are
 often inlined into the root scope) will need to be updated as follows:
 
-* No change required for accessing top level IO signals. These are directly
+- No change required for accessing top level IO signals. These are directly
   accessible in the model class via references.
 
-* No change required for accessing ``/* verilator public */`` items. These
+- No change required for accessing ``/* verilator public */`` items. These
   are directly accessible via sub-module pointers in the model class.
 
-* Accessing any other internal members, including
-  ``/* verilator public_flat */`` items requires the following changes:
+- Accessing any other internal members, including ``/* verilator
+  public_flat */`` items requires the following changes:
 
-  * Additionally include :file:`{prefix}___024root.h`. This header defines
+  - Additionally include :file:`{prefix}___024root.h`. This header defines
     type of the ``rootp`` pointer within the model class. Note the
     ``__024`` substring is the Verilator escape sequence for the ``$``
     character, i.e.: ``rootp`` points to the Verilated SystemVerilog
     ``$root`` scope.
 
-  * Replace ``modelp->internal->member`` references with
+  - Replace ``modelp->internal->member`` references with
     ``modelp->rootp->internal->member`` references, which contain one
     additional indirection via the ``rootp`` pointer.
 
@@ -210,9 +211,9 @@ Verilator extends the DPI format to allow using the same scheme to
 efficiently add system functions. Use a dollar-sign prefixed system
 function name for the import, but note it must be escaped.
 
-.. code-block:: sv
+.. code-block::
 
-   export "DPI-C" function integer \$myRand;
+   import "DPI-C" function integer \$myRand;
 
    initial $display("myRand=%d", $myRand());
 
@@ -502,9 +503,9 @@ described above is just a wrapper which calls these two functions.
 3. If using delays and :vlopt:`--timing`, there are two additional methods
 the user should call:
 
-   * ``designp->eventsPending()``, which returns ``true`` if there are any
+   - ``designp->eventsPending()``, which returns ``true`` if there are any
      delayed events pending,
-   * ``designp->nextTimeSlot()``, which returns the simulation time of the
+   - ``designp->nextTimeSlot()``, which returns the simulation time of the
      next delayed event. This method can only be called if
      ``designp->eventsPending()`` returned ``true``.
 

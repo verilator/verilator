@@ -7,7 +7,7 @@ name: Pages
 on:
   push:
     branches: [master]
-    paths: ["ci/**", ".github/workflows"]
+    paths: ["ci/**", ".github/workflows/**"]
   workflow_dispatch:
   workflow_run:
     workflows: ["Code coverage", "RTLMeter"]
@@ -22,8 +22,11 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run
 # in-progress and latest queued. However, do NOT cancel in-progress runs as we
 # want to allow these deployments to complete.
+# A skipped-upstream run does no work (see the build job's if:), so put it in its
+# own throwaway group: otherwise, as the newest queued run, it would cancel a
+# pending real run and then deploy nothing.
 concurrency:
-  group: "pages"
+  group: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'skipped') && format('pages-skip-{0}', github.run_id) || 'pages' }}
   cancel-in-progress: false
 
 defaults:
@@ -34,11 +37,15 @@ jobs:
   build:
     name: Build content
     runs-on: ubuntu-24.04
+    # A skipped upstream run (e.g. Code coverage / RTLMeter on a branch push)
+    # still fires workflow_run; don't rebuild and redeploy for it. deploy and
+    # notify need this job, so they cascade-skip too.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'skipped' }}
     outputs:
       pr-run-ids: ${{ steps.build.outputs.pr-run-ids }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - name: Build pages
         id: build
         env:
@@ -48,7 +55,7 @@ jobs:
           ls -lsha
           tree -L 3 pages
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
         with:
           path: pages
 
@@ -58,10 +65,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy-2.outputs.page_url || steps.deploy-1.outputs.page_url }}
     steps:
+      # GitHub's Pages backend intermittently fails a deployment mid-sync, retry
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v5
+        id: deploy-1
+        continue-on-error: true
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5
+      - name: Deploy to GitHub Pages (retry)
+        id: deploy-2
+        if: steps.deploy-1.outcome == 'failure'
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5
 
   notify:
     name: Notify
@@ -70,13 +84,13 @@ jobs:
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
+          client-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
           permission-actions: write
           permission-pull-requests: write

@@ -351,8 +351,7 @@ std::string reportLoopVars(FileLine* /*warnFl*/, Graph* graphp, SchedAcyclicVarV
 
     if (splittable) {
         ss << V3Error::warnMore()
-           << "... Suggest add /*verilator split_var*/ or /*verilator "
-              "isolate_assignments*/ to appropriate variables above.\n";
+           << "... Suggest add /*verilator split_var*/ to appropriate variables above.\n";
     }
     V3Stats::addStat("Scheduling, split_var, candidates", splittable);
     return ss.str();

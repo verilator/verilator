@@ -89,6 +89,12 @@
 # include <unistd.h>
 # define _VL_HAVE_GETRLIMIT
 #endif
+#if VM_VPI
+# include <cstring>
+# ifndef _WIN32
+#  include <dlfcn.h>  // dlopen
+# endif
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -261,6 +267,58 @@ void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char*
 }
 
 //===========================================================================
+// Runtime VPI shared library loading (--vpi)
+
+// Load one VPI shared library named by a +verilator+vpi+<lib>[:<bootstrap>] argument.
+// 'arg' is the payload after the prefix: either "<lib>" (invoke the library's
+// vlog_startup_routines array) or "<lib>:<bootstrap>" (invoke the named bootstrap).
+void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
+#if VM_VPI
+    if (arg.empty()) return;
+#ifdef _WIN32
+    VL_FATAL_MT("", 0, "",
+                "+verilator+vpi+: runtime VPI library loading is not supported on"
+                " Windows; link the VPI code into the model instead");
+#else
+    using vlog_startup_t = void (*)();
+    // Split <lib>:<bootstrap> on the last ':'
+    const std::string::size_type colon_pos = arg.rfind(':');
+    const bool has_entry = (colon_pos != std::string::npos);
+    const std::string libpath = has_entry ? arg.substr(0, colon_pos) : arg;
+    const std::string entry_name = has_entry ? arg.substr(colon_pos + 1) : std::string{};
+    void* handle = dlopen(libpath.c_str(), RTLD_LAZY);
+    if (!handle)
+        // The library path is stable; the dlerror() text is platform-specific, so put it on
+        // a separate "- " line (test golden files strip "- " lines, keeping output portable).
+        VL_FATAL_MT(
+            "", 0, "",
+            (std::string{"Cannot load VPI library: "} + libpath + "\n- dlerror: " + dlerror())
+                .c_str());
+    if (has_entry) {
+        vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
+        if (!bsp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find VPI bootstrap '"} + entry_name + "' in: " + libpath)
+                    .c_str());
+        bsp();
+    } else {
+        vlog_startup_t* routinesp
+            = reinterpret_cast<vlog_startup_t*>(dlsym(handle, "vlog_startup_routines"));
+        if (!routinesp)
+            VL_FATAL_MT(
+                "", 0, "",
+                (std::string{"Cannot find 'vlog_startup_routines' in: "} + libpath).c_str());
+        for (int j = 0; routinesp[j]; ++j) routinesp[j]();
+    }
+#endif
+#else
+    // Never reached: the command-line handler only calls this when compiled with --vpi.
+    (void)arg;
+#endif
+}
+
+//===========================================================================
 // Debug prints
 
 // sprintf but return as string (this isn't fast, for print messages only)
@@ -315,6 +373,12 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_end(ap);
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         VL_PRINTF("%s", result.c_str());
+    }});
+}
+
+void VL_FFLUSH_MT() VL_MT_SAFE {
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        Verilated::runFlushCallbacks();
     }});
 }
 
@@ -499,9 +563,10 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
 }
 
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -510,9 +575,10 @@ IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 }
 
 QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
+    if (randReset != 1) {  // if 2, randomize
         VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
@@ -522,10 +588,17 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 
 WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                  uint64_t salt) VL_MT_UNSAFE {
-    if (Verilated::threadContextp()->randReset() != 2) { return VL_RAND_RESET_W(obits, outwp); }
-    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
-    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
+    const int words = VL_WORDS_I(obits);
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) {
+        VL_MEMSET_ZERO_W(outwp, words);
+    } else if (randReset == 1) {
+        VL_MEMSET_ONES_W(outwp, words);
+    } else {
+        VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+        for (int i = 0; i < words; ++i) outwp[i] = rng.rand64();
+    }
+    outwp[words - 1] &= VL_MASK_E(obits);
     return outwp;
 }
 
@@ -550,30 +623,14 @@ WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t sco
 }
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    const int randReset = Verilated::threadContextp()->randReset();
+    if (randReset == 0) return 0;
     IData data = ~0;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_I();
-    }
+    if (randReset != 1) data = VL_RANDOM_I();  // if 2, randomize
     data &= VL_MASK_I(obits);
     return data;
 }
 
-QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
-    QData data = ~0ULL;
-    if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_Q();
-    }
-    data &= VL_MASK_Q(obits);
-    return data;
-}
-
-WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
-    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-    return outwp;
-}
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
@@ -3028,40 +3085,97 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
 }
 bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    // Check if selected directive type bit in the assertOn is enabled for assertion type.
-    // Note: it is assumed that this is checked only for one type at the time.
-
-    // Flag unspecified assertion types as disabled.
-    if (type == 0) return false;
-
-    // Get index of 3-bit group guarding assertion type status.
-    // Since the assertOnGet is generated __always__ for a single assert type, we assume that only
-    // a single bit will be set. Thus, ceil log2 will work fine.
-    VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
-    const IData typeMaskPosition = VL_CLOG2_I(type);
-
-    // Check if directive type bit is enabled in corresponding assertion type bits.
-    return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
+}
+uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
+    // Place the directive bits at each selected assertion type's 3-bit group.
+    uint32_t mask = 0;
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
+    }
+    return mask;
 }
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // For each assertion type, set directive bits.
-
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // set directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
-    }
+    m_s.m_assertOn |= assertOnMask(types, directives);
 }
 void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
                                      VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
-    // clear directive type bits mask at this group index.
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i))
-            m_s.m_assertOn &= ~(directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    m_s.m_assertOn &= ~assertOnMask(types, directives);
+}
+void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
+                                 VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
+    // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
+    const uint32_t mask = assertOnMask(types, directives);
+    const uint32_t lockedMask = mask & ~m_s.m_assertLock;
+    switch (controlType) {
+    case 1:  // Lock
+        m_s.m_assertLock |= mask;
+        break;
+    case 2:  // Unlock
+        m_s.m_assertLock &= ~mask;
+        break;
+    case 3:  // On
+        m_s.m_assertOn |= lockedMask;
+        break;
+    case 4:  // Off
+        m_s.m_assertOn &= ~lockedMask;
+        break;
+    case 5: {  // Kill
+        m_s.m_assertOn &= ~lockedMask;
+        for (int slot = 0; slot < static_cast<int>(ASSERT_CONTROL_SLOT_COUNT); ++slot) {
+            if (VL_BITISSET_I(lockedMask, slot)) { m_s.m_assertKill[slot]++; }
+        }
+        break;
     }
+    case 6:  // PassOn
+        m_s.m_assertPassOnVacuous |= lockedMask;
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 7:  // PassOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        m_s.m_assertPassOnNonvacuous &= ~lockedMask;
+        break;
+    case 8:  // FailOn
+        m_s.m_assertFailOn |= lockedMask;
+        break;
+    case 9:  // FailOff
+        m_s.m_assertFailOn &= ~lockedMask;
+        break;
+    case 10:  // NonvacuousOn
+        m_s.m_assertPassOnNonvacuous |= lockedMask;
+        break;
+    case 11:  // VacuousOff
+        m_s.m_assertPassOnVacuous &= ~lockedMask;
+        break;
+    default:
+        VL_WARN_MT("", 0, "",
+                   ("Bad $assertcontrol control_type '" + std::to_string(controlType)
+                    + "' (IEEE 1800-2023 Table 20-5)")
+                       .c_str());
+    }
+}
+uint32_t
+VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
+    const uint32_t mask = assertOnMask(type, directive);
+    if (!mask) return 0;
+    switch (query) {  // LCOV_EXCL_BR_LINE
+    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
+        assert(mask && (mask & (mask - 1)) == 0);
+        return m_s.m_assertKill[VL_CLOG2_I(mask)];
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
+        return (m_s.m_assertPassOnVacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
+        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
+    default:  // LCOV_EXCL_START
+        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
+        VL_UNREACHABLE;
+    }  // LCOV_EXCL_STOP
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -3480,6 +3594,17 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             // and the run can be reproduced by passing +verilator+seed+<that_value>.
             if (u64 == 0) u64 = pickRandomSeed();
             randSeed(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+vpi+", str)) {
+            // With --vpi, load the requested shared library now.  Without --vpi there is
+            // no VPI runtime, so warn the argument is ignored.
+#if VM_VPI
+            Verilated::loadVpiLib(str);
+#else
+            VL_WARN_MT(
+                "COMMAND_LINE", 0, "",
+                ("+verilator+vpi+ ignored: simulation was not compiled with --vpi '" + arg + "'")
+                    .c_str());  // LCOV_EXCL_LINE  (gcov zeroes this wrapped continuation line)
+#endif
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",
@@ -3893,6 +4018,7 @@ std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { retu
 
 // cppcheck-suppress unusedFunction  // Used by applications
 uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
+    if (m_entSize) return m_entSize;
     uint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR: size = sizeof(void*); break;
@@ -4002,6 +4128,27 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
         const int lsb = va_arg(ap, int);
         var.m_packed[i].m_left = msb;
         var.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
+VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
+                                             VerilatedVarType vltype, int vlflags, int udims,
+                                             uint32_t entSize...) VL_MT_UNSAFE {
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, 0,
+                     isParam, entSize);
+
+    va_list ap;
+    va_start(ap, entSize);
+    for (int i = 0; i < udims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_unpacked[i].m_left = msb;
+        var.m_unpacked[i].m_right = lsb;
     }
     va_end(ap);
 

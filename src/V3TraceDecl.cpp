@@ -485,7 +485,7 @@ class TraceDeclVisitor final : public VNVisitor {
         AstNodeDType* const skipTypep = nodep->skipRefp();
         // offset and direction args added in EmitCImp
         std::string callArgs{"tracep, \"" + VIdProtect::protect(m_traName) + "\""};
-        VL_RESTORER(m_traName);
+        VL_RESTORER_COPY(m_traName);
         FileLine* const flp = skipTypep->fileline();
 
         const DtypeFuncKey dtypeKey{skipTypep, m_traVscp->varp()->varType()};
@@ -530,7 +530,7 @@ class TraceDeclVisitor final : public VNVisitor {
     void declUnpackedArray(AstUnpackArrayDType* const nodep, bool newFunc) {
         string prefixName(newFunc ? "name" : m_traName);
 
-        VL_RESTORER(m_traName);
+        VL_RESTORER_COPY(m_traName);
         FileLine* const flp = nodep->fileline();
 
         addToSubFunc(new AstTracePushPrefix{flp, prefixName, VTracePrefixType::ARRAY_UNPACKED,
@@ -568,7 +568,7 @@ class TraceDeclVisitor final : public VNVisitor {
         string prefixName(newFunc ? "name" : m_traName);
         AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
 
-        VL_RESTORER(m_traName);
+        VL_RESTORER_COPY(m_traName);
         FileLine* const flp = nodep->fileline();
 
         addToSubFunc(new AstTracePushPrefix{flp, prefixName, VTracePrefixType::ARRAY_PACKED,
@@ -918,7 +918,7 @@ class TraceDeclVisitor final : public VNVisitor {
             return;
         }
 
-        VL_RESTORER(m_traName);
+        VL_RESTORER_COPY(m_traName);
         FileLine* const flp = nodep->fileline();
 
         int nMembers = 0;
@@ -980,6 +980,7 @@ public:
         AstCFunc* rootFuncp = nullptr;
         if (!v3Global.opt.libCreate().empty()) {
             rootFuncp = newCFunc(flp, "trace_init_root");
+            rootFuncp->entryPoint(true);
             for (size_t i = 0; i < m_topScopeRootFuncCount; ++i) {
                 AstCCall* const callp = new AstCCall{flp, topScopeFuncps.at(i)};
                 callp->dtypeSetVoid();
@@ -1017,6 +1018,7 @@ public:
         // Set name of top level function
         AstCFunc* const topFuncp = m_topFuncps.front();
         topFuncp->name("trace_init_top");
+        topFuncp->entryPoint(true);
 
         if (rootFuncp && v3Global.opt.debugCheck()) checkCallsRecurse(rootFuncp);
         checkCalls(topFuncp);

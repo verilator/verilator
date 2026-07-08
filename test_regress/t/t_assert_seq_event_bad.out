@@ -1,0 +1,6 @@
+%Error: t/t_assert_seq_event_bad.v:19:7: Arguments to a sequence used as an event control must be static (IEEE 1800-2023 9.4.2.4)
+                                       : ... note: In instance 't'
+   19 |     @(s_arg(x));
+      |       ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

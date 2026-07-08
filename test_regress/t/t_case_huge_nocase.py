@@ -16,6 +16,8 @@ test.compile(verilator_flags2=["--stats -fno-case"])
 
 test.execute()
 
+test.file_grep(test.stats, r'Optimizations, Cases table tiny\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Cases table normal\s+(\d+)', 0)
 test.file_grep(test.stats, r'Optimizations, Cases parallelized\s+(\d+)', 0)
 
 test.passes()

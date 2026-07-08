@@ -1401,6 +1401,17 @@ class ParamProcessor final {
         }
     }
 
+    // True if a $bits/$size type query in nodep's parameters reads another type parameter.
+    static bool defaultParamsHaveTypeQueryOnParamType(const AstClassRefDType* nodep) {
+        bool found = false;
+        nodep->foreach([&](const AstAttrOf* attrp) {
+            if (found || !attrp->attrType().isTypeQuery()) return;
+            const AstRefDType* const refp = VN_CAST(attrp->fromp(), RefDType);
+            if (refp && VN_IS(refp->refDTypep(), ParamTypeDType)) found = true;
+        });
+        return found;
+    }
+
     // Check if exprp's class matches origp's class after deparameterization.
     // Handles both the simple case (user4p link from defaultsResolved) and the
     // nested case where the default's inner class has non-default sub-parameters
@@ -1415,6 +1426,9 @@ class ParamProcessor final {
         const AstNodeModule* const defaultClonep
             = VN_CAST(origClassRefp->classp()->user4p(), Class);
         if (defaultClonep && defaultClonep == exprClassRefp->classp()) return true;
+        // Skip the comparison when the default's $bits/$size reads another type parameter, as
+        // deparameterizing it below would resolve that shared type at the wrong width (#7711).
+        if (defaultParamsHaveTypeQueryOnParamType(origClassRefp)) return false;
         // Slow path: deparameterize the default type and compare the result.
         // Different templates can never match; use origName() because exprp's
         // class may already be a specialization (clone) of the template.
@@ -2657,11 +2671,9 @@ class ParamVisitor final : public VNVisitor {
                 // Iterate the body
                 {
                     VL_RESTORER(m_modp);
-                    VL_RESTORER(m_ifacePortNames);
-                    VL_RESTORER(m_ifaceInstCells);
+                    VL_RESTORER_CLEAR(m_ifacePortNames);
+                    VL_RESTORER_CLEAR(m_ifaceInstCells);
                     m_modp = modp;
-                    m_ifacePortNames.clear();
-                    m_ifaceInstCells.clear();
                     iterateChildren(modp);
                 }
             }
@@ -3333,7 +3345,7 @@ class ParamVisitor final : public VNVisitor {
                 // Note this clears nodep->genforp(), so begin is no longer special
             }
         } else {
-            VL_RESTORER(m_generateHierName);
+            VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
             iterateChildren(nodep);
         }

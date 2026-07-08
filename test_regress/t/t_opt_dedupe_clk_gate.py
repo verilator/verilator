@@ -18,7 +18,7 @@ test.compile(verilator_flags2=["--no-json-edit-nums", "--stats"])
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.f0.clock_gate.clken_latched","addr":"[^"]*","loc":"\w,44:[^"]*","dtypep":"\(\w+\)",.*"origName":"clken_latched",.*"isLatched":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"t.f1.clock_gate.clken_latched","addr":"[^"]*","loc":"\w,44:[^"]*","dtypep":"\(\w+\)",.*"origName":"clken_latched",.*"isLatched":true,.*"dtypeName":"logic"'
     )
     test.file_grep(test.stats, r'Optimizations, Gate sigs deduped\s+(\d+)', 2)
 

@@ -1,5 +1,6 @@
-.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
-.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+..
+   SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+   SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _installation:
 
@@ -384,11 +385,9 @@ the files:
 
    make install
 
-
 .. Docker Build Environment
 
 .. include:: ../../ci/docker/buildenv/README.rst
-
 
 .. Docker Run Environment
 

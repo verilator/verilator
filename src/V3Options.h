@@ -392,7 +392,10 @@ private:
     // MEMBERS (optimizations)
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
-    bool m_fCase;        // main switch: -fno-case: case tree conversion
+    bool m_fBitScanLoops;  // main switch: -fno-bit-scan-loops: convert bit scan loops to builtins
+    bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
+    bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
+    bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
@@ -410,7 +413,10 @@ private:
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
+    // main switch: -fno-ico-change-detect: input change detection optimization
+    VOptionBool m_fIcoChangeDetect{VOptionBool::OPT_DEFAULT_TRUE};
     bool m_fInline;      // main switch: -fno-inline: module inlining
+    bool m_fInlineCFuncs;  // main switch: -fno-inline-cfuncs: inline small C functions
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
@@ -547,6 +553,9 @@ public:
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
+    bool dumpAstPatterns() const {
+        return m_dumpLevel.count("ast-patterns") && m_dumpLevel.at("ast-patterns");
+    }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool dumpDfgPatterns() const {
         return m_dumpLevel.count("dfg-patterns") && m_dumpLevel.at("dfg-patterns");
@@ -723,7 +732,10 @@ public:
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
-    bool fCase() const { return m_fCase; }
+    bool fBitScanLoops() const { return m_fBitScanLoops; }
+    bool fCaseDecoder() const { return m_fCaseDecoder; }
+    bool fCaseTable() const { return m_fCaseTable; }
+    bool fCaseTree() const { return m_fCaseTree; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
@@ -745,7 +757,9 @@ public:
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
     bool fFunc() const { return fFuncSplitCat() || fFuncBalanceCat(); }
     bool fGate() const { return m_fGate; }
+    VOptionBool fIcoChangeDetect() const { return m_fIcoChangeDetect; }
     bool fInline() const { return m_fInline; }
+    bool fInlineCFuncs() const { return m_fInlineCFuncs; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }

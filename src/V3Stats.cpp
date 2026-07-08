@@ -35,51 +35,60 @@ class StatsVisitor final : public VNVisitorConst {
     struct Counters final {
         // Nodes of given type
         std::array<uint64_t, VNType::NUM_TYPES()> m_statTypeCount{};
-        // Nodes of given type with given type immediate child
-        std::array<std::array<uint64_t, VNType::NUM_TYPES()>, VNType::NUM_TYPES()> m_statAbove{};
         // Prediction of given type
         std::array<uint64_t, VBranchPred::_ENUM_END> m_statPred{};
     };
 
     // STATE
     const bool m_fastOnly;  // When true, consider only fast functions
-    const AstNodeExpr* m_parentExprp = nullptr;  // Parent expression
+    bool m_empty = true;  // Netlist is empty
     Counters m_counters;  // The actual counts we will display
     Counters m_dumpster;  // Alternate buffer to make discarding parts of the tree easier
     Counters* m_accump;  // The currently active accumulator
     std::vector<uint64_t> m_statVarWidths;  // Variables of given width
+    std::vector<uint64_t> m_constPoolConsts;  // Constant pool constants of given width
+    // Constant pool tables of given width and depth
+    std::map<std::pair<int, int>, uint64_t> m_constPoolTables;
     std::vector<std::map<const std::string, uint32_t>>
         m_statVarWidthNames;  // Var names of given width
 
     // METHODS
     void countThenIterateChildren(AstNode* nodep) {
         ++m_accump->m_statTypeCount[nodep->type()];
+        if (nodep->type() != VNType::Netlist) m_empty = false;
         iterateChildrenConst(nodep);
     }
 
     // VISITORS
     void visit(AstVar* nodep) override {
         if (nodep->dtypep()) {
-            if (m_statVarWidths.size() <= static_cast<size_t>(nodep->width())) {
-                m_statVarWidths.resize(nodep->width() + 5);
-                if (v3Global.opt.statsVars()) {  //
-                    m_statVarWidthNames.resize(nodep->width() + 5);
+            if (nodep->constPoolEntry()) {
+                // Count constant pool entries
+                if (AstUnpackArrayDType* const uatp = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                    const int width = uatp->subDTypep()->width();
+                    const int depth = uatp->elementsConst();
+                    ++m_constPoolTables[{width, depth}];
+                } else {
+                    if (m_constPoolConsts.size() <= static_cast<size_t>(nodep->width())) {
+                        m_constPoolConsts.resize(nodep->width() + 5);
+                    }
+                    ++m_constPoolConsts.at(nodep->width());
                 }
-            }
-            ++m_statVarWidths.at(nodep->width());
-            if (v3Global.opt.statsVars()) {
-                ++m_statVarWidthNames.at(nodep->width())[nodep->prettyName()];
+            } else {
+                // Count proper variables
+                if (m_statVarWidths.size() <= static_cast<size_t>(nodep->width())) {
+                    m_statVarWidths.resize(nodep->width() + 5);
+                    if (v3Global.opt.statsVars()) {  //
+                        m_statVarWidthNames.resize(nodep->width() + 5);
+                    }
+                }
+                ++m_statVarWidths.at(nodep->width());
+                if (v3Global.opt.statsVars()) {
+                    ++m_statVarWidthNames.at(nodep->width())[nodep->prettyName()];
+                }
             }
         }
 
-        countThenIterateChildren(nodep);
-    }
-
-    void visit(AstNodeExpr* nodep) override {
-        // Count expression combinations
-        if (m_parentExprp) ++m_accump->m_statAbove[m_parentExprp->type()][nodep->type()];
-        VL_RESTORER(m_parentExprp);
-        m_parentExprp = nodep;
         countThenIterateChildren(nodep);
     }
 
@@ -104,6 +113,7 @@ public:
         , m_accump{fastOnly ? &m_dumpster : &m_counters} {
         UINFO(9, "Starting stats, fastOnly=" << fastOnly);
         iterateConst(nodep);
+        if (m_empty) return;
 
         // Shorthand
         const auto addStat = [&](const std::string& name, double count, unsigned precision = 0) {
@@ -126,6 +136,26 @@ public:
             }
         }
 
+        // Constant pool constants
+        for (size_t i = 0; i < m_constPoolConsts.size(); ++i) {
+            const uint64_t count = m_constPoolConsts.at(i);
+            if (!count) continue;
+            std::stringstream ss;
+            ss << "Vars Const, width " << std::setw(5) << std::dec << i;
+            addStat(ss.str(), count);
+        }
+
+        // Constant pool tables
+        for (const auto& it : m_constPoolTables) {
+            const int depth = it.first.second;
+            const int width = it.first.first;
+            const int count = it.second;
+            std::ostringstream ss;
+            ss << "Vars Table, width " << std::setw(5) << std::dec << width  //
+               << " x " << std::setw(5) << std::dec << depth;
+            addStat(ss.str(), count);
+        }
+
         // Node types (also total memory usage)
         const auto typeName
             = [](size_t t) { return std::string{VNType{static_cast<VNType::en>(t)}.ascii()}; };
@@ -138,22 +168,13 @@ public:
                 addStat("Node count, " + typeName(t), count);
             }
         }
-        addStat("Node memory TOTAL (MiB)", totalNodeMemoryUsage >> 20);
+        addStat("Node mem TOTAL (MiB)", totalNodeMemoryUsage >> 20);
 
         // Node Memory usage
         for (size_t t = 0; t < VNType::NUM_TYPES(); ++t) {
             if (const uint64_t count = m_counters.m_statTypeCount[t]) {
                 const double share = 100.0 * count * typeSize(t) / totalNodeMemoryUsage;
-                addStat("Node memory share (%), " + typeName(t), share, 2);
-            }
-        }
-
-        // Expression combinations
-        for (size_t t1 = 0; t1 < VNType::NUM_TYPES(); ++t1) {
-            for (size_t t2 = 0; t2 < VNType::NUM_TYPES(); ++t2) {
-                if (const uint64_t c = m_counters.m_statAbove[t1][t2]) {
-                    addStat("Expr combination, " + typeName(t1) + " over " + typeName(t2), c);
-                }
+                addStat("Node mem %, " + typeName(t), share, 2);
             }
         }
 

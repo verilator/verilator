@@ -97,6 +97,28 @@ struct VlWide final {
     bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
     EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
     const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    VlWide<N_Words>& operator&=(const VlWide& rhs) {
+        VL_AND_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator|=(const VlWide& rhs) {
+        VL_OR_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator^=(const VlWide& rhs) {
+        VL_XOR_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator+=(const VlWide& rhs) {
+        VL_ADD_W(N_Words, *this, *this, rhs);
+        return *this;
+    }
+    VlWide<N_Words>& operator*=(const VlWide& rhs) {
+        VlWide<N_Words> out{};
+        VL_MUL_W(N_Words, out, *this, rhs);
+        for (size_t i = 0; i < N_Words; ++i) m_storage[i] = out.m_storage[i];
+        return *this;
+    }
 
     // METHODS
     EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
@@ -315,6 +337,7 @@ public:
 
     ~VlProcess() {
         if (m_parentp) m_parentp->detach(this);
+        if (t_currentp == this) t_currentp = m_parentp.get();
     }
 
     void attach(VlProcess* childp) { m_children.insert(childp); }
@@ -1280,7 +1303,7 @@ public:
     }
 
     T_Value r_sum() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out += i.second;
         return out;
     }
@@ -1291,8 +1314,9 @@ public:
         return out;
     }
     T_Value r_product() const {
-        if (m_map.empty()) return T_Value(0);  // The big three do it this way
-        T_Value out = T_Value(1);
+        // The big three return 0 when assoc array is empty
+        if (m_map.empty()) return T_Value{};
+        T_Value out = T_Value{1};
         for (const auto& i : m_map) out *= i.second;
         return out;
     }
@@ -1304,8 +1328,9 @@ public:
         return out;
     }
     T_Value r_and() const {
-        if (m_map.empty()) return T_Value(0);  // The big three do it this way
-        T_Value out = ~T_Value(0);
+        // The big three return 0 when assoc array is empty
+        if (m_map.empty()) return T_Value{};
+        T_Value out = m_map.cbegin()->second;
         for (const auto& i : m_map) out &= i.second;
         return out;
     }
@@ -1317,7 +1342,7 @@ public:
         return out;
     }
     T_Value r_or() const {
-        T_Value out = T_Value(0);
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out |= i.second;
         return out;
     }
@@ -1328,7 +1353,7 @@ public:
         return out;
     }
     T_Value r_xor() const {
-        T_Value out = T_Value(0);
+        T_Value out = T_Value{};
         for (const auto& i : m_map) out ^= i.second;
         return out;
     }
@@ -2045,8 +2070,24 @@ struct VlNull final {
     operator T*() const {
         return nullptr;
     }
+    template <class T>
+    bool operator==(T* rhs) const {
+        return !rhs;
+    }
+    template <class T>
+    bool operator==(const T* rhs) const {
+        return !rhs;
+    }
 };
-inline bool operator==(const void* ptr, VlNull) { return !ptr; }
+
+template <class T>
+inline bool operator==(T* lhs, VlNull) {
+    return !lhs;
+}
+template <class T>
+inline bool operator==(const T* lhs, VlNull) {
+    return !lhs;
+}
 
 //===================================================================
 // Verilog class reference container

@@ -299,6 +299,7 @@ public:
     void fromp(DfgVertex* vtxp) { srcp(vtxp); }
     uint32_t lsb() const { return m_lsb; }
     void lsb(uint32_t value) { m_lsb = value; }
+    uint32_t msb() const { return m_lsb + width() - 1; }
 };
 
 class DfgUnitArray final : public DfgVertexUnary {
@@ -326,6 +327,21 @@ protected:
 
 public:
     ASTGEN_MEMBERS_DfgVertexBinary;
+};
+
+class DfgMatchMasked final : public DfgVertexBinary {
+    // Dfg equivalent of AstMatchMasked
+public:
+    DfgMatchMasked(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtype} {}
+    ASTGEN_MEMBERS_DfgMatchMasked;
+
+    DfgVertex* lhsp() const { return inputp(0); }
+    void lhsp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    DfgVertex* matchp() const { return inputp(1); }
+    void matchp(DfgVertex* vtxp) { inputp(1, vtxp); }
+
+    std::string srcName(size_t idx) const override { return idx ? "matchp" : "lhsp"; }
 };
 
 class DfgMux final : public DfgVertexBinary {
@@ -496,6 +512,7 @@ class DfgLogic final : public DfgVertexVariadic {
     AstScope* const m_scopep;  // The AstScope m_nodep is under, iff scoped
     const std::unique_ptr<CfgGraph> m_cfgp;
     std::vector<DfgVertex*> m_synth;  // Vertices this logic was synthesized into
+    bool m_drivesUnusedVars = false;  // Logic drives unused variables
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis
     bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
     bool m_reverted = false;  // Logic was synthesized (in part if non-synthesizable) then reverted
@@ -522,6 +539,8 @@ public:
     const CfgGraph& cfg() const { return *m_cfgp; }
     std::vector<DfgVertex*>& synth() { return m_synth; }
     const std::vector<DfgVertex*>& synth() const { return m_synth; }
+    bool drivesUnusedVars() const { return m_drivesUnusedVars; }
+    void setDrivesUnusedVars() { m_drivesUnusedVars = true; }
     bool selectedForSynthesis() const { return m_selectedForSynthesis; }
     void setSelectedForSynthesis() { m_selectedForSynthesis = true; }
     bool nonSynthesizable() const { return m_nonSynthesizable; }

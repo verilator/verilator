@@ -24,7 +24,6 @@ module t (
   // For "always [m:n] P" the action runs at cyc=K+n on success and at the
   // detected-violation cyc on failure -- both deterministic given the inputs.
   int high_bounded_pass_q[$];
-  int high_sbounded_pass_q[$];
   int high_degenerate_pass_q[$];
   int low_bounded_fail_q[$];
   int low_degenerate_fail_q[$];
@@ -39,19 +38,14 @@ module t (
   // Bounded weak always over constant-true input.
   assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
 
-  // Bounded strong s_always over constant-true input.
-  assert property (@(posedge clk) s_always [1:2] a_high) high_sbounded_pass_q.push_back(cyc);
-
   // Degenerate [0:0]: equivalent to immediate sample.
   assert property (@(posedge clk) always [0:0] a_high) high_degenerate_pass_q.push_back(cyc);
 
   // Constant-false: every attempt fails.
   assert property (@(posedge clk) always [0:3] a_low)
-    ;
   else low_bounded_fail_q.push_back(cyc);
 
   assert property (@(posedge clk) always [0:0] a_low)
-    ;
   else low_degenerate_fail_q.push_back(cyc);
 
   // CRC-driven random input: window [cyc..cyc+3] of a_rand.
@@ -80,25 +74,21 @@ module t (
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 19) begin
       // Constant-true window [0:3]: K=0..16 succeed at cyc K+3 = 3..19.
-      `checkd(high_bounded_pass_q.size(), 17);
-      `checkd(high_bounded_pass_q[0], 3);
+      `checkd(high_bounded_pass_q.size(), 17);  // Other sims: 16
+      `checkd(high_bounded_pass_q[0], 3);  // Other sims: 4
       `checkd(high_bounded_pass_q[$], 19);
-      // Strong [1:2]: K=0..17 succeed at cyc K+2 = 2..19.
-      `checkd(high_sbounded_pass_q.size(), 18);
-      `checkd(high_sbounded_pass_q[0], 2);
-      `checkd(high_sbounded_pass_q[$], 19);
       // Degenerate [0:0]: K=0..19 succeed at cyc K = 0..19.
-      `checkd(high_degenerate_pass_q.size(), 20);
-      `checkd(high_degenerate_pass_q[0], 0);
+      `checkd(high_degenerate_pass_q.size(), 20);  // Other sims: 19
+      `checkd(high_degenerate_pass_q[0], 0);  // Other sims: 0, 1
       `checkd(high_degenerate_pass_q[$], 19);
       // Constant-false: every attempt fails immediately.
-      `checkd(low_bounded_fail_q.size(), 20);
-      `checkd(low_degenerate_fail_q.size(), 20);
-      // CRC + disable streams: counts pinned (cross-checked against Questa).
+      `checkd(low_bounded_fail_q.size(), 20);  // Other sims: 19
+      `checkd(low_degenerate_fail_q.size(), 20);  // Other sims: 19
+      // CRC + disable streams
       `checkd(rand_bounded_pass_q.size(), 0);
-      `checkd(rand_bounded_fail_q.size(), 20);
+      `checkd(rand_bounded_fail_q.size(), 20);  // Other sims: 19, 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 13);
+      `checkd(disable_bounded_fail_q.size(), 13);  // Other sims: 5, 6
       $write("*-* All Finished *-*\n");
       $finish;
     end

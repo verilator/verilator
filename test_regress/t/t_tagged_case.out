@@ -11,142 +11,142 @@
 %Error-UNSUPPORTED: t/t_tagged_case.v:65:5: Unsupported: void (for tagged unions)
    65 |     void    Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:71:5: Unsupported: void (for tagged unions)
-   71 |     void      Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:73:5: Unsupported: void (for tagged unions)
+   73 |     void      Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:80:5: Unsupported: void (for tagged unions)
-   80 |     void      Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:82:5: Unsupported: void (for tagged unions)
+   82 |     void      Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:87:5: Unsupported: void (for tagged unions)
-   87 |     void   Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:89:5: Unsupported: void (for tagged unions)
+   89 |     void   Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:93:5: Unsupported: void (for tagged unions)
-   93 |     void  Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:95:5: Unsupported: void (for tagged unions)
+   95 |     void  Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:102:5: Unsupported: void (for tagged unions)
-  102 |     void  Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:104:5: Unsupported: void (for tagged unions)
+  104 |     void  Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:126:9: Unsupported: tagged union
-  126 |     v = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_case.v:128:9: Unsupported: tagged union
+  128 |     v = tagged Invalid;
       |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:128:5: Unsupported: case matches (for tagged union)
-  128 |     case (v) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:130:5: Unsupported: case matches (for tagged union)
+  130 |     case (v) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:129:7: Unsupported: tagged union
-  129 |       tagged Invalid : result = 1;
+%Error-UNSUPPORTED: t/t_tagged_case.v:131:7: Unsupported: tagged union
+  131 |       tagged Invalid : result = 1;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:130:7: Unsupported: tagged pattern
-  130 |       tagged Valid .n : result = n;
+%Error-UNSUPPORTED: t/t_tagged_case.v:132:7: Unsupported: tagged pattern
+  132 |       tagged Valid .n : result = n;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:130:20: Unsupported: pattern variable
-  130 |       tagged Valid .n : result = n;
+%Error-UNSUPPORTED: t/t_tagged_case.v:132:20: Unsupported: pattern variable
+  132 |       tagged Valid .n : result = n;
       |                    ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:135:9: Unsupported: tagged union
-  135 |     v = tagged Valid (123);
+%Error-UNSUPPORTED: t/t_tagged_case.v:137:9: Unsupported: tagged union
+  137 |     v = tagged Valid (123);
       |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:137:5: Unsupported: case matches (for tagged union)
-  137 |     case (v) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:139:5: Unsupported: case matches (for tagged union)
+  139 |     case (v) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:138:7: Unsupported: tagged union
-  138 |       tagged Invalid : result = -1;
+%Error-UNSUPPORTED: t/t_tagged_case.v:140:7: Unsupported: tagged union
+  140 |       tagged Invalid : result = -1;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:139:7: Unsupported: tagged pattern
-  139 |       tagged Valid .n : result = n;
+%Error-UNSUPPORTED: t/t_tagged_case.v:141:7: Unsupported: tagged pattern
+  141 |       tagged Valid .n : result = n;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:139:20: Unsupported: pattern variable
-  139 |       tagged Valid .n : result = n;
+%Error-UNSUPPORTED: t/t_tagged_case.v:141:20: Unsupported: pattern variable
+  141 |       tagged Valid .n : result = n;
       |                    ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:144:10: Unsupported: tagged union
-  144 |     wt = tagged Wide60 (60'hFEDCBA987654321);
+%Error-UNSUPPORTED: t/t_tagged_case.v:146:10: Unsupported: tagged union
+  146 |     wt = tagged Wide60 (60'hFEDCBA987654321);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:146:5: Unsupported: case matches (for tagged union)
-  146 |     case (wt) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:148:5: Unsupported: case matches (for tagged union)
+  148 |     case (wt) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:147:7: Unsupported: tagged union
-  147 |       tagged Invalid : wide60_result = 0;
+%Error-UNSUPPORTED: t/t_tagged_case.v:149:7: Unsupported: tagged union
+  149 |       tagged Invalid : wide60_result = 0;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:148:7: Unsupported: tagged pattern
-  148 |       tagged Wide60 .w : wide60_result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:150:7: Unsupported: tagged pattern
+  150 |       tagged Wide60 .w : wide60_result = w;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:148:21: Unsupported: pattern variable
-  148 |       tagged Wide60 .w : wide60_result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:150:21: Unsupported: pattern variable
+  150 |       tagged Wide60 .w : wide60_result = w;
       |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:154:10: Unsupported: tagged union
-  154 |     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
+%Error-UNSUPPORTED: t/t_tagged_case.v:158:10: Unsupported: tagged union
+  158 |     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:156:5: Unsupported: case matches (for tagged union)
-  156 |     case (wt) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:160:5: Unsupported: case matches (for tagged union)
+  160 |     case (wt) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:157:7: Unsupported: tagged union
-  157 |       tagged Invalid : wide90_result = 0;
+%Error-UNSUPPORTED: t/t_tagged_case.v:161:7: Unsupported: tagged union
+  161 |       tagged Invalid : wide90_result = 0;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:158:7: Unsupported: tagged pattern
-  158 |       tagged Wide90 .w : wide90_result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:162:7: Unsupported: tagged pattern
+  162 |       tagged Wide90 .w : wide90_result = w;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:158:21: Unsupported: pattern variable
-  158 |       tagged Wide90 .w : wide90_result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:162:21: Unsupported: pattern variable
+  162 |       tagged Wide90 .w : wide90_result = w;
       |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:164:10: Unsupported: tagged union
-  164 |     wt = tagged Byte8NonZeroLSB (8'hA5);
+%Error-UNSUPPORTED: t/t_tagged_case.v:170:10: Unsupported: tagged union
+  170 |     wt = tagged Byte8NonZeroLSB (8'hA5);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:166:5: Unsupported: case matches (for tagged union)
-  166 |     case (wt) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:172:5: Unsupported: case matches (for tagged union)
+  172 |     case (wt) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:167:7: Unsupported: tagged pattern
-  167 |       tagged Byte8NonZeroLSB .b : result = b;
+%Error-UNSUPPORTED: t/t_tagged_case.v:173:7: Unsupported: tagged pattern
+  173 |       tagged Byte8NonZeroLSB .b : result = b;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:167:30: Unsupported: pattern variable
-  167 |       tagged Byte8NonZeroLSB .b : result = b;
+%Error-UNSUPPORTED: t/t_tagged_case.v:173:30: Unsupported: pattern variable
+  173 |       tagged Byte8NonZeroLSB .b : result = b;
       |                              ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:173:10: Unsupported: tagged union
-  173 |     wt = tagged Word32LittleEndian (32'hDEADBEEF);
+%Error-UNSUPPORTED: t/t_tagged_case.v:179:10: Unsupported: tagged union
+  179 |     wt = tagged Word32LittleEndian (32'hDEADBEEF);
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:175:5: Unsupported: case matches (for tagged union)
-  175 |     case (wt) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:181:5: Unsupported: case matches (for tagged union)
+  181 |     case (wt) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:176:7: Unsupported: tagged pattern
-  176 |       tagged Word32LittleEndian .w : result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:182:7: Unsupported: tagged pattern
+  182 |       tagged Word32LittleEndian .w : result = w;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:176:33: Unsupported: pattern variable
-  176 |       tagged Word32LittleEndian .w : result = w;
+%Error-UNSUPPORTED: t/t_tagged_case.v:182:33: Unsupported: pattern variable
+  182 |       tagged Word32LittleEndian .w : result = w;
       |                                 ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:182:10: Unsupported: tagged union
-  182 |     at = tagged Arr '{10, 20, 30, 40};
+%Error-UNSUPPORTED: t/t_tagged_case.v:188:10: Unsupported: tagged union
+  188 |     at = tagged Arr '{10, 20, 30, 40};
       |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:184:5: Unsupported: case matches (for tagged union)
-  184 |     case (at) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:190:5: Unsupported: case matches (for tagged union)
+  190 |     case (at) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:185:7: Unsupported: tagged union
-  185 |       tagged Invalid : result = -1;
+%Error-UNSUPPORTED: t/t_tagged_case.v:191:7: Unsupported: tagged union
+  191 |       tagged Invalid : result = -1;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:186:7: Unsupported: tagged pattern
-  186 |       tagged Scalar .s : result = s;
+%Error-UNSUPPORTED: t/t_tagged_case.v:192:7: Unsupported: tagged pattern
+  192 |       tagged Scalar .s : result = s;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:186:21: Unsupported: pattern variable
-  186 |       tagged Scalar .s : result = s;
+%Error-UNSUPPORTED: t/t_tagged_case.v:192:21: Unsupported: pattern variable
+  192 |       tagged Scalar .s : result = s;
       |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:187:7: Unsupported: tagged pattern
-  187 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
+%Error-UNSUPPORTED: t/t_tagged_case.v:193:7: Unsupported: tagged pattern
+  193 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:187:18: Unsupported: pattern variable
-  187 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
+%Error-UNSUPPORTED: t/t_tagged_case.v:193:18: Unsupported: pattern variable
+  193 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
       |                  ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:192:13: Unsupported: tagged union
-  192 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+%Error-UNSUPPORTED: t/t_tagged_case.v:198:13: Unsupported: tagged union
+  198 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:192:25: Unsupported: tagged union
-  192 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+%Error-UNSUPPORTED: t/t_tagged_case.v:198:25: Unsupported: tagged union
+  198 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |                         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:194:5: Unsupported: case matches (for tagged union)
-  194 |     case (instr) matches
+%Error-UNSUPPORTED: t/t_tagged_case.v:200:5: Unsupported: case matches (for tagged union)
+  200 |     case (instr) matches
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:195:7: Unsupported: tagged pattern
-  195 |       tagged Add .* : result = -1;
+%Error-UNSUPPORTED: t/t_tagged_case.v:201:7: Unsupported: tagged pattern
+  201 |       tagged Add .* : result = -1;
       |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:195:18: Unsupported: pattern wildcard
-  195 |       tagged Add .* : result = -1;
+%Error-UNSUPPORTED: t/t_tagged_case.v:201:18: Unsupported: pattern wildcard
+  201 |       tagged Add .* : result = -1;
       |                  ^~
-%Error-UNSUPPORTED: t/t_tagged_case.v:196:7: Unsupported: tagged union
-  196 |       tagged Jmp (tagged JmpU .a) : result = a;
+%Error-UNSUPPORTED: t/t_tagged_case.v:202:7: Unsupported: tagged union
+  202 |       tagged Jmp (tagged JmpU .a) : result = a;
       |       ^~~~~~
 %Error: Exiting due to

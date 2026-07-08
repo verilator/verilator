@@ -240,7 +240,7 @@ void VlcTop::writeInfo(const string& filename) {
     //   FNF:<number_functions_found>
     //   FNH:<number_functions_hit>
     // Branches:
-    //   BRDA:<line_number>,<block_number>,<branch_number>,<taken_count_or_-_for_zero>
+    //   BRDA:<line_number>,<block_number>,<branch>,<taken_count_or_-_for_zero>
     //   BRF:<number_of_branches_found>
     //   BRH:<number_of_branches_hit>
     // Line counts:
@@ -273,8 +273,14 @@ void VlcTop::writeInfo(const string& filename) {
             for (const VlcPoint* point : infoPoints) {
                 os << "BRDA:" << sc.lineno() << ",";
                 os << "0,";
-                os << point_num << ",";
-                os << point->count() << "\n";
+                if (point->comment().empty()) {
+                    os << point_num;
+                } else {
+                    std::string comment(point->comment());
+                    std::replace(comment.begin(), comment.end(), ',', '_');
+                    os << comment;
+                }
+                os << "," << point->count() << "\n";
 
                 branchesHit += opt.countOk(point->count());
                 ++point_num;

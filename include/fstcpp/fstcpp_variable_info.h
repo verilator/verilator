@@ -335,10 +335,10 @@ public:
 	// Double variables should not use these array-based emitValueChange overloads.
 	// We implement them to satisfy the VairableInfo::dispatchHelper template instantiation.
 	void emitValueChange(uint64_t, const uint32_t *, EncodingType) {
-		throw std::runtime_error("emitValueChange(uint32_t*) not supported for Double");
+		FST_FAIL_STRING("emitValueChange(uint32_t*) not supported for Double");
 	}
 	void emitValueChange(uint64_t, const uint64_t *, EncodingType) {
-		throw std::runtime_error("emitValueChange(uint64_t*) not supported for Double");
+		FST_FAIL_STRING("emitValueChange(uint64_t*) not supported for Double");
 	}
 
 	void dumpInitialBits(std::vector<uint8_t> &buf) const {
