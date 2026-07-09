@@ -82,10 +82,20 @@ public:
 // OrderMoveGraph is constructed from the fine-grained OrderGraph.
 // It is a slightly coarsened representation of dependencies used to drive serialization.
 class OrderMoveGraph final : public V3Graph {
+    OrderGraph& m_orderGraph;  // The OrderGraph this move graph was built from
+
 public:
+    explicit OrderMoveGraph(OrderGraph& orderGraph)
+        : m_orderGraph{orderGraph} {}
+
+    OrderGraph& orderGraph() const { return m_orderGraph; }
+
     // Build an OrderMoveGraph from an OrderGraph
     static std::unique_ptr<OrderMoveGraph> build(OrderGraph&, const V3Order::TrigToSenMap&);
 };
+
+//======================================================================
+// OrderMoveDomScope
 
 // Information stored for each unique (domain, scope) pair. Mainly a list of ready vertices under
 // that (domain, scope). OrderMoveDomScope instances are themselves organized into a global ready

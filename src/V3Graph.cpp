@@ -388,3 +388,20 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
 
     cout << "dot -Tpdf -o ~/a.pdf " << filename << "\n";
 }
+
+void V3Graph::hashGraphDebug(const char* debugName) const {
+    // Disabled when there are no nondeterminism issues in flight.
+    if (!v3Global.opt.debugNondeterminism()) return;
+
+    // Assign a unique ID to each vertex in the graph
+    uint32_t id = 1;
+    std::unordered_map<const V3GraphVertex*, uint32_t> vx2Id;
+    for (const V3GraphVertex& vtx : vertices()) vx2Id[&vtx] = ++id;
+    // Hash the ids in enumeration order
+    V3Hash hash;
+    for (const V3GraphVertex& vtx : vertices()) {
+        for (const V3GraphEdge& edge : vtx.outEdges()) hash += vx2Id[edge.top()];
+    }
+    // Print the hash
+    UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToHex(hash.value()));
+}

@@ -879,8 +879,9 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
     execMTaskGraphp->removeTransitiveEdges();
 
     // Record summary stats for final m_tasks graph.
-    const auto report = execMTaskGraphp->parallelismReport(
-        [](const V3GraphVertex* vtxp) { return vtxp->as<const ExecMTask>()->cost(); });
+    const auto report = execMTaskGraphp->parallelismReport([](const V3GraphVertex* vtxp) {  //
+        return vtxp->as<const ExecMTask>()->cost();
+    });
     V3Stats::addStat("MTask graph, final, critical path cost", report.criticalPathCost());
     V3Stats::addStat("MTask graph, final, total graph cost", report.totalGraphCost());
     V3Stats::addStat("MTask graph, final, mtask count", report.vertexCount());
