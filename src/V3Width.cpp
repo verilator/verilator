@@ -109,6 +109,12 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
     return str << s_det[rhs];
 }
 
+enum StreamUse : uint8_t {
+    STREAM_USE_NONE,  // Stream concatenation is not allowed in this context
+    STREAM_USE_ASSIGN,  // Assignment-like context permits stream concatenation
+    STREAM_USE_CAST,  // Explicit cast context permits stream concatenation
+};
+
 #define v3widthWarn(lhs, rhs, msg) \
     v3warnCode(((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
                 : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
@@ -122,21 +128,26 @@ class WidthVP final {
     // Parameters to pass down hierarchy with visit functions.
     AstNodeDType* const m_dtypep;  // Parent's data type to resolve to
     const Stage m_stage;  // If true, report errors
+    const StreamUse m_streamUse;  // Current expression may be a stream concat
+
 public:
-    WidthVP(AstNodeDType* dtypep, Stage stage)
+    WidthVP(AstNodeDType* dtypep, Stage stage, StreamUse streamUse = STREAM_USE_NONE)
         : m_dtypep{dtypep}
-        , m_stage{stage} {
+        , m_stage{stage}
+        , m_streamUse{streamUse} {
         // Prelim doesn't look at assignments, so shouldn't need a dtype,
         // however AstPattern uses them
     }
-    WidthVP(Determ determ, Stage stage)
+    WidthVP(Determ determ, Stage stage, StreamUse streamUse = STREAM_USE_NONE)
         : m_dtypep{nullptr}
-        , m_stage{stage} {
+        , m_stage{stage}
+        , m_streamUse{streamUse} {
         if (determ != SELF && stage != PRELIM)
             v3fatalSrc("Context-determined width request only allowed as prelim step");
     }
     WidthVP* p() { return this; }
     bool selfDtm() const { return m_dtypep == nullptr; }
+    StreamUse streamUse() const { return m_streamUse; }
     AstNodeDType* dtypep() const {
         // Detect where overrideDType is probably the intended call
         UASSERT(m_dtypep, "Width dtype request on self-determined or preliminary VUP");
@@ -254,6 +265,12 @@ class WidthVisitor final : public VNVisitor {
         EXTEND_LHS,  // Extend with sign if node signed. e.g. node=y in ASSIGN(y,x), "x = y"
         EXTEND_OFF  // No extension
     };
+
+    static StreamUse streamUseForDeterm(Determ determ) {
+        return determ == ASSIGN ? STREAM_USE_ASSIGN : STREAM_USE_NONE;
+    }
+
+    StreamUse currentStreamUse() const { return m_vup ? m_vup->streamUse() : STREAM_USE_NONE; }
 
     static void packIfUnpacked(AstNodeExpr* const nodep) {
         if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
@@ -969,6 +986,15 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetInteger();
         }
     }
+    bool streamImplicitUseAllowed(const AstNodeStream* nodep) const {
+        if (m_streamConcat) return true;
+        if (m_vup && m_vup->streamUse() != STREAM_USE_NONE) return true;
+
+        const AstNode* const backp = nodep->backp();
+        if (!backp) return true;  // Error elsewhere
+
+        return VN_IS(backp, NodeAssign);
+    }
     void visit(AstNodeStream* nodep) override {
         VL_RESTORER(m_streamConcat);
         // UINFOTREE(1, nodep, "stream-in vup" << m_vup, "stream-in ");
@@ -1002,6 +1028,12 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (m_vup->final()) {
+            if (!streamImplicitUseAllowed(nodep)) {
+                nodep->v3error(
+                    "Streaming concatenation cannot be used in an implicitly cast context "
+                    "(IEEE 1800-2023 11.4.17)\n"
+                    << nodep->warnMore() << "... Suggest use a cast");
+            }
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
                 nodeForUnsizedWarning(nodep)->v3warn(
@@ -2071,25 +2103,25 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCvtPackString* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
-        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
     }
     void visit(AstCvtPackedToArray* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
-        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
     }
     void visit(AstCvtArrayToArray* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
-        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
     }
     void visit(AstCvtArrayToPacked* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
-        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
     }
     void visit(AstCvtUnpackedToQueue* nodep) override {
@@ -2712,7 +2744,7 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(fromp->deleteTree(), fromp);
                 }
             }
-            userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
+            userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
             UINFOTREE(9, nodep, "", "CastDit");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
@@ -2815,7 +2847,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->final()) {
             UINFOTREE(9, nodep, "", "CastFPit");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
-                         EXTEND_EXP, false);
+                         EXTEND_EXP, false, STREAM_USE_CAST);
             UINFOTREE(9, nodep, "", "CastFin");
             AstNodeExpr* const underp = nodep->fromp()->unlinkFrBack();
             underp->dtypeFrom(nodep);
@@ -2838,7 +2870,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("Size-changing cast to zero or negative size: " << width);
                 width = 1;
             }
-            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
             castSized(nodep, nodep->lhsp(), width);  // lhsp may change
         }
         if (m_vup->final()) {
@@ -2851,7 +2883,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstCastWrap* nodep) override {
         // Inserted by V3Width only so we know has been resolved
-        userIterateAndNext(nodep->lhsp(), WidthVP{nodep->dtypep(), BOTH}.p());
+        userIterateAndNext(nodep->lhsp(), WidthVP{nodep->dtypep(), BOTH, STREAM_USE_CAST}.p());
     }
     void castSized(AstNode* nodep, AstNode* underp, int width) {
         const AstBasicDType* underDtp = VN_CAST(underp->dtypep(), BasicDType);
@@ -2872,7 +2904,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypep(calcDtp);
             // We ignore warnings as that is sort of the point of a cast
             iterateCheck(nodep, "Cast expr", underp, CONTEXT_DET, FINAL, calcDtp, EXTEND_EXP,
-                         false);
+                         false, STREAM_USE_CAST);
             VL_DANGLING(underp);
             underp = nodep->op1p();  // Above asserts that op1 was underp pre-relink
         }
@@ -7534,7 +7566,7 @@ class WidthVisitor final : public VNVisitor {
                     // Output args: at return caller = callee, reverse direction.
                     checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
                                      portp->direction() == VDirection::OUTPUT);
-                    userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
+                    userIterate(pinp, WidthVP{portDTypep, FINAL, STREAM_USE_ASSIGN}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
                 }
@@ -9203,7 +9235,7 @@ class WidthVisitor final : public VNVisitor {
 
     AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, AstNodeDType* expDTypep, ExtendRule extendRule,
-                          bool warnOn = true) {
+                          bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE) {
         // Perform data type check on underp, which is underneath parentp used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
@@ -9211,30 +9243,37 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(underp, parentp, "Node has no child");
         UASSERT_OBJ(underp->dtypep(), underp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
+        const StreamUse childStreamUse
+            = streamUse != STREAM_USE_NONE ? streamUse : streamUseForDeterm(determ);
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
             underp->v3error(ucfirst(parentp->prettyOperatorName())
                             << " expected non-datatype " << side << " but "
                             << underp->prettyNameQ() << " is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+            underp = userIterateSubtreeReturnEdits(
+                underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+            underp = userIterateSubtreeReturnEdits(
+                underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtD(VN_AS(underp, NodeExpr));
-            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
+            underp = userIterateSubtreeReturnEdits(
+                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
-            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
+            underp = userIterateSubtreeReturnEdits(
+                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtString(VN_AS(underp, NodeExpr));
-            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
+            underp = userIterateSubtreeReturnEdits(
+                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
@@ -9262,7 +9301,8 @@ class WidthVisitor final : public VNVisitor {
                 // is e.g. an ADD, the ADD will auto-adjust to the proper data type
                 // or if another operation e.g. ATOI will not.
                 if (determ == SELF) {
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, FINAL}.p());
+                    underp = userIterateSubtreeReturnEdits(
+                        underp, WidthVP{SELF, FINAL, childStreamUse}.p());
                 } else if (determ == ASSIGN) {
                     // IEEE: Signedness is solely determined by the RHS
                     // (underp), not by the LHS (expDTypep)
@@ -9274,9 +9314,11 @@ class WidthVisitor final : public VNVisitor {
                             VSigning::fromBool(underp->isSigned()));
                         UINFO(9, "Assignment of opposite-signed RHS to LHS: " << parentp);
                     }
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{subDTypep, FINAL}.p());
+                    underp = userIterateSubtreeReturnEdits(
+                        underp, WidthVP{subDTypep, FINAL, childStreamUse}.p());
                 } else {
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{subDTypep, FINAL}.p());
+                    underp = userIterateSubtreeReturnEdits(
+                        underp, WidthVP{subDTypep, FINAL, childStreamUse}.p());
                 }
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
@@ -9315,11 +9357,13 @@ class WidthVisitor final : public VNVisitor {
                                     << " interface modport on " << side << " but got "
                                     << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
                 } else {
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                    underp = userIterateSubtreeReturnEdits(
+                        underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
                 }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
-                underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                underp = userIterateSubtreeReturnEdits(
+                    underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
             }
         }
         return underp;
