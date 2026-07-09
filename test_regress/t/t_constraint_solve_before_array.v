@@ -72,6 +72,17 @@ class ScFirst;  // scalar solved before an array
   }
 endclass
 
+class DynArr;  // dynamic array solved before a scalar
+  rand int unsigned d[];
+  rand int unsigned s;
+  constraint c {
+    d.size() == 3;
+    solve d before s;
+    foreach (d[i]) d[i] inside {[1:10]};
+    s == d[0] + d[1] + d[2];
+  }
+endclass
+
 module t;
   OneD o1;
   TwoD o2;
@@ -79,6 +90,7 @@ module t;
   Chain oc;
   Que oq;
   ScFirst osf;
+  DynArr odn;
   int ok;
   initial begin
     o1 = new;
@@ -87,6 +99,7 @@ module t;
     oc = new;
     oq = new;
     osf = new;
+    odn = new;
     for (int i = 0; i < 10; ++i) begin
       ok = o1.randomize();
       `checkd(ok, 1);
@@ -115,6 +128,11 @@ module t;
       `checkd(ok, 1);
       `checkd(osf.a[0], osf.xw);
       `checkd(osf.a[1], osf.xw + 1);
+
+      ok = odn.randomize();
+      `checkd(ok, 1);
+      `checkd(odn.d.size(), 3);
+      `checkd(odn.s, odn.d[0] + odn.d[1] + odn.d[2]);
     end
     $write("*-* All Finished *-*\n");
     $finish;

@@ -104,6 +104,9 @@ public:
         count_cache[base_name] = count;
         return count;
     }
+    bool hasMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
+        return arr_vars.find(base_name + "0") != arr_vars.end();
+    }
 };
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {

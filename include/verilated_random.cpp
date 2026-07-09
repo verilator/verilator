@@ -998,15 +998,15 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
     // Step 3: Solve phase by phase
     std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
 
-    bool hasNonEnumArray = false;
+    bool needsAllLogic = false;
     for (const auto& var : m_vars) {
         if (var.second->dimension() == 0) continue;
-        if (var.second->countMatchingElements(m_arr_vars, var.second->name()) == 0) {
-            hasNonEnumArray = true;
+        if (!var.second->hasMatchingElements(m_arr_vars, var.second->name())) {
+            needsAllLogic = true;
             break;
         }
     }
-    const char* const logicp = hasNonEnumArray ? "ALL" : "QF_ABV";
+    const char* const logicp = needsAllLogic ? "ALL" : "QF_ABV";
 
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);
@@ -1085,8 +1085,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                         auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
                         it->second->setArrayInfo(arrVarsp);
                         // Enumerable arrays: query each element for a QF_ABV-safe pin.
-                        if (it->second->countMatchingElements(m_arr_vars, it->second->name())
-                            > 0) {
+                        if (it->second->hasMatchingElements(m_arr_vars, it->second->name())) {
                             it->second->emitGetValue(os);
                             continue;
                         }

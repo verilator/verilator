@@ -2162,6 +2162,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Generate solveBefore() calls for each (lhs, rhs) variable pair.
         // Do NOT iterate children -- these are variable references, not constraint expressions.
         FileLine* const fl = nodep->fileline();
+        for (AstNodeExpr* const listp : {nodep->lhssp(), nodep->rhssp()}) {
+            for (AstNodeExpr* ep = listp; ep; ep = VN_CAST(ep->nextp(), NodeExpr)) {
+                if (VN_IS(ep->dtypep()->skipRefp(), AssocArrayDType)) {
+                    ep->v3warn(E_UNSUPPORTED,
+                               "Unsupported: 'solve ... before' with associative array");
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    return;
+                }
+            }
+        }
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
