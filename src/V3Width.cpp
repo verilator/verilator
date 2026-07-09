@@ -6460,6 +6460,7 @@ class WidthVisitor final : public VNVisitor {
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
+            convertArrayToUnpackedAssign(nodep);
             // UINFOTREE(1, nodep, "", "AssignOut");
         }
         if (VN_IS(nodep, AssignForce)) checkForceReleaseLhs(nodep, nodep->lhsp());
@@ -6580,6 +6581,30 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "L-value is untyped");
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "L-value width is unsized");
         checkForceReleaseLhs(nodep, nodep->lhsp());
+    }
+
+    static void convertArrayToUnpackedAssign(AstNodeAssign* nodep) {
+        AstNodeDType* const lhsDTypep = nodep->lhsp()->dtypep()->skipRefp();
+        if (!VN_IS(lhsDTypep, UnpackArrayDType)) return;
+
+        AstNodeExpr* const rhsp = nodep->rhsp();
+        AstNodeDType* const rhsDTypep = rhsp->dtypep()->skipRefp();
+        if (!VN_IS(rhsDTypep, DynArrayDType) && !VN_IS(rhsDTypep, QueueDType)) return;
+
+        int srcElementBits = 1;
+        if (const AstNodeDType* const elemDtp = rhsDTypep->subDTypep()->skipRefp()) {
+            srcElementBits = elemDtp->width();
+        }
+        int dstElementBits = 1;
+        if (const AstNodeDType* const elemDtp = lhsDTypep->subDTypep()->skipRefp()) {
+            dstElementBits = elemDtp->width();
+        }
+
+        rhsp->unlinkFrBack();
+        AstCvtArrayToArray* const newp = new AstCvtArrayToArray{
+            rhsp->fileline(), rhsp, lhsDTypep, false, 1, dstElementBits, srcElementBits};
+        newp->didWidth(true);
+        nodep->rhsp(newp);
     }
 
     static bool isFormatNonNumericArg(const AstNodeDType* dtypep) {
