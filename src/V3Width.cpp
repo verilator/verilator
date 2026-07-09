@@ -9251,29 +9251,26 @@ class WidthVisitor final : public VNVisitor {
                             << " expected non-datatype " << side << " but "
                             << underp->prettyNameQ() << " is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
-            underp = userIterateSubtreeReturnEdits(
-                underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
+            underp = userIterateSubtreeReturnEdits(underp,
+                                                   WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
-            underp = userIterateSubtreeReturnEdits(
-                underp, WidthVP{expDTypep, FINAL, childStreamUse}.p());
+            underp = userIterateSubtreeReturnEdits(underp,
+                                                   WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtD(VN_AS(underp, NodeExpr));
-            underp = userIterateSubtreeReturnEdits(
-                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
-            underp = userIterateSubtreeReturnEdits(
-                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtString(VN_AS(underp, NodeExpr));
-            underp = userIterateSubtreeReturnEdits(
-                oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
