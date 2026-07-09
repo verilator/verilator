@@ -4566,7 +4566,6 @@ class RandomizeVisitor final : public VNVisitor {
     // frozen variable requires only membership, not a freshly drawn bucket.
     AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
                             const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
-        if (!chainp) return chainp;
         FileLine* const fl = distp->fileline();
         AstNodeExpr* gatep = nullptr;
         std::unordered_set<const AstVar*> gatedVars;

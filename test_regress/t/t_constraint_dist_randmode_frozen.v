@@ -82,6 +82,19 @@ class MultiVar;
   constraint c {(x + y) dist {10 := 9, 1000 := 1};}
 endclass
 
+class DupVar;
+  rand uint x;
+  constraint c {(x + x) dist {10 := 9, 20 := 1};}
+endclass
+
+class DupMember;
+  rand Sub s;
+  constraint c {(s.x + s.x) dist {10 := 9, 20 := 1};}
+  function new();
+    s = new;
+  endfunction
+endclass
+
 class RtWeight;
   rand uint x;
   uint w;
@@ -257,6 +270,48 @@ module t;
       ok = m.randomize();
       `checkd(ok, 0);
       `checkd(m.y, 500);
+    end
+
+    // Same var twice in the dist expression, frozen: membership of 2*x decides.
+    begin
+      DupVar d;
+      d = new;
+      ok = d.randomize();
+      `checkd(ok, 1);
+      d.x.rand_mode(0);
+      d.x = 5;
+      for (int i = 0; i < 8; ++i) begin
+        ok = d.randomize();
+        `checkd(ok, 1);
+        `checkd(d.x, 5);
+      end
+      d.x = 7;
+      for (int i = 0; i < 8; ++i) begin
+        ok = d.randomize();
+        `checkd(ok, 0);
+        `checkd(d.x, 7);
+      end
+    end
+
+    // Same sub-object member twice in the dist expression, frozen.
+    begin
+      DupMember dm;
+      dm = new;
+      ok = dm.randomize();
+      `checkd(ok, 1);
+      dm.s.x.rand_mode(0);
+      dm.s.x = 5;
+      for (int i = 0; i < 8; ++i) begin
+        ok = dm.randomize();
+        `checkd(ok, 1);
+        `checkd(dm.s.x, 5);
+      end
+      dm.s.x = 7;
+      for (int i = 0; i < 8; ++i) begin
+        ok = dm.randomize();
+        `checkd(ok, 0);
+        `checkd(dm.s.x, 7);
+      end
     end
 
     // Runtime weight of zero excludes the bucket's values (18.5.3): frozen
