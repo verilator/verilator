@@ -4563,8 +4563,8 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         ;
 
 severity_system_task<nodep>: // IEEE: severity_system_task/elaboration_severity_system_task (1800-2009)
-        //                      // TODO: These currently just make initial statements, should instead give runtime error
-                severity_system_task_guts ';'           { $$ = new AstInitial{$<fl>1, $1}; }
+        //                      // Elaboration-time task; V3Width evaluates and removes it
+                severity_system_task_guts ';'           { $$ = $1; }
         ;
 
 severity_system_task_guts<nodep>:    // IEEE: part of severity_system_task (1800-2009)
