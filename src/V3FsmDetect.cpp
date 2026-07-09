@@ -988,21 +988,15 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    static AstVarRef* tryExtractVarRef(AstNodeExpr* const exprp) {
-        AstVarRef* const varp = VN_CAST(AstArraySel::baseFromp(exprp, true), VarRef);
-        if (!varp) {
-            exprp->v3warn(COVERIGN,
-                          "Ignoring unsupported: FSM coverage with " << exprp->prettyTypeName());
-            return nullptr;
-        }
-        return varp;
+    static AstVarRef* extractVarRefQuiet(AstNodeExpr* const exprp) {
+        return VN_CAST(AstArraySel::baseFromp(exprp, true), VarRef);
     }
 
     static AstNodeAssign* nodeStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
+        AstVarRef* const lhsp = extractVarRefQuiet(assp->lhsp());
         AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
         if (!rhsp || !lhsp) return nullptr;
         stateVscp = lhsp->varScopep();
@@ -1016,7 +1010,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
+        AstVarRef* const lhsp = extractVarRefQuiet(assp->lhsp());
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp || !lhsp) return nullptr;
         if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
@@ -1228,7 +1222,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* vrefp = VN_CAST(eqp->lhsp(), VarRef);
         AstNodeExpr* valuep = eqp->rhsp();
         if (!vrefp) {
-            vrefp = tryExtractVarRef(eqp->rhsp());
+            vrefp = extractVarRefQuiet(eqp->rhsp());
             if (!vrefp) { return false; }
             valuep = eqp->lhsp();
         }

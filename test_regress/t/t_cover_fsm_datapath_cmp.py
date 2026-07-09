@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage concat as unsupported operation test
+# DESCRIPTION: Verilator: FSM coverage ignores unrelated datapath comparisons
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(fails=True, expect_filename=test.golden_filename, verilator_flags2=['--coverage'])
+# Fail if speculative FSM extraction emits COVERIGN for unrelated datapath comparisons.
+test.lint(verilator_flags2=['--coverage-fsm', '-Werror-COVERIGN'])
 
 test.passes()
