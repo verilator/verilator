@@ -1097,50 +1097,42 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             };
 
             auto parseGetValue = [&]() -> bool {
+                // Parse ((name value) ...): one paren-depth counter drives every match.
                 char c;
-                // Read a balanced parenthesised group, opening '(' already read.
-                auto readGroup = [&](std::string& out) {
-                    out = "(";
-                    int depth = 1;
-                    char gc;
-                    while (depth > 0 && os.get(gc)) {
-                        out += gc;
-                        if (gc == '(') {
-                            ++depth;
-                        } else if (gc == ')') {
-                            --depth;
-                        }
-                    }
-                };
                 os >> c;  // outer '('
-                while (true) {
-                    os >> c;
-                    if (c == ')') break;
-                    if (c != '(') return false;
-
-                    // LHS: the queried term echoed back, a name or (select ...) group.
-                    os >> std::ws;
-                    std::string name;
-                    if (os.peek() == '(') {
-                        os.get(c);
-                        readGroup(name);
+                if (c != '(') return false;
+                int depth = 1;
+                std::string tokens[2];
+                std::string cur;
+                int fields = 0;
+                auto flush = [&]() {
+                    if (cur.empty()) return;
+                    if (fields < 2) tokens[fields] = cur;
+                    ++fields;
+                    cur.clear();
+                };
+                while (depth > 0 && os.get(c)) {
+                    if (c == '(') {
+                        ++depth;
+                        if (depth >= 3) cur += c;
+                    } else if (c == ')') {
+                        --depth;
+                        if (depth >= 2) {
+                            cur += c;
+                        } else if (depth == 1) {
+                            flush();
+                            if (fields == 2) solvedValues[tokens[0]] = tokens[1];
+                            fields = 0;
+                        }
+                    } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                        if (depth >= 3) {
+                            cur += c;
+                        } else {
+                            flush();
+                        }
                     } else {
-                        os >> name;
+                        cur += c;
                     }
-
-                    os >> std::ws;
-                    std::string value;
-                    if (os.peek() == '(') {
-                        os.get(c);
-                        readGroup(value);
-                        os >> c;  // pair-closing ')'
-                    } else {
-                        while (os.get(c) && c != ')') { value += c; }
-                        const size_t end = value.find_last_not_of(" \t\n\r");
-                        if (end != std::string::npos) value = value.substr(0, end + 1);
-                    }
-
-                    solvedValues[name] = value;
                 }
                 return true;
             };
