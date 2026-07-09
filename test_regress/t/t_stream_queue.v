@@ -5,17 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%h' exp='%h'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks_w(width,gotv,expv) do begin \
   logic [(width)-1:0] got_check; \
   logic [(width)-1:0] exp_check; \
   got_check = (gotv); \
   exp_check = (expv); \
-  if (got_check != exp_check) begin \
-    $write("%%Error: %s:%0d:  got='%h' exp='%h'\n", `__FILE__,`__LINE__, got_check, exp_check); \
-    `stop; \
-  end \
+  `checks(got_check, exp_check) \
 end while(0);
-`define checks(gotv,expv) `checks_w($bits(expv), gotv, expv)
 module t;
 
   logic [7:0] i_char;

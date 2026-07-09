@@ -110,9 +110,9 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
 }
 
 enum StreamUse : uint8_t {
-    STREAM_USE_NONE,
-    STREAM_USE_ASSIGN,
-    STREAM_USE_CAST,
+    STREAM_USE_NONE,  // Stream concatenation is not allowed in this context
+    STREAM_USE_ASSIGN,  // Assignment-like context permits stream concatenation
+    STREAM_USE_CAST,  // Explicit cast context permits stream concatenation
 };
 
 #define v3widthWarn(lhs, rhs, msg) \
@@ -128,7 +128,7 @@ class WidthVP final {
     // Parameters to pass down hierarchy with visit functions.
     AstNodeDType* const m_dtypep;  // Parent's data type to resolve to
     const Stage m_stage;  // If true, report errors
-    const StreamUse m_streamUse;  // Whether current expression may be a stream concat
+    const StreamUse m_streamUse;  // Current expression may be a stream concat
 
 public:
     WidthVP(AstNodeDType* dtypep, Stage stage, StreamUse streamUse = STREAM_USE_NONE)
@@ -148,7 +148,6 @@ public:
     WidthVP* p() { return this; }
     bool selfDtm() const { return m_dtypep == nullptr; }
     StreamUse streamUse() const { return m_streamUse; }
-    bool streamUseAllowed() const { return m_streamUse != STREAM_USE_NONE; }
     AstNodeDType* dtypep() const {
         // Detect where overrideDType is probably the intended call
         UASSERT(m_dtypep, "Width dtype request on self-determined or preliminary VUP");
@@ -989,17 +988,12 @@ class WidthVisitor final : public VNVisitor {
     }
     bool streamImplicitUseAllowed(const AstNodeStream* nodep) const {
         if (m_streamConcat) return true;
-        if (m_vup && m_vup->streamUseAllowed()) return true;
+        if (m_vup && m_vup->streamUse() != STREAM_USE_NONE) return true;
 
         const AstNode* const backp = nodep->backp();
         if (!backp) return true;  // Error elsewhere
 
-        if (const AstNodeAssign* const assignp = VN_CAST(backp, NodeAssign)) {
-            return assignp->lhsp() == nodep || assignp->rhsp() == nodep;
-        }
-
-        // Explicit cast nodes are legal contexts for the stream operand.
-        return VN_IS(backp, Cast) || VN_IS(backp, CastSize) || VN_IS(backp, CastWrap);
+        return VN_IS(backp, NodeAssign);
     }
     void visit(AstNodeStream* nodep) override {
         VL_RESTORER(m_streamConcat);
