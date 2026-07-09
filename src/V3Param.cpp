@@ -1311,26 +1311,47 @@ class ParamProcessor final {
                     AstNodeDType* curDTypep = varp->dtypep();
                     AstNode* topp = dotp;
                     AstDot* outerDotp = VN_CAST(dotp->backp(), Dot);
-                    // On any mismatch (non-ParseRef rhs, non-packed-struct dtype, or
-                    // unknown field name) leave the outer Dots intact so V3Width can
-                    // emit the proper user-facing diagnostic.
-                    while (outerDotp && outerDotp->lhsp() == topp) {
+                    const auto errorRecover = [&](AstDot* const badp, const string& msg) {
+                        badp->v3error(msg);
+                        badp->replaceWith(new AstConst{badp->fileline(), AstConst::Signed32{}, 0});
+                        VL_DO_DANGLING(badp->deleteTree(), badp);
+                    };
+                    bool errored = false;
+                    while (outerDotp && outerDotp->lhsp() == topp) {  // LCOV_EXCL_BR_LINE
                         const AstParseRef* const fieldRefp = VN_CAST(outerDotp->rhsp(), ParseRef);
-                        if (!fieldRefp) break;
-                        AstNodeDType* const skippedp = curDTypep ? curDTypep->skipRefp() : nullptr;
+                        if (!fieldRefp) {
+                            errorRecover(outerDotp, "Malformed dotted select in parameter value");
+                            errored = true;
+                            break;
+                        }
+                        UASSERT_OBJ(curDTypep, outerDotp,
+                                    "curDTypep null in struct field chain walk");
+                        AstNodeDType* const skippedp = curDTypep->skipRefp();
                         AstNodeUOrStructDType* const structp
                             = VN_CAST(skippedp, NodeUOrStructDType);
-                        if (!structp) break;
+                        if (!structp) {
+                            errorRecover(outerDotp,
+                                         "Dotted member select on non-struct parameter value");
+                            errored = true;
+                            break;
+                        }
                         AstMemberDType* const foundMemp = VN_CAST(
                             m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
-                        UASSERT_OBJ(foundMemp, outerDotp, "member not found in struct/union");
-                        if (!foundMemp->subDTypep()) break;
+                        if (!foundMemp) {
+                            errorRecover(outerDotp, "Member " + fieldRefp->prettyNameQ()
+                                                        + " not found in structure");
+                            errored = true;
+                            break;
+                        }
+                        UASSERT_OBJ(foundMemp->subDTypep(), outerDotp,
+                                    "member has null subDTypep");
                         totalLsb += foundMemp->lsb();
                         sliceWidth = foundMemp->width();
                         curDTypep = foundMemp->subDTypep();
                         topp = outerDotp;
                         outerDotp = VN_CAST(outerDotp->backp(), Dot);
                     }
+                    if (errored) return;
                     if (topp == dotp) {
                         dotp->replaceWith(constp->cloneTree(false));
                         VL_DO_DANGLING(dotp->deleteTree(), dotp);

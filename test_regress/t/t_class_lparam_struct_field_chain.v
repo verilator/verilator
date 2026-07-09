@@ -35,6 +35,12 @@ class C #(parameter int W = 1);
                            tag: W[7:0] + 8'd2};
 endclass
 
+// Wrapper class containing the use of another class
+class D #(parameter int W = 1);
+  typedef C#(W) CC;
+  localparam int q = int'(CC::cfg.tag) + 100;
+endclass
+
 module Sub #(parameter int WIDTH = 0) ();
 endmodule
 
@@ -47,6 +53,9 @@ module Mid #(parameter int W = 8) ();
   // (2) nested struct field access -> two loop iterations, lsb accumulation
   Sub #(int'(CFG::cfg.jt.cam_type)) u_cam ();
   Sub #(int'(CFG::cfg.jt.depth)) u_depth ();
+  // (3) nested struct-field Dot buried in a wrapper class's lparam value
+  typedef D#(W) DD;
+  Sub #(int'(DD::q)) u_q ();
 endmodule
 
 module t;
@@ -59,6 +68,8 @@ module t;
     `checkh(u.u_cam.WIDTH, 32'd8);
     // cfg.jt.depth = W + 1 = 9 (nested, lsb 8)
     `checkh(u.u_depth.WIDTH, 32'd9);
+    // q = cfg.tag + 100 = 10 + 100 = 110
+    `checkh(u.u_q.WIDTH, 32'd110);
     $write("*-* All Finished *-*\n");
     $finish;
   end
