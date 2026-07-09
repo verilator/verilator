@@ -74,6 +74,21 @@ class AssocInt extends Base;
   endfunction
 endclass
 
+class Leaf;
+  rand uint a[3];
+  constraint c {foreach (a[i]) a[i] inside {[1:10]};}
+endclass
+
+class Nested;
+  rand uint x;
+  rand Leaf leaf;
+  constraint xc {x inside {[1:100]};}
+  constraint lc {foreach (leaf.a[i]) leaf.a[i] inside {[1:10]};}
+  function new();
+    leaf = new;
+  endfunction
+endclass
+
 class NoModes;  // no rand_mode() call anywhere; scoped arg only
   rand uint x, y;
   rand uint arr[2];
@@ -209,6 +224,23 @@ module t;
         `checkd(nm.y, snapy);
         if (nm.arr !== snaparr) `checkd(0, 1);
         if (nm.x < 1 || nm.x > 100) `checkd(0, 1);
+      end
+    end
+
+    // Frozen rand array inside a sub-object: mode gate via member select.
+    begin
+      Nested n;
+      uint snapn[3];
+      n = new;
+      ok = n.randomize();
+      `checkd(ok, 1);
+      n.leaf.a.rand_mode(0);
+      snapn = n.leaf.a;
+      for (int i = 0; i < 5; ++i) begin
+        ok = n.randomize();
+        `checkd(ok, 1);
+        if (n.leaf.a !== snapn) `checkd(0, 1);
+        if (n.x < 1 || n.x > 100) `checkd(0, 1);
       end
     end
 
