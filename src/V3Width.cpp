@@ -6680,7 +6680,13 @@ class WidthVisitor final : public VNVisitor {
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
-                if (AstVarRef* const varRefp = VN_CAST(argp, VarRef)) {
+                const AstNodeExpr* formatTypeArgp = argp;
+                if (const AstCMethodHard* const cmethp = VN_CAST(formatTypeArgp, CMethodHard)) {
+                    if (cmethp->method() == VCMethod::ARRAY_AT) formatTypeArgp = cmethp->fromp();
+                } else if (const AstArraySel* const arselp = VN_CAST(formatTypeArgp, ArraySel)) {
+                    formatTypeArgp = arselp->fromp();
+                }
+                if (const AstVarRef* const varRefp = VN_CAST(formatTypeArgp, VarRef)) {
                     if (AstClassRefDType* const classRefp
                         = VN_CAST(varRefp->dtypep(), ClassRefDType)) {
                         if (classRefp->classp()) {
