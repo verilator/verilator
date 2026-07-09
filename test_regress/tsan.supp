@@ -1,0 +1,33 @@
+# DESCRIPTION: Verilator: ThreadSanitizer default suppressions for test_regress
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+# This file is used via TSAN_OPTIONS by driver.py when running a test with
+# ThreadSanitizer (--tsan option, or test.enable_tsan()). Suppress known
+# races in the runtime library. TODO: most of these should likely be fixed.
+
+# Racy update of the cached last-used context pointer
+race:*Verilated::lastContextp*
+
+# Model teardown may destroy mtask state while a worker thread is still
+# returning from signaling completion of the final mtask
+race:*VlMTaskVertex::signalUpstreamDone*
+
+# The parallel trace buffer handoff between worker threads and the commit
+# on the dumping thread is not visible to ThreadSanitizer; this includes
+# the trace worker unlocking a mutex locked by the dumping thread
+race:*VerilatedTrace*
+race:*VerilatedVcd*
+mutex:*VerilatedTrace*
+
+# vl_stop (e.g. on assertion failure) tears the model down via exit
+# handlers while worker threads may still be executing the current eval
+race:*vl_stop*
+
+# The --debug-runtime-timeout alarm handler prints via the runtime, which
+# allocates; not async-signal-safe. Note 'signal:' matches the handler name.
+signal:*alarmHandler*
