@@ -593,40 +593,18 @@ class ForkVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
         return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
     }
-    static bool isDisableProcessQueueExpr(const AstNodeExpr* const nodep) {
-        const AstNode* const basep
-            = AstArraySel::baseFromp(const_cast<AstNodeExpr*>(nodep), false);
-        if (const AstVarRef* const refp = VN_CAST(basep, VarRef))
-            return refp->varp()->processQueue();
-        if (const AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
-            return selp->varp() && selp->varp()->processQueue();
-        }
-        return false;
-    }
-    static bool isDisableQueuePushSelfStmt(const AstNode* const nodep) {
-        // Detect LinkJump-generated registration:
-        // __VprocessQueue_*.push_back(std::process::self())
-        const AstStmtExpr* const stmtExprp = VN_CAST(nodep, StmtExpr);
-        if (!stmtExprp) return false;
-        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-        if (!methodp || methodp->name() != "push_back") return false;
-        return isDisableProcessQueueExpr(methodp->fromp());
-    }
-    static const AstNode* unwrapLeadingJumpBlocks(const AstNode* nodep) {
-        while (const AstJumpBlock* const jumpBlockp = VN_CAST(nodep, JumpBlock)) {
+    static bool isDisableQueuePushSelfPrefix(AstNode* nodep) {
+        while (AstJumpBlock* const jumpBlockp = VN_CAST(nodep, JumpBlock)) {
             nodep = jumpBlockp->stmtsp();
         }
-        return nodep;
-    }
-    static bool isDisableQueuePushSelfPrefix(const AstNode* const nodep) {
-        return isDisableQueuePushSelfStmt(unwrapLeadingJumpBlocks(nodep));
+        return nodep && nodep->isDisableQueuePushSelfStmt();
     }
     template <typename T_Owner>
     static bool insertForkSentinelAfterDisableQueuePushes(T_Owner* const ownerp,
                                                           AstNode* const firstStmtp,
                                                           AstNode* const delayp) {
         AstNode* insertBeforep = firstStmtp;
-        while (insertBeforep && isDisableQueuePushSelfStmt(insertBeforep)) {
+        while (insertBeforep && insertBeforep->isDisableQueuePushSelfStmt()) {
             insertBeforep = insertBeforep->nextp();
         }
         if (AstJumpBlock* const jumpBlockp = VN_CAST(insertBeforep, JumpBlock)) {
@@ -654,9 +632,8 @@ class ForkVisitor final : public VNVisitor {
             = insertForkSentinelAfterDisableQueuePushes(beginp, afterSentinelp, delayp);
         UASSERT_OBJ(moved, beginp, "Failed to move fork sentinel after disable queue pushes");
     }
-    static bool forkIsDisableable(const AstFork* const nodep) {
-        for (const AstBegin* itemp = nodep->forksp(); itemp;
-             itemp = VN_AS(itemp->nextp(), Begin)) {
+    static bool forkIsDisableable(AstFork* const nodep) {
+        for (AstBegin* itemp = nodep->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
             if (isDisableQueuePushSelfPrefix(itemp->stmtsp())) return true;
         }
         return false;
@@ -680,7 +657,8 @@ class ForkVisitor final : public VNVisitor {
         // start executing until the parent process is blocked or terminates. Because join and
         // join_any block the parent process, deferring branch start with a synthetic #0 delay is
         // normally only needed for join_none. A fork that can be disabled by name needs the same
-        // deferral for every join type.
+        // deferral for every join type so all branches register their processes before any branch
+        // body can disable the block.
         if (nodep->joinType().joinNone() || forkIsDisableable(nodep)) {
             UINFO(9, "Adding fork branch start sentinels " << nodep);
             FileLine* fl = nodep->fileline();

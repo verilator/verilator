@@ -749,31 +749,19 @@ class TimingControlVisitor final : public VNVisitor {
         addDebugInfo(donep);
         beginp->addStmtsp(donep->makeStmt());
     }
-    static bool isDisableProcessQueueExpr(const AstNodeExpr* const nodep) {
-        const AstNode* const basep
-            = AstArraySel::baseFromp(const_cast<AstNodeExpr*>(nodep), false);
-        if (const AstVarRef* const refp = VN_CAST(basep, VarRef))
-            return refp->varp()->processQueue();
-        if (const AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
-            return selp->varp() && selp->varp()->processQueue();
-        }
-        return false;
-    }
-    static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
+    static bool hasDisableQueuePushSelfPrefix(AstBegin* const beginp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
-        // By this pass V3LiftExpr has lifted the std::process::self() argument into a preceding
-        // temporary (and left a leading comment), so the push_back is no longer necessarily the
-        // first statement. Scan across the leading registration statements for it, stopping at the
-        // fork-start sentinel or the branch body. The branch's own registration is at the front;
-        // registrations for nested forks live in sub-blocks and so are not in this statement list.
-        for (const AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        // V3LiftExpr lifts std::process::self() into an assignment to a temporary, then V3Task
+        // lowers that assignment's function call into a leading comment and AstStmtExpr. Thus the
+        // push_back is no longer necessarily the first statement. Scan across this generated
+        // prefix for it, stopping at the fork-start sentinel or the branch body. Registrations for
+        // nested forks live in sub-blocks and so are not in this statement list.
+        for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Comment)) continue;
-            const AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
+            AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
             if (!stmtExprp) break;
-            const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-            if (!methodp || methodp->name() != "push_back") continue;
-            if (isDisableProcessQueueExpr(methodp->fromp())) return true;
+            if (stmtExprp->isDisableQueuePushSelfStmt()) return true;
         }
         return false;
     }

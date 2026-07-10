@@ -6209,7 +6209,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->targetRefp()->unlinkFrBack()->deleteTree();
                 if (!hasPartSelect) {
                     const string instancePath = targetInstancePath(nodep->targetp(), targetPath);
-                    if (instancePath != "") {
+                    if (!instancePath.empty()) {
                         // Keep only the instance prefix so V3LinkJump can reference the selected
                         // instance's process queue without reparsing the disable target.
                         nodep->targetRefp(

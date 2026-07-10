@@ -607,8 +607,8 @@ class LinkJumpVisitor final : public VNVisitor {
                     // If disable executes inside a fork branch of this named block, jump to the
                     // end of that branch to prevent statements after disable from executing.
                     AstBegin* const branchp = innerForkBranchp(beginp);
-                    AstBegin* const jumpTargetp = branchp ? branchp : m_beginDisableBegins[beginp];
-                    UASSERT_OBJ(jumpTargetp, nodep, "Missing disable jump target");
+                    AstBegin* const jumpTargetp
+                        = branchp ? branchp : m_beginDisableBegins.at(beginp);
                     addJumpAfterKill(killStmtp, jumpTargetp);
                 }
             } else {
