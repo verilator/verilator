@@ -752,12 +752,7 @@ class TimingControlVisitor final : public VNVisitor {
     static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
-        const AstStmtExpr* const stmtExprp = VN_CAST(beginp->stmtsp(), StmtExpr);
-        if (!stmtExprp) return false;
-        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-        if (!methodp || methodp->name() != "push_back") return false;
-        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->varp()->processQueue();
+        return beginp->stmtsp() && beginp->stmtsp()->isDisableQueuePushSelfStmt();
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
