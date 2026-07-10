@@ -507,6 +507,11 @@ _MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-std=gnu++20)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 AC_SUBST(HAVE_COROUTINES)
 
+# Check if the C++ compiler supports ThreadSanitizer
+_MY_CXX_CHECK_IFELSE(-fsanitize=thread,
+  [AC_DEFINE([HAVE_TSAN],[1],[Defined if ThreadSanitizer is supported by $CXX])])
+AC_SUBST(HAVE_TSAN)
+
 # Flags for compiling Verilator internals including parser always
 if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   _MY_CXX_CHECK_IFELSE(-fsanitize=address -DVL_ASAN,
