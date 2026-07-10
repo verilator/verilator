@@ -10241,8 +10241,8 @@ public:
             if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)
                 || lowerAsFixedAggregate(lhsDTypeSkippedRefp)) {
                 streamp->unlinkFrBack();
-                nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp,
-                                                    lhsDTypeSkippedRefp});
+                nodep->rhsp(
+                    new AstCvtPackedToArray{streamp->fileline(), streamp, lhsDTypeSkippedRefp});
             }
         }
         if (AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
@@ -10253,9 +10253,8 @@ public:
             if (rwidth != 0 && rwidth < lwidth) {
                 nodep->v3widthWarn(lwidth, rwidth,
                                    "Stream target requires "
-                                       << lwidth
-                                       << " bits, but source expression only provides " << rwidth
-                                       << " bits (IEEE 1800-2023 11.4.14.3)");
+                                       << lwidth << " bits, but source expression only provides "
+                                       << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
             }
             if (lowerAsFixedAggregate(lhsStreamDTypep)) {
                 AstNodeExpr* const streamExprp = nodep->lhsp()->unlinkFrBack();
