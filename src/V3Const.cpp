@@ -2780,9 +2780,8 @@ class ConstVisitor final : public VNVisitor {
                 streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
                                               VSigning::UNSIGNED);
                 srcp = packedp;
-            }
-            if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
-                 || VN_IS(srcDTypep, UnpackArrayDType))) {
+            } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
+                        || VN_IS(srcDTypep, UnpackArrayDType))) {
                 if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
                     int blockSize = 1;
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
