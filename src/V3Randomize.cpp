@@ -133,6 +133,13 @@ union RandomizeMode final {
     int asInt;  // Representation as int to be stored in nodep->user*
 };
 
+// Look through unpacked array dimensions to the element type
+static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
+    dtypep = dtypep->skipRefp();
+    while (dtypep->isNonPackedArray()) dtypep = dtypep->subDTypep()->skipRefp();
+    return dtypep;
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -783,6 +790,32 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
+    // Mark the one directly-referenced member; it must reach the solver even when it
+    // carries no rand qualifier (the constraint refers to it).
+    void markConstrainedRandMember(AstStructDType* const structp, const std::string& name) {
+        AstMemberDType* const memberp
+            = VN_CAST(m_memberMap.findMember(structp, name), MemberDType);
+        UASSERT_OBJ(memberp, structp, "Constraint references unknown struct member " << name);
+        memberp->markConstrainedRand(true);
+    }
+
+    // IEEE 1800-2023 18.4: all rand members of a rand unpacked struct are solved
+    // concurrently, so unreferenced rand members must still reach the solver.
+    static void markStructConstrainedRandRecurse(AstNodeDType* const dtypep) {
+        AstStructDType* const structp = VN_CAST(arrayElementDTypep(dtypep), StructDType);
+        if (!structp || structp->packed()) return;
+        if (structp->isConstrainedRand()) return;  // Already processed
+        structp->markConstrainedRand(true);
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            // Non-rand members keep their value. TODO: randc members are solved as
+            // plain rand (uniform); per-member cyclic state is not generated for structs.
+            if (!memberp->rand().isRandomizable()) continue;
+            memberp->markConstrainedRand(true);
+            markStructConstrainedRandRecurse(memberp->subDTypep());
+        }
+    }
+
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
         const AstNode* fromp = memberSelp->fromp();
@@ -1409,7 +1442,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 if (VN_IS(varp->dtypeSkipRefp(), StructDType)
                     && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
-                    VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
+                    markStructConstrainedRandRecurse(varp->dtypeSkipRefp());
                     dimension = 1;
                 }
                 methodp->dtypeSetVoid();
@@ -1433,9 +1466,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     varRefp->classOrPackagep(classOrPackagep);
                     methodp->addPinsp(varRefp);
                 }
-                AstNodeDType* tmpDtypep = varp->dtypep();
-                while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
-                const size_t width = tmpDtypep->width();
+                const size_t width = arrayElementDTypep(varp->dtypep())->width();
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
                 AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
@@ -1917,34 +1948,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
-            if (VN_IS(fromp, StructSel)) {
-                VN_AS(fromp->dtypep()->skipRefp(), StructDType)->markConstrainedRand(true);
-            }
-            AstMemberDType* memberp = VN_AS(fromp->dtypep()->skipRefp(), StructDType)->membersp();
-            while (memberp) {
-                if (memberp->name() == nodep->name()) {
-                    memberp->markConstrainedRand(true);
-                    break;
-                } else
-                    memberp = VN_CAST(memberp->nextp(), MemberDType);
-            }
+            AstStructDType* const structp = VN_AS(fromp->dtypep()->skipRefp(), StructDType);
+            markConstrainedRandMember(structp, nodep->name());
+            markStructConstrainedRandRecurse(fromp->dtypep());
         }
         // Mark Random for structArray
         if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)) {
             AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
                                            ? VN_AS(nodep->fromp(), ArraySel)->fromp()
                                            : VN_AS(nodep->fromp(), CMethodHard)->fromp();
-            AstStructDType* const dtypep
+            AstStructDType* const structp
                 = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
-            dtypep->markConstrainedRand(true);
-            AstMemberDType* memberp = dtypep->membersp();
-            while (memberp) {
-                if (memberp->name() == nodep->name()) {
-                    memberp->markConstrainedRand(true);
-                    break;
-                } else
-                    memberp = VN_CAST(memberp->nextp(), MemberDType);
-            }
+            markConstrainedRandMember(structp, nodep->name());
+            markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
         }
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -5227,9 +5243,7 @@ class RandomizeVisitor final : public VNVisitor {
                         dimension = dims.second;
                     }
 
-                    AstNodeDType* tmpDtypep = arrVarp->dtypep();
-                    while (tmpDtypep->isNonPackedArray()) tmpDtypep = tmpDtypep->subDTypep();
-                    const size_t width = tmpDtypep->width();
+                    const size_t width = arrayElementDTypep(arrVarp->dtypep())->width();
 
                     methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
                     AstNodeExpr* const varnamep = new AstCExpr{
