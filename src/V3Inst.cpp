@@ -26,6 +26,7 @@
 #include "V3Inst.h"
 
 #include "V3Const.h"
+#include "V3Width.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -909,9 +910,14 @@ public:
                                            << pinexprp->width());
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef{newvarp->fileline(), newvarp, VAccess::WRITE});
-                AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
                 markContinuousLhs(pinexprp);
-                assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
+                if (VN_IS(pinexprp, NodeStream)) {
+                    assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
+                    V3Width::streamAssignLowerEdit(assignp);
+                } else {
+                    AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
+                }
             } else {
                 // V3 width should have range/extended to make the widths correct
                 newvarp->isContinuously(true);
