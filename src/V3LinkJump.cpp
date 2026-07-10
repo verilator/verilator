@@ -68,6 +68,7 @@ class LinkJumpVisitor final : public VNVisitor {
         "__VprocessQueue"};  // Names for queues needed for 'disable' handling
     std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
     std::unordered_map<const AstBegin*, AstVar*> m_beginDisableQueues;  // Per-begin process queues
+    std::unordered_map<const AstFork*, AstVar*> m_forkDisableQueues;  // Per-fork process queues
     std::unordered_map<const AstTask*, AstBegin*>
         m_taskDisableBegins;  // Per-task process wrappers
     std::unordered_map<const AstBegin*, AstBegin*>
@@ -310,6 +311,21 @@ class LinkJumpVisitor final : public VNVisitor {
         m_beginDisableQueues.emplace(beginp, processQueuep);
         return processQueuep;
     }
+    AstVar* getOrCreateForkDisableQueuep(AstFork* const forkp, FileLine* const fl) {
+        const auto it = m_forkDisableQueues.find(forkp);
+        if (it != m_forkDisableQueues.end()) return it->second;
+
+        AstVar* const processQueuep = getProcessQueuep(forkp, fl);
+        prependForkBranchQueuePushes(forkp, processQueuep, fl, true);
+        // Disabling a fork must also terminate detached descendants created by nested forks
+        // under each branch, so track nested fork branch processes in the same queue.
+        for (AstBegin* branchp = forkp->forksp(); branchp;
+             branchp = VN_AS(branchp->nextp(), Begin)) {
+            prependNestedForkBranchQueuePushes(branchp, processQueuep, fl, true);
+        }
+        m_forkDisableQueues.emplace(forkp, processQueuep);
+        return processQueuep;
+    }
     AstStmtExpr* insertKillStmtp(AstDisable* const nodep, AstVar* const processQueuep) {
         AstStmtExpr* const killStmtp = getQueueKillStmtp(nodep->fileline(), processQueuep);
         nodep->addNextHere(killStmtp);
@@ -319,13 +335,13 @@ class LinkJumpVisitor final : public VNVisitor {
         AstJumpBlock* const jmpBlockp = getJumpBlock(targetp, false);
         killStmtp->addNextHere(new AstJumpGo{killStmtp->fileline(), jmpBlockp});
     }
-    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks) {
-        // The support utilizes the process::kill()` method. For each `disable` a queue of
-        // processes is declared. At the beginning of each fork that can be disabled, its process
-        // handle is pushed to the queue. `disable` statement is replaced with calling `kill()`
-        // method on each element of the queue.
+    void handleDisableOnFork(AstDisable* const nodep) {
+        // The support utilizes the process::kill()` method. For each disabled fork a queue of
+        // processes is declared. At the beginning of each fork branch (and each nested fork
+        // branch) its process handle is pushed to the queue. The `disable` statement is replaced
+        // with calling `kill()` on each element of the queue.
         FileLine* const fl = nodep->fileline();
-        AstNode* const targetp = nodep->targetp();
+        AstFork* const targetp = VN_AS(nodep->targetp(), Fork);
         if (m_ftaskp) {
             if (!m_ftaskp->exists(
                     [targetp](const AstNodeBlock* blockp) -> bool { return blockp == targetp; })) {
@@ -334,33 +350,18 @@ class LinkJumpVisitor final : public VNVisitor {
             }
         }
 
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstVar* const processQueuep = getProcessQueuep(targetp, fl);
-        AstVarRef* const queueWriteRefp
-            = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
-        AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
-
-        for (AstBegin* const beginp : forks) {
-            if (pushCurrentProcessp->backp()) {
-                pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
-            }
-            prependStmtsp(beginp, pushCurrentProcessp);
-        }
+        AstVar* const processQueuep = getOrCreateForkDisableQueuep(targetp, fl);
         AstStmtExpr* const killStmtp = insertKillStmtp(nodep, processQueuep);
 
-        // 'process::kill' does not immediately kill the current process
-        // executing the disable statement (because it's in the running state).
-        // If the disable statement is indeed executed by a process under the
-        // target AstFork, then jump to the end of that fork branch.
-        if (VN_IS(targetp, Fork)) {
-            AstNodeBlock* forkBranchp = nullptr;
-            for (AstNodeBlock* const blockp : vlstd::reverse_view(m_blockStack)) {
-                if (blockp == targetp) {
-                    addJumpAfterKill(killStmtp, VN_AS(forkBranchp, Begin));
-                    break;
-                }
-                forkBranchp = blockp;
-            }
+        // 'process::kill' does not immediately kill the current process executing the disable
+        // statement (because it's in the running state). If the disable runs under the target
+        // fork, jump to the end of the innermost enclosing fork branch (the branch that holds the
+        // running process) so statements after the disable do not execute. Targeting the innermost
+        // branch keeps the jump inside a single emitted coroutine even when the disable sits in a
+        // nested sub-fork; targeting the outer target fork's branch would cross a coroutine
+        // boundary once forks are split into separate functions.
+        if (AstBegin* const branchp = innerForkBranchp(targetp)) {
+            addJumpAfterKill(killStmtp, branchp);
         }
     }
     // VISITORS
@@ -553,12 +554,8 @@ class LinkJumpVisitor final : public VNVisitor {
                 if (it != m_taskDisableBegins.end()) jumpTargetp = it->second;
                 addJumpAfterKill(killStmtp, jumpTargetp);
             }
-        } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
-            std::vector<AstBegin*> forks;
-            for (AstBegin* itemp = forkp->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
-                forks.push_back(itemp);
-            }
-            handleDisableOnFork(nodep, forks);
+        } else if (VN_IS(targetp, Fork)) {
+            handleDisableOnFork(nodep);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             if (existsBlockAbove(beginp->name())) {
                 if (!beginp->user3()) {
