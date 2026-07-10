@@ -16,12 +16,12 @@ module t;
   wire [7:0] f;
   wire [31:0] g;
   logic [4:0] idx = 0;
-  sub s(b);
-  sub8 s_sel(d[7:0]);
-  sub8 s_const(8'h7c);
-  subout s_out(e[idx+:8]);
-  subout s_out_simple(f);
-  subout s_out_slice(g[15:8]);
+  sub s (b);
+  sub8 s_sel (d[7:0]);
+  sub8 s_const (8'h7c);
+  subout s_out (e[idx+:8]);
+  subout s_out_simple (f);
+  subout s_out_slice (g[15:8]);
 
   initial begin
     #1;
@@ -76,12 +76,18 @@ module t;
 
 endmodule
 
-module sub(input logic [31:0] c);
+module sub (
+    input logic [31:0] c
+);
 endmodule
 
-module sub8(input logic [7:0] c);
+module sub8 (
+    input logic [7:0] c
+);
 endmodule
 
-module subout(output logic [7:0] c);
+module subout (
+    output logic [7:0] c
+);
   assign c = 8'h5a;
 endmodule

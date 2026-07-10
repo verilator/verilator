@@ -16,12 +16,27 @@ Verilator 5.051 devel
 **Other:**
 
 * Add comments as a branch description in coverage .info files (#7843). [Eryk Szpotanski]
+* Add --enable-light-debug configure option (#7886). [Geza Lore, Testorrent USA, Inc.]
+* Add user-provided DPI-C function declarations (#7626) (#7893). [Jakub Michalski]
+* Support a sequence used as an event control (#7797) (#7846). [Yilou Wang]
 * Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
+* Optimize more always blocks in DFG (#7775). [Geza Lore, Testorrent USA, Inc.]
+* Optimize assertion NFAs using bit-vector ring buffers (#7885). [Artur Bieniek, Antmicro Ltd.]
+* Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
 * Fix unique0 case side effects (#7787). [Pawel Klopotek]
 * Fix cleaning purity cache after assertions. [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error for coverpoints that reference a covergroup formal parameter (#7853 partial) (#7889). [Matthew Ballance]
 * Fix clang++ ambiguous overload of '==' operator (#7863). [Pawel Kojma, Antmicro Ltd.]
 * Fix heap-use-after-free in `VlRNG::VlRNG()` (#7865). [Dragon-Git]
+* Fix mixed-width inside and dist range bounds failing randomization (#7875). [Yilou Wang]
+* Fix range delays with parameter bounds (#7882). [Artur Bieniek, Antmicro Ltd.]
+* Fix --coverage on labeled inline assert/cover property (#7898) (#7904). [Patrick Creighton]
+* Fix memory leak in VerilatedFst::close() (#7899). [Jakub Michalski]
+* Fix independent force of multiply instantiated signals (#7905). [Artur Bieniek, Antmicro Ltd.]
+* Fix release of forced port nets (#7907) (#7901). [Artur Bieniek, Antmicro Ltd.]
+* Fix VL_TO_STRING function for array of structs (#7912). [Kornel Uriasz, Antmicro Ltd.]
+* Fix queues falling into wrong template spec (#7914). [Adam Kostrzewski, Antmicro Ltd.]
 
 
 Verilator 5.050 2026-07-01

@@ -4,7 +4,10 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module child(input wire drive, output wire observed);
+module child (
+    input wire drive,
+    output wire observed
+);
   /*verilator no_inline_module*/
 
   logic value;
@@ -22,8 +25,14 @@ module t;
   wire b_observed;
   bit done;
 
-  child a(.drive(1'b1), .observed(a_observed));
-  child b(.drive(1'b0), .observed(b_observed));
+  child a (
+      .drive(1'b1),
+      .observed(a_observed)
+  );
+  child b (
+      .drive(1'b0),
+      .observed(b_observed)
+  );
 
   always @(a_observed or b_observed) begin
     if (!done && a_observed === 1'b1) begin
