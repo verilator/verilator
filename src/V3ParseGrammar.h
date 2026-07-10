@@ -31,6 +31,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    VRandAttr m_memRand;  // 'rand'/'randc' qualifier for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
