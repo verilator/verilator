@@ -145,7 +145,7 @@ private:
     const VNUser2InUse m_user2InUse;
 
     std::vector<VarForceInfo> m_varInfos;  // Indexed by stable variable ID
-    std::unordered_map<AstVar*, int> m_varToId;
+    std::unordered_map<AstVarScope*, int> m_varToId;
     std::unordered_set<AstVar*> m_clockedWrites;
     std::unordered_map<AstVar*, std::vector<ForceInfo*>> m_rhsDepToForces;
     std::unordered_map<AstScope*, ScopeVarCache> m_scopeVarCaches;
@@ -329,7 +329,7 @@ public:
             // Non-bitwise member/struct paths cannot use a real bit range, so map each distinct
             // source path onto a synthetic index in VlForceVec and use that index consistently
             // for force, release, and readback.
-            VarForceInfo& varInfo = getOrCreateVarInfo(varp);
+            VarForceInfo& varInfo = getOrCreateVarInfo(getOneVarRef(lhsp)->varScopep());
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
             info.m_rangeLsb = index;
             info.m_rangeMsb = index;
@@ -426,14 +426,16 @@ public:
             });
     }
 
-    VarForceInfo& getOrCreateVarInfo(AstVar* varp) {
-        const auto it = m_varToId.find(varp);
+    VarForceInfo& getOrCreateVarInfo(AstVarScope* vscp) {
+        const auto it = m_varToId.find(vscp);
         if (it != m_varToId.end()) return m_varInfos[it->second];
 
-        m_varToId.emplace(varp, m_varInfos.size());
+        m_varToId.emplace(vscp, m_varInfos.size());
         m_varInfos.emplace_back();
         VarForceInfo& info = m_varInfos.back();
-        info.m_varp = varp;
+        info.m_varVscp = vscp;
+        info.m_varp = vscp->varp();
+        info.m_scopep = vscp->scopep();
         return info;
     }
 
@@ -442,8 +444,8 @@ public:
 
     bool doingAssign() const { return m_doingAssign; }
 
-    const VarForceInfo* getVarInfo(AstVar* varp) const {
-        const auto it = m_varToId.find(varp);
+    const VarForceInfo* getVarInfo(AstVarScope* vscp) const {
+        const auto it = m_varToId.find(vscp);
         return it != m_varToId.end() ? &m_varInfos[it->second] : nullptr;
     }
 
@@ -464,8 +466,7 @@ public:
         v3Global.setUsesForce();
         varp->setForcedByCode();
 
-        VarForceInfo& info = getOrCreateVarInfo(varp);
-        if (!info.m_scopep) info.m_scopep = vscp->scopep();
+        VarForceInfo& info = getOrCreateVarInfo(vscp);
         const int forceId = info.m_forces.size();
         FileLine* const flp = varp->fileline();
         AstScope* const scopep = vscp->scopep();
@@ -475,9 +476,11 @@ public:
             AstCDType* const forceVecDtypep = new AstCDType{flp, "VlForceVec"};
             v3Global.rootp()->typeTablep()->addTypesp(forceVecDtypep);
 
-            AstVar* const forceVecVarp = new AstVar{
-                flp, VVarType::MEMBER,
-                varp->name() + (m_doingAssign ? "_VassignVec" : "__VforceVec"), forceVecDtypep};
+            AstVar* const forceVecVarp
+                = new AstVar{flp, VVarType::MEMBER,
+                             varp->name() + (m_doingAssign ? "_VassignVec" : "__VforceVec") + "__"
+                                 + scopep->nameDotless(),
+                             forceVecDtypep};
             forceVecVarp->funcLocal(false);
             forceVecVarp->isInternal(true);
             varp->addNextHere(forceVecVarp);
@@ -578,11 +581,11 @@ public:
                 UASSERT_OBJ(finfo.m_rhsExprp, varp, "Missing RHS expression for ForceInfo");
 
                 // Create per-force temporary storage for the captured RHS value.
-                AstVar* const rhsVarp
-                    = new AstVar{flp, VVarType::VAR,
-                                 varp->name() + (doingAssign() ? "_VassignRHS" : "__VforceRHS")
-                                     + std::to_string(finfo.m_forceId),
-                                 finfo.m_rhsExprp->dtypep()};
+                AstVar* const rhsVarp = new AstVar{
+                    flp, VVarType::VAR,
+                    varp->name() + (doingAssign() ? "_VassignRHS" : "__VforceRHS")
+                        + std::to_string(finfo.m_forceId) + "__" + scopep->nameDotless(),
+                    finfo.m_rhsExprp->dtypep()};
                 rhsVarp->noSubst(true);
                 rhsVarp->sigPublic(true);
                 rhsVarp->setForcedByCode();
@@ -704,8 +707,8 @@ public:
     }
 
     const ForceInfo& getForceInfo(AstAssignForce* forceStmtp) const {
-        AstVar* varp = getOneVarRef(forceStmtp->lhsp())->varp();
-        const VarForceInfo* const varInfo = getVarInfo(varp);
+        AstVarScope* const vscp = getOneVarRef(forceStmtp->lhsp())->varScopep();
+        const VarForceInfo* const varInfo = getVarInfo(vscp);
         UASSERT(varInfo, "Force info not found for variable");
         auto it2 = varInfo->m_forces.find(forceStmtp);
         UASSERT(it2 != varInfo->m_forces.end(), "Force statement not found");
@@ -812,11 +815,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         nodep->scopep()->addVarsp(enVscp);
         nodep->scopep()->addVarsp(valVscp);
 
-        ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
+        ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(nodep);
         info.m_forceRdVscp = rdVscp;
         info.m_forceEnVscp = enVscp;
         info.m_forceValVscp = valVscp;
-        info.m_varVscp = nodep;
         varp->user3p(rdVscp);
         varp->user4p(enVscp);
         nodep->user3p(valVscp);
@@ -906,11 +908,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                 if (rdVscp || enVscp || valVscp) {
                     UASSERT_OBJ(rdVscp && enVscp && valVscp, nodep,
                                 "Incomplete pre-existing force helper set");
-                    ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
+                    ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(nodep);
                     info.m_forceRdVscp = rdVscp;
                     info.m_forceEnVscp = enVscp;
                     info.m_forceValVscp = valVscp;
-                    info.m_varVscp = nodep;
                     iterateChildrenConst(nodep);
                     return;
                 }
@@ -958,11 +959,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             nodep->user3p(valVscp);
 
             // Register force metadata so later transforms can find these helper vars.
-            ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(varp);
+            ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(nodep);
             info.m_forceRdVscp = rdVscp;
             info.m_forceEnVscp = enVscp;
             info.m_forceValVscp = valVscp;
-            info.m_varVscp = nodep;
 
             // Build an update block triggered by force-enable changes.
             AstSenItem* const itemsp = new AstSenItem{flp, VEdgeType::ET_CHANGED,
@@ -1033,7 +1033,8 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVar* const forcedVarp = lhsVarRefp->varp();
 
         const ForceState::ForceInfo& info = m_state.getForceInfo(nodep);
-        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(forcedVarp);
+        const ForceState::VarForceInfo* const varInfo
+            = m_state.getVarInfo(lhsVarRefp->varScopep());
         UASSERT_OBJ(varInfo && varInfo->m_forceVecVscp, nodep, "Force info not set up");
 
         FileLine* const flp = nodep->fileline();
@@ -1141,7 +1142,8 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVarRef* const lhsVarRefp = m_state.getOneVarRef(lhsp);
         AstVar* const releasedVarp = lhsVarRefp->varp();
 
-        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(releasedVarp);
+        const ForceState::VarForceInfo* const varInfo
+            = m_state.getVarInfo(lhsVarRefp->varScopep());
         if (!varInfo) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -1314,7 +1316,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         }
 
         AstVar* const varp = refp->varp();
-        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(refp->varScopep());
         if (!varInfo || varInfo->m_forceRdVscp || varInfo->m_forces.empty()
             || !ForceState::isBitwiseDType(varp) || !varp->dtypep()->isWide()) {
             visit(static_cast<AstNode*>(nodep));
@@ -1362,7 +1364,7 @@ class ForceReplaceVisitor final : public VNVisitor {
             return;
         }
         AstVar* const varp = baseRefp->varp();
-        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(baseRefp->varScopep());
         // Skip non-forceable reads, reads we intentionally protected earlier, and intermediate
         // selections that still evaluate to an unpacked array rather than a scalar element.
         if (ForceState::isNotReplaceable(baseRefp) || !varInfo
@@ -1389,8 +1391,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         if (ForceState::isNotReplaceable(nodep)) return;
         if (nodep->backp() && VN_IS(nodep->backp(), ArraySel)) return;
 
-        AstVar* const varp = nodep->varp();
-        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+        const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(nodep->varScopep());
         if (!varInfo) return;
 
         if (varInfo->m_forceRdVscp) {
@@ -1444,7 +1445,8 @@ class ForceReplaceVisitor final : public VNVisitor {
                 AstVar* const varp = baseRefp->varp();
                 if (!ForceState::isBitwiseDType(varp)
                     && !ForceState::isUnpackedArrayDType(varp->dtypep())) {
-                    const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(varp);
+                    const ForceState::VarForceInfo* const varInfo
+                        = m_state.getVarInfo(baseRefp->varScopep());
                     if (!ForceState::isNotReplaceable(baseRefp) && varInfo) {
                         const int forcePathIndex = varInfo->findForcePathIndex(exprp);
                         if (forcePathIndex >= 0) {
