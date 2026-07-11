@@ -482,6 +482,7 @@ class TimingControlVisitor final : public VNVisitor {
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
+    bool m_underIfaceCFunc = false;  // True if we are under a CFunc owned by an interface scope
     bool m_hasStaticZeroDelay = false;  // True if we have a static #0 delay
     std::vector<FileLine*> m_unknownDelayFlps;  // Locations of AstDelay with non-constant value
 
@@ -633,10 +634,10 @@ class TimingControlVisitor final : public VNVisitor {
                              new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
                              new AstConst{flp, AstConst::BitTrue{}}};
     }
-    // Returns true if we are under a class or the given tree has any references to locals. These
-    // are cases where static, globally-evaluated triggers are not suitable.
+    // Returns true if we are under a class or interface function, or the tree references locals.
+    // These are cases where static, globally-evaluated triggers are not suitable.
     bool needDynamicTrigger(AstNode* const nodep) const {
-        return m_classp || nodep->exists([](AstNode* const nodep) {
+        return m_classp || m_underIfaceCFunc || nodep->exists([](AstNode* const nodep) {
             if (AstNodeVarRef* varp = VN_CAST(nodep, NodeVarRef)) {
                 return varp->varp()->isFuncLocal();
             }
@@ -953,8 +954,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_underIfaceCFunc);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_underIfaceCFunc = m_scopep && VN_IS(m_scopep->modp(), Iface);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;

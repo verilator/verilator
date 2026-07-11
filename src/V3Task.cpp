@@ -2291,11 +2291,41 @@ std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp
     return statements;
 }
 
+static void markIfaceSensRefsUnder(AstNode* const sensesp) {
+    sensesp->foreach([](AstVarRef* const refp) {
+        UASSERT_OBJ(refp->varScopep(), refp, "No var scope");
+        // Keep temps: the clocking event var is a MODULETEMP
+        if (refp->varp()->isFuncLocal()) return;
+        if (AstIface* const ifacep = VN_CAST(refp->varScopep()->scopep()->modp(), Iface)) {
+            refp->varp()->sensIfacep(ifacep);
+        }
+    });
+}
+
+// Mark interface members under timing controls of iface CFuncs as interface-sensed
+static void markIfaceCFuncTimingSenses(AstNetlist* const netlistp) {
+    netlistp->foreach([](AstCFunc* const funcp) {
+        if (!funcp->scopep() || !VN_IS(funcp->scopep()->modp(), Iface)) return;
+        funcp->foreach([](AstNode* const nodep) {
+            if (AstEventControl* const controlp = VN_CAST(nodep, EventControl)) {
+                if (controlp->sentreep()) markIfaceSensRefsUnder(controlp->sentreep());
+            } else if (AstWait* const waitp = VN_CAST(nodep, Wait)) {
+                markIfaceSensRefsUnder(waitp->condp());
+            } else if (AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
+                if (AstSenTree* const sentreep = VN_CAST(assignp->timingControlp(), SenTree)) {
+                    markIfaceSensRefsUnder(sentreep);
+                }
+            }
+        });
+    });
+}
+
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
+    markIfaceCFuncTimingSenses(nodep);
     V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
 }
