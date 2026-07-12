@@ -4586,30 +4586,30 @@ class RandomizeVisitor final : public VNVisitor {
             if (!smodep) return nullptr;
             return new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
         };
-        // Direct var references and sub-object member references each carry a mode bit.
-        distp->exprp()->foreach([&](const AstNodeVarRef* refp) {
-            AstVar* const varp = refp->varp();
+        // Each direct, static, or sub-object member reference carries a mode bit.
+        distp->exprp()->foreach([&](const AstNode* nodep) {
+            const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef);
+            const AstMemberSel* const mselp = refp ? nullptr : VN_CAST(nodep, MemberSel);
+            if (!refp && !mselp) return;
+            AstVar* const varp = refp ? refp->varp() : mselp->varp();
             const RandomizeMode rmode = {.asInt = varp->user1()};
             if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
             if (varp->lifetime().isStatic()) {
                 if (AstNodeExpr* const readp = staticModeRead(varp))
                     addModeGate(readp, rmode.index);
+            } else if (mselp) {
+                AstVar* const memberModep
+                    = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+                if (!memberModep) return;
+                AstMemberSel* const modeSelp
+                    = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
+                modeSelp->dtypep(memberModep->dtypep());
+                addModeGate(modeSelp, rmode.index);
             } else if (randModeVarp) {
                 addModeGate(new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule),
                                           randModeVarp, VAccess::READ},
                             rmode.index);
             }
-        });
-        distp->exprp()->foreach([&](const AstMemberSel* mselp) {
-            AstVar* const varp = mselp->varp();
-            const RandomizeMode rmode = {.asInt = varp->user1()};
-            if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
-            AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
-            if (!memberModep) return;
-            AstMemberSel* const modeSelp
-                = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
-            modeSelp->dtypep(memberModep->dtypep());
-            addModeGate(modeSelp, rmode.index);
         });
         if (!gatep) return chainp;
 
@@ -4634,6 +4634,78 @@ class RandomizeVisitor final : public VNVisitor {
             }
         }
         return new AstConstraintIf{fl, gatep, chainp, new AstConstraintExpr{fl, unionExprp}};
+    }
+
+    AstNodeExpr* newUniformRangePick(AstDist* distp, const AstInsideRange* irp) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
+        distExprCopyp->user1(true);
+        const int distWidth = distp->exprp()->width();
+        const AstConst* const lopC = VN_CAST(irp->lhsp(), Const);
+        const AstConst* const hipC = VN_CAST(irp->rhsp(), Const);
+        AstNodeExpr* rangeSzp;
+        if (lopC && hipC) {
+            const uint64_t rsz = hipC->toUQuad() - lopC->toUQuad() + 1;
+            rangeSzp = new AstConst{fl, AstConst::Unsized64{}, rsz};
+        } else {
+            const bool isSigned = irp->lhsp()->isSigned();
+            AstNodeExpr* const lo64p
+                = isSigned ? static_cast<AstNodeExpr*>(
+                                 new AstExtendS{fl, irp->lhsp()->cloneTreePure(false), 64})
+                           : static_cast<AstNodeExpr*>(
+                                 new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64});
+            lo64p->dtypeSetUInt64();
+            AstNodeExpr* const hi64p
+                = isSigned ? static_cast<AstNodeExpr*>(
+                                 new AstExtendS{fl, irp->rhsp()->cloneTreePure(false), 64})
+                           : static_cast<AstNodeExpr*>(
+                                 new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64});
+            hi64p->dtypeSetUInt64();
+            rangeSzp = new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1ULL},
+                                  new AstSub{fl, hi64p, lo64p}};
+        }
+        AstNodeExpr* const rand64p = new AstRand{fl, nullptr, false};
+        rand64p->dtypeSetUInt64();
+        AstNodeExpr* const offsetp
+            = new AstCCast{fl, new AstModDiv{fl, rand64p, rangeSzp}, distWidth};
+        AstNodeExpr* const valuep = new AstAdd{fl, irp->lhsp()->cloneTreePure(false), offsetp};
+        valuep->dtypeFrom(distp->exprp());
+        AstNodeExpr* const eqp = new AstEq{fl, distExprCopyp, valuep};
+        eqp->user1(true);
+        return eqp;
+    }
+
+    // Soft weighted bucket chain: select a bucket by bucketVar against cumulative weights.
+    AstNode* buildWeightedBucketChain(AstDist* distp, const std::vector<DistBucket>& buckets,
+                                      AstVar* bucketVarp,
+                                      const std::vector<AstNodeExpr*>& cumSums) {
+        FileLine* const fl = distp->fileline();
+        AstNode* chainp = nullptr;
+        for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
+            AstNodeExpr* constraintExprp;
+            const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
+            if (irp && (distBoundRefsRandVar(irp->lhsp()) || distBoundRefsRandVar(irp->rhsp()))) {
+                constraintExprp = newDistRangeMembership(distp, irp);
+            } else if (irp) {
+                constraintExprp = newUniformRangePick(distp, irp);
+            } else {
+                AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
+                distExprCopyp->user1(true);
+                constraintExprp
+                    = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
+                constraintExprp->user1(true);
+            }
+            AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
+            thenp->isSoft(true);
+            if (!chainp) {
+                chainp = thenp;
+            } else {
+                AstNodeExpr* const condp
+                    = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
+                chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+            }
+        }
+        return chainp;
     }
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
@@ -4770,79 +4842,7 @@ class RandomizeVisitor final : public VNVisitor {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            // Build ConstraintIf chain backward (last bucket is unconditional default)
-            AstNode* chainp = nullptr;
-            for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
-                AstNodeExpr* constraintExprp;
-                const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
-                if (irp
-                    && (distBoundRefsRandVar(irp->lhsp()) || distBoundRefsRandVar(irp->rhsp()))) {
-                    // Bounds solved concurrently cannot pin a pre-solve value; softly
-                    // prefer the symbolic range so the hard membership stays satisfiable
-                    constraintExprp = newDistRangeMembership(distp, irp);
-                } else if (irp) {
-                    // Pick distExpr = lo + rand64() % (hi - lo + 1) for a uniform value in range
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    const int distWidth = distp->exprp()->width();
-                    // Compute range size in 64-bit to avoid overflow
-                    const AstConst* const lopC = VN_CAST(irp->lhsp(), Const);
-                    const AstConst* const hipC = VN_CAST(irp->rhsp(), Const);
-                    AstNodeExpr* rangeSzp;
-                    if (lopC && hipC) {
-                        const uint64_t rsz = hipC->toUQuad() - lopC->toUQuad() + 1;
-                        rangeSzp = new AstConst{fl, AstConst::Unsized64{}, rsz};
-                    } else {
-                        const bool isSigned = irp->lhsp()->isSigned();
-                        AstNodeExpr* const lo64p
-                            = isSigned
-                                  ? static_cast<AstNodeExpr*>(
-                                        new AstExtendS{fl, irp->lhsp()->cloneTreePure(false), 64})
-                                  : static_cast<AstNodeExpr*>(
-                                        new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64});
-                        lo64p->dtypeSetUInt64();
-                        AstNodeExpr* const hi64p
-                            = isSigned
-                                  ? static_cast<AstNodeExpr*>(
-                                        new AstExtendS{fl, irp->rhsp()->cloneTreePure(false), 64})
-                                  : static_cast<AstNodeExpr*>(
-                                        new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64});
-                        hi64p->dtypeSetUInt64();
-                        rangeSzp = new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1ULL},
-                                              new AstSub{fl, hi64p, lo64p}};
-                    }
-                    AstNodeExpr* const rand64p = new AstRand{fl, nullptr, false};
-                    rand64p->dtypeSetUInt64();
-                    // offset = rand64() % rangeSize (result in [0, rangeSize-1])
-                    AstNodeExpr* const offset64p = new AstModDiv{fl, rand64p, rangeSzp};
-                    // Truncate offset to dist expression width, then add lo
-                    AstNodeExpr* const offsetp = new AstCCast{fl, offset64p, distWidth};
-                    AstNodeExpr* const lop = irp->lhsp()->cloneTreePure(false);
-                    AstNodeExpr* const valuep = new AstAdd{fl, lop, offsetp};
-                    valuep->dtypeFrom(distp->exprp());
-                    constraintExprp = new AstEq{fl, distExprCopyp, valuep};
-                    constraintExprp->user1(true);
-                } else {
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    constraintExprp
-                        = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
-                    constraintExprp->user1(true);
-                }
-
-                AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
-                // Per IEEE 18.5.3: weights are a preference, not a hard constraint.
-                // The solver may discard this when it conflicts with other constraints.
-                thenp->isSoft(true);
-
-                if (!chainp) {
-                    chainp = thenp;
-                } else {
-                    AstNodeExpr* const condp
-                        = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
-                    chainp = new AstConstraintIf{fl, condp, thenp, chainp};
-                }
-            }
+            AstNode* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
 
             chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
