@@ -998,15 +998,24 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
     // Step 3: Solve phase by phase
     std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
 
+    bool needsAllLogic = false;
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() == 0) continue;
+        if (!var.second->hasMatchingElements(m_arr_vars, var.second->name())) {
+            needsAllLogic = true;
+            break;
+        }
+    }
+    const char* const logicp = needsAllLogic ? "ALL" : "QF_ABV";
+
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);
 
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Solver session setup
         os << "(set-option :produce-models true)\n";
-        os << "(set-logic QF_ABV)\n";
+        os << "(set-logic " << logicp << ")\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 
@@ -1021,7 +1030,6 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             os << ")\n";
         }
 
-        // Pin all previously solved variables
         for (const auto& entry : solvedValues) {
             os << "(assert (= " << entry.first << " " << entry.second << "))\n";
         }
@@ -1072,51 +1080,58 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             auto getValueCmd = [&]() {
                 os << "(get-value (";
                 for (const auto& varName : layerVars) {
-                    if (m_vars.count(varName)) os << varName << " ";
+                    const auto it = m_vars.find(varName);
+                    if (it->second->dimension() > 0) {
+                        auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                        it->second->setArrayInfo(arrVarsp);
+                        // Enumerable arrays: query each element for a QF_ABV-safe pin.
+                        if (it->second->hasMatchingElements(m_arr_vars, it->second->name())) {
+                            it->second->emitGetValue(os);
+                            continue;
+                        }
+                    }
+                    os << varName << " ";
                 }
                 os << "))\n";
             };
 
-            // Helper to parse ((name1 value1) (name2 value2) ...) response
             auto parseGetValue = [&]() -> bool {
+                // Parse ((name value) ...): one paren-depth counter drives every match.
                 char c;
                 os >> c;  // outer '('
-                while (true) {
-                    os >> c;
-                    if (c == ')') break;  // outer closing
-                    if (c != '(') return false;
-                    std::string name;
-                    os >> name;
-
-                    // Read value handling nested parens for (_ bvN W) format
-                    os >> std::ws;
-                    std::string value;
-                    char firstChar;
-                    os.get(firstChar);
-                    if (firstChar == '(') {
-                        // Compound value like (_ bv5 32)
-                        value = "(";
-                        int depth = 1;
-                        while (depth > 0) {
-                            os.get(c);
-                            value += c;
-                            if (c == '(')
-                                depth++;
-                            else if (c == ')')
-                                depth--;
+                if (c != '(') return false;
+                int depth = 1;
+                std::string tokens[2];
+                std::string cur;
+                int fields = 0;
+                auto flush = [&]() {
+                    if (cur.empty()) return;
+                    if (fields < 2) tokens[fields] = cur;
+                    ++fields;
+                    cur.clear();
+                };
+                while (depth > 0 && os.get(c)) {
+                    if (c == '(') {
+                        ++depth;
+                        if (depth >= 3) cur += c;
+                    } else if (c == ')') {
+                        --depth;
+                        if (depth >= 2) {
+                            cur += c;
+                        } else if (depth == 1) {
+                            flush();
+                            if (fields == 2) solvedValues[tokens[0]] = tokens[1];
+                            fields = 0;
                         }
-                        // Read closing ')' of the pair
-                        os >> c;
+                    } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                        if (depth >= 3) {
+                            cur += c;
+                        } else {
+                            flush();
+                        }
                     } else {
-                        // Atom value like #x00000005 or #b101
-                        value += firstChar;
-                        while (os.get(c) && c != ')') { value += c; }
-                        // Trim trailing whitespace
-                        const size_t end = value.find_last_not_of(" \t\n\r");
-                        if (end != std::string::npos) value = value.substr(0, end + 1);
+                        cur += c;
                     }
-
-                    solvedValues[name] = value;
                 }
                 return true;
             };

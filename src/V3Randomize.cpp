@@ -2165,6 +2165,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
+            if (VN_IS(lhsp->dtypep()->skipRefp(), AssocArrayDType)) {
+                lhsp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: 'solve ... before' with associative array");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
                 lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
@@ -2173,6 +2179,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
             for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
                  rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
+                if (VN_IS(rhsp->dtypep()->skipRefp(), AssocArrayDType)) {
+                    rhsp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: 'solve ... before' with associative array");
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    return;
+                }
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
                     rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
